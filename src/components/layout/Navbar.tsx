@@ -52,14 +52,14 @@ const Navbar: React.FC = () => {
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-24">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3">
+          <Link to="/" className="flex items-center">
             <motion.img
               src={bikerzLogo}
               alt="BIKERZ"
               whileHover={{ scale: 1.05 }}
-              className="h-12 sm:h-14 md:h-16 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+              className="h-20 sm:h-24 md:h-28 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]"
             />
           </Link>
 
