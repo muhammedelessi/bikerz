@@ -56,8 +56,8 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Image */}
+    <div className="min-h-screen min-h-[100svh] flex flex-col lg:flex-row">
+      {/* Image Section - Hidden on mobile */}
       <div className="hidden lg:block flex-1 relative">
         <img
           src={heroImage}
@@ -68,47 +68,47 @@ const Signup: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
       </div>
 
-      {/* Right Side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background">
+      {/* Form Section */}
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-background safe-area-inset">
         <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-6 sm:mb-8">
             <Link to="/" className="flex items-center">
               <img
                 src={bikerzLogo}
                 alt="BIKERZ"
-                className="h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+                className="h-10 sm:h-12 lg:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
               />
             </Link>
             <LanguageToggle />
           </div>
 
           {/* Form Card */}
-          <div className="card-premium p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-foreground mb-2">
+          <div className="card-premium p-5 sm:p-6 lg:p-8">
+            <div className="text-center mb-6 sm:mb-8">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
                 {t('auth.signup.title')}
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-sm sm:text-base text-muted-foreground">
                 {t('auth.signup.subtitle')}
               </p>
             </div>
 
             {error && (
-              <div className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/30 flex items-center gap-3">
+              <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg bg-destructive/10 border border-destructive/30 flex items-center gap-3">
                 <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
                 <p className="text-sm text-destructive">{error}</p>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="name">{t('auth.signup.name')}</Label>
+                <Label htmlFor="name" className="text-sm sm:text-base">{t('auth.signup.name')}</Label>
                 <Input
                   id="name"
                   type="text"
@@ -116,12 +116,12 @@ const Signup: React.FC = () => {
                   onChange={(e) => setName(e.target.value)}
                   placeholder={isRTL ? 'اسمك الكامل' : 'Your full name'}
                   required
-                  className="form-input"
+                  className="form-input h-11 sm:h-12 text-base"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">{t('auth.signup.email')}</Label>
+                <Label htmlFor="email" className="text-sm sm:text-base">{t('auth.signup.email')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -129,12 +129,12 @@ const Signup: React.FC = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
                   required
-                  className="form-input"
+                  className="form-input h-11 sm:h-12 text-base"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">{t('auth.signup.password')}</Label>
+                <Label htmlFor="password" className="text-sm sm:text-base">{t('auth.signup.password')}</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -144,12 +144,12 @@ const Signup: React.FC = () => {
                     placeholder="••••••••"
                     required
                     minLength={6}
-                    className="form-input pe-10"
+                    className="form-input h-11 sm:h-12 text-base pe-12"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 touch-target"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -157,7 +157,7 @@ const Signup: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">{t('auth.signup.confirmPassword')}</Label>
+                <Label htmlFor="confirmPassword" className="text-sm sm:text-base">{t('auth.signup.confirmPassword')}</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -165,14 +165,14 @@ const Signup: React.FC = () => {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="form-input"
+                  className="form-input h-11 sm:h-12 text-base"
                 />
               </div>
 
               <Button
                 type="submit"
                 variant="cta"
-                className="w-full"
+                className="w-full h-11 sm:h-12 text-base"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -186,7 +186,7 @@ const Signup: React.FC = () => {
               </Button>
             </form>
 
-            <div className="mt-6 text-center text-sm text-muted-foreground">
+            <div className="mt-5 sm:mt-6 text-center text-sm sm:text-base text-muted-foreground">
               {t('auth.signup.hasAccount')}{' '}
               <Link to="/login" className="text-primary hover:underline font-medium">
                 {t('auth.signup.loginLink')}
@@ -194,6 +194,15 @@ const Signup: React.FC = () => {
             </div>
           </div>
         </motion.div>
+      </div>
+
+      {/* Mobile Hero Image - Visible only on mobile as subtle background */}
+      <div className="lg:hidden absolute inset-0 -z-10 opacity-10">
+        <img
+          src={heroImage}
+          alt=""
+          className="w-full h-full object-cover"
+        />
       </div>
     </div>
   );

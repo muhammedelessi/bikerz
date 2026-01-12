@@ -112,9 +112,9 @@ const CourseLearn: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
-  const [showTest, setShowTest] = useState<string | null>(null); // chapter id
+  const [showTest, setShowTest] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -123,6 +123,18 @@ const CourseLearn: React.FC = () => {
 
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ChevronLeft : ChevronRight;
+
+  // Lock body scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (sidebarOpen && window.innerWidth < 1024) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [sidebarOpen]);
 
   // Fetch course details
   const { data: course, isLoading: courseLoading } = useQuery({
@@ -154,7 +166,6 @@ const CourseLearn: React.FC = () => {
 
       const chaptersWithData = await Promise.all(
         (chaptersData || []).map(async (chapter) => {
-          // Fetch lessons
           const { data: lessons, error: lessonsError } = await supabase
             .from('lessons')
             .select('*')
@@ -163,7 +174,6 @@ const CourseLearn: React.FC = () => {
 
           if (lessonsError) throw lessonsError;
 
-          // Fetch test for this chapter
           const { data: test, error: testError } = await supabase
             .from('chapter_tests')
             .select('id, title, title_ar, passing_score, time_limit_minutes')
@@ -322,6 +332,7 @@ const CourseLearn: React.FC = () => {
     setShowTest(null);
     setIsPlaying(false);
     setCurrentTime(0);
+    setSidebarOpen(false);
   };
 
   // Video controls
@@ -385,23 +396,22 @@ const CourseLearn: React.FC = () => {
     }
   };
 
-  // Check if all lessons in chapter are complete
   const isChapterComplete = (chapter: Chapter) => {
     return chapter.lessons.every(l => isLessonCompleted(l.id));
   };
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center p-8">
-          <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-foreground mb-2">
+      <div className="min-h-screen min-h-[100svh] bg-background flex items-center justify-center p-4">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
             {isRTL ? 'يرجى تسجيل الدخول' : 'Please Login'}
           </h2>
-          <p className="text-muted-foreground mb-6">
+          <p className="text-sm sm:text-base text-muted-foreground mb-6">
             {isRTL ? 'يجب تسجيل الدخول للوصول إلى الدورة' : 'You need to login to access this course'}
           </p>
-          <Button asChild>
+          <Button asChild className="h-11">
             <Link to="/login">{isRTL ? 'تسجيل الدخول' : 'Login'}</Link>
           </Button>
         </div>
@@ -411,14 +421,14 @@ const CourseLearn: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="flex h-screen">
-          <div className="flex-1 p-8">
+      <div className="min-h-screen min-h-[100svh] bg-background">
+        <div className="flex flex-col lg:flex-row h-screen">
+          <div className="flex-1 p-4 sm:p-8">
             <Skeleton className="w-full aspect-video rounded-xl" />
-            <Skeleton className="h-8 w-1/2 mt-6" />
-            <Skeleton className="h-4 w-full mt-4" />
+            <Skeleton className="h-6 sm:h-8 w-1/2 mt-4 sm:mt-6" />
+            <Skeleton className="h-4 w-full mt-3 sm:mt-4" />
           </div>
-          <div className="w-80 border-s border-border p-4">
+          <div className="hidden lg:block w-80 border-s border-border p-4">
             <Skeleton className="h-6 w-32 mb-4" />
             {[1,2,3].map(i => (
               <Skeleton key={i} className="h-16 w-full mb-2" />
@@ -431,20 +441,20 @@ const CourseLearn: React.FC = () => {
 
   if (!course || !isEnrolled) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center p-8">
-          <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-foreground mb-2">
+      <div className="min-h-screen min-h-[100svh] bg-background flex items-center justify-center p-4">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
             {!course 
               ? (isRTL ? 'الدورة غير موجودة' : 'Course Not Found')
               : (isRTL ? 'غير مسجل في الدورة' : 'Not Enrolled')}
           </h2>
-          <p className="text-muted-foreground mb-6">
+          <p className="text-sm sm:text-base text-muted-foreground mb-6">
             {!course 
               ? (isRTL ? 'لم نتمكن من العثور على هذه الدورة' : "We couldn't find this course")
               : (isRTL ? 'يرجى التسجيل في الدورة أولاً' : 'Please enroll in this course first')}
           </p>
-          <Button asChild>
+          <Button asChild className="h-11">
             <Link to={`/courses/${id}`}>
               <BackIcon className="w-4 h-4 me-2" />
               {isRTL ? 'العودة لصفحة الدورة' : 'Back to Course'}
@@ -456,24 +466,24 @@ const CourseLearn: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen min-h-[100svh] bg-background flex flex-col">
       {/* Header */}
-      <header className="h-16 border-b border-border bg-card/80 backdrop-blur-xl flex items-center justify-between px-4 lg:px-6 sticky top-0 z-50">
-        <div className="flex items-center gap-4">
+      <header className="h-14 sm:h-16 border-b border-border bg-card/80 backdrop-blur-xl flex items-center justify-between px-3 sm:px-4 lg:px-6 sticky top-0 z-50 safe-area-top">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="lg:hidden touch-target flex-shrink-0"
             onClick={() => setSidebarOpen(!sidebarOpen)}
           >
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </Button>
           
-          <Link to="/courses" className="flex items-center gap-2">
-            <img src={bikerzLogo} alt="BIKERZ" className="h-10" />
+          <Link to="/courses" className="flex items-center gap-2 flex-shrink-0">
+            <img src={bikerzLogo} alt="BIKERZ" className="h-8 sm:h-10" />
           </Link>
           
-          <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground min-w-0">
             <span>/</span>
             <span className="text-foreground font-medium truncate max-w-[200px]">
               {isRTL && course.title_ar ? course.title_ar : course.title}
@@ -481,15 +491,15 @@ const CourseLearn: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">
               {progressPercentage}%
             </span>
-            <Progress value={progressPercentage} className="w-24 h-2" />
+            <Progress value={progressPercentage} className="w-16 sm:w-24 h-2" />
           </div>
           
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" asChild className="hidden sm:flex">
             <Link to={`/courses/${id}`}>
               {isRTL ? 'تفاصيل الدورة' : 'Course Details'}
             </Link>
@@ -497,9 +507,17 @@ const CourseLearn: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Mobile Overlay */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Main Content */}
-        <main className={`flex-1 overflow-auto transition-all duration-300 ${sidebarOpen ? 'lg:me-80' : ''}`}>
+        <main className="flex-1 overflow-auto">
           <AnimatePresence mode="wait">
             {showTest && currentChapter?.test ? (
               <motion.div
@@ -507,7 +525,7 @@ const CourseLearn: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="p-4 lg:p-8"
+                className="p-4 sm:p-6 lg:p-8"
               >
                 <ChapterTest
                   testId={currentChapter.test.id}
@@ -526,8 +544,8 @@ const CourseLearn: React.FC = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                {/* Video Player */}
-                <div className="relative bg-black aspect-video">
+                {/* Video Player - Full width, adaptive aspect ratio */}
+                <div className="relative bg-black aspect-video w-full">
                   {currentLesson?.video_url ? (
                     <>
                       <video
@@ -544,11 +562,12 @@ const CourseLearn: React.FC = () => {
                             completeLessonMutation.mutate(currentLesson.id);
                           }
                         }}
+                        playsInline
                       />
                       
                       {/* Video Controls Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity">
-                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                        <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
                           {/* Progress Bar */}
                           <input
                             type="range"
@@ -556,42 +575,42 @@ const CourseLearn: React.FC = () => {
                             max={duration || 100}
                             value={currentTime}
                             onChange={handleSeek}
-                            className="w-full h-1 mb-4 accent-primary cursor-pointer"
+                            className="w-full h-1 mb-3 sm:mb-4 accent-primary cursor-pointer"
                           />
                           
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Button variant="ghost" size="icon" onClick={() => skip(-10)}>
-                                <SkipBack className="w-5 h-5 text-white" />
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1 sm:gap-2">
+                              <Button variant="ghost" size="icon" onClick={() => skip(-10)} className="h-9 w-9 sm:h-10 sm:w-10">
+                                <SkipBack className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                               </Button>
                               
-                              <Button variant="ghost" size="icon" onClick={togglePlay}>
+                              <Button variant="ghost" size="icon" onClick={togglePlay} className="h-9 w-9 sm:h-10 sm:w-10">
                                 {isPlaying ? (
-                                  <Pause className="w-6 h-6 text-white" />
+                                  <Pause className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                 ) : (
-                                  <Play className="w-6 h-6 text-white ms-0.5" />
+                                  <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white ms-0.5" />
                                 )}
                               </Button>
                               
-                              <Button variant="ghost" size="icon" onClick={() => skip(10)}>
-                                <SkipForward className="w-5 h-5 text-white" />
+                              <Button variant="ghost" size="icon" onClick={() => skip(10)} className="h-9 w-9 sm:h-10 sm:w-10">
+                                <SkipForward className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                               </Button>
                               
-                              <Button variant="ghost" size="icon" onClick={toggleMute}>
+                              <Button variant="ghost" size="icon" onClick={toggleMute} className="h-9 w-9 sm:h-10 sm:w-10 hidden sm:flex">
                                 {isMuted ? (
-                                  <VolumeX className="w-5 h-5 text-white" />
+                                  <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                                 ) : (
-                                  <Volume2 className="w-5 h-5 text-white" />
+                                  <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                                 )}
                               </Button>
                               
-                              <span className="text-white text-sm ms-2">
+                              <span className="text-white text-xs sm:text-sm ms-1 sm:ms-2">
                                 {formatTime(currentTime)} / {formatTime(duration)}
                               </span>
                             </div>
                             
-                            <Button variant="ghost" size="icon" onClick={toggleFullscreen}>
-                              <Maximize className="w-5 h-5 text-white" />
+                            <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="h-9 w-9 sm:h-10 sm:w-10">
+                              <Maximize className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                             </Button>
                           </div>
                         </div>
@@ -599,9 +618,9 @@ const CourseLearn: React.FC = () => {
                     </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-muted">
-                      <div className="text-center">
-                        <Video className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">
+                      <div className="text-center p-4">
+                        <Video className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-sm sm:text-base text-muted-foreground">
                           {isRTL ? 'لا يوجد فيديو لهذا الدرس' : 'No video available for this lesson'}
                         </p>
                       </div>
@@ -610,23 +629,25 @@ const CourseLearn: React.FC = () => {
                 </div>
 
                 {/* Lesson Content */}
-                <div className="p-4 lg:p-8">
-                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
-                    <div>
-                      <span className="text-sm text-primary font-medium">
+                <div className="p-4 sm:p-6 lg:p-8 safe-area-bottom">
+                  <div className="flex flex-col gap-4 mb-6">
+                    <div className="min-w-0">
+                      <span className="text-xs sm:text-sm text-primary font-medium">
                         {currentChapter && (isRTL && currentChapter.title_ar ? currentChapter.title_ar : currentChapter.title)}
                       </span>
-                      <h1 className="text-2xl lg:text-3xl font-bold text-foreground mt-1">
+                      <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mt-1">
                         {currentLesson && (isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title)}
                       </h1>
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {currentLesson && !isLessonCompleted(currentLesson.id) && (
                         <Button
                           variant="outline"
+                          size="sm"
                           onClick={() => completeLessonMutation.mutate(currentLesson.id)}
                           disabled={completeLessonMutation.isPending}
+                          className="h-10 sm:h-9"
                         >
                           <CheckCircle2 className="w-4 h-4 me-2" />
                           {isRTL ? 'وضع علامة مكتمل' : 'Mark Complete'}
@@ -636,16 +657,27 @@ const CourseLearn: React.FC = () => {
                       {currentLesson && isLessonCompleted(currentLesson.id) && (
                         <div className="flex items-center gap-2 text-primary">
                           <CheckCircle2 className="w-5 h-5" />
-                          <span className="font-medium">{isRTL ? 'مكتمل' : 'Completed'}</span>
+                          <span className="font-medium text-sm sm:text-base">{isRTL ? 'مكتمل' : 'Completed'}</span>
                         </div>
                       )}
+
+                      {/* Mobile sidebar toggle */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSidebarOpen(true)}
+                        className="lg:hidden h-10 sm:h-9 ms-auto"
+                      >
+                        <BookOpen className="w-4 h-4 me-2" />
+                        {isRTL ? 'المحتوى' : 'Content'}
+                      </Button>
                     </div>
                   </div>
 
                   {/* Description */}
                   {currentLesson?.description && (
-                    <div className="prose prose-invert max-w-none mb-8">
-                      <p className="text-muted-foreground">
+                    <div className="prose prose-invert max-w-none mb-6 sm:mb-8">
+                      <p className="text-sm sm:text-base text-muted-foreground">
                         {isRTL && currentLesson.description_ar ? currentLesson.description_ar : currentLesson.description}
                       </p>
                     </div>
@@ -653,8 +685,8 @@ const CourseLearn: React.FC = () => {
 
                   {/* Resources */}
                   {resources.length > 0 && (
-                    <div className="mb-8">
-                      <h3 className="text-lg font-semibold text-foreground mb-4">
+                    <div className="mb-6 sm:mb-8">
+                      <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">
                         {isRTL ? 'الموارد' : 'Resources'}
                       </h3>
                       <div className="grid gap-2">
@@ -664,10 +696,10 @@ const CourseLearn: React.FC = () => {
                             href={resource.resource_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                            className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors touch-target"
                           >
-                            <FileText className="w-5 h-5 text-primary" />
-                            <span className="text-foreground">{resource.title}</span>
+                            <FileText className="w-5 h-5 text-primary flex-shrink-0" />
+                            <span className="text-sm sm:text-base text-foreground truncate">{resource.title}</span>
                           </a>
                         ))}
                       </div>
@@ -675,28 +707,28 @@ const CourseLearn: React.FC = () => {
                   )}
 
                   {/* Navigation */}
-                  <div className="flex items-center justify-between pt-6 border-t border-border">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-6 border-t border-border">
                     {prevLesson ? (
-                      <Button variant="outline" onClick={() => goToLesson(prevLesson.id)}>
+                      <Button variant="outline" onClick={() => goToLesson(prevLesson.id)} className="h-11 sm:h-10 order-2 sm:order-1">
                         <BackIcon className="w-4 h-4 me-2" />
-                        {isRTL ? 'الدرس السابق' : 'Previous'}
+                        <span className="truncate">{isRTL ? 'الدرس السابق' : 'Previous'}</span>
                       </Button>
                     ) : (
-                      <div />
+                      <div className="hidden sm:block" />
                     )}
                     
                     {nextLesson ? (
-                      <Button onClick={() => goToLesson(nextLesson.id)}>
-                        {isRTL ? 'الدرس التالي' : 'Next'}
+                      <Button onClick={() => goToLesson(nextLesson.id)} className="h-11 sm:h-10 order-1 sm:order-2">
+                        <span className="truncate">{isRTL ? 'الدرس التالي' : 'Next'}</span>
                         <ForwardIcon className="w-4 h-4 ms-2" />
                       </Button>
                     ) : currentChapter?.test && isChapterComplete(currentChapter) ? (
-                      <Button onClick={() => setShowTest(currentChapter.id)} className="btn-cta">
+                      <Button onClick={() => setShowTest(currentChapter.id)} className="btn-cta h-11 sm:h-10 order-1 sm:order-2">
                         <ClipboardList className="w-4 h-4 me-2" />
                         {isRTL ? 'ابدأ الاختبار' : 'Take Test'}
                       </Button>
                     ) : (
-                      <Button disabled>
+                      <Button disabled className="h-11 sm:h-10 order-1 sm:order-2">
                         <Trophy className="w-4 h-4 me-2" />
                         {isRTL ? 'أكمل الدورة' : 'Course Complete'}
                       </Button>
@@ -710,17 +742,17 @@ const CourseLearn: React.FC = () => {
 
         {/* Sidebar */}
         <aside
-          className={`fixed lg:fixed top-16 end-0 h-[calc(100vh-4rem)] w-80 bg-card border-s border-border transform transition-transform duration-300 z-40 ${
-            sidebarOpen ? 'translate-x-0' : isRTL ? '-translate-x-full' : 'translate-x-full'
-          }`}
+          className={`fixed lg:sticky top-14 sm:top-16 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] w-[300px] sm:w-80 max-w-[85vw] bg-card border-s border-border transform transition-transform duration-300 ease-out z-50 lg:z-auto ${
+            sidebarOpen ? 'translate-x-0' : isRTL ? '-translate-x-full lg:translate-x-0' : 'translate-x-full lg:translate-x-0'
+          } ${isRTL ? 'left-0' : 'right-0'}`}
         >
           <ScrollArea className="h-full">
-            <div className="p-4">
+            <div className="p-3 sm:p-4">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-foreground">
+                <h2 className="font-semibold text-sm sm:text-base text-foreground">
                   {isRTL ? 'محتوى الدورة' : 'Course Content'}
                 </h2>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-xs sm:text-sm text-muted-foreground">
                   {completedLessons}/{totalLessons}
                 </span>
               </div>
@@ -732,20 +764,20 @@ const CourseLearn: React.FC = () => {
                     value={chapter.id}
                     className="border border-border/50 rounded-lg overflow-hidden"
                   >
-                    <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/30 text-sm">
-                      <div className="flex items-center gap-3 text-start">
-                        <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                    <AccordionTrigger className="px-3 sm:px-4 py-3 hover:no-underline hover:bg-muted/30 text-xs sm:text-sm">
+                      <div className="flex items-center gap-2 sm:gap-3 text-start min-w-0">
+                        <span className={`flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                           isChapterComplete(chapter) 
                             ? 'bg-primary text-primary-foreground' 
                             : 'bg-muted text-muted-foreground'
                         }`}>
                           {isChapterComplete(chapter) ? (
-                            <CheckCircle2 className="w-4 h-4" />
+                            <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4" />
                           ) : (
                             chapterIndex + 1
                           )}
                         </span>
-                        <span className="font-medium text-foreground">
+                        <span className="font-medium text-foreground truncate">
                           {isRTL && chapter.title_ar ? chapter.title_ar : chapter.title}
                         </span>
                       </div>
@@ -762,12 +794,12 @@ const CourseLearn: React.FC = () => {
                               key={lesson.id}
                               disabled={locked}
                               onClick={() => !locked && goToLesson(lesson.id)}
-                              className={`w-full flex items-center gap-3 px-4 py-3 text-start text-sm transition-colors ${
+                              className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 text-start text-xs sm:text-sm transition-colors touch-target ${
                                 isActive 
                                   ? 'bg-primary/10 border-s-2 border-primary' 
                                   : locked 
                                     ? 'opacity-50 cursor-not-allowed' 
-                                    : 'hover:bg-muted/50'
+                                    : 'hover:bg-muted/50 active:bg-muted/70'
                               }`}
                             >
                               <div className="flex-shrink-0">
@@ -785,7 +817,7 @@ const CourseLearn: React.FC = () => {
                                 {isRTL && lesson.title_ar ? lesson.title_ar : lesson.title}
                               </span>
                               {lesson.duration_minutes && (
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-xs text-muted-foreground flex-shrink-0">
                                   {lesson.duration_minutes}m
                                 </span>
                               )}
@@ -798,24 +830,24 @@ const CourseLearn: React.FC = () => {
                           <button
                             onClick={() => isChapterComplete(chapter) && setShowTest(chapter.id)}
                             disabled={!isChapterComplete(chapter)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 text-start text-sm transition-colors border-t border-border/30 ${
+                            className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 text-start text-xs sm:text-sm transition-colors border-t border-border/30 touch-target ${
                               !isChapterComplete(chapter)
                                 ? 'opacity-50 cursor-not-allowed'
                                 : showTest === chapter.id
                                   ? 'bg-primary/10 border-s-2 border-primary'
-                                  : 'hover:bg-muted/50'
+                                  : 'hover:bg-muted/50 active:bg-muted/70'
                             }`}
                           >
-                            <ClipboardList className={`w-4 h-4 ${
+                            <ClipboardList className={`w-4 h-4 flex-shrink-0 ${
                               isChapterComplete(chapter) ? 'text-primary' : 'text-muted-foreground'
                             }`} />
-                            <span className={`flex-1 ${
+                            <span className={`flex-1 truncate ${
                               showTest === chapter.id ? 'text-primary font-medium' : 'text-foreground'
                             }`}>
                               {isRTL && chapter.test.title_ar ? chapter.test.title_ar : chapter.test.title}
                             </span>
                             {!isChapterComplete(chapter) && (
-                              <Lock className="w-4 h-4 text-muted-foreground" />
+                              <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                             )}
                           </button>
                         )}
