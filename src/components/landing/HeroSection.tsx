@@ -13,20 +13,21 @@ const HeroSection: React.FC = () => {
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image */}
+    <section className="relative min-h-[100svh] flex items-center justify-center overflow-hidden pt-16 sm:pt-20 lg:pt-24">
+      {/* Background Image - Optimized for mobile */}
       <div className="absolute inset-0">
         <img
           src={heroImage}
           alt="Motorcycle rider on desert highway"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-center"
+          loading="eager"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-background/80" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/50 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/60 via-transparent to-background/60 hidden sm:block" />
       </div>
 
-      {/* Animated Lines */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Animated Lines - Lighter on mobile */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.1 }}
@@ -45,28 +46,28 @@ const HeroSection: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 section-container text-center">
+      <div className="relative z-10 section-container text-center px-4">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="space-y-8"
+          className="space-y-6 sm:space-y-8"
         >
           {/* Badge */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-sm"
+            className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-sm"
           >
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-sm text-primary font-medium">
+            <span className="text-xs sm:text-sm text-primary font-medium">
               {isRTL ? '+15,000 راكب في الخليج' : '15,000+ GCC Riders'}
             </span>
           </motion.div>
 
           {/* Title */}
-          <h1 className="hero-text max-w-5xl mx-auto">
+          <h1 className="hero-text max-w-5xl mx-auto leading-[1.15]">
             {t('hero.title')}
           </h1>
 
@@ -75,33 +76,33 @@ const HeroSection: React.FC = () => {
             {t('hero.subtitle')}
           </p>
 
-          {/* CTAs */}
+          {/* CTAs - Stack on mobile */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-4 px-4 sm:px-0"
           >
-            <Link to="/signup">
-              <Button variant="hero" size="xl" className="group">
+            <Link to="/signup" className="w-full sm:w-auto">
+              <Button variant="hero" size="xl" className="group w-full sm:w-auto min-h-[52px]">
                 {t('hero.cta')}
                 <Arrow className="w-5 h-5 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
               </Button>
             </Link>
-            <Link to="/courses">
-              <Button variant="heroOutline" size="xl" className="group">
+            <Link to="/courses" className="w-full sm:w-auto">
+              <Button variant="heroOutline" size="xl" className="group w-full sm:w-auto min-h-[52px]">
                 <Play className="w-5 h-5" />
                 {t('hero.secondaryCta')}
               </Button>
             </Link>
           </motion.div>
 
-          {/* Stats Row */}
+          {/* Stats Row - Responsive grid */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.8 }}
-            className="flex flex-wrap items-center justify-center gap-8 pt-12"
+            className="grid grid-cols-3 gap-4 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-8 pt-8 sm:pt-12"
           >
             {[
               { value: '15K+', label: isRTL ? 'عضو' : 'Members' },
@@ -109,20 +110,20 @@ const HeroSection: React.FC = () => {
               { value: '98%', label: isRTL ? 'نجاح' : 'Success' },
             ].map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-2xl md:text-3xl font-black text-primary">{stat.value}</div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
+                <div className="text-xl sm:text-2xl md:text-3xl font-black text-primary">{stat.value}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>
               </div>
             ))}
           </motion.div>
         </motion.div>
       </div>
 
-      {/* Scroll Indicator */}
+      {/* Scroll Indicator - Hidden on small mobile */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
+        className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 hidden sm:block"
       >
         <motion.div
           animate={{ y: [0, 10, 0] }}

@@ -39,27 +39,27 @@ const Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="bg-card/50 border-t border-border/30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+    <footer className="bg-card/50 border-t border-border/30 safe-area-bottom">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 lg:py-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 lg:gap-12">
           {/* Brand */}
-          <div className="space-y-4">
+          <div className="sm:col-span-2 lg:col-span-1 space-y-4">
             <Link to="/" className="inline-block">
               <img
                 src={bikerzLogo}
                 alt="BIKERZ"
-                className="h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+                className="h-12 sm:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
               />
             </Link>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm max-w-xs">
               {t('footer.tagline')}
             </p>
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               {socialLinks.map((social) => (
                 <a
                   key={social.label}
                   href={social.href}
-                  className="w-10 h-10 rounded-full bg-muted/30 border border-border/30 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all duration-300"
+                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-muted/30 border border-border/30 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all duration-300 touch-target"
                   aria-label={social.label}
                 >
                   <social.icon className="w-5 h-5" />
@@ -70,20 +70,20 @@ const Footer: React.FC = () => {
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-bold text-foreground mb-4">{t('footer.links')}</h4>
-            <ul className="space-y-3">
+            <h4 className="font-bold text-foreground mb-3 sm:mb-4">{t('footer.links')}</h4>
+            <ul className="space-y-2 sm:space-y-3">
               <li>
-                <Link to="/courses" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link to="/courses" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
                   {t('nav.courses')}
                 </Link>
               </li>
               <li>
-                <Link to="/community" className="text-muted-foreground hover:text-foreground transition-colors">
-                  {t('nav.community')}
+                <Link to="/mentors" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
+                  {isRTL ? 'المدربون' : 'Mentors'}
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
                   {t('nav.about')}
                 </Link>
               </li>
@@ -92,20 +92,20 @@ const Footer: React.FC = () => {
 
           {/* Legal */}
           <div>
-            <h4 className="font-bold text-foreground mb-4">{t('footer.legal')}</h4>
-            <ul className="space-y-3">
+            <h4 className="font-bold text-foreground mb-3 sm:mb-4">{t('footer.legal')}</h4>
+            <ul className="space-y-2 sm:space-y-3">
               <li>
-                <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
                   {t('footer.privacy')}
                 </Link>
               </li>
               <li>
-                <Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
                   {t('footer.terms')}
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
                   {t('footer.contact')}
                 </Link>
               </li>
@@ -114,8 +114,8 @@ const Footer: React.FC = () => {
 
           {/* Contact */}
           <div>
-            <h4 className="font-bold text-foreground mb-4">{t('footer.contact')}</h4>
-            <div className="space-y-3 text-muted-foreground text-sm">
+            <h4 className="font-bold text-foreground mb-3 sm:mb-4">{t('footer.contact')}</h4>
+            <div className="space-y-2 sm:space-y-3 text-muted-foreground text-sm">
               <p>info@bikerz.sa</p>
               <p dir="ltr" className="text-start">+966 50 111 1111</p>
               <p>{isRTL ? 'جدة، المملكة العربية السعودية' : 'Jeddah, Saudi Arabia'}</p>
@@ -123,7 +123,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-8 sm:mt-10 lg:mt-12 pt-6 sm:pt-8 border-t border-border/30 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-start">
           <p className="text-muted-foreground text-sm">
             © {new Date().getFullYear()} BIKERZ. {t('footer.rights')}
           </p>

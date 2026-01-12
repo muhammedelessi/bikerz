@@ -38,9 +38,9 @@ const JourneySection: React.FC = () => {
   ];
 
   return (
-    <section ref={ref} className="relative py-24 bg-gradient-to-b from-background via-secondary/10 to-background overflow-hidden">
-      {/* Road Pattern Background */}
-      <div className="absolute inset-0 opacity-5">
+    <section ref={ref} className="relative py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-b from-background via-secondary/10 to-background overflow-hidden">
+      {/* Road Pattern Background - Hidden on mobile for performance */}
+      <div className="absolute inset-0 opacity-5 hidden md:block">
         <div className="absolute left-1/2 -translate-x-1/2 w-4 h-full bg-gradient-to-b from-transparent via-muted-foreground to-transparent" />
         {[...Array(20)].map((_, i) => (
           <div
@@ -57,9 +57,9 @@ const JourneySection: React.FC = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="text-center mb-20"
+          className="text-center mb-10 sm:mb-16 lg:mb-20"
         >
-          <h2 className="section-title text-foreground mb-4">
+          <h2 className="section-title text-foreground mb-3 sm:mb-4">
             {t('journey.title')}
           </h2>
           <p className="section-subtitle">
@@ -67,10 +67,10 @@ const JourneySection: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* Journey Steps */}
+        {/* Journey Steps - Mobile optimized */}
         <div className="relative max-w-4xl mx-auto">
-          {/* Vertical Line */}
-          <div className="absolute left-8 lg:left-1/2 lg:-translate-x-1/2 top-0 bottom-0 w-px">
+          {/* Vertical Line - Positioned for mobile */}
+          <div className="absolute left-6 sm:left-8 lg:left-1/2 lg:-translate-x-1/2 top-0 bottom-0 w-0.5 sm:w-px">
             <motion.div
               initial={{ height: 0 }}
               animate={inView ? { height: '100%' } : {}}
@@ -79,70 +79,72 @@ const JourneySection: React.FC = () => {
             />
           </div>
 
-          {steps.map((step, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, x: isRTL ? (index % 2 === 0 ? 50 : -50) : (index % 2 === 0 ? -50 : 50) }}
-              animate={inView ? { opacity: 1, x: 0 } : {}}
-              transition={{ duration: 0.6, delay: 0.3 + index * 0.2 }}
-              className={`relative flex items-center gap-8 mb-12 last:mb-0 ${
-                index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'
-              }`}
-            >
-              {/* Mobile: Always left-aligned */}
-              <div className="flex lg:hidden items-center gap-6 w-full">
-                {/* Dot */}
-                <div className="relative z-10 flex-shrink-0">
-                  <div className="w-16 h-16 rounded-2xl bg-card border-2 border-primary/50 flex items-center justify-center shadow-glow">
-                    <step.icon className="w-8 h-8 text-primary" />
+          <div className="space-y-6 sm:space-y-8 lg:space-y-12">
+            {steps.map((step, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
+                animate={inView ? { opacity: 1, x: 0 } : {}}
+                transition={{ duration: 0.6, delay: 0.3 + index * 0.15 }}
+                className="relative"
+              >
+                {/* Mobile & Tablet Layout */}
+                <div className="flex lg:hidden items-start gap-4 sm:gap-6">
+                  {/* Dot */}
+                  <div className="relative z-10 flex-shrink-0">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-card border-2 border-primary/50 flex items-center justify-center shadow-glow">
+                      <step.icon className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+                    </div>
                   </div>
-                </div>
-                
-                {/* Content */}
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-primary mb-1">{step.number}</div>
-                  <h3 className="text-xl font-bold text-foreground mb-2">
-                    {t(step.titleKey)}
-                  </h3>
-                  <p className="text-muted-foreground">
-                    {t(step.descKey)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Desktop: Alternating layout */}
-              <div className="hidden lg:flex items-center gap-8 w-full">
-                {/* Left Content */}
-                <div className={`flex-1 ${index % 2 === 0 ? 'text-end' : 'text-start order-3'}`}>
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    className="inline-block p-6 rounded-2xl bg-card/50 border border-border/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300"
-                  >
-                    <div className="text-sm font-bold text-primary mb-1">{step.number}</div>
-                    <h3 className="text-xl font-bold text-foreground mb-2">
+                  
+                  {/* Content */}
+                  <div className="flex-1 pt-1">
+                    <div className="text-xs sm:text-sm font-bold text-primary mb-1">{step.number}</div>
+                    <h3 className="text-lg sm:text-xl font-bold text-foreground mb-1.5 sm:mb-2">
                       {t(step.titleKey)}
                     </h3>
-                    <p className="text-muted-foreground max-w-xs">
+                    <p className="text-sm sm:text-base text-muted-foreground">
                       {t(step.descKey)}
                     </p>
-                  </motion.div>
+                  </div>
                 </div>
 
-                {/* Center Dot */}
-                <div className="relative z-10 flex-shrink-0 order-2">
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 10 }}
-                    className="w-16 h-16 rounded-2xl bg-card border-2 border-primary/50 flex items-center justify-center shadow-glow transition-all duration-300"
-                  >
-                    <step.icon className="w-8 h-8 text-primary" />
-                  </motion.div>
-                </div>
+                {/* Desktop: Alternating layout */}
+                <div className={`hidden lg:flex items-center gap-8 ${
+                  index % 2 === 0 ? '' : 'flex-row-reverse'
+                }`}>
+                  {/* Content */}
+                  <div className={`flex-1 ${index % 2 === 0 ? 'text-end' : 'text-start'}`}>
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      className="inline-block p-6 rounded-2xl bg-card/50 border border-border/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300"
+                    >
+                      <div className="text-sm font-bold text-primary mb-1">{step.number}</div>
+                      <h3 className="text-xl font-bold text-foreground mb-2">
+                        {t(step.titleKey)}
+                      </h3>
+                      <p className="text-muted-foreground max-w-xs">
+                        {t(step.descKey)}
+                      </p>
+                    </motion.div>
+                  </div>
 
-                {/* Right Spacer */}
-                <div className={`flex-1 ${index % 2 === 0 ? 'order-3' : ''}`} />
-              </div>
-            </motion.div>
-          ))}
+                  {/* Center Dot */}
+                  <div className="relative z-10 flex-shrink-0">
+                    <motion.div
+                      whileHover={{ scale: 1.1, rotate: 10 }}
+                      className="w-16 h-16 rounded-2xl bg-card border-2 border-primary/50 flex items-center justify-center shadow-glow transition-all duration-300"
+                    >
+                      <step.icon className="w-8 h-8 text-primary" />
+                    </motion.div>
+                  </div>
+
+                  {/* Spacer */}
+                  <div className="flex-1" />
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
