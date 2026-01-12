@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
+import bikerzLogo from '@/assets/bikerz-logo.png';
 
 const Footer: React.FC = () => {
   const { t } = useTranslation();
@@ -21,14 +22,13 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-                <span className="text-primary-foreground font-black text-lg">R</span>
-              </div>
-              <span className="text-xl font-bold text-foreground">
-                {isRTL ? 'رايدر أكاديمي' : 'Rider Academy'}
-              </span>
-            </div>
+            <Link to="/" className="inline-block">
+              <img
+                src={bikerzLogo}
+                alt="BIKERZ"
+                className="h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+              />
+            </Link>
             <p className="text-muted-foreground text-sm">
               {t('footer.tagline')}
             </p>
@@ -94,7 +94,7 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="font-bold text-foreground mb-4">{t('footer.contact')}</h4>
             <div className="space-y-3 text-muted-foreground text-sm">
-              <p>info@rideracademy.com</p>
+              <p>info@bikerz.com</p>
               <p>+971 50 123 4567</p>
               <p>{isRTL ? 'دبي، الإمارات العربية المتحدة' : 'Dubai, UAE'}</p>
             </div>
@@ -103,7 +103,7 @@ const Footer: React.FC = () => {
 
         <div className="mt-12 pt-8 border-t border-border/30 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} Rider Academy. {t('footer.rights')}
+            © {new Date().getFullYear()} BIKERZ. {t('footer.rights')}
           </p>
         </div>
       </div>

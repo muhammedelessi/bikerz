@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, User, LogOut } from 'lucide-react';
+import { Menu, X, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LanguageToggle from '@/components/common/LanguageToggle';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import bikerzLogo from '@/assets/bikerz-logo.png';
 
 const Navbar: React.FC = () => {
   const { t } = useTranslation();
@@ -54,15 +55,12 @@ const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
-            <motion.div
-              whileHover={{ rotate: 10 }}
-              className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center"
-            >
-              <span className="text-primary-foreground font-black text-lg">R</span>
-            </motion.div>
-            <span className="text-xl font-bold text-foreground hidden sm:block">
-              {isRTL ? 'رايدر أكاديمي' : 'Rider Academy'}
-            </span>
+            <motion.img
+              src={bikerzLogo}
+              alt="BIKERZ"
+              whileHover={{ scale: 1.05 }}
+              className="h-12 sm:h-14 md:h-16 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+            />
           </Link>
 
           {/* Desktop Navigation */}
