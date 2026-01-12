@@ -6,13 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import LanguageToggle from '@/components/common/LanguageToggle';
-import { Eye, EyeOff, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import heroImage from '@/assets/community-ride.jpg';
 
 const Signup: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
+  const { signUp } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
@@ -20,19 +23,35 @@ const Signup: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
     if (password !== confirmPassword) {
+      setError(isRTL ? 'كلمات المرور غير متطابقة' : 'Passwords do not match');
       return;
     }
+
+    if (password.length < 6) {
+      setError(isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+      return;
+    }
+
     setIsLoading(true);
-    // Simulate signup - will be replaced with real auth
-    setTimeout(() => {
+    
+    const { error } = await signUp(email, password, name);
+    
+    if (error) {
+      setError(error.message);
       setIsLoading(false);
-      navigate('/dashboard');
-    }, 1000);
+      return;
+    }
+    
+    toast.success(isRTL ? 'تم إنشاء الحساب بنجاح!' : 'Account created successfully!');
+    navigate('/dashboard');
   };
 
   return (
@@ -80,6 +99,13 @@ const Signup: React.FC = () => {
               </p>
             </div>
 
+            {error && (
+              <div className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/30 flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="name">{t('auth.signup.name')}</Label>
@@ -117,6 +143,7 @@ const Signup: React.FC = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
+                    minLength={6}
                     className="form-input pe-10"
                   />
                   <button
