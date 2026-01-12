@@ -1,0 +1,94 @@
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Link } from 'react-router-dom';
+
+const CTASection: React.FC = () => {
+  const { t } = useTranslation();
+  const { isRTL } = useLanguage();
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const Arrow = isRTL ? ArrowLeft : ArrowRight;
+
+  return (
+    <section ref={ref} className="relative py-24 overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/20 to-primary/10" />
+      
+      {/* Animated Glow */}
+      <div className="absolute inset-0 overflow-hidden">
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{ duration: 4, repeat: Infinity }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/20 blur-3xl"
+        />
+      </div>
+
+      <div className="section-container relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+          className="max-w-3xl mx-auto text-center"
+        >
+          {/* Icon */}
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={inView ? { scale: 1 } : {}}
+            transition={{ duration: 0.5, type: 'spring' }}
+            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/20 border border-primary/30 mb-8"
+          >
+            <Sparkles className="w-8 h-8 text-primary" />
+          </motion.div>
+
+          {/* Title */}
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6">
+            {t('cta.title')}
+          </h2>
+
+          {/* Subtitle */}
+          <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-xl mx-auto">
+            {t('cta.subtitle')}
+          </p>
+
+          {/* CTA Button */}
+          <Link to="/signup">
+            <Button variant="hero" size="xl" className="group">
+              {t('cta.button')}
+              <Arrow className="w-5 h-5 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
+            </Button>
+          </Link>
+
+          {/* Trust Badges */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={inView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              {isRTL ? 'ابدأ مجاناً' : 'Start Free'}
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              {isRTL ? 'بدون بطاقة ائتمان' : 'No Credit Card'}
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              {isRTL ? 'إلغاء في أي وقت' : 'Cancel Anytime'}
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
+
+export default CTASection;
