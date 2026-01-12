@@ -6,28 +6,39 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import LanguageToggle from '@/components/common/LanguageToggle';
-import { Eye, EyeOff, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.jpg';
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsLoading(true);
-    // Simulate login - will be replaced with real auth
-    setTimeout(() => {
+    
+    const { error } = await signIn(email, password);
+    
+    if (error) {
+      setError(isRTL ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Invalid email or password');
       setIsLoading(false);
-      navigate('/dashboard');
-    }, 1000);
+      return;
+    }
+    
+    toast.success(isRTL ? 'تم تسجيل الدخول بنجاح!' : 'Logged in successfully!');
+    navigate('/dashboard');
   };
 
   return (
@@ -64,6 +75,13 @@ const Login: React.FC = () => {
               </p>
             </div>
 
+            {error && (
+              <div className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/30 flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email">{t('auth.login.email')}</Label>
@@ -72,7 +90,7 @@ const Login: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={isRTL ? 'your@email.com' : 'your@email.com'}
+                  placeholder="your@email.com"
                   required
                   className="form-input"
                 />

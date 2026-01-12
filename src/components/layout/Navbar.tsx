@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, User } from 'lucide-react';
+import { Menu, X, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LanguageToggle from '@/components/common/LanguageToggle';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
+  const { user, profile, signOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -22,10 +25,16 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+    setIsMobileMenuOpen(false);
+  };
+
   const navLinks = [
     { to: '/', label: t('nav.home') },
     { to: '/courses', label: t('nav.courses') },
-    { to: '/community', label: t('nav.community') },
+    { to: '/mentors', label: isRTL ? 'المدربون' : 'Mentors' },
     { to: '/about', label: t('nav.about') },
   ];
 
@@ -74,16 +83,36 @@ const Navbar: React.FC = () => {
             <LanguageToggle />
             
             <div className="hidden sm:flex items-center gap-2">
-              <Link to="/login">
-                <Button variant="ghost" size="sm">
-                  {t('nav.login')}
-                </Button>
-              </Link>
-              <Link to="/signup">
-                <Button variant="cta" size="sm">
-                  {t('nav.signup')}
-                </Button>
-              </Link>
+              {user ? (
+                <>
+                  <Link to="/dashboard">
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-secondary to-secondary/70 flex items-center justify-center">
+                        <span className="text-xs font-bold text-secondary-foreground">
+                          {profile?.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
+                        </span>
+                      </div>
+                      {profile?.full_name?.split(' ')[0] || t('nav.dashboard')}
+                    </Button>
+                  </Link>
+                  <Button variant="ghost" size="icon" onClick={handleSignOut} title={isRTL ? 'تسجيل الخروج' : 'Logout'}>
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login">
+                    <Button variant="ghost" size="sm">
+                      {t('nav.login')}
+                    </Button>
+                  </Link>
+                  <Link to="/signup">
+                    <Button variant="cta" size="sm">
+                      {t('nav.signup')}
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -124,16 +153,31 @@ const Navbar: React.FC = () => {
               ))}
               
               <div className="flex gap-3 pt-4 border-t border-border/30">
-                <Link to="/login" className="flex-1" onClick={() => setIsMobileMenuOpen(false)}>
-                  <Button variant="outline" className="w-full">
-                    {t('nav.login')}
-                  </Button>
-                </Link>
-                <Link to="/signup" className="flex-1" onClick={() => setIsMobileMenuOpen(false)}>
-                  <Button variant="cta" className="w-full">
-                    {t('nav.signup')}
-                  </Button>
-                </Link>
+                {user ? (
+                  <>
+                    <Link to="/dashboard" className="flex-1" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="outline" className="w-full">
+                        {t('nav.dashboard')}
+                      </Button>
+                    </Link>
+                    <Button variant="ghost" onClick={handleSignOut}>
+                      <LogOut className="w-4 h-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login" className="flex-1" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="outline" className="w-full">
+                        {t('nav.login')}
+                      </Button>
+                    </Link>
+                    <Link to="/signup" className="flex-1" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="cta" className="w-full">
+                        {t('nav.signup')}
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

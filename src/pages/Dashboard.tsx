@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import LanguageToggle from '@/components/common/LanguageToggle';
 import {
@@ -18,6 +19,7 @@ import {
   LogOut,
   Menu,
   X,
+  Users,
 } from 'lucide-react';
 import heroImage from '@/assets/hero-rider.jpg';
 import instructorImage from '@/assets/instructor.jpg';
@@ -25,13 +27,14 @@ import instructorImage from '@/assets/instructor.jpg';
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
+  const { user, profile, signOut, isAdmin, isMentor } = useAuth();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
 
-  // Sample user data
-  const user = {
-    name: isRTL ? 'أحمد محمد' : 'Ahmed Mohammed',
-    email: 'ahmed@example.com',
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
   };
 
   // Sample enrolled courses
@@ -56,7 +59,8 @@ const Dashboard: React.FC = () => {
     { icon: Home, label: t('nav.home'), to: '/' },
     { icon: BookOpen, label: t('nav.courses'), to: '/courses' },
     { icon: GraduationCap, label: t('dashboard.myCourses'), to: '/dashboard', active: true },
-    { icon: Settings, label: t('admin.settings'), to: '/settings' },
+    { icon: Users, label: isRTL ? 'المدربون' : 'Mentors', to: '/mentors' },
+    ...(isAdmin ? [{ icon: Settings, label: isRTL ? 'لوحة الإدارة' : 'Admin Panel', to: '/admin' }] : []),
   ];
 
   return (
@@ -103,15 +107,21 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-secondary/70 flex items-center justify-center">
                 <span className="text-secondary-foreground font-bold">
-                  {user.name.charAt(0)}
+                  {profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground truncate">{user.name}</p>
-                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                <p className="font-medium text-foreground truncate">
+                  {profile?.full_name || (isRTL ? 'مستخدم' : 'User')}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               </div>
             </div>
-            <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-destructive">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-muted-foreground hover:text-destructive"
+              onClick={handleSignOut}
+            >
               <LogOut className="w-4 h-4 me-2" />
               {isRTL ? 'تسجيل الخروج' : 'Logout'}
             </Button>
@@ -141,7 +151,7 @@ const Dashboard: React.FC = () => {
               </button>
               <div>
                 <h1 className="text-xl font-bold text-foreground">
-                  {t('dashboard.welcome')}, {user.name.split(' ')[0]}!
+                  {t('dashboard.welcome')}, {profile?.full_name?.split(' ')[0] || (isRTL ? 'مستخدم' : 'User')}!
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   {isRTL ? 'استمر في التعلم' : 'Keep up the great work'}
@@ -237,6 +247,35 @@ const Dashboard: React.FC = () => {
                   </Link>
                 </motion.div>
               ))}
+            </div>
+          </section>
+
+          {/* Quick Actions */}
+          <section>
+            <h2 className="text-xl font-bold text-foreground mb-4">
+              {isRTL ? 'إجراءات سريعة' : 'Quick Actions'}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Link to="/courses">
+                <div className="card-premium p-4 flex items-center gap-4 hover:border-primary/40 transition-all">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <BookOpen className="w-5 h-5 text-primary" />
+                  </div>
+                  <span className="font-medium text-foreground">
+                    {isRTL ? 'تصفح الدورات' : 'Browse Courses'}
+                  </span>
+                </div>
+              </Link>
+              <Link to="/mentors">
+                <div className="card-premium p-4 flex items-center gap-4 hover:border-primary/40 transition-all">
+                  <div className="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-secondary" />
+                  </div>
+                  <span className="font-medium text-foreground">
+                    {isRTL ? 'ابحث عن مدرب' : 'Find a Mentor'}
+                  </span>
+                </div>
+              </Link>
             </div>
           </section>
         </div>
