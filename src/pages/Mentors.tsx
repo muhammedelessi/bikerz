@@ -235,7 +235,7 @@ const Mentors: React.FC = () => {
                         </div>
                         <div className="text-end">
                           <p className="text-lg font-bold text-primary">
-                            {mentor.fees_per_hour} {isRTL ? 'د.إ' : 'AED'}
+                            {mentor.fees_per_hour} {isRTL ? 'ر.س' : 'SAR'}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {isRTL ? 'للساعة' : 'per hour'}
