@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      chapter_tests: {
+        Row: {
+          chapter_id: string
+          created_at: string
+          description: string | null
+          description_ar: string | null
+          id: string
+          is_published: boolean
+          passing_score: number
+          time_limit_minutes: number | null
+          title: string
+          title_ar: string | null
+          updated_at: string
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          is_published?: boolean
+          passing_score?: number
+          time_limit_minutes?: number | null
+          title: string
+          title_ar?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          is_published?: boolean
+          passing_score?: number
+          time_limit_minutes?: number | null
+          title?: string
+          title_ar?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_tests_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapters: {
         Row: {
           course_id: string
@@ -367,6 +417,94 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      test_attempts: {
+        Row: {
+          answers: Json
+          completed_at: string | null
+          id: string
+          passed: boolean | null
+          score: number | null
+          started_at: string
+          test_id: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          completed_at?: string | null
+          id?: string
+          passed?: boolean | null
+          score?: number | null
+          started_at?: string
+          test_id: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          completed_at?: string | null
+          id?: string
+          passed?: boolean | null
+          score?: number | null
+          started_at?: string
+          test_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_attempts_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_questions: {
+        Row: {
+          correct_answer: string
+          created_at: string
+          id: string
+          options: Json
+          points: number
+          position: number
+          question: string
+          question_ar: string | null
+          question_type: string
+          test_id: string
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string
+          id?: string
+          options?: Json
+          points?: number
+          position?: number
+          question: string
+          question_ar?: string | null
+          question_type?: string
+          test_id: string
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string
+          id?: string
+          options?: Json
+          points?: number
+          position?: number
+          question?: string
+          question_ar?: string | null
+          question_type?: string
+          test_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_questions_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_tests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

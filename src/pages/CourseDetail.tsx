@@ -356,7 +356,7 @@ const CourseDetail: React.FC = () => {
                       </p>
 
                       <Button className="w-full btn-cta" asChild>
-                        <Link to={chapters[0]?.lessons[0] ? `/courses/${id}/lessons/${chapters[0].lessons[0].id}` : '#'}>
+                        <Link to={`/courses/${id}/learn`}>
                           <Play className="w-4 h-4 me-2" />
                           {isRTL ? 'متابعة التعلم' : 'Continue Learning'}
                         </Link>
