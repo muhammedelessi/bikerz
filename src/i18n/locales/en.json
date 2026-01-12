@@ -1,0 +1,160 @@
+{
+  "nav": {
+    "home": "Home",
+    "courses": "Courses",
+    "community": "Community",
+    "about": "About",
+    "login": "Login",
+    "signup": "Sign Up",
+    "dashboard": "Dashboard"
+  },
+  "hero": {
+    "title": "Master the Art of Riding",
+    "subtitle": "Join 15,000+ GCC riders on their journey from beginner to confident road master. Learn safety, control, and the freedom of the open road.",
+    "cta": "Start Your Journey",
+    "secondaryCta": "Explore Courses"
+  },
+  "why": {
+    "title": "Why Learn With Us?",
+    "subtitle": "Most riders learn through trial and error—dangerous and inefficient. We've built the comprehensive system that transforms beginners into confident riders.",
+    "card1": {
+      "title": "Safety First",
+      "description": "Learn proper techniques that prevent accidents and build lifelong safe riding habits from day one."
+    },
+    "card2": {
+      "title": "Expert Instructors",
+      "description": "Our instructors are certified professionals with decades of experience on GCC roads."
+    },
+    "card3": {
+      "title": "Real Road Skills",
+      "description": "From traffic navigation to emergency maneuvers—skills that matter in real-world situations."
+    },
+    "card4": {
+      "title": "Community Support",
+      "description": "Join a brotherhood of 15,000+ riders who support and learn from each other."
+    }
+  },
+  "journey": {
+    "title": "Your Path to Mastery",
+    "subtitle": "A structured journey designed to take you from complete beginner to confident rider",
+    "step1": {
+      "title": "Basics & Safety",
+      "description": "Understand your machine, gear essentials, and fundamental safety protocols."
+    },
+    "step2": {
+      "title": "Control & Balance",
+      "description": "Master throttle control, braking techniques, and low-speed maneuvering."
+    },
+    "step3": {
+      "title": "Road Skills",
+      "description": "Navigate traffic, handle intersections, and read road conditions."
+    },
+    "step4": {
+      "title": "Advanced Riding",
+      "description": "Corner like a pro, handle emergencies, and ride in all conditions."
+    }
+  },
+  "learn": {
+    "title": "What You'll Master",
+    "subtitle": "Comprehensive curriculum designed for real-world riding excellence",
+    "skill1": "Pre-ride Safety Checks",
+    "skill2": "Throttle & Brake Control",
+    "skill3": "Cornering Techniques",
+    "skill4": "Traffic Navigation",
+    "skill5": "Emergency Maneuvers",
+    "skill6": "Night & Weather Riding",
+    "skill7": "Highway Riding",
+    "skill8": "Group Riding Etiquette"
+  },
+  "community": {
+    "title": "Join the Brotherhood",
+    "subtitle": "15,000+ riders across the GCC have chosen to learn the right way",
+    "stat1": {
+      "value": "15K+",
+      "label": "Community Members"
+    },
+    "stat2": {
+      "value": "1,500+",
+      "label": "Active Learners"
+    },
+    "stat3": {
+      "value": "98%",
+      "label": "Success Rate"
+    },
+    "stat4": {
+      "value": "50+",
+      "label": "Video Lessons"
+    }
+  },
+  "cta": {
+    "title": "Ready to Ride?",
+    "subtitle": "Your journey to becoming a confident, skilled rider starts with a single step.",
+    "button": "Start Learning Today"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome Back",
+      "subtitle": "Sign in to continue your riding journey",
+      "email": "Email Address",
+      "password": "Password",
+      "button": "Sign In",
+      "forgot": "Forgot password?",
+      "noAccount": "Don't have an account?",
+      "signupLink": "Sign up"
+    },
+    "signup": {
+      "title": "Join the Riders",
+      "subtitle": "Create your account and start learning today",
+      "name": "Full Name",
+      "email": "Email Address",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "button": "Create Account",
+      "hasAccount": "Already have an account?",
+      "loginLink": "Sign in"
+    }
+  },
+  "dashboard": {
+    "welcome": "Welcome back",
+    "myCourses": "My Courses",
+    "continueLearning": "Continue Learning",
+    "progress": "Progress",
+    "completed": "Completed",
+    "inProgress": "In Progress"
+  },
+  "course": {
+    "chapters": "Chapters",
+    "lessons": "Lessons",
+    "duration": "Duration",
+    "startCourse": "Start Course",
+    "continueCourse": "Continue Course",
+    "nextLesson": "Next Lesson",
+    "prevLesson": "Previous Lesson",
+    "markComplete": "Mark as Complete",
+    "quiz": "Take Quiz",
+    "resources": "Resources"
+  },
+  "admin": {
+    "title": "Admin Dashboard",
+    "users": "Users",
+    "courses": "Courses",
+    "chapters": "Chapters",
+    "lessons": "Lessons",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "create": "Create New",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save Changes",
+    "cancel": "Cancel"
+  },
+  "footer": {
+    "tagline": "Empowering riders across the GCC",
+    "links": "Quick Links",
+    "legal": "Legal",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "contact": "Contact Us",
+    "rights": "All rights reserved."
+  }
+}
