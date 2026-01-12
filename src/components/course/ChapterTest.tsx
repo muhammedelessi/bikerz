@@ -109,7 +109,6 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
     mutationFn: async () => {
       if (!user || !test) throw new Error('Not authenticated');
 
-      // Calculate score
       let correctCount = 0;
       let totalPoints = 0;
 
@@ -240,25 +239,25 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
 
   if (testLoading || questionsLoading) {
     return (
-      <div className="max-w-3xl mx-auto">
-        <Skeleton className="h-8 w-64 mb-6" />
-        <Skeleton className="h-4 w-full mb-8" />
-        <Skeleton className="h-48 w-full" />
+      <div className="max-w-3xl mx-auto px-4">
+        <Skeleton className="h-6 sm:h-8 w-48 sm:w-64 mb-4 sm:mb-6" />
+        <Skeleton className="h-3 sm:h-4 w-full mb-6 sm:mb-8" />
+        <Skeleton className="h-40 sm:h-48 w-full" />
       </div>
     );
   }
 
   if (!test || questions.length === 0) {
     return (
-      <div className="max-w-3xl mx-auto text-center py-12">
-        <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-foreground mb-2">
+      <div className="max-w-3xl mx-auto text-center py-8 sm:py-12 px-4">
+        <AlertCircle className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mx-auto mb-4" />
+        <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
           {isRTL ? 'الاختبار غير متوفر' : 'Test Not Available'}
         </h2>
-        <p className="text-muted-foreground mb-6">
+        <p className="text-sm sm:text-base text-muted-foreground mb-6">
           {isRTL ? 'لا توجد أسئلة في هذا الاختبار حالياً' : 'There are no questions in this test yet'}
         </p>
-        <Button variant="outline" onClick={onBack}>
+        <Button variant="outline" onClick={onBack} className="h-11 sm:h-10">
           <ArrowLeft className="w-4 h-4 me-2" />
           {isRTL ? 'العودة' : 'Go Back'}
         </Button>
@@ -274,47 +273,48 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="max-w-2xl mx-auto"
+        className="max-w-2xl mx-auto px-4"
       >
-        <div className="card-premium p-8 text-center">
-          <div className={`w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center ${
+        <div className="card-premium p-5 sm:p-6 lg:p-8 text-center">
+          <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full mx-auto mb-4 sm:mb-6 flex items-center justify-center ${
             results.passed ? 'bg-primary/20' : 'bg-destructive/20'
           }`}>
             {results.passed ? (
-              <Trophy className="w-12 h-12 text-primary" />
+              <Trophy className="w-10 h-10 sm:w-12 sm:h-12 text-primary" />
             ) : (
-              <XCircle className="w-12 h-12 text-destructive" />
+              <XCircle className="w-10 h-10 sm:w-12 sm:h-12 text-destructive" />
             )}
           </div>
 
-          <h2 className="text-3xl font-bold text-foreground mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
             {results.passed
               ? (isRTL ? 'مبروك!' : 'Congratulations!')
               : (isRTL ? 'حاول مرة أخرى' : 'Try Again')}
           </h2>
 
-          <p className="text-muted-foreground mb-6">
+          <p className="text-sm sm:text-base text-muted-foreground mb-6">
             {results.passed
               ? (isRTL ? 'لقد اجتزت الاختبار بنجاح' : 'You passed the test successfully')
               : (isRTL ? 'لم تحقق الحد الأدنى للنجاح' : "You didn't reach the passing score")}
           </p>
 
-          <div className="bg-muted/50 rounded-xl p-6 mb-6">
-            <div className="text-5xl font-bold text-foreground mb-2">
+          <div className="bg-muted/50 rounded-xl p-4 sm:p-6 mb-6">
+            <div className="text-4xl sm:text-5xl font-bold text-foreground mb-2">
               {results.score}%
             </div>
-            <div className="text-muted-foreground">
+            <div className="text-sm sm:text-base text-muted-foreground">
               {results.correctCount} / {results.totalQuestions} {isRTL ? 'إجابات صحيحة' : 'correct answers'}
             </div>
-            <div className="text-sm text-muted-foreground mt-2">
+            <div className="text-xs sm:text-sm text-muted-foreground mt-2">
               {isRTL ? 'الحد الأدنى للنجاح:' : 'Passing score:'} {test.passing_score}%
             </div>
           </div>
 
-          <div className="flex justify-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
             {!results.passed && (
               <Button
                 variant="outline"
+                className="h-11 sm:h-10"
                 onClick={() => {
                   setShowResults(false);
                   setAnswers({});
@@ -326,7 +326,7 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
                 {isRTL ? 'إعادة الاختبار' : 'Retry Test'}
               </Button>
             )}
-            <Button onClick={onComplete}>
+            <Button onClick={onComplete} className="h-11 sm:h-10">
               {isRTL ? 'متابعة' : 'Continue'}
             </Button>
           </div>
@@ -341,48 +341,48 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-2xl mx-auto"
+        className="max-w-2xl mx-auto px-4"
       >
-        <Button variant="ghost" onClick={onBack} className="mb-6">
+        <Button variant="ghost" onClick={onBack} className="mb-4 sm:mb-6 h-11 sm:h-10">
           <ArrowLeft className="w-4 h-4 me-2" />
           {isRTL ? 'العودة للدروس' : 'Back to Lessons'}
         </Button>
 
-        <div className="card-premium p-8 text-center">
-          <div className="w-20 h-20 rounded-full bg-primary/20 mx-auto mb-6 flex items-center justify-center">
-            <CheckCircle2 className="w-10 h-10 text-primary" />
+        <div className="card-premium p-5 sm:p-6 lg:p-8 text-center">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/20 mx-auto mb-4 sm:mb-6 flex items-center justify-center">
+            <CheckCircle2 className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
           </div>
 
-          <h1 className="text-2xl font-bold text-foreground mb-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
             {isRTL && test.title_ar ? test.title_ar : test.title}
           </h1>
           
-          <p className="text-sm text-primary mb-4">{chapterTitle}</p>
+          <p className="text-xs sm:text-sm text-primary mb-4">{chapterTitle}</p>
 
           {test.description && (
-            <p className="text-muted-foreground mb-6">
+            <p className="text-sm sm:text-base text-muted-foreground mb-6">
               {isRTL && test.description_ar ? test.description_ar : test.description}
             </p>
           )}
 
-          <div className="flex justify-center gap-6 mb-8 text-muted-foreground">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-6 mb-6 sm:mb-8 text-muted-foreground text-sm">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5" />
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>{questions.length} {isRTL ? 'أسئلة' : 'questions'}</span>
             </div>
             {test.time_limit_minutes && (
               <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>{test.time_limit_minutes} {isRTL ? 'دقيقة' : 'minutes'}</span>
               </div>
             )}
             <div className="flex items-center gap-2">
-              <Trophy className="w-5 h-5" />
+              <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>{test.passing_score}% {isRTL ? 'للنجاح' : 'to pass'}</span>
             </div>
           </div>
 
-          <Button onClick={startTest} className="btn-cta">
+          <Button onClick={startTest} className="btn-cta h-11 sm:h-10 w-full sm:w-auto">
             {isRTL ? 'ابدأ الاختبار' : 'Start Test'}
           </Button>
         </div>
@@ -395,52 +395,52 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="max-w-3xl mx-auto"
+      className="max-w-3xl mx-auto px-4"
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-xl font-bold text-foreground">
+          <h1 className="text-lg sm:text-xl font-bold text-foreground">
             {isRTL && test.title_ar ? test.title_ar : test.title}
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             {isRTL ? 'السؤال' : 'Question'} {currentQuestionIndex + 1} / {questions.length}
           </p>
         </div>
         
         {timeLeft !== null && (
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+          <div className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full self-start ${
             timeLeft < 60 ? 'bg-destructive/20 text-destructive' : 'bg-muted text-muted-foreground'
           }`}>
             <Clock className="w-4 h-4" />
-            <span className="font-mono font-medium">{formatTimeLeft(timeLeft)}</span>
+            <span className="font-mono font-medium text-sm">{formatTimeLeft(timeLeft)}</span>
           </div>
         )}
       </div>
 
       {/* Progress */}
-      <Progress value={progress} className="h-2 mb-8" />
+      <Progress value={progress} className="h-2 mb-6 sm:mb-8" />
 
       {/* Question */}
       <motion.div
         key={currentQuestion.id}
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="card-premium p-6 mb-6"
+        className="card-premium p-4 sm:p-6 mb-4 sm:mb-6"
       >
-        <h2 className="text-lg font-semibold text-foreground mb-6">
+        <h2 className="text-base sm:text-lg font-semibold text-foreground mb-4 sm:mb-6">
           {isRTL && currentQuestion.question_ar ? currentQuestion.question_ar : currentQuestion.question}
         </h2>
 
         <RadioGroup
           value={answers[currentQuestion.id] || ''}
           onValueChange={handleAnswer}
-          className="space-y-3"
+          className="space-y-2 sm:space-y-3"
         >
           {parseOptions(currentQuestion.options).map((option) => (
             <div
               key={option.id}
-              className={`flex items-center space-x-3 rtl:space-x-reverse p-4 rounded-lg border transition-colors cursor-pointer ${
+              className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg border transition-colors cursor-pointer touch-target ${
                 answers[currentQuestion.id] === option.id
                   ? 'border-primary bg-primary/10'
                   : 'border-border hover:border-primary/50'
@@ -448,7 +448,7 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
               onClick={() => handleAnswer(option.id)}
             >
               <RadioGroupItem value={option.id} id={option.id} />
-              <Label htmlFor={option.id} className="flex-1 cursor-pointer text-foreground">
+              <Label htmlFor={option.id} className="flex-1 cursor-pointer text-sm sm:text-base text-foreground">
                 {isRTL && option.text_ar ? option.text_ar : option.text}
               </Label>
             </div>
@@ -457,11 +457,12 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
       </motion.div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <Button
           variant="outline"
           onClick={goPrev}
           disabled={currentQuestionIndex === 0}
+          className="h-11 sm:h-10 order-2 sm:order-1"
         >
           <BackIcon className="w-4 h-4 me-2" />
           {isRTL ? 'السابق' : 'Previous'}
@@ -471,14 +472,14 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
           <Button
             onClick={handleSubmit}
             disabled={submitMutation.isPending}
-            className="btn-cta"
+            className="btn-cta h-11 sm:h-10 order-1 sm:order-2"
           >
             {submitMutation.isPending
               ? (isRTL ? 'جاري الإرسال...' : 'Submitting...')
               : (isRTL ? 'إرسال الإجابات' : 'Submit Answers')}
           </Button>
         ) : (
-          <Button onClick={goNext}>
+          <Button onClick={goNext} className="h-11 sm:h-10 order-1 sm:order-2">
             {isRTL ? 'التالي' : 'Next'}
             <NextIcon className="w-4 h-4 ms-2" />
           </Button>
@@ -486,12 +487,12 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
       </div>
 
       {/* Question indicators */}
-      <div className="flex justify-center gap-2 mt-8">
+      <div className="flex flex-wrap justify-center gap-2 mt-6 sm:mt-8">
         {questions.map((q, index) => (
           <button
             key={q.id}
             onClick={() => setCurrentQuestionIndex(index)}
-            className={`w-8 h-8 rounded-full text-xs font-medium transition-colors ${
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full text-xs font-medium transition-colors touch-target ${
               index === currentQuestionIndex
                 ? 'bg-primary text-primary-foreground'
                 : answers[q.id]
