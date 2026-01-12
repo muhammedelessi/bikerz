@@ -14,11 +14,11 @@ const CTASection: React.FC = () => {
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   return (
-    <section ref={ref} className="relative py-24 overflow-hidden">
+    <section ref={ref} className="relative py-12 sm:py-16 md:py-20 lg:py-24 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/20 to-primary/10" />
       
-      {/* Animated Glow */}
+      {/* Animated Glow - Smaller on mobile */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
           animate={{
@@ -26,7 +26,7 @@ const CTASection: React.FC = () => {
             opacity: [0.3, 0.5, 0.3],
           }}
           transition={{ duration: 4, repeat: Infinity }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/20 blur-3xl"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[400px] lg:w-[600px] h-[300px] sm:h-[400px] lg:h-[600px] rounded-full bg-primary/20 blur-3xl"
         />
       </div>
 
@@ -35,31 +35,31 @@ const CTASection: React.FC = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="max-w-3xl mx-auto text-center"
+          className="max-w-3xl mx-auto text-center px-4"
         >
           {/* Icon */}
           <motion.div
             initial={{ scale: 0 }}
             animate={inView ? { scale: 1 } : {}}
             transition={{ duration: 0.5, type: 'spring' }}
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/20 border border-primary/30 mb-8"
+            className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl sm:rounded-2xl bg-primary/20 border border-primary/30 mb-6 sm:mb-8"
           >
-            <Sparkles className="w-8 h-8 text-primary" />
+            <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-primary" />
           </motion.div>
 
           {/* Title */}
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6">
             {t('cta.title')}
           </h2>
 
           {/* Subtitle */}
-          <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground mb-8 sm:mb-10 max-w-xl mx-auto">
             {t('cta.subtitle')}
           </p>
 
           {/* CTA Button */}
-          <Link to="/signup">
-            <Button variant="hero" size="xl" className="group">
+          <Link to="/signup" className="inline-block w-full sm:w-auto">
+            <Button variant="hero" size="xl" className="group w-full sm:w-auto min-h-[52px]">
               {t('cta.button')}
               <Arrow className="w-5 h-5 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
             </Button>
@@ -70,7 +70,7 @@ const CTASection: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={inView ? { opacity: 1 } : {}}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground"
+            className="mt-8 sm:mt-10 lg:mt-12 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-6 text-sm text-muted-foreground"
           >
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500" />

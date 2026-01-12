@@ -119,7 +119,7 @@
   }
 
   .hero-text {
-    @apply text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-tight;
+    @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-tight;
     background: linear-gradient(135deg, hsl(43 18% 85%) 0%, hsl(43 18% 65%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -127,7 +127,7 @@
   }
 
   .hero-subtitle {
-    @apply text-lg md:text-xl lg:text-2xl text-muted-foreground font-light max-w-2xl;
+    @apply text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground font-light max-w-2xl px-4 sm:px-0;
   }
 
   /* Card Styles */
@@ -144,7 +144,7 @@
 
   /* CTA Button Styles */
   .btn-cta {
-    @apply px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300;
+    @apply px-6 py-3 sm:px-8 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-all duration-300;
     background: var(--gradient-cta);
     box-shadow: var(--shadow-md), var(--shadow-glow);
   }
@@ -154,17 +154,17 @@
     box-shadow: var(--shadow-lg), 0 0 60px hsl(18 78% 45% / 0.5);
   }
 
-  /* Section Styles */
+  /* Section Styles - Mobile First */
   .section-container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24;
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20 lg:py-24;
   }
 
   .section-title {
-    @apply text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-4;
+    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-3 sm:mb-4 px-2;
   }
 
   .section-subtitle {
-    @apply text-lg md:text-xl text-muted-foreground text-center max-w-3xl mx-auto;
+    @apply text-base sm:text-lg md:text-xl text-muted-foreground text-center max-w-3xl mx-auto px-4;
   }
 
   /* Journey Road */
@@ -177,9 +177,9 @@
     box-shadow: var(--shadow-glow);
   }
 
-  /* Interactive Cards */
+  /* Interactive Cards - Mobile Optimized */
   .interactive-card {
-    @apply relative overflow-hidden rounded-2xl border border-border/30 bg-card/60 backdrop-blur-md p-6 transition-all duration-500;
+    @apply relative overflow-hidden rounded-xl sm:rounded-2xl border border-border/30 bg-card/60 backdrop-blur-sm p-4 sm:p-6 transition-all duration-500;
   }
 
   .interactive-card::before {
@@ -193,7 +193,7 @@
   }
 
   .interactive-card:hover {
-    @apply border-primary/40 -translate-y-2;
+    @apply border-primary/40 -translate-y-1 sm:-translate-y-2;
     box-shadow: var(--shadow-lg);
   }
 
@@ -212,13 +212,13 @@
 
   /* Video Player */
   .video-container {
-    @apply relative aspect-video rounded-xl overflow-hidden bg-near-black;
+    @apply relative aspect-video rounded-lg sm:rounded-xl overflow-hidden bg-near-black;
     box-shadow: var(--shadow-lg);
   }
 
   /* Admin Dashboard */
   .admin-card {
-    @apply rounded-xl border border-border bg-card p-6 transition-all duration-300 hover:border-primary/30;
+    @apply rounded-lg sm:rounded-xl border border-border bg-card p-4 sm:p-6 transition-all duration-300 hover:border-primary/30;
   }
 
   /* Progress Bar */
@@ -231,14 +231,15 @@
     background: var(--gradient-cta);
   }
 
-  /* Form Input */
+  /* Form Input - Touch Friendly */
   .form-input {
-    @apply w-full px-4 py-3 rounded-lg bg-muted/50 border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300;
+    @apply w-full px-4 py-3 sm:py-3 rounded-lg bg-muted/50 border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-base;
+    min-height: 48px; /* Touch target minimum */
   }
 
   /* Navigation */
   .nav-link {
-    @apply relative px-4 py-2 text-muted-foreground hover:text-foreground transition-colors duration-300;
+    @apply relative px-3 sm:px-4 py-2 text-muted-foreground hover:text-foreground transition-colors duration-300;
   }
 
   .nav-link::after {
@@ -256,6 +257,49 @@
 
   .nav-link.active::after {
     @apply scale-x-100;
+  }
+
+  /* Mobile-first touch targets */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+
+  /* Responsive table to cards */
+  .responsive-table {
+    @apply w-full;
+  }
+
+  @media (max-width: 640px) {
+    .responsive-table thead {
+      @apply hidden;
+    }
+
+    .responsive-table tr {
+      @apply block mb-4 p-4 rounded-lg bg-card border border-border;
+    }
+
+    .responsive-table td {
+      @apply block text-end py-2 border-b border-border/30 last:border-0;
+    }
+
+    .responsive-table td::before {
+      content: attr(data-label);
+      @apply float-start font-medium text-muted-foreground;
+    }
+  }
+
+  /* Safe area padding for notched devices */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .safe-area-inset {
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
   }
 }
 

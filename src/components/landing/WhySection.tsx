@@ -38,9 +38,9 @@ const WhySection: React.FC = () => {
   ];
 
   return (
-    <section ref={ref} className="relative py-24 overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
+    <section ref={ref} className="relative py-12 sm:py-16 md:py-20 lg:py-24 overflow-hidden">
+      {/* Background Pattern - Lighter on mobile */}
+      <div className="absolute inset-0 opacity-5 hidden sm:block">
         <div
           className="absolute inset-0"
           style={{
@@ -56,9 +56,9 @@ const WhySection: React.FC = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-10 sm:mb-12 lg:mb-16"
         >
-          <h2 className="section-title text-foreground mb-4">
+          <h2 className="section-title text-foreground mb-3 sm:mb-4">
             {t('why.title')}
           </h2>
           <p className="section-subtitle">
@@ -66,8 +66,8 @@ const WhySection: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+        {/* Cards Grid - Single column on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
           {cards.map((card, index) => (
             <motion.div
               key={index}
@@ -82,21 +82,22 @@ const WhySection: React.FC = () => {
                     src={card.image}
                     alt=""
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 </div>
               )}
               
-              <div className="relative z-10 flex items-start gap-5">
+              <div className="relative z-10 flex items-start gap-4 sm:gap-5">
                 <div className="flex-shrink-0">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-glow">
-                    <card.icon className="w-7 h-7 text-primary-foreground" />
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-glow">
+                    <card.icon className="w-6 h-6 sm:w-7 sm:h-7 text-primary-foreground" />
                   </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg sm:text-xl font-bold text-foreground mb-1.5 sm:mb-2 group-hover:text-primary transition-colors">
                     {t(card.titleKey)}
                   </h3>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                     {t(card.descKey)}
                   </p>
                 </div>
