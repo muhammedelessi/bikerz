@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import heroImage from '@/assets/hero-rider.jpg';
 import instructorImage from '@/assets/instructor.jpg';
+import bikerzLogo from '@/assets/bikerz-logo.png';
 
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
@@ -74,13 +75,12 @@ const Dashboard: React.FC = () => {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-border">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-                <span className="text-primary-foreground font-black text-lg">R</span>
-              </div>
-              <span className="text-xl font-bold text-foreground">
-                {isRTL ? 'رايدر أكاديمي' : 'Rider Academy'}
-              </span>
+            <Link to="/" className="flex items-center">
+              <img
+                src={bikerzLogo}
+                alt="BIKERZ"
+                className="h-12 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+              />
             </Link>
           </div>
 
