@@ -25,6 +25,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import bikerzLogo from '@/assets/bikerz-logo.png';
 
 const AdminDashboard: React.FC = () => {
   const { t } = useTranslation();
@@ -74,16 +75,13 @@ const AdminDashboard: React.FC = () => {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-border">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-                <span className="text-primary-foreground font-black text-lg">R</span>
-              </div>
-              <div>
-                <span className="text-lg font-bold text-foreground block">
-                  {isRTL ? 'رايدر أكاديمي' : 'Rider Academy'}
-                </span>
-                <span className="text-xs text-primary">{t('admin.title')}</span>
-              </div>
+            <Link to="/" className="flex items-center">
+              <img
+                src={bikerzLogo}
+                alt="BIKERZ"
+                className="h-10 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+              />
+              <span className="text-xs text-primary ms-2">{t('admin.title')}</span>
             </Link>
           </div>
 

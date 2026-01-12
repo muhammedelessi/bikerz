@@ -11,6 +11,7 @@ import LanguageToggle from '@/components/common/LanguageToggle';
 import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import heroImage from '@/assets/community-ride.jpg';
+import bikerzLogo from '@/assets/bikerz-logo.png';
 
 const Signup: React.FC = () => {
   const { t } = useTranslation();
@@ -77,13 +78,12 @@ const Signup: React.FC = () => {
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-                <span className="text-primary-foreground font-black text-lg">R</span>
-              </div>
-              <span className="text-xl font-bold text-foreground">
-                {isRTL ? 'رايدر أكاديمي' : 'Rider Academy'}
-              </span>
+            <Link to="/" className="flex items-center">
+              <img
+                src={bikerzLogo}
+                alt="BIKERZ"
+                className="h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+              />
             </Link>
             <LanguageToggle />
           </div>
