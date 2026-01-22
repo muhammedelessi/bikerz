@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import LanguageToggle from '@/components/common/LanguageToggle';
+import NotificationsDropdown from '@/components/admin/NotificationsDropdown';
 import {
   LayoutDashboard,
   BookOpen,
@@ -29,7 +30,6 @@ import {
   LogOut,
   ChevronRight,
   ChevronLeft,
-  Bell,
   FileText,
   MessageSquare,
   HelpCircle,
@@ -194,12 +194,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           <div className="flex items-center gap-2 sm:gap-4">
             <LanguageToggle />
             
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -end-1 w-4 h-4 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
-                3
-              </span>
-            </Button>
+            <NotificationsDropdown />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
