@@ -473,6 +473,52 @@ const CourseLearn: React.FC = () => {
 
   return (
     <div className="min-h-screen min-h-[100svh] bg-background flex flex-col">
+      {/* Enrollment Banner for non-enrolled users */}
+      {!isEnrolled && (
+        <div className="bg-gradient-to-r from-primary/90 to-primary text-primary-foreground py-3 px-4 sm:px-6">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3 text-center sm:text-start">
+              <BookOpen className="w-5 h-5 hidden sm:block" />
+              <p className="text-sm sm:text-base font-medium">
+                {isRTL 
+                  ? 'أنت تشاهد معاينة مجانية. سجل الآن للحصول على الوصول الكامل!'
+                  : "You're watching a free preview. Enroll now for full access!"}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {user ? (
+                <Button 
+                  size="sm" 
+                  variant="secondary"
+                  className="font-semibold"
+                  onClick={() => {
+                    supabase
+                      .from('course_enrollments')
+                      .insert({ user_id: user.id, course_id: id })
+                      .then(({ error }) => {
+                        if (error) {
+                          toast.error(isRTL ? 'فشل التسجيل' : 'Failed to enroll');
+                        } else {
+                          toast.success(isRTL ? 'تم التسجيل بنجاح!' : 'Successfully enrolled!');
+                          queryClient.invalidateQueries({ queryKey: ['enrollment-learn'] });
+                        }
+                      });
+                  }}
+                >
+                  {isRTL ? 'سجل الآن مجاناً' : 'Enroll Now - Free'}
+                </Button>
+              ) : (
+                <Button size="sm" variant="secondary" className="font-semibold" asChild>
+                  <Link to="/signup">
+                    {isRTL ? 'إنشاء حساب' : 'Sign Up Free'}
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="h-14 sm:h-16 border-b border-border bg-card/80 backdrop-blur-xl flex items-center justify-between px-3 sm:px-4 lg:px-6 sticky top-0 z-50 safe-area-top">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
