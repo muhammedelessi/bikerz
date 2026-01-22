@@ -105,7 +105,7 @@ interface LessonResource {
 }
 
 const CourseLearn: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, lessonId: urlLessonId } = useParams<{ id: string; lessonId?: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
@@ -113,7 +113,7 @@ const CourseLearn: React.FC = () => {
   const queryClient = useQueryClient();
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
+  const [currentLessonId, setCurrentLessonId] = useState<string | null>(urlLessonId || null);
   const [showTest, setShowTest] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -285,15 +285,28 @@ const CourseLearn: React.FC = () => {
     },
   });
 
-  // Set initial lesson
+  // Set initial lesson from URL or default to first lesson
   useEffect(() => {
-    if (chapters.length > 0 && !currentLessonId) {
-      const firstLesson = chapters[0]?.lessons[0];
-      if (firstLesson) {
-        setCurrentLessonId(firstLesson.id);
+    if (chapters.length > 0) {
+      // If URL has a lesson ID, validate and use it
+      if (urlLessonId) {
+        const lessonExists = chapters.some(ch => ch.lessons.some(l => l.id === urlLessonId));
+        if (lessonExists) {
+          setCurrentLessonId(urlLessonId);
+          return;
+        }
+      }
+      // Fallback to first lesson if no valid URL lesson ID
+      if (!currentLessonId) {
+        const firstLesson = chapters[0]?.lessons[0];
+        if (firstLesson) {
+          setCurrentLessonId(firstLesson.id);
+          // Update URL to include the lesson ID
+          navigate(`/courses/${id}/lessons/${firstLesson.id}`, { replace: true });
+        }
       }
     }
-  }, [chapters, currentLessonId]);
+  }, [chapters, urlLessonId, currentLessonId, id, navigate]);
 
   // Current lesson
   const currentLesson = chapters
@@ -333,6 +346,8 @@ const CourseLearn: React.FC = () => {
     setIsPlaying(false);
     setCurrentTime(0);
     setSidebarOpen(false);
+    // Update URL to reflect the current lesson
+    navigate(`/courses/${id}/lessons/${lessonId}`, { replace: true });
   };
 
   // Video controls
