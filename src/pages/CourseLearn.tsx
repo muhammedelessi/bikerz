@@ -292,9 +292,11 @@ const CourseLearn: React.FC = () => {
     return attempts.length > 0 ? attempts[0].score : null;
   };
 
-  // Allow quiz access if chapter is complete OR if user has previously attempted the quiz
-  const canAccessTest = (chapter: Chapter) => {
+  // Allow quiz access if chapter is complete, first chapter, OR if user has previously attempted the quiz
+  const canAccessTest = (chapter: Chapter, chapterIndex: number) => {
     if (!chapter.test) return false;
+    // First chapter quiz is always accessible
+    if (chapterIndex === 0) return true;
     return isChapterComplete(chapter) || hasAttemptedTest(chapter.test.id);
   };
 
@@ -1014,7 +1016,7 @@ const CourseLearn: React.FC = () => {
                         {/* Chapter Test */}
                         {chapter.test && (() => {
                           const testPassed = isTestPassed(chapter.test.id);
-                          const canAccess = canAccessTest(chapter);
+                          const canAccess = canAccessTest(chapter, chapterIndex);
                           const lastScore = getLastTestScore(chapter.test.id);
                           const hasFailed = hasAttemptedTest(chapter.test.id) && !testPassed;
 
