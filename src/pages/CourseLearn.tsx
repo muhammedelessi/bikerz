@@ -249,7 +249,7 @@ const CourseLearn: React.FC = () => {
     enabled: !!currentLessonId,
   });
 
-  // Fetch quiz/test attempts to track passed quizzes
+  // Fetch quiz/test attempts to track passed quizzes and allow retakes
   const { data: testAttempts = [] } = useQuery({
     queryKey: ['test-attempts', id, user?.id],
     queryFn: async () => {
@@ -261,12 +261,13 @@ const CourseLearn: React.FC = () => {
       
       if (!testIds.length) return [];
 
+      // Fetch all attempts (not just passed) to track quiz history
       const { data, error } = await supabase
         .from('test_attempts')
-        .select('test_id, passed, score')
+        .select('test_id, passed, score, completed_at')
         .eq('user_id', user.id)
         .in('test_id', testIds)
-        .eq('passed', true);
+        .order('completed_at', { ascending: false });
 
       if (error) throw error;
       return data || [];
@@ -276,10 +277,25 @@ const CourseLearn: React.FC = () => {
 
   // Calculate quiz progress
   const totalQuizzes = chapters.filter(ch => ch.test).length;
-  const passedQuizzes = new Set(testAttempts.map(a => a.test_id)).size;
+  const passedQuizzes = new Set(testAttempts.filter(a => a.passed).map(a => a.test_id)).size;
 
   const isTestPassed = (testId: string) => {
     return testAttempts.some(a => a.test_id === testId && a.passed);
+  };
+
+  const hasAttemptedTest = (testId: string) => {
+    return testAttempts.some(a => a.test_id === testId);
+  };
+
+  const getLastTestScore = (testId: string) => {
+    const attempts = testAttempts.filter(a => a.test_id === testId);
+    return attempts.length > 0 ? attempts[0].score : null;
+  };
+
+  // Allow quiz access if chapter is complete OR if user has previously attempted the quiz
+  const canAccessTest = (chapter: Chapter) => {
+    if (!chapter.test) return false;
+    return isChapterComplete(chapter) || hasAttemptedTest(chapter.test.id);
   };
 
   // Mark lesson as complete mutation
@@ -931,37 +947,60 @@ const CourseLearn: React.FC = () => {
                         })}
                         
                         {/* Chapter Test */}
-                        {chapter.test && (
-                          <button
-                            onClick={() => isChapterComplete(chapter) && setShowTest(chapter.id)}
-                            disabled={!isChapterComplete(chapter)}
-                            className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 text-start text-xs sm:text-sm transition-colors border-t border-border/30 touch-target ${
-                              !isChapterComplete(chapter)
-                                ? 'opacity-50 cursor-not-allowed'
-                                : showTest === chapter.id
-                                  ? 'bg-primary/10 border-s-2 border-primary'
-                                  : 'hover:bg-muted/50 active:bg-muted/70'
-                            }`}
-                          >
-                            <div className="flex-shrink-0">
-                              {isTestPassed(chapter.test.id) ? (
-                                <Trophy className="w-4 h-4 text-primary" />
-                              ) : !isChapterComplete(chapter) ? (
-                                <Lock className="w-4 h-4 text-muted-foreground" />
-                              ) : (
-                                <ClipboardList className="w-4 h-4 text-primary" />
+                        {chapter.test && (() => {
+                          const testPassed = isTestPassed(chapter.test.id);
+                          const canAccess = canAccessTest(chapter);
+                          const lastScore = getLastTestScore(chapter.test.id);
+                          const hasFailed = hasAttemptedTest(chapter.test.id) && !testPassed;
+
+                          return (
+                            <button
+                              onClick={() => canAccess && setShowTest(chapter.id)}
+                              disabled={!canAccess}
+                              className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 text-start text-xs sm:text-sm transition-colors border-t border-border/30 touch-target ${
+                                !canAccess
+                                  ? 'opacity-50 cursor-not-allowed'
+                                  : showTest === chapter.id
+                                    ? 'bg-primary/10 border-s-2 border-primary'
+                                    : hasFailed
+                                      ? 'hover:bg-destructive/10 active:bg-destructive/20'
+                                      : 'hover:bg-muted/50 active:bg-muted/70'
+                              }`}
+                            >
+                              <div className="flex-shrink-0">
+                                {testPassed ? (
+                                  <Trophy className="w-4 h-4 text-primary" />
+                                ) : hasFailed ? (
+                                  <ClipboardList className="w-4 h-4 text-destructive" />
+                                ) : !canAccess ? (
+                                  <Lock className="w-4 h-4 text-muted-foreground" />
+                                ) : (
+                                  <ClipboardList className="w-4 h-4 text-primary" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <span className={`block truncate ${
+                                  showTest === chapter.id ? 'text-primary font-medium' : 
+                                  hasFailed ? 'text-destructive' : 'text-foreground'
+                                }`}>
+                                  {isRTL && chapter.test.title_ar ? chapter.test.title_ar : chapter.test.title}
+                                </span>
+                                {hasFailed && lastScore !== null && (
+                                  <span className="text-xs text-destructive/80">
+                                    {isRTL ? `آخر نتيجة: ${lastScore}% - حاول مرة أخرى` : `Last score: ${lastScore}% - Retry`}
+                                  </span>
+                                )}
+                              </div>
+                              {testPassed ? (
+                                <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+                              ) : hasFailed && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/20 text-destructive flex-shrink-0">
+                                  {isRTL ? 'إعادة' : 'Retry'}
+                                </span>
                               )}
-                            </div>
-                            <span className={`flex-1 truncate ${
-                              showTest === chapter.id ? 'text-primary font-medium' : 'text-foreground'
-                            }`}>
-                              {isRTL && chapter.test.title_ar ? chapter.test.title_ar : chapter.test.title}
-                            </span>
-                            {isTestPassed(chapter.test.id) && (
-                              <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
-                            )}
-                          </button>
-                        )}
+                            </button>
+                          );
+                        })()}
                       </div>
                     </AccordionContent>
                   </AccordionItem>
