@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_logs: {
+        Row: {
+          action: string
+          admin_user_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          new_data: Json | null
+          old_data: Json | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          admin_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      admin_settings: {
+        Row: {
+          category: string
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          category?: string
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          category?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       chapter_tests: {
         Row: {
           chapter_id: string
@@ -151,15 +217,22 @@ export type Database = {
       }
       courses: {
         Row: {
+          certificate_enabled: boolean | null
           created_at: string
+          currency: string | null
           description: string | null
           description_ar: string | null
           difficulty_level: string
+          drip_enabled: boolean | null
           duration_hours: number | null
           id: string
           instructor_id: string | null
           is_published: boolean
+          preview_video_url: string | null
           price: number
+          seo_description: string | null
+          seo_title: string | null
+          status: string | null
           thumbnail_url: string | null
           title: string
           title_ar: string | null
@@ -167,15 +240,22 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          certificate_enabled?: boolean | null
           created_at?: string
+          currency?: string | null
           description?: string | null
           description_ar?: string | null
           difficulty_level?: string
+          drip_enabled?: boolean | null
           duration_hours?: number | null
           id?: string
           instructor_id?: string | null
           is_published?: boolean
+          preview_video_url?: string | null
           price?: number
+          seo_description?: string | null
+          seo_title?: string | null
+          status?: string | null
           thumbnail_url?: string | null
           title: string
           title_ar?: string | null
@@ -183,15 +263,22 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          certificate_enabled?: boolean | null
           created_at?: string
+          currency?: string | null
           description?: string | null
           description_ar?: string | null
           difficulty_level?: string
+          drip_enabled?: boolean | null
           duration_hours?: number | null
           id?: string
           instructor_id?: string | null
           is_published?: boolean
+          preview_video_url?: string | null
           price?: number
+          seo_description?: string | null
+          seo_title?: string | null
+          status?: string | null
           thumbnail_url?: string | null
           title?: string
           title_ar?: string | null
@@ -284,6 +371,8 @@ export type Database = {
       lessons: {
         Row: {
           chapter_id: string
+          content_html: string | null
+          content_html_ar: string | null
           created_at: string
           description: string | null
           description_ar: string | null
@@ -295,10 +384,14 @@ export type Database = {
           title: string
           title_ar: string | null
           updated_at: string
+          video_provider: string | null
+          video_thumbnail: string | null
           video_url: string | null
         }
         Insert: {
           chapter_id: string
+          content_html?: string | null
+          content_html_ar?: string | null
           created_at?: string
           description?: string | null
           description_ar?: string | null
@@ -310,10 +403,14 @@ export type Database = {
           title: string
           title_ar?: string | null
           updated_at?: string
+          video_provider?: string | null
+          video_thumbnail?: string | null
           video_url?: string | null
         }
         Update: {
           chapter_id?: string
+          content_html?: string | null
+          content_html_ar?: string | null
           created_at?: string
           description?: string | null
           description_ar?: string | null
@@ -325,6 +422,8 @@ export type Database = {
           title?: string
           title_ar?: string | null
           updated_at?: string
+          video_provider?: string | null
+          video_thumbnail?: string | null
           video_url?: string | null
         }
         Relationships: [
@@ -333,6 +432,59 @@ export type Database = {
             columns: ["chapter_id"]
             isOneToOne: false
             referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manual_payments: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          course_id: string | null
+          created_at: string
+          currency: string | null
+          id: string
+          notes: string | null
+          payment_method: string
+          reference_number: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          course_id?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          notes?: string | null
+          payment_method: string
+          reference_number?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          course_id?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: string
+          reference_number?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_payments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
             referencedColumns: ["id"]
           },
         ]
@@ -348,7 +500,9 @@ export type Database = {
           license_type: string | null
           motorbike_brand: string | null
           motorbike_type: string
+          payout_status: string | null
           rating: number | null
+          revenue_share_percentage: number | null
           specializations: string[] | null
           total_students: number | null
           updated_at: string
@@ -364,7 +518,9 @@ export type Database = {
           license_type?: string | null
           motorbike_brand?: string | null
           motorbike_type: string
+          payout_status?: string | null
           rating?: number | null
+          revenue_share_percentage?: number | null
           specializations?: string[] | null
           total_students?: number | null
           updated_at?: string
@@ -380,7 +536,9 @@ export type Database = {
           license_type?: string | null
           motorbike_brand?: string | null
           motorbike_type?: string
+          payout_status?: string | null
           rating?: number | null
+          revenue_share_percentage?: number | null
           specializations?: string[] | null
           total_students?: number | null
           updated_at?: string
@@ -539,9 +697,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "student" | "mentor"
+      app_role:
+        | "super_admin"
+        | "academy_admin"
+        | "instructor"
+        | "moderator"
+        | "finance"
+        | "support"
+        | "student"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -669,7 +835,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "student", "mentor"],
+      app_role: [
+        "super_admin",
+        "academy_admin",
+        "instructor",
+        "moderator",
+        "finance",
+        "support",
+        "student",
+      ],
     },
   },
 } as const
