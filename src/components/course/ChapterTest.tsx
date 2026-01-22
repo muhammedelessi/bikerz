@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
+import confetti from 'canvas-confetti';
 
 interface TestQuestion {
   id: string;
@@ -69,6 +70,39 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
   const [showReview, setShowReview] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [testStarted, setTestStarted] = useState(false);
+
+  // Confetti celebration function
+  const fireConfetti = useCallback(() => {
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+    const interval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+
+      // Confetti from both sides
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+        colors: ['#22c55e', '#eab308', '#3b82f6', '#f97316', '#ec4899'],
+      });
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+        colors: ['#22c55e', '#eab308', '#3b82f6', '#f97316', '#ec4899'],
+      });
+    }, 250);
+  }, []);
 
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const NextIcon = isRTL ? ChevronLeft : ChevronRight;
@@ -140,6 +174,8 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
     onSuccess: (result) => {
       setShowResults(true);
       if (result.passed) {
+        // Fire confetti celebration!
+        fireConfetti();
         toast.success(isRTL ? 'مبروك! اجتزت الاختبار' : 'Congratulations! You passed!');
       } else {
         toast.error(isRTL ? 'لم تجتز الاختبار، حاول مرة أخرى' : "You didn't pass. Try again!");
