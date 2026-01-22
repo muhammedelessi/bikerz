@@ -1,0 +1,658 @@
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Plus,
+  Search,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Eye,
+  Copy,
+  BookOpen,
+  Users,
+  Clock,
+  DollarSign,
+  Filter,
+  ArrowUpDown,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
+
+interface Course {
+  id: string;
+  title: string;
+  title_ar: string | null;
+  description: string | null;
+  description_ar: string | null;
+  price: number;
+  currency: string;
+  status: string;
+  difficulty_level: string;
+  duration_hours: number | null;
+  total_lessons: number | null;
+  is_published: boolean;
+  certificate_enabled: boolean;
+  created_at: string;
+  instructor_id: string | null;
+}
+
+const AdminCourses: React.FC = () => {
+  const { t } = useTranslation();
+  const { isRTL } = useLanguage();
+  const queryClient = useQueryClient();
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    title: '',
+    title_ar: '',
+    description: '',
+    description_ar: '',
+    price: 0,
+    currency: 'SAR',
+    difficulty_level: 'beginner',
+    duration_hours: 0,
+    is_published: false,
+    certificate_enabled: true,
+  });
+
+  // Fetch courses
+  const { data: courses = [], isLoading } = useQuery({
+    queryKey: ['admin-courses'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Course[];
+    },
+  });
+
+  // Create course mutation
+  const createMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const { error } = await supabase.from('courses').insert({
+        title: data.title,
+        title_ar: data.title_ar || null,
+        description: data.description || null,
+        description_ar: data.description_ar || null,
+        price: data.price,
+        currency: data.currency,
+        difficulty_level: data.difficulty_level,
+        duration_hours: data.duration_hours || null,
+        is_published: data.is_published,
+        certificate_enabled: data.certificate_enabled,
+        status: data.is_published ? 'published' : 'draft',
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
+      setIsCreateOpen(false);
+      resetForm();
+      toast.success(isRTL ? 'تم إنشاء الدورة بنجاح' : 'Course created successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || (isRTL ? 'فشل في إنشاء الدورة' : 'Failed to create course'));
+    },
+  });
+
+  // Update course mutation
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
+      const { error } = await supabase
+        .from('courses')
+        .update({
+          title: data.title,
+          title_ar: data.title_ar || null,
+          description: data.description || null,
+          description_ar: data.description_ar || null,
+          price: data.price,
+          currency: data.currency,
+          difficulty_level: data.difficulty_level,
+          duration_hours: data.duration_hours || null,
+          is_published: data.is_published,
+          certificate_enabled: data.certificate_enabled,
+          status: data.is_published ? 'published' : 'draft',
+        })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
+      setEditingCourse(null);
+      resetForm();
+      toast.success(isRTL ? 'تم تحديث الدورة بنجاح' : 'Course updated successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || (isRTL ? 'فشل في تحديث الدورة' : 'Failed to update course'));
+    },
+  });
+
+  // Delete course mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('courses').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
+      setDeleteConfirm(null);
+      toast.success(isRTL ? 'تم حذف الدورة بنجاح' : 'Course deleted successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || (isRTL ? 'فشل في حذف الدورة' : 'Failed to delete course'));
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      title_ar: '',
+      description: '',
+      description_ar: '',
+      price: 0,
+      currency: 'SAR',
+      difficulty_level: 'beginner',
+      duration_hours: 0,
+      is_published: false,
+      certificate_enabled: true,
+    });
+  };
+
+  const openEditDialog = (course: Course) => {
+    setFormData({
+      title: course.title,
+      title_ar: course.title_ar || '',
+      description: course.description || '',
+      description_ar: course.description_ar || '',
+      price: course.price,
+      currency: course.currency || 'SAR',
+      difficulty_level: course.difficulty_level,
+      duration_hours: course.duration_hours || 0,
+      is_published: course.is_published,
+      certificate_enabled: course.certificate_enabled,
+    });
+    setEditingCourse(course);
+  };
+
+  const handleSubmit = () => {
+    if (!formData.title.trim()) {
+      toast.error(isRTL ? 'عنوان الدورة مطلوب' : 'Course title is required');
+      return;
+    }
+
+    if (editingCourse) {
+      updateMutation.mutate({ id: editingCourse.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  // Filter courses
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = 
+      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (course.title_ar && course.title_ar.includes(searchQuery));
+    
+    const matchesStatus = statusFilter === 'all' || 
+      (statusFilter === 'published' && course.is_published) ||
+      (statusFilter === 'draft' && !course.is_published);
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  const getStatusBadge = (course: Course) => {
+    if (course.is_published) {
+      return <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20">{isRTL ? 'منشور' : 'Published'}</Badge>;
+    }
+    return <Badge variant="secondary">{isRTL ? 'مسودة' : 'Draft'}</Badge>;
+  };
+
+  const getDifficultyLabel = (level: string) => {
+    const labels: Record<string, { en: string; ar: string }> = {
+      beginner: { en: 'Beginner', ar: 'مبتدئ' },
+      intermediate: { en: 'Intermediate', ar: 'متوسط' },
+      advanced: { en: 'Advanced', ar: 'متقدم' },
+    };
+    return isRTL ? labels[level]?.ar || level : labels[level]?.en || level;
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            {isRTL ? 'إدارة الدورات' : 'Course Management'}
+          </h1>
+          <p className="text-muted-foreground">
+            {isRTL ? 'إنشاء وتعديل وإدارة جميع الدورات' : 'Create, edit, and manage all courses'}
+          </p>
+        </div>
+        <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+          <Plus className="w-4 h-4" />
+          {isRTL ? 'إنشاء دورة' : 'Create Course'}
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-primary/10">
+              <BookOpen className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">{isRTL ? 'إجمالي الدورات' : 'Total Courses'}</p>
+              <p className="text-2xl font-bold">{courses.length}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-green-500/10">
+              <Eye className="w-6 h-6 text-green-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">{isRTL ? 'منشورة' : 'Published'}</p>
+              <p className="text-2xl font-bold">{courses.filter(c => c.is_published).length}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-amber-500/10">
+              <Edit className="w-6 h-6 text-amber-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">{isRTL ? 'مسودات' : 'Drafts'}</p>
+              <p className="text-2xl font-bold">{courses.filter(c => !c.is_published).length}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-purple-500/10">
+              <Users className="w-6 h-6 text-purple-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">{isRTL ? 'إجمالي الطلاب' : 'Total Students'}</p>
+              <p className="text-2xl font-bold">0</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder={isRTL ? 'البحث عن دورة...' : 'Search courses...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="ps-10"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <Filter className="w-4 h-4 me-2" />
+                <SelectValue placeholder={isRTL ? 'الحالة' : 'Status'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{isRTL ? 'الكل' : 'All'}</SelectItem>
+                <SelectItem value="published">{isRTL ? 'منشور' : 'Published'}</SelectItem>
+                <SelectItem value="draft">{isRTL ? 'مسودة' : 'Draft'}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Courses Table */}
+      <Card>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-6 space-y-4">
+              {[1, 2, 3].map(i => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : filteredCourses.length === 0 ? (
+            <div className="p-12 text-center">
+              <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                {isRTL ? 'لا توجد دورات' : 'No courses found'}
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                {isRTL ? 'ابدأ بإنشاء أول دورة' : 'Start by creating your first course'}
+              </p>
+              <Button onClick={() => setIsCreateOpen(true)} variant="outline">
+                <Plus className="w-4 h-4 me-2" />
+                {isRTL ? 'إنشاء دورة' : 'Create Course'}
+              </Button>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{isRTL ? 'الدورة' : 'Course'}</TableHead>
+                  <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
+                  <TableHead>{isRTL ? 'المستوى' : 'Level'}</TableHead>
+                  <TableHead>{isRTL ? 'السعر' : 'Price'}</TableHead>
+                  <TableHead>{isRTL ? 'المدة' : 'Duration'}</TableHead>
+                  <TableHead className="text-end">{isRTL ? 'الإجراءات' : 'Actions'}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCourses.map((course) => (
+                  <TableRow key={course.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {isRTL && course.title_ar ? course.title_ar : course.title}
+                        </p>
+                        <p className="text-sm text-muted-foreground line-clamp-1">
+                          {isRTL && course.description_ar ? course.description_ar : course.description}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(course)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{getDifficultyLabel(course.difficulty_level)}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {course.price === 0 
+                        ? (isRTL ? 'مجاني' : 'Free')
+                        : `${course.price} ${course.currency || 'SAR'}`}
+                    </TableCell>
+                    <TableCell>
+                      {course.duration_hours ? `${course.duration_hours}h` : '-'}
+                    </TableCell>
+                    <TableCell className="text-end">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
+                          <DropdownMenuLabel>{isRTL ? 'الإجراءات' : 'Actions'}</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild>
+                            <Link to={`/admin/courses/${course.id}`}>
+                              <Edit className="w-4 h-4 me-2" />
+                              {isRTL ? 'تعديل المحتوى' : 'Edit Content'}
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEditDialog(course)}>
+                            <Edit className="w-4 h-4 me-2" />
+                            {isRTL ? 'تعديل الإعدادات' : 'Edit Settings'}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link to={`/courses/${course.id}`} target="_blank">
+                              <Eye className="w-4 h-4 me-2" />
+                              {isRTL ? 'معاينة' : 'Preview'}
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Copy className="w-4 h-4 me-2" />
+                            {isRTL ? 'استنساخ' : 'Duplicate'}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => setDeleteConfirm(course.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4 me-2" />
+                            {isRTL ? 'حذف' : 'Delete'}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={isCreateOpen || !!editingCourse} onOpenChange={(open) => {
+        if (!open) {
+          setIsCreateOpen(false);
+          setEditingCourse(null);
+          resetForm();
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingCourse 
+                ? (isRTL ? 'تعديل الدورة' : 'Edit Course')
+                : (isRTL ? 'إنشاء دورة جديدة' : 'Create New Course')}
+            </DialogTitle>
+            <DialogDescription>
+              {isRTL ? 'أدخل تفاصيل الدورة' : 'Enter course details'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{isRTL ? 'العنوان (إنجليزي)' : 'Title (English)'}</Label>
+                <Input
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Course title"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{isRTL ? 'العنوان (عربي)' : 'Title (Arabic)'}</Label>
+                <Input
+                  value={formData.title_ar}
+                  onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })}
+                  placeholder="عنوان الدورة"
+                  dir="rtl"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{isRTL ? 'الوصف (إنجليزي)' : 'Description (English)'}</Label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Course description"
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{isRTL ? 'الوصف (عربي)' : 'Description (Arabic)'}</Label>
+                <Textarea
+                  value={formData.description_ar}
+                  onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
+                  placeholder="وصف الدورة"
+                  dir="rtl"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label>{isRTL ? 'السعر' : 'Price'}</Label>
+                <Input
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                  min={0}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{isRTL ? 'العملة' : 'Currency'}</Label>
+                <Select 
+                  value={formData.currency} 
+                  onValueChange={(value) => setFormData({ ...formData, currency: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SAR">SAR</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="AED">AED</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{isRTL ? 'المستوى' : 'Level'}</Label>
+                <Select 
+                  value={formData.difficulty_level} 
+                  onValueChange={(value) => setFormData({ ...formData, difficulty_level: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="beginner">{isRTL ? 'مبتدئ' : 'Beginner'}</SelectItem>
+                    <SelectItem value="intermediate">{isRTL ? 'متوسط' : 'Intermediate'}</SelectItem>
+                    <SelectItem value="advanced">{isRTL ? 'متقدم' : 'Advanced'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{isRTL ? 'المدة (ساعات)' : 'Duration (hours)'}</Label>
+                <Input
+                  type="number"
+                  value={formData.duration_hours}
+                  onChange={(e) => setFormData({ ...formData, duration_hours: parseInt(e.target.value) || 0 })}
+                  min={0}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-6 pt-4">
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={formData.is_published}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
+                />
+                <Label>{isRTL ? 'نشر الدورة' : 'Publish Course'}</Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={formData.certificate_enabled}
+                  onCheckedChange={(checked) => setFormData({ ...formData, certificate_enabled: checked })}
+                />
+                <Label>{isRTL ? 'تفعيل الشهادة' : 'Enable Certificate'}</Label>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsCreateOpen(false);
+              setEditingCourse(null);
+              resetForm();
+            }}>
+              {isRTL ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button 
+              onClick={handleSubmit}
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
+              {createMutation.isPending || updateMutation.isPending
+                ? (isRTL ? 'جاري الحفظ...' : 'Saving...')
+                : editingCourse
+                  ? (isRTL ? 'تحديث' : 'Update')
+                  : (isRTL ? 'إنشاء' : 'Create')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{isRTL ? 'تأكيد الحذف' : 'Confirm Delete'}</DialogTitle>
+            <DialogDescription>
+              {isRTL 
+                ? 'هل أنت متأكد من حذف هذه الدورة؟ لا يمكن التراجع عن هذا الإجراء.'
+                : 'Are you sure you want to delete this course? This action cannot be undone.'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
+              {isRTL ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => deleteConfirm && deleteMutation.mutate(deleteConfirm)}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (isRTL ? 'جاري الحذف...' : 'Deleting...') : (isRTL ? 'حذف' : 'Delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default AdminCourses;
