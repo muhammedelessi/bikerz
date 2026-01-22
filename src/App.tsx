@@ -13,8 +13,18 @@ import CourseDetail from "./pages/CourseDetail";
 import CourseLearn from "./pages/CourseLearn";
 import Mentors from "./pages/Mentors";
 import Dashboard from "./pages/Dashboard";
-import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
+
+// Admin Pages
+import AdminHome from "./pages/admin/AdminHome";
+import AdminCourses from "./pages/admin/AdminCourses";
+import AdminCourseEditor from "./pages/admin/AdminCourseEditor";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminInstructors from "./pages/admin/AdminInstructors";
+import AdminPayments from "./pages/admin/AdminPayments";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminRoles from "./pages/admin/AdminRoles";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -37,9 +47,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
-// Admin Route Component
+// Admin Route Component - checks for admin roles
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isAdmin, isLoading } = useAuth();
+  const { user, canAccessAdmin, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -53,7 +63,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (!isAdmin) {
+  if (!canAccessAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -81,6 +91,7 @@ const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const AppRoutes = () => (
   <Routes>
+    {/* Public Routes */}
     <Route path="/" element={<Index />} />
     <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
     <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
@@ -89,8 +100,23 @@ const AppRoutes = () => (
     <Route path="/courses/:id/learn" element={<CourseLearn />} />
     <Route path="/courses/:id/lessons/:lessonId" element={<CourseLearn />} />
     <Route path="/mentors" element={<Mentors />} />
+    
+    {/* Protected Routes */}
     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-    <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+    
+    {/* Admin Routes */}
+    <Route path="/admin" element={<AdminRoute><AdminHome /></AdminRoute>} />
+    <Route path="/admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
+    <Route path="/admin/courses/new" element={<AdminRoute><AdminCourseEditor /></AdminRoute>} />
+    <Route path="/admin/courses/:id" element={<AdminRoute><AdminCourseEditor /></AdminRoute>} />
+    <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+    <Route path="/admin/instructors" element={<AdminRoute><AdminInstructors /></AdminRoute>} />
+    <Route path="/admin/payments" element={<AdminRoute><AdminPayments /></AdminRoute>} />
+    <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
+    <Route path="/admin/roles" element={<AdminRoute><AdminRoles /></AdminRoute>} />
+    <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
+    
+    {/* 404 */}
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

@@ -28,7 +28,7 @@ import bikerzLogo from '@/assets/bikerz-logo.png';
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { user, profile, signOut, isAdmin, isMentor } = useAuth();
+  const { user, profile, signOut, isAdmin, isInstructor } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
