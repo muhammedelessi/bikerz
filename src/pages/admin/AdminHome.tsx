@@ -1,8 +1,8 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -35,7 +35,6 @@ import {
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
 const AdminHome: React.FC = () => {
-  const { t } = useTranslation();
   const { isRTL } = useLanguage();
 
   // Fetch stats
@@ -135,19 +134,20 @@ const AdminHome: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">
-          {isRTL ? 'لوحة التحكم' : 'Dashboard'}
-        </h1>
-        <p className="text-muted-foreground">
-          {isRTL ? 'نظرة عامة على أداء الأكاديمية' : 'Academy performance overview'}
-        </p>
-      </div>
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            {isRTL ? 'لوحة التحكم' : 'Dashboard'}
+          </h1>
+          <p className="text-muted-foreground">
+            {isRTL ? 'نظرة عامة على أداء الأكاديمية' : 'Academy performance overview'}
+          </p>
+        </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -378,7 +378,8 @@ const AdminHome: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </AdminLayout>
   );
 };
 
