@@ -396,6 +396,18 @@ const CourseLearn: React.FC = () => {
     }
   };
 
+  // Helper to extract YouTube video ID
+  const getYouTubeVideoId = (url: string): string | null => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const isYouTubeUrl = (url: string | null): boolean => {
+    if (!url) return false;
+    return url.includes('youtube.com') || url.includes('youtu.be');
+  };
+
   const isChapterComplete = (chapter: Chapter) => {
     return chapter.lessons.every(l => isLessonCompleted(l.id));
   };
@@ -547,75 +559,87 @@ const CourseLearn: React.FC = () => {
                 {/* Video Player - Full width, adaptive aspect ratio */}
                 <div className="relative bg-black aspect-video w-full">
                   {currentLesson?.video_url ? (
-                    <>
-                      <video
-                        ref={videoRef}
-                        src={currentLesson.video_url}
+                    isYouTubeUrl(currentLesson.video_url) ? (
+                      // YouTube Embed Player
+                      <iframe
+                        src={`https://www.youtube.com/embed/${getYouTubeVideoId(currentLesson.video_url)}?rel=0&modestbranding=1`}
                         className="w-full h-full"
-                        onTimeUpdate={handleTimeUpdate}
-                        onLoadedMetadata={handleLoadedMetadata}
-                        onPlay={() => setIsPlaying(true)}
-                        onPause={() => setIsPlaying(false)}
-                        onEnded={() => {
-                          setIsPlaying(false);
-                          if (!isLessonCompleted(currentLesson.id)) {
-                            completeLessonMutation.mutate(currentLesson.id);
-                          }
-                        }}
-                        playsInline
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        title={currentLesson.title}
                       />
-                      
-                      {/* Video Controls Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                        <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
-                          {/* Progress Bar */}
-                          <input
-                            type="range"
-                            min={0}
-                            max={duration || 100}
-                            value={currentTime}
-                            onChange={handleSeek}
-                            className="w-full h-1 mb-3 sm:mb-4 accent-primary cursor-pointer"
-                          />
-                          
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1 sm:gap-2">
-                              <Button variant="ghost" size="icon" onClick={() => skip(-10)} className="h-9 w-9 sm:h-10 sm:w-10">
-                                <SkipBack className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                              </Button>
-                              
-                              <Button variant="ghost" size="icon" onClick={togglePlay} className="h-9 w-9 sm:h-10 sm:w-10">
-                                {isPlaying ? (
-                                  <Pause className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                                ) : (
-                                  <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white ms-0.5" />
-                                )}
-                              </Button>
-                              
-                              <Button variant="ghost" size="icon" onClick={() => skip(10)} className="h-9 w-9 sm:h-10 sm:w-10">
-                                <SkipForward className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                              </Button>
-                              
-                              <Button variant="ghost" size="icon" onClick={toggleMute} className="h-9 w-9 sm:h-10 sm:w-10 hidden sm:flex">
-                                {isMuted ? (
-                                  <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                                ) : (
-                                  <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                                )}
-                              </Button>
-                              
-                              <span className="text-white text-xs sm:text-sm ms-1 sm:ms-2">
-                                {formatTime(currentTime)} / {formatTime(duration)}
-                              </span>
-                            </div>
+                    ) : (
+                      // Native Video Player for direct video URLs
+                      <>
+                        <video
+                          ref={videoRef}
+                          src={currentLesson.video_url}
+                          className="w-full h-full"
+                          onTimeUpdate={handleTimeUpdate}
+                          onLoadedMetadata={handleLoadedMetadata}
+                          onPlay={() => setIsPlaying(true)}
+                          onPause={() => setIsPlaying(false)}
+                          onEnded={() => {
+                            setIsPlaying(false);
+                            if (!isLessonCompleted(currentLesson.id)) {
+                              completeLessonMutation.mutate(currentLesson.id);
+                            }
+                          }}
+                          playsInline
+                        />
+                        
+                        {/* Video Controls Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                          <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
+                            {/* Progress Bar */}
+                            <input
+                              type="range"
+                              min={0}
+                              max={duration || 100}
+                              value={currentTime}
+                              onChange={handleSeek}
+                              className="w-full h-1 mb-3 sm:mb-4 accent-primary cursor-pointer"
+                            />
                             
-                            <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="h-9 w-9 sm:h-10 sm:w-10">
-                              <Maximize className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                            </Button>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1 sm:gap-2">
+                                <Button variant="ghost" size="icon" onClick={() => skip(-10)} className="h-9 w-9 sm:h-10 sm:w-10">
+                                  <SkipBack className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                                </Button>
+                                
+                                <Button variant="ghost" size="icon" onClick={togglePlay} className="h-9 w-9 sm:h-10 sm:w-10">
+                                  {isPlaying ? (
+                                    <Pause className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                                  ) : (
+                                    <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white ms-0.5" />
+                                  )}
+                                </Button>
+                                
+                                <Button variant="ghost" size="icon" onClick={() => skip(10)} className="h-9 w-9 sm:h-10 sm:w-10">
+                                  <SkipForward className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                                </Button>
+                                
+                                <Button variant="ghost" size="icon" onClick={toggleMute} className="h-9 w-9 sm:h-10 sm:w-10 hidden sm:flex">
+                                  {isMuted ? (
+                                    <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                                  ) : (
+                                    <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                                  )}
+                                </Button>
+                                
+                                <span className="text-white text-xs sm:text-sm ms-1 sm:ms-2">
+                                  {formatTime(currentTime)} / {formatTime(duration)}
+                                </span>
+                              </div>
+                              
+                              <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="h-9 w-9 sm:h-10 sm:w-10">
+                                <Maximize className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </>
+                      </>
+                    )
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-muted">
                       <div className="text-center p-4">
