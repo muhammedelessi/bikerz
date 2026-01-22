@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useAuditLog } from '@/hooks/useAuditLog';
 import {
   Settings,
   Globe,
@@ -37,6 +38,7 @@ const AdminSettings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { logAction } = useAuditLog();
 
   // Local state for settings
   const [generalSettings, setGeneralSettings] = useState({
@@ -104,35 +106,59 @@ const AdminSettings = () => {
     },
   });
 
-  const handleSaveGeneral = () => {
-    saveSettingsMutation.mutate({
+  const handleSaveGeneral = async () => {
+    await saveSettingsMutation.mutateAsync({
       category: 'general',
       key: 'site_settings',
       value: generalSettings,
     });
+    logAction({
+      action: 'settings_updated',
+      entityType: 'settings',
+      entityId: 'site_settings',
+      newData: generalSettings,
+    });
   };
 
-  const handleSavePayment = () => {
-    saveSettingsMutation.mutate({
+  const handleSavePayment = async () => {
+    await saveSettingsMutation.mutateAsync({
       category: 'payment',
       key: 'payment_settings',
       value: paymentSettings,
     });
+    logAction({
+      action: 'settings_updated',
+      entityType: 'settings',
+      entityId: 'payment_settings',
+      newData: paymentSettings,
+    });
   };
 
-  const handleSaveNotifications = () => {
-    saveSettingsMutation.mutate({
+  const handleSaveNotifications = async () => {
+    await saveSettingsMutation.mutateAsync({
       category: 'notifications',
       key: 'notification_settings',
       value: notificationSettings,
     });
+    logAction({
+      action: 'settings_updated',
+      entityType: 'settings',
+      entityId: 'notification_settings',
+      newData: notificationSettings,
+    });
   };
 
-  const handleSaveSecurity = () => {
-    saveSettingsMutation.mutate({
+  const handleSaveSecurity = async () => {
+    await saveSettingsMutation.mutateAsync({
       category: 'security',
       key: 'security_settings',
       value: securitySettings,
+    });
+    logAction({
+      action: 'settings_updated',
+      entityType: 'settings',
+      entityId: 'security_settings',
+      newData: securitySettings,
     });
   };
 

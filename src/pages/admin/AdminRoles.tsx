@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { useAuditLog } from '@/hooks/useAuditLog';
 import {
   Search,
   Shield,
@@ -113,6 +114,7 @@ const AdminRoles = () => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { logAction } = useAuditLog();
   const [searchQuery, setSearchQuery] = useState('');
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -156,6 +158,14 @@ const AdminRoles = () => {
         }
         throw error;
       }
+      
+      // Log the action
+      await logAction({
+        action: 'role_assigned',
+        entityType: 'role',
+        entityId: userId,
+        newData: { userId, role },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users-roles'] });
@@ -186,6 +196,14 @@ const AdminRoles = () => {
         .eq('role', role);
 
       if (error) throw error;
+      
+      // Log the action
+      await logAction({
+        action: 'role_removed',
+        entityType: 'role',
+        entityId: userId,
+        oldData: { userId, role },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users-roles'] });
