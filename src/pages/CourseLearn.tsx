@@ -367,6 +367,9 @@ const CourseLearn: React.FC = () => {
     ch.lessons.some(l => l.id === currentLessonId)
   );
 
+  // Chapter for the currently shown test (may differ from currentChapter)
+  const testChapter = showTest ? chapters.find(ch => ch.id === showTest) : null;
+
   // Calculate progress
   const totalLessons = chapters.reduce((acc, ch) => acc + ch.lessons.length, 0);
   const completedLessons = lessonProgress.filter(lp => lp.is_completed).length;
@@ -603,7 +606,7 @@ const CourseLearn: React.FC = () => {
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
           <AnimatePresence mode="wait">
-            {showTest && currentChapter?.test ? (
+            {showTest && testChapter?.test ? (
               <motion.div
                 key="test"
                 initial={{ opacity: 0 }}
@@ -612,10 +615,11 @@ const CourseLearn: React.FC = () => {
                 className="p-4 sm:p-6 lg:p-8"
               >
                 <ChapterTest
-                  testId={currentChapter.test.id}
-                  chapterTitle={isRTL && currentChapter.title_ar ? currentChapter.title_ar : currentChapter.title}
+                  testId={testChapter.test.id}
+                  chapterTitle={isRTL && testChapter.title_ar ? testChapter.title_ar : testChapter.title}
                   onComplete={() => {
                     setShowTest(null);
+                    queryClient.invalidateQueries({ queryKey: ['test-attempts'] });
                     toast.success(isRTL ? 'أحسنت! أكملت الاختبار' : 'Great job! Test completed');
                   }}
                   onBack={() => setShowTest(null)}
