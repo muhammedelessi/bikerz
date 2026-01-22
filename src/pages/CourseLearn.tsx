@@ -801,6 +801,71 @@ const CourseLearn: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Take Quiz CTA - appears when all chapter lessons are completed */}
+                  {currentChapter?.test && isChapterComplete(currentChapter) && !isTestPassed(currentChapter.test.id) && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20"
+                    >
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/20">
+                          <ClipboardList className="w-6 h-6 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-semibold text-foreground mb-1">
+                            {isRTL ? 'جاهز للاختبار!' : 'Ready for the Quiz!'}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {isRTL 
+                              ? `أكملت جميع دروس هذا الفصل. اختبر معلوماتك الآن!`
+                              : `You've completed all lessons in this chapter. Test your knowledge now!`}
+                          </p>
+                        </div>
+                        <Button 
+                          onClick={() => setShowTest(currentChapter.id)} 
+                          className="btn-cta h-11 w-full sm:w-auto"
+                        >
+                          <Trophy className="w-4 h-4 me-2" />
+                          {isRTL ? 'ابدأ الاختبار' : 'Take Quiz'}
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Quiz Retake CTA - appears when quiz was attempted but not passed */}
+                  {currentChapter?.test && hasAttemptedTest(currentChapter.test.id) && !isTestPassed(currentChapter.test.id) && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-xl bg-gradient-to-r from-destructive/10 via-destructive/5 to-transparent border border-destructive/20"
+                    >
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-destructive/20">
+                          <AlertCircle className="w-6 h-6 text-destructive" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-semibold text-foreground mb-1">
+                            {isRTL ? 'حاول مرة أخرى!' : 'Try Again!'}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {isRTL 
+                              ? `نتيجتك الأخيرة: ${getLastTestScore(currentChapter.test.id)}%. راجع الدروس وحاول مرة أخرى.`
+                              : `Your last score: ${getLastTestScore(currentChapter.test.id)}%. Review the lessons and try again.`}
+                          </p>
+                        </div>
+                        <Button 
+                          onClick={() => setShowTest(currentChapter.id)} 
+                          variant="destructive"
+                          className="h-11 w-full sm:w-auto"
+                        >
+                          <ClipboardList className="w-4 h-4 me-2" />
+                          {isRTL ? 'إعادة الاختبار' : 'Retake Quiz'}
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+
                   {/* Navigation */}
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-6 border-t border-border">
                     {prevLesson ? (
