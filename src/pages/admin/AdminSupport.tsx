@@ -42,6 +42,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { useAuditLog } from '@/hooks/useAuditLog';
 import {
   Search,
   MoreHorizontal,
@@ -97,6 +98,7 @@ const AdminSupport = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { logAction } = useAuditLog();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
@@ -176,6 +178,34 @@ const AdminSupport = () => {
         .eq('id', updates.id);
 
       if (error) throw error;
+      
+      // Log the action
+      if (updates.status) {
+        await logAction({
+          action: 'ticket_status_changed',
+          entityType: 'ticket',
+          entityId: updates.id,
+          oldData: { status: selectedTicket?.status },
+          newData: { status: updates.status },
+        });
+      }
+      if (updates.priority) {
+        await logAction({
+          action: 'ticket_priority_changed',
+          entityType: 'ticket',
+          entityId: updates.id,
+          oldData: { priority: selectedTicket?.priority },
+          newData: { priority: updates.priority },
+        });
+      }
+      if (updates.assigned_to) {
+        await logAction({
+          action: 'ticket_assigned',
+          entityType: 'ticket',
+          entityId: updates.id,
+          newData: { assigned_to: updates.assigned_to },
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-support-tickets'] });

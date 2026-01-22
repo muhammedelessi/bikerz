@@ -32,6 +32,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useAuditLog } from '@/hooks/useAuditLog';
 import {
   Search,
   MoreHorizontal,
@@ -54,6 +55,7 @@ const AdminPayments = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { logAction } = useAuditLog();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
@@ -118,6 +120,15 @@ const AdminPayments = () => {
           throw enrollError;
         }
       }
+      
+      // Log the action
+      await logAction({
+        action: status === 'approved' ? 'payment_approved' : 'payment_rejected',
+        entityType: 'payment',
+        entityId: paymentId,
+        oldData: { status: selectedPayment?.status },
+        newData: { status, notes, amount: selectedPayment?.amount },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
