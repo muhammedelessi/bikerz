@@ -292,12 +292,11 @@ const CourseLearn: React.FC = () => {
     return attempts.length > 0 ? attempts[0].score : null;
   };
 
-  // Allow quiz access if chapter is complete, first chapter, OR if user has previously attempted the quiz
-  const canAccessTest = (chapter: Chapter, chapterIndex: number) => {
+  // Allow quiz access - all quizzes are accessible (not locked)
+  const canAccessTest = (chapter: Chapter, _chapterIndex: number) => {
     if (!chapter.test) return false;
-    // First chapter quiz is always accessible
-    if (chapterIndex === 0) return true;
-    return isChapterComplete(chapter) || hasAttemptedTest(chapter.test.id);
+    // All quizzes are always accessible
+    return true;
   };
 
   // Mark lesson as complete mutation
