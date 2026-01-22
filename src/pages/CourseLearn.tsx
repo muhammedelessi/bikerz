@@ -249,6 +249,39 @@ const CourseLearn: React.FC = () => {
     enabled: !!currentLessonId,
   });
 
+  // Fetch quiz/test attempts to track passed quizzes
+  const { data: testAttempts = [] } = useQuery({
+    queryKey: ['test-attempts', id, user?.id],
+    queryFn: async () => {
+      if (!user || !chapters.length) return [];
+      
+      const testIds = chapters
+        .filter(ch => ch.test)
+        .map(ch => ch.test!.id);
+      
+      if (!testIds.length) return [];
+
+      const { data, error } = await supabase
+        .from('test_attempts')
+        .select('test_id, passed, score')
+        .eq('user_id', user.id)
+        .in('test_id', testIds)
+        .eq('passed', true);
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!id && !!user && chapters.length > 0,
+  });
+
+  // Calculate quiz progress
+  const totalQuizzes = chapters.filter(ch => ch.test).length;
+  const passedQuizzes = new Set(testAttempts.map(a => a.test_id)).size;
+
+  const isTestPassed = (testId: string) => {
+    return testAttempts.some(a => a.test_id === testId && a.passed);
+  };
+
   // Mark lesson as complete mutation
   const completeLessonMutation = useMutation({
     mutationFn: async (lessonId: string) => {
@@ -794,7 +827,7 @@ const CourseLearn: React.FC = () => {
         >
           <ScrollArea className="h-full">
             <div className="p-3 sm:p-4">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3">
                 <h2 className="font-semibold text-sm sm:text-base text-foreground">
                   {isRTL ? 'محتوى الدورة' : 'Course Content'}
                 </h2>
@@ -802,6 +835,32 @@ const CourseLearn: React.FC = () => {
                   {completedLessons}/{totalLessons}
                 </span>
               </div>
+
+              {/* Quiz Progress Indicator */}
+              {totalQuizzes > 0 && (
+                <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-4 h-4 text-primary" />
+                      <span className="text-xs sm:text-sm font-medium text-foreground">
+                        {isRTL ? 'تقدم الاختبارات' : 'Quiz Progress'}
+                      </span>
+                    </div>
+                    <span className={`text-xs sm:text-sm font-bold ${passedQuizzes === totalQuizzes ? 'text-primary' : 'text-muted-foreground'}`}>
+                      {passedQuizzes}/{totalQuizzes}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={totalQuizzes > 0 ? (passedQuizzes / totalQuizzes) * 100 : 0} 
+                    className="h-2" 
+                  />
+                  {passedQuizzes === totalQuizzes && totalQuizzes > 0 && (
+                    <p className="text-xs text-primary mt-2 font-medium">
+                      {isRTL ? '🎉 أكملت جميع الاختبارات!' : '🎉 All quizzes completed!'}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <Accordion type="multiple" defaultValue={chapters.map(c => c.id)} className="space-y-2">
                 {chapters.map((chapter, chapterIndex) => (
@@ -884,16 +943,22 @@ const CourseLearn: React.FC = () => {
                                   : 'hover:bg-muted/50 active:bg-muted/70'
                             }`}
                           >
-                            <ClipboardList className={`w-4 h-4 flex-shrink-0 ${
-                              isChapterComplete(chapter) ? 'text-primary' : 'text-muted-foreground'
-                            }`} />
+                            <div className="flex-shrink-0">
+                              {isTestPassed(chapter.test.id) ? (
+                                <Trophy className="w-4 h-4 text-primary" />
+                              ) : !isChapterComplete(chapter) ? (
+                                <Lock className="w-4 h-4 text-muted-foreground" />
+                              ) : (
+                                <ClipboardList className="w-4 h-4 text-primary" />
+                              )}
+                            </div>
                             <span className={`flex-1 truncate ${
                               showTest === chapter.id ? 'text-primary font-medium' : 'text-foreground'
                             }`}>
                               {isRTL && chapter.test.title_ar ? chapter.test.title_ar : chapter.test.title}
                             </span>
-                            {!isChapterComplete(chapter) && (
-                              <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            {isTestPassed(chapter.test.id) && (
+                              <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
                             )}
                           </button>
                         )}
