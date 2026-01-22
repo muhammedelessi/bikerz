@@ -66,6 +66,7 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showResults, setShowResults] = useState(false);
+  const [showReview, setShowReview] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [testStarted, setTestStarted] = useState(false);
 
@@ -265,6 +266,151 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
     );
   }
 
+  // Answer Review Screen
+  if (showReview) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="max-w-3xl mx-auto px-4"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <Button variant="ghost" onClick={() => setShowReview(false)} className="h-11 sm:h-10">
+            <ArrowLeft className="w-4 h-4 me-2" />
+            {isRTL ? 'العودة للنتائج' : 'Back to Results'}
+          </Button>
+          <h1 className="text-lg sm:text-xl font-bold text-foreground">
+            {isRTL ? 'مراجعة الإجابات' : 'Answer Review'}
+          </h1>
+        </div>
+
+        <div className="space-y-4">
+          {questions.map((question, index) => {
+            const userAnswer = answers[question.id];
+            const isCorrect = userAnswer === question.correct_answer;
+            const options = parseOptions(question.options);
+            const correctOption = options.find(o => o.id === question.correct_answer);
+            const userOption = options.find(o => o.id === userAnswer);
+
+            return (
+              <motion.div
+                key={question.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className={`card-premium p-4 sm:p-5 border-2 ${
+                  isCorrect ? 'border-primary/50 bg-primary/5' : 'border-destructive/50 bg-destructive/5'
+                }`}
+              >
+                <div className="flex items-start gap-3 mb-4">
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                    isCorrect ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'
+                  }`}>
+                    {isCorrect ? (
+                      <CheckCircle2 className="w-4 h-4" />
+                    ) : (
+                      <XCircle className="w-4 h-4" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      {isRTL ? `السؤال ${index + 1}` : `Question ${index + 1}`}
+                    </p>
+                    <h3 className="text-sm sm:text-base font-medium text-foreground">
+                      {isRTL && question.question_ar ? question.question_ar : question.question}
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="space-y-2 mb-4">
+                  {options.map((option) => {
+                    const isUserAnswer = option.id === userAnswer;
+                    const isCorrectAnswer = option.id === question.correct_answer;
+                    
+                    let optionClass = 'border-border bg-background';
+                    if (isCorrectAnswer) {
+                      optionClass = 'border-primary bg-primary/10';
+                    } else if (isUserAnswer && !isCorrect) {
+                      optionClass = 'border-destructive bg-destructive/10';
+                    }
+
+                    return (
+                      <div
+                        key={option.id}
+                        className={`flex items-center gap-3 p-3 rounded-lg border ${optionClass}`}
+                      >
+                        <div className="flex-shrink-0">
+                          {isCorrectAnswer ? (
+                            <CheckCircle2 className="w-4 h-4 text-primary" />
+                          ) : isUserAnswer ? (
+                            <XCircle className="w-4 h-4 text-destructive" />
+                          ) : (
+                            <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30" />
+                          )}
+                        </div>
+                        <span className={`text-sm ${
+                          isCorrectAnswer ? 'text-primary font-medium' : 
+                          isUserAnswer && !isCorrect ? 'text-destructive' : 'text-foreground'
+                        }`}>
+                          {isRTL && option.text_ar ? option.text_ar : option.text}
+                        </span>
+                        {isUserAnswer && (
+                          <span className="ms-auto text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                            {isRTL ? 'إجابتك' : 'Your answer'}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Explanation */}
+                <div className={`p-3 rounded-lg ${isCorrect ? 'bg-primary/10' : 'bg-muted/50'}`}>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    {isCorrect ? (
+                      <>
+                        <span className="font-medium text-primary">
+                          {isRTL ? '✓ صحيح!' : '✓ Correct!'}
+                        </span>
+                        {' '}
+                        {isRTL 
+                          ? `الإجابة الصحيحة هي "${correctOption ? (isRTL && correctOption.text_ar ? correctOption.text_ar : correctOption.text) : ''}".`
+                          : `The correct answer is "${correctOption ? correctOption.text : ''}".`
+                        }
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-medium text-destructive">
+                          {isRTL ? '✗ غير صحيح.' : '✗ Incorrect.'}
+                        </span>
+                        {' '}
+                        {userOption ? (
+                          isRTL 
+                            ? `أجبت "${isRTL && userOption.text_ar ? userOption.text_ar : userOption.text}"، لكن الإجابة الصحيحة هي "${correctOption ? (isRTL && correctOption.text_ar ? correctOption.text_ar : correctOption.text) : ''}".`
+                            : `You answered "${userOption.text}", but the correct answer is "${correctOption ? correctOption.text : ''}".`
+                        ) : (
+                          isRTL 
+                            ? `لم تجب على هذا السؤال. الإجابة الصحيحة هي "${correctOption ? (isRTL && correctOption.text_ar ? correctOption.text_ar : correctOption.text) : ''}".`
+                            : `You didn't answer this question. The correct answer is "${correctOption ? correctOption.text : ''}".`
+                        )}
+                      </>
+                    )}
+                  </p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <div className="mt-6 flex justify-center">
+          <Button onClick={() => setShowReview(false)} className="h-11 sm:h-10">
+            {isRTL ? 'العودة للنتائج' : 'Back to Results'}
+          </Button>
+        </div>
+      </motion.div>
+    );
+  }
+
   // Results screen
   if (showResults) {
     const results = calculateResults();
@@ -310,6 +456,16 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
             </div>
           </div>
 
+          {/* Review Answers Button */}
+          <Button
+            variant="outline"
+            className="w-full mb-4 h-11 sm:h-10"
+            onClick={() => setShowReview(true)}
+          >
+            <CheckCircle2 className="w-4 h-4 me-2" />
+            {isRTL ? 'مراجعة الإجابات' : 'Review Answers'}
+          </Button>
+
           <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
             {!results.passed && (
               <Button
@@ -317,6 +473,7 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
                 className="h-11 sm:h-10"
                 onClick={() => {
                   setShowResults(false);
+                  setShowReview(false);
                   setAnswers({});
                   setCurrentQuestionIndex(0);
                   setTestStarted(false);
