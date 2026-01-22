@@ -2,7 +2,15 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-type AppRole = 'admin' | 'student' | 'mentor';
+// Updated role types matching the database enum
+type AppRole = 
+  | 'super_admin'
+  | 'academy_admin'
+  | 'instructor'
+  | 'moderator'
+  | 'finance'
+  | 'support'
+  | 'student';
 
 interface UserProfile {
   id: string;
@@ -22,12 +30,24 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
+  hasAnyRole: (roles: AppRole[]) => boolean;
+  // Convenience role checks
   isAdmin: boolean;
-  isMentor: boolean;
+  isSuperAdmin: boolean;
+  isAcademyAdmin: boolean;
+  isInstructor: boolean;
+  isModerator: boolean;
+  isFinance: boolean;
+  isSupport: boolean;
   isStudent: boolean;
+  // Can access admin panel
+  canAccessAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Admin roles that can access the admin panel
+const ADMIN_ROLES: AppRole[] = ['super_admin', 'academy_admin', 'instructor', 'moderator', 'finance', 'support'];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -49,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile(profileData);
       }
 
-      // Fetch roles
+      // Fetch roles from user_roles table
       const { data: rolesData } = await supabase
         .from('user_roles')
         .select('role')
@@ -127,9 +147,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const hasRole = (role: AppRole) => roles.includes(role);
-  const isAdmin = hasRole('admin');
-  const isMentor = hasRole('mentor');
+  const hasAnyRole = (checkRoles: AppRole[]) => checkRoles.some(role => roles.includes(role));
+
+  // Individual role checks
+  const isSuperAdmin = hasRole('super_admin');
+  const isAcademyAdmin = hasRole('academy_admin');
+  const isInstructor = hasRole('instructor');
+  const isModerator = hasRole('moderator');
+  const isFinance = hasRole('finance');
+  const isSupport = hasRole('support');
   const isStudent = hasRole('student');
+  
+  // Admin check - any admin role
+  const isAdmin = hasAnyRole(ADMIN_ROLES);
+  const canAccessAdmin = isAdmin;
 
   return (
     <AuthContext.Provider
@@ -143,9 +174,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signIn,
         signOut,
         hasRole,
+        hasAnyRole,
         isAdmin,
-        isMentor,
+        isSuperAdmin,
+        isAcademyAdmin,
+        isInstructor,
+        isModerator,
+        isFinance,
+        isSupport,
         isStudent,
+        canAccessAdmin,
       }}
     >
       {children}
