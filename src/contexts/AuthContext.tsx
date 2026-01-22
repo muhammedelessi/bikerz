@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -56,45 +56,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUserData = async (userId: string) => {
+  const fetchUserData = useCallback(async (userId: string) => {
     try {
-      // Fetch profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+      // Fetch profile and roles in parallel
+      const [profileResult, rolesResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle(),
+        supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+      ]);
 
-      if (profileData) {
-        setProfile(profileData);
+      if (profileResult.data) {
+        setProfile(profileResult.data);
       }
 
-      // Fetch roles from user_roles table
-      const { data: rolesData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
-
-      if (rolesData) {
-        setRoles(rolesData.map((r) => r.role as AppRole));
+      if (rolesResult.data) {
+        setRoles(rolesResult.data.map((r) => r.role as AppRole));
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    let mounted = true;
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+        
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Defer fetching to avoid blocking
-          setTimeout(() => {
-            fetchUserData(session.user.id);
-          }, 0);
+          await fetchUserData(session.user.id);
         } else {
           setProfile(null);
           setRoles([]);
@@ -104,17 +105,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return;
+      
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserData(session.user.id);
+        await fetchUserData(session.user.id);
       }
       setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [fetchUserData]);
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const { error } = await supabase.auth.signUp({
@@ -146,46 +152,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setRoles([]);
   };
 
-  const hasRole = (role: AppRole) => roles.includes(role);
-  const hasAnyRole = (checkRoles: AppRole[]) => checkRoles.some(role => roles.includes(role));
+  const hasRole = useCallback((role: AppRole) => roles.includes(role), [roles]);
+  const hasAnyRole = useCallback((checkRoles: AppRole[]) => checkRoles.some(role => roles.includes(role)), [roles]);
 
-  // Individual role checks
-  const isSuperAdmin = hasRole('super_admin');
-  const isAcademyAdmin = hasRole('academy_admin');
-  const isInstructor = hasRole('instructor');
-  const isModerator = hasRole('moderator');
-  const isFinance = hasRole('finance');
-  const isSupport = hasRole('support');
-  const isStudent = hasRole('student');
-  
-  // Admin check - any admin role
-  const isAdmin = hasAnyRole(ADMIN_ROLES);
-  const canAccessAdmin = isAdmin;
+  // Memoize role checks to ensure they update when roles change
+  const roleChecks = useMemo(() => {
+    const isSuperAdmin = roles.includes('super_admin');
+    const isAcademyAdmin = roles.includes('academy_admin');
+    const isInstructor = roles.includes('instructor');
+    const isModerator = roles.includes('moderator');
+    const isFinance = roles.includes('finance');
+    const isSupport = roles.includes('support');
+    const isStudent = roles.includes('student');
+    const isAdmin = ADMIN_ROLES.some(role => roles.includes(role));
+    const canAccessAdmin = isAdmin;
+    
+    return {
+      isSuperAdmin,
+      isAcademyAdmin,
+      isInstructor,
+      isModerator,
+      isFinance,
+      isSupport,
+      isStudent,
+      isAdmin,
+      canAccessAdmin,
+    };
+  }, [roles]);
+
+  const value = useMemo(() => ({
+    user,
+    session,
+    profile,
+    roles,
+    isLoading,
+    signUp,
+    signIn,
+    signOut,
+    hasRole,
+    hasAnyRole,
+    ...roleChecks,
+  }), [user, session, profile, roles, isLoading, hasRole, hasAnyRole, roleChecks]);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        profile,
-        roles,
-        isLoading,
-        signUp,
-        signIn,
-        signOut,
-        hasRole,
-        hasAnyRole,
-        isAdmin,
-        isSuperAdmin,
-        isAcademyAdmin,
-        isInstructor,
-        isModerator,
-        isFinance,
-        isSupport,
-        isStudent,
-        canAccessAdmin,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
