@@ -86,8 +86,8 @@ const AppRoutes = () => (
     <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
     <Route path="/courses" element={<Courses />} />
     <Route path="/courses/:id" element={<CourseDetail />} />
-    <Route path="/courses/:id/learn" element={<ProtectedRoute><CourseLearn /></ProtectedRoute>} />
-    <Route path="/courses/:id/lessons/:lessonId" element={<ProtectedRoute><CourseLearn /></ProtectedRoute>} />
+    <Route path="/courses/:id/learn" element={<CourseLearn />} />
+    <Route path="/courses/:id/lessons/:lessonId" element={<CourseLearn />} />
     <Route path="/mentors" element={<Mentors />} />
     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
     <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

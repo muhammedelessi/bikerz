@@ -427,24 +427,7 @@ const CourseLearn: React.FC = () => {
     return chapter.lessons.every(l => isLessonCompleted(l.id));
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen min-h-[100svh] bg-background flex items-center justify-center p-4">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
-            {isRTL ? 'يرجى تسجيل الدخول' : 'Please Login'}
-          </h2>
-          <p className="text-sm sm:text-base text-muted-foreground mb-6">
-            {isRTL ? 'يجب تسجيل الدخول للوصول إلى الدورة' : 'You need to login to access this course'}
-          </p>
-          <Button asChild className="h-11">
-            <Link to="/login">{isRTL ? 'تسجيل الدخول' : 'Login'}</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // Removed login requirement - allow anyone to view lessons
 
   if (isLoading) {
     return (
@@ -466,25 +449,21 @@ const CourseLearn: React.FC = () => {
     );
   }
 
-  if (!course || !isEnrolled) {
+  if (!course) {
     return (
       <div className="min-h-screen min-h-[100svh] bg-background flex items-center justify-center p-4">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
-            {!course 
-              ? (isRTL ? 'الدورة غير موجودة' : 'Course Not Found')
-              : (isRTL ? 'غير مسجل في الدورة' : 'Not Enrolled')}
+            {isRTL ? 'الدورة غير موجودة' : 'Course Not Found'}
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground mb-6">
-            {!course 
-              ? (isRTL ? 'لم نتمكن من العثور على هذه الدورة' : "We couldn't find this course")
-              : (isRTL ? 'يرجى التسجيل في الدورة أولاً' : 'Please enroll in this course first')}
+            {isRTL ? 'لم نتمكن من العثور على هذه الدورة' : "We couldn't find this course"}
           </p>
           <Button asChild className="h-11">
-            <Link to={`/courses/${id}`}>
+            <Link to="/courses">
               <BackIcon className="w-4 h-4 me-2" />
-              {isRTL ? 'العودة لصفحة الدورة' : 'Back to Course'}
+              {isRTL ? 'العودة للدورات' : 'Back to Courses'}
             </Link>
           </Button>
         </div>
