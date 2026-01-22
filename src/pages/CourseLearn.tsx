@@ -486,34 +486,16 @@ const CourseLearn: React.FC = () => {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {user ? (
-                <Button 
-                  size="sm" 
-                  variant="secondary"
-                  className="font-semibold"
-                  onClick={() => {
-                    supabase
-                      .from('course_enrollments')
-                      .insert({ user_id: user.id, course_id: id })
-                      .then(({ error }) => {
-                        if (error) {
-                          toast.error(isRTL ? 'فشل التسجيل' : 'Failed to enroll');
-                        } else {
-                          toast.success(isRTL ? 'تم التسجيل بنجاح!' : 'Successfully enrolled!');
-                          queryClient.invalidateQueries({ queryKey: ['enrollment-learn'] });
-                        }
-                      });
-                  }}
-                >
-                  {isRTL ? 'سجل الآن مجاناً' : 'Enroll Now - Free'}
-                </Button>
-              ) : (
-                <Button size="sm" variant="secondary" className="font-semibold" asChild>
-                  <Link to="/signup">
-                    {isRTL ? 'إنشاء حساب' : 'Sign Up Free'}
-                  </Link>
-                </Button>
-              )}
+              <Button 
+                size="sm" 
+                variant="secondary"
+                className="font-semibold"
+                asChild
+              >
+                <Link to="/signup">
+                  {isRTL ? 'سجل الآن' : 'Register Now'}
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
