@@ -292,10 +292,23 @@ const CourseLearn: React.FC = () => {
     return attempts.length > 0 ? attempts[0].score : null;
   };
 
-  // Allow quiz access - all quizzes are accessible (not locked)
-  const canAccessTest = (chapter: Chapter, _chapterIndex: number) => {
+  // Progressive quiz locking - unlock next quiz only after passing the previous one
+  const canAccessTest = (chapter: Chapter, chapterIndex: number) => {
     if (!chapter.test) return false;
-    // All quizzes are always accessible
+    
+    // First chapter quiz is always accessible
+    if (chapterIndex === 0) return true;
+    
+    // Find the previous chapter that has a test
+    for (let i = chapterIndex - 1; i >= 0; i--) {
+      const prevChapter = chapters[i];
+      if (prevChapter.test) {
+        // Check if previous quiz was passed
+        return isTestPassed(prevChapter.test.id);
+      }
+    }
+    
+    // No previous quiz exists, so this one is accessible
     return true;
   };
 
