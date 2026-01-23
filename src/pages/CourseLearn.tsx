@@ -17,6 +17,12 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   Play,
   Pause,
   Clock,
@@ -310,6 +316,22 @@ const CourseLearn: React.FC = () => {
     
     // No previous quiz exists, so this one is accessible
     return true;
+  };
+
+  // Get the required quiz name that needs to be passed to unlock a given chapter's quiz
+  const getRequiredQuizName = (chapterIndex: number): string | null => {
+    if (chapterIndex === 0) return null;
+    
+    for (let i = chapterIndex - 1; i >= 0; i--) {
+      const prevChapter = chapters[i];
+      if (prevChapter.test) {
+        const title = isRTL && prevChapter.test.title_ar 
+          ? prevChapter.test.title_ar 
+          : prevChapter.test.title;
+        return title;
+      }
+    }
+    return null;
   };
 
   // Mark lesson as complete mutation
@@ -1035,8 +1057,9 @@ const CourseLearn: React.FC = () => {
                           const canAccess = canAccessTest(chapter, chapterIndex);
                           const lastScore = getLastTestScore(chapter.test.id);
                           const hasFailed = hasAttemptedTest(chapter.test.id) && !testPassed;
+                          const requiredQuizName = !canAccess ? getRequiredQuizName(chapterIndex) : null;
 
-                          return (
+                          const testButton = (
                             <button
                               onClick={() => canAccess && setShowTest(chapter.id)}
                               disabled={!canAccess}
@@ -1073,6 +1096,13 @@ const CourseLearn: React.FC = () => {
                                     {isRTL ? `آخر نتيجة: ${lastScore}% - حاول مرة أخرى` : `Last score: ${lastScore}% - Retry`}
                                   </span>
                                 )}
+                                {!canAccess && requiredQuizName && (
+                                  <span className="text-xs text-muted-foreground block mt-0.5">
+                                    {isRTL 
+                                      ? `🔒 اجتز "${requiredQuizName}" أولاً`
+                                      : `🔒 Pass "${requiredQuizName}" first`}
+                                  </span>
+                                )}
                               </div>
                               {testPassed ? (
                                 <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
@@ -1083,6 +1113,28 @@ const CourseLearn: React.FC = () => {
                               )}
                             </button>
                           );
+
+                          // Wrap locked quizzes in a tooltip for additional context
+                          if (!canAccess && requiredQuizName) {
+                            return (
+                              <TooltipProvider key={chapter.test.id}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    {testButton}
+                                  </TooltipTrigger>
+                                  <TooltipContent side={isRTL ? 'left' : 'right'} className="max-w-[250px]">
+                                    <p className="text-sm">
+                                      {isRTL 
+                                        ? `يجب اجتياز "${requiredQuizName}" لفتح هذا الاختبار`
+                                        : `You must pass "${requiredQuizName}" to unlock this quiz`}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            );
+                          }
+
+                          return testButton;
                         })()}
                       </div>
                     </AccordionContent>
