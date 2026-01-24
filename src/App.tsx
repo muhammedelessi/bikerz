@@ -26,6 +26,7 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminRoles from "./pages/admin/AdminRoles";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminSupport from "./pages/admin/AdminSupport";
+import AdminLessonDiscussions from "./pages/admin/AdminLessonDiscussions";
 
 const queryClient = new QueryClient();
 
@@ -117,6 +118,7 @@ const AppRoutes = () => (
     <Route path="/admin/roles" element={<AdminRoute><AdminRoles /></AdminRoute>} />
     <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
     <Route path="/admin/support" element={<AdminRoute><AdminSupport /></AdminRoute>} />
+    <Route path="/admin/discussions" element={<AdminRoute><AdminLessonDiscussions /></AdminRoute>} />
     
     {/* 404 */}
     <Route path="*" element={<NotFound />} />
