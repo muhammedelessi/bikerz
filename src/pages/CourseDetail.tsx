@@ -29,9 +29,11 @@ import {
   FileText,
   Video,
   AlertCircle,
+  ShoppingCart,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.jpg';
+import CheckoutModal from '@/components/checkout/CheckoutModal';
 
 interface Lesson {
   id: string;
@@ -84,6 +86,7 @@ const CourseDetail: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
+  const [showCheckout, setShowCheckout] = useState(false);
 
   // Fetch course details
   const { data: course, isLoading: courseLoading } = useQuery({
@@ -373,19 +376,29 @@ const CourseDetail: React.FC = () => {
                       </div>
 
                       {user ? (
-                        <Button 
-                          className="w-full btn-cta" 
-                          onClick={() => enrollMutation.mutate()}
-                          disabled={enrollMutation.isPending}
-                        >
-                          {enrollMutation.isPending 
-                            ? (isRTL ? 'جاري التسجيل...' : 'Enrolling...') 
-                            : (isRTL ? 'سجل الآن' : 'Enroll Now')}
-                        </Button>
+                        course.price === 0 ? (
+                          <Button 
+                            className="w-full btn-cta" 
+                            onClick={() => enrollMutation.mutate()}
+                            disabled={enrollMutation.isPending}
+                          >
+                            {enrollMutation.isPending 
+                              ? (isRTL ? 'جاري التسجيل...' : 'Enrolling...') 
+                              : (isRTL ? 'سجل مجاناً' : 'Enroll for Free')}
+                          </Button>
+                        ) : (
+                          <Button 
+                            className="w-full btn-cta" 
+                            onClick={() => setShowCheckout(true)}
+                          >
+                            <ShoppingCart className="w-4 h-4 me-2" />
+                            {isRTL ? 'اشتري الآن' : 'Buy Now'}
+                          </Button>
+                        )
                       ) : (
                         <Button className="w-full btn-cta" asChild>
                           <Link to="/login">
-                            {isRTL ? 'سجل دخول للتسجيل' : 'Login to Enroll'}
+                            {isRTL ? 'سجل دخول للشراء' : 'Login to Purchase'}
                           </Link>
                         </Button>
                       )}
@@ -514,6 +527,24 @@ const CourseDetail: React.FC = () => {
       </main>
 
       <Footer />
+
+      {/* Checkout Modal */}
+      {course && (
+        <CheckoutModal
+          open={showCheckout}
+          onOpenChange={setShowCheckout}
+          course={{
+            id: course.id,
+            title: course.title,
+            title_ar: course.title_ar,
+            price: course.price,
+            thumbnail_url: course.thumbnail_url,
+          }}
+          onSuccess={() => {
+            enrollMutation.mutate();
+          }}
+        />
+      )}
     </div>
   );
 };
