@@ -168,9 +168,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-card border-border p-0 overflow-hidden">
-        {/* Header with course info */}
-        <div className="bg-muted/30 p-6 border-b border-border">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] bg-card border-2 border-border shadow-2xl p-0 overflow-hidden flex flex-col mx-4">
+        {/* Header with course info - Fixed at top */}
+        <div className="bg-muted/30 p-4 sm:p-6 border-b-2 border-border flex-shrink-0">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
               {isRTL ? 'إتمام الشراء' : 'Complete Purchase'}
@@ -247,8 +247,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           })}
         </div>
 
-        {/* Content */}
-        <div className="p-6">
+        {/* Content - Scrollable */}
+        <div className="p-6 overflow-y-auto flex-1 min-h-0">
           <AnimatePresence mode="wait">
             {step === 'payment' && (
               <motion.div
@@ -473,8 +473,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </AnimatePresence>
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-border bg-muted/20 flex gap-3">
+        {/* Footer - Fixed at bottom */}
+        <div className="p-4 sm:p-6 border-t-2 border-border bg-muted/30 flex gap-3 flex-shrink-0">
           {step !== 'payment' && (
             <Button variant="outline" onClick={handleBack} className="flex-1">
               {isRTL ? 'رجوع' : 'Back'}
