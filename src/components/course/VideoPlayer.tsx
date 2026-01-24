@@ -38,6 +38,12 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
+interface VideoQuality {
+  label: string;
+  value: string;
+  src?: string;
+}
+
 interface VideoPlayerProps {
   src: string;
   poster?: string;
@@ -45,9 +51,18 @@ interface VideoPlayerProps {
   onEnded?: () => void;
   onProgress?: (progress: number) => void;
   autoPlay?: boolean;
+  qualities?: VideoQuality[];
 }
 
 const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+
+const DEFAULT_QUALITIES: VideoQuality[] = [
+  { label: 'Auto', value: 'auto' },
+  { label: '1080p', value: '1080' },
+  { label: '720p', value: '720' },
+  { label: '480p', value: '480' },
+  { label: '360p', value: '360' },
+];
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
   src,
@@ -56,6 +71,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onEnded,
   onProgress,
   autoPlay = false,
+  qualities = DEFAULT_QUALITIES,
 }) => {
   const { isRTL } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -75,6 +91,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showControls, setShowControls] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [currentQuality, setCurrentQuality] = useState<string>('auto');
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
   // Format time helper
   const formatTime = (seconds: number) => {
@@ -191,6 +209,27 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     videoRef.current.playbackRate = speedNum;
     setPlaybackSpeed(speedNum);
   }, []);
+
+  const handleQualityChange = useCallback((quality: string) => {
+    if (!videoRef.current) return;
+    const currentTime = videoRef.current.currentTime;
+    const wasPlaying = !videoRef.current.paused;
+    
+    setCurrentQuality(quality);
+    
+    // Find the quality source
+    const selectedQuality = qualities.find(q => q.value === quality);
+    if (selectedQuality?.src) {
+      videoRef.current.src = selectedQuality.src;
+      videoRef.current.load();
+      videoRef.current.currentTime = currentTime;
+      if (wasPlaying) {
+        videoRef.current.play();
+      }
+    }
+    
+    setShowSettingsMenu(false);
+  }, [qualities]);
 
   const toggleFullscreen = useCallback(async () => {
     if (!containerRef.current) return;
@@ -574,31 +613,73 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
                   {/* Right Controls */}
                   <div className="flex items-center gap-1 sm:gap-2">
-                    {/* Playback Speed */}
-                    <DropdownMenu>
+                    {/* Settings Menu (Speed + Quality) */}
+                    <DropdownMenu open={showSettingsMenu} onOpenChange={setShowSettingsMenu}>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={(e) => e.stopPropagation()}
-                          className="h-8 sm:h-9 px-2 text-white hover:bg-white/20 text-xs sm:text-sm font-medium"
+                          className="h-8 w-8 sm:h-9 sm:w-9 text-white hover:bg-white/20"
                         >
-                          {playbackSpeed}x
+                          <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="min-w-[100px]">
-                        {PLAYBACK_SPEEDS.map((speed) => (
-                          <DropdownMenuItem
-                            key={speed}
-                            onClick={() => handleSpeedChange(speed.toString())}
-                            className={cn(
-                              "justify-center",
-                              speed === playbackSpeed && "bg-primary/20 text-primary"
-                            )}
-                          >
-                            {speed}x
-                          </DropdownMenuItem>
-                        ))}
+                      <DropdownMenuContent 
+                        align="end" 
+                        className="min-w-[200px] bg-background/95 backdrop-blur-sm border-border"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* Quality Section */}
+                        <div className="px-3 py-2 border-b border-border">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            {isRTL ? 'الجودة' : 'Quality'}
+                          </span>
+                        </div>
+                        <div className="py-1">
+                          {qualities.map((quality) => (
+                            <DropdownMenuItem
+                              key={quality.value}
+                              onClick={() => handleQualityChange(quality.value)}
+                              className={cn(
+                                "flex items-center justify-between cursor-pointer",
+                                currentQuality === quality.value && "bg-primary/20"
+                              )}
+                            >
+                              <span>{quality.label}</span>
+                              {currentQuality === quality.value && (
+                                <div className="w-2 h-2 rounded-full bg-primary" />
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                        </div>
+
+                        {/* Speed Section */}
+                        <div className="px-3 py-2 border-t border-b border-border">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            {isRTL ? 'السرعة' : 'Speed'}
+                          </span>
+                        </div>
+                        <div className="py-1 max-h-[200px] overflow-y-auto">
+                          {PLAYBACK_SPEEDS.map((speed) => (
+                            <DropdownMenuItem
+                              key={speed}
+                              onClick={() => {
+                                handleSpeedChange(speed.toString());
+                                setShowSettingsMenu(false);
+                              }}
+                              className={cn(
+                                "flex items-center justify-between cursor-pointer",
+                                speed === playbackSpeed && "bg-primary/20"
+                              )}
+                            >
+                              <span>{speed === 1 ? (isRTL ? 'عادي' : 'Normal') : `${speed}x`}</span>
+                              {speed === playbackSpeed && (
+                                <div className="w-2 h-2 rounded-full bg-primary" />
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                        </div>
                       </DropdownMenuContent>
                     </DropdownMenu>
 
