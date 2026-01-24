@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,7 +24,6 @@ import {
 } from '@/components/ui/tooltip';
 import {
   Play,
-  Pause,
   Clock,
   BookOpen,
   CheckCircle2,
@@ -36,17 +35,13 @@ import {
   AlertCircle,
   Menu,
   X,
-  Maximize,
-  Volume2,
-  VolumeX,
-  SkipBack,
-  SkipForward,
   ClipboardList,
   Trophy,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import bikerzLogo from '@/assets/bikerz-logo.png';
 import ChapterTest from '@/components/course/ChapterTest';
+import VideoPlayer from '@/components/course/VideoPlayer';
 
 interface Lesson {
   id: string;
@@ -121,11 +116,6 @@ const CourseLearn: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(urlLessonId || null);
   const [showTest, setShowTest] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ChevronLeft : ChevronRight;
@@ -431,72 +421,9 @@ const CourseLearn: React.FC = () => {
   const goToLesson = (lessonId: string) => {
     setCurrentLessonId(lessonId);
     setShowTest(null);
-    setIsPlaying(false);
-    setCurrentTime(0);
     setSidebarOpen(false);
     // Update URL to reflect the current lesson
     navigate(`/courses/${id}/lessons/${lessonId}`, { replace: true });
-  };
-
-  // Video controls
-  const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
-  };
-
-  const toggleFullscreen = () => {
-    if (videoRef.current) {
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-      } else {
-        videoRef.current.requestFullscreen();
-      }
-    }
-  };
-
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
-    }
-  };
-
-  const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-      setDuration(videoRef.current.duration);
-    }
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = parseFloat(e.target.value);
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-      setCurrentTime(time);
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const skip = (amount: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime += amount;
-    }
   };
 
   // Helper to extract YouTube video ID
@@ -668,91 +595,33 @@ const CourseLearn: React.FC = () => {
                 exit={{ opacity: 0 }}
               >
                 {/* Video Player - Full width, adaptive aspect ratio */}
-                <div className="relative bg-black aspect-video w-full">
+                <div className="relative bg-black w-full">
                   {currentLesson?.video_url ? (
                     isYouTubeUrl(currentLesson.video_url) ? (
                       // YouTube Embed Player
-                      <iframe
-                        src={`https://www.youtube.com/embed/${getYouTubeVideoId(currentLesson.video_url)}?rel=0&modestbranding=1`}
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                        title={currentLesson.title}
-                      />
-                    ) : (
-                      // Native Video Player for direct video URLs
-                      <>
-                        <video
-                          ref={videoRef}
-                          src={currentLesson.video_url}
+                      <div className="aspect-video">
+                        <iframe
+                          src={`https://www.youtube.com/embed/${getYouTubeVideoId(currentLesson.video_url)}?rel=0&modestbranding=1`}
                           className="w-full h-full"
-                          onTimeUpdate={handleTimeUpdate}
-                          onLoadedMetadata={handleLoadedMetadata}
-                          onPlay={() => setIsPlaying(true)}
-                          onPause={() => setIsPlaying(false)}
-                          onEnded={() => {
-                            setIsPlaying(false);
-                            if (!isLessonCompleted(currentLesson.id)) {
-                              completeLessonMutation.mutate(currentLesson.id);
-                            }
-                          }}
-                          playsInline
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                          title={currentLesson.title}
                         />
-                        
-                        {/* Video Controls Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                          <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
-                            {/* Progress Bar */}
-                            <input
-                              type="range"
-                              min={0}
-                              max={duration || 100}
-                              value={currentTime}
-                              onChange={handleSeek}
-                              className="w-full h-1 mb-3 sm:mb-4 accent-primary cursor-pointer"
-                            />
-                            
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-1 sm:gap-2">
-                                <Button variant="ghost" size="icon" onClick={() => skip(-10)} className="h-9 w-9 sm:h-10 sm:w-10">
-                                  <SkipBack className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                                </Button>
-                                
-                                <Button variant="ghost" size="icon" onClick={togglePlay} className="h-9 w-9 sm:h-10 sm:w-10">
-                                  {isPlaying ? (
-                                    <Pause className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                                  ) : (
-                                    <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white ms-0.5" />
-                                  )}
-                                </Button>
-                                
-                                <Button variant="ghost" size="icon" onClick={() => skip(10)} className="h-9 w-9 sm:h-10 sm:w-10">
-                                  <SkipForward className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                                </Button>
-                                
-                                <Button variant="ghost" size="icon" onClick={toggleMute} className="h-9 w-9 sm:h-10 sm:w-10 hidden sm:flex">
-                                  {isMuted ? (
-                                    <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                                  ) : (
-                                    <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                                  )}
-                                </Button>
-                                
-                                <span className="text-white text-xs sm:text-sm ms-1 sm:ms-2">
-                                  {formatTime(currentTime)} / {formatTime(duration)}
-                                </span>
-                              </div>
-                              
-                              <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="h-9 w-9 sm:h-10 sm:w-10">
-                                <Maximize className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </>
+                      </div>
+                    ) : (
+                      // Custom Video Player for direct video URLs
+                      <VideoPlayer
+                        src={currentLesson.video_url}
+                        title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
+                        onEnded={() => {
+                          if (!isLessonCompleted(currentLesson.id)) {
+                            completeLessonMutation.mutate(currentLesson.id);
+                          }
+                        }}
+                      />
                     )
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                    <div className="w-full aspect-video flex items-center justify-center bg-muted">
                       <div className="text-center p-4">
                         <Video className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mx-auto mb-4" />
                         <p className="text-sm sm:text-base text-muted-foreground">
