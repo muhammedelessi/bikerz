@@ -360,6 +360,58 @@ const CourseLearn: React.FC = () => {
     },
   });
 
+  // Save watch time mutation (debounced, no toast)
+  const saveWatchTimeMutation = useMutation({
+    mutationFn: async ({ lessonId, watchTimeSeconds }: { lessonId: string; watchTimeSeconds: number }) => {
+      if (!user) return;
+      
+      const { data: existing } = await supabase
+        .from('lesson_progress')
+        .select('id')
+        .eq('lesson_id', lessonId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('lesson_progress')
+          .update({ 
+            watch_time_seconds: watchTimeSeconds,
+            last_watched_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('lesson_progress')
+          .insert({
+            lesson_id: lessonId,
+            user_id: user.id,
+            watch_time_seconds: watchTimeSeconds,
+            last_watched_at: new Date().toISOString(),
+          });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      // Silently invalidate without showing toast
+      queryClient.invalidateQueries({ queryKey: ['lesson-progress-learn'] });
+    },
+  });
+
+  // Get saved watch time for current lesson
+  const getSavedWatchTime = (lessonId: string): number => {
+    const progress = lessonProgress.find(lp => lp.lesson_id === lessonId);
+    return progress?.watch_time_seconds || 0;
+  };
+
+  // Handle watch time update from video player
+  const handleWatchTimeUpdate = (lessonId: string, timeSeconds: number) => {
+    if (user && lessonId) {
+      saveWatchTimeMutation.mutate({ lessonId, watchTimeSeconds: timeSeconds });
+    }
+  };
+
   // Set initial lesson from URL or default to first lesson
   useEffect(() => {
     if (chapters.length > 0) {
@@ -613,6 +665,8 @@ const CourseLearn: React.FC = () => {
                       <VideoPlayer
                         src={currentLesson.video_url}
                         title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
+                        initialTime={getSavedWatchTime(currentLesson.id)}
+                        onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
                         onEnded={() => {
                           if (!isLessonCompleted(currentLesson.id)) {
                             completeLessonMutation.mutate(currentLesson.id);

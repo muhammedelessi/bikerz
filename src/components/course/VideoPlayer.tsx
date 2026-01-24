@@ -50,8 +50,10 @@ interface VideoPlayerProps {
   title?: string;
   onEnded?: () => void;
   onProgress?: (progress: number) => void;
+  onTimeUpdate?: (timeSeconds: number) => void;
   autoPlay?: boolean;
   qualities?: VideoQuality[];
+  initialTime?: number;
 }
 
 const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -70,8 +72,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   title,
   onEnded,
   onProgress,
+  onTimeUpdate,
   autoPlay = false,
   qualities = DEFAULT_QUALITIES,
+  initialTime = 0,
 }) => {
   const { isRTL } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -93,6 +97,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [currentQuality, setCurrentQuality] = useState<string>('auto');
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [hasRestoredTime, setHasRestoredTime] = useState(false);
+  const lastSavedTimeRef = useRef<number>(0);
 
   // Format time helper
   const formatTime = (seconds: number) => {
@@ -114,15 +120,33 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       if (onProgress && duration > 0) {
         onProgress((time / duration) * 100);
       }
+      
+      // Save progress every 5 seconds to avoid too many updates
+      if (onTimeUpdate && Math.abs(time - lastSavedTimeRef.current) >= 5) {
+        lastSavedTimeRef.current = time;
+        onTimeUpdate(Math.floor(time));
+      }
     }
-  }, [duration, onProgress]);
+  }, [duration, onProgress, onTimeUpdate]);
 
+  // Restore initial time when video loads
   const handleLoadedMetadata = useCallback(() => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
       setIsLoading(false);
+      
+      // Restore watch position if provided and not already restored
+      if (initialTime > 0 && !hasRestoredTime) {
+        // Don't restore if very close to the end (within last 10 seconds)
+        const isNearEnd = initialTime >= videoRef.current.duration - 10;
+        if (!isNearEnd) {
+          videoRef.current.currentTime = initialTime;
+          setCurrentTime(initialTime);
+        }
+        setHasRestoredTime(true);
+      }
     }
-  }, []);
+  }, [initialTime, hasRestoredTime]);
 
   const handleProgress = useCallback(() => {
     if (videoRef.current && videoRef.current.buffered.length > 0) {
