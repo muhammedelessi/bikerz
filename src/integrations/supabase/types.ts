@@ -340,6 +340,62 @@ export type Database = {
           },
         ]
       }
+      lesson_discussions: {
+        Row: {
+          admin_reply: string | null
+          admin_reply_ar: string | null
+          created_at: string
+          id: string
+          is_approved: boolean
+          is_featured: boolean
+          lesson_id: string
+          question: string
+          question_ar: string | null
+          replied_at: string | null
+          replied_by: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_reply?: string | null
+          admin_reply_ar?: string | null
+          created_at?: string
+          id?: string
+          is_approved?: boolean
+          is_featured?: boolean
+          lesson_id: string
+          question: string
+          question_ar?: string | null
+          replied_at?: string | null
+          replied_by?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_reply?: string | null
+          admin_reply_ar?: string | null
+          created_at?: string
+          id?: string
+          is_approved?: boolean
+          is_featured?: boolean
+          lesson_id?: string
+          question?: string
+          question_ar?: string | null
+          replied_at?: string | null
+          replied_by?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_discussions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_progress: {
         Row: {
           completed_at: string | null

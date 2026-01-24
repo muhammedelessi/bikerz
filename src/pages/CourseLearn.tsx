@@ -42,6 +42,7 @@ import { toast } from 'sonner';
 import bikerzLogo from '@/assets/bikerz-logo.png';
 import ChapterTest from '@/components/course/ChapterTest';
 import VideoPlayer from '@/components/course/VideoPlayer';
+import LessonDiscussion from '@/components/course/LessonDiscussion';
 
 interface Lesson {
   id: string;
@@ -857,6 +858,14 @@ const CourseLearn: React.FC = () => {
                       </Button>
                     )}
                   </div>
+
+                  {/* Lesson Discussion / Q&A Section */}
+                  {currentLesson && (
+                    <LessonDiscussion 
+                      lessonId={currentLesson.id}
+                      lessonTitle={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
+                    />
+                  )}
                 </div>
               </motion.div>
             )}
