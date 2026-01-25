@@ -44,6 +44,15 @@ interface VideoQuality {
   src?: string;
 }
 
+interface ChapterMarker {
+  id: string;
+  title: string;
+  titleAr?: string;
+  startTime: number; // in seconds
+  endTime?: number; // in seconds
+  thumbnail?: string;
+}
+
 interface VideoPlayerProps {
   src: string;
   poster?: string;
@@ -54,6 +63,7 @@ interface VideoPlayerProps {
   autoPlay?: boolean;
   qualities?: VideoQuality[];
   initialTime?: number;
+  chapters?: ChapterMarker[];
 }
 
 const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -76,6 +86,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   autoPlay = false,
   qualities = DEFAULT_QUALITIES,
   initialTime = 0,
+  chapters = [],
 }) => {
   const { isRTL } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -98,6 +109,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [currentQuality, setCurrentQuality] = useState<string>('auto');
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [hasRestoredTime, setHasRestoredTime] = useState(false);
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<number>(0);
+  const [hoveredChapter, setHoveredChapter] = useState<ChapterMarker | null>(null);
   const lastSavedTimeRef = useRef<number>(0);
 
   // Format time helper
@@ -218,6 +232,47 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     videoRef.current.currentTime = time;
     setCurrentTime(time);
   }, [duration]);
+
+  // Handle progress bar hover for time preview
+  const handleProgressHover = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressRef.current || duration <= 0) return;
+    const rect = progressRef.current.getBoundingClientRect();
+    const isRtl = document.documentElement.dir === 'rtl';
+    const pos = isRtl 
+      ? (rect.right - e.clientX) / rect.width 
+      : (e.clientX - rect.left) / rect.width;
+    const clampedPos = Math.max(0, Math.min(1, pos));
+    const time = clampedPos * duration;
+    
+    setHoverTime(time);
+    setHoverPosition(clampedPos * 100);
+    
+    // Find hovered chapter
+    const chapter = chapters.find(ch => {
+      const endTime = ch.endTime ?? duration;
+      return time >= ch.startTime && time < endTime;
+    });
+    setHoveredChapter(chapter || null);
+  }, [duration, chapters]);
+
+  const handleProgressLeave = useCallback(() => {
+    setHoverTime(null);
+    setHoveredChapter(null);
+  }, []);
+
+  // Get chapter at a specific position (percentage)
+  const getChapterPosition = useCallback((chapter: ChapterMarker) => {
+    if (duration <= 0) return 0;
+    return (chapter.startTime / duration) * 100;
+  }, [duration]);
+
+  // Get current chapter based on playback time
+  const getCurrentChapter = useCallback(() => {
+    return chapters.find(ch => {
+      const endTime = ch.endTime ?? duration;
+      return currentTime >= ch.startTime && currentTime < endTime;
+    });
+  }, [chapters, currentTime, duration]);
 
   const skip = useCallback((amount: number) => {
     if (!videoRef.current) return;
@@ -477,44 +532,134 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
               {/* Bottom Controls */}
               <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 pointer-events-auto">
-                {/* Progress Bar */}
-                <div
-                  ref={progressRef}
-                  className="relative h-1.5 bg-white/30 rounded-full mb-3 cursor-pointer group/progress"
-                  onClick={handleProgressClick}
-                >
-                  {/* Buffered Progress */}
-                  <div
-                    className={cn(
-                      "absolute h-full bg-white/40 rounded-full transition-all",
-                      isRTL ? "right-0" : "left-0"
+                {/* Progress Bar Container */}
+                <div className="relative mb-3">
+                  {/* Hover Preview Tooltip */}
+                  <AnimatePresence>
+                    {hoverTime !== null && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 5 }}
+                        className="absolute bottom-full mb-3 pointer-events-none z-10"
+                        style={{
+                          [isRTL ? 'right' : 'left']: `${hoverPosition}%`,
+                          transform: `translateX(${isRTL ? '50%' : '-50%'})`
+                        }}
+                      >
+                        <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-xl overflow-hidden">
+                          {/* Chapter Thumbnail */}
+                          {hoveredChapter?.thumbnail && (
+                            <div className="w-40 h-24 relative">
+                              <img 
+                                src={hoveredChapter.thumbnail} 
+                                alt="" 
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          {/* Time & Chapter Info */}
+                          <div className="px-3 py-2 text-center">
+                            <span className="text-white font-mono text-sm font-medium">
+                              {formatTime(hoverTime)}
+                            </span>
+                            {hoveredChapter && (
+                              <p className="text-muted-foreground text-xs mt-0.5 max-w-[150px] truncate">
+                                {isRTL ? hoveredChapter.titleAr || hoveredChapter.title : hoveredChapter.title}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
                     )}
-                    style={{ width: `${bufferedPercentage}%` }}
-                  />
-                  {/* Playback Progress */}
+                  </AnimatePresence>
+
+                  {/* Progress Bar */}
                   <div
-                    className={cn(
-                      "absolute h-full bg-primary rounded-full transition-all",
-                      isRTL ? "right-0" : "left-0"
-                    )}
-                    style={{ width: `${progressPercentage}%` }}
-                  />
-                  {/* Seek Handle */}
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-primary rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity shadow-lg"
-                    style={{ 
-                      [isRTL ? 'right' : 'left']: `calc(${progressPercentage}% - 7px)` 
-                    }}
-                  />
-                  {/* Hover Time Preview */}
-                  <Slider
-                    value={[currentTime]}
-                    min={0}
-                    max={duration || 100}
-                    step={0.1}
-                    onValueChange={handleSeek}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
+                    ref={progressRef}
+                    className="relative h-1.5 hover:h-2.5 bg-white/30 rounded-full cursor-pointer group/progress transition-all"
+                    onClick={handleProgressClick}
+                    onMouseMove={handleProgressHover}
+                    onMouseLeave={handleProgressLeave}
+                  >
+                    {/* Buffered Progress */}
+                    <div
+                      className={cn(
+                        "absolute h-full bg-white/40 rounded-full transition-all",
+                        isRTL ? "right-0" : "left-0"
+                      )}
+                      style={{ width: `${bufferedPercentage}%` }}
+                    />
+                    {/* Playback Progress */}
+                    <div
+                      className={cn(
+                        "absolute h-full bg-primary rounded-full transition-all",
+                        isRTL ? "right-0" : "left-0"
+                      )}
+                      style={{ width: `${progressPercentage}%` }}
+                    />
+                    
+                    {/* Chapter Markers */}
+                    {chapters.length > 0 && chapters.map((chapter, index) => {
+                      const position = getChapterPosition(chapter);
+                      // Don't show marker at 0%
+                      if (position <= 0) return null;
+                      return (
+                        <Tooltip key={chapter.id}>
+                          <TooltipTrigger asChild>
+                            <div
+                              className="absolute top-0 bottom-0 w-1 bg-white/70 hover:bg-white cursor-pointer transition-colors z-10"
+                              style={{
+                                [isRTL ? 'right' : 'left']: `${position}%`,
+                                transform: 'translateX(-50%)'
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (videoRef.current) {
+                                  videoRef.current.currentTime = chapter.startTime;
+                                  setCurrentTime(chapter.startTime);
+                                }
+                              }}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[200px]">
+                            <div className="text-center">
+                              {chapter.thumbnail && (
+                                <img 
+                                  src={chapter.thumbnail} 
+                                  alt="" 
+                                  className="w-32 h-20 object-cover rounded mb-1"
+                                />
+                              )}
+                              <p className="text-sm font-medium">
+                                {isRTL ? chapter.titleAr || chapter.title : chapter.title}
+                              </p>
+                              <span className="text-xs text-muted-foreground">
+                                {formatTime(chapter.startTime)}
+                              </span>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                    
+                    {/* Seek Handle */}
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-primary rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity shadow-lg"
+                      style={{ 
+                        [isRTL ? 'right' : 'left']: `calc(${progressPercentage}% - 7px)` 
+                      }}
+                    />
+                    {/* Hidden Slider for accessibility */}
+                    <Slider
+                      value={[currentTime]}
+                      min={0}
+                      max={duration || 100}
+                      step={0.1}
+                      onValueChange={handleSeek}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                  </div>
                 </div>
 
                 {/* Control Buttons */}
@@ -770,3 +915,4 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 };
 
 export default VideoPlayer;
+export type { ChapterMarker, VideoPlayerProps };
