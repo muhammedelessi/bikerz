@@ -220,8 +220,8 @@ const AdminCourses: React.FC = () => {
       currency: course.currency || 'SAR',
       difficulty_level: course.difficulty_level,
       duration_hours: course.duration_hours || 0,
-      is_published: course.is_published,
-      certificate_enabled: course.certificate_enabled,
+      is_published: Boolean(course.is_published),
+      certificate_enabled: course.certificate_enabled ?? true,
     });
     setEditingCourse(course);
   };
@@ -591,17 +591,23 @@ const AdminCourses: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-6 pt-4">
               <div className="flex items-center gap-3">
                 <Switch
-                  checked={formData.is_published}
+                  id="is_published"
+                  checked={Boolean(formData.is_published)}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
                 />
-                <Label>{isRTL ? 'نشر الدورة' : 'Publish Course'}</Label>
+                <Label htmlFor="is_published" className="cursor-pointer">
+                  {isRTL ? 'نشر الدورة' : 'Publish Course'}
+                </Label>
               </div>
               <div className="flex items-center gap-3">
                 <Switch
-                  checked={formData.certificate_enabled}
+                  id="certificate_enabled"
+                  checked={Boolean(formData.certificate_enabled)}
                   onCheckedChange={(checked) => setFormData({ ...formData, certificate_enabled: checked })}
                 />
-                <Label>{isRTL ? 'تفعيل الشهادة' : 'Enable Certificate'}</Label>
+                <Label htmlFor="certificate_enabled" className="cursor-pointer">
+                  {isRTL ? 'تفعيل الشهادة' : 'Enable Certificate'}
+                </Label>
               </div>
             </div>
           </div>
