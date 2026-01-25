@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -48,8 +49,11 @@ import {
   Eye,
   ArrowLeft,
   ArrowRight,
+  Upload,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import VideoUploader from '@/components/admin/VideoUploader';
 
 interface Chapter {
   id: string;
@@ -755,41 +759,69 @@ const AdminCourseEditor: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>{isRTL ? 'رابط الفيديو' : 'Video URL'}</Label>
-              <Input
-                value={lessonForm.video_url}
-                onChange={(e) => setLessonForm({ ...lessonForm, video_url: e.target.value })}
-                placeholder="https://youtube.com/watch?v=..."
-              />
+            <div className="space-y-3">
+              <Label>{isRTL ? 'الفيديو' : 'Video'}</Label>
+              <Tabs defaultValue="upload" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="upload" className="flex items-center gap-2">
+                    <Upload className="w-4 h-4" />
+                    {isRTL ? 'رفع فيديو' : 'Upload Video'}
+                  </TabsTrigger>
+                  <TabsTrigger value="url" className="flex items-center gap-2">
+                    <LinkIcon className="w-4 h-4" />
+                    {isRTL ? 'رابط خارجي' : 'External URL'}
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="upload" className="mt-3">
+                  <VideoUploader
+                    currentVideoUrl={lessonForm.video_provider === 'upload' ? lessonForm.video_url : undefined}
+                    isRTL={isRTL}
+                    onUploadComplete={(url) => {
+                      setLessonForm({ 
+                        ...lessonForm, 
+                        video_url: url, 
+                        video_provider: url ? 'upload' : 'youtube' 
+                      });
+                    }}
+                  />
+                </TabsContent>
+                <TabsContent value="url" className="mt-3 space-y-4">
+                  <div className="space-y-2">
+                    <Label>{isRTL ? 'رابط الفيديو' : 'Video URL'}</Label>
+                    <Input
+                      value={lessonForm.video_provider !== 'upload' ? lessonForm.video_url : ''}
+                      onChange={(e) => setLessonForm({ ...lessonForm, video_url: e.target.value })}
+                      placeholder="https://youtube.com/watch?v=..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{isRTL ? 'مزود الفيديو' : 'Video Provider'}</Label>
+                    <Select
+                      value={lessonForm.video_provider === 'upload' ? 'youtube' : lessonForm.video_provider}
+                      onValueChange={(value) => setLessonForm({ ...lessonForm, video_provider: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="youtube">YouTube</SelectItem>
+                        <SelectItem value="vimeo">Vimeo</SelectItem>
+                        <SelectItem value="cloudflare">Cloudflare</SelectItem>
+                        <SelectItem value="custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{isRTL ? 'مزود الفيديو' : 'Video Provider'}</Label>
-                <Select
-                  value={lessonForm.video_provider}
-                  onValueChange={(value) => setLessonForm({ ...lessonForm, video_provider: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="youtube">YouTube</SelectItem>
-                    <SelectItem value="vimeo">Vimeo</SelectItem>
-                    <SelectItem value="cloudflare">Cloudflare</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>{isRTL ? 'المدة (دقائق)' : 'Duration (minutes)'}</Label>
-                <Input
-                  type="number"
-                  value={lessonForm.duration_minutes}
-                  onChange={(e) => setLessonForm({ ...lessonForm, duration_minutes: parseInt(e.target.value) || 0 })}
-                  min={0}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>{isRTL ? 'المدة (دقائق)' : 'Duration (minutes)'}</Label>
+              <Input
+                type="number"
+                value={lessonForm.duration_minutes}
+                onChange={(e) => setLessonForm({ ...lessonForm, duration_minutes: parseInt(e.target.value) || 0 })}
+                min={0}
+              />
             </div>
             <div className="flex gap-6">
               <div className="flex items-center gap-3">
