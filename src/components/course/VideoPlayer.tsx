@@ -209,8 +209,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!videoRef.current || !progressRef.current) return;
     const rect = progressRef.current.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
-    const time = pos * duration;
+    // For RTL, calculate from right side
+    const isRtl = document.documentElement.dir === 'rtl';
+    const pos = isRtl 
+      ? (rect.right - e.clientX) / rect.width 
+      : (e.clientX - rect.left) / rect.width;
+    const time = Math.max(0, Math.min(1, pos)) * duration;
     videoRef.current.currentTime = time;
     setCurrentTime(time);
   }, [duration]);
@@ -443,7 +447,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 }}
                 className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/90 hover:bg-primary flex items-center justify-center transition-all hover:scale-110 shadow-2xl"
               >
-                <Play className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground ms-1" />
+                <Play className={cn(
+                  "w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground",
+                  isRTL ? "me-1" : "ms-1"
+                )} />
               </button>
             </motion.div>
           )}
@@ -478,18 +485,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 >
                   {/* Buffered Progress */}
                   <div
-                    className="absolute h-full bg-white/40 rounded-full transition-all"
+                    className={cn(
+                      "absolute h-full bg-white/40 rounded-full transition-all",
+                      isRTL ? "right-0" : "left-0"
+                    )}
                     style={{ width: `${bufferedPercentage}%` }}
                   />
                   {/* Playback Progress */}
                   <div
-                    className="absolute h-full bg-primary rounded-full transition-all"
+                    className={cn(
+                      "absolute h-full bg-primary rounded-full transition-all",
+                      isRTL ? "right-0" : "left-0"
+                    )}
                     style={{ width: `${progressPercentage}%` }}
                   />
                   {/* Seek Handle */}
                   <div
                     className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-primary rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity shadow-lg"
-                    style={{ left: `calc(${progressPercentage}% - 7px)` }}
+                    style={{ 
+                      [isRTL ? 'right' : 'left']: `calc(${progressPercentage}% - 7px)` 
+                    }}
                   />
                   {/* Hover Time Preview */}
                   <Slider
@@ -521,7 +536,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                           {isPlaying ? (
                             <Pause className="w-5 h-5 sm:w-6 sm:h-6" />
                           ) : (
-                            <Play className="w-5 h-5 sm:w-6 sm:h-6 ms-0.5" />
+                            <Play className={cn(
+                              "w-5 h-5 sm:w-6 sm:h-6",
+                              isRTL ? "me-0.5" : "ms-0.5"
+                            )} />
                           )}
                         </Button>
                       </TooltipTrigger>
@@ -542,7 +560,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                           }}
                           className="h-8 w-8 sm:h-9 sm:w-9 text-white hover:bg-white/20"
                         >
-                          <SkipBack className="w-4 h-4 sm:w-5 sm:h-5" />
+                          {isRTL ? (
+                            <SkipForward className="w-4 h-4 sm:w-5 sm:h-5" />
+                          ) : (
+                            <SkipBack className="w-4 h-4 sm:w-5 sm:h-5" />
+                          )}
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>{isRTL ? '10 ثوانٍ للخلف (J)' : '10 seconds back (J)'}</TooltipContent>
@@ -560,7 +582,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                           }}
                           className="h-8 w-8 sm:h-9 sm:w-9 text-white hover:bg-white/20"
                         >
-                          <SkipForward className="w-4 h-4 sm:w-5 sm:h-5" />
+                          {isRTL ? (
+                            <SkipBack className="w-4 h-4 sm:w-5 sm:h-5" />
+                          ) : (
+                            <SkipForward className="w-4 h-4 sm:w-5 sm:h-5" />
+                          )}
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>{isRTL ? '10 ثوانٍ للأمام (L)' : '10 seconds forward (L)'}</TooltipContent>
