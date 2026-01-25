@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievement_badges: {
+        Row: {
+          category: string
+          code: string
+          coin_reward: number
+          created_at: string
+          description: string
+          description_ar: string | null
+          icon_name: string
+          id: string
+          is_hidden: boolean
+          name: string
+          name_ar: string | null
+          rarity: string
+          requirement_type: string
+          requirement_value: number
+          xp_reward: number
+        }
+        Insert: {
+          category?: string
+          code: string
+          coin_reward?: number
+          created_at?: string
+          description: string
+          description_ar?: string | null
+          icon_name?: string
+          id?: string
+          is_hidden?: boolean
+          name: string
+          name_ar?: string | null
+          rarity?: string
+          requirement_type: string
+          requirement_value?: number
+          xp_reward?: number
+        }
+        Update: {
+          category?: string
+          code?: string
+          coin_reward?: number
+          created_at?: string
+          description?: string
+          description_ar?: string | null
+          icon_name?: string
+          id?: string
+          is_hidden?: boolean
+          name?: string
+          name_ar?: string | null
+          rarity?: string
+          requirement_type?: string
+          requirement_value?: number
+          xp_reward?: number
+        }
+        Relationships: []
+      }
       admin_audit_logs: {
         Row: {
           action: string
@@ -336,6 +390,157 @@ export type Database = {
             columns: ["instructor_id"]
             isOneToOne: false
             referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_challenges: {
+        Row: {
+          challenge_date: string
+          challenge_type: string
+          coin_reward: number
+          created_at: string
+          description: string | null
+          description_ar: string | null
+          id: string
+          target_value: number
+          title: string
+          title_ar: string | null
+          xp_reward: number
+        }
+        Insert: {
+          challenge_date: string
+          challenge_type: string
+          coin_reward?: number
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          target_value?: number
+          title: string
+          title_ar?: string | null
+          xp_reward?: number
+        }
+        Update: {
+          challenge_date?: string
+          challenge_type?: string
+          coin_reward?: number
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          target_value?: number
+          title?: string
+          title_ar?: string | null
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      leaderboard_entries: {
+        Row: {
+          course_id: string | null
+          created_at: string
+          id: string
+          lessons_completed: number
+          period_start: string
+          period_type: string
+          quizzes_passed: number
+          rank: number | null
+          streak_days: number
+          updated_at: string
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          lessons_completed?: number
+          period_start: string
+          period_type: string
+          quizzes_passed?: number
+          rank?: number | null
+          streak_days?: number
+          updated_at?: string
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          lessons_completed?: number
+          period_start?: string
+          period_type?: string
+          quizzes_passed?: number
+          rank?: number | null
+          streak_days?: number
+          updated_at?: string
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_entries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_activities: {
+        Row: {
+          activity_type: string
+          created_at: string
+          data: Json
+          difficulty_level: number
+          id: string
+          is_published: boolean
+          lesson_id: string
+          position: number
+          time_limit_seconds: number | null
+          title: string
+          title_ar: string | null
+          updated_at: string
+          xp_reward: number
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          data?: Json
+          difficulty_level?: number
+          id?: string
+          is_published?: boolean
+          lesson_id: string
+          position?: number
+          time_limit_seconds?: number | null
+          title: string
+          title_ar?: string | null
+          updated_at?: string
+          xp_reward?: number
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          data?: Json
+          difficulty_level?: number
+          id?: string
+          is_published?: boolean
+          lesson_id?: string
+          position?: number
+          time_limit_seconds?: number | null
+          title?: string
+          title_ar?: string | null
+          updated_at?: string
+          xp_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_activities_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
         ]
@@ -874,6 +1079,174 @@ export type Database = {
           },
         ]
       }
+      user_activity_attempts: {
+        Row: {
+          activity_id: string
+          answers: Json
+          attempt_number: number
+          combo_applied: number
+          completed_at: string
+          id: string
+          max_score: number
+          passed: boolean
+          score: number
+          time_taken_seconds: number | null
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          activity_id: string
+          answers?: Json
+          attempt_number?: number
+          combo_applied?: number
+          completed_at?: string
+          id?: string
+          max_score?: number
+          passed?: boolean
+          score?: number
+          time_taken_seconds?: number | null
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          activity_id?: string
+          answers?: Json
+          attempt_number?: number
+          combo_applied?: number
+          completed_at?: string
+          id?: string
+          max_score?: number
+          passed?: boolean
+          score?: number
+          time_taken_seconds?: number | null
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_attempts_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "achievement_badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_daily_progress: {
+        Row: {
+          challenge_id: string
+          claimed_reward: boolean
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          current_value: number
+          id: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          claimed_reward?: boolean
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number
+          id?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          claimed_reward?: boolean
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_daily_progress_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "daily_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_gamification: {
+        Row: {
+          coins: number
+          combo_multiplier: number
+          created_at: string
+          current_streak: number
+          id: string
+          last_activity_date: string | null
+          level: number
+          longest_streak: number
+          streak_freeze_count: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coins?: number
+          combo_multiplier?: number
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          level?: number
+          longest_streak?: number
+          streak_freeze_count?: number
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coins?: number
+          combo_multiplier?: number
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          level?: number
+          longest_streak?: number
+          streak_freeze_count?: number
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -891,6 +1264,105 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_skill_proficiency: {
+        Row: {
+          avg_response_time_ms: number | null
+          chapter_id: string | null
+          correct_attempts: number
+          course_id: string
+          created_at: string
+          difficulty_level: number
+          id: string
+          last_assessed_at: string | null
+          proficiency_score: number
+          skill_area: string
+          total_attempts: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_response_time_ms?: number | null
+          chapter_id?: string | null
+          correct_attempts?: number
+          course_id: string
+          created_at?: string
+          difficulty_level?: number
+          id?: string
+          last_assessed_at?: string | null
+          proficiency_score?: number
+          skill_area: string
+          total_attempts?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_response_time_ms?: number | null
+          chapter_id?: string | null
+          correct_attempts?: number
+          course_id?: string
+          created_at?: string
+          difficulty_level?: number
+          id?: string
+          last_assessed_at?: string | null
+          proficiency_score?: number
+          skill_area?: string
+          total_attempts?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_skill_proficiency_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_skill_proficiency_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      xp_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          description_ar: string | null
+          id: string
+          multiplier: number
+          source_id: string | null
+          source_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          multiplier?: number
+          source_id?: string | null
+          source_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          multiplier?: number
+          source_id?: string | null
+          source_type?: string
           user_id?: string
         }
         Relationships: []
