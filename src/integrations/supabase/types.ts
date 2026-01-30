@@ -1304,6 +1304,188 @@ export type Database = {
         }
         Relationships: []
       }
+      user_mistake_events: {
+        Row: {
+          chapter_id: string | null
+          concept_area: string
+          context_data: Json | null
+          course_id: string | null
+          created_at: string
+          id: string
+          lesson_id: string | null
+          mistake_type: string
+          situation_type: string | null
+          source_id: string | null
+          source_type: string
+          user_id: string
+        }
+        Insert: {
+          chapter_id?: string | null
+          concept_area: string
+          context_data?: Json | null
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          lesson_id?: string | null
+          mistake_type: string
+          situation_type?: string | null
+          source_id?: string | null
+          source_type: string
+          user_id: string
+        }
+        Update: {
+          chapter_id?: string | null
+          concept_area?: string
+          context_data?: Json | null
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          lesson_id?: string | null
+          mistake_type?: string
+          situation_type?: string | null
+          source_id?: string | null
+          source_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_mistake_events_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_mistake_events_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_mistake_events_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_mistake_patterns: {
+        Row: {
+          concept_area: string
+          created_at: string
+          decay_factor: number
+          id: string
+          is_active: boolean
+          last_occurrence_at: string
+          occurrence_count: number
+          pattern_type: string
+          situation_type: string | null
+          strength_score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          concept_area: string
+          created_at?: string
+          decay_factor?: number
+          id?: string
+          is_active?: boolean
+          last_occurrence_at?: string
+          occurrence_count?: number
+          pattern_type: string
+          situation_type?: string | null
+          strength_score?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          concept_area?: string
+          created_at?: string
+          decay_factor?: number
+          id?: string
+          is_active?: boolean
+          last_occurrence_at?: string
+          occurrence_count?: number
+          pattern_type?: string
+          situation_type?: string | null
+          strength_score?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_reinforcement_queue: {
+        Row: {
+          content_data: Json | null
+          created_at: string
+          delivered_at: string | null
+          expires_at: string | null
+          id: string
+          is_delivered: boolean
+          is_dismissed: boolean
+          pattern_id: string | null
+          priority: number
+          reinforcement_type: string
+          target_chapter_id: string | null
+          target_lesson_id: string | null
+          user_id: string
+        }
+        Insert: {
+          content_data?: Json | null
+          created_at?: string
+          delivered_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_delivered?: boolean
+          is_dismissed?: boolean
+          pattern_id?: string | null
+          priority?: number
+          reinforcement_type: string
+          target_chapter_id?: string | null
+          target_lesson_id?: string | null
+          user_id: string
+        }
+        Update: {
+          content_data?: Json | null
+          created_at?: string
+          delivered_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_delivered?: boolean
+          is_dismissed?: boolean
+          pattern_id?: string | null
+          priority?: number
+          reinforcement_type?: string
+          target_chapter_id?: string | null
+          target_lesson_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_reinforcement_queue_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "user_mistake_patterns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_reinforcement_queue_target_chapter_id_fkey"
+            columns: ["target_chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_reinforcement_queue_target_lesson_id_fkey"
+            columns: ["target_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string

@@ -43,6 +43,8 @@ import bikerzLogo from '@/assets/bikerz-logo.png';
 import ChapterTest from '@/components/course/ChapterTest';
 import VideoPlayer from '@/components/course/VideoPlayer';
 import LessonDiscussion from '@/components/course/LessonDiscussion';
+import ReinforcementSuggestion from '@/components/learning/ReinforcementSuggestion';
+import LessonRecapInsert from '@/components/learning/LessonRecapInsert';
 
 interface Lesson {
   id: string;
@@ -740,6 +742,16 @@ const CourseLearn: React.FC = () => {
                         {isRTL && currentLesson.description_ar ? currentLesson.description_ar : currentLesson.description}
                       </p>
                     </div>
+                  )}
+
+                  {/* Coach-like reinforcement suggestion - non-intrusive */}
+                  {user && currentLesson && currentChapter && (
+                    <ReinforcementSuggestion
+                      lessonId={currentLesson.id}
+                      chapterId={currentChapter.id}
+                      variant="card"
+                      className="mb-6 sm:mb-8"
+                    />
                   )}
 
                   {/* Resources */}
