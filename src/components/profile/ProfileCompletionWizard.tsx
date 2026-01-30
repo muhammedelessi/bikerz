@@ -1,0 +1,475 @@
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { 
+  User, 
+  Bike, 
+  Award,
+  ChevronRight, 
+  ChevronLeft,
+  X,
+  Gift,
+  Sparkles,
+  Camera
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+
+interface ProfileCompletionWizardProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onComplete?: () => void;
+}
+
+const STEPS = [
+  { id: 'rider', icon: User, title: 'Rider Identity', title_ar: 'هوية الراكب' },
+  { id: 'bike', icon: Bike, title: 'Your Bike', title_ar: 'دراجتك' },
+  { id: 'complete', icon: Award, title: 'Complete!', title_ar: 'اكتمل!' },
+];
+
+const BIKE_BRANDS = [
+  'Honda', 'Yamaha', 'Kawasaki', 'Suzuki', 'Ducati', 'BMW', 'Harley-Davidson',
+  'KTM', 'Triumph', 'Aprilia', 'Royal Enfield', 'Benelli', 'CFMoto', 'Other'
+];
+
+const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
+  open,
+  onOpenChange,
+  onComplete
+}) => {
+  const { t } = useTranslation();
+  const { isRTL } = useLanguage();
+  const { user, profile } = useAuth();
+  
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Form data
+  const [riderNickname, setRiderNickname] = useState('');
+  const [phone, setPhone] = useState('');
+  const [bikeBrand, setBikeBrand] = useState('');
+  const [bikeModel, setBikeModel] = useState('');
+  const [engineSize, setEngineSize] = useState('');
+  const [ridingYears, setRidingYears] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  // Pre-fill with existing data if available
+  useEffect(() => {
+    const loadExistingProfile = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (data) {
+        setRiderNickname(data.rider_nickname || '');
+        setPhone(data.phone || '');
+        setBikeBrand(data.bike_brand || '');
+        setBikeModel(data.bike_model || '');
+        setEngineSize(data.engine_size_cc?.toString() || '');
+        setRidingYears(data.riding_experience_years?.toString() || '');
+        if (data.avatar_url) {
+          setAvatarPreview(data.avatar_url);
+        }
+      }
+    };
+    
+    if (open) {
+      loadExistingProfile();
+    }
+  }, [user, open]);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setAvatarPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadAvatar = async (): Promise<string | null> => {
+    if (!avatarFile || !user) return null;
+    
+    const fileExt = avatarFile.name.split('.').pop();
+    const fileName = `${user.id}/avatar.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, avatarFile, { upsert: true });
+    
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      return null;
+    }
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(fileName);
+    
+    return publicUrl;
+  };
+
+  const handleNext = () => {
+    if (currentStep < STEPS.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleSkip = async () => {
+    // Mark as skipped in localStorage to show reminder later
+    localStorage.setItem('profile_completion_skipped', 'true');
+    localStorage.setItem('profile_completion_skip_time', Date.now().toString());
+    onOpenChange(false);
+    toast.info(
+      isRTL 
+        ? 'يمكنك إكمال ملفك الشخصي لاحقاً للحصول على خصم 10%!' 
+        : 'You can complete your profile later for 10% off!'
+    );
+  };
+
+  const handleComplete = async () => {
+    if (!user) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Upload avatar if selected
+      let avatarUrl = avatarPreview;
+      if (avatarFile) {
+        const uploadedUrl = await uploadAvatar();
+        if (uploadedUrl) avatarUrl = uploadedUrl;
+      }
+      
+      // Update profile
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          rider_nickname: riderNickname || null,
+          phone: phone || null,
+          bike_brand: bikeBrand || null,
+          bike_model: bikeModel || null,
+          engine_size_cc: engineSize ? parseInt(engineSize) : null,
+          riding_experience_years: ridingYears ? parseInt(ridingYears) : null,
+          avatar_url: avatarUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      // Clear skip flags
+      localStorage.removeItem('profile_completion_skipped');
+      localStorage.removeItem('profile_completion_skip_time');
+      localStorage.setItem('profile_completed', 'true');
+      
+      // Log activity
+      await supabase.from('user_activity_timeline').insert({
+        user_id: user.id,
+        activity_type: 'profile_completed',
+        title: 'Profile completed',
+        title_ar: 'تم إكمال الملف الشخصي',
+        description: 'Earned 10% discount reward',
+        description_ar: 'حصل على خصم 10%',
+      });
+      
+      toast.success(
+        isRTL 
+          ? '🎉 تم إكمال ملفك الشخصي! حصلت على خصم 10%' 
+          : '🎉 Profile complete! You earned 10% off'
+      );
+      
+      onComplete?.();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error(isRTL ? 'فشل في تحديث الملف الشخصي' : 'Failed to update profile');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const progress = ((currentStep + 1) / STEPS.length) * 100;
+  
+  const ChevronNext = isRTL ? ChevronLeft : ChevronRight;
+  const ChevronPrev = isRTL ? ChevronRight : ChevronLeft;
+
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 0: // Rider Identity
+        return (
+          <motion.div
+            key="rider"
+            initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
+            className="space-y-5"
+          >
+            {/* Avatar Upload */}
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full bg-muted border-2 border-dashed border-primary/50 flex items-center justify-center overflow-hidden">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera className="w-8 h-8 text-muted-foreground" />
+                  )}
+                </div>
+                <label 
+                  htmlFor="avatar-upload"
+                  className="absolute bottom-0 right-0 p-2 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors"
+                >
+                  <Camera className="w-4 h-4 text-primary-foreground" />
+                  <input 
+                    type="file" 
+                    id="avatar-upload"
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                  />
+                </label>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {isRTL ? 'أضف صورتك الشخصية' : 'Add your profile photo'}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nickname">
+                {isRTL ? 'لقب الراكب' : 'Rider Nickname'}
+              </Label>
+              <Input
+                id="nickname"
+                value={riderNickname}
+                onChange={(e) => setRiderNickname(e.target.value)}
+                placeholder={isRTL ? 'مثال: النسر الأسود' : 'e.g., Black Eagle'}
+                className="h-11"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">
+                {isRTL ? 'رقم الهاتف' : 'Phone Number'}
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder={isRTL ? '+966 5XX XXX XXXX' : '+966 5XX XXX XXXX'}
+                className="h-11"
+                dir="ltr"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ridingYears">
+                {isRTL ? 'سنوات الخبرة في القيادة' : 'Years of Riding Experience'}
+              </Label>
+              <Input
+                id="ridingYears"
+                type="number"
+                min="0"
+                max="50"
+                value={ridingYears}
+                onChange={(e) => setRidingYears(e.target.value)}
+                placeholder={isRTL ? 'عدد السنوات' : 'Number of years'}
+                className="h-11"
+              />
+            </div>
+          </motion.div>
+        );
+        
+      case 1: // Bike Info
+        return (
+          <motion.div
+            key="bike"
+            initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
+            className="space-y-5"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="bikeBrand">
+                {isRTL ? 'ماركة الدراجة' : 'Bike Brand'}
+              </Label>
+              <select
+                id="bikeBrand"
+                value={bikeBrand}
+                onChange={(e) => setBikeBrand(e.target.value)}
+                className="w-full h-11 px-3 rounded-md border border-input bg-background text-foreground"
+              >
+                <option value="">{isRTL ? 'اختر الماركة' : 'Select brand'}</option>
+                {BIKE_BRANDS.map(brand => (
+                  <option key={brand} value={brand}>{brand}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="bikeModel">
+                {isRTL ? 'موديل الدراجة' : 'Bike Model'}
+              </Label>
+              <Input
+                id="bikeModel"
+                value={bikeModel}
+                onChange={(e) => setBikeModel(e.target.value)}
+                placeholder={isRTL ? 'مثال: CBR 600RR' : 'e.g., CBR 600RR'}
+                className="h-11"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="engineSize">
+                {isRTL ? 'حجم المحرك (سي سي)' : 'Engine Size (CC)'}
+              </Label>
+              <Input
+                id="engineSize"
+                type="number"
+                min="50"
+                max="3000"
+                value={engineSize}
+                onChange={(e) => setEngineSize(e.target.value)}
+                placeholder={isRTL ? 'مثال: 600' : 'e.g., 600'}
+                className="h-11"
+              />
+            </div>
+          </motion.div>
+        );
+        
+      case 2: // Complete
+        return (
+          <motion.div
+            key="complete"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center text-center py-6"
+          >
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4">
+              <Sparkles className="w-10 h-10 text-white" />
+            </div>
+            
+            <h3 className="text-xl font-bold mb-2">
+              {isRTL ? 'رائع! أنت جاهز تقريباً' : 'Awesome! You\'re almost ready'}
+            </h3>
+            
+            <p className="text-muted-foreground mb-6">
+              {isRTL 
+                ? 'أكمل ملفك الشخصي واحصل على خصم 10% على أول دورة!' 
+                : 'Complete your profile and get 10% off your first course!'}
+            </p>
+
+            <div className="w-full p-4 rounded-lg bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Gift className="w-5 h-5 text-primary" />
+                <span className="font-bold text-lg text-primary">
+                  {isRTL ? 'خصم 10%' : '10% OFF'}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {isRTL 
+                  ? 'كود الخصم: PROFILE10' 
+                  : 'Discount code: PROFILE10'}
+              </p>
+            </div>
+          </motion.div>
+        );
+        
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {React.createElement(STEPS[currentStep].icon, {
+                className: "w-6 h-6 text-primary"
+              })}
+              <div>
+                <DialogTitle className="text-lg">
+                  {isRTL ? STEPS[currentStep].title_ar : STEPS[currentStep].title}
+                </DialogTitle>
+                <DialogDescription className="text-sm">
+                  {isRTL 
+                    ? `الخطوة ${currentStep + 1} من ${STEPS.length}` 
+                    : `Step ${currentStep + 1} of ${STEPS.length}`}
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
+          
+          {/* Progress Bar */}
+          <Progress value={progress} className="h-2 mt-4" />
+        </DialogHeader>
+
+        <div className="mt-4 min-h-[300px]">
+          <AnimatePresence mode="wait">
+            {renderStepContent()}
+          </AnimatePresence>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-between gap-3 mt-6 pt-4 border-t">
+          {currentStep === 0 ? (
+            <Button variant="ghost" onClick={handleSkip} className="text-muted-foreground">
+              {isRTL ? 'تخطي' : 'Skip for now'}
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={handlePrev} disabled={isSubmitting}>
+              <ChevronPrev className="w-4 h-4" />
+              {isRTL ? 'السابق' : 'Previous'}
+            </Button>
+          )}
+
+          {currentStep < STEPS.length - 1 ? (
+            <Button onClick={handleNext}>
+              {isRTL ? 'التالي' : 'Next'}
+              <ChevronNext className="w-4 h-4" />
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleComplete} 
+              disabled={isSubmitting}
+              className="bg-gradient-to-r from-primary to-accent"
+            >
+              {isSubmitting ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  {isRTL ? 'إكمال والحصول على الخصم' : 'Complete & Get Discount'}
+                  <Gift className="w-4 h-4" />
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default ProfileCompletionWizard;

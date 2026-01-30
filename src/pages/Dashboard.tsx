@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import LanguageToggle from '@/components/common/LanguageToggle';
+import ProfileCompletionReminder from '@/components/profile/ProfileCompletionReminder';
 import {
   BookOpen,
   Play,
@@ -189,6 +190,9 @@ const Dashboard: React.FC = () => {
 
         {/* Dashboard Content */}
         <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 safe-area-bottom">
+          {/* Profile Completion Reminder */}
+          <ProfileCompletionReminder variant="card" />
+
           {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             {[

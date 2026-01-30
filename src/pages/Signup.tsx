@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import LanguageToggle from '@/components/common/LanguageToggle';
+import ProfileCompletionWizard from '@/components/profile/ProfileCompletionWizard';
 import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import heroImage from '@/assets/community-ride.jpg';
@@ -25,6 +26,7 @@ const Signup: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showProfileWizard, setShowProfileWizard] = useState(false);
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,7 +54,17 @@ const Signup: React.FC = () => {
     }
     
     toast.success(isRTL ? 'تم إنشاء الحساب بنجاح!' : 'Account created successfully!');
-    navigate('/dashboard');
+    setIsLoading(false);
+    // Show profile completion wizard instead of navigating immediately
+    setShowProfileWizard(true);
+  };
+
+  const handleProfileWizardClose = (open: boolean) => {
+    setShowProfileWizard(open);
+    if (!open) {
+      // Navigate to dashboard when wizard is closed (completed or skipped)
+      navigate('/dashboard');
+    }
   };
 
   return (
@@ -204,6 +216,12 @@ const Signup: React.FC = () => {
           className="w-full h-full object-cover"
         />
       </div>
+
+      {/* Profile Completion Wizard */}
+      <ProfileCompletionWizard
+        open={showProfileWizard}
+        onOpenChange={handleProfileWizardClose}
+      />
     </div>
   );
 };
