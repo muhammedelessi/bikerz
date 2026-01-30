@@ -59,6 +59,13 @@ const Profile: React.FC = () => {
     };
   }, [sidebarOpen]);
 
+  // Redirect to login if no user
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
+
   const navItems = [
     { icon: Home, label: t('nav.home'), to: '/' },
     { icon: BookOpen, label: t('nav.courses'), to: '/courses' },
@@ -68,8 +75,8 @@ const Profile: React.FC = () => {
     ...(isAdmin ? [{ icon: Settings, label: isRTL ? 'لوحة الإدارة' : 'Admin Panel', to: '/admin' }] : []),
   ];
 
+  // Show nothing while redirecting
   if (!user) {
-    navigate('/login');
     return null;
   }
 
