@@ -20,6 +20,7 @@ import {
   Menu,
   X,
   Users,
+  User,
 } from 'lucide-react';
 import heroImage from '@/assets/hero-rider.jpg';
 import instructorImage from '@/assets/instructor.jpg';
@@ -73,6 +74,7 @@ const Dashboard: React.FC = () => {
     { icon: BookOpen, label: t('nav.courses'), to: '/courses' },
     { icon: GraduationCap, label: t('dashboard.myCourses'), to: '/dashboard', active: true },
     { icon: Users, label: isRTL ? 'المدربون' : 'Mentors', to: '/mentors' },
+    { icon: User, label: isRTL ? 'الملف الشخصي' : 'Profile', to: '/profile' },
     ...(isAdmin ? [{ icon: Settings, label: isRTL ? 'لوحة الإدارة' : 'Admin Panel', to: '/admin' }] : []),
   ];
 

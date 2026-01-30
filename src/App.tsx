@@ -13,6 +13,7 @@ import CourseDetail from "./pages/CourseDetail";
 import CourseLearn from "./pages/CourseLearn";
 import Mentors from "./pages/Mentors";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 // Admin Pages
@@ -105,6 +106,7 @@ const AppRoutes = () => (
     
     {/* Protected Routes */}
     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+    <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
     
     {/* Admin Routes */}
     <Route path="/admin" element={<AdminRoute><AdminHome /></AdminRoute>} />
