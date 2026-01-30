@@ -855,28 +855,46 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bike_brand: string | null
+          bike_model: string | null
           created_at: string
+          engine_size_cc: number | null
+          experience_level: string | null
           full_name: string | null
           id: string
           phone: string | null
+          rider_nickname: string | null
+          riding_experience_years: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           avatar_url?: string | null
+          bike_brand?: string | null
+          bike_model?: string | null
           created_at?: string
+          engine_size_cc?: number | null
+          experience_level?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
+          rider_nickname?: string | null
+          riding_experience_years?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           avatar_url?: string | null
+          bike_brand?: string | null
+          bike_model?: string | null
           created_at?: string
+          engine_size_cc?: number | null
+          experience_level?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
+          rider_nickname?: string | null
+          riding_experience_years?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -1131,6 +1149,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_activity_timeline: {
+        Row: {
+          activity_type: string
+          created_at: string
+          description: string | null
+          description_ar: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          title: string
+          title_ar: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          title: string
+          title_ar?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          title?: string
+          title_ar?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_badges: {
         Row: {
