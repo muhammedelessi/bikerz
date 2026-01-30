@@ -24,15 +24,20 @@ import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
 import confetti from 'canvas-confetti';
 
+// Student-facing question interface (excludes correct_answer for security)
 interface TestQuestion {
   id: string;
   question: string;
   question_ar: string | null;
   question_type: string;
   options: Json;
-  correct_answer: string;
   points: number;
   position: number;
+}
+
+// Full question with correct_answer - only used in review after grading
+interface TestQuestionWithAnswer extends TestQuestion {
+  correct_answer: string;
 }
 
 interface ChapterTestData {
@@ -58,6 +63,14 @@ interface ChapterTestProps {
   onBack: () => void;
 }
 
+// Server grading result interface
+interface GradingResult {
+  score: number;
+  passed: boolean;
+  correct_count: number;
+  correct_answers: Record<string, string>;
+}
+
 const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onComplete, onBack }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
@@ -70,6 +83,7 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
   const [showReview, setShowReview] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [testStarted, setTestStarted] = useState(false);
+  const [gradingResult, setGradingResult] = useState<GradingResult | null>(null);
 
   // Confetti celebration function
   const fireConfetti = useCallback(() => {
@@ -123,13 +137,13 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
     enabled: !!testId,
   });
 
-  // Fetch questions
+  // Fetch questions from secure view (excludes correct_answer)
   const { data: questions = [], isLoading: questionsLoading } = useQuery({
-    queryKey: ['test-questions', testId],
+    queryKey: ['test-questions-student', testId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('test_questions')
-        .select('*')
+        .from('test_questions_student' as 'test_questions')
+        .select('id, test_id, question, question_ar, question_type, options, points, position')
         .eq('test_id', testId)
         .order('position', { ascending: true });
 
@@ -139,39 +153,38 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
     enabled: !!testId,
   });
 
-  // Submit attempt mutation
+  // Submit attempt mutation - uses server-side grading for security
   const submitMutation = useMutation({
     mutationFn: async () => {
       if (!user || !test) throw new Error('Not authenticated');
 
-      let correctCount = 0;
-      let totalPoints = 0;
-
-      questions.forEach((q) => {
-        totalPoints += q.points;
-        if (answers[q.id] === q.correct_answer) {
-          correctCount += q.points;
-        }
+      // Call server-side grading function - score is calculated on the server
+      // This prevents client-side manipulation of test scores
+      const { data, error } = await supabase.rpc('grade_test_attempt', {
+        p_test_id: testId,
+        p_user_answers: answers
       });
 
-      const score = totalPoints > 0 ? Math.round((correctCount / totalPoints) * 100) : 0;
-      const passed = score >= test.passing_score;
-
-      const { error } = await supabase
-        .from('test_attempts')
-        .insert({
-          test_id: testId,
-          user_id: user.id,
-          answers: answers as unknown as Json,
-          score,
-          passed,
-          completed_at: new Date().toISOString(),
-        });
-
       if (error) throw error;
-      return { score, passed };
+      
+      // The server returns the grading result
+      const result = data?.[0];
+      if (!result) throw new Error('No grading result returned');
+      
+      return { 
+        score: result.score as number, 
+        passed: result.passed as boolean,
+        correct_count: result.correct_count as number
+      };
     },
     onSuccess: (result) => {
+      // Store the grading result for display
+      setGradingResult({
+        score: result.score,
+        passed: result.passed,
+        correct_count: result.correct_count,
+        correct_answers: {} // Answers are not returned for security - review is simplified
+      });
       setShowResults(true);
       if (result.passed) {
         // Fire confetti celebration!
@@ -257,21 +270,18 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
     return [];
   };
 
-  const calculateResults = () => {
-    let correctCount = 0;
-    let totalPoints = 0;
-
-    questions.forEach((q) => {
-      totalPoints += q.points;
-      if (answers[q.id] === q.correct_answer) {
-        correctCount += q.points;
-      }
-    });
-
-    const score = totalPoints > 0 ? Math.round((correctCount / totalPoints) * 100) : 0;
-    const passed = test ? score >= test.passing_score : false;
-
-    return { score, passed, correctCount, totalQuestions: questions.length };
+  // Get results from server grading (not calculated client-side for security)
+  const getResults = () => {
+    if (gradingResult) {
+      return { 
+        score: gradingResult.score, 
+        passed: gradingResult.passed, 
+        correctCount: gradingResult.correct_count, 
+        totalQuestions: questions.length 
+      };
+    }
+    // Fallback for display purposes only (actual scoring is server-side)
+    return { score: 0, passed: false, correctCount: 0, totalQuestions: questions.length };
   };
 
   if (testLoading || questionsLoading) {
@@ -302,154 +312,13 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
     );
   }
 
-  // Answer Review Screen
-  if (showReview) {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="max-w-3xl mx-auto px-4"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" onClick={() => setShowReview(false)} className="h-11 sm:h-10">
-            <ArrowLeft className="w-4 h-4 me-2" />
-            {isRTL ? 'العودة للنتائج' : 'Back to Results'}
-          </Button>
-          <h1 className="text-lg sm:text-xl font-bold text-foreground">
-            {isRTL ? 'مراجعة الإجابات' : 'Answer Review'}
-          </h1>
-        </div>
-
-        <div className="space-y-4">
-          {questions.map((question, index) => {
-            const userAnswer = answers[question.id];
-            const isCorrect = userAnswer === question.correct_answer;
-            const options = parseOptions(question.options);
-            const correctOption = options.find(o => o.id === question.correct_answer);
-            const userOption = options.find(o => o.id === userAnswer);
-
-            return (
-              <motion.div
-                key={question.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className={`card-premium p-4 sm:p-5 border-2 ${
-                  isCorrect ? 'border-primary/50 bg-primary/5' : 'border-destructive/50 bg-destructive/5'
-                }`}
-              >
-                <div className="flex items-start gap-3 mb-4">
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    isCorrect ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'
-                  }`}>
-                    {isCorrect ? (
-                      <CheckCircle2 className="w-4 h-4" />
-                    ) : (
-                      <XCircle className="w-4 h-4" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground mb-1">
-                      {isRTL ? `السؤال ${index + 1}` : `Question ${index + 1}`}
-                    </p>
-                    <h3 className="text-sm sm:text-base font-medium text-foreground">
-                      {isRTL && question.question_ar ? question.question_ar : question.question}
-                    </h3>
-                  </div>
-                </div>
-
-                <div className="space-y-2 mb-4">
-                  {options.map((option) => {
-                    const isUserAnswer = option.id === userAnswer;
-                    const isCorrectAnswer = option.id === question.correct_answer;
-                    
-                    let optionClass = 'border-border bg-background';
-                    if (isCorrectAnswer) {
-                      optionClass = 'border-primary bg-primary/10';
-                    } else if (isUserAnswer && !isCorrect) {
-                      optionClass = 'border-destructive bg-destructive/10';
-                    }
-
-                    return (
-                      <div
-                        key={option.id}
-                        className={`flex items-center gap-3 p-3 rounded-lg border ${optionClass}`}
-                      >
-                        <div className="flex-shrink-0">
-                          {isCorrectAnswer ? (
-                            <CheckCircle2 className="w-4 h-4 text-primary" />
-                          ) : isUserAnswer ? (
-                            <XCircle className="w-4 h-4 text-destructive" />
-                          ) : (
-                            <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30" />
-                          )}
-                        </div>
-                        <span className={`text-sm ${
-                          isCorrectAnswer ? 'text-primary font-medium' : 
-                          isUserAnswer && !isCorrect ? 'text-destructive' : 'text-foreground'
-                        }`}>
-                          {isRTL && option.text_ar ? option.text_ar : option.text}
-                        </span>
-                        {isUserAnswer && (
-                          <span className="ms-auto text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                            {isRTL ? 'إجابتك' : 'Your answer'}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Explanation */}
-                <div className={`p-3 rounded-lg ${isCorrect ? 'bg-primary/10' : 'bg-muted/50'}`}>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    {isCorrect ? (
-                      <>
-                        <span className="font-medium text-primary">
-                          {isRTL ? '✓ صحيح!' : '✓ Correct!'}
-                        </span>
-                        {' '}
-                        {isRTL 
-                          ? `الإجابة الصحيحة هي "${correctOption ? (isRTL && correctOption.text_ar ? correctOption.text_ar : correctOption.text) : ''}".`
-                          : `The correct answer is "${correctOption ? correctOption.text : ''}".`
-                        }
-                      </>
-                    ) : (
-                      <>
-                        <span className="font-medium text-destructive">
-                          {isRTL ? '✗ غير صحيح.' : '✗ Incorrect.'}
-                        </span>
-                        {' '}
-                        {userOption ? (
-                          isRTL 
-                            ? `أجبت "${isRTL && userOption.text_ar ? userOption.text_ar : userOption.text}"، لكن الإجابة الصحيحة هي "${correctOption ? (isRTL && correctOption.text_ar ? correctOption.text_ar : correctOption.text) : ''}".`
-                            : `You answered "${userOption.text}", but the correct answer is "${correctOption ? correctOption.text : ''}".`
-                        ) : (
-                          isRTL 
-                            ? `لم تجب على هذا السؤال. الإجابة الصحيحة هي "${correctOption ? (isRTL && correctOption.text_ar ? correctOption.text_ar : correctOption.text) : ''}".`
-                            : `You didn't answer this question. The correct answer is "${correctOption ? correctOption.text : ''}".`
-                        )}
-                      </>
-                    )}
-                  </p>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        <div className="mt-6 flex justify-center">
-          <Button onClick={() => setShowReview(false)} className="h-11 sm:h-10">
-            {isRTL ? 'العودة للنتائج' : 'Back to Results'}
-          </Button>
-        </div>
-      </motion.div>
-    );
-  }
+  // Note: Answer Review with correct answers is disabled for security
+  // The correct answers are never sent to the client to prevent cheating
+  // Students can see their score but not which specific answers were correct
 
   // Results screen
   if (showResults) {
-    const results = calculateResults();
+    const results = getResults();
 
     return (
       <motion.div
@@ -492,16 +361,6 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
             </div>
           </div>
 
-          {/* Review Answers Button */}
-          <Button
-            variant="outline"
-            className="w-full mb-4 h-11 sm:h-10"
-            onClick={() => setShowReview(true)}
-          >
-            <CheckCircle2 className="w-4 h-4 me-2" />
-            {isRTL ? 'مراجعة الإجابات' : 'Review Answers'}
-          </Button>
-
           <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
             {!results.passed && (
               <Button
@@ -514,6 +373,7 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
                   setCurrentQuestionIndex(0);
                   setTestStarted(false);
                   setTimeLeft(null);
+                  setGradingResult(null);
                 }}
               >
                 {isRTL ? 'إعادة الاختبار' : 'Retry Test'}
