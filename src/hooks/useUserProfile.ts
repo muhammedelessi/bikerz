@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -72,132 +72,8 @@ export function useUserProfile() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-
-  const fetchProfile = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error) throw error;
-      setProfile(data as ExtendedProfile);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  }, [user]);
-
-  const fetchLearningStats = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      // Fetch enrollments, lesson progress, and gamification data in parallel
-      const [enrollmentsRes, progressRes, gamificationRes] = await Promise.all([
-        supabase
-          .from('course_enrollments')
-          .select('id, progress_percentage, completed_at, course_id')
-          .eq('user_id', user.id),
-        supabase
-          .from('lesson_progress')
-          .select('id, is_completed, watch_time_seconds, lesson_id, completed_at')
-          .eq('user_id', user.id)
-          .order('completed_at', { ascending: false }),
-        supabase
-          .from('user_gamification')
-          .select('total_xp')
-          .eq('user_id', user.id)
-          .maybeSingle(),
-      ]);
-
-      const enrollments = enrollmentsRes.data || [];
-      const progress = progressRes.data || [];
-      const gamification = gamificationRes.data;
-
-      const totalCourses = enrollments.length;
-      const coursesInProgress = enrollments.filter(e => !e.completed_at).length;
-      const completedLessons = progress.filter(p => p.is_completed).length;
-      const totalWatchTimeSeconds = progress.reduce((acc, p) => acc + (p.watch_time_seconds || 0), 0);
-      const totalLearningTimeHours = Math.round((totalWatchTimeSeconds / 3600) * 10) / 10;
-
-      // Calculate overall progress
-      const overallProgress = totalCourses > 0
-        ? Math.round(enrollments.reduce((acc, e) => acc + e.progress_percentage, 0) / totalCourses)
-        : 0;
-
-      // Get last lesson details
-      let lastLessonTitle = null;
-      let lastLessonTitleAr = null;
-      
-      const lastProgress = progress.find(p => p.is_completed);
-      if (lastProgress) {
-        const { data: lessonData } = await supabase
-          .from('lessons')
-          .select('title, title_ar')
-          .eq('id', lastProgress.lesson_id)
-          .single();
-        
-        if (lessonData) {
-          lastLessonTitle = lessonData.title;
-          lastLessonTitleAr = lessonData.title_ar;
-        }
-      }
-
-      // Update experience level based on XP and lessons
-      const totalXp = gamification?.total_xp || 0;
-      const newLevel = calculateExperienceLevel(totalXp, completedLessons);
-      
-      // Update profile experience level if changed
-      if (profile && profile.experience_level !== newLevel) {
-        await supabase
-          .from('profiles')
-          .update({ experience_level: newLevel })
-          .eq('user_id', user.id);
-        
-        setProfile(prev => prev ? { ...prev, experience_level: newLevel } : null);
-        
-        // Log activity for level change
-        await supabase.from('user_activity_timeline').insert({
-          user_id: user.id,
-          activity_type: 'level_change',
-          title: `Reached ${newLevel} level`,
-          title_ar: `وصل إلى مستوى ${newLevel}`,
-        });
-      }
-
-      setLearningStats({
-        totalCourses,
-        coursesInProgress,
-        completedLessons,
-        totalLearningTimeHours,
-        overallProgress,
-        lastLessonTitle,
-        lastLessonTitleAr,
-      });
-    } catch (error) {
-      console.error('Error fetching learning stats:', error);
-    }
-  }, [user, profile]);
-
-  const fetchActivities = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('user_activity_timeline')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-      setActivities(data || []);
-    } catch (error) {
-      console.error('Error fetching activities:', error);
-    }
-  }, [user]);
+  const hasLoadedRef = useRef(false);
+  const userIdRef = useRef<string | null>(null);
 
   const updateProfile = async (updates: Partial<ExtendedProfile>) => {
     if (!user) return;
@@ -249,17 +125,144 @@ export function useUserProfile() {
     }
   };
 
+  const loadAllData = async (userId: string) => {
+    try {
+      // Fetch profile, enrollments, lesson progress, gamification, and activities in parallel
+      const [profileRes, enrollmentsRes, progressRes, gamificationRes, activitiesRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single(),
+        supabase
+          .from('course_enrollments')
+          .select('id, progress_percentage, completed_at, course_id')
+          .eq('user_id', userId),
+        supabase
+          .from('lesson_progress')
+          .select('id, is_completed, watch_time_seconds, lesson_id, completed_at')
+          .eq('user_id', userId)
+          .order('completed_at', { ascending: false }),
+        supabase
+          .from('user_gamification')
+          .select('total_xp')
+          .eq('user_id', userId)
+          .maybeSingle(),
+        supabase
+          .from('user_activity_timeline')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(50),
+      ]);
+
+      // Process profile
+      const profileData = profileRes.data as ExtendedProfile | null;
+      
+      // Process learning stats
+      const enrollments = enrollmentsRes.data || [];
+      const progress = progressRes.data || [];
+      const gamification = gamificationRes.data;
+
+      const totalCourses = enrollments.length;
+      const coursesInProgress = enrollments.filter(e => !e.completed_at).length;
+      const completedLessons = progress.filter(p => p.is_completed).length;
+      const totalWatchTimeSeconds = progress.reduce((acc, p) => acc + (p.watch_time_seconds || 0), 0);
+      const totalLearningTimeHours = Math.round((totalWatchTimeSeconds / 3600) * 10) / 10;
+
+      // Calculate overall progress
+      const overallProgress = totalCourses > 0
+        ? Math.round(enrollments.reduce((acc, e) => acc + e.progress_percentage, 0) / totalCourses)
+        : 0;
+
+      // Get last lesson details
+      let lastLessonTitle = null;
+      let lastLessonTitleAr = null;
+      
+      const lastProgress = progress.find(p => p.is_completed);
+      if (lastProgress) {
+        const { data: lessonData } = await supabase
+          .from('lessons')
+          .select('title, title_ar')
+          .eq('id', lastProgress.lesson_id)
+          .single();
+        
+        if (lessonData) {
+          lastLessonTitle = lessonData.title;
+          lastLessonTitleAr = lessonData.title_ar;
+        }
+      }
+
+      // Calculate experience level based on XP and lessons
+      const totalXp = gamification?.total_xp || 0;
+      const newLevel = calculateExperienceLevel(totalXp, completedLessons);
+      
+      // Update experience level if changed (do this silently, no state flicker)
+      let finalProfile = profileData;
+      if (profileData && profileData.experience_level !== newLevel) {
+        await supabase
+          .from('profiles')
+          .update({ experience_level: newLevel })
+          .eq('user_id', userId);
+        
+        finalProfile = { ...profileData, experience_level: newLevel };
+        
+        // Log activity for level change
+        await supabase.from('user_activity_timeline').insert({
+          user_id: userId,
+          activity_type: 'level_change',
+          title: `Reached ${newLevel} level`,
+          title_ar: `وصل إلى مستوى ${newLevel}`,
+        });
+      }
+
+      // Set all state at once to prevent multiple re-renders
+      setProfile(finalProfile);
+      setLearningStats({
+        totalCourses,
+        coursesInProgress,
+        completedLessons,
+        totalLearningTimeHours,
+        overallProgress,
+        lastLessonTitle,
+        lastLessonTitleAr,
+      });
+      setActivities(activitiesRes.data || []);
+    } catch (error) {
+      console.error('Error loading profile data:', error);
+    }
+  };
+
   useEffect(() => {
+    // Reset loading state only if user changed
+    if (user?.id !== userIdRef.current) {
+      hasLoadedRef.current = false;
+      userIdRef.current = user?.id || null;
+    }
+
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
+    if (hasLoadedRef.current) {
+      return;
+    }
+
     const loadData = async () => {
       setIsLoading(true);
-      await Promise.all([fetchProfile(), fetchLearningStats(), fetchActivities()]);
+      await loadAllData(user.id);
+      hasLoadedRef.current = true;
       setIsLoading(false);
     };
 
-    if (user) {
-      loadData();
-    }
-  }, [user, fetchProfile, fetchLearningStats, fetchActivities]);
+    loadData();
+  }, [user]);
+
+  const refetch = async () => {
+    if (!user) return;
+    await loadAllData(user.id);
+  };
 
   return {
     profile,
@@ -269,6 +272,6 @@ export function useUserProfile() {
     isUpdating,
     updateProfile,
     uploadAvatar,
-    refetch: () => Promise.all([fetchProfile(), fetchLearningStats(), fetchActivities()]),
+    refetch,
   };
 }
