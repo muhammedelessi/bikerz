@@ -1426,9 +1426,60 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      test_questions_student: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          options: Json | null
+          points: number | null
+          position: number | null
+          question: string | null
+          question_ar: string | null
+          question_type: string | null
+          test_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          options?: Json | null
+          points?: number | null
+          position?: number | null
+          question?: string | null
+          question_ar?: string | null
+          question_type?: string | null
+          test_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          options?: Json | null
+          points?: number | null
+          position?: number | null
+          question?: string | null
+          question_ar?: string | null
+          question_type?: string | null
+          test_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_questions_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      grade_test_attempt: {
+        Args: { p_test_id: string; p_user_answers: Json }
+        Returns: {
+          correct_count: number
+          passed: boolean
+          score: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
