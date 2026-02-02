@@ -71,13 +71,7 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
   const serverTranscode = async (filePath: string): Promise<string | null> => {
     try {
       setUploadStage('transcoding');
-      setUploadProgress(0);
-
-      // Get auth token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('Not authenticated');
-      }
+      setUploadProgress(50);
 
       const maxWidth = maxResolution === 1080 ? 1920 : maxResolution === 720 ? 1280 : 854;
 
@@ -97,22 +91,23 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
 
       const result = response.data;
       
-      if (result.success && result.publicUrl) {
-        toast.success(
+      if (result.success) {
+        // Server validates the video but recommends client-side compression
+        toast.info(
           isRTL 
-            ? `تم تحويل الفيديو! نسبة الضغط: ${result.compressionRatio}`
-            : `Video transcoded! Compression: ${result.compressionRatio}`
+            ? 'تم التحقق من الفيديو. للضغط الأمثل، استخدم وضع ضغط المتصفح'
+            : 'Video validated. For optimal compression, use browser compression mode'
         );
         return result.publicUrl;
       } else {
-        throw new Error(result.error || 'Transcoding failed');
+        throw new Error(result.error || 'Validation failed');
       }
     } catch (err) {
-      console.error('Server transcoding error:', err);
+      console.error('Server validation error:', err);
       toast.warning(
         isRTL
-          ? 'فشل التحويل على السيرفر، استخدام الفيديو الأصلي'
-          : 'Server transcoding failed, using original video'
+          ? 'فشل التحقق على السيرفر، استخدام الفيديو الأصلي'
+          : 'Server validation failed, using original video'
       );
       return null;
     }
@@ -359,7 +354,7 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
                 <RadioGroupItem value="server" id="server" />
                 <Label htmlFor="server" className="text-sm cursor-pointer flex items-center gap-2">
                   <Server className="w-4 h-4 text-green-500" />
-                  {isRTL ? 'ضغط على السيرفر (أفضل جودة)' : 'Server transcoding (better quality)'}
+                  {isRTL ? 'التحقق على السيرفر' : 'Server validation'}
                 </Label>
               </div>
             </RadioGroup>
@@ -369,11 +364,11 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
             <p className="text-xs text-muted-foreground">
               {compressionMode === 'client' 
                 ? (isRTL 
-                    ? 'سيتم ضغط الفيديو في المتصفح قبل الرفع - أسرع ولكن جودة أقل'
-                    : 'Video compressed in browser before upload - faster but lower quality')
+                    ? 'سيتم ضغط الفيديو في المتصفح قبل الرفع - موصى به للحجم الأصغر'
+                    : 'Video compressed in browser before upload - recommended for smaller size')
                 : (isRTL
-                    ? 'سيتم رفع الفيديو ثم تحويله على السيرفر - جودة أفضل'
-                    : 'Video uploaded then transcoded on server - better quality')
+                    ? 'سيتم رفع الفيديو والتحقق منه على السيرفر'
+                    : 'Video uploaded and validated on server')
               }
             </p>
           )}
