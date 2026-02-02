@@ -2,13 +2,13 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, X, Video, CheckCircle, AlertCircle, Loader2, Zap, Settings2 } from 'lucide-react';
+import { Upload, X, Video, CheckCircle, AlertCircle, Loader2, Zap, Settings2, Server, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { 
   compressVideo, 
   formatFileSize, 
@@ -25,7 +25,8 @@ interface VideoUploaderProps {
 const ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
 const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 
-type UploadStage = 'idle' | 'compressing' | 'uploading' | 'done';
+type UploadStage = 'idle' | 'compressing' | 'uploading' | 'transcoding' | 'done';
+type CompressionMode = 'none' | 'client' | 'server';
 
 const VideoUploader: React.FC<VideoUploaderProps> = ({
   onUploadComplete,
@@ -41,12 +42,12 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Compression settings
-  const [enableCompression, setEnableCompression] = useState(true);
+  const [compressionMode, setCompressionMode] = useState<CompressionMode>('client');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [maxResolution, setMaxResolution] = useState(720); // 720p default
   const [quality, setQuality] = useState(70); // 70% quality
 
-  const isProcessing = uploadStage === 'compressing' || uploadStage === 'uploading';
+  const isProcessing = uploadStage === 'compressing' || uploadStage === 'uploading' || uploadStage === 'transcoding';
 
   const validateFile = (file: File): string | null => {
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -67,6 +68,56 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
     return 500000 + (qualityPercent / 100) * 3500000;
   };
 
+  const serverTranscode = async (filePath: string): Promise<string | null> => {
+    try {
+      setUploadStage('transcoding');
+      setUploadProgress(0);
+
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Not authenticated');
+      }
+
+      const maxWidth = maxResolution === 1080 ? 1920 : maxResolution === 720 ? 1280 : 854;
+
+      const response = await supabase.functions.invoke('transcode-video', {
+        body: {
+          videoPath: filePath,
+          maxWidth,
+          maxHeight: maxResolution,
+          quality,
+          outputFormat: 'mp4',
+        },
+      });
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      const result = response.data;
+      
+      if (result.success && result.publicUrl) {
+        toast.success(
+          isRTL 
+            ? `تم تحويل الفيديو! نسبة الضغط: ${result.compressionRatio}`
+            : `Video transcoded! Compression: ${result.compressionRatio}`
+        );
+        return result.publicUrl;
+      } else {
+        throw new Error(result.error || 'Transcoding failed');
+      }
+    } catch (err) {
+      console.error('Server transcoding error:', err);
+      toast.warning(
+        isRTL
+          ? 'فشل التحويل على السيرفر، استخدام الفيديو الأصلي'
+          : 'Server transcoding failed, using original video'
+      );
+      return null;
+    }
+  };
+
   const uploadFile = async (file: File) => {
     const validationError = validateFile(file);
     if (validationError) {
@@ -81,8 +132,8 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
 
     let fileToUpload = file;
 
-    // Compress video if enabled
-    if (enableCompression) {
+    // Client-side compression
+    if (compressionMode === 'client') {
       setUploadStage('compressing');
       
       try {
@@ -129,7 +180,7 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
 
     try {
       // Generate unique filename
-      const fileExt = fileToUpload.name.split('.').pop();
+      const fileExt = fileToUpload.name.split('.').pop() || 'mp4';
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `videos/${fileName}`;
 
@@ -158,9 +209,17 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
       }
 
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      let { data: { publicUrl } } = supabase.storage
         .from('lesson-videos')
         .getPublicUrl(filePath);
+
+      // Server-side transcoding (after upload)
+      if (compressionMode === 'server') {
+        const transcodedUrl = await serverTranscode(filePath);
+        if (transcodedUrl) {
+          publicUrl = transcodedUrl;
+        }
+      }
 
       setUploadProgress(100);
       setUploadStage('done');
@@ -194,7 +253,7 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
     if (file) {
       uploadFile(file);
     }
-  }, [enableCompression, maxResolution, quality]);
+  }, [compressionMode, maxResolution, quality]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -237,12 +296,18 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
     if (uploadStage === 'uploading') {
       return isRTL ? `جاري الرفع... ${Math.round(uploadProgress)}%` : `Uploading... ${Math.round(uploadProgress)}%`;
     }
+    if (uploadStage === 'transcoding') {
+      return isRTL ? 'جاري التحويل على السيرفر...' : 'Server transcoding...';
+    }
     return '';
   };
 
   const getCurrentProgress = () => {
     if (uploadStage === 'compressing' && compressionProgress) {
       return compressionProgress.progress;
+    }
+    if (uploadStage === 'transcoding') {
+      return 50; // Indeterminate progress for server transcoding
     }
     return uploadProgress;
   };
@@ -261,32 +326,59 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
 
       {/* Compression Settings */}
       {!uploadedUrl && (
-        <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+        <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-4">
+          <div className="space-y-3">
+            <Label className="text-sm font-medium flex items-center gap-2">
               <Zap className="w-4 h-4 text-primary" />
-              <Label htmlFor="compression" className="text-sm font-medium">
-                {isRTL ? 'ضغط الفيديو تلقائياً' : 'Auto-compress video'}
-              </Label>
-            </div>
-            <Switch
-              id="compression"
-              checked={enableCompression}
-              onCheckedChange={setEnableCompression}
+              {isRTL ? 'وضع الضغط' : 'Compression Mode'}
+            </Label>
+            
+            <RadioGroup
+              value={compressionMode}
+              onValueChange={(v) => setCompressionMode(v as CompressionMode)}
+              className="grid grid-cols-1 gap-2"
               disabled={isProcessing}
-            />
+            >
+              <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                <RadioGroupItem value="none" id="none" />
+                <Label htmlFor="none" className="text-sm cursor-pointer flex items-center gap-2">
+                  <X className="w-4 h-4 text-muted-foreground" />
+                  {isRTL ? 'بدون ضغط' : 'No compression'}
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                <RadioGroupItem value="client" id="client" />
+                <Label htmlFor="client" className="text-sm cursor-pointer flex items-center gap-2">
+                  <Monitor className="w-4 h-4 text-blue-500" />
+                  {isRTL ? 'ضغط في المتصفح (سريع)' : 'Browser compression (fast)'}
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                <RadioGroupItem value="server" id="server" />
+                <Label htmlFor="server" className="text-sm cursor-pointer flex items-center gap-2">
+                  <Server className="w-4 h-4 text-green-500" />
+                  {isRTL ? 'ضغط على السيرفر (أفضل جودة)' : 'Server transcoding (better quality)'}
+                </Label>
+              </div>
+            </RadioGroup>
           </div>
           
-          {enableCompression && (
+          {compressionMode !== 'none' && (
             <p className="text-xs text-muted-foreground">
-              {isRTL 
-                ? 'سيتم ضغط الفيديو للحصول على أفضل جودة بأقل حجم ورفع أسرع'
-                : 'Video will be compressed for best quality with smaller size and faster upload'
+              {compressionMode === 'client' 
+                ? (isRTL 
+                    ? 'سيتم ضغط الفيديو في المتصفح قبل الرفع - أسرع ولكن جودة أقل'
+                    : 'Video compressed in browser before upload - faster but lower quality')
+                : (isRTL
+                    ? 'سيتم رفع الفيديو ثم تحويله على السيرفر - جودة أفضل'
+                    : 'Video uploaded then transcoded on server - better quality')
               }
             </p>
           )}
 
-          {enableCompression && (
+          {compressionMode !== 'none' && (
             <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm" className="w-full justify-start gap-2 h-8 text-xs">
@@ -430,10 +522,19 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
                       : 'or click to browse • MP4, WebM, MOV • up to 500MB'
                     }
                   </p>
-                  {enableCompression && (
+                  {compressionMode !== 'none' && (
                     <p className="text-xs text-primary mt-2 flex items-center justify-center gap-1">
-                      <Zap className="w-3 h-3" />
-                      {isRTL ? 'سيتم الضغط تلقائياً' : 'Will be auto-compressed'}
+                      {compressionMode === 'client' ? (
+                        <>
+                          <Monitor className="w-3 h-3" />
+                          {isRTL ? 'سيتم الضغط في المتصفح' : 'Browser compression'}
+                        </>
+                      ) : (
+                        <>
+                          <Server className="w-3 h-3" />
+                          {isRTL ? 'سيتم التحويل على السيرفر' : 'Server transcoding'}
+                        </>
+                      )}
                     </p>
                   )}
                 </div>
