@@ -1,6 +1,7 @@
 /**
  * Video Compressor Utility
  * Uses HTML5 Canvas and MediaRecorder to compress videos client-side
+ * Properly captures and preserves audio from original video
  */
 
 export interface CompressionProgress {
@@ -52,8 +53,10 @@ export async function compressVideo(
     return file;
   }
 
-  // Check for supported MIME types early
+  // Check for supported MIME types early - prefer VP9 with Opus audio
   const mimeTypes = [
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
     'video/webm;codecs=vp9',
     'video/webm;codecs=vp8',
     'video/webm',
@@ -81,7 +84,7 @@ export async function compressVideo(
   return new Promise((resolve, reject) => {
     // Create video element to load the source
     const video = document.createElement('video');
-    video.muted = false; // Keep audio enabled to capture it
+    video.muted = true; // Must be muted initially for autoplay, we'll capture audio differently
     video.playsInline = true;
     video.crossOrigin = 'anonymous';
     
@@ -148,10 +151,10 @@ export async function compressVideo(
           return;
         }
         
-        // Create a stream from canvas for video
-        const canvasStream = canvas.captureStream(30); // 30 FPS
+        // Create a stream from canvas for video at 30 FPS
+        const canvasStream = canvas.captureStream(30);
         
-        // Create a combined stream with video from canvas and audio from original video
+        // Create a combined stream
         const combinedStream = new MediaStream();
         
         // Add video track from canvas
@@ -159,35 +162,89 @@ export async function compressVideo(
           combinedStream.addTrack(track);
         });
         
-        // Try to capture audio from the video element
+        // Try to capture audio using captureStream on the video element
+        // This is the more reliable approach for audio capture
+        let audioContext: AudioContext | null = null;
+        let audioDestination: MediaStreamAudioDestinationNode | null = null;
+        let audioSource: MediaElementAudioSourceNode | null = null;
+        
         try {
-          // Create an audio context to capture audio from video
-          const audioContext = new AudioContext();
-          const source = audioContext.createMediaElementSource(video);
-          const destination = audioContext.createMediaStreamDestination();
-          source.connect(destination);
-          source.connect(audioContext.destination); // Also play audio normally
+          // Create a separate video element for audio capture to avoid conflicts
+          const audioVideo = document.createElement('video');
+          audioVideo.src = objectUrl;
+          audioVideo.muted = false; // Need audio for capture
+          audioVideo.volume = 0.001; // Nearly silent to avoid playing out loud
+          audioVideo.playsInline = true;
           
-          // Add audio track to combined stream
-          destination.stream.getAudioTracks().forEach(track => {
+          // Wait for audio video to be ready
+          await new Promise<void>((resolveAudio) => {
+            audioVideo.onloadedmetadata = () => resolveAudio();
+            audioVideo.onerror = () => resolveAudio(); // Continue without audio on error
+            setTimeout(() => resolveAudio(), 2000); // Timeout after 2s
+          });
+          
+          // Create audio context and capture from the audio video element
+          audioContext = new AudioContext();
+          audioSource = audioContext.createMediaElementSource(audioVideo);
+          audioDestination = audioContext.createMediaStreamDestination();
+          
+          // Create a gain node to control volume (keep it very low to avoid playback)
+          const gainNode = audioContext.createGain();
+          gainNode.gain.value = 0.001;
+          
+          // Connect: source -> destination (for recording) and source -> gain -> output (very quiet)
+          audioSource.connect(audioDestination);
+          audioSource.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          // Add audio tracks to combined stream
+          audioDestination.stream.getAudioTracks().forEach(track => {
             combinedStream.addTrack(track);
           });
+          
+          // Sync the audio video with main video
+          video.addEventListener('timeupdate', () => {
+            if (Math.abs(audioVideo.currentTime - video.currentTime) > 0.1) {
+              audioVideo.currentTime = video.currentTime;
+            }
+          });
+          
+          video.addEventListener('play', () => {
+            audioVideo.currentTime = video.currentTime;
+            audioVideo.play().catch(() => {});
+          });
+          
+          video.addEventListener('pause', () => {
+            audioVideo.pause();
+          });
+          
+          video.addEventListener('ended', () => {
+            audioVideo.pause();
+          });
+          
         } catch (audioError) {
-          console.warn('Could not capture audio, video will have no sound:', audioError);
-          // Continue without audio
+          console.warn('Could not set up audio capture, video will have no sound:', audioError);
+          // Continue without audio - better than failing completely
         }
         
         // Create MediaRecorder with optimized settings
         let mediaRecorder: MediaRecorder;
         try {
-          mediaRecorder = new MediaRecorder(combinedStream, {
+          const recorderOptions: MediaRecorderOptions = {
             mimeType: selectedMimeType,
             videoBitsPerSecond: opts.videoBitrate,
-            audioBitsPerSecond: opts.audioBitrate,
-          });
+          };
+          
+          // Only add audio bitrate if we have audio tracks
+          if (combinedStream.getAudioTracks().length > 0) {
+            recorderOptions.audioBitsPerSecond = opts.audioBitrate;
+          }
+          
+          mediaRecorder = new MediaRecorder(combinedStream, recorderOptions);
         } catch (recorderError) {
           console.warn('Failed to create MediaRecorder:', recorderError);
           URL.revokeObjectURL(objectUrl);
+          if (audioContext) audioContext.close();
           resolve(file);
           return;
         }
@@ -206,6 +263,9 @@ export async function compressVideo(
           recordingStopped = true;
           
           URL.revokeObjectURL(objectUrl);
+          if (audioContext) {
+            audioContext.close().catch(() => {});
+          }
           
           if (chunks.length === 0) {
             console.warn('No video data recorded, using original');
@@ -237,6 +297,7 @@ export async function compressVideo(
         
         mediaRecorder.onerror = () => {
           URL.revokeObjectURL(objectUrl);
+          if (audioContext) audioContext.close().catch(() => {});
           console.warn('MediaRecorder error, using original');
           resolve(file);
         };
@@ -247,6 +308,7 @@ export async function compressVideo(
         } catch (startError) {
           console.warn('Failed to start recording:', startError);
           URL.revokeObjectURL(objectUrl);
+          if (audioContext) audioContext.close().catch(() => {});
           resolve(file);
           return;
         }
@@ -262,6 +324,7 @@ export async function compressVideo(
             mediaRecorder.stop();
           }
           URL.revokeObjectURL(objectUrl);
+          if (audioContext) audioContext.close().catch(() => {});
           resolve(file);
           return;
         }

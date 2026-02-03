@@ -216,22 +216,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleSeek = useCallback((value: number[]) => {
     if (!videoRef.current) return;
     const time = value[0];
-    videoRef.current.currentTime = time;
-    setCurrentTime(time);
+    // Guard against non-finite values (NaN, Infinity)
+    if (!isFinite(time) || time < 0) return;
+    const safeDuration = videoRef.current.duration || 0;
+    const safeTime = Math.min(time, safeDuration);
+    if (isFinite(safeTime)) {
+      videoRef.current.currentTime = safeTime;
+      setCurrentTime(safeTime);
+    }
   }, []);
 
   const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!videoRef.current || !progressRef.current) return;
+    const safeDuration = videoRef.current.duration;
+    if (!isFinite(safeDuration) || safeDuration <= 0) return;
     const rect = progressRef.current.getBoundingClientRect();
     // For RTL, calculate from right side
     const isRtl = document.documentElement.dir === 'rtl';
     const pos = isRtl 
       ? (rect.right - e.clientX) / rect.width 
       : (e.clientX - rect.left) / rect.width;
-    const time = Math.max(0, Math.min(1, pos)) * duration;
-    videoRef.current.currentTime = time;
-    setCurrentTime(time);
-  }, [duration]);
+    const time = Math.max(0, Math.min(1, pos)) * safeDuration;
+    if (isFinite(time)) {
+      videoRef.current.currentTime = time;
+      setCurrentTime(time);
+    }
+  }, []);
 
   // Handle progress bar hover for time preview
   const handleProgressHover = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -276,8 +286,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const skip = useCallback((amount: number) => {
     if (!videoRef.current) return;
-    videoRef.current.currentTime = Math.max(0, Math.min(duration, videoRef.current.currentTime + amount));
-  }, [duration]);
+    const safeDuration = videoRef.current.duration || 0;
+    if (!isFinite(safeDuration)) return;
+    const newTime = Math.max(0, Math.min(safeDuration, videoRef.current.currentTime + amount));
+    if (isFinite(newTime)) {
+      videoRef.current.currentTime = newTime;
+    }
+  }, []);
 
   const replay = useCallback(() => {
     if (!videoRef.current) return;
