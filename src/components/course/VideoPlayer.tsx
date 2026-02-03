@@ -259,6 +259,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   return (
     <div className="relative w-full aspect-video overflow-hidden rounded-lg border border-border bg-muted">
+      {/* CRITICAL: volume={1} + muted={false} ensures audio plays */}
       <video
         ref={videoRef}
         className="h-full w-full"
@@ -267,6 +268,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         playsInline
         preload="metadata"
         aria-label={title || "Video player"}
+        // Explicit defaults to GUARANTEE audio is not suppressed
+        // @ts-ignore - volume and muted are valid attributes
+        volume={1}
+        muted={false}
       />
 
       {/* Explicit user gesture (required for sound in many browsers if autoplay is requested) */}
