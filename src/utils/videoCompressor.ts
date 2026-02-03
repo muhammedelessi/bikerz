@@ -81,7 +81,7 @@ export async function compressVideo(
   return new Promise((resolve, reject) => {
     // Create video element to load the source
     const video = document.createElement('video');
-    video.muted = true;
+    video.muted = false; // Keep audio enabled to capture it
     video.playsInline = true;
     video.crossOrigin = 'anonymous';
     
@@ -148,15 +148,42 @@ export async function compressVideo(
           return;
         }
         
-        // Create a stream from canvas (video only - no audio for reliability)
-        const stream = canvas.captureStream(30); // 30 FPS
+        // Create a stream from canvas for video
+        const canvasStream = canvas.captureStream(30); // 30 FPS
+        
+        // Create a combined stream with video from canvas and audio from original video
+        const combinedStream = new MediaStream();
+        
+        // Add video track from canvas
+        canvasStream.getVideoTracks().forEach(track => {
+          combinedStream.addTrack(track);
+        });
+        
+        // Try to capture audio from the video element
+        try {
+          // Create an audio context to capture audio from video
+          const audioContext = new AudioContext();
+          const source = audioContext.createMediaElementSource(video);
+          const destination = audioContext.createMediaStreamDestination();
+          source.connect(destination);
+          source.connect(audioContext.destination); // Also play audio normally
+          
+          // Add audio track to combined stream
+          destination.stream.getAudioTracks().forEach(track => {
+            combinedStream.addTrack(track);
+          });
+        } catch (audioError) {
+          console.warn('Could not capture audio, video will have no sound:', audioError);
+          // Continue without audio
+        }
         
         // Create MediaRecorder with optimized settings
         let mediaRecorder: MediaRecorder;
         try {
-          mediaRecorder = new MediaRecorder(stream, {
+          mediaRecorder = new MediaRecorder(combinedStream, {
             mimeType: selectedMimeType,
             videoBitsPerSecond: opts.videoBitrate,
+            audioBitsPerSecond: opts.audioBitrate,
           });
         } catch (recorderError) {
           console.warn('Failed to create MediaRecorder:', recorderError);
