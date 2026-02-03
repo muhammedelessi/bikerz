@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -60,14 +60,6 @@ interface VideoPlayerProps {
   chapters?: ChapterMarker[];
 }
 
-export interface VideoPlayerRef {
-  play: () => void;
-  pause: () => void;
-  seek: (time: number) => void;
-  getCurrentTime: () => number;
-  getDuration: () => number;
-}
-
 const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
 const DEFAULT_QUALITIES: VideoQuality[] = [
@@ -95,7 +87,7 @@ const safeNumber = (value: number, fallback: number = 0): number => {
   return Number.isFinite(value) ? value : fallback;
 };
 
-const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({
+const VideoPlayer: React.FC<VideoPlayerProps> = ({
   src,
   poster,
   title,
@@ -106,7 +98,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({
   qualities = DEFAULT_QUALITIES,
   initialTime = 0,
   chapters = [],
-}, ref) => {
+}) => {
   const { isRTL } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -137,18 +129,6 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({
   const [error, setError] = useState<string | null>(null);
   const [isSeeking, setIsSeeking] = useState(false);
 
-  // Expose imperative methods
-  useImperativeHandle(ref, () => ({
-    play: () => videoRef.current?.play(),
-    pause: () => videoRef.current?.pause(),
-    seek: (time: number) => {
-      if (videoRef.current && Number.isFinite(time)) {
-        videoRef.current.currentTime = Math.max(0, Math.min(time, videoRef.current.duration || 0));
-      }
-    },
-    getCurrentTime: () => videoRef.current?.currentTime ?? 0,
-    getDuration: () => videoRef.current?.duration ?? 0,
-  }));
 
   // Video event handlers
   const handleTimeUpdate = useCallback(() => {
@@ -1050,9 +1030,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({
       </div>
     </TooltipProvider>
   );
-});
-
-VideoPlayer.displayName = 'VideoPlayer';
+};
 
 export default VideoPlayer;
 export type { ChapterMarker, VideoPlayerProps };
