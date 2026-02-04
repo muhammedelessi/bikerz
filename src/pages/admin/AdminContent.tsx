@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -15,8 +14,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { 
   Save, Loader2, Eye, Home, Target, Route, BookOpen, Megaphone, Users,
-  Settings2, Palette, Link2, LayoutGrid, Type, MousePointer,
-  Sparkles, RefreshCw, PanelLeftClose, PanelLeft
+  Settings2, Palette, LayoutGrid, Type, MousePointer,
+  Sparkles, PanelLeftClose, PanelLeft, Menu, ExternalLink
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import IconSelector from '@/components/admin/content/IconSelector';
@@ -33,11 +32,50 @@ interface ContentSection {
   value: ContentValue;
 }
 
+interface MenuItem {
+  id: string;
+  title_en: string;
+  title_ar: string;
+  link: string;
+  is_visible: boolean;
+  open_in_new_tab: boolean;
+}
+
+interface FeatureCard {
+  title_en: string;
+  title_ar: string;
+  description_en: string;
+  description_ar: string;
+  icon: string;
+}
+
+interface JourneyStep {
+  title_en: string;
+  title_ar: string;
+  description_en: string;
+  description_ar: string;
+  icon: string;
+}
+
+interface Skill {
+  title_en: string;
+  title_ar: string;
+  description_en: string;
+  description_ar: string;
+  icon: string;
+}
+
+interface TrustBadge {
+  text_en: string;
+  text_ar: string;
+  icon: string;
+}
+
 const AdminContent: React.FC = () => {
   const { isRTL } = useLanguage();
   const queryClient = useQueryClient();
   const [editedContent, setEditedContent] = useState<Record<string, ContentValue>>({});
-  const [activeSection, setActiveSection] = useState('hero');
+  const [activeSection, setActiveSection] = useState('header');
   const [showPreview, setShowPreview] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -78,6 +116,7 @@ const AdminContent: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-landing-content'] });
       queryClient.invalidateQueries({ queryKey: ['landing-content'] });
+      queryClient.invalidateQueries({ queryKey: ['header-content'] });
       setHasChanges(false);
       toast.success(isRTL ? 'تم حفظ التغييرات' : 'Changes saved successfully');
     },
@@ -99,7 +138,7 @@ const AdminContent: React.FC = () => {
     await Promise.all(promises);
   };
 
-  const updateField = (section: string, field: string, value: string) => {
+  const updateField = (section: string, field: string, value: string | boolean) => {
     setEditedContent(prev => ({
       ...prev,
       [section]: { ...prev[section], [field]: value }
@@ -107,7 +146,17 @@ const AdminContent: React.FC = () => {
     setHasChanges(true);
   };
 
-  const updateArrayItem = (section: string, arrayKey: string, index: number, field: string, value: string) => {
+  const updateNestedField = (section: string, parentKey: string, field: string, value: string | boolean) => {
+    setEditedContent(prev => {
+      const sectionData = JSON.parse(JSON.stringify(prev[section] || {}));
+      if (!sectionData[parentKey]) sectionData[parentKey] = {};
+      sectionData[parentKey][field] = value;
+      return { ...prev, [section]: sectionData };
+    });
+    setHasChanges(true);
+  };
+
+  const updateArrayItem = (section: string, arrayKey: string, index: number, field: string, value: string | boolean) => {
     setEditedContent(prev => {
       const sectionData = JSON.parse(JSON.stringify(prev[section] || {}));
       const array = sectionData[arrayKey] || [];
@@ -151,6 +200,7 @@ const AdminContent: React.FC = () => {
   };
 
   const sections = [
+    { key: 'header', icon: Menu, label: isRTL ? 'القائمة الرئيسية' : 'Header Menu' },
     { key: 'hero', icon: Home, label: isRTL ? 'القسم الرئيسي' : 'Hero Section' },
     { key: 'why', icon: Target, label: isRTL ? 'لماذا نحن' : 'Why Us' },
     { key: 'journey', icon: Route, label: isRTL ? 'رحلة التعلم' : 'Journey' },
@@ -158,6 +208,202 @@ const AdminContent: React.FC = () => {
     { key: 'cta', icon: Megaphone, label: isRTL ? 'دعوة للعمل' : 'Call to Action' },
     { key: 'community', icon: Users, label: isRTL ? 'المجتمع' : 'Community' },
   ];
+
+  // ============= HEADER MENU EDITOR =============
+  const renderHeaderSection = () => {
+    const headerData = editedContent.header || {};
+    const menuItems = headerData.menu_items || [];
+    const ctaButton = headerData.cta_button || {};
+    const loginButton = headerData.login_button || {};
+
+    const menuItemTemplate = {
+      id: `menu-${Date.now()}`,
+      title_en: 'New Link',
+      title_ar: 'رابط جديد',
+      link: '/',
+      is_visible: true,
+      open_in_new_tab: false
+    };
+
+    return (
+      <div className="space-y-8">
+        {/* Logo Settings */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Palette className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'إعدادات الشعار' : 'Logo Settings'}</h3>
+          </div>
+
+          <ImageUploader
+            value={headerData.logo_url || ''}
+            onChange={(url) => updateField('header', 'logo_url', url)}
+            label={isRTL ? 'شعار مخصص (اختياري)' : 'Custom Logo (optional)'}
+          />
+
+          <BilingualInput
+            labelEn="Logo Alt Text"
+            labelAr="نص بديل للشعار"
+            valueEn={headerData.logo_alt_en || 'BIKERZ'}
+            valueAr={headerData.logo_alt_ar || 'بايكرز'}
+            onChangeEn={(v) => updateField('header', 'logo_alt_en', v)}
+            onChangeAr={(v) => updateField('header', 'logo_alt_ar', v)}
+          />
+
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={headerData.show_language_toggle !== false}
+              onCheckedChange={(v) => updateField('header', 'show_language_toggle', v)}
+            />
+            <Label>{isRTL ? 'إظهار زر تغيير اللغة' : 'Show Language Toggle'}</Label>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Menu Items */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Menu className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'روابط القائمة' : 'Menu Links'}</h3>
+          </div>
+
+          <SortableList<MenuItem>
+            items={menuItems}
+            onReorder={(newItems) => updateArray('header', 'menu_items', newItems)}
+            onAdd={() => addArrayItem('header', 'menu_items', menuItemTemplate)}
+            onRemove={(index) => removeArrayItem('header', 'menu_items', index)}
+            addLabel={isRTL ? 'إضافة رابط جديد' : 'Add Menu Link'}
+            minItems={1}
+            maxItems={8}
+            renderItem={(item: MenuItem, index: number) => (
+              <div className="space-y-4">
+                <BilingualInput
+                  labelEn="Link Title"
+                  labelAr="عنوان الرابط"
+                  valueEn={item.title_en || ''}
+                  valueAr={item.title_ar || ''}
+                  onChangeEn={(v) => updateArrayItem('header', 'menu_items', index, 'title_en', v)}
+                  onChangeAr={(v) => updateArrayItem('header', 'menu_items', index, 'title_ar', v)}
+                />
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <ExternalLink className="w-4 h-4" />
+                      {isRTL ? 'الرابط' : 'Link URL'}
+                    </Label>
+                    <Input
+                      value={item.link || ''}
+                      onChange={(e) => updateArrayItem('header', 'menu_items', index, 'link', e.target.value)}
+                      placeholder="/courses"
+                    />
+                  </div>
+                  <div className="space-y-4 pt-6">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={item.is_visible !== false}
+                        onCheckedChange={(v) => updateArrayItem('header', 'menu_items', index, 'is_visible', v)}
+                      />
+                      <Label>{isRTL ? 'مرئي' : 'Visible'}</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={item.open_in_new_tab === true}
+                        onCheckedChange={(v) => updateArrayItem('header', 'menu_items', index, 'open_in_new_tab', v)}
+                      />
+                      <Label>{isRTL ? 'فتح في نافذة جديدة' : 'Open in new tab'}</Label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          />
+        </div>
+
+        <Separator />
+
+        {/* CTA Button */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <MousePointer className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'زر الدعوة للعمل (CTA)' : 'CTA Button'}</h3>
+          </div>
+
+          <BilingualInput
+            labelEn="Button Text"
+            labelAr="نص الزر"
+            valueEn={ctaButton.text_en || 'Get Started'}
+            valueAr={ctaButton.text_ar || 'ابدأ الآن'}
+            onChangeEn={(v) => updateNestedField('header', 'cta_button', 'text_en', v)}
+            onChangeAr={(v) => updateNestedField('header', 'cta_button', 'text_ar', v)}
+          />
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{isRTL ? 'رابط الزر' : 'Button Link'}</Label>
+              <Input
+                value={ctaButton.link || '/signup'}
+                onChange={(e) => updateNestedField('header', 'cta_button', 'link', e.target.value)}
+                placeholder="/signup"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{isRTL ? 'نمط الزر' : 'Button Style'}</Label>
+              <Input
+                value={ctaButton.style || 'cta'}
+                onChange={(e) => updateNestedField('header', 'cta_button', 'style', e.target.value)}
+                placeholder="cta, primary, secondary"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={ctaButton.is_visible !== false}
+              onCheckedChange={(v) => updateNestedField('header', 'cta_button', 'is_visible', v)}
+            />
+            <Label>{isRTL ? 'إظهار الزر' : 'Show Button'}</Label>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Login Button */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Type className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'زر تسجيل الدخول' : 'Login Button'}</h3>
+          </div>
+
+          <BilingualInput
+            labelEn="Button Text"
+            labelAr="نص الزر"
+            valueEn={loginButton.text_en || 'Login'}
+            valueAr={loginButton.text_ar || 'تسجيل الدخول'}
+            onChangeEn={(v) => updateNestedField('header', 'login_button', 'text_en', v)}
+            onChangeAr={(v) => updateNestedField('header', 'login_button', 'text_ar', v)}
+          />
+
+          <div className="space-y-2">
+            <Label>{isRTL ? 'رابط الزر' : 'Button Link'}</Label>
+            <Input
+              value={loginButton.link || '/login'}
+              onChange={(e) => updateNestedField('header', 'login_button', 'link', e.target.value)}
+              placeholder="/login"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={loginButton.is_visible !== false}
+              onCheckedChange={(v) => updateNestedField('header', 'login_button', 'is_visible', v)}
+            />
+            <Label>{isRTL ? 'إظهار الزر' : 'Show Button'}</Label>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // ============= HERO SECTION EDITOR =============
   const renderHeroSection = () => {
@@ -462,70 +708,7 @@ const AdminContent: React.FC = () => {
             onChangeEn={(v) => updateField('why', 'subtitle_en', v)}
             onChangeAr={(v) => updateField('why', 'subtitle_ar', v)}
             isTextarea
-          />
-        </div>
-
-        <Separator />
-
-        {/* Cards */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <LayoutGrid className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold">{isRTL ? 'البطاقات' : 'Feature Cards'}</h3>
-            </div>
-            <Badge variant="secondary">{cards.length} / 6</Badge>
-          </div>
-
-          <SortableList
-            items={cards}
-            onReorder={(newCards) => updateArray('why', 'cards', newCards)}
-            onAdd={() => addArrayItem('why', 'cards', cardTemplate)}
-            onRemove={(index) => removeArrayItem('why', 'cards', index)}
-            addLabel={isRTL ? 'إضافة بطاقة' : 'Add Card'}
-            minItems={1}
-            maxItems={6}
-            renderItem={(card: ContentValue, index: number) => (
-              <div className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Icon</Label>
-                    <IconSelector
-                      value={card.icon || 'Shield'}
-                      onChange={(icon) => updateArrayItem('why', 'cards', index, 'icon', icon)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Background Image (optional)</Label>
-                    <Input
-                      value={card.image || ''}
-                      onChange={(e) => updateArrayItem('why', 'cards', index, 'image', e.target.value)}
-                      placeholder="Image URL"
-                    />
-                  </div>
-                </div>
-
-                <BilingualInput
-                  labelEn="Title"
-                  labelAr="العنوان"
-                  valueEn={card.title_en || ''}
-                  valueAr={card.title_ar || ''}
-                  onChangeEn={(v) => updateArrayItem('why', 'cards', index, 'title_en', v)}
-                  onChangeAr={(v) => updateArrayItem('why', 'cards', index, 'title_ar', v)}
-                />
-
-                <BilingualInput
-                  labelEn="Description"
-                  labelAr="الوصف"
-                  valueEn={card.description_en || ''}
-                  valueAr={card.description_ar || ''}
-                  onChangeEn={(v) => updateArrayItem('why', 'cards', index, 'description_en', v)}
-                  onChangeAr={(v) => updateArrayItem('why', 'cards', index, 'description_ar', v)}
-                  isTextarea
-                  rows={2}
-                />
-              </div>
-            )}
+            rows={2}
           />
         </div>
 
@@ -534,23 +717,23 @@ const AdminContent: React.FC = () => {
         {/* Layout Settings */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-4">
-            <Settings2 className="w-5 h-5 text-primary" />
+            <LayoutGrid className="w-5 h-5 text-primary" />
             <h3 className="font-semibold">{isRTL ? 'إعدادات التخطيط' : 'Layout Settings'}</h3>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <Label>Columns (Desktop)</Label>
+              <Label>Desktop Columns</Label>
               <Input
                 type="number"
-                min="1"
+                min="2"
                 max="4"
-                value={whyData.columns_desktop || '2'}
+                value={whyData.columns_desktop || '3'}
                 onChange={(e) => updateField('why', 'columns_desktop', e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label>Columns (Tablet)</Label>
+              <Label>Tablet Columns</Label>
               <Input
                 type="number"
                 min="1"
@@ -560,7 +743,7 @@ const AdminContent: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>Columns (Mobile)</Label>
+              <Label>Mobile Columns</Label>
               <Input
                 type="number"
                 min="1"
@@ -570,6 +753,55 @@ const AdminContent: React.FC = () => {
               />
             </div>
           </div>
+        </div>
+
+        <Separator />
+
+        {/* Feature Cards */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <LayoutGrid className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'بطاقات المميزات' : 'Feature Cards'}</h3>
+          </div>
+
+          <SortableList<FeatureCard>
+            items={cards}
+            onReorder={(newItems) => updateArray('why', 'cards', newItems)}
+            onAdd={() => addArrayItem('why', 'cards', cardTemplate)}
+            onRemove={(index) => removeArrayItem('why', 'cards', index)}
+            addLabel={isRTL ? 'إضافة بطاقة' : 'Add Card'}
+            minItems={1}
+            maxItems={6}
+            renderItem={(item: FeatureCard, index: number) => (
+              <div className="space-y-4">
+                <IconSelector
+                  value={item.icon || 'Shield'}
+                  onChange={(icon) => updateArrayItem('why', 'cards', index, 'icon', icon)}
+                  label={isRTL ? 'الأيقونة' : 'Icon'}
+                />
+                
+                <BilingualInput
+                  labelEn="Title"
+                  labelAr="العنوان"
+                  valueEn={item.title_en || ''}
+                  valueAr={item.title_ar || ''}
+                  onChangeEn={(v) => updateArrayItem('why', 'cards', index, 'title_en', v)}
+                  onChangeAr={(v) => updateArrayItem('why', 'cards', index, 'title_ar', v)}
+                />
+
+                <BilingualInput
+                  labelEn="Description"
+                  labelAr="الوصف"
+                  valueEn={item.description_en || ''}
+                  valueAr={item.description_ar || ''}
+                  onChangeEn={(v) => updateArrayItem('why', 'cards', index, 'description_en', v)}
+                  onChangeAr={(v) => updateArrayItem('why', 'cards', index, 'description_ar', v)}
+                  isTextarea
+                  rows={2}
+                />
+              </div>
+            )}
+          />
         </div>
       </div>
     );
@@ -581,12 +813,11 @@ const AdminContent: React.FC = () => {
     const steps = journeyData.steps || [];
 
     const stepTemplate = {
-      number: `0${steps.length + 1}`,
       title_en: 'New Step',
       title_ar: 'خطوة جديدة',
-      description_en: 'Description here',
-      description_ar: 'الوصف هنا',
-      icon: 'Route',
+      description_en: 'Step description',
+      description_ar: 'وصف الخطوة',
+      icon: 'BookOpen',
     };
 
     return (
@@ -615,54 +846,40 @@ const AdminContent: React.FC = () => {
             onChangeEn={(v) => updateField('journey', 'subtitle_en', v)}
             onChangeAr={(v) => updateField('journey', 'subtitle_ar', v)}
             isTextarea
+            rows={2}
           />
         </div>
 
         <Separator />
 
-        {/* Steps */}
+        {/* Journey Steps */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Route className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold">{isRTL ? 'خطوات الرحلة' : 'Journey Steps'}</h3>
-            </div>
-            <Badge variant="secondary">{steps.length} / 8</Badge>
+          <div className="flex items-center gap-2 mb-4">
+            <Route className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'خطوات الرحلة' : 'Journey Steps'}</h3>
           </div>
 
-          <SortableList
+          <SortableList<JourneyStep>
             items={steps}
-            onReorder={(newSteps) => updateArray('journey', 'steps', newSteps)}
+            onReorder={(newItems) => updateArray('journey', 'steps', newItems)}
             onAdd={() => addArrayItem('journey', 'steps', stepTemplate)}
             onRemove={(index) => removeArrayItem('journey', 'steps', index)}
             addLabel={isRTL ? 'إضافة خطوة' : 'Add Step'}
-            minItems={2}
-            maxItems={8}
-            renderItem={(step: ContentValue, index: number) => (
+            minItems={1}
+            maxItems={6}
+            renderItem={(item: JourneyStep, index: number) => (
               <div className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label>Step Number</Label>
-                    <Input
-                      value={step.number || `0${index + 1}`}
-                      onChange={(e) => updateArrayItem('journey', 'steps', index, 'number', e.target.value)}
-                      placeholder="01"
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label>Icon</Label>
-                    <IconSelector
-                      value={step.icon || 'Route'}
-                      onChange={(icon) => updateArrayItem('journey', 'steps', index, 'icon', icon)}
-                    />
-                  </div>
-                </div>
-
+                <IconSelector
+                  value={item.icon || 'BookOpen'}
+                  onChange={(icon) => updateArrayItem('journey', 'steps', index, 'icon', icon)}
+                  label={isRTL ? 'الأيقونة' : 'Icon'}
+                />
+                
                 <BilingualInput
                   labelEn="Step Title"
                   labelAr="عنوان الخطوة"
-                  valueEn={step.title_en || ''}
-                  valueAr={step.title_ar || ''}
+                  valueEn={item.title_en || ''}
+                  valueAr={item.title_ar || ''}
                   onChangeEn={(v) => updateArrayItem('journey', 'steps', index, 'title_en', v)}
                   onChangeAr={(v) => updateArrayItem('journey', 'steps', index, 'title_ar', v)}
                 />
@@ -670,8 +887,8 @@ const AdminContent: React.FC = () => {
                 <BilingualInput
                   labelEn="Step Description"
                   labelAr="وصف الخطوة"
-                  valueEn={step.description_en || ''}
-                  valueAr={step.description_ar || ''}
+                  valueEn={item.description_en || ''}
+                  valueAr={item.description_ar || ''}
                   onChangeEn={(v) => updateArrayItem('journey', 'steps', index, 'description_en', v)}
                   onChangeAr={(v) => updateArrayItem('journey', 'steps', index, 'description_ar', v)}
                   isTextarea
@@ -680,33 +897,6 @@ const AdminContent: React.FC = () => {
               </div>
             )}
           />
-        </div>
-
-        <Separator />
-
-        {/* Visual Settings */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Palette className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold">{isRTL ? 'الإعدادات المرئية' : 'Visual Settings'}</h3>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={journeyData.show_timeline !== false}
-                onCheckedChange={(v) => updateField('journey', 'show_timeline', v.toString())}
-              />
-              <Label>{isRTL ? 'إظهار الخط الزمني' : 'Show Timeline'}</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={journeyData.alternate_layout !== false}
-                onCheckedChange={(v) => updateField('journey', 'alternate_layout', v.toString())}
-              />
-              <Label>{isRTL ? 'تخطيط متناوب' : 'Alternate Layout'}</Label>
-            </div>
-          </div>
         </div>
       </div>
     );
@@ -718,10 +908,11 @@ const AdminContent: React.FC = () => {
     const skills = learnData.skills || [];
 
     const skillTemplate = {
-      key: `skill_${Date.now()}`,
-      text_en: 'New Skill',
-      text_ar: 'مهارة جديدة',
-      icon: 'CheckCircle2',
+      title_en: 'New Skill',
+      title_ar: 'مهارة جديدة',
+      description_en: 'Skill description',
+      description_ar: 'وصف المهارة',
+      icon: 'Zap',
     };
 
     return (
@@ -750,103 +941,100 @@ const AdminContent: React.FC = () => {
             onChangeEn={(v) => updateField('learn', 'subtitle_en', v)}
             onChangeAr={(v) => updateField('learn', 'subtitle_ar', v)}
             isTextarea
+            rows={2}
           />
+        </div>
+
+        <Separator />
+
+        {/* Layout Settings */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <LayoutGrid className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'إعدادات التخطيط' : 'Layout Settings'}</h3>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Desktop Columns</Label>
+              <Input
+                type="number"
+                min="2"
+                max="4"
+                value={learnData.columns_desktop || '3'}
+                onChange={(e) => updateField('learn', 'columns_desktop', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Tablet Columns</Label>
+              <Input
+                type="number"
+                min="1"
+                max="3"
+                value={learnData.columns_tablet || '2'}
+                onChange={(e) => updateField('learn', 'columns_tablet', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Mobile Columns</Label>
+              <Input
+                type="number"
+                min="1"
+                max="2"
+                value={learnData.columns_mobile || '1'}
+                onChange={(e) => updateField('learn', 'columns_mobile', e.target.value)}
+              />
+            </div>
+          </div>
         </div>
 
         <Separator />
 
         {/* Skills */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold">{isRTL ? 'المهارات' : 'Skills'}</h3>
-            </div>
-            <Badge variant="secondary">{skills.length} / 12</Badge>
+          <div className="flex items-center gap-2 mb-4">
+            <BookOpen className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'المهارات' : 'Skills'}</h3>
           </div>
 
-          <SortableList
+          <SortableList<Skill>
             items={skills}
-            onReorder={(newSkills) => updateArray('learn', 'skills', newSkills)}
+            onReorder={(newItems) => updateArray('learn', 'skills', newItems)}
             onAdd={() => addArrayItem('learn', 'skills', skillTemplate)}
             onRemove={(index) => removeArrayItem('learn', 'skills', index)}
             addLabel={isRTL ? 'إضافة مهارة' : 'Add Skill'}
-            minItems={4}
-            maxItems={12}
-            renderItem={(skill: ContentValue, index: number) => (
+            minItems={1}
+            maxItems={9}
+            renderItem={(item: Skill, index: number) => (
               <div className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label>Key (unique)</Label>
-                    <Input
-                      value={skill.key || ''}
-                      onChange={(e) => updateArrayItem('learn', 'skills', index, 'key', e.target.value)}
-                      placeholder="skill_key"
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label>Icon</Label>
-                    <IconSelector
-                      value={skill.icon || 'CheckCircle2'}
-                      onChange={(icon) => updateArrayItem('learn', 'skills', index, 'icon', icon)}
-                    />
-                  </div>
-                </div>
+                <IconSelector
+                  value={item.icon || 'Zap'}
+                  onChange={(icon) => updateArrayItem('learn', 'skills', index, 'icon', icon)}
+                  label={isRTL ? 'الأيقونة' : 'Icon'}
+                />
+                
+                <BilingualInput
+                  labelEn="Skill Title"
+                  labelAr="عنوان المهارة"
+                  valueEn={item.title_en || ''}
+                  valueAr={item.title_ar || ''}
+                  onChangeEn={(v) => updateArrayItem('learn', 'skills', index, 'title_en', v)}
+                  onChangeAr={(v) => updateArrayItem('learn', 'skills', index, 'title_ar', v)}
+                />
 
                 <BilingualInput
-                  labelEn="Skill Text"
-                  labelAr="نص المهارة"
-                  valueEn={skill.text_en || ''}
-                  valueAr={skill.text_ar || ''}
-                  onChangeEn={(v) => updateArrayItem('learn', 'skills', index, 'text_en', v)}
-                  onChangeAr={(v) => updateArrayItem('learn', 'skills', index, 'text_ar', v)}
+                  labelEn="Skill Description"
+                  labelAr="وصف المهارة"
+                  valueEn={item.description_en || ''}
+                  valueAr={item.description_ar || ''}
+                  onChangeEn={(v) => updateArrayItem('learn', 'skills', index, 'description_en', v)}
+                  onChangeAr={(v) => updateArrayItem('learn', 'skills', index, 'description_ar', v)}
+                  isTextarea
+                  rows={2}
                 />
               </div>
             )}
           />
-        </div>
-
-        <Separator />
-
-        {/* Grid Settings */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-4">
-            <LayoutGrid className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold">{isRTL ? 'إعدادات الشبكة' : 'Grid Settings'}</h3>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label>Columns (Desktop)</Label>
-              <Input
-                type="number"
-                min="2"
-                max="6"
-                value={learnData.columns_desktop || '4'}
-                onChange={(e) => updateField('learn', 'columns_desktop', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Columns (Tablet)</Label>
-              <Input
-                type="number"
-                min="2"
-                max="4"
-                value={learnData.columns_tablet || '2'}
-                onChange={(e) => updateField('learn', 'columns_tablet', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Columns (Mobile)</Label>
-              <Input
-                type="number"
-                min="1"
-                max="2"
-                value={learnData.columns_mobile || '2'}
-                onChange={(e) => updateField('learn', 'columns_mobile', e.target.value)}
-              />
-            </div>
-          </div>
         </div>
       </div>
     );
@@ -855,12 +1043,6 @@ const AdminContent: React.FC = () => {
   // ============= CTA SECTION EDITOR =============
   const renderCTASection = () => {
     const ctaData = editedContent.cta || {};
-    const trustBadges = ctaData.trust_badges || [];
-
-    const badgeTemplate = {
-      text_en: 'New Badge',
-      text_ar: 'شارة جديدة',
-    };
 
     return (
       <div className="space-y-8">
@@ -872,8 +1054,8 @@ const AdminContent: React.FC = () => {
           </div>
 
           <BilingualInput
-            labelEn="Title"
-            labelAr="العنوان"
+            labelEn="Section Title"
+            labelAr="عنوان القسم"
             valueEn={ctaData.title_en || ''}
             valueAr={ctaData.title_ar || ''}
             onChangeEn={(v) => updateField('cta', 'title_en', v)}
@@ -881,13 +1063,14 @@ const AdminContent: React.FC = () => {
           />
 
           <BilingualInput
-            labelEn="Subtitle"
+            labelEn="Section Subtitle"
             labelAr="العنوان الفرعي"
             valueEn={ctaData.subtitle_en || ''}
             valueAr={ctaData.subtitle_ar || ''}
             onChangeEn={(v) => updateField('cta', 'subtitle_en', v)}
             onChangeAr={(v) => updateField('cta', 'subtitle_ar', v)}
             isTextarea
+            rows={2}
           />
         </div>
 
@@ -919,10 +1102,11 @@ const AdminContent: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>Icon</Label>
-              <IconSelector
-                value={ctaData.icon || 'Sparkles'}
-                onChange={(icon) => updateField('cta', 'icon', icon)}
+              <Label>Button Style</Label>
+              <Input
+                value={ctaData.button_style || 'cta'}
+                onChange={(e) => updateField('cta', 'button_style', e.target.value)}
+                placeholder="cta, primary, secondary"
               />
             </div>
           </div>
@@ -930,61 +1114,19 @@ const AdminContent: React.FC = () => {
 
         <Separator />
 
-        {/* Trust Badges */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold">{isRTL ? 'شارات الثقة' : 'Trust Badges'}</h3>
-            </div>
-            <Badge variant="secondary">{trustBadges.length} / 5</Badge>
-          </div>
-
-          <SortableList
-            items={trustBadges}
-            onReorder={(newBadges) => updateArray('cta', 'trust_badges', newBadges)}
-            onAdd={() => addArrayItem('cta', 'trust_badges', badgeTemplate)}
-            onRemove={(index) => removeArrayItem('cta', 'trust_badges', index)}
-            addLabel={isRTL ? 'إضافة شارة' : 'Add Badge'}
-            minItems={1}
-            maxItems={5}
-            renderItem={(badge: ContentValue, index: number) => (
-              <BilingualInput
-                labelEn="Badge Text"
-                labelAr="نص الشارة"
-                valueEn={badge.text_en || ''}
-                valueAr={badge.text_ar || ''}
-                onChangeEn={(v) => updateArrayItem('cta', 'trust_badges', index, 'text_en', v)}
-                onChangeAr={(v) => updateArrayItem('cta', 'trust_badges', index, 'text_ar', v)}
-              />
-            )}
-          />
-        </div>
-
-        <Separator />
-
-        {/* Visual Settings */}
+        {/* Background */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-4">
             <Palette className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold">{isRTL ? 'الإعدادات المرئية' : 'Visual Settings'}</h3>
+            <h3 className="font-semibold">{isRTL ? 'إعدادات الخلفية' : 'Background Settings'}</h3>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={ctaData.show_glow !== false}
-                onCheckedChange={(v) => updateField('cta', 'show_glow', v.toString())}
-              />
-              <Label>{isRTL ? 'تأثير التوهج' : 'Glow Effect'}</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={ctaData.animate_background !== false}
-                onCheckedChange={(v) => updateField('cta', 'animate_background', v.toString())}
-              />
-              <Label>{isRTL ? 'خلفية متحركة' : 'Animate Background'}</Label>
-            </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={ctaData.show_glow !== false}
+              onCheckedChange={(v) => updateField('cta', 'show_glow', v.toString())}
+            />
+            <Label>{isRTL ? 'تأثير التوهج' : 'Glow Effect'}</Label>
           </div>
         </div>
       </div>
@@ -994,14 +1136,21 @@ const AdminContent: React.FC = () => {
   // ============= COMMUNITY SECTION EDITOR =============
   const renderCommunitySection = () => {
     const communityData = editedContent.community || {};
+    const badges = communityData.trust_badges || [];
+
+    const badgeTemplate = {
+      text_en: 'New Badge',
+      text_ar: 'شارة جديدة',
+      icon: 'Star',
+    };
 
     return (
       <div className="space-y-8">
-        {/* Section Header */}
+        {/* Main Content */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-4">
             <Type className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold">{isRTL ? 'رأس القسم' : 'Section Header'}</h3>
+            <h3 className="font-semibold">{isRTL ? 'المحتوى الرئيسي' : 'Main Content'}</h3>
           </div>
 
           <BilingualInput
@@ -1021,6 +1170,7 @@ const AdminContent: React.FC = () => {
             onChangeEn={(v) => updateField('community', 'subtitle_en', v)}
             onChangeAr={(v) => updateField('community', 'subtitle_ar', v)}
             isTextarea
+            rows={2}
           />
         </div>
 
@@ -1034,66 +1184,99 @@ const AdminContent: React.FC = () => {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Card className="p-4 space-y-3">
-              <Label className="font-medium">Members Stat</Label>
+            <div className="space-y-2">
+              <Label>Members Label (EN)</Label>
               <Input
-                placeholder="English label"
-                value={communityData.stat1_label_en || 'Community Members'}
-                onChange={(e) => updateField('community', 'stat1_label_en', e.target.value)}
+                value={communityData.stats_members_en || 'Active Members'}
+                onChange={(e) => updateField('community', 'stats_members_en', e.target.value)}
               />
               <Input
-                placeholder="Arabic label"
-                value={communityData.stat1_label_ar || 'عضو في المجتمع'}
-                onChange={(e) => updateField('community', 'stat1_label_ar', e.target.value)}
+                value={communityData.stats_members_ar || 'عضو نشط'}
+                onChange={(e) => updateField('community', 'stats_members_ar', e.target.value)}
                 dir="rtl"
+                className="mt-2"
               />
-            </Card>
-
-            <Card className="p-4 space-y-3">
-              <Label className="font-medium">Active Learners Stat</Label>
+            </div>
+            <div className="space-y-2">
+              <Label>Joined Label (EN)</Label>
               <Input
-                placeholder="English label"
-                value={communityData.stat2_label_en || 'Active Learners'}
-                onChange={(e) => updateField('community', 'stat2_label_en', e.target.value)}
+                value={communityData.stats_joined_en || 'Joined This Month'}
+                onChange={(e) => updateField('community', 'stats_joined_en', e.target.value)}
               />
               <Input
-                placeholder="Arabic label"
-                value={communityData.stat2_label_ar || 'متعلم نشط'}
-                onChange={(e) => updateField('community', 'stat2_label_ar', e.target.value)}
+                value={communityData.stats_joined_ar || 'انضموا هذا الشهر'}
+                onChange={(e) => updateField('community', 'stats_joined_ar', e.target.value)}
                 dir="rtl"
+                className="mt-2"
               />
-            </Card>
-
-            <Card className="p-4 space-y-3">
-              <Label className="font-medium">Success Rate Stat</Label>
-              <Input
-                placeholder="English label"
-                value={communityData.stat3_label_en || 'Success Rate'}
-                onChange={(e) => updateField('community', 'stat3_label_en', e.target.value)}
-              />
-              <Input
-                placeholder="Arabic label"
-                value={communityData.stat3_label_ar || 'معدل النجاح'}
-                onChange={(e) => updateField('community', 'stat3_label_ar', e.target.value)}
-                dir="rtl"
-              />
-            </Card>
-
-            <Card className="p-4 space-y-3">
-              <Label className="font-medium">Lessons Stat</Label>
-              <Input
-                placeholder="English label"
-                value={communityData.stat4_label_en || 'Video Lessons'}
-                onChange={(e) => updateField('community', 'stat4_label_en', e.target.value)}
-              />
-              <Input
-                placeholder="Arabic label"
-                value={communityData.stat4_label_ar || 'درس فيديو'}
-                onChange={(e) => updateField('community', 'stat4_label_ar', e.target.value)}
-                dir="rtl"
-              />
-            </Card>
+            </div>
           </div>
+        </div>
+
+        <Separator />
+
+        {/* Button */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <MousePointer className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'الزر' : 'Button'}</h3>
+          </div>
+
+          <BilingualInput
+            labelEn="Button Text"
+            labelAr="نص الزر"
+            valueEn={communityData.button_en || ''}
+            valueAr={communityData.button_ar || ''}
+            onChangeEn={(v) => updateField('community', 'button_en', v)}
+            onChangeAr={(v) => updateField('community', 'button_ar', v)}
+          />
+
+          <div className="space-y-2">
+            <Label>Button Link</Label>
+            <Input
+              value={communityData.button_link || '/signup'}
+              onChange={(e) => updateField('community', 'button_link', e.target.value)}
+              placeholder="/signup"
+            />
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Trust Badges */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'شارات الثقة' : 'Trust Badges'}</h3>
+          </div>
+
+          <SortableList<TrustBadge>
+            items={badges}
+            onReorder={(newItems) => updateArray('community', 'trust_badges', newItems)}
+            onAdd={() => addArrayItem('community', 'trust_badges', badgeTemplate)}
+            onRemove={(index) => removeArrayItem('community', 'trust_badges', index)}
+            addLabel={isRTL ? 'إضافة شارة' : 'Add Badge'}
+            minItems={1}
+            maxItems={6}
+            renderItem={(item: TrustBadge, index: number) => (
+              <div className="space-y-4">
+                <IconSelector
+                  value={item.icon || 'Star'}
+                  onChange={(icon) => updateArrayItem('community', 'trust_badges', index, 'icon', icon)}
+                  label={isRTL ? 'الأيقونة' : 'Icon'}
+                />
+                
+                <BilingualInput
+                  labelEn="Badge Text"
+                  labelAr="نص الشارة"
+                  valueEn={item.text_en || ''}
+                  valueAr={item.text_ar || ''}
+                  onChangeEn={(v) => updateArrayItem('community', 'trust_badges', index, 'text_en', v)}
+                  onChangeAr={(v) => updateArrayItem('community', 'trust_badges', index, 'text_ar', v)}
+                />
+              </div>
+            )}
+          />
         </div>
 
         <Separator />
@@ -1130,6 +1313,7 @@ const AdminContent: React.FC = () => {
 
   const renderSectionContent = (key: string) => {
     switch (key) {
+      case 'header': return renderHeaderSection();
       case 'hero': return renderHeroSection();
       case 'why': return renderWhySection();
       case 'journey': return renderJourneySection();
@@ -1152,113 +1336,123 @@ const AdminContent: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div className="flex gap-6 h-[calc(100vh-theme(spacing.16))]">
-        {/* Main Editor */}
-        <div className={`flex-1 space-y-6 overflow-hidden ${showPreview ? 'w-1/2' : 'w-full'}`}>
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-shrink-0">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">
-                {isRTL ? 'إدارة محتوى الصفحة الرئيسية' : 'Landing Page Content'}
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                {isRTL ? 'قم بتحرير جميع النصوص والمحتوى في الصفحة الرئيسية' : 'Edit all text and content on the landing page'}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {hasChanges && (
-                <Badge variant="outline" className="text-destructive border-destructive">
-                  {isRTL ? 'تغييرات غير محفوظة' : 'Unsaved Changes'}
-                </Badge>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPreview(!showPreview)}
-              >
-                {showPreview ? (
-                  <>
-                    <PanelLeftClose className="w-4 h-4 me-2" />
-                    {isRTL ? 'إخفاء المعاينة' : 'Hide Preview'}
-                  </>
-                ) : (
-                  <>
-                    <PanelLeft className="w-4 h-4 me-2" />
-                    {isRTL ? 'إظهار المعاينة' : 'Show Preview'}
-                  </>
-                )}
-              </Button>
-              <Button variant="outline" asChild>
-                <a href="/" target="_blank" rel="noopener noreferrer">
-                  <Eye className="w-4 h-4 me-2" />
-                  {isRTL ? 'معاينة' : 'Preview'}
-                </a>
-              </Button>
-              <Button onClick={handleSaveAll} disabled={updateMutation.isPending || !hasChanges}>
-                {updateMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 me-2 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4 me-2" />
-                )}
-                {isRTL ? 'حفظ الكل' : 'Save All'}
-              </Button>
-            </div>
+      <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+        {/* Header - Fixed */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 flex-shrink-0">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">
+              {isRTL ? 'إدارة محتوى الصفحة الرئيسية' : 'Landing Page Content'}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {isRTL ? 'قم بتحرير جميع النصوص والمحتوى في الصفحة الرئيسية' : 'Edit all text and content on the landing page'}
+            </p>
           </div>
-
-          {/* Content Editor */}
-          <Tabs value={activeSection} onValueChange={setActiveSection} className="flex-1 overflow-hidden flex flex-col">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 flex-shrink-0">
-              {sections.map(section => (
-                <TabsTrigger key={section.key} value={section.key} className="flex items-center gap-2">
-                  <section.icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{section.label}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            <ScrollArea className="flex-1 mt-4">
-              {sections.map(section => (
-                <TabsContent key={section.key} value={section.key} className="m-0">
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="flex items-center gap-2">
-                            <section.icon className="w-5 h-5" />
-                            {section.label}
-                          </CardTitle>
-                          <CardDescription>
-                            {isRTL 
-                              ? 'قم بتحرير المحتوى باللغتين العربية والإنجليزية'
-                              : 'Edit content in both English and Arabic'
-                            }
-                          </CardDescription>
-                        </div>
-                        <Button onClick={() => handleSave(section.key)} disabled={updateMutation.isPending} size="sm">
-                          {updateMutation.isPending ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Save className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {renderSectionContent(section.key)}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              ))}
-            </ScrollArea>
-          </Tabs>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {hasChanges && (
+              <Badge variant="outline" className="text-destructive border-destructive">
+                {isRTL ? 'تغييرات غير محفوظة' : 'Unsaved Changes'}
+              </Badge>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPreview(!showPreview)}
+            >
+              {showPreview ? (
+                <>
+                  <PanelLeftClose className="w-4 h-4 me-2" />
+                  <span className="hidden sm:inline">{isRTL ? 'إخفاء المعاينة' : 'Hide Preview'}</span>
+                </>
+              ) : (
+                <>
+                  <PanelLeft className="w-4 h-4 me-2" />
+                  <span className="hidden sm:inline">{isRTL ? 'إظهار المعاينة' : 'Show Preview'}</span>
+                </>
+              )}
+            </Button>
+            <Button variant="outline" asChild>
+              <a href="/" target="_blank" rel="noopener noreferrer">
+                <Eye className="w-4 h-4 me-2" />
+                <span className="hidden sm:inline">{isRTL ? 'معاينة' : 'Preview'}</span>
+              </a>
+            </Button>
+            <Button onClick={handleSaveAll} disabled={updateMutation.isPending || !hasChanges}>
+              {updateMutation.isPending ? (
+                <Loader2 className="w-4 h-4 me-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 me-2" />
+              )}
+              {isRTL ? 'حفظ الكل' : 'Save All'}
+            </Button>
+          </div>
         </div>
 
-        {/* Live Preview Panel */}
-        {showPreview && (
-          <div className="w-1/2 flex-shrink-0">
-            <LivePreview className="h-full" />
+        {/* Main Content Area */}
+        <div className="flex gap-6 flex-1 min-h-0 overflow-hidden">
+          {/* Editor Panel */}
+          <div className={`flex flex-col min-h-0 overflow-hidden ${showPreview ? 'w-1/2' : 'w-full'}`}>
+            <Tabs value={activeSection} onValueChange={setActiveSection} className="flex flex-col flex-1 min-h-0">
+              {/* Tab List - Fixed */}
+              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 flex-shrink-0 mb-4">
+                {sections.map(section => (
+                  <TabsTrigger key={section.key} value={section.key} className="flex items-center gap-1 px-2">
+                    <section.icon className="w-4 h-4 flex-shrink-0" />
+                    <span className="hidden xl:inline text-xs truncate">{section.label}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              {/* Tab Content - Scrollable */}
+              <div className="flex-1 min-h-0 overflow-hidden">
+                {sections.map(section => (
+                  <TabsContent 
+                    key={section.key} 
+                    value={section.key} 
+                    className="h-full m-0 data-[state=inactive]:hidden"
+                  >
+                    <Card className="h-full flex flex-col overflow-hidden">
+                      <CardHeader className="flex-shrink-0 pb-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="flex items-center gap-2">
+                              <section.icon className="w-5 h-5" />
+                              {section.label}
+                            </CardTitle>
+                            <CardDescription>
+                              {isRTL 
+                                ? 'قم بتحرير المحتوى باللغتين العربية والإنجليزية'
+                                : 'Edit content in both English and Arabic'
+                              }
+                            </CardDescription>
+                          </div>
+                          <Button onClick={() => handleSave(section.key)} disabled={updateMutation.isPending} size="sm">
+                            {updateMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Save className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="flex-1 overflow-hidden p-0">
+                        <ScrollArea className="h-full px-6 pb-6">
+                          {renderSectionContent(section.key)}
+                        </ScrollArea>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                ))}
+              </div>
+            </Tabs>
           </div>
-        )}
+
+          {/* Live Preview Panel */}
+          {showPreview && (
+            <div className="w-1/2 flex-shrink-0 min-h-0 overflow-hidden">
+              <LivePreview className="h-full" />
+            </div>
+          )}
+        </div>
       </div>
     </AdminLayout>
   );

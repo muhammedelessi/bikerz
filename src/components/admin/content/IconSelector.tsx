@@ -23,10 +23,11 @@ const icons: Record<string, LucideIcon> = {
 interface IconSelectorProps {
   value: string;
   onChange: (icon: string) => void;
+  label?: string;
   className?: string;
 }
 
-const IconSelector: React.FC<IconSelectorProps> = ({ value, onChange, className }) => {
+const IconSelector: React.FC<IconSelectorProps> = ({ value, onChange, label, className }) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -37,43 +38,46 @@ const IconSelector: React.FC<IconSelectorProps> = ({ value, onChange, className 
   );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className={cn("w-full justify-start gap-2", className)}
-        >
-          <SelectedIcon className="w-4 h-4" />
-          <span className="truncate">{value || 'Select Icon'}</span>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-3" align="start">
-        <Input
-          placeholder="Search icons..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="mb-3"
-        />
-        <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto">
-          {filteredIcons.map(([name, Icon]) => (
-            <Button
-              key={name}
-              variant={value === name ? "default" : "ghost"}
-              size="sm"
-              className="h-9 w-9 p-0"
-              onClick={() => {
-                onChange(name);
-                setOpen(false);
-              }}
-              title={name}
-            >
-              <Icon className="w-4 h-4" />
-            </Button>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
+    <div className="space-y-2">
+      {label && <label className="text-sm font-medium">{label}</label>}
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn("w-full justify-start gap-2", className)}
+          >
+            <SelectedIcon className="w-4 h-4" />
+            <span className="truncate">{value || 'Select Icon'}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 p-3" align="start">
+          <Input
+            placeholder="Search icons..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="mb-3"
+          />
+          <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto">
+            {filteredIcons.map(([name, Icon]) => (
+              <Button
+                key={name}
+                variant={value === name ? "default" : "ghost"}
+                size="sm"
+                className="h-9 w-9 p-0"
+                onClick={() => {
+                  onChange(name);
+                  setOpen(false);
+                }}
+                title={name}
+              >
+                <Icon className="w-4 h-4" />
+              </Button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 };
 
