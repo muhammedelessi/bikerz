@@ -15,7 +15,8 @@ import { toast } from 'sonner';
 import { 
   Save, Loader2, Eye, Home, Target, Route, BookOpen, Megaphone, Users,
   Settings2, Palette, LayoutGrid, Type, MousePointer,
-  Sparkles, PanelLeftClose, PanelLeft, Menu, ExternalLink, Share2
+  Sparkles, PanelLeftClose, PanelLeft, Menu, ExternalLink, Share2,
+  FileText, Shield, Scale, MessageSquare
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import IconSelector from '@/components/admin/content/IconSelector';
@@ -208,6 +209,7 @@ const AdminContent: React.FC = () => {
     { key: 'cta', icon: Megaphone, label: isRTL ? 'دعوة للعمل' : 'Call to Action' },
     { key: 'community', icon: Users, label: isRTL ? 'المجتمع' : 'Community' },
     { key: 'footer', icon: Share2, label: isRTL ? 'التذييل والسوشيال' : 'Footer & Social' },
+    { key: 'pages', icon: FileText, label: isRTL ? 'الصفحات' : 'Pages' },
   ];
 
   // ============= HEADER MENU EDITOR =============
@@ -1429,6 +1431,193 @@ const AdminContent: React.FC = () => {
     );
   };
 
+  // ============= PAGES SECTION EDITOR =============
+  const renderPagesSection = () => {
+    const privacyData = editedContent.privacy_page || {};
+    const termsData = editedContent.terms_page || {};
+    const contactData = editedContent.contact_page || {};
+
+    return (
+      <div className="space-y-8">
+        {/* Privacy Policy Page */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Shield className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'صفحة سياسة الخصوصية' : 'Privacy Policy Page'}</h3>
+            <Badge variant="outline" className="ms-auto">
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                <ExternalLink className="w-3 h-3" />
+                {isRTL ? 'معاينة' : 'Preview'}
+              </a>
+            </Badge>
+          </div>
+
+          <div className="space-y-2">
+            <Label>{isRTL ? 'تاريخ آخر تحديث' : 'Last Updated Date'}</Label>
+            <Input
+              type="date"
+              value={privacyData.last_updated || '2024-01-01'}
+              onChange={(e) => updateField('privacy_page', 'last_updated', e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={privacyData.is_enabled !== false}
+              onCheckedChange={(v) => updateField('privacy_page', 'is_enabled', v)}
+            />
+            <Label>{isRTL ? 'الصفحة مفعلة' : 'Page Enabled'}</Label>
+          </div>
+
+          <p className="text-sm text-muted-foreground">
+            {isRTL 
+              ? 'محتوى صفحة سياسة الخصوصية يستخدم قوالب افتراضية. يمكنك تعديل التاريخ وحالة التفعيل.'
+              : 'Privacy policy page content uses default templates. You can modify the date and enable/disable status.'
+            }
+          </p>
+        </div>
+
+        <Separator />
+
+        {/* Terms of Service Page */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Scale className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'صفحة شروط الخدمة' : 'Terms of Service Page'}</h3>
+            <Badge variant="outline" className="ms-auto">
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                <ExternalLink className="w-3 h-3" />
+                {isRTL ? 'معاينة' : 'Preview'}
+              </a>
+            </Badge>
+          </div>
+
+          <div className="space-y-2">
+            <Label>{isRTL ? 'تاريخ آخر تحديث' : 'Last Updated Date'}</Label>
+            <Input
+              type="date"
+              value={termsData.last_updated || '2024-01-01'}
+              onChange={(e) => updateField('terms_page', 'last_updated', e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={termsData.is_enabled !== false}
+              onCheckedChange={(v) => updateField('terms_page', 'is_enabled', v)}
+            />
+            <Label>{isRTL ? 'الصفحة مفعلة' : 'Page Enabled'}</Label>
+          </div>
+
+          <p className="text-sm text-muted-foreground">
+            {isRTL 
+              ? 'محتوى صفحة شروط الخدمة يستخدم قوالب افتراضية. يمكنك تعديل التاريخ وحالة التفعيل.'
+              : 'Terms of service page content uses default templates. You can modify the date and enable/disable status.'
+            }
+          </p>
+        </div>
+
+        <Separator />
+
+        {/* Contact Us Page */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <MessageSquare className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'صفحة اتصل بنا' : 'Contact Us Page'}</h3>
+            <Badge variant="outline" className="ms-auto">
+              <a href="/contact" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                <ExternalLink className="w-3 h-3" />
+                {isRTL ? 'معاينة' : 'Preview'}
+              </a>
+            </Badge>
+          </div>
+
+          <BilingualInput
+            labelEn="Page Title"
+            labelAr="عنوان الصفحة"
+            valueEn={contactData.title_en || 'Contact Us'}
+            valueAr={contactData.title_ar || 'اتصل بنا'}
+            onChangeEn={(v) => updateField('contact_page', 'title_en', v)}
+            onChangeAr={(v) => updateField('contact_page', 'title_ar', v)}
+          />
+
+          <BilingualInput
+            labelEn="Page Subtitle"
+            labelAr="العنوان الفرعي"
+            valueEn={contactData.subtitle_en || "Have questions or need help? We're here for you."}
+            valueAr={contactData.subtitle_ar || 'لديك أسئلة أو تحتاج مساعدة؟ نحن هنا من أجلك.'}
+            onChangeEn={(v) => updateField('contact_page', 'subtitle_en', v)}
+            onChangeAr={(v) => updateField('contact_page', 'subtitle_ar', v)}
+            isTextarea
+            rows={2}
+          />
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{isRTL ? 'البريد الإلكتروني' : 'Contact Email'}</Label>
+              <Input
+                value={contactData.email || 'support@bikerz.sa'}
+                onChange={(e) => updateField('contact_page', 'email', e.target.value)}
+                placeholder="support@bikerz.sa"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{isRTL ? 'رقم الهاتف' : 'Phone Number'}</Label>
+              <Input
+                value={contactData.phone || '+966 12 XXX XXXX'}
+                onChange={(e) => updateField('contact_page', 'phone', e.target.value)}
+                placeholder="+966 12 XXX XXXX"
+                dir="ltr"
+              />
+            </div>
+          </div>
+
+          <BilingualInput
+            labelEn="Location"
+            labelAr="الموقع"
+            valueEn={contactData.location_en || 'Jeddah, Saudi Arabia'}
+            valueAr={contactData.location_ar || 'جدة، المملكة العربية السعودية'}
+            onChangeEn={(v) => updateField('contact_page', 'location_en', v)}
+            onChangeAr={(v) => updateField('contact_page', 'location_ar', v)}
+          />
+
+          <BilingualInput
+            labelEn="Working Hours"
+            labelAr="ساعات العمل"
+            valueEn={contactData.hours_en || 'Sun - Thu: 9AM - 6PM'}
+            valueAr={contactData.hours_ar || 'الأحد - الخميس: 9 صباحاً - 6 مساءً'}
+            onChangeEn={(v) => updateField('contact_page', 'hours_en', v)}
+            onChangeAr={(v) => updateField('contact_page', 'hours_ar', v)}
+          />
+
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={contactData.is_enabled !== false}
+              onCheckedChange={(v) => updateField('contact_page', 'is_enabled', v)}
+            />
+            <Label>{isRTL ? 'الصفحة مفعلة' : 'Page Enabled'}</Label>
+          </div>
+
+          <div className="bg-muted/50 rounded-lg p-4 mt-4">
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              {isRTL 
+                ? 'نماذج الاتصال ترسل تلقائياً إلى نظام التذاكر. اذهب إلى لوحة الدعم لإدارة الطلبات.'
+                : 'Contact forms automatically submit to the ticketing system. Go to Support panel to manage requests.'
+              }
+            </p>
+            <a 
+              href="/admin/support" 
+              className="text-sm text-primary hover:underline mt-2 inline-block"
+            >
+              {isRTL ? 'الذهاب إلى لوحة الدعم ←' : '→ Go to Support Panel'}
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderSectionContent = (key: string) => {
     switch (key) {
       case 'header': return renderHeaderSection();
@@ -1439,6 +1628,7 @@ const AdminContent: React.FC = () => {
       case 'cta': return renderCTASection();
       case 'community': return renderCommunitySection();
       case 'footer': return renderFooterSection();
+      case 'pages': return renderPagesSection();
       default: return null;
     }
   };
@@ -1512,7 +1702,7 @@ const AdminContent: React.FC = () => {
           <div className={`flex flex-col min-h-0 overflow-hidden ${showPreview ? 'w-1/2' : 'w-full'}`}>
             <Tabs value={activeSection} onValueChange={setActiveSection} className="flex flex-col flex-1 min-h-0">
               {/* Tab List - Fixed */}
-              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 flex-shrink-0 mb-4">
+              <TabsList className="grid w-full grid-cols-5 lg:grid-cols-9 flex-shrink-0 mb-4">
                 {sections.map(section => (
                   <TabsTrigger key={section.key} value={section.key} className="flex items-center gap-1 px-2">
                     <section.icon className="w-4 h-4 flex-shrink-0" />

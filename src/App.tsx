@@ -10,6 +10,9 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import AboutUs from "./pages/AboutUs";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import ContactUs from "./pages/ContactUs";
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
 import CourseLearn from "./pages/CourseLearn";
@@ -103,6 +106,9 @@ const AppRoutes = () => (
     <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
     <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
     <Route path="/about" element={<AboutUs />} />
+    <Route path="/privacy" element={<PrivacyPolicy />} />
+    <Route path="/terms" element={<TermsOfService />} />
+    <Route path="/contact" element={<ContactUs />} />
     <Route path="/courses" element={<Courses />} />
     <Route path="/courses/:id" element={<CourseDetail />} />
     <Route path="/courses/:id/learn" element={<CourseLearn />} />
