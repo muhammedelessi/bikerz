@@ -294,7 +294,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [applyPersistedAudioSettings, initialTime, isHls, onEnded, onProgress, onTimeUpdate, src]);
 
   return (
-    <div className="relative w-full aspect-video overflow-hidden rounded-lg border border-border bg-muted">
+    <div className="relative w-full max-w-full overflow-hidden rounded-lg border border-border bg-muted" style={{ aspectRatio: '16 / 9' }}>
       <video
         // Key forces a real element reset between sources (prevents stale state).
         key={src}

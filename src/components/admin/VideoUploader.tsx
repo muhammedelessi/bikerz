@@ -460,10 +460,11 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
           
           {/* Video Preview */}
           {!isExternalUrl && (
-            <div className="mt-3 aspect-video rounded-lg overflow-hidden bg-black">
+            <div className="mt-3 w-full max-w-full rounded-lg overflow-hidden bg-black" style={{ aspectRatio: '16 / 9' }}>
               <video
                 src={uploadedUrl}
                 controls
+                playsInline
                 className="w-full h-full object-contain"
               />
             </div>
