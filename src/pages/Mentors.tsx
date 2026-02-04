@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
-import { Star, Clock, Bike, Award, Users, MessageCircle } from 'lucide-react';
+import { Star, Bike, Award, Users, MessageCircle, UserX } from 'lucide-react';
 import instructorImage from '@/assets/instructor.jpg';
 
 interface Mentor {
@@ -22,108 +24,49 @@ interface Mentor {
   is_available: boolean;
   rating: number | null;
   total_students: number | null;
-  profile?: {
+}
+
+interface MentorWithProfile extends Mentor {
+  profile: {
     full_name: string | null;
     avatar_url: string | null;
-  };
+  } | null;
 }
 
 const Mentors: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const [mentors, setMentors] = useState<Mentor[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchMentors = async () => {
+  const { data: mentors = [], isLoading, error } = useQuery({
+    queryKey: ['mentors'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('mentors')
-        .select(`
-          *,
-          profile:profiles!mentors_user_id_fkey(full_name, avatar_url)
-        `)
-        .eq('is_available', true);
+        .select('*')
+        .eq('is_available', true)
+        .order('rating', { ascending: false });
 
-      if (!error && data) {
-        setMentors(data as unknown as Mentor[]);
-      }
-      setIsLoading(false);
-    };
+      if (error) throw error;
 
-    fetchMentors();
-  }, []);
+      // Fetch profiles for each mentor
+      const mentorsWithProfiles = await Promise.all(
+        (data || []).map(async (mentor) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('user_id', mentor.user_id)
+            .maybeSingle();
 
-  // Sample mentors for demo (will be replaced by real data)
-  const sampleMentors: Mentor[] = [
-    {
-      id: '1',
-      user_id: '1',
-      experience_years: 12,
-      motorbike_type: 'Sport Bike',
-      motorbike_brand: 'Kawasaki Ninja ZX-10R',
-      license_type: 'A',
-      fees_per_hour: 150,
-      bio: isRTL 
-        ? 'مدرب محترف متخصص في الدراجات الرياضية مع خبرة تزيد عن 12 عاماً في تدريب الراكبين على مهارات القيادة المتقدمة والسلامة على الطرق.'
-        : 'Professional instructor specializing in sport bikes with over 12 years of experience training riders on advanced riding skills and road safety.',
-      specializations: isRTL 
-        ? ['القيادة الرياضية', 'الانعطاف المتقدم', 'السلامة'] 
-        : ['Sport Riding', 'Advanced Cornering', 'Safety'],
-      is_available: true,
-      rating: 4.9,
-      total_students: 234,
-      profile: {
-        full_name: isRTL ? 'محمد الراشد' : 'Mohammed Al-Rashid',
-        avatar_url: null,
-      },
+          return {
+            ...mentor,
+            profile,
+          } as MentorWithProfile;
+        })
+      );
+
+      return mentorsWithProfiles;
     },
-    {
-      id: '2',
-      user_id: '2',
-      experience_years: 8,
-      motorbike_type: 'Adventure',
-      motorbike_brand: 'BMW R 1250 GS',
-      license_type: 'A',
-      fees_per_hour: 180,
-      bio: isRTL
-        ? 'خبير في دراجات المغامرات والقيادة على الطرق الوعرة. قاد في أكثر من 15 دولة ومتخصص في رحلات الصحراء.'
-        : 'Adventure bike expert and off-road riding specialist. Has ridden in 15+ countries and specializes in desert touring.',
-      specializations: isRTL 
-        ? ['قيادة المغامرات', 'الطرق الوعرة', 'رحلات الصحراء'] 
-        : ['Adventure Riding', 'Off-Road', 'Desert Touring'],
-      is_available: true,
-      rating: 4.8,
-      total_students: 156,
-      profile: {
-        full_name: isRTL ? 'خالد العتيبي' : 'Khalid Al-Otaibi',
-        avatar_url: null,
-      },
-    },
-    {
-      id: '3',
-      user_id: '3',
-      experience_years: 15,
-      motorbike_type: 'Cruiser',
-      motorbike_brand: 'Harley-Davidson Road King',
-      license_type: 'A',
-      fees_per_hour: 120,
-      bio: isRTL
-        ? 'مدرب هارلي ديفيدسون معتمد مع شغف لتعليم الراكبين الجدد. متخصص في القيادة المريحة والرحلات الطويلة.'
-        : 'Certified Harley-Davidson instructor with a passion for teaching new riders. Specializes in comfortable cruising and long-distance touring.',
-      specializations: isRTL 
-        ? ['دراجات الكروزر', 'الرحلات الطويلة', 'المبتدئين'] 
-        : ['Cruiser Bikes', 'Long-Distance', 'Beginners'],
-      is_available: true,
-      rating: 4.7,
-      total_students: 312,
-      profile: {
-        full_name: isRTL ? 'فهد السعيد' : 'Fahad Al-Saeed',
-        avatar_url: null,
-      },
-    },
-  ];
-
-  const displayMentors = mentors.length > 0 ? mentors : sampleMentors;
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -148,13 +91,52 @@ const Mentors: React.FC = () => {
             </p>
           </motion.div>
 
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-            </div>
-          ) : (
+          {/* Loading State */}
+          {isLoading && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-              {displayMentors.map((mentor, index) => (
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="card-premium overflow-hidden">
+                  <Skeleton className="h-48 w-full" />
+                  <div className="p-6 space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="text-center py-12">
+              <p className="text-destructive">
+                {isRTL ? 'حدث خطأ أثناء تحميل المدربين' : 'Error loading mentors'}
+              </p>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!isLoading && !error && mentors.length === 0 && (
+            <div className="text-center py-16">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
+                <UserX className="w-10 h-10 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">
+                {isRTL ? 'لا يوجد مدربون متاحون حالياً' : 'No mentors available'}
+              </h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                {isRTL 
+                  ? 'لا يوجد مدربون متاحون في الوقت الحالي. يرجى العودة لاحقاً.'
+                  : 'There are no mentors available at this time. Please check back later.'}
+              </p>
+            </div>
+          )}
+
+          {/* Mentors Grid */}
+          {!isLoading && !error && mentors.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+              {mentors.map((mentor, index) => (
                 <motion.div
                   key={mentor.id}
                   initial={{ opacity: 0, y: 30 }}
@@ -173,10 +155,12 @@ const Mentors: React.FC = () => {
                       <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
                       
                       {/* Rating Badge */}
-                      <div className="absolute top-4 end-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background/90 backdrop-blur-sm">
-                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                        <span className="text-sm font-bold text-foreground">{mentor.rating || 0}</span>
-                      </div>
+                      {mentor.rating !== null && mentor.rating > 0 && (
+                        <div className="absolute top-4 end-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background/90 backdrop-blur-sm">
+                          <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                          <span className="text-sm font-bold text-foreground">{mentor.rating}</span>
+                        </div>
+                      )}
 
                       {/* Name */}
                       <div className="absolute bottom-4 start-4 end-4">
@@ -198,17 +182,21 @@ const Mentors: React.FC = () => {
                         </div>
                         <div>
                           <p className="font-medium text-foreground">{mentor.motorbike_type}</p>
-                          <p className="text-muted-foreground text-xs">{mentor.motorbike_brand}</p>
+                          {mentor.motorbike_brand && (
+                            <p className="text-muted-foreground text-xs">{mentor.motorbike_brand}</p>
+                          )}
                         </div>
                       </div>
 
                       {/* Bio */}
-                      <p className="text-sm text-muted-foreground line-clamp-3">
-                        {mentor.bio}
-                      </p>
+                      {mentor.bio && (
+                        <p className="text-sm text-muted-foreground line-clamp-3">
+                          {mentor.bio}
+                        </p>
+                      )}
 
                       {/* Specializations */}
-                      {mentor.specializations && (
+                      {mentor.specializations && mentor.specializations.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {mentor.specializations.slice(0, 3).map((spec, i) => (
                             <span
@@ -228,10 +216,12 @@ const Mentors: React.FC = () => {
                             <Users className="w-4 h-4" />
                             <span>{mentor.total_students || 0}</span>
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <Award className="w-4 h-4" />
-                            <span>{mentor.license_type}</span>
-                          </div>
+                          {mentor.license_type && (
+                            <div className="flex items-center gap-1.5">
+                              <Award className="w-4 h-4" />
+                              <span>{mentor.license_type}</span>
+                            </div>
+                          )}
                         </div>
                         <div className="text-end">
                           <p className="text-lg font-bold text-primary">

@@ -1,16 +1,71 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ArrowLeft, Play } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import heroImage from '@/assets/hero-rider.jpg';
 
 const HeroSection: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+
+  // Fetch real stats from database
+  const { data: stats } = useQuery({
+    queryKey: ['hero-stats'],
+    queryFn: async () => {
+      const [
+        { count: usersCount },
+        { count: lessonsCount },
+        { data: enrollmentStats },
+      ] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('lessons').select('*', { count: 'exact', head: true }).eq('is_published', true),
+        supabase.from('course_enrollments').select('progress_percentage'),
+      ]);
+
+      // Calculate success rate (enrollments with >70% progress)
+      const successfulEnrollments = (enrollmentStats || []).filter(e => e.progress_percentage >= 70).length;
+      const totalEnrollments = (enrollmentStats || []).length;
+      const successRate = totalEnrollments > 0 
+        ? Math.round((successfulEnrollments / totalEnrollments) * 100) 
+        : 0;
+
+      return {
+        members: usersCount || 0,
+        lessons: lessonsCount || 0,
+        successRate,
+      };
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  // Format numbers for display
+  const formatCount = (count: number) => {
+    if (count >= 1000) {
+      return `${Math.floor(count / 1000)}K+`;
+    }
+    return count > 0 ? `${count}+` : '0';
+  };
+
+  const displayStats = [
+    { 
+      value: formatCount(stats?.members || 0), 
+      label: isRTL ? 'عضو' : 'Members' 
+    },
+    { 
+      value: formatCount(stats?.lessons || 0), 
+      label: isRTL ? 'درس' : 'Lessons' 
+    },
+    { 
+      value: stats?.successRate ? `${stats.successRate}%` : '0%', 
+      label: isRTL ? 'نجاح' : 'Success' 
+    },
+  ];
 
   return (
     <section className="relative min-h-[100svh] flex items-center justify-center overflow-hidden pt-16 sm:pt-20 lg:pt-24">
@@ -62,7 +117,7 @@ const HeroSection: React.FC = () => {
           >
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             <span className="text-xs sm:text-sm text-primary font-medium">
-              {isRTL ? '+15,000 راكب في الخليج' : '15,000+ GCC Riders'}
+              {formatCount(stats?.members || 0)} {isRTL ? 'راكب في الخليج' : 'GCC Riders'}
             </span>
           </motion.div>
 
@@ -104,11 +159,7 @@ const HeroSection: React.FC = () => {
             transition={{ duration: 0.8, delay: 0.8 }}
             className="grid grid-cols-3 gap-4 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-8 pt-8 sm:pt-12"
           >
-            {[
-              { value: '15K+', label: isRTL ? 'عضو' : 'Members' },
-              { value: '50+', label: isRTL ? 'درس' : 'Lessons' },
-              { value: '98%', label: isRTL ? 'نجاح' : 'Success' },
-            ].map((stat, index) => (
+            {displayStats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="text-xl sm:text-2xl md:text-3xl font-black text-primary">{stat.value}</div>
                 <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>

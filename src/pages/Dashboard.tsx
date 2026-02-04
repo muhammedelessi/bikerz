@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import LanguageToggle from '@/components/common/LanguageToggle';
 import ProfileCompletionReminder from '@/components/profile/ProfileCompletionReminder';
 import {
@@ -22,18 +25,160 @@ import {
   X,
   Users,
   User,
+  Loader2,
 } from 'lucide-react';
-import heroImage from '@/assets/hero-rider.jpg';
-import instructorImage from '@/assets/instructor.jpg';
 import bikerzLogo from '@/assets/bikerz-logo.png';
+
+interface EnrolledCourse {
+  id: string;
+  course_id: string;
+  progress_percentage: number;
+  course: {
+    id: string;
+    title: string;
+    title_ar: string | null;
+    thumbnail_url: string | null;
+  };
+  nextLesson?: {
+    title: string;
+    title_ar: string | null;
+  } | null;
+}
+
+interface LearningStats {
+  totalCourses: number;
+  totalWatchTimeSeconds: number;
+  overallProgress: number;
+}
 
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { user, profile, signOut, isAdmin, isInstructor } = useAuth();
+  const { user, profile, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
+
+  // Fetch enrolled courses from database
+  const { data: enrolledCourses = [], isLoading: coursesLoading } = useQuery({
+    queryKey: ['enrolled-courses', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+
+      const { data: enrollments, error } = await supabase
+        .from('course_enrollments')
+        .select(`
+          id,
+          course_id,
+          progress_percentage,
+          course:courses!course_enrollments_course_id_fkey(
+            id,
+            title,
+            title_ar,
+            thumbnail_url
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('enrolled_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch next lesson for each enrollment
+      const coursesWithNextLesson = await Promise.all(
+        (enrollments || []).map(async (enrollment) => {
+          // Get completed lessons
+          const { data: completedLessons } = await supabase
+            .from('lesson_progress')
+            .select('lesson_id')
+            .eq('user_id', user.id)
+            .eq('is_completed', true);
+
+          const completedIds = (completedLessons || []).map(l => l.lesson_id);
+
+          // Get first uncompleted lesson from the course
+          const { data: chapters } = await supabase
+            .from('chapters')
+            .select('id')
+            .eq('course_id', enrollment.course_id)
+            .eq('is_published', true)
+            .order('position', { ascending: true });
+
+          let nextLesson = null;
+          if (chapters && chapters.length > 0) {
+            const { data: lessons } = await supabase
+              .from('lessons')
+              .select('id, title, title_ar')
+              .in('chapter_id', chapters.map(c => c.id))
+              .eq('is_published', true)
+              .order('position', { ascending: true })
+              .limit(10);
+
+            nextLesson = lessons?.find(l => !completedIds.includes(l.id)) || null;
+          }
+
+          return {
+            ...enrollment,
+            nextLesson,
+          } as EnrolledCourse;
+        })
+      );
+
+      return coursesWithNextLesson;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch learning stats from database
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['learning-stats', user?.id],
+    queryFn: async (): Promise<LearningStats> => {
+      if (!user?.id) return { totalCourses: 0, totalWatchTimeSeconds: 0, overallProgress: 0 };
+
+      // Get total enrolled courses
+      const { count: totalCourses } = await supabase
+        .from('course_enrollments')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      // Get total watch time from lesson progress
+      const { data: progress } = await supabase
+        .from('lesson_progress')
+        .select('watch_time_seconds')
+        .eq('user_id', user.id);
+
+      const totalWatchTimeSeconds = (progress || []).reduce(
+        (acc, p) => acc + (p.watch_time_seconds || 0),
+        0
+      );
+
+      // Get overall progress (average of all enrollments)
+      const { data: enrollments } = await supabase
+        .from('course_enrollments')
+        .select('progress_percentage')
+        .eq('user_id', user.id);
+
+      const overallProgress = enrollments && enrollments.length > 0
+        ? Math.round(enrollments.reduce((acc, e) => acc + e.progress_percentage, 0) / enrollments.length)
+        : 0;
+
+      return {
+        totalCourses: totalCourses || 0,
+        totalWatchTimeSeconds,
+        overallProgress,
+      };
+    },
+    enabled: !!user?.id,
+  });
+
+  // Format watch time
+  const formatWatchTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  };
 
   // Lock body scroll when sidebar is open on mobile
   useEffect(() => {
@@ -52,24 +197,6 @@ const Dashboard: React.FC = () => {
     navigate('/');
   };
 
-  // Sample enrolled courses
-  const enrolledCourses = [
-    {
-      id: '1',
-      title: isRTL ? 'أساسيات ركوب الدراجات النارية' : 'Motorcycle Riding Fundamentals',
-      progress: 65,
-      image: heroImage,
-      nextLesson: isRTL ? 'التحكم في الفرامل' : 'Brake Control',
-    },
-    {
-      id: '2',
-      title: isRTL ? 'التحكم والتوازن المتقدم' : 'Advanced Control & Balance',
-      progress: 20,
-      image: instructorImage,
-      nextLesson: isRTL ? 'التوازن في السرعات المنخفضة' : 'Low-Speed Balance',
-    },
-  ];
-
   const navItems = [
     { icon: Home, label: t('nav.home'), to: '/' },
     { icon: BookOpen, label: t('nav.courses'), to: '/courses' },
@@ -78,6 +205,8 @@ const Dashboard: React.FC = () => {
     { icon: User, label: isRTL ? 'الملف الشخصي' : 'Profile', to: '/profile' },
     ...(isAdmin ? [{ icon: Settings, label: isRTL ? 'لوحة الإدارة' : 'Admin Panel', to: '/admin' }] : []),
   ];
+
+  const isLoading = coursesLoading || statsLoading;
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -195,29 +324,49 @@ const Dashboard: React.FC = () => {
 
           {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            {[
-              { icon: BookOpen, value: '2', label: isRTL ? 'دورات مسجلة' : 'Enrolled Courses' },
-              { icon: Clock, value: '12h', label: isRTL ? 'وقت التعلم' : 'Learning Time' },
-              { icon: Trophy, value: '45%', label: isRTL ? 'التقدم الكلي' : 'Overall Progress' },
-            ].map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                className="card-premium p-4 sm:p-6"
-              >
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            {isLoading ? (
+              <>
+                <Skeleton className="h-24 rounded-xl" />
+                <Skeleton className="h-24 rounded-xl" />
+                <Skeleton className="h-24 rounded-xl" />
+              </>
+            ) : (
+              [
+                { 
+                  icon: BookOpen, 
+                  value: stats?.totalCourses || 0, 
+                  label: isRTL ? 'دورات مسجلة' : 'Enrolled Courses' 
+                },
+                { 
+                  icon: Clock, 
+                  value: formatWatchTime(stats?.totalWatchTimeSeconds || 0), 
+                  label: isRTL ? 'وقت التعلم' : 'Learning Time' 
+                },
+                { 
+                  icon: Trophy, 
+                  value: `${stats?.overallProgress || 0}%`, 
+                  label: isRTL ? 'التقدم الكلي' : 'Overall Progress' 
+                },
+              ].map((stat, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: index * 0.1 }}
+                  className="card-premium p-4 sm:p-6"
+                >
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">{stat.value}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">{stat.label}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xl sm:text-2xl font-bold text-foreground">{stat.value}</p>
-                    <p className="text-xs sm:text-sm text-muted-foreground truncate">{stat.label}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))
+            )}
           </div>
 
           {/* Continue Learning */}
@@ -225,61 +374,102 @@ const Dashboard: React.FC = () => {
             <h2 className="text-lg sm:text-xl font-bold text-foreground mb-3 sm:mb-4">
               {t('dashboard.continueLearning')}
             </h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              {enrolledCourses.map((course, index) => (
-                <motion.div
-                  key={course.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.2 + index * 0.1 }}
-                >
-                  <Link to={`/courses/${course.id}/learn`}>
-                    <div className="group card-premium p-3 sm:p-4 flex gap-3 sm:gap-4 transition-all duration-300 hover:border-primary/40 active:scale-[0.99]">
-                      {/* Thumbnail */}
-                      <div className="relative w-24 h-20 sm:w-32 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
-                        <img
-                          src={course.image}
-                          alt={course.title}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-background/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Play className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
-                        </div>
-                      </div>
 
-                      {/* Info */}
-                      <div className="flex-1 min-w-0 flex flex-col justify-between">
-                        <div>
-                          <h3 className="font-bold text-sm sm:text-base text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                            {course.title}
-                          </h3>
-                          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                            {isRTL ? 'التالي: ' : 'Next: '}{course.nextLesson}
-                          </p>
-                        </div>
+            {isLoading ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <Skeleton className="h-32 rounded-xl" />
+                <Skeleton className="h-32 rounded-xl" />
+              </div>
+            ) : enrolledCourses.length === 0 ? (
+              <div className="card-premium p-8 text-center">
+                <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {isRTL ? 'لم تسجل في أي دورة بعد' : 'No courses enrolled yet'}
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  {isRTL 
+                    ? 'ابدأ رحلتك التعليمية بالتسجيل في دورة'
+                    : 'Start your learning journey by enrolling in a course'}
+                </p>
+                <Link to="/courses">
+                  <Button variant="cta">
+                    {isRTL ? 'تصفح الدورات' : 'Browse Courses'}
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                {enrolledCourses.map((enrollment, index) => {
+                  const course = enrollment.course as EnrolledCourse['course'];
+                  const title = isRTL && course.title_ar ? course.title_ar : course.title;
+                  const nextLessonTitle = enrollment.nextLesson
+                    ? (isRTL && enrollment.nextLesson.title_ar 
+                        ? enrollment.nextLesson.title_ar 
+                        : enrollment.nextLesson.title)
+                    : (isRTL ? 'تم إكمال الدورة' : 'Course completed');
 
-                        {/* Progress */}
-                        <div className="space-y-1 mt-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">{t('dashboard.progress')}</span>
-                            <span className="text-primary font-medium">{course.progress}%</span>
+                  return (
+                    <motion.div
+                      key={enrollment.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.2 + index * 0.1 }}
+                    >
+                      <Link to={`/courses/${course.id}/learn`}>
+                        <div className="group card-premium p-3 sm:p-4 flex gap-3 sm:gap-4 transition-all duration-300 hover:border-primary/40 active:scale-[0.99]">
+                          {/* Thumbnail */}
+                          <div className="relative w-24 h-20 sm:w-32 sm:h-24 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
+                            {course.thumbnail_url ? (
+                              <img
+                                src={course.thumbnail_url}
+                                alt={title}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <BookOpen className="w-8 h-8 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-background/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Play className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
+                            </div>
                           </div>
-                          <div className="progress-track">
-                            <div
-                              className="progress-fill"
-                              style={{ width: `${course.progress}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
 
-                      <Chevron className="w-5 h-5 text-muted-foreground self-center opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" />
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
+                          {/* Info */}
+                          <div className="flex-1 min-w-0 flex flex-col justify-between">
+                            <div>
+                              <h3 className="font-bold text-sm sm:text-base text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                                {title}
+                              </h3>
+                              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                                {isRTL ? 'التالي: ' : 'Next: '}{nextLessonTitle}
+                              </p>
+                            </div>
+
+                            {/* Progress */}
+                            <div className="space-y-1 mt-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground">{t('dashboard.progress')}</span>
+                                <span className="text-primary font-medium">{enrollment.progress_percentage}%</span>
+                              </div>
+                              <div className="progress-track">
+                                <div
+                                  className="progress-fill"
+                                  style={{ width: `${enrollment.progress_percentage}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <Chevron className="w-5 h-5 text-muted-foreground self-center opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" />
+                        </div>
+                      </Link>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           {/* Quick Actions */}

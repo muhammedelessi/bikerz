@@ -1,8 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import { useInView } from 'react-intersection-observer';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/integrations/supabase/client';
 import communityImage from '@/assets/community-ride.jpg';
 
 const CommunitySection: React.FC = () => {
@@ -10,11 +12,60 @@ const CommunitySection: React.FC = () => {
   const { isRTL } = useLanguage();
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
-  const stats = [
-    { valueKey: 'stat1.value', labelKey: 'stat1.label' },
-    { valueKey: 'stat2.value', labelKey: 'stat2.label' },
-    { valueKey: 'stat3.value', labelKey: 'stat3.label' },
-    { valueKey: 'stat4.value', labelKey: 'stat4.label' },
+  // Fetch real community stats from database
+  const { data: stats } = useQuery({
+    queryKey: ['community-stats'],
+    queryFn: async () => {
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      const [
+        { count: totalUsers },
+        { count: totalCourses },
+        { count: totalEnrollments },
+        { count: recentSignups },
+      ] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('courses').select('*', { count: 'exact', head: true }).eq('is_published', true),
+        supabase.from('course_enrollments').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', thirtyDaysAgo),
+      ]);
+
+      return {
+        totalUsers: totalUsers || 0,
+        totalCourses: totalCourses || 0,
+        totalEnrollments: totalEnrollments || 0,
+        recentSignups: recentSignups || 0,
+      };
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  // Format numbers for display
+  const formatCount = (count: number) => {
+    if (count >= 1000) {
+      return `${(count / 1000).toFixed(1).replace(/\.0$/, '')}K+`;
+    }
+    return count > 0 ? `${count}+` : '0';
+  };
+
+  const displayStats = [
+    { 
+      value: formatCount(stats?.totalUsers || 0), 
+      label: isRTL ? 'راكب مسجل' : 'Registered Riders' 
+    },
+    { 
+      value: formatCount(stats?.totalCourses || 0), 
+      label: isRTL ? 'دورة متاحة' : 'Available Courses' 
+    },
+    { 
+      value: formatCount(stats?.totalEnrollments || 0), 
+      label: isRTL ? 'تسجيل في الدورات' : 'Course Enrollments' 
+    },
+    { 
+      value: formatCount(stats?.recentSignups || 0), 
+      label: isRTL ? 'راكب جديد هذا الشهر' : 'New This Month' 
+    },
   ];
 
   return (
@@ -49,7 +100,7 @@ const CommunitySection: React.FC = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-          {stats.map((stat, index) => (
+          {displayStats.map((stat, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 40 }}
@@ -63,38 +114,40 @@ const CommunitySection: React.FC = () => {
                 transition={{ duration: 0.5, delay: 0.3 + index * 0.1, type: 'spring' }}
                 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-primary mb-1 sm:mb-2"
               >
-                {t(`community.${stat.valueKey}`)}
+                {stat.value}
               </motion.div>
               <div className="text-xs sm:text-sm lg:text-base text-muted-foreground font-medium">
-                {t(`community.${stat.labelKey}`)}
+                {stat.label}
               </div>
             </motion.div>
           ))}
         </div>
 
-        {/* Testimonial Placeholder */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="mt-10 sm:mt-12 lg:mt-16 text-center"
-        >
-          <div className="inline-flex flex-col sm:flex-row items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-4 rounded-2xl sm:rounded-full bg-secondary/20 border border-secondary/30">
-            <div className="flex -space-x-2 sm:-space-x-3 rtl:space-x-reverse">
-              {[...Array(4)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-secondary border-2 border-background flex items-center justify-center text-xs font-bold text-primary-foreground"
-                >
-                  {['A', 'M', 'K', 'S'][i]}
-                </div>
-              ))}
+        {/* Recent Signups Indicator */}
+        {stats && stats.recentSignups > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="mt-10 sm:mt-12 lg:mt-16 text-center"
+          >
+            <div className="inline-flex flex-col sm:flex-row items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-4 rounded-2xl sm:rounded-full bg-secondary/20 border border-secondary/30">
+              <div className="flex -space-x-2 sm:-space-x-3 rtl:space-x-reverse">
+                {[...Array(Math.min(4, stats.recentSignups))].map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-secondary border-2 border-background flex items-center justify-center text-xs font-bold text-primary-foreground"
+                  >
+                    {['A', 'M', 'K', 'S'][i]}
+                  </div>
+                ))}
+              </div>
+              <span className="text-sm sm:text-base text-foreground font-medium text-center">
+                +{stats.recentSignups} {isRTL ? 'راكب انضموا هذا الشهر' : 'riders joined this month'}
+              </span>
             </div>
-            <span className="text-sm sm:text-base text-foreground font-medium text-center">
-              {isRTL ? '+1,000 راكب انضموا هذا الشهر' : '+1,000 riders joined this month'}
-            </span>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
       </div>
     </section>
   );
