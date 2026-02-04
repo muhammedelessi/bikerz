@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Instagram, Youtube } from 'lucide-react';
+import { Instagram, Youtube, Facebook, Linkedin } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import bikerzLogo from '@/assets/bikerz-logo.png';
 
 // Custom X (Twitter) icon
@@ -26,17 +28,86 @@ const SnapchatIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+interface SocialLink {
+  platform: string;
+  url: string;
+  is_visible: boolean;
+}
+
+interface FooterContent {
+  email?: string;
+  phone?: string;
+  tagline_en?: string;
+  tagline_ar?: string;
+  social_links?: SocialLink[];
+}
+
 const Footer: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
 
-  const socialLinks = [
-    { icon: XIcon, href: '#', label: 'X' },
-    { icon: Instagram, href: '#', label: 'Instagram' },
-    { icon: TikTokIcon, href: '#', label: 'TikTok' },
-    { icon: SnapchatIcon, href: '#', label: 'Snapchat' },
-    { icon: Youtube, href: '#', label: 'Youtube' },
+  // Fetch footer content from database
+  const { data: footerContent } = useQuery({
+    queryKey: ['footer-content'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('admin_settings')
+        .select('value')
+        .eq('key', 'footer')
+        .eq('category', 'landing')
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      return (data?.value as FooterContent) || {};
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const getPlatformIcon = (platform: string) => {
+    switch (platform) {
+      case 'x': return XIcon;
+      case 'instagram': return Instagram;
+      case 'tiktok': return TikTokIcon;
+      case 'snapchat': return SnapchatIcon;
+      case 'youtube': return Youtube;
+      case 'facebook': return Facebook;
+      case 'linkedin': return Linkedin;
+      default: return XIcon;
+    }
+  };
+
+  const getPlatformLabel = (platform: string) => {
+    switch (platform) {
+      case 'x': return 'X';
+      case 'instagram': return 'Instagram';
+      case 'tiktok': return 'TikTok';
+      case 'snapchat': return 'Snapchat';
+      case 'youtube': return 'YouTube';
+      case 'facebook': return 'Facebook';
+      case 'linkedin': return 'LinkedIn';
+      default: return platform;
+    }
+  };
+
+  // Default social links if not configured
+  const defaultSocialLinks: SocialLink[] = [
+    { platform: 'x', url: '#', is_visible: true },
+    { platform: 'instagram', url: '#', is_visible: true },
+    { platform: 'tiktok', url: '#', is_visible: true },
+    { platform: 'snapchat', url: '#', is_visible: true },
+    { platform: 'youtube', url: '#', is_visible: true },
   ];
+
+  const socialLinks = (footerContent?.social_links && footerContent.social_links.length > 0) 
+    ? footerContent.social_links.filter(link => link.is_visible !== false)
+    : defaultSocialLinks;
+
+  const tagline = isRTL 
+    ? (footerContent?.tagline_ar || t('footer.tagline'))
+    : (footerContent?.tagline_en || t('footer.tagline'));
+
+  const email = footerContent?.email || 'info@bikerz.sa';
+  const phone = footerContent?.phone || '+966 50 111 1111';
 
   return (
     <footer className="bg-card/50 border-t border-border/30 safe-area-bottom">
@@ -52,19 +123,24 @@ const Footer: React.FC = () => {
               />
             </Link>
             <p className="text-muted-foreground text-sm max-w-xs">
-              {t('footer.tagline')}
+              {tagline}
             </p>
             <div className="flex gap-2 sm:gap-3">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-muted/30 border border-border/30 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all duration-300 touch-target"
-                  aria-label={social.label}
-                >
-                  <social.icon className="w-5 h-5" />
-                </a>
-              ))}
+              {socialLinks.map((social, index) => {
+                const IconComponent = getPlatformIcon(social.platform);
+                return (
+                  <a
+                    key={`${social.platform}-${index}`}
+                    href={social.url || '#'}
+                    target={social.url && social.url !== '#' ? '_blank' : undefined}
+                    rel={social.url && social.url !== '#' ? 'noopener noreferrer' : undefined}
+                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-muted/30 border border-border/30 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all duration-300 touch-target"
+                    aria-label={getPlatformLabel(social.platform)}
+                  >
+                    <IconComponent className="w-5 h-5" />
+                  </a>
+                );
+              })}
             </div>
           </div>
 
@@ -116,8 +192,8 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="font-bold text-foreground mb-3 sm:mb-4">{t('footer.contact')}</h4>
             <div className="space-y-2 sm:space-y-3 text-muted-foreground text-sm">
-              <p>info@bikerz.sa</p>
-              <p dir="ltr" className="text-start">+966 50 111 1111</p>
+              <p>{email}</p>
+              <p dir="ltr" className="text-start">{phone}</p>
               <p>{t('footer.location')}</p>
             </div>
           </div>
