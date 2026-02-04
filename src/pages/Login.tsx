@@ -33,12 +33,12 @@ const Login: React.FC = () => {
     const { error } = await signIn(email, password);
     
     if (error) {
-      setError(isRTL ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Invalid email or password');
+      setError(t('auth.login.invalidCredentials'));
       setIsLoading(false);
       return;
     }
     
-    toast.success(isRTL ? 'تم تسجيل الدخول بنجاح!' : 'Logged in successfully!');
+    toast.success(t('auth.login.success'));
     navigate('/dashboard');
   };
 

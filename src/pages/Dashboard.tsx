@@ -201,9 +201,9 @@ const Dashboard: React.FC = () => {
     { icon: Home, label: t('nav.home'), to: '/' },
     { icon: BookOpen, label: t('nav.courses'), to: '/courses' },
     { icon: GraduationCap, label: t('dashboard.myCourses'), to: '/dashboard', active: true },
-    { icon: Users, label: isRTL ? 'المدربون' : 'Mentors', to: '/mentors' },
-    { icon: User, label: isRTL ? 'الملف الشخصي' : 'Profile', to: '/profile' },
-    ...(isAdmin ? [{ icon: Settings, label: isRTL ? 'لوحة الإدارة' : 'Admin Panel', to: '/admin' }] : []),
+    { icon: Users, label: t('nav.mentors'), to: '/mentors' },
+    { icon: User, label: t('profile.title'), to: '/profile' },
+    ...(isAdmin ? [{ icon: Settings, label: t('nav.adminPanel'), to: '/admin' }] : []),
   ];
 
   const isLoading = coursesLoading || statsLoading;
@@ -275,7 +275,7 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-foreground truncate">
-                  {profile?.full_name || (isRTL ? 'مستخدم' : 'User')}
+                  {profile?.full_name || t('common.user')}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               </div>
@@ -286,7 +286,7 @@ const Dashboard: React.FC = () => {
               onClick={handleSignOut}
             >
               <LogOut className="w-4 h-4 me-2" />
-              {isRTL ? 'تسجيل الخروج' : 'Logout'}
+              {t('common.logout')}
             </Button>
           </div>
         </div>
@@ -306,10 +306,10 @@ const Dashboard: React.FC = () => {
               </button>
               <div className="min-w-0">
                 <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">
-                  {t('dashboard.welcome')}, {profile?.full_name?.split(' ')[0] || (isRTL ? 'مستخدم' : 'User')}!
+                  {t('dashboard.welcome')}, {profile?.full_name?.split(' ')[0] || t('common.user')}!
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
-                  {isRTL ? 'استمر في التعلم' : 'Keep up the great work'}
+                  {t('dashboard.keepUpGreatWork')}
                 </p>
               </div>
             </div>
@@ -335,17 +335,17 @@ const Dashboard: React.FC = () => {
                 { 
                   icon: BookOpen, 
                   value: stats?.totalCourses || 0, 
-                  label: isRTL ? 'دورات مسجلة' : 'Enrolled Courses' 
+                  label: t('dashboard.enrolledCourses')
                 },
                 { 
                   icon: Clock, 
                   value: formatWatchTime(stats?.totalWatchTimeSeconds || 0), 
-                  label: isRTL ? 'وقت التعلم' : 'Learning Time' 
+                  label: t('dashboard.learningTime')
                 },
                 { 
                   icon: Trophy, 
                   value: `${stats?.overallProgress || 0}%`, 
-                  label: isRTL ? 'التقدم الكلي' : 'Overall Progress' 
+                  label: t('dashboard.overallProgress')
                 },
               ].map((stat, index) => (
                 <motion.div
@@ -384,16 +384,14 @@ const Dashboard: React.FC = () => {
               <div className="card-premium p-8 text-center">
                 <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">
-                  {isRTL ? 'لم تسجل في أي دورة بعد' : 'No courses enrolled yet'}
+                  {t('dashboard.noCoursesEnrolled')}
                 </h3>
                 <p className="text-muted-foreground mb-4">
-                  {isRTL 
-                    ? 'ابدأ رحلتك التعليمية بالتسجيل في دورة'
-                    : 'Start your learning journey by enrolling in a course'}
+                  {t('dashboard.startLearningJourney')}
                 </p>
                 <Link to="/courses">
                   <Button variant="cta">
-                    {isRTL ? 'تصفح الدورات' : 'Browse Courses'}
+                    {t('dashboard.browseCourses')}
                   </Button>
                 </Link>
               </div>
@@ -406,7 +404,7 @@ const Dashboard: React.FC = () => {
                     ? (isRTL && enrollment.nextLesson.title_ar 
                         ? enrollment.nextLesson.title_ar 
                         : enrollment.nextLesson.title)
-                    : (isRTL ? 'تم إكمال الدورة' : 'Course completed');
+                    : t('dashboard.courseCompleted');
 
                   return (
                     <motion.div
@@ -443,7 +441,7 @@ const Dashboard: React.FC = () => {
                                 {title}
                               </h3>
                               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                                {isRTL ? 'التالي: ' : 'Next: '}{nextLessonTitle}
+                                {t('dashboard.nextLesson')}{nextLessonTitle}
                               </p>
                             </div>
 

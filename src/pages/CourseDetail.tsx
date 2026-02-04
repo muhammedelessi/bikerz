@@ -222,12 +222,8 @@ const CourseDetail: React.FC = () => {
   };
 
   const getDifficultyLabel = (level: string) => {
-    const labels: Record<string, { en: string; ar: string }> = {
-      beginner: { en: 'Beginner', ar: 'مبتدئ' },
-      intermediate: { en: 'Intermediate', ar: 'متوسط' },
-      advanced: { en: 'Advanced', ar: 'متقدم' },
-    };
-    return isRTL ? labels[level]?.ar || level : labels[level]?.en || level;
+    const key = `courses.difficulty.${level}` as const;
+    return t(key);
   };
 
   if (isLoading) {
@@ -249,15 +245,15 @@ const CourseDetail: React.FC = () => {
         <div className="section-container min-h-[60vh] flex flex-col items-center justify-center text-center">
           <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
           <h2 className="text-2xl font-bold text-foreground mb-2">
-            {isRTL ? 'الدورة غير موجودة' : 'Course Not Found'}
+            {t('courses.courseNotFound')}
           </h2>
           <p className="text-muted-foreground mb-6">
-            {isRTL ? 'لم نتمكن من العثور على هذه الدورة' : "We couldn't find this course"}
+            {t('courses.courseNotFoundDescription')}
           </p>
           <Link to="/courses">
             <Button variant="outline">
               <BackIcon className="w-4 h-4 me-2" />
-              {isRTL ? 'العودة للدورات' : 'Back to Courses'}
+              {t('courses.backToCourses')}
             </Button>
           </Link>
         </div>
@@ -286,7 +282,7 @@ const CourseDetail: React.FC = () => {
             {/* Back Link */}
             <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-6">
               <BackIcon className="w-5 h-5 me-1" />
-              {isRTL ? 'العودة للدورات' : 'Back to Courses'}
+              {t('courses.backToCourses')}
             </Link>
 
             <div className="grid lg:grid-cols-3 gap-8">
@@ -303,7 +299,7 @@ const CourseDetail: React.FC = () => {
                     </span>
                     {course.price === 0 && (
                       <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-sm font-medium">
-                        {isRTL ? 'مجاني' : 'Free'}
+                        {t('common.free')}
                       </span>
                     )}
                   </div>
@@ -319,12 +315,12 @@ const CourseDetail: React.FC = () => {
                   <div className="flex flex-wrap items-center gap-6 text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <BookOpen className="w-5 h-5" />
-                      <span>{totalLessons} {isRTL ? 'درس' : 'lessons'}</span>
+                      <span>{totalLessons} {t('courses.lesson')}</span>
                     </div>
                     {course.duration_hours && (
                       <div className="flex items-center gap-2">
                         <Clock className="w-5 h-5" />
-                        <span>{course.duration_hours} {isRTL ? 'ساعات' : 'hours'}</span>
+                        <span>{course.duration_hours} {t('courses.hours')}</span>
                       </div>
                     )}
                   </div>
@@ -343,25 +339,25 @@ const CourseDetail: React.FC = () => {
                     <>
                       <div className="flex items-center gap-2 text-primary mb-4">
                         <CheckCircle2 className="w-5 h-5" />
-                        <span className="font-medium">{isRTL ? 'مسجل' : 'Enrolled'}</span>
+                        <span className="font-medium">{t('courses.enrolled')}</span>
                       </div>
                       
                       <div className="mb-4">
                         <div className="flex justify-between text-sm mb-2">
-                          <span className="text-muted-foreground">{isRTL ? 'التقدم' : 'Progress'}</span>
+                          <span className="text-muted-foreground">{t('dashboard.progress')}</span>
                           <span className="text-foreground font-medium">{progressPercentage}%</span>
                         </div>
                         <Progress value={progressPercentage} className="h-2" />
                       </div>
 
                       <p className="text-sm text-muted-foreground mb-4">
-                        {completedLessons} / {totalLessons} {isRTL ? 'دروس مكتملة' : 'lessons completed'}
+                        {completedLessons} / {totalLessons} {t('courses.lessonsCompleted')}
                       </p>
 
                       <Button className="w-full btn-cta" asChild>
                         <Link to={`/courses/${id}/learn`}>
                           <Play className="w-4 h-4 me-2" />
-                          {isRTL ? 'متابعة التعلم' : 'Continue Learning'}
+                          {t('courses.continueLearning')}
                         </Link>
                       </Button>
                     </>
@@ -370,8 +366,8 @@ const CourseDetail: React.FC = () => {
                       <div className="text-center mb-6">
                         <span className="text-4xl font-bold text-foreground">
                           {course.price === 0 
-                            ? (isRTL ? 'مجاني' : 'Free') 
-                            : `${course.price} ${isRTL ? 'ر.س' : 'SAR'}`}
+                            ? t('common.free')
+                            : `${course.price} ${t('common.sar')}`}
                         </span>
                       </div>
 
@@ -383,8 +379,8 @@ const CourseDetail: React.FC = () => {
                             disabled={enrollMutation.isPending}
                           >
                             {enrollMutation.isPending 
-                              ? (isRTL ? 'جاري التسجيل...' : 'Enrolling...') 
-                              : (isRTL ? 'سجل مجاناً' : 'Enroll for Free')}
+                              ? t('courses.enrolling')
+                              : t('courses.enrollForFree')}
                           </Button>
                         ) : (
                           <Button 
@@ -392,21 +388,19 @@ const CourseDetail: React.FC = () => {
                             onClick={() => setShowCheckout(true)}
                           >
                             <ShoppingCart className="w-4 h-4 me-2" />
-                            {isRTL ? 'اشتري الآن' : 'Buy Now'}
+                            {t('courses.buyNow')}
                           </Button>
                         )
                       ) : (
                         <Button className="w-full btn-cta" asChild>
                           <Link to="/login">
-                            {isRTL ? 'سجل دخول للشراء' : 'Login to Purchase'}
+                            {t('courses.loginToPurchase')}
                           </Link>
                         </Button>
                       )}
 
                       <p className="text-xs text-muted-foreground text-center mt-4">
-                        {isRTL 
-                          ? 'الوصول الكامل لجميع محتويات الدورة'
-                          : 'Full access to all course content'}
+                        {t('courses.fullAccess')}
                       </p>
                     </>
                   )}
@@ -424,11 +418,11 @@ const CourseDetail: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <h2 className="text-2xl font-bold text-foreground mb-6">
-              {isRTL ? 'محتوى الدورة' : 'Course Content'}
+              {t('courses.courseContent')}
             </h2>
 
             <div className="text-sm text-muted-foreground mb-4">
-              {chapters.length} {isRTL ? 'فصول' : 'chapters'} • {totalLessons} {isRTL ? 'دروس' : 'lessons'}
+              {chapters.length} {t('courses.chapters')} • {totalLessons} {t('courses.lessons')}
             </div>
 
             {chapters.length > 0 ? (
@@ -449,10 +443,10 @@ const CourseDetail: React.FC = () => {
                             {isRTL && chapter.title_ar ? chapter.title_ar : chapter.title}
                           </h3>
                           <p className="text-sm text-muted-foreground mt-0.5">
-                            {chapter.lessons.length} {isRTL ? 'دروس' : 'lessons'}
+                            {chapter.lessons.length} {t('courses.lessons')}
                             {chapter.is_free && (
                               <span className="ms-2 text-primary">
-                                ({isRTL ? 'مجاني' : 'Free'})
+                                ({t('common.free')})
                               </span>
                             )}
                           </p>

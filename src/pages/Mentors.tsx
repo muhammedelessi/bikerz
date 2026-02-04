@@ -82,12 +82,10 @@ const Mentors: React.FC = () => {
             className="text-center mb-12"
           >
             <h1 className="section-title text-foreground mb-4">
-              {isRTL ? 'المدربون الخبراء' : 'Expert Mentors'}
+              {t('mentors.title')}
             </h1>
             <p className="section-subtitle">
-              {isRTL 
-                ? 'تعلم من مدربين محترفين معتمدين بخبرات متنوعة في مختلف أنواع الدراجات'
-                : 'Learn from certified professional instructors with diverse expertise across all bike types'}
+              {t('mentors.subtitle')}
             </p>
           </motion.div>
 
@@ -111,7 +109,7 @@ const Mentors: React.FC = () => {
           {error && (
             <div className="text-center py-12">
               <p className="text-destructive">
-                {isRTL ? 'حدث خطأ أثناء تحميل المدربين' : 'Error loading mentors'}
+                {t('mentors.loadingError')}
               </p>
             </div>
           )}
@@ -123,12 +121,10 @@ const Mentors: React.FC = () => {
                 <UserX className="w-10 h-10 text-muted-foreground" />
               </div>
               <h3 className="text-xl font-bold text-foreground mb-2">
-                {isRTL ? 'لا يوجد مدربون متاحون حالياً' : 'No mentors available'}
+                {t('mentors.noMentors')}
               </h3>
               <p className="text-muted-foreground max-w-md mx-auto">
-                {isRTL 
-                  ? 'لا يوجد مدربون متاحون في الوقت الحالي. يرجى العودة لاحقاً.'
-                  : 'There are no mentors available at this time. Please check back later.'}
+                {t('mentors.noMentorsDescription')}
               </p>
             </div>
           )}
@@ -165,10 +161,10 @@ const Mentors: React.FC = () => {
                       {/* Name */}
                       <div className="absolute bottom-4 start-4 end-4">
                         <h3 className="text-xl font-bold text-foreground">
-                          {mentor.profile?.full_name || (isRTL ? 'مدرب' : 'Mentor')}
+                          {mentor.profile?.full_name || t('mentors.mentor')}
                         </h3>
                         <p className="text-sm text-primary font-medium">
-                          {mentor.experience_years} {isRTL ? 'سنوات خبرة' : 'years experience'}
+                          {mentor.experience_years} {t('mentors.yearsExperience')}
                         </p>
                       </div>
                     </div>
@@ -225,10 +221,10 @@ const Mentors: React.FC = () => {
                         </div>
                         <div className="text-end">
                           <p className="text-lg font-bold text-primary">
-                            {mentor.fees_per_hour} {isRTL ? 'ر.س' : 'SAR'}
+                            {mentor.fees_per_hour} {t('common.sar')}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {isRTL ? 'للساعة' : 'per hour'}
+                            {t('common.perHour')}
                           </p>
                         </div>
                       </div>
@@ -236,7 +232,7 @@ const Mentors: React.FC = () => {
                       {/* CTA */}
                       <Button variant="cta" className="w-full group-hover:shadow-glow-lg">
                         <MessageCircle className="w-4 h-4" />
-                        {isRTL ? 'تواصل مع المدرب' : 'Contact Mentor'}
+                        {t('mentors.contactMentor')}
                       </Button>
                     </div>
                   </div>
