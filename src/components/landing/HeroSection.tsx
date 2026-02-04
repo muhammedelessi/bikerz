@@ -1,5 +1,4 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -8,11 +7,15 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import heroImage from '@/assets/hero-rider.jpg';
+import { useLandingContent, HeroContent } from '@/hooks/useLandingContent';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const HeroSection: React.FC = () => {
-  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+
+  // Fetch dynamic content from database
+  const { data: content, isLoading: contentLoading } = useLandingContent<HeroContent>('hero');
 
   // Fetch real stats from database
   const { data: stats } = useQuery({
@@ -28,7 +31,6 @@ const HeroSection: React.FC = () => {
         supabase.from('course_enrollments').select('progress_percentage'),
       ]);
 
-      // Calculate success rate (enrollments with >70% progress)
       const successfulEnrollments = (enrollmentStats || []).filter(e => e.progress_percentage >= 70).length;
       const totalEnrollments = (enrollmentStats || []).length;
       const successRate = totalEnrollments > 0 
@@ -41,10 +43,9 @@ const HeroSection: React.FC = () => {
         successRate,
       };
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Format numbers for display
   const formatCount = (count: number) => {
     if (count >= 1000) {
       return `${Math.floor(count / 1000)}K+`;
@@ -67,9 +68,24 @@ const HeroSection: React.FC = () => {
     },
   ];
 
+  // Get text based on language
+  const getText = (enKey: keyof HeroContent, arKey: keyof HeroContent, fallbackEn: string, fallbackAr: string) => {
+    if (!content) return isRTL ? fallbackAr : fallbackEn;
+    return isRTL ? (content[arKey] || fallbackAr) : (content[enKey] || fallbackEn);
+  };
+
+  const title = getText('title_en', 'title_ar', 'Master the Art of Riding', 'أتقن فن القيادة');
+  const subtitle = getText('subtitle_en', 'subtitle_ar', 
+    'Join 15,000+ GCC riders on their journey from beginner to confident road master.',
+    'انضم إلى أكثر من 15,000 راكب في الخليج في رحلتهم من المبتدئين إلى أساتذة الطريق.'
+  );
+  const ctaText = getText('cta_en', 'cta_ar', 'Start Your Journey', 'ابدأ رحلتك');
+  const secondaryCta = getText('secondary_cta_en', 'secondary_cta_ar', 'Explore Courses', 'استكشف الدورات');
+  const badgeText = getText('badge_text_en', 'badge_text_ar', 'GCC Riders', 'راكب في الخليج');
+
   return (
     <section className="relative min-h-[100svh] flex items-center justify-center overflow-hidden pt-16 sm:pt-20 lg:pt-24">
-      {/* Background Image - Optimized for mobile */}
+      {/* Background Image */}
       <div className="absolute inset-0">
         <img
           src={heroImage}
@@ -81,7 +97,7 @@ const HeroSection: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-background/60 via-transparent to-background/60 hidden sm:block" />
       </div>
 
-      {/* Animated Lines - Lighter on mobile */}
+      {/* Animated Lines */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
         <motion.div
           initial={{ opacity: 0 }}
@@ -117,21 +133,29 @@ const HeroSection: React.FC = () => {
           >
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             <span className="text-xs sm:text-sm text-primary font-medium">
-              {formatCount(stats?.members || 0)} {isRTL ? 'راكب في الخليج' : 'GCC Riders'}
+              {formatCount(stats?.members || 0)} {badgeText}
             </span>
           </motion.div>
 
           {/* Title */}
-          <h1 className="hero-text max-w-5xl mx-auto leading-[1.15]">
-            {t('hero.title')}
-          </h1>
+          {contentLoading ? (
+            <Skeleton className="h-16 w-3/4 mx-auto" />
+          ) : (
+            <h1 className="hero-text max-w-5xl mx-auto leading-[1.15]">
+              {title}
+            </h1>
+          )}
 
           {/* Subtitle */}
-          <p className="hero-subtitle mx-auto">
-            {t('hero.subtitle')}
-          </p>
+          {contentLoading ? (
+            <Skeleton className="h-8 w-2/3 mx-auto" />
+          ) : (
+            <p className="hero-subtitle mx-auto">
+              {subtitle}
+            </p>
+          )}
 
-          {/* CTAs - Stack on mobile */}
+          {/* CTAs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -140,19 +164,19 @@ const HeroSection: React.FC = () => {
           >
             <Link to="/signup" className="w-full sm:w-auto">
               <Button variant="hero" size="xl" className="group w-full sm:w-auto min-h-[52px]">
-                {t('hero.cta')}
+                {ctaText}
                 <Arrow className="w-5 h-5 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
               </Button>
             </Link>
             <Link to="/courses" className="w-full sm:w-auto">
               <Button variant="heroOutline" size="xl" className="group w-full sm:w-auto min-h-[52px]">
                 <Play className="w-5 h-5" />
-                {t('hero.secondaryCta')}
+                {secondaryCta}
               </Button>
             </Link>
           </motion.div>
 
-          {/* Stats Row - Responsive grid */}
+          {/* Stats Row */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -169,7 +193,7 @@ const HeroSection: React.FC = () => {
         </motion.div>
       </div>
 
-      {/* Scroll Indicator - Hidden on small mobile */}
+      {/* Scroll Indicator */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

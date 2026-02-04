@@ -1,45 +1,31 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Bike, Shield, Route, Trophy } from 'lucide-react';
+import { Bike, Shield, Route, Trophy, LucideIcon } from 'lucide-react';
+import { useLandingContent, JourneyContent } from '@/hooks/useLandingContent';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const iconMap: Record<string, LucideIcon> = {
+  Shield,
+  Bike,
+  Route,
+  Trophy,
+};
 
 const JourneySection: React.FC = () => {
-  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
-  const steps = [
-    {
-      icon: Shield,
-      number: '01',
-      titleKey: 'journey.step1.title',
-      descKey: 'journey.step1.description',
-    },
-    {
-      icon: Bike,
-      number: '02',
-      titleKey: 'journey.step2.title',
-      descKey: 'journey.step2.description',
-    },
-    {
-      icon: Route,
-      number: '03',
-      titleKey: 'journey.step3.title',
-      descKey: 'journey.step3.description',
-    },
-    {
-      icon: Trophy,
-      number: '04',
-      titleKey: 'journey.step4.title',
-      descKey: 'journey.step4.description',
-    },
-  ];
+  const { data: content, isLoading } = useLandingContent<JourneyContent>('journey');
+
+  const title = isRTL ? (content?.title_ar || 'طريقك نحو الإتقان') : (content?.title_en || 'Your Path to Mastery');
+  const subtitle = isRTL ? (content?.subtitle_ar || '') : (content?.subtitle_en || '');
+  const steps = content?.steps || [];
 
   return (
     <section ref={ref} className="relative py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-b from-background via-secondary/10 to-background overflow-hidden">
-      {/* Road Pattern Background - Hidden on mobile for performance */}
+      {/* Road Pattern Background */}
       <div className="absolute inset-0 opacity-5 hidden md:block">
         <div className="absolute left-1/2 -translate-x-1/2 w-4 h-full bg-gradient-to-b from-transparent via-muted-foreground to-transparent" />
         {[...Array(20)].map((_, i) => (
@@ -59,17 +45,22 @@ const JourneySection: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-10 sm:mb-16 lg:mb-20"
         >
-          <h2 className="section-title text-foreground mb-3 sm:mb-4">
-            {t('journey.title')}
-          </h2>
-          <p className="section-subtitle">
-            {t('journey.subtitle')}
-          </p>
+          {isLoading ? (
+            <>
+              <Skeleton className="h-10 w-64 mx-auto mb-4" />
+              <Skeleton className="h-6 w-96 mx-auto" />
+            </>
+          ) : (
+            <>
+              <h2 className="section-title text-foreground mb-3 sm:mb-4">{title}</h2>
+              <p className="section-subtitle">{subtitle}</p>
+            </>
+          )}
         </motion.div>
 
-        {/* Journey Steps - Mobile optimized */}
+        {/* Journey Steps */}
         <div className="relative max-w-4xl mx-auto">
-          {/* Vertical Line - Positioned for mobile */}
+          {/* Vertical Line */}
           <div className="absolute left-6 sm:left-8 lg:left-1/2 lg:-translate-x-1/2 top-0 bottom-0 w-0.5 sm:w-px">
             <motion.div
               initial={{ height: 0 }}
@@ -80,70 +71,72 @@ const JourneySection: React.FC = () => {
           </div>
 
           <div className="space-y-6 sm:space-y-8 lg:space-y-12">
-            {steps.map((step, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
-                animate={inView ? { opacity: 1, x: 0 } : {}}
-                transition={{ duration: 0.6, delay: 0.3 + index * 0.15 }}
-                className="relative"
-              >
-                {/* Mobile & Tablet Layout */}
-                <div className="flex lg:hidden items-start gap-4 sm:gap-6">
-                  {/* Dot */}
-                  <div className="relative z-10 flex-shrink-0">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-card border-2 border-primary/50 flex items-center justify-center shadow-glow">
-                      <step.icon className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+            {isLoading ? (
+              Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="flex items-start gap-4 sm:gap-6">
+                  <Skeleton className="w-12 h-12 rounded-xl flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                </div>
+              ))
+            ) : (
+              steps.map((step, index) => {
+                const IconComponent = iconMap[step.icon] || Shield;
+                const stepTitle = isRTL ? step.title_ar : step.title_en;
+                const stepDesc = isRTL ? step.description_ar : step.description_en;
+
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
+                    animate={inView ? { opacity: 1, x: 0 } : {}}
+                    transition={{ duration: 0.6, delay: 0.3 + index * 0.15 }}
+                    className="relative"
+                  >
+                    {/* Mobile & Tablet Layout */}
+                    <div className="flex lg:hidden items-start gap-4 sm:gap-6">
+                      <div className="relative z-10 flex-shrink-0">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-card border-2 border-primary/50 flex items-center justify-center shadow-glow">
+                          <IconComponent className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+                        </div>
+                      </div>
+                      <div className="flex-1 pt-1">
+                        <div className="text-xs sm:text-sm font-bold text-primary mb-1">{step.number}</div>
+                        <h3 className="text-lg sm:text-xl font-bold text-foreground mb-1.5 sm:mb-2">{stepTitle}</h3>
+                        <p className="text-sm sm:text-base text-muted-foreground">{stepDesc}</p>
+                      </div>
                     </div>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="flex-1 pt-1">
-                    <div className="text-xs sm:text-sm font-bold text-primary mb-1">{step.number}</div>
-                    <h3 className="text-lg sm:text-xl font-bold text-foreground mb-1.5 sm:mb-2">
-                      {t(step.titleKey)}
-                    </h3>
-                    <p className="text-sm sm:text-base text-muted-foreground">
-                      {t(step.descKey)}
-                    </p>
-                  </div>
-                </div>
 
-                {/* Desktop: Alternating layout */}
-                <div className={`hidden lg:flex items-center gap-8 ${
-                  index % 2 === 0 ? '' : 'flex-row-reverse'
-                }`}>
-                  {/* Content */}
-                  <div className={`flex-1 ${index % 2 === 0 ? 'text-end' : 'text-start'}`}>
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      className="inline-block p-6 rounded-2xl bg-card/50 border border-border/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300"
-                    >
-                      <div className="text-sm font-bold text-primary mb-1">{step.number}</div>
-                      <h3 className="text-xl font-bold text-foreground mb-2">
-                        {t(step.titleKey)}
-                      </h3>
-                      <p className="text-muted-foreground max-w-xs">
-                        {t(step.descKey)}
-                      </p>
-                    </motion.div>
-                  </div>
+                    {/* Desktop: Alternating layout */}
+                    <div className={`hidden lg:flex items-center gap-8 ${index % 2 === 0 ? '' : 'flex-row-reverse'}`}>
+                      <div className={`flex-1 ${index % 2 === 0 ? 'text-end' : 'text-start'}`}>
+                        <motion.div
+                          whileHover={{ scale: 1.02 }}
+                          className="inline-block p-6 rounded-2xl bg-card/50 border border-border/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300"
+                        >
+                          <div className="text-sm font-bold text-primary mb-1">{step.number}</div>
+                          <h3 className="text-xl font-bold text-foreground mb-2">{stepTitle}</h3>
+                          <p className="text-muted-foreground max-w-xs">{stepDesc}</p>
+                        </motion.div>
+                      </div>
 
-                  {/* Center Dot */}
-                  <div className="relative z-10 flex-shrink-0">
-                    <motion.div
-                      whileHover={{ scale: 1.1, rotate: 10 }}
-                      className="w-16 h-16 rounded-2xl bg-card border-2 border-primary/50 flex items-center justify-center shadow-glow transition-all duration-300"
-                    >
-                      <step.icon className="w-8 h-8 text-primary" />
-                    </motion.div>
-                  </div>
+                      <div className="relative z-10 flex-shrink-0">
+                        <motion.div
+                          whileHover={{ scale: 1.1, rotate: 10 }}
+                          className="w-16 h-16 rounded-2xl bg-card border-2 border-primary/50 flex items-center justify-center shadow-glow transition-all duration-300"
+                        >
+                          <IconComponent className="w-8 h-8 text-primary" />
+                        </motion.div>
+                      </div>
 
-                  {/* Spacer */}
-                  <div className="flex-1" />
-                </div>
-              </motion.div>
-            ))}
+                      <div className="flex-1" />
+                    </div>
+                  </motion.div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
