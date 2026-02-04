@@ -157,6 +157,52 @@
     "subtitle": "Your journey to becoming a confident, skilled rider starts with a single step.",
     "button": "Start Learning Today"
   },
+  "aboutUs": {
+    "title": "About BIKERZ",
+    "subtitle": "We're on a mission to make motorcycle riding safer and more accessible for everyone in the GCC region.",
+    "story": {
+      "title": "Our Story",
+      "paragraph1": "BIKERZ was founded by a group of passionate riders who saw a critical gap in motorcycle education across the GCC. Too many riders were learning through dangerous trial and error, leading to preventable accidents and injuries.",
+      "paragraph2": "We built a comprehensive learning platform that combines expert instruction, interactive content, and a supportive community to transform beginners into confident, safe riders. Today, we're proud to have helped thousands of riders across Saudi Arabia and the Gulf region."
+    },
+    "mission": {
+      "title": "Our Mission",
+      "description": "To provide world-class motorcycle education that prioritizes safety, builds confidence, and creates a community of responsible riders who share our passion for the open road."
+    },
+    "vision": {
+      "title": "Our Vision",
+      "description": "To become the leading motorcycle education platform in the Middle East, reducing riding accidents and building a culture of safety-first riding across the GCC."
+    },
+    "values": {
+      "title": "Our Values",
+      "subtitle": "The principles that guide everything we do",
+      "safety": {
+        "title": "Safety First",
+        "description": "Every lesson, every tip, every piece of content is designed with rider safety as the top priority."
+      },
+      "community": {
+        "title": "Community",
+        "description": "We believe in the power of riders helping riders, sharing knowledge and supporting each other."
+      },
+      "excellence": {
+        "title": "Excellence",
+        "description": "We strive for the highest quality in our content, instruction, and learner experience."
+      },
+      "passion": {
+        "title": "Passion",
+        "description": "We're riders ourselves, and that passion drives us to create the best learning experience possible."
+      }
+    },
+    "contact": {
+      "title": "Get in Touch",
+      "subtitle": "Have questions? We'd love to hear from you.",
+      "location": "Location",
+      "phone": "Phone",
+      "email": "Email",
+      "hours": "Working Hours",
+      "hoursValue": "Sun - Thu: 9AM - 6PM"
+    }
+  },
   "auth": {
     "login": {
       "title": "Welcome Back",
@@ -184,6 +230,16 @@
       "passwordTooShort": "Password must be at least 6 characters",
       "success": "Account created successfully!",
       "namePlaceholder": "Your full name"
+    },
+    "forgotPassword": {
+      "title": "Forgot Password?",
+      "subtitle": "Enter your email address and we'll send you a link to reset your password.",
+      "sendLink": "Send Reset Link",
+      "emailSent": "Password reset email sent!",
+      "checkEmail": "Check Your Email",
+      "emailSentDescription": "We've sent a password reset link to your email address. Please check your inbox and follow the instructions.",
+      "backToLogin": "Back to Login",
+      "tryDifferentEmail": "Try a different email"
     },
     "emailPlaceholder": "your@email.com",
     "passwordPlaceholder": "••••••••"

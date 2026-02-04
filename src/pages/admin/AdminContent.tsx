@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { 
   Save, Loader2, Eye, Home, Target, Route, BookOpen, Megaphone, Users,
   Settings2, Palette, LayoutGrid, Type, MousePointer,
-  Sparkles, PanelLeftClose, PanelLeft, Menu, ExternalLink
+  Sparkles, PanelLeftClose, PanelLeft, Menu, ExternalLink, Share2
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import IconSelector from '@/components/admin/content/IconSelector';
@@ -207,6 +207,7 @@ const AdminContent: React.FC = () => {
     { key: 'learn', icon: BookOpen, label: isRTL ? 'ما ستتعلمه' : 'What You Learn' },
     { key: 'cta', icon: Megaphone, label: isRTL ? 'دعوة للعمل' : 'Call to Action' },
     { key: 'community', icon: Users, label: isRTL ? 'المجتمع' : 'Community' },
+    { key: 'footer', icon: Share2, label: isRTL ? 'التذييل والسوشيال' : 'Footer & Social' },
   ];
 
   // ============= HEADER MENU EDITOR =============
@@ -1311,6 +1312,123 @@ const AdminContent: React.FC = () => {
     );
   };
 
+  // ============= FOOTER SECTION EDITOR =============
+  const renderFooterSection = () => {
+    const footerData = editedContent.footer || {};
+    const socialLinks = footerData.social_links || [];
+
+    const socialLinkTemplate = {
+      id: `social-${Date.now()}`,
+      platform: 'x',
+      url: '',
+      is_visible: true
+    };
+
+    const platformOptions = [
+      { value: 'x', label: 'X (Twitter)' },
+      { value: 'instagram', label: 'Instagram' },
+      { value: 'tiktok', label: 'TikTok' },
+      { value: 'snapchat', label: 'Snapchat' },
+      { value: 'youtube', label: 'YouTube' },
+      { value: 'facebook', label: 'Facebook' },
+      { value: 'linkedin', label: 'LinkedIn' },
+    ];
+
+    return (
+      <div className="space-y-8">
+        {/* Contact Info */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Type className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'معلومات الاتصال' : 'Contact Information'}</h3>
+          </div>
+
+          <div className="space-y-2">
+            <Label>{isRTL ? 'البريد الإلكتروني' : 'Email'}</Label>
+            <Input
+              value={footerData.email || 'info@bikerz.sa'}
+              onChange={(e) => updateField('footer', 'email', e.target.value)}
+              placeholder="info@bikerz.sa"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>{isRTL ? 'رقم الهاتف' : 'Phone Number'}</Label>
+            <Input
+              value={footerData.phone || '+966 50 111 1111'}
+              onChange={(e) => updateField('footer', 'phone', e.target.value)}
+              placeholder="+966 50 111 1111"
+              dir="ltr"
+            />
+          </div>
+
+          <BilingualInput
+            labelEn="Tagline"
+            labelAr="الشعار"
+            valueEn={footerData.tagline_en || 'Empowering riders across the GCC'}
+            valueAr={footerData.tagline_ar || 'تمكين الراكبين في جميع أنحاء الخليج'}
+            onChangeEn={(v) => updateField('footer', 'tagline_en', v)}
+            onChangeAr={(v) => updateField('footer', 'tagline_ar', v)}
+          />
+        </div>
+
+        <Separator />
+
+        {/* Social Media Links */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Share2 className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'روابط التواصل الاجتماعي' : 'Social Media Links'}</h3>
+          </div>
+
+          <SortableList
+            items={socialLinks}
+            onReorder={(newItems) => updateArray('footer', 'social_links', newItems)}
+            onAdd={() => addArrayItem('footer', 'social_links', socialLinkTemplate)}
+            onRemove={(index) => removeArrayItem('footer', 'social_links', index)}
+            addLabel={isRTL ? 'إضافة رابط' : 'Add Social Link'}
+            minItems={0}
+            maxItems={10}
+            renderItem={(item: { platform: string; url: string; is_visible: boolean }, index: number) => (
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>{isRTL ? 'المنصة' : 'Platform'}</Label>
+                    <select
+                      value={item.platform || 'x'}
+                      onChange={(e) => updateArrayItem('footer', 'social_links', index, 'platform', e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      {platformOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{isRTL ? 'الرابط' : 'URL'}</Label>
+                    <Input
+                      value={item.url || ''}
+                      onChange={(e) => updateArrayItem('footer', 'social_links', index, 'url', e.target.value)}
+                      placeholder="https://x.com/bikerz"
+                      dir="ltr"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={item.is_visible !== false}
+                    onCheckedChange={(v) => updateArrayItem('footer', 'social_links', index, 'is_visible', v)}
+                  />
+                  <Label>{isRTL ? 'مرئي' : 'Visible'}</Label>
+                </div>
+              </div>
+            )}
+          />
+        </div>
+      </div>
+    );
+  };
+
   const renderSectionContent = (key: string) => {
     switch (key) {
       case 'header': return renderHeaderSection();
@@ -1320,6 +1438,7 @@ const AdminContent: React.FC = () => {
       case 'learn': return renderLearnSection();
       case 'cta': return renderCTASection();
       case 'community': return renderCommunitySection();
+      case 'footer': return renderFooterSection();
       default: return null;
     }
   };
@@ -1393,7 +1512,7 @@ const AdminContent: React.FC = () => {
           <div className={`flex flex-col min-h-0 overflow-hidden ${showPreview ? 'w-1/2' : 'w-full'}`}>
             <Tabs value={activeSection} onValueChange={setActiveSection} className="flex flex-col flex-1 min-h-0">
               {/* Tab List - Fixed */}
-              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 flex-shrink-0 mb-4">
+              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 flex-shrink-0 mb-4">
                 {sections.map(section => (
                   <TabsTrigger key={section.key} value={section.key} className="flex items-center gap-1 px-2">
                     <section.icon className="w-4 h-4 flex-shrink-0" />

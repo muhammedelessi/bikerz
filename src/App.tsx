@@ -8,6 +8,8 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import AboutUs from "./pages/AboutUs";
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
 import CourseLearn from "./pages/CourseLearn";
@@ -99,6 +101,8 @@ const AppRoutes = () => (
     <Route path="/" element={<Index />} />
     <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
     <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
+    <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
+    <Route path="/about" element={<AboutUs />} />
     <Route path="/courses" element={<Courses />} />
     <Route path="/courses/:id" element={<CourseDetail />} />
     <Route path="/courses/:id/learn" element={<CourseLearn />} />
