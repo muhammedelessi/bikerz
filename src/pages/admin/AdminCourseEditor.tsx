@@ -38,6 +38,8 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Edit,
   Trash2,
   GripVertical,
@@ -54,6 +56,13 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import VideoUploader from '@/components/admin/VideoUploader';
+import TestQuestionManager from '@/components/admin/TestQuestionManager';
+
+interface ChapterTest {
+  id: string;
+  title: string;
+  title_ar: string | null;
+}
 
 interface Chapter {
   id: string;
@@ -96,6 +105,9 @@ const AdminCourseEditor: React.FC = () => {
   const [editingChapter, setEditingChapter] = useState<Chapter | null>(null);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
+  
+  // Quiz/Test management state
+  const [selectedTest, setSelectedTest] = useState<{ id: string; title: string } | null>(null);
 
   // Chapter form state
   const [chapterForm, setChapterForm] = useState({
@@ -167,6 +179,27 @@ const AdminCourseEditor: React.FC = () => {
     },
     enabled: chapters.length > 0,
   });
+
+  // Fetch chapter tests
+  const { data: chapterTests = [] } = useQuery({
+    queryKey: ['admin-chapter-tests', id],
+    queryFn: async () => {
+      const chapterIds = chapters.map(c => c.id);
+      if (chapterIds.length === 0) return [];
+
+      const { data, error } = await supabase
+        .from('chapter_tests')
+        .select('id, chapter_id, title, title_ar')
+        .in('chapter_id', chapterIds);
+      if (error) throw error;
+      return data as (ChapterTest & { chapter_id: string })[];
+    },
+    enabled: chapters.length > 0,
+  });
+
+  const getTestForChapter = (chapterId: string) => {
+    return chapterTests.find(t => t.chapter_id === chapterId);
+  };
 
   // Create chapter mutation
   const createChapterMutation = useMutation({
@@ -315,6 +348,65 @@ const AdminCourseEditor: React.FC = () => {
       toast.error(error.message);
     },
   });
+
+  // Reorder chapters mutation
+  const reorderChaptersMutation = useMutation({
+    mutationFn: async (reorderedChapters: Chapter[]) => {
+      const updates = reorderedChapters.map((chapter, index) => 
+        supabase.from('chapters').update({ position: index }).eq('id', chapter.id)
+      );
+      const results = await Promise.all(updates);
+      const error = results.find(r => r.error)?.error;
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-chapters'] });
+      toast.success(isRTL ? 'تم إعادة ترتيب الفصول' : 'Chapters reordered');
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
+  });
+
+  // Reorder lessons mutation
+  const reorderLessonsMutation = useMutation({
+    mutationFn: async ({ chapterId, reorderedLessons }: { chapterId: string; reorderedLessons: Lesson[] }) => {
+      const updates = reorderedLessons.map((lesson, index) => 
+        supabase.from('lessons').update({ position: index }).eq('id', lesson.id)
+      );
+      const results = await Promise.all(updates);
+      const error = results.find(r => r.error)?.error;
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-lessons'] });
+      toast.success(isRTL ? 'تم إعادة ترتيب الدروس' : 'Lessons reordered');
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
+  });
+
+  const moveChapter = (fromIndex: number, direction: 'up' | 'down') => {
+    const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
+    if (toIndex < 0 || toIndex >= chapters.length) return;
+    
+    const newChapters = [...chapters];
+    const [removed] = newChapters.splice(fromIndex, 1);
+    newChapters.splice(toIndex, 0, removed);
+    reorderChaptersMutation.mutate(newChapters);
+  };
+
+  const moveLesson = (chapterId: string, fromIndex: number, direction: 'up' | 'down') => {
+    const chapterLessons = getLessonsForChapter(chapterId);
+    const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
+    if (toIndex < 0 || toIndex >= chapterLessons.length) return;
+    
+    const newLessons = [...chapterLessons];
+    const [removed] = newLessons.splice(fromIndex, 1);
+    newLessons.splice(toIndex, 0, removed);
+    reorderLessonsMutation.mutate({ chapterId, reorderedLessons: newLessons });
+  };
 
   const resetChapterForm = () => {
     setChapterForm({
@@ -524,7 +616,26 @@ const AdminCourseEditor: React.FC = () => {
             >
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/30">
                 <div className="flex items-center gap-3 flex-1 text-start">
-                  <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
+                  <div className="flex flex-col gap-0.5">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5"
+                      onClick={(e) => { e.stopPropagation(); moveChapter(index, 'up'); }}
+                      disabled={index === 0}
+                    >
+                      <ChevronUp className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5"
+                      onClick={(e) => { e.stopPropagation(); moveChapter(index, 'down'); }}
+                      disabled={index === chapters.length - 1}
+                    >
+                      <ChevronDown className="w-3 h-3" />
+                    </Button>
+                  </div>
                   <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">
                     {index + 1}
                   </span>
@@ -575,56 +686,112 @@ const AdminCourseEditor: React.FC = () => {
 
                 {/* Lessons */}
                 <div className="space-y-2">
-                  {getLessonsForChapter(chapter.id).map((lesson, lessonIndex) => (
-                    <div
-                      key={lesson.id}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 group hover:bg-muted/50 transition-colors"
-                    >
-                      <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
-                      <span className="text-sm text-muted-foreground w-6">{lessonIndex + 1}.</span>
-                      {lesson.video_url ? (
-                        <Video className="w-4 h-4 text-primary" />
-                      ) : (
-                        <FileText className="w-4 h-4 text-muted-foreground" />
-                      )}
-                      <span className="flex-1 font-medium truncate">
-                        {isRTL && lesson.title_ar ? lesson.title_ar : lesson.title}
-                      </span>
-                      {lesson.duration_minutes && (
-                        <span className="text-sm text-muted-foreground">
-                          {lesson.duration_minutes} {isRTL ? 'د' : 'min'}
+                  {getLessonsForChapter(chapter.id).map((lesson, lessonIndex) => {
+                    const chapterLessons = getLessonsForChapter(chapter.id);
+                    return (
+                      <div
+                        key={lesson.id}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 group hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex flex-col gap-0.5">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5"
+                            onClick={() => moveLesson(chapter.id, lessonIndex, 'up')}
+                            disabled={lessonIndex === 0}
+                          >
+                            <ChevronUp className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5"
+                            onClick={() => moveLesson(chapter.id, lessonIndex, 'down')}
+                            disabled={lessonIndex === chapterLessons.length - 1}
+                          >
+                            <ChevronDown className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        <span className="text-sm text-muted-foreground w-6">{lessonIndex + 1}.</span>
+                        {lesson.video_url ? (
+                          <Video className="w-4 h-4 text-primary" />
+                        ) : (
+                          <FileText className="w-4 h-4 text-muted-foreground" />
+                        )}
+                        <span className="flex-1 font-medium truncate">
+                          {isRTL && lesson.title_ar ? lesson.title_ar : lesson.title}
                         </span>
-                      )}
-                      {lesson.is_free && (
-                        <Badge variant="outline" className="text-green-500 border-green-500 text-xs">
-                          {isRTL ? 'مجاني' : 'Free'}
-                        </Badge>
-                      )}
-                      {lesson.is_published ? (
-                        <Badge className="bg-green-500/10 text-green-500 text-xs">{isRTL ? 'منشور' : 'Published'}</Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-xs">{isRTL ? 'مسودة' : 'Draft'}</Badge>
-                      )}
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditLesson(lesson)}>
-                          <Edit className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-7 w-7 text-destructive"
-                          onClick={() => deleteLessonMutation.mutate(lesson.id)}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        {lesson.duration_minutes && (
+                          <span className="text-sm text-muted-foreground">
+                            {lesson.duration_minutes} {isRTL ? 'د' : 'min'}
+                          </span>
+                        )}
+                        {lesson.is_free && (
+                          <Badge variant="outline" className="text-green-500 border-green-500 text-xs">
+                            {isRTL ? 'مجاني' : 'Free'}
+                          </Badge>
+                        )}
+                        {lesson.is_published ? (
+                          <Badge className="bg-green-500/10 text-green-500 text-xs">{isRTL ? 'منشور' : 'Published'}</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">{isRTL ? 'مسودة' : 'Draft'}</Badge>
+                        )}
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditLesson(lesson)}>
+                            <Edit className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7 text-destructive"
+                            onClick={() => deleteLessonMutation.mutate(lesson.id)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {getLessonsForChapter(chapter.id).length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       {isRTL ? 'لا توجد دروس في هذا الفصل' : 'No lessons in this chapter'}
                     </p>
                   )}
+                </div>
+
+                {/* Chapter Quiz/Test */}
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ClipboardList className="w-4 h-4 text-primary" />
+                      <span className="font-medium text-sm">
+                        {isRTL ? 'اختبار الفصل' : 'Chapter Quiz'}
+                      </span>
+                    </div>
+                    {getTestForChapter(chapter.id) ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const test = getTestForChapter(chapter.id);
+                          if (test) {
+                            setSelectedTest({
+                              id: test.id,
+                              title: isRTL && test.title_ar ? test.title_ar : test.title,
+                            });
+                          }
+                        }}
+                      >
+                        <Edit className="w-4 h-4 me-1" />
+                        {isRTL ? 'إدارة الأسئلة' : 'Manage Questions'}
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        {isRTL ? 'لا يوجد اختبار' : 'No quiz configured'}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -851,6 +1018,16 @@ const AdminCourseEditor: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Test Question Manager */}
+      {selectedTest && (
+        <TestQuestionManager
+          testId={selectedTest.id}
+          testTitle={selectedTest.title}
+          isOpen={!!selectedTest}
+          onClose={() => setSelectedTest(null)}
+        />
+      )}
     </div>
   );
 };
