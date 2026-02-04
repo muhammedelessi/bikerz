@@ -70,9 +70,9 @@ const Profile: React.FC = () => {
     { icon: Home, label: t('nav.home'), to: '/' },
     { icon: BookOpen, label: t('nav.courses'), to: '/courses' },
     { icon: GraduationCap, label: t('dashboard.myCourses'), to: '/dashboard' },
-    { icon: Users, label: isRTL ? 'المدربون' : 'Mentors', to: '/mentors' },
-    { icon: User, label: isRTL ? 'الملف الشخصي' : 'Profile', to: '/profile', active: true },
-    ...(isAdmin ? [{ icon: Settings, label: isRTL ? 'لوحة الإدارة' : 'Admin Panel', to: '/admin' }] : []),
+    { icon: Users, label: t('nav.mentors'), to: '/mentors' },
+    { icon: User, label: t('profile.title'), to: '/profile', active: true },
+    ...(isAdmin ? [{ icon: Settings, label: t('nav.adminPanel'), to: '/admin' }] : []),
   ];
 
   // Show nothing while redirecting
@@ -153,10 +153,10 @@ const Profile: React.FC = () => {
               </button>
               <div className="min-w-0">
                 <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">
-                  {isRTL ? 'الملف الشخصي' : 'My Profile'}
+                  {t('profile.title')}
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
-                  {isRTL ? 'إدارة معلوماتك وإعداداتك' : 'Manage your information and settings'}
+                  {t('profile.subtitle')}
                 </p>
               </div>
             </div>
@@ -210,7 +210,7 @@ const Profile: React.FC = () => {
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
-                {isRTL ? 'لم يتم العثور على الملف الشخصي' : 'Profile not found'}
+                {t('profile.notFound')}
               </p>
             </div>
           )}

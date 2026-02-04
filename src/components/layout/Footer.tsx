@@ -79,7 +79,7 @@ const Footer: React.FC = () => {
               </li>
               <li>
                 <Link to="/mentors" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
-                  {isRTL ? 'المدربون' : 'Mentors'}
+                  {t('nav.mentors')}
                 </Link>
               </li>
               <li>
@@ -118,7 +118,7 @@ const Footer: React.FC = () => {
             <div className="space-y-2 sm:space-y-3 text-muted-foreground text-sm">
               <p>info@bikerz.sa</p>
               <p dir="ltr" className="text-start">+966 50 111 1111</p>
-              <p>{isRTL ? 'جدة، المملكة العربية السعودية' : 'Jeddah, Saudi Arabia'}</p>
+              <p>{t('footer.location')}</p>
             </div>
           </div>
         </div>

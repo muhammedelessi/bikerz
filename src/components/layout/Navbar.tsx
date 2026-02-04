@@ -204,7 +204,7 @@ const Navbar: React.FC = () => {
                         </span>
                       </Button>
                     </Link>
-                    <Button variant="ghost" size="icon" onClick={handleSignOut} title={isRTL ? 'تسجيل الخروج' : 'Logout'}>
+                    <Button variant="ghost" size="icon" onClick={handleSignOut} title={t('common.logout')}>
                       <LogOut className="w-4 h-4" />
                     </Button>
                   </>
@@ -337,7 +337,7 @@ const Navbar: React.FC = () => {
                       </Link>
                       <Button variant="ghost" onClick={handleSignOut} className="w-full h-12 text-base text-muted-foreground">
                         <LogOut className="w-5 h-5 me-2" />
-                        {isRTL ? 'تسجيل الخروج' : 'Logout'}
+                        {t('common.logout')}
                       </Button>
                     </>
                   ) : (

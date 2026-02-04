@@ -44,19 +44,15 @@ const Courses: React.FC = () => {
   });
 
   const getDifficultyLabel = (level: string) => {
-    const labels: Record<string, { en: string; ar: string }> = {
-      beginner: { en: 'Beginner', ar: 'مبتدئ' },
-      intermediate: { en: 'Intermediate', ar: 'متوسط' },
-      advanced: { en: 'Advanced', ar: 'متقدم' },
-    };
-    return isRTL ? labels[level]?.ar || level : labels[level]?.en || level;
+    const key = `courses.difficulty.${level}` as const;
+    return t(key);
   };
 
   const formatDuration = (hours: number | null) => {
-    if (!hours) return isRTL ? '0س' : '0h';
+    if (!hours) return `0${t('courses.hour')}`;
     const h = Math.floor(hours);
     const m = Math.round((hours - h) * 60);
-    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+    return m > 0 ? `${h}${t('courses.hour')} ${m}${t('courses.minutes')}` : `${h}${t('courses.hour')}`;
   };
 
   return (
@@ -73,12 +69,10 @@ const Courses: React.FC = () => {
             className="text-center mb-8 sm:mb-10 lg:mb-12"
           >
             <h1 className="section-title text-foreground mb-3 sm:mb-4">
-              {t('nav.courses')}
+              {t('courses.title')}
             </h1>
             <p className="section-subtitle">
-              {isRTL 
-                ? 'اختر دورتك وابدأ رحلتك نحو إتقان ركوب الدراجات النارية'
-                : 'Choose your course and begin your journey to motorcycle mastery'}
+              {t('courses.subtitle')}
             </p>
           </motion.div>
 
@@ -96,12 +90,10 @@ const Courses: React.FC = () => {
                 <BookOpen className="w-10 h-10 text-muted-foreground" />
               </div>
               <h3 className="text-xl font-bold text-foreground mb-2">
-                {isRTL ? 'لا توجد دورات متاحة حالياً' : 'No courses available'}
+                {t('courses.noCourses')}
               </h3>
               <p className="text-muted-foreground max-w-md mx-auto">
-                {isRTL 
-                  ? 'لم يتم نشر أي دورات بعد. يرجى العودة لاحقاً.'
-                  : 'No courses have been published yet. Please check back later.'}
+                {t('courses.noCoursesDescription')}
               </p>
             </div>
           )}
@@ -157,7 +149,7 @@ const Courses: React.FC = () => {
                             <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                               <div className="flex items-center gap-1.5">
                                 <BookOpen className="w-4 h-4" />
-                                <span>{course.total_lessons || 0} {isRTL ? 'درس' : 'lessons'}</span>
+                                <span>{course.total_lessons || 0} {t('courses.lesson')}</span>
                               </div>
                               <div className="flex items-center gap-1.5">
                                 <Clock className="w-4 h-4" />

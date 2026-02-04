@@ -35,12 +35,12 @@ const Signup: React.FC = () => {
     setError(null);
 
     if (password !== confirmPassword) {
-      setError(isRTL ? 'كلمات المرور غير متطابقة' : 'Passwords do not match');
+      setError(t('auth.signup.passwordMismatch'));
       return;
     }
 
     if (password.length < 6) {
-      setError(isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+      setError(t('auth.signup.passwordTooShort'));
       return;
     }
 
@@ -54,7 +54,7 @@ const Signup: React.FC = () => {
       return;
     }
     
-    toast.success(isRTL ? 'تم إنشاء الحساب بنجاح!' : 'Account created successfully!');
+    toast.success(t('auth.signup.success'));
     setIsLoading(false);
     // Show profile completion wizard instead of navigating immediately
     setShowProfileWizard(true);
@@ -127,7 +127,7 @@ const Signup: React.FC = () => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder={isRTL ? 'اسمك الكامل' : 'Your full name'}
+                  placeholder={t('auth.signup.namePlaceholder')}
                   required
                   className="form-input h-11 sm:h-12 text-base"
                 />
