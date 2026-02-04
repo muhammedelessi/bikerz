@@ -461,6 +461,47 @@
     "rights": "All rights reserved.",
     "location": "Jeddah, Saudi Arabia"
   },
+  "legal": {
+    "lastUpdated": "Last Updated",
+    "privacy": {
+      "title": "Privacy Policy",
+      "subtitle": "Your privacy is important to us. Learn how we collect, use, and protect your personal information.",
+      "questions": "Have questions about your privacy?",
+      "contactUs": "Contact our privacy team for more information."
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "subtitle": "Please read these terms carefully before using our platform and services.",
+      "questions": "Have questions about our terms?",
+      "contactUs": "Contact our support team for clarification."
+    }
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Have questions or need help? We're here for you.",
+    "info": {
+      "title": "Contact Information"
+    },
+    "form": {
+      "title": "Send Us a Message",
+      "loggedInDescription": "Fill out the form below and we'll get back to you as soon as possible.",
+      "guestDescription": "Log in to submit a support ticket and track your request.",
+      "name": "Full Name",
+      "email": "Email Address",
+      "category": "Category",
+      "subject": "Subject",
+      "message": "Message",
+      "submit": "Submit Request",
+      "loginRequired": "You need to be logged in to submit a support ticket. This allows you to track your request in your dashboard."
+    },
+    "success": {
+      "title": "Request Submitted!",
+      "description": "Thank you for contacting us. We've received your request and will respond as soon as possible.",
+      "ticketNumber": "Your Ticket Number",
+      "checkDashboard": "You can track the status of your request in your dashboard.",
+      "submitAnother": "Submit Another Request"
+    }
+  },
   "notFound": {
     "title": "404",
     "subtitle": "Oops! Page not found",
