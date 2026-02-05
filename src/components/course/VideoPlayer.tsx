@@ -40,6 +40,35 @@ const MUTED_KEY = "video_player:muted";
 
 const isHlsUrl = (url: string) => /\.m3u8($|\?)/i.test(url);
 
+// Vimeo URL detection and ID extraction
+const getVimeoVideoId = (url: string): string | null => {
+  if (!url) return null;
+  
+  // Match patterns like:
+  // https://vimeo.com/123456789
+  // https://player.vimeo.com/video/123456789
+  // https://vimeo.com/channels/staffpicks/123456789
+  // https://vimeo.com/groups/name/videos/123456789
+  const patterns = [
+    /vimeo\.com\/(\d+)/,
+    /player\.vimeo\.com\/video\/(\d+)/,
+    /vimeo\.com\/channels\/[\w-]+\/(\d+)/,
+    /vimeo\.com\/groups\/[\w-]+\/videos\/(\d+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  return null;
+};
+
+const isVimeoUrl = (url: string): boolean => {
+  return getVimeoVideoId(url) !== null;
+};
+
 const getFriendlyMediaError = (err: MediaError | null) => {
   if (!err) return "Failed to load video.";
   switch (err.code) {
@@ -90,13 +119,169 @@ const detectAudioBestEffort = (video: HTMLVideoElement): boolean | null => {
 };
 
 /**
+ * Vimeo Player Component
+ * Uses Vimeo's iframe embed for playback
+ */
+const VimeoPlayer: React.FC<{
+  videoId: string;
+  title?: string;
+  autoPlay?: boolean;
+  initialTime?: number;
+  onEnded?: () => void;
+  onProgress?: (progress: number) => void;
+  onTimeUpdate?: (timeSeconds: number) => void;
+}> = ({ videoId, title, autoPlay, initialTime = 0, onEnded, onProgress, onTimeUpdate }) => {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Build Vimeo embed URL with parameters
+  const embedUrl = useMemo(() => {
+    const params = new URLSearchParams({
+      autopause: '0',
+      quality: 'auto',
+      responsive: '1',
+      dnt: '1', // Do not track
+      pip: '1', // Picture-in-picture
+      title: '1',
+      byline: '0',
+      portrait: '0',
+    });
+
+    if (autoPlay) {
+      params.set('autoplay', '1');
+    }
+
+    if (initialTime > 0) {
+      // Vimeo uses #t=XXs format for start time
+      return `https://player.vimeo.com/video/${videoId}?${params.toString()}#t=${Math.floor(initialTime)}s`;
+    }
+
+    return `https://player.vimeo.com/video/${videoId}?${params.toString()}`;
+  }, [videoId, autoPlay, initialTime]);
+
+  // Listen for Vimeo postMessage events
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Verify message is from Vimeo
+      if (!event.origin.includes('vimeo.com')) return;
+
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        
+        if (data.event === 'ready') {
+          setIsLoading(false);
+          setError(null);
+        }
+
+        if (data.event === 'error') {
+          setError('Failed to load Vimeo video. Please check the video URL.');
+          setIsLoading(false);
+        }
+
+        if (data.event === 'ended' && onEnded) {
+          onEnded();
+        }
+
+        if (data.event === 'timeupdate' && data.data) {
+          const { seconds, duration, percent } = data.data;
+          
+          if (onProgress && typeof percent === 'number') {
+            onProgress(percent * 100);
+          }
+          
+          if (onTimeUpdate && typeof seconds === 'number') {
+            onTimeUpdate(Math.floor(seconds));
+          }
+        }
+      } catch {
+        // Ignore non-JSON messages
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onEnded, onProgress, onTimeUpdate]);
+
+  // Handle iframe load
+  const handleIframeLoad = () => {
+    setIsLoading(false);
+  };
+
+  const handleIframeError = () => {
+    setError('Failed to load Vimeo video. Please check your connection.');
+    setIsLoading(false);
+  };
+
+  return (
+    <div 
+      className="relative w-full max-w-full overflow-hidden rounded-lg border border-border bg-muted" 
+      style={{ aspectRatio: '16 / 9' }}
+    >
+      <iframe
+        ref={iframeRef}
+        src={embedUrl}
+        className="absolute inset-0 h-full w-full"
+        frameBorder="0"
+        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+        allowFullScreen
+        title={title || 'Vimeo video player'}
+        onLoad={handleIframeLoad}
+        onError={handleIframeError}
+      />
+
+      {/* Loading indicator */}
+      {isLoading && !error && (
+        <div className="absolute inset-0 grid place-items-center bg-background/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground">Loading video...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Error UI */}
+      {error && (
+        <div className="absolute inset-0 grid place-items-center bg-background/80 backdrop-blur-sm">
+          <div className="max-w-md rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 text-destructive" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium">Video error</p>
+                <p className="mt-1 text-sm text-muted-foreground">{error}</p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError(null);
+                      setIsLoading(true);
+                      // Force reload by updating the iframe src
+                      if (iframeRef.current) {
+                        iframeRef.current.src = embedUrl;
+                      }
+                    }}
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm hover:bg-accent"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/**
  * Bulletproof native HTML5 player:
  * - ONLY uses <video> + native controls (no custom playback pipeline)
  * - Requires explicit user gesture to start playback (no autoplay-with-sound)
  * - Persists volume/mute across sessions
  * - Shows buffering + clear, non-silent errors
  */
-const VideoPlayer: React.FC<VideoPlayerProps> = ({
+const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
   src,
   poster,
   title,
@@ -260,7 +445,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     // If the user starts playback via native controls (keyboard/tap on controls), hide overlay.
     const onPlayInternal = () => setShowStartOverlay(false);
     const onPauseInternal = () => {
-      // Don’t re-cover the native controls after the user has interacted.
+      // Don't re-cover the native controls after the user has interacted.
       // (Native controls already include a play button.)
     };
 
@@ -363,7 +548,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         </div>
       )}
 
-      {/* Transparent, explicit “no audio” warning (best-effort detection) */}
+      {/* Transparent, explicit "no audio" warning (best-effort detection) */}
       {audioDetected === false && !error && (
         <div className="pointer-events-none absolute bottom-3 left-3 right-3">
           <div className="rounded-md border border-border bg-background/70 px-3 py-2 text-sm text-foreground backdrop-blur-sm">
@@ -373,6 +558,34 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       )}
     </div>
   );
+};
+
+/**
+ * Main VideoPlayer component that automatically detects Vimeo URLs
+ * and uses the appropriate player
+ */
+const VideoPlayer: React.FC<VideoPlayerProps> = (props) => {
+  const { src, title, autoPlay, initialTime, onEnded, onProgress, onTimeUpdate } = props;
+
+  // Check if this is a Vimeo URL
+  const vimeoId = useMemo(() => getVimeoVideoId(src), [src]);
+
+  if (vimeoId) {
+    return (
+      <VimeoPlayer
+        videoId={vimeoId}
+        title={title}
+        autoPlay={autoPlay}
+        initialTime={initialTime}
+        onEnded={onEnded}
+        onProgress={onProgress}
+        onTimeUpdate={onTimeUpdate}
+      />
+    );
+  }
+
+  // Fall back to native player for non-Vimeo URLs
+  return <NativeVideoPlayer {...props} />;
 };
 
 export default VideoPlayer;
