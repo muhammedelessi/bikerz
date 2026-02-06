@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 
 type Language = 'en' | 'ar';
 
@@ -13,8 +13,13 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { i18n } = useTranslation();
-  const [language, setLanguageState] = useState<Language>((i18n.language as Language) || 'ar');
+  const [language, setLanguageState] = useState<Language>(() => {
+    const savedLang = localStorage.getItem('i18nextLng') as Language;
+    if (savedLang && (savedLang === 'en' || savedLang === 'ar')) {
+      return savedLang;
+    }
+    return (i18n.language as Language) || 'ar';
+  });
 
   const isRTL = language === 'ar';
 
@@ -29,9 +34,9 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   useEffect(() => {
-    const savedLang = localStorage.getItem('i18nextLng') as Language;
-    if (savedLang && (savedLang === 'en' || savedLang === 'ar')) {
-      setLanguage(savedLang);
+    // Ensure i18n is synced on mount
+    if (i18n.language !== language) {
+      i18n.changeLanguage(language);
     }
   }, []);
 
