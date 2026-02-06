@@ -149,10 +149,10 @@ export function useBunnyStream() {
             filetype: file.type,
           },
           headers: {
-            'AuthorizationSignature': credentials.apiKey,
+            'AuthorizationSignature': credentials.authorizationSignature,
             'AuthorizationExpire': credentials.expirationTime.toString(),
             'VideoId': videoId,
-            'LibraryId': libraryId,
+            'LibraryId': credentials.libraryId,
           },
           onError: (error) => {
             console.error('TUS upload error:', error);

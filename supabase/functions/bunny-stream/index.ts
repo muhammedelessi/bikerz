@@ -183,7 +183,16 @@ serve(async (req) => {
         const tusEndpoint = `https://video.bunnycdn.com/tusupload`;
         
         // Generate authorization signature for TUS
+        // Bunny requires: SHA256(library_id + api_key + expiration_time + video_id)
         const expirationTime = Math.floor(Date.now() / 1000) + 86400; // 24 hours
+        
+        // Create the signature hash
+        const signatureString = `${bunnyLibraryId}${bunnyApiKey}${expirationTime}${videoId}`;
+        const encoder = new TextEncoder();
+        const data = encoder.encode(signatureString);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const authorizationSignature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         
         return new Response(
           JSON.stringify({
@@ -191,14 +200,8 @@ serve(async (req) => {
             uploadUrl: tusEndpoint,
             videoId,
             libraryId: bunnyLibraryId,
-            apiKey: bunnyApiKey, // TUS needs the API key
             expirationTime,
-            headers: {
-              'AuthorizationSignature': bunnyApiKey,
-              'AuthorizationExpire': expirationTime.toString(),
-              'VideoId': videoId,
-              'LibraryId': bunnyLibraryId,
-            },
+            authorizationSignature,
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
