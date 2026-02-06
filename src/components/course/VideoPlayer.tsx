@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, Loader2, Play } from "lucide-react";
+import Hls from "hls.js";
 
 export interface VideoQuality {
   label: string;
@@ -40,15 +41,16 @@ const MUTED_KEY = "video_player:muted";
 
 const isHlsUrl = (url: string) => /\.m3u8($|\?)/i.test(url);
 
+// Bunny Stream URL detection - matches their CDN pattern
+const isBunnyStreamUrl = (url: string): boolean => {
+  return /vz-[a-z0-9]+-[a-z0-9]+\.b-cdn\.net/i.test(url) || 
+         /iframe\.mediadelivery\.net/i.test(url);
+};
+
 // Vimeo URL detection and ID extraction
 const getVimeoVideoId = (url: string): string | null => {
   if (!url) return null;
   
-  // Match patterns like:
-  // https://vimeo.com/123456789
-  // https://player.vimeo.com/video/123456789
-  // https://vimeo.com/channels/staffpicks/123456789
-  // https://vimeo.com/groups/name/videos/123456789
   const patterns = [
     /vimeo\.com\/(\d+)/,
     /player\.vimeo\.com\/video\/(\d+)/,
@@ -275,11 +277,12 @@ const VimeoPlayer: React.FC<{
 };
 
 /**
- * Bulletproof native HTML5 player:
- * - ONLY uses <video> + native controls (no custom playback pipeline)
- * - Requires explicit user gesture to start playback (no autoplay-with-sound)
- * - Persists volume/mute across sessions
- * - Shows buffering + clear, non-silent errors
+ * Premium HLS/Native video player with adaptive streaming:
+ * - Uses hls.js for adaptive bitrate streaming on non-Safari browsers
+ * - Native HLS playback on Safari/iOS
+ * - Automatic quality selection based on network conditions
+ * - Persistent volume/mute settings
+ * - User gesture required for first playback
  */
 const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
   src,
@@ -291,6 +294,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
   initialTime = 0,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const restoredRef = useRef(false);
   const lastReportedTimeRef = useRef(0);
 
@@ -298,25 +302,24 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
   const [isBuffering, setIsBuffering] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [audioDetected, setAudioDetected] = useState<boolean | null>(null);
+  const [currentQuality, setCurrentQuality] = useState<string>("auto");
 
   const mimeType = useMemo(() => inferMimeType(src), [src]);
   const isHls = useMemo(() => isHlsUrl(src), [src]);
+  const isBunny = useMemo(() => isBunnyStreamUrl(src), [src]);
 
   const applyPersistedAudioSettings = useCallback((video: HTMLVideoElement) => {
-    // Default: audible.
     const rawVol = localStorage.getItem(VOLUME_KEY);
     const vol = rawVol ? Number(rawVol) : NaN;
     video.volume = Number.isFinite(vol) && vol >= 0 && vol <= 1 ? vol : 0.8;
 
     const rawMuted = localStorage.getItem(MUTED_KEY);
-    // Only honor persisted muted if explicitly set before.
     if (rawMuted === "true" || rawMuted === "false") {
       video.muted = rawMuted === "true";
     } else {
       video.muted = false;
     }
 
-    // Guard: never start silent unless user explicitly muted.
     if (!video.muted && video.volume === 0) video.volume = 0.8;
   }, []);
 
@@ -326,8 +329,6 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
 
     setError(null);
     setIsBuffering(false);
-
-    // Ensure our defaults/persistence are applied before first play.
     applyPersistedAudioSettings(video);
 
     try {
@@ -340,7 +341,6 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
         if (detectedLater !== null) setAudioDetected(detectedLater);
       }, 900);
     } catch (e: any) {
-      // Most common: autoplay policy / gesture requirements.
       if (e?.name === "NotAllowedError") {
         setError("Click Play to start video with sound.");
         setShowStartOverlay(true);
@@ -352,7 +352,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [applyPersistedAudioSettings, src]);
 
-  // Hard reset UI state on source changes.
+  // Hard reset UI state on source changes
   useEffect(() => {
     restoredRef.current = false;
     lastReportedTimeRef.current = 0;
@@ -360,20 +360,108 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
     setIsBuffering(false);
     setError(null);
     setAudioDetected(null);
+    setCurrentQuality("auto");
   }, [src]);
 
-  // Wire native events (single source of truth).
+  // HLS.js setup for adaptive streaming
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !src) return;
+
+    // Cleanup previous HLS instance
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    // If it's HLS content
+    if (isHls || isBunny) {
+      // Check if native HLS is supported (Safari, iOS)
+      const canNativeHls = video.canPlayType("application/vnd.apple.mpegurl") !== "";
+
+      if (canNativeHls) {
+        // Use native HLS (Safari/iOS)
+        video.src = src;
+        console.log("[VideoPlayer] Using native HLS playback");
+      } else if (Hls.isSupported()) {
+        // Use hls.js for other browsers
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+          backBufferLength: 90,
+          maxBufferLength: 30,
+          maxMaxBufferLength: 600,
+          startLevel: -1, // Auto quality selection
+          capLevelToPlayerSize: true,
+          testBandwidth: true,
+        });
+
+        hls.loadSource(src);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
+          console.log("[VideoPlayer] HLS manifest loaded, levels:", data.levels.length);
+          // Restore position after manifest loads
+          if (!restoredRef.current && initialTime > 0) {
+            restoredRef.current = true;
+            const dur = video.duration || Infinity;
+            const safeTime = Math.min(Math.max(0, initialTime), dur - 1);
+            if (safeTime > 0 && safeTime < dur - 2) {
+              video.currentTime = safeTime;
+            }
+          }
+        });
+
+        hls.on(Hls.Events.LEVEL_SWITCHED, (_, data) => {
+          const level = hls.levels[data.level];
+          if (level) {
+            setCurrentQuality(`${level.height}p`);
+          }
+        });
+
+        hls.on(Hls.Events.ERROR, (_, data) => {
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.error("[VideoPlayer] Network error, attempting recovery...");
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.error("[VideoPlayer] Media error, attempting recovery...");
+                hls.recoverMediaError();
+                break;
+              default:
+                console.error("[VideoPlayer] Fatal HLS error:", data);
+                setError("Failed to load video stream.");
+                hls.destroy();
+                break;
+            }
+          }
+        });
+
+        hlsRef.current = hls;
+        console.log("[VideoPlayer] Using hls.js for adaptive streaming");
+      } else {
+        // No HLS support at all
+        setError("HLS streaming is not supported in this browser.");
+      }
+    } else {
+      // Regular video file
+      video.src = src;
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [src, isHls, isBunny, initialTime]);
+
+  // Wire native video events
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-
-    // If this is HLS and the browser doesn't support native HLS, fail loudly.
-    if (isHls) {
-      const canNativeHls = video.canPlayType("application/vnd.apple.mpegurl") !== "";
-      if (!canNativeHls) {
-        setError("This HLS stream is not supported in this browser. Please use an MP4/WebM upload or open in Safari.");
-      }
-    }
 
     applyPersistedAudioSettings(video);
 
@@ -384,13 +472,12 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
     const onStalled = () => setIsBuffering(true);
 
     const onLoadedMetadata = () => {
-      // Restore watch position once.
+      // Restore watch position once (for non-HLS or native HLS)
       if (restoredRef.current) return;
       restoredRef.current = true;
 
       const dur = video.duration;
       if (Number.isFinite(dur) && dur > 0 && Number.isFinite(initialTime) && initialTime > 0) {
-        // Avoid restoring right at the end.
         const safeTime = Math.min(Math.max(0, initialTime), Math.max(0, dur - 1));
         if (safeTime < dur - 2) {
           try {
@@ -419,7 +506,6 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
     };
 
     const onVolumeChange = () => {
-      // Persist only what the user actually chose.
       try {
         localStorage.setItem(VOLUME_KEY, String(video.volume));
         localStorage.setItem(MUTED_KEY, String(video.muted));
@@ -429,6 +515,9 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
     };
 
     const onErrorInternal = () => {
+      // Only handle errors if HLS.js isn't managing this
+      if (hlsRef.current) return;
+      
       const msg = getFriendlyMediaError(video.error);
       console.error("Video element error", {
         src,
@@ -441,13 +530,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
     };
 
     const onEndedInternal = () => onEnded?.();
-
-    // If the user starts playback via native controls (keyboard/tap on controls), hide overlay.
     const onPlayInternal = () => setShowStartOverlay(false);
-    const onPauseInternal = () => {
-      // Don't re-cover the native controls after the user has interacted.
-      // (Native controls already include a play button.)
-    };
 
     video.addEventListener("loadstart", onLoadStart);
     video.addEventListener("canplay", onCanPlay);
@@ -460,7 +543,6 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
     video.addEventListener("error", onErrorInternal);
     video.addEventListener("ended", onEndedInternal);
     video.addEventListener("play", onPlayInternal);
-    video.addEventListener("pause", onPauseInternal);
 
     return () => {
       video.removeEventListener("loadstart", onLoadStart);
@@ -474,14 +556,12 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
       video.removeEventListener("error", onErrorInternal);
       video.removeEventListener("ended", onEndedInternal);
       video.removeEventListener("play", onPlayInternal);
-      video.removeEventListener("pause", onPauseInternal);
     };
-  }, [applyPersistedAudioSettings, initialTime, isHls, onEnded, onProgress, onTimeUpdate, src]);
+  }, [applyPersistedAudioSettings, initialTime, onEnded, onProgress, onTimeUpdate, src]);
 
   return (
     <div className="relative w-full max-w-full overflow-hidden rounded-lg border border-border bg-muted" style={{ aspectRatio: '16 / 9' }}>
       <video
-        // Key forces a real element reset between sources (prevents stale state).
         key={src}
         ref={videoRef}
         className="h-full w-full"
@@ -490,12 +570,17 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
         playsInline
         preload="metadata"
         aria-label={title || "Video player"}
-      >
-        {/* Setting a <source type> helps browsers choose the correct decoder pipeline. */}
-        <source src={src} type={mimeType} />
-      </video>
+      />
 
-      {/* Buffering indicator (never blocks controls) */}
+      {/* Quality indicator for HLS streams */}
+      {(isHls || isBunny) && currentQuality !== "auto" && !showStartOverlay && !error && (
+        <div className="pointer-events-none absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-background/70 px-2 py-1 text-xs font-medium text-foreground backdrop-blur-sm">
+          <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+          {currentQuality}
+        </div>
+      )}
+
+      {/* Buffering indicator */}
       {isBuffering && !error && (
         <div className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-2 rounded-md bg-background/70 px-3 py-2 text-sm text-foreground backdrop-blur-sm">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -503,7 +588,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
         </div>
       )}
 
-      {/* Explicit user-gesture play (no autoplay-with-sound). */}
+      {/* Play overlay */}
       {showStartOverlay && !error && (
         <div className="absolute inset-0 grid place-items-center bg-background/35 backdrop-blur-[2px]">
           <button
@@ -518,7 +603,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
         </div>
       )}
 
-      {/* Error UI (never silent) */}
+      {/* Error UI */}
       {error && (
         <div className="absolute inset-0 grid place-items-center bg-background/80 backdrop-blur-sm">
           <div className="max-w-md rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm">
@@ -535,7 +620,11 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
                       if (!v) return;
                       setError(null);
                       setIsBuffering(true);
-                      v.load();
+                      if (hlsRef.current) {
+                        hlsRef.current.startLoad();
+                      } else {
+                        v.load();
+                      }
                     }}
                     className="rounded-md border border-input bg-background px-3 py-2 text-sm hover:bg-accent"
                   >
@@ -548,7 +637,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
         </div>
       )}
 
-      {/* Transparent, explicit "no audio" warning (best-effort detection) */}
+      {/* No audio warning */}
       {audioDetected === false && !error && (
         <div className="pointer-events-none absolute bottom-3 left-3 right-3">
           <div className="rounded-md border border-border bg-background/70 px-3 py-2 text-sm text-foreground backdrop-blur-sm">
