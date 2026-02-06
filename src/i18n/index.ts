@@ -10,22 +10,6 @@ const resources = {
   ar: { translation: ar },
 };
 
-i18n
-  .use(LanguageDetector)
-  .use(initReactI18next)
-  .init({
-    resources,
-    fallbackLng: 'ar',
-    lng: localStorage.getItem('i18nextLng') || 'ar',
-    interpolation: {
-      escapeValue: false,
-    },
-    detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
-    },
-  });
-
 // Set document direction based on language
 const setDocumentDirection = (lng: string) => {
   const dir = lng === 'ar' ? 'rtl' : 'ltr';
@@ -33,8 +17,36 @@ const setDocumentDirection = (lng: string) => {
   document.documentElement.lang = lng;
 };
 
+// Get initial language from localStorage
+const getInitialLanguage = () => {
+  const saved = localStorage.getItem('i18nextLng');
+  if (saved === 'en' || saved === 'ar') return saved;
+  return 'ar';
+};
+
+const initialLang = getInitialLanguage();
+
+i18n
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    resources,
+    fallbackLng: 'ar',
+    lng: initialLang,
+    interpolation: {
+      escapeValue: false,
+    },
+    detection: {
+      order: ['localStorage', 'navigator'],
+      caches: ['localStorage'],
+    },
+    react: {
+      useSuspense: false,
+    },
+  });
+
 // Set initial direction
-setDocumentDirection(i18n.language);
+setDocumentDirection(initialLang);
 
 // Update direction on language change
 i18n.on('languageChanged', setDocumentDirection);
