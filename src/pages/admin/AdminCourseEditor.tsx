@@ -56,6 +56,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import VideoUploader from '@/components/admin/VideoUploader';
+import BunnyVideoUploader from '@/components/admin/BunnyVideoUploader';
 import TestQuestionManager from '@/components/admin/TestQuestionManager';
 
 interface ChapterTest {
@@ -928,17 +929,39 @@ const AdminCourseEditor: React.FC = () => {
             </div>
             <div className="space-y-3">
               <Label>{isRTL ? 'الفيديو' : 'Video'}</Label>
-              <Tabs defaultValue="upload" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+              <Tabs defaultValue="bunny" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="bunny" className="flex items-center gap-2">
+                    <Play className="w-4 h-4" />
+                    {isRTL ? 'Bunny Stream' : 'Bunny Stream'}
+                  </TabsTrigger>
                   <TabsTrigger value="upload" className="flex items-center gap-2">
                     <Upload className="w-4 h-4" />
-                    {isRTL ? 'رفع فيديو' : 'Upload Video'}
+                    {isRTL ? 'رفع مباشر' : 'Direct Upload'}
                   </TabsTrigger>
                   <TabsTrigger value="url" className="flex items-center gap-2">
                     <LinkIcon className="w-4 h-4" />
                     {isRTL ? 'رابط خارجي' : 'External URL'}
                   </TabsTrigger>
                 </TabsList>
+                <TabsContent value="bunny" className="mt-3">
+                  <BunnyVideoUploader
+                    onUploadComplete={(videoId, playbackUrl) => {
+                      setLessonForm({ 
+                        ...lessonForm, 
+                        video_url: playbackUrl, 
+                        video_provider: 'bunny' 
+                      });
+                    }}
+                  />
+                  {lessonForm.video_provider === 'bunny' && lessonForm.video_url && (
+                    <div className="mt-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                      <p className="text-sm text-green-600">
+                        {isRTL ? '✓ تم رفع الفيديو بنجاح - جاهز للبث' : '✓ Video uploaded - Ready for streaming'}
+                      </p>
+                    </div>
+                  )}
+                </TabsContent>
                 <TabsContent value="upload" className="mt-3">
                   <VideoUploader
                     currentVideoUrl={lessonForm.video_provider === 'upload' ? lessonForm.video_url : undefined}
@@ -956,7 +979,7 @@ const AdminCourseEditor: React.FC = () => {
                   <div className="space-y-2">
                     <Label>{isRTL ? 'رابط الفيديو' : 'Video URL'}</Label>
                     <Input
-                      value={lessonForm.video_provider !== 'upload' ? lessonForm.video_url : ''}
+                      value={!['upload', 'bunny'].includes(lessonForm.video_provider) ? lessonForm.video_url : ''}
                       onChange={(e) => setLessonForm({ ...lessonForm, video_url: e.target.value })}
                       placeholder="https://youtube.com/watch?v=..."
                     />
@@ -964,7 +987,7 @@ const AdminCourseEditor: React.FC = () => {
                   <div className="space-y-2">
                     <Label>{isRTL ? 'مزود الفيديو' : 'Video Provider'}</Label>
                     <Select
-                      value={lessonForm.video_provider === 'upload' ? 'youtube' : lessonForm.video_provider}
+                      value={['upload', 'bunny'].includes(lessonForm.video_provider) ? 'youtube' : lessonForm.video_provider}
                       onValueChange={(value) => setLessonForm({ ...lessonForm, video_provider: value })}
                     >
                       <SelectTrigger>
