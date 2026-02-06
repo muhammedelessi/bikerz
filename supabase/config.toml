@@ -1,1 +1,4 @@
 project_id = "gifovgwlxwuiibfzyvwb"
+
+[functions.bunny-stream]
+verify_jwt = false
