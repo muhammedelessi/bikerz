@@ -75,12 +75,6 @@ export function useBunnyStream() {
    */
   const createVideo = useCallback(async (title: string): Promise<{ videoId: string; libraryId: string } | null> => {
     try {
-      const { data, error } = await supabase.functions.invoke('bunny-stream', {
-        body: { title },
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      // Add action as query param
       const { data: result, error: invokeError } = await supabase.functions.invoke('bunny-stream?action=create-video', {
         body: { title },
       });
