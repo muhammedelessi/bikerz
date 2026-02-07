@@ -45,12 +45,23 @@ export interface VideoPlayerProps {
 const VOLUME_KEY = "video_player:volume";
 const MUTED_KEY = "video_player:muted";
 
+// Video proxy URL for bypassing CORS on Bunny Stream
+const VIDEO_PROXY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/video-proxy`;
+
 const isHlsUrl = (url: string) => /\.m3u8($|\?)/i.test(url);
 
 // Bunny Stream URL detection - matches their CDN pattern
 const isBunnyStreamUrl = (url: string): boolean => {
   return /vz-[a-z0-9]+-[a-z0-9]+\.b-cdn\.net/i.test(url) ||
          /iframe\.mediadelivery\.net/i.test(url);
+};
+
+// Convert Bunny Stream URL to proxied URL to bypass CORS
+const getProxiedUrl = (url: string): string => {
+  if (isBunnyStreamUrl(url)) {
+    return `${VIDEO_PROXY_URL}?url=${encodeURIComponent(url)}`;
+  }
+  return url;
 };
 
 // Native HLS is reliable on iOS + Safari. Some browsers may claim they can play HLS,
@@ -424,12 +435,16 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
       hlsRef.current = null;
     }
     hlsInitializingRef.current = false;
+
+    // Get the effective source URL (proxied for Bunny Stream)
+    const effectiveSrc = isBunny ? getProxiedUrl(src) : src;
+
     if (isHls || isBunny) {
       const shouldUseNativeHls = !forceHlsJs && isSafariOrIOS() && video.canPlayType("application/vnd.apple.mpegurl") !== "";
 
       if (shouldUseNativeHls) {
-        // Use native HLS (Safari/iOS)
-        video.src = src;
+        // Use native HLS (Safari/iOS) - also use proxy for Bunny
+        video.src = effectiveSrc;
         console.log("[VideoPlayer] Using native HLS playback");
       } else if (Hls.isSupported()) {
         // Mark that we're initializing HLS - suppress native errors during this time
@@ -455,8 +470,10 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
           testBandwidth: true,
         });
 
-        hls.loadSource(src);
+        // Load from proxied URL for Bunny Stream
+        hls.loadSource(effectiveSrc);
         hls.attachMedia(video);
+        console.log("[VideoPlayer] Using hls.js for adaptive streaming via proxy");
 
         hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
           console.log("[VideoPlayer] HLS manifest loaded, levels:", data.levels.length);
@@ -513,7 +530,6 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
         });
 
         hlsRef.current = hls;
-        console.log("[VideoPlayer] Using hls.js for adaptive streaming");
       } else {
         // No HLS support at all
         setError("HLS streaming is not supported in this browser.");
