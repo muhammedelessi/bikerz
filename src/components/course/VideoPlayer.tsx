@@ -295,6 +295,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const hlsInitializingRef = useRef(false); // Track HLS setup to suppress native errors
   const restoredRef = useRef(false);
   const lastReportedTimeRef = useRef(0);
 
@@ -373,8 +374,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
       hlsRef.current.destroy();
       hlsRef.current = null;
     }
-
-    // If it's HLS content
+    hlsInitializingRef.current = false;
     if (isHls || isBunny) {
       // Check if native HLS is supported (Safari, iOS)
       const canNativeHls = video.canPlayType("application/vnd.apple.mpegurl") !== "";
@@ -384,6 +384,9 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
         video.src = src;
         console.log("[VideoPlayer] Using native HLS playback");
       } else if (Hls.isSupported()) {
+        // Mark that we're initializing HLS - suppress native errors during this time
+        hlsInitializingRef.current = true;
+        
         // Use hls.js for other browsers
         const hls = new Hls({
           enableWorker: true,
@@ -401,6 +404,9 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
 
         hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
           console.log("[VideoPlayer] HLS manifest loaded, levels:", data.levels.length);
+          // HLS is now active, clear initializing flag
+          hlsInitializingRef.current = false;
+          
           // Restore position after manifest loads
           if (!restoredRef.current && initialTime > 0) {
             restoredRef.current = true;
@@ -515,8 +521,8 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
     };
 
     const onErrorInternal = () => {
-      // Only handle errors if HLS.js isn't managing this
-      if (hlsRef.current) return;
+      // Suppress errors while HLS.js is initializing (it handles the m3u8 directly)
+      if (hlsRef.current || hlsInitializingRef.current) return;
       
       const msg = getFriendlyMediaError(video.error);
       console.error("Video element error", {
