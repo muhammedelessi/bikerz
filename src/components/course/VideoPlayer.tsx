@@ -43,8 +43,25 @@ const isHlsUrl = (url: string) => /\.m3u8($|\?)/i.test(url);
 
 // Bunny Stream URL detection - matches their CDN pattern
 const isBunnyStreamUrl = (url: string): boolean => {
-  return /vz-[a-z0-9]+-[a-z0-9]+\.b-cdn\.net/i.test(url) || 
+  return /vz-[a-z0-9]+-[a-z0-9]+\.b-cdn\.net/i.test(url) ||
          /iframe\.mediadelivery\.net/i.test(url);
+};
+
+// Native HLS is reliable on iOS + Safari. Some browsers may claim they can play HLS,
+// but still fail to decode playlists; prefer hls.js everywhere else.
+const isSafariOrIOS = (): boolean => {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+
+  const isIOS = /iPad|iPhone|iPod/i.test(ua);
+  if (isIOS) return true;
+
+  const isAppleWebKit = /AppleWebKit/i.test(ua);
+  const isChromeLike = /Chrome|CriOS|Edg|OPR|SamsungBrowser/i.test(ua);
+  const isFirefoxLike = /Firefox|FxiOS/i.test(ua);
+  const isSafari = isAppleWebKit && !isChromeLike && !isFirefoxLike && /Safari/i.test(ua);
+
+  return isSafari;
 };
 
 // Vimeo URL detection and ID extraction
@@ -304,6 +321,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [audioDetected, setAudioDetected] = useState<boolean | null>(null);
   const [currentQuality, setCurrentQuality] = useState<string>("auto");
+  const [forceHlsJs, setForceHlsJs] = useState(false);
 
   const mimeType = useMemo(() => inferMimeType(src), [src]);
   const isHls = useMemo(() => isHlsUrl(src), [src]);
@@ -362,6 +380,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
     setError(null);
     setAudioDetected(null);
     setCurrentQuality("auto");
+    setForceHlsJs(false);
   }, [src]);
 
   // HLS.js setup for adaptive streaming
@@ -376,17 +395,24 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
     }
     hlsInitializingRef.current = false;
     if (isHls || isBunny) {
-      // Check if native HLS is supported (Safari, iOS)
-      const canNativeHls = video.canPlayType("application/vnd.apple.mpegurl") !== "";
+      const shouldUseNativeHls = !forceHlsJs && isSafariOrIOS() && video.canPlayType("application/vnd.apple.mpegurl") !== "";
 
-      if (canNativeHls) {
+      if (shouldUseNativeHls) {
         // Use native HLS (Safari/iOS)
         video.src = src;
         console.log("[VideoPlayer] Using native HLS playback");
       } else if (Hls.isSupported()) {
         // Mark that we're initializing HLS - suppress native errors during this time
         hlsInitializingRef.current = true;
-        
+
+        // Ensure the video element isn't trying to load the m3u8 by itself
+        try {
+          video.removeAttribute("src");
+          video.load();
+        } catch {
+          // ignore
+        }
+
         // Use hls.js for other browsers
         const hls = new Hls({
           enableWorker: true,
@@ -406,7 +432,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
           console.log("[VideoPlayer] HLS manifest loaded, levels:", data.levels.length);
           // HLS is now active, clear initializing flag
           hlsInitializingRef.current = false;
-          
+
           // Restore position after manifest loads
           if (!restoredRef.current && initialTime > 0) {
             restoredRef.current = true;
@@ -462,7 +488,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
         hlsRef.current = null;
       }
     };
-  }, [src, isHls, isBunny, initialTime]);
+  }, [src, isHls, isBunny, initialTime, forceHlsJs]);
 
   // Wire native video events
   useEffect(() => {
@@ -523,7 +549,17 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
     const onErrorInternal = () => {
       // Suppress errors while HLS.js is initializing (it handles the m3u8 directly)
       if (hlsRef.current || hlsInitializingRef.current) return;
-      
+
+      // Native HLS sometimes fails even when the browser claims it can play it.
+      // If this is an HLS source and hls.js is supported, retry via hls.js.
+      if (!forceHlsJs && (isHls || isBunny) && Hls.isSupported()) {
+        console.warn("[VideoPlayer] Native HLS failed; falling back to hls.js", { src });
+        setForceHlsJs(true);
+        setIsBuffering(true);
+        setError(null);
+        return;
+      }
+
       const msg = getFriendlyMediaError(video.error);
       console.error("Video element error", {
         src,
@@ -563,7 +599,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
       video.removeEventListener("ended", onEndedInternal);
       video.removeEventListener("play", onPlayInternal);
     };
-  }, [applyPersistedAudioSettings, initialTime, onEnded, onProgress, onTimeUpdate, src]);
+  }, [applyPersistedAudioSettings, initialTime, onEnded, onProgress, onTimeUpdate, src, forceHlsJs, isHls, isBunny]);
 
   return (
     <div className="relative w-full max-w-full overflow-hidden rounded-lg border border-border bg-muted" style={{ aspectRatio: '16 / 9' }}>
