@@ -1,6 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, Loader2, Play } from "lucide-react";
+import { AlertCircle, ChevronDown, Loader2, Play, Settings } from "lucide-react";
 import Hls from "hls.js";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export interface VideoQuality {
   label: string;
@@ -322,6 +328,8 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
   const [audioDetected, setAudioDetected] = useState<boolean | null>(null);
   const [currentQuality, setCurrentQuality] = useState<string>("auto");
   const [forceHlsJs, setForceHlsJs] = useState(false);
+  const [availableLevels, setAvailableLevels] = useState<{ height: number; index: number }[]>([]);
+  const [isAutoQuality, setIsAutoQuality] = useState(true);
 
   const mimeType = useMemo(() => inferMimeType(src), [src]);
   const isHls = useMemo(() => isHlsUrl(src), [src]);
@@ -381,7 +389,29 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
     setAudioDetected(null);
     setCurrentQuality("auto");
     setForceHlsJs(false);
+    setAvailableLevels([]);
+    setIsAutoQuality(true);
   }, [src]);
+
+  // Handle quality level change
+  const handleQualityChange = useCallback((levelIndex: number) => {
+    const hls = hlsRef.current;
+    if (!hls) return;
+
+    if (levelIndex === -1) {
+      // Auto quality
+      hls.currentLevel = -1;
+      setIsAutoQuality(true);
+      setCurrentQuality("auto");
+    } else {
+      hls.currentLevel = levelIndex;
+      setIsAutoQuality(false);
+      const level = hls.levels[levelIndex];
+      if (level) {
+        setCurrentQuality(`${level.height}p`);
+      }
+    }
+  }, []);
 
   // HLS.js setup for adaptive streaming
   useEffect(() => {
@@ -432,6 +462,17 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
           console.log("[VideoPlayer] HLS manifest loaded, levels:", data.levels.length);
           // HLS is now active, clear initializing flag
           hlsInitializingRef.current = false;
+
+          // Store available quality levels for the selector
+          const levels = data.levels.map((level, index) => ({
+            height: level.height,
+            index,
+          }));
+          // Sort by height descending and remove duplicates
+          const uniqueLevels = levels
+            .filter((v, i, a) => a.findIndex(t => t.height === v.height) === i)
+            .sort((a, b) => b.height - a.height);
+          setAvailableLevels(uniqueLevels);
 
           // Restore position after manifest loads
           if (!restoredRef.current && initialTime > 0) {
@@ -614,11 +655,45 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
         aria-label={title || "Video player"}
       />
 
-      {/* Quality indicator for HLS streams */}
-      {(isHls || isBunny) && currentQuality !== "auto" && !showStartOverlay && !error && (
-        <div className="pointer-events-none absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-background/70 px-2 py-1 text-xs font-medium text-foreground backdrop-blur-sm">
-          <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-          {currentQuality}
+      {/* Quality selector for HLS streams */}
+      {(isHls || isBunny) && availableLevels.length > 0 && !showStartOverlay && !error && (
+        <div className="absolute right-3 top-3 z-50">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 rounded-md bg-background/80 px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-background/95 focus:outline-none focus:ring-2 focus:ring-ring"
+                aria-label="Select video quality"
+              >
+                <Settings className="h-3.5 w-3.5" />
+                <span>{isAutoQuality ? `Auto (${currentQuality})` : currentQuality}</span>
+                <ChevronDown className="h-3 w-3 opacity-70" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="z-[100] min-w-[120px] bg-background border border-border shadow-lg"
+            >
+              <DropdownMenuItem
+                onClick={() => handleQualityChange(-1)}
+                className={`cursor-pointer ${isAutoQuality ? "bg-accent" : ""}`}
+              >
+                <span className="flex items-center gap-2">
+                  Auto
+                  {isAutoQuality && <span className="text-xs text-muted-foreground">({currentQuality})</span>}
+                </span>
+              </DropdownMenuItem>
+              {availableLevels.map((level) => (
+                <DropdownMenuItem
+                  key={level.height}
+                  onClick={() => handleQualityChange(level.index)}
+                  className={`cursor-pointer ${!isAutoQuality && currentQuality === `${level.height}p` ? "bg-accent" : ""}`}
+                >
+                  {level.height}p
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )}
 
