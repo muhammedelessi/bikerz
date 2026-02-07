@@ -179,6 +179,36 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_daily_aggregates: {
+        Row: {
+          aggregate_date: string
+          breakdown_dimension: string | null
+          breakdown_value: string | null
+          created_at: string
+          id: string
+          metric_name: string
+          metric_value: number
+        }
+        Insert: {
+          aggregate_date?: string
+          breakdown_dimension?: string | null
+          breakdown_value?: string | null
+          created_at?: string
+          id?: string
+          metric_name: string
+          metric_value: number
+        }
+        Update: {
+          aggregate_date?: string
+          breakdown_dimension?: string | null
+          breakdown_value?: string | null
+          created_at?: string
+          id?: string
+          metric_name?: string
+          metric_value?: number
+        }
+        Relationships: []
+      }
       chapter_tests: {
         Row: {
           chapter_id: string
@@ -433,6 +463,90 @@ export type Database = {
           title?: string
           title_ar?: string | null
           xp_reward?: number
+        }
+        Relationships: []
+      }
+      funnel_events: {
+        Row: {
+          country: string | null
+          course_id: string | null
+          created_at: string
+          device_type: string | null
+          funnel_step: string
+          id: string
+          previous_step: string | null
+          session_id: string | null
+          time_from_previous_step_seconds: number | null
+          user_id: string | null
+        }
+        Insert: {
+          country?: string | null
+          course_id?: string | null
+          created_at?: string
+          device_type?: string | null
+          funnel_step: string
+          id?: string
+          previous_step?: string | null
+          session_id?: string | null
+          time_from_previous_step_seconds?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          country?: string | null
+          course_id?: string | null
+          created_at?: string
+          device_type?: string | null
+          funnel_step?: string
+          id?: string
+          previous_step?: string | null
+          session_id?: string | null
+          time_from_previous_step_seconds?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funnel_events_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funnel_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "user_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      infrastructure_metrics: {
+        Row: {
+          id: string
+          metric_type: string
+          percentile: string | null
+          recorded_at: string
+          region: string | null
+          sample_count: number | null
+          value: number
+        }
+        Insert: {
+          id?: string
+          metric_type: string
+          percentile?: string | null
+          recorded_at?: string
+          region?: string | null
+          sample_count?: number | null
+          value: number
+        }
+        Update: {
+          id?: string
+          metric_type?: string
+          percentile?: string | null
+          recorded_at?: string
+          region?: string | null
+          sample_count?: number | null
+          value?: number
         }
         Relationships: []
       }
@@ -852,6 +966,50 @@ export type Database = {
         }
         Relationships: []
       }
+      page_view_events: {
+        Row: {
+          created_at: string
+          id: string
+          page_path: string
+          page_title: string | null
+          referrer: string | null
+          scroll_depth_percentage: number | null
+          session_id: string | null
+          time_on_page_seconds: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          page_path: string
+          page_title?: string | null
+          referrer?: string | null
+          scroll_depth_percentage?: number | null
+          session_id?: string | null
+          time_on_page_seconds?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          page_path?: string
+          page_title?: string | null
+          referrer?: string | null
+          scroll_depth_percentage?: number | null
+          session_id?: string | null
+          time_on_page_seconds?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_view_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "user_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -899,6 +1057,98 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      realtime_presence: {
+        Row: {
+          current_lesson_id: string | null
+          current_page: string | null
+          id: string
+          is_watching_video: boolean | null
+          last_heartbeat_at: string
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          current_lesson_id?: string | null
+          current_page?: string | null
+          id?: string
+          is_watching_video?: boolean | null
+          last_heartbeat_at?: string
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          current_lesson_id?: string | null
+          current_page?: string | null
+          id?: string
+          is_watching_video?: boolean | null
+          last_heartbeat_at?: string
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "realtime_presence_current_lesson_id_fkey"
+            columns: ["current_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      revenue_analytics: {
+        Row: {
+          amount: number
+          cohort_month: string | null
+          course_id: string | null
+          created_at: string
+          currency: string | null
+          event_type: string
+          id: string
+          payment_id: string | null
+          user_id: string
+          user_lifetime_day: number | null
+        }
+        Insert: {
+          amount: number
+          cohort_month?: string | null
+          course_id?: string | null
+          created_at?: string
+          currency?: string | null
+          event_type: string
+          id?: string
+          payment_id?: string | null
+          user_id: string
+          user_lifetime_day?: number | null
+        }
+        Update: {
+          amount?: number
+          cohort_month?: string | null
+          course_id?: string | null
+          created_at?: string
+          currency?: string | null
+          event_type?: string
+          id?: string
+          payment_id?: string | null
+          user_id?: string
+          user_lifetime_day?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_analytics_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenue_analytics_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "manual_payments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       support_tickets: {
         Row: {
@@ -1259,6 +1509,60 @@ export type Database = {
           },
         ]
       }
+      user_engagement_scores: {
+        Row: {
+          churn_risk_score: number | null
+          created_at: string
+          drop_off_recovery_score: number | null
+          engagement_score: number | null
+          id: string
+          lesson_completion_score: number | null
+          lessons_completed: number | null
+          quizzes_taken: number | null
+          return_frequency_score: number | null
+          score_date: string
+          sessions_count: number | null
+          speed_stability_score: number | null
+          total_watch_time_minutes: number | null
+          user_id: string
+          watch_consistency_score: number | null
+        }
+        Insert: {
+          churn_risk_score?: number | null
+          created_at?: string
+          drop_off_recovery_score?: number | null
+          engagement_score?: number | null
+          id?: string
+          lesson_completion_score?: number | null
+          lessons_completed?: number | null
+          quizzes_taken?: number | null
+          return_frequency_score?: number | null
+          score_date?: string
+          sessions_count?: number | null
+          speed_stability_score?: number | null
+          total_watch_time_minutes?: number | null
+          user_id: string
+          watch_consistency_score?: number | null
+        }
+        Update: {
+          churn_risk_score?: number | null
+          created_at?: string
+          drop_off_recovery_score?: number | null
+          engagement_score?: number | null
+          id?: string
+          lesson_completion_score?: number | null
+          lessons_completed?: number | null
+          quizzes_taken?: number | null
+          return_frequency_score?: number | null
+          score_date?: string
+          sessions_count?: number | null
+          speed_stability_score?: number | null
+          total_watch_time_minutes?: number | null
+          user_id?: string
+          watch_consistency_score?: number | null
+        }
+        Relationships: []
+      }
       user_gamification: {
         Row: {
           coins: number
@@ -1507,6 +1811,66 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          device_type: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          is_active: boolean | null
+          last_activity_at: string | null
+          os: string | null
+          page_views: number | null
+          screen_height: number | null
+          screen_width: number | null
+          session_token: string
+          started_at: string
+          timezone: string | null
+          user_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device_type?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_activity_at?: string | null
+          os?: string | null
+          page_views?: number | null
+          screen_height?: number | null
+          screen_width?: number | null
+          session_token: string
+          started_at?: string
+          timezone?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device_type?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_activity_at?: string | null
+          os?: string | null
+          page_views?: number | null
+          screen_height?: number | null
+          screen_width?: number | null
+          session_token?: string
+          started_at?: string
+          timezone?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_skill_proficiency: {
         Row: {
           avg_response_time_ms: number | null
@@ -1566,6 +1930,147 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_playback_events: {
+        Row: {
+          buffering_duration_ms: number | null
+          created_at: string
+          event_type: string
+          id: string
+          lesson_id: string
+          metadata: Json | null
+          playback_speed: number | null
+          quality_level: string | null
+          session_id: string | null
+          user_id: string
+          video_duration_seconds: number | null
+          video_position_seconds: number | null
+        }
+        Insert: {
+          buffering_duration_ms?: number | null
+          created_at?: string
+          event_type: string
+          id?: string
+          lesson_id: string
+          metadata?: Json | null
+          playback_speed?: number | null
+          quality_level?: string | null
+          session_id?: string | null
+          user_id: string
+          video_duration_seconds?: number | null
+          video_position_seconds?: number | null
+        }
+        Update: {
+          buffering_duration_ms?: number | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          lesson_id?: string
+          metadata?: Json | null
+          playback_speed?: number | null
+          quality_level?: string | null
+          session_id?: string | null
+          user_id?: string
+          video_duration_seconds?: number | null
+          video_position_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_playback_events_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_playback_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "user_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_watch_sessions: {
+        Row: {
+          average_playback_speed: number | null
+          buffering_events: number | null
+          completed: boolean | null
+          completion_percentage: number | null
+          device_type: string | null
+          ended_at: string | null
+          id: string
+          lesson_id: string
+          max_position_reached_seconds: number | null
+          pause_count: number | null
+          rewind_count: number | null
+          seek_count: number | null
+          session_id: string | null
+          speed_changes: number | null
+          started_at: string
+          total_buffering_time_ms: number | null
+          total_watch_time_seconds: number | null
+          user_id: string
+          video_duration_seconds: number | null
+        }
+        Insert: {
+          average_playback_speed?: number | null
+          buffering_events?: number | null
+          completed?: boolean | null
+          completion_percentage?: number | null
+          device_type?: string | null
+          ended_at?: string | null
+          id?: string
+          lesson_id: string
+          max_position_reached_seconds?: number | null
+          pause_count?: number | null
+          rewind_count?: number | null
+          seek_count?: number | null
+          session_id?: string | null
+          speed_changes?: number | null
+          started_at?: string
+          total_buffering_time_ms?: number | null
+          total_watch_time_seconds?: number | null
+          user_id: string
+          video_duration_seconds?: number | null
+        }
+        Update: {
+          average_playback_speed?: number | null
+          buffering_events?: number | null
+          completed?: boolean | null
+          completion_percentage?: number | null
+          device_type?: string | null
+          ended_at?: string | null
+          id?: string
+          lesson_id?: string
+          max_position_reached_seconds?: number | null
+          pause_count?: number | null
+          rewind_count?: number | null
+          seek_count?: number | null
+          session_id?: string | null
+          speed_changes?: number | null
+          started_at?: string
+          total_buffering_time_ms?: number | null
+          total_watch_time_seconds?: number | null
+          user_id?: string
+          video_duration_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_watch_sessions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_watch_sessions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "user_sessions"
             referencedColumns: ["id"]
           },
         ]
