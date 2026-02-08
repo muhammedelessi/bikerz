@@ -35,6 +35,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   Plus,
   ChevronLeft,
   ChevronRight,
@@ -58,6 +64,7 @@ import { toast } from 'sonner';
 import VideoUploader from '@/components/admin/VideoUploader';
 import BunnyVideoUploader from '@/components/admin/BunnyVideoUploader';
 import TestQuestionManager from '@/components/admin/TestQuestionManager';
+import LessonQuizManager from '@/components/admin/LessonQuizManager';
 
 interface ChapterTest {
   id: string;
@@ -109,6 +116,7 @@ const AdminCourseEditor: React.FC = () => {
   
   // Quiz/Test management state
   const [selectedTest, setSelectedTest] = useState<{ id: string; title: string } | null>(null);
+  const [selectedLessonQuiz, setSelectedLessonQuiz] = useState<{ id: string; title: string } | null>(null);
 
   // Chapter form state
   const [chapterForm, setChapterForm] = useState({
@@ -739,6 +747,26 @@ const AdminCourseEditor: React.FC = () => {
                           <Badge variant="secondary" className="text-xs">{isRTL ? 'مسودة' : 'Draft'}</Badge>
                         )}
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-7 w-7"
+                                  onClick={() => setSelectedLessonQuiz({
+                                    id: lesson.id,
+                                    title: isRTL && lesson.title_ar ? lesson.title_ar : lesson.title,
+                                  })}
+                                >
+                                  <ClipboardList className="w-3.5 h-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {isRTL ? 'إدارة الأسئلة' : 'Manage Questions'}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditLesson(lesson)}>
                             <Edit className="w-3.5 h-3.5" />
                           </Button>
@@ -1049,6 +1077,16 @@ const AdminCourseEditor: React.FC = () => {
           testTitle={selectedTest.title}
           isOpen={!!selectedTest}
           onClose={() => setSelectedTest(null)}
+        />
+      )}
+
+      {/* Lesson Quiz Manager */}
+      {selectedLessonQuiz && (
+        <LessonQuizManager
+          lessonId={selectedLessonQuiz.id}
+          lessonTitle={selectedLessonQuiz.title}
+          isOpen={!!selectedLessonQuiz}
+          onClose={() => setSelectedLessonQuiz(null)}
         />
       )}
     </div>

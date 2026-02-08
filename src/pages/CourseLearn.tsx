@@ -43,6 +43,7 @@ import bikerzLogo from '@/assets/bikerz-logo.png';
 import ChapterTest from '@/components/course/ChapterTest';
 import VideoPlayer from '@/components/course/VideoPlayer';
 import LessonDiscussion from '@/components/course/LessonDiscussion';
+import LessonQuiz from '@/components/course/LessonQuiz';
 import ReinforcementSuggestion from '@/components/learning/ReinforcementSuggestion';
 import LessonRecapInsert from '@/components/learning/LessonRecapInsert';
 
@@ -741,6 +742,20 @@ const CourseLearn: React.FC = () => {
                       <p className="text-sm sm:text-base text-muted-foreground">
                         {isRTL && currentLesson.description_ar ? currentLesson.description_ar : currentLesson.description}
                       </p>
+                    </div>
+                  )}
+
+                  {/* Lesson Quiz - Interactive questions embedded in the lesson */}
+                  {currentLesson && (
+                    <div className="mb-6 sm:mb-8">
+                      <LessonQuiz
+                        lessonId={currentLesson.id}
+                        onComplete={(totalXp) => {
+                          if (totalXp > 0) {
+                            toast.success(isRTL ? `أحسنت! حصلت على ${totalXp} نقطة XP` : `Great job! You earned ${totalXp} XP`);
+                          }
+                        }}
+                      />
                     </div>
                   )}
 
