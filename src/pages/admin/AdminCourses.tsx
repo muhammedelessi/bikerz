@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -57,6 +57,10 @@ import {
   DollarSign,
   Filter,
   ArrowUpDown,
+  Upload,
+  ImageIcon,
+  X,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -67,6 +71,7 @@ interface Course {
   title_ar: string | null;
   description: string | null;
   description_ar: string | null;
+  thumbnail_url: string | null;
   price: number;
   currency: string;
   status: string;
@@ -83,12 +88,14 @@ const AdminCourses: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -96,6 +103,7 @@ const AdminCourses: React.FC = () => {
     title_ar: '',
     description: '',
     description_ar: '',
+    thumbnail_url: '',
     price: 0,
     currency: 'SAR',
     difficulty_level: 'beginner',
@@ -126,6 +134,7 @@ const AdminCourses: React.FC = () => {
         title_ar: data.title_ar || null,
         description: data.description || null,
         description_ar: data.description_ar || null,
+        thumbnail_url: data.thumbnail_url || null,
         price: data.price,
         currency: data.currency,
         difficulty_level: data.difficulty_level,
@@ -157,6 +166,7 @@ const AdminCourses: React.FC = () => {
           title_ar: data.title_ar || null,
           description: data.description || null,
           description_ar: data.description_ar || null,
+          thumbnail_url: data.thumbnail_url || null,
           price: data.price,
           currency: data.currency,
           difficulty_level: data.difficulty_level,
@@ -201,6 +211,7 @@ const AdminCourses: React.FC = () => {
       title_ar: '',
       description: '',
       description_ar: '',
+      thumbnail_url: '',
       price: 0,
       currency: 'SAR',
       difficulty_level: 'beginner',
@@ -210,12 +221,63 @@ const AdminCourses: React.FC = () => {
     });
   };
 
+  const handleThumbnailUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error(isRTL ? 'يرجى اختيار صورة' : 'Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(isRTL ? 'حجم الصورة يجب أن لا يتجاوز 5 ميجابايت' : 'Image size must be less than 5MB');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `thumbnails/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('course-thumbnails')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('course-thumbnails')
+        .getPublicUrl(filePath);
+
+      setFormData({ ...formData, thumbnail_url: publicUrl });
+      toast.success(isRTL ? 'تم رفع الصورة بنجاح' : 'Image uploaded successfully');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(error.message || (isRTL ? 'فشل في رفع الصورة' : 'Failed to upload image'));
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const removeThumbnail = () => {
+    setFormData({ ...formData, thumbnail_url: '' });
+  };
+
   const openEditDialog = (course: Course) => {
     setFormData({
       title: course.title,
       title_ar: course.title_ar || '',
       description: course.description || '',
       description_ar: course.description_ar || '',
+      thumbnail_url: course.thumbnail_url || '',
       price: course.price,
       currency: course.currency || 'SAR',
       difficulty_level: course.difficulty_level,
@@ -533,6 +595,61 @@ const AdminCourses: React.FC = () => {
                   rows={3}
                 />
               </div>
+            </div>
+
+            {/* Thumbnail Upload */}
+            <div className="space-y-2">
+              <Label>{isRTL ? 'صورة الدورة' : 'Course Thumbnail'}</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleThumbnailUpload}
+                className="hidden"
+              />
+              
+              {formData.thumbnail_url ? (
+                <div className="relative w-full h-40 rounded-lg overflow-hidden border border-border">
+                  <img
+                    src={formData.thumbnail_url}
+                    alt="Course thumbnail"
+                    className="w-full h-full object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 end-2 h-8 w-8"
+                    onClick={removeThumbnail}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-40 rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors cursor-pointer flex flex-col items-center justify-center gap-2"
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                      <span className="text-sm text-muted-foreground">
+                        {isRTL ? 'جاري الرفع...' : 'Uploading...'}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        {isRTL ? 'انقر لرفع صورة' : 'Click to upload image'}
+                      </span>
+                      <span className="text-xs text-muted-foreground/70">
+                        {isRTL ? 'الحد الأقصى 5 ميجابايت' : 'Max 5MB'}
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
