@@ -2,8 +2,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 interface CreateVideoRequest {
@@ -30,12 +32,80 @@ interface DeleteVideoRequest {
 
 // Bunny Stream API configuration
 const BUNNY_API_BASE = "https://video.bunnycdn.com";
-const BUNNY_CDN_BASE = "https://vz-4da6a56a-dc2.b-cdn.net"; // Will be updated based on library
+
+// IMPORTANT: The CDN Pull Zone host is NOT reliably derivable from the library id.
+// We try to resolve it via Bunny API, and fall back to the known base used by this project.
+const BUNNY_CDN_BASE = "https://vz-4da6a56a-dc2.b-cdn.net";
+
+const normalizeCdnBase = (value: string) => value.replace(/\/+$/, "");
+
+const tryExtractCdnBase = (maybeUrl: unknown): string | null => {
+  if (typeof maybeUrl !== "string") return null;
+  const raw = maybeUrl.trim();
+  if (!raw) return null;
+
+  // Some APIs may return hostname-only, protocol-relative, or full URL.
+  const withProto = raw.startsWith("http")
+    ? raw
+    : raw.startsWith("//")
+      ? `https:${raw}`
+      : `https://${raw}`;
+
+  try {
+    const u = new URL(withProto);
+    if (!u.hostname.toLowerCase().includes("b-cdn.net")) return null;
+    return normalizeCdnBase(`${u.protocol}//${u.host}`);
+  } catch {
+    return null;
+  }
+};
+
+const pickCdnBaseFromLibrary = (library: any): string | null => {
+  // Common-ish fields (case varies across docs/examples)
+  const knownKeys = [
+    "pullZoneUrl",
+    "PullZoneUrl",
+    "cdnUrl",
+    "CdnUrl",
+    "cdnBase",
+    "CdnBase",
+    "hostname",
+    "Hostname",
+  ];
+
+  for (const key of knownKeys) {
+    const base = tryExtractCdnBase(library?.[key]);
+    if (base) return base;
+  }
+
+  // Fallback: scan all primitive string props for a b-cdn.net URL/hostname
+  for (const v of Object.values(library ?? {})) {
+    const base = tryExtractCdnBase(v);
+    if (base) return base;
+  }
+
+  return null;
+};
+
+const resolveCdnBase = async (
+  libraryId: string,
+  bunnyFetch: (endpoint: string, options?: RequestInit) => Promise<any>
+): Promise<string> => {
+  try {
+    const library = await bunnyFetch(`/library/${libraryId}`);
+    const fromApi = pickCdnBaseFromLibrary(library);
+    if (fromApi) return fromApi;
+  } catch (e) {
+    console.warn("[bunny-stream] Failed to resolve CDN base via API, falling back", e);
+  }
+
+  return normalizeCdnBase(BUNNY_CDN_BASE);
+};
 
 serve(async (req) => {
   // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -79,8 +149,8 @@ serve(async (req) => {
 
     // Parse request
     const url = new URL(req.url);
-    const action = url.searchParams.get('action');
-    const body = req.method === 'POST' ? await req.json() : {};
+    const body: any = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+    const action = url.searchParams.get('action') ?? (typeof body?.action === 'string' ? body.action : null);
 
     // Helper function for Bunny API calls
     const bunnyFetch = async (endpoint: string, options: RequestInit = {}) => {
@@ -233,18 +303,18 @@ serve(async (req) => {
           );
         }
 
-        // Generate playback URLs
-        const pullZone = `vz-${bunnyLibraryId.slice(0, 8)}-dc2`;
-        const cdnBase = `https://${pullZone}.b-cdn.net`;
-        
+        // Generate playback URLs (resolve the correct CDN Pull Zone base)
+        const cdnBase = await resolveCdnBase(bunnyLibraryId, bunnyFetch);
+        const base = normalizeCdnBase(cdnBase);
+
         // HLS playlist URL
-        const hlsUrl = `${cdnBase}/${videoId}/playlist.m3u8`;
-        
+        const hlsUrl = `${base}/${videoId}/playlist.m3u8`;
+
         // Thumbnail URL
-        const thumbnailUrl = `${cdnBase}/${videoId}/thumbnail.jpg`;
-        
+        const thumbnailUrl = `${base}/${videoId}/thumbnail.jpg`;
+
         // Preview animation (if available)
-        const previewUrl = `${cdnBase}/${videoId}/preview.webp`;
+        const previewUrl = `${base}/${videoId}/preview.webp`;
 
         return new Response(
           JSON.stringify({

@@ -75,8 +75,8 @@ export function useBunnyStream() {
    */
   const createVideo = useCallback(async (title: string): Promise<{ videoId: string; libraryId: string } | null> => {
     try {
-      const { data: result, error: invokeError } = await supabase.functions.invoke('bunny-stream?action=create-video', {
-        body: { title },
+      const { data: result, error: invokeError } = await supabase.functions.invoke('bunny-stream', {
+        body: { action: 'create-video', title },
       });
 
       if (invokeError) throw invokeError;
@@ -96,8 +96,8 @@ export function useBunnyStream() {
    * Get upload credentials for TUS resumable upload
    */
   const getUploadCredentials = useCallback(async (videoId: string) => {
-    const { data, error } = await supabase.functions.invoke('bunny-stream?action=get-upload-url', {
-      body: { videoId },
+    const { data, error } = await supabase.functions.invoke('bunny-stream', {
+      body: { action: 'get-upload-url', videoId },
     });
 
     if (error) throw error;
@@ -265,8 +265,8 @@ export function useBunnyStream() {
    */
   const getVideoStatus = useCallback(async (videoId: string): Promise<BunnyVideoStatus | null> => {
     try {
-      const { data, error } = await supabase.functions.invoke('bunny-stream?action=get-status', {
-        body: { videoId },
+      const { data, error } = await supabase.functions.invoke('bunny-stream', {
+        body: { action: 'get-status', videoId },
       });
 
       if (error) throw error;
@@ -336,8 +336,8 @@ export function useBunnyStream() {
    */
   const getPlaybackInfo = useCallback(async (videoId: string): Promise<BunnyPlaybackInfo> => {
     try {
-      const { data, error } = await supabase.functions.invoke('bunny-stream?action=get-playback-url', {
-        body: { videoId },
+      const { data, error } = await supabase.functions.invoke('bunny-stream', {
+        body: { action: 'get-playback-url', videoId },
       });
 
       if (error) throw error;
@@ -353,8 +353,8 @@ export function useBunnyStream() {
    */
   const deleteVideo = useCallback(async (videoId: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.functions.invoke('bunny-stream?action=delete-video', {
-        body: { videoId },
+      const { data, error } = await supabase.functions.invoke('bunny-stream', {
+        body: { action: 'delete-video', videoId },
       });
 
       if (error) throw error;
