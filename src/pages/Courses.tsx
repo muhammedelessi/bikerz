@@ -17,11 +17,14 @@ interface Course {
   description: string | null;
   description_ar: string | null;
   thumbnail_url: string | null;
-  duration_hours: number | null;
-  total_lessons: number | null;
   difficulty_level: string;
   price: number;
   is_published: boolean;
+}
+
+interface CourseWithStats extends Course {
+  lessonCount: number;
+  totalDurationMinutes: number;
 }
 
 const Courses: React.FC = () => {
@@ -30,16 +33,68 @@ const Courses: React.FC = () => {
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
 
   const { data: courses = [], isLoading } = useQuery({
-    queryKey: ['courses'],
+    queryKey: ['courses-with-stats'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch courses with their chapters and lessons to calculate real stats
+      const { data: coursesData, error: coursesError } = await supabase
         .from('courses')
-        .select('*')
+        .select(`
+          id,
+          title,
+          title_ar,
+          description,
+          description_ar,
+          thumbnail_url,
+          difficulty_level,
+          price,
+          is_published,
+          chapters (
+            id,
+            is_published,
+            lessons (
+              id,
+              duration_minutes,
+              is_published
+            )
+          )
+        `)
         .eq('is_published', true)
         .order('created_at', { ascending: true });
       
-      if (error) throw error;
-      return data as Course[];
+      if (coursesError) throw coursesError;
+
+      // Calculate real lesson count and duration from actual content
+      const coursesWithStats: CourseWithStats[] = (coursesData || []).map((course: any) => {
+        let lessonCount = 0;
+        let totalDurationMinutes = 0;
+
+        (course.chapters || []).forEach((chapter: any) => {
+          if (chapter.is_published) {
+            (chapter.lessons || []).forEach((lesson: any) => {
+              if (lesson.is_published) {
+                lessonCount++;
+                totalDurationMinutes += lesson.duration_minutes || 0;
+              }
+            });
+          }
+        });
+
+        return {
+          id: course.id,
+          title: course.title,
+          title_ar: course.title_ar,
+          description: course.description,
+          description_ar: course.description_ar,
+          thumbnail_url: course.thumbnail_url,
+          difficulty_level: course.difficulty_level,
+          price: course.price,
+          is_published: course.is_published,
+          lessonCount,
+          totalDurationMinutes,
+        };
+      });
+
+      return coursesWithStats;
     },
   });
 
@@ -48,11 +103,12 @@ const Courses: React.FC = () => {
     return t(key);
   };
 
-  const formatDuration = (hours: number | null) => {
-    if (!hours) return `0${t('courses.hour')}`;
-    const h = Math.floor(hours);
-    const m = Math.round((hours - h) * 60);
-    return m > 0 ? `${h}${t('courses.hour')} ${m}${t('courses.minutes')}` : `${h}${t('courses.hour')}`;
+  const formatDuration = (minutes: number) => {
+    if (!minutes || minutes === 0) return `0${t('courses.hour')}`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours === 0) return `${mins}${t('courses.minutes')}`;
+    return mins > 0 ? `${hours}${t('courses.hour')} ${mins}${t('courses.minutes')}` : `${hours}${t('courses.hour')}`;
   };
 
   return (
@@ -144,16 +200,16 @@ const Courses: React.FC = () => {
                             {description}
                           </p>
 
-                          {/* Meta */}
+                          {/* Meta - Now using real calculated values */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                               <div className="flex items-center gap-1.5">
                                 <BookOpen className="w-4 h-4" />
-                                <span>{course.total_lessons || 0} {t('courses.lesson')}</span>
+                                <span>{course.lessonCount} {t('courses.lesson')}</span>
                               </div>
                               <div className="flex items-center gap-1.5">
                                 <Clock className="w-4 h-4" />
-                                <span>{formatDuration(course.duration_hours)}</span>
+                                <span>{formatDuration(course.totalDurationMinutes)}</span>
                               </div>
                             </div>
                             <Chevron className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
