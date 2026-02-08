@@ -650,10 +650,10 @@ const CourseLearn: React.FC = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                {/* Video Player - Full width, adaptive aspect ratio */}
-                <div className="relative bg-black w-full">
-                  {currentLesson?.video_url ? (
-                    isYouTubeUrl(currentLesson.video_url) ? (
+                {/* Video Player - Full width, adaptive aspect ratio - Hidden for quiz-only lessons */}
+                {currentLesson?.video_url && (
+                  <div className="relative bg-black w-full">
+                    {isYouTubeUrl(currentLesson.video_url) ? (
                       // YouTube Embed Player
                       <div className="aspect-video">
                         <iframe
@@ -677,18 +677,9 @@ const CourseLearn: React.FC = () => {
                           }
                         }}
                       />
-                    )
-                  ) : (
-                    <div className="w-full aspect-video flex items-center justify-center bg-muted">
-                      <div className="text-center p-4">
-                        <Video className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-sm sm:text-base text-muted-foreground">
-                          {isRTL ? 'لا يوجد فيديو لهذا الدرس' : 'No video available for this lesson'}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Lesson Content */}
                 <div className="p-4 sm:p-6 lg:p-8 safe-area-bottom">
@@ -750,6 +741,7 @@ const CourseLearn: React.FC = () => {
                     <div className="mb-6 sm:mb-8">
                       <LessonQuiz
                         lessonId={currentLesson.id}
+                        isQuizOnlyLesson={!currentLesson.video_url}
                         onComplete={(totalXp) => {
                           if (totalXp > 0) {
                             toast.success(isRTL ? `أحسنت! حصلت على ${totalXp} نقطة XP` : `Great job! You earned ${totalXp} XP`);
