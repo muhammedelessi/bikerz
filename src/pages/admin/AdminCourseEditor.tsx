@@ -23,6 +23,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -114,6 +124,10 @@ const AdminCourseEditor: React.FC = () => {
   // Quiz/Test management state
   const [selectedTest, setSelectedTest] = useState<{ id: string; title: string } | null>(null);
   const [selectedLessonQuiz, setSelectedLessonQuiz] = useState<{ id: string; title: string } | null>(null);
+  
+  // Confirmation dialogs
+  const [deleteChapterConfirm, setDeleteChapterConfirm] = useState<{ id: string; title: string } | null>(null);
+  const [deleteLessonConfirm, setDeleteLessonConfirm] = useState<{ id: string; title: string } | null>(null);
 
   // Chapter form state
   const [chapterForm, setChapterForm] = useState({
@@ -678,7 +692,10 @@ const AdminCourseEditor: React.FC = () => {
                       variant="outline" 
                       size="sm" 
                       className="text-destructive"
-                      onClick={() => deleteChapterMutation.mutate(chapter.id)}
+                      onClick={() => setDeleteChapterConfirm({ 
+                        id: chapter.id, 
+                        title: isRTL && chapter.title_ar ? chapter.title_ar : chapter.title 
+                      })}
                     >
                       <Trash2 className="w-4 h-4 me-1" />
                       {isRTL ? 'حذف' : 'Delete'}
@@ -771,7 +788,10 @@ const AdminCourseEditor: React.FC = () => {
                             variant="ghost" 
                             size="icon" 
                             className="h-7 w-7 text-destructive"
-                            onClick={() => deleteLessonMutation.mutate(lesson.id)}
+                            onClick={() => setDeleteLessonConfirm({
+                              id: lesson.id,
+                              title: isRTL && lesson.title_ar ? lesson.title_ar : lesson.title
+                            })}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
@@ -954,21 +974,42 @@ const AdminCourseEditor: React.FC = () => {
             </div>
             <div className="space-y-3">
               <Label>{isRTL ? 'الفيديو' : 'Video'}</Label>
-              <BunnyVideoUploader
-                onUploadComplete={(videoId, playbackUrl) => {
-                  setLessonForm({ 
-                    ...lessonForm, 
-                    video_url: playbackUrl, 
-                    video_provider: 'bunny' 
-                  });
-                }}
-              />
+              
+              {/* Show existing video if present */}
               {lessonForm.video_url && (
-                <div className="mt-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                  <p className="text-sm text-green-600">
-                    {isRTL ? '✓ تم رفع الفيديو بنجاح - جاهز للبث' : '✓ Video uploaded - Ready for streaming'}
-                  </p>
+                <div className="p-4 bg-muted/50 border border-border rounded-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Video className="w-5 h-5 text-green-500" />
+                      <span className="font-medium text-green-600">
+                        {isRTL ? 'فيديو مرفق' : 'Video Attached'}
+                      </span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => setLessonForm({ ...lessonForm, video_url: '', video_provider: 'bunny' })}
+                    >
+                      <Trash2 className="w-4 h-4 me-1" />
+                      {isRTL ? 'إزالة' : 'Remove'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground break-all">{lessonForm.video_url}</p>
                 </div>
+              )}
+              
+              {/* Upload new video */}
+              {!lessonForm.video_url && (
+                <BunnyVideoUploader
+                  onUploadComplete={(videoId, playbackUrl) => {
+                    setLessonForm({ 
+                      ...lessonForm, 
+                      video_url: playbackUrl, 
+                      video_provider: 'bunny' 
+                    });
+                  }}
+                />
               )}
             </div>
             <div className="space-y-2">
@@ -1028,6 +1069,76 @@ const AdminCourseEditor: React.FC = () => {
           onClose={() => setSelectedLessonQuiz(null)}
         />
       )}
+
+      {/* Delete Chapter Confirmation */}
+      <Dialog open={!!deleteChapterConfirm} onOpenChange={(open) => !open && setDeleteChapterConfirm(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">
+              {isRTL ? 'حذف الفصل' : 'Delete Chapter'}
+            </DialogTitle>
+            <DialogDescription>
+              {isRTL 
+                ? `هل أنت متأكد من حذف "${deleteChapterConfirm?.title}"؟ سيتم حذف جميع الدروس والفيديوهات المرتبطة بهذا الفصل. لا يمكن التراجع عن هذا الإجراء.`
+                : `Are you sure you want to delete "${deleteChapterConfirm?.title}"? All lessons and videos in this chapter will be deleted. This action cannot be undone.`
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteChapterConfirm(null)}>
+              {isRTL ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                if (deleteChapterConfirm) {
+                  deleteChapterMutation.mutate(deleteChapterConfirm.id);
+                  setDeleteChapterConfirm(null);
+                }
+              }}
+              disabled={deleteChapterMutation.isPending}
+            >
+              <Trash2 className="w-4 h-4 me-2" />
+              {isRTL ? 'حذف' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Lesson Confirmation */}
+      <Dialog open={!!deleteLessonConfirm} onOpenChange={(open) => !open && setDeleteLessonConfirm(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">
+              {isRTL ? 'حذف الدرس' : 'Delete Lesson'}
+            </DialogTitle>
+            <DialogDescription>
+              {isRTL 
+                ? `هل أنت متأكد من حذف "${deleteLessonConfirm?.title}"؟ سيتم حذف الفيديو المرتبط بهذا الدرس. لا يمكن التراجع عن هذا الإجراء.`
+                : `Are you sure you want to delete "${deleteLessonConfirm?.title}"? The video attached to this lesson will be removed. This action cannot be undone.`
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteLessonConfirm(null)}>
+              {isRTL ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                if (deleteLessonConfirm) {
+                  deleteLessonMutation.mutate(deleteLessonConfirm.id);
+                  setDeleteLessonConfirm(null);
+                }
+              }}
+              disabled={deleteLessonMutation.isPending}
+            >
+              <Trash2 className="w-4 h-4 me-2" />
+              {isRTL ? 'حذف' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
