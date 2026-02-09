@@ -1221,6 +1221,83 @@ export type Database = {
           },
         ]
       }
+      tap_charges: {
+        Row: {
+          amount: number
+          card_brand: string | null
+          card_last_four: string | null
+          charge_id: string | null
+          course_id: string | null
+          created_at: string
+          currency: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          error_message: string | null
+          id: string
+          idempotency_key: string
+          metadata: Json | null
+          payment_method: string | null
+          status: string
+          tap_response: Json | null
+          updated_at: string
+          user_id: string
+          webhook_verified: boolean | null
+        }
+        Insert: {
+          amount: number
+          card_brand?: string | null
+          card_last_four?: string | null
+          charge_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          error_message?: string | null
+          id?: string
+          idempotency_key: string
+          metadata?: Json | null
+          payment_method?: string | null
+          status?: string
+          tap_response?: Json | null
+          updated_at?: string
+          user_id: string
+          webhook_verified?: boolean | null
+        }
+        Update: {
+          amount?: number
+          card_brand?: string | null
+          card_last_four?: string | null
+          charge_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          error_message?: string | null
+          id?: string
+          idempotency_key?: string
+          metadata?: Json | null
+          payment_method?: string | null
+          status?: string
+          tap_response?: Json | null
+          updated_at?: string
+          user_id?: string
+          webhook_verified?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tap_charges_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_attempts: {
         Row: {
           answers: Json
