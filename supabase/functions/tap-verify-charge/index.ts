@@ -1,6 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Verifies a charge status after 3DS redirect callback
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -26,20 +25,18 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const tapSecretKey = Deno.env.get("TAP_SECRET_KEY")!;
 
-    // Verify user
+    // Verify user with getUser
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(
-      authHeader.replace("Bearer ", "")
-    );
-    if (claimsError || !claimsData?.claims) {
+    const { data: userData, error: userError } = await userClient.auth.getUser();
+    if (userError || !userData?.user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    const userId = claimsData.claims.sub as string;
+    const userId = userData.user.id;
 
     const { charge_id } = await req.json();
     if (!charge_id) {
@@ -49,7 +46,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Retrieve charge from Tap API
+    // Retrieve charge from Tap API (source of truth)
     const tapResponse = await fetch(`https://api.tap.company/v2/charges/${charge_id}`, {
       headers: { Authorization: `Bearer ${tapSecretKey}` },
     });
