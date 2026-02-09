@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTapPayment } from '@/hooks/useTapPayment';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
@@ -11,18 +13,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import {
   CreditCard,
-  Smartphone,
-  Building2,
   Gift,
   Shield,
   Check,
   ArrowRight,
   ArrowLeft,
   Loader2,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -39,8 +41,7 @@ interface CheckoutModalProps {
   onSuccess: () => void;
 }
 
-type PaymentMethod = 'card' | 'apple_pay' | 'mada' | 'bank' | 'promo';
-type CheckoutStep = 'payment' | 'details' | 'confirmation';
+type CheckoutStep = 'info' | 'payment' | 'result';
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({
   open,
@@ -50,53 +51,72 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const [step, setStep] = useState<CheckoutStep>('payment');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
+  const { user, profile } = useAuth();
+  const {
+    status: paymentStatus,
+    error: paymentError,
+    publicKey,
+    isReady,
+    initializeCard,
+    submitPayment,
+    reset: resetPayment,
+  } = useTapPayment();
+
+  const [step, setStep] = useState<CheckoutStep>('info');
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  
-  // Card details state
-  const [cardDetails, setCardDetails] = useState({
-    number: '',
-    name: '',
-    expiry: '',
-    cvv: '',
-  });
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const cardContainerRef = useRef<HTMLDivElement>(null);
+  const cardInitializedRef = useRef(false);
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
-
-  const paymentMethods = [
-    {
-      id: 'card' as PaymentMethod,
-      name: isRTL ? 'بطاقة ائتمان/خصم' : 'Credit/Debit Card',
-      icon: CreditCard,
-      description: isRTL ? 'Visa, Mastercard, Amex' : 'Visa, Mastercard, Amex',
-    },
-    {
-      id: 'apple_pay' as PaymentMethod,
-      name: 'Apple Pay',
-      icon: Smartphone,
-      description: isRTL ? 'ادفع بسهولة عبر Apple Pay' : 'Quick checkout with Apple Pay',
-    },
-    {
-      id: 'mada' as PaymentMethod,
-      name: isRTL ? 'مدى' : 'Mada',
-      icon: CreditCard,
-      description: isRTL ? 'بطاقات مدى السعودية' : 'Saudi Mada cards',
-    },
-    {
-      id: 'bank' as PaymentMethod,
-      name: isRTL ? 'تحويل بنكي' : 'Bank Transfer',
-      icon: Building2,
-      description: isRTL ? 'تحويل مباشر للحساب البنكي' : 'Direct bank transfer',
-    },
-  ];
-
   const discountedPrice = promoApplied ? course.price * 0.8 : course.price;
 
+  // Pre-fill customer info
+  useEffect(() => {
+    if (profile?.full_name) setCustomerName(profile.full_name);
+    if (user?.email) setCustomerEmail(user.email);
+    if (profile?.phone) setCustomerPhone(profile.phone);
+  }, [profile, user]);
+
+  // Initialize Tap Card SDK when moving to payment step
+  useEffect(() => {
+    if (step === 'payment' && publicKey && !cardInitializedRef.current) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        initializeCard('tap-card-container');
+        cardInitializedRef.current = true;
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [step, publicKey, initializeCard]);
+
+  // Handle payment status changes
+  useEffect(() => {
+    if (paymentStatus === 'succeeded') {
+      setStep('result');
+      onSuccess();
+    } else if (paymentStatus === 'failed') {
+      setStep('result');
+    }
+  }, [paymentStatus, onSuccess]);
+
+  // Reset on close
+  useEffect(() => {
+    if (!open) {
+      setStep('info');
+      setPromoCode('');
+      setPromoApplied(false);
+      cardInitializedRef.current = false;
+      resetPayment();
+    }
+  }, [open, resetPayment]);
+
   const handleApplyPromo = () => {
-    if (promoCode.toLowerCase() === 'bikerz20' || promoCode.toLowerCase() === 'welcome') {
+    const code = promoCode.toLowerCase();
+    if (code === 'bikerz20' || code === 'welcome') {
       setPromoApplied(true);
       toast.success(isRTL ? 'تم تطبيق الخصم بنجاح!' : 'Discount applied successfully!');
     } else {
@@ -104,87 +124,46 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  const handleNext = () => {
-    if (step === 'payment') {
-      if (paymentMethod === 'card') {
-        setStep('details');
-      } else {
-        setStep('confirmation');
-      }
-    } else if (step === 'details') {
-      setStep('confirmation');
+  const handleProceedToPayment = () => {
+    if (!customerName.trim() || !customerEmail.trim()) {
+      toast.error(isRTL ? 'يرجى ملء الحقول المطلوبة' : 'Please fill in the required fields');
+      return;
     }
-  };
-
-  const handleBack = () => {
-    if (step === 'details') {
-      setStep('payment');
-    } else if (step === 'confirmation') {
-      if (paymentMethod === 'card') {
-        setStep('details');
-      } else {
-        setStep('payment');
-      }
-    }
-  };
-
-  const handleConfirm = async () => {
-    setIsProcessing(true);
-    
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsProcessing(false);
-    toast.success(isRTL ? 'تم الشراء بنجاح!' : 'Purchase successful!');
-    onSuccess();
-    onOpenChange(false);
-    
-    // Reset state
     setStep('payment');
-    setPaymentMethod('card');
-    setPromoCode('');
-    setPromoApplied(false);
-    setCardDetails({ number: '', name: '', expiry: '', cvv: '' });
   };
 
-  const formatCardNumber = (value: string) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    const matches = v.match(/\d{4,16}/g);
-    const match = (matches && matches[0]) || '';
-    const parts = [];
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4));
-    }
-    return parts.length ? parts.join(' ') : value;
+  const handleSubmitPayment = async () => {
+    await submitPayment({
+      courseId: course.id,
+      amount: discountedPrice,
+      currency: 'SAR',
+      customerName,
+      customerEmail,
+      customerPhone,
+    });
   };
 
-  const formatExpiry = (value: string) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    if (v.length >= 2) {
-      return v.substring(0, 2) + '/' + v.substring(2, 4);
+  const handleClose = () => {
+    if (paymentStatus === 'processing' || paymentStatus === 'tokenizing') {
+      return; // Don't close during processing
     }
-    return v;
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] bg-card border-2 border-border shadow-2xl p-0 overflow-hidden flex flex-col mx-4">
-        {/* Header with course info - Fixed at top */}
+        {/* Header */}
         <div className="bg-muted/30 p-4 sm:p-6 border-b-2 border-border flex-shrink-0">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
               {isRTL ? 'إتمام الشراء' : 'Complete Purchase'}
             </DialogTitle>
           </DialogHeader>
-          
           <div className="flex items-center gap-4 mt-4">
             <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
               {course.thumbnail_url ? (
-                <img 
-                  src={course.thumbnail_url} 
-                  alt={course.title} 
-                  className="w-full h-full object-cover"
-                />
+                <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-primary/20 flex items-center justify-center">
                   <CreditCard className="w-6 h-6 text-primary" />
@@ -205,30 +184,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {discountedPrice} {isRTL ? 'ر.س' : 'SAR'}
                 </span>
                 {promoApplied && (
-                  <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
-                    -20%
-                  </span>
+                  <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">-20%</span>
                 )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Step indicator */}
+        {/* Step Indicator */}
         <div className="flex items-center justify-center gap-2 py-4 px-6 border-b border-border/50">
-          {['payment', 'details', 'confirmation'].map((s, index) => {
-            const isActive = 
-              s === step || 
-              (s === 'payment' && (step === 'details' || step === 'confirmation')) ||
-              (s === 'details' && step === 'confirmation' && paymentMethod === 'card');
+          {['info', 'payment', 'result'].map((s, index) => {
+            const stepIndex = ['info', 'payment', 'result'].indexOf(step);
+            const isActive = index <= stepIndex;
             const isCurrent = s === step;
-            const showDetails = paymentMethod === 'card' || s !== 'details';
-            
-            if (!showDetails) return null;
-            
             return (
               <React.Fragment key={s}>
-                {index > 0 && (paymentMethod === 'card' || s !== 'details') && (
+                {index > 0 && (
                   <div className={`h-0.5 w-8 ${isActive ? 'bg-primary' : 'bg-border'}`} />
                 )}
                 <div
@@ -240,62 +211,60 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       : 'bg-muted text-muted-foreground'
                   }`}
                 >
-                  {isActive && !isCurrent ? <Check className="w-4 h-4" /> : (paymentMethod === 'card' ? index + 1 : (s === 'payment' ? 1 : 2))}
+                  {isActive && !isCurrent ? <Check className="w-4 h-4" /> : index + 1}
                 </div>
               </React.Fragment>
             );
           })}
         </div>
 
-        {/* Content - Scrollable */}
+        {/* Content */}
         <div className="p-6 overflow-y-auto flex-1 min-h-0">
           <AnimatePresence mode="wait">
-            {step === 'payment' && (
+            {/* Step 1: Customer Info & Promo */}
+            {step === 'info' && (
               <motion.div
-                key="payment"
+                key="info"
                 initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
                 transition={{ duration: 0.2 }}
+                className="space-y-4"
               >
-                <h4 className="font-semibold text-foreground mb-4">
-                  {isRTL ? 'اختر طريقة الدفع' : 'Select Payment Method'}
+                <h4 className="font-semibold text-foreground">
+                  {isRTL ? 'معلومات الدفع' : 'Payment Information'}
                 </h4>
-                
-                <RadioGroup
-                  value={paymentMethod}
-                  onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
-                  className="space-y-3"
-                >
-                  {paymentMethods.map((method) => (
-                    <label
-                      key={method.id}
-                      className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                        paymentMethod === method.id
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <RadioGroupItem value={method.id} className="sr-only" />
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        paymentMethod === method.id ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                      }`}>
-                        <method.icon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1">
-                        <span className="font-medium text-foreground">{method.name}</span>
-                        <p className="text-sm text-muted-foreground">{method.description}</p>
-                      </div>
-                      {paymentMethod === method.id && (
-                        <Check className="w-5 h-5 text-primary" />
-                      )}
-                    </label>
-                  ))}
-                </RadioGroup>
+
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'الاسم الكامل' : 'Full Name'} *</Label>
+                  <Input
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder={isRTL ? 'أدخل اسمك الكامل' : 'Enter your full name'}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'البريد الإلكتروني' : 'Email'} *</Label>
+                  <Input
+                    type="email"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'رقم الهاتف' : 'Phone Number'}</Label>
+                  <Input
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder={isRTL ? '05xxxxxxxx' : '05xxxxxxxx'}
+                  />
+                </div>
 
                 {/* Promo Code */}
-                <Separator className="my-6" />
-                
+                <Separator />
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
                     <Gift className="w-4 h-4 inline-block me-2" />
@@ -309,14 +278,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       disabled={promoApplied}
                       className="flex-1"
                     />
-                    <Button
-                      variant="outline"
-                      onClick={handleApplyPromo}
-                      disabled={!promoCode || promoApplied}
-                    >
-                      {promoApplied 
-                        ? (isRTL ? 'مطبق' : 'Applied') 
-                        : (isRTL ? 'تطبيق' : 'Apply')}
+                    <Button variant="outline" onClick={handleApplyPromo} disabled={!promoCode || promoApplied}>
+                      {promoApplied ? (isRTL ? 'مطبق' : 'Applied') : (isRTL ? 'تطبيق' : 'Apply')}
                     </Button>
                   </div>
                   {promoApplied && (
@@ -329,183 +292,200 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </motion.div>
             )}
 
-            {step === 'details' && paymentMethod === 'card' && (
+            {/* Step 2: Embedded Card Payment */}
+            {step === 'payment' && (
               <motion.div
-                key="details"
+                key="payment"
                 initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
                 transition={{ duration: 0.2 }}
+                className="space-y-4"
               >
-                <h4 className="font-semibold text-foreground mb-4">
-                  {isRTL ? 'تفاصيل البطاقة' : 'Card Details'}
+                <h4 className="font-semibold text-foreground">
+                  {isRTL ? 'ادخل بيانات البطاقة' : 'Enter Card Details'}
                 </h4>
-                
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="cardNumber">
-                      {isRTL ? 'رقم البطاقة' : 'Card Number'}
-                    </Label>
-                    <Input
-                      id="cardNumber"
-                      value={cardDetails.number}
-                      onChange={(e) => setCardDetails({ 
-                        ...cardDetails, 
-                        number: formatCardNumber(e.target.value) 
-                      })}
-                      placeholder="1234 5678 9012 3456"
-                      maxLength={19}
-                    />
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="cardName">
-                      {isRTL ? 'الاسم على البطاقة' : 'Name on Card'}
-                    </Label>
-                    <Input
-                      id="cardName"
-                      value={cardDetails.name}
-                      onChange={(e) => setCardDetails({ ...cardDetails, name: e.target.value })}
-                      placeholder={isRTL ? 'الاسم الكامل' : 'Full Name'}
-                    />
-                  </div>
+                {/* Tap Card SDK container */}
+                <div className="min-h-[200px] rounded-xl border border-border bg-background p-4">
+                  {paymentStatus === 'loading_sdk' && (
+                    <div className="flex items-center justify-center h-40">
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      <span className="ms-2 text-muted-foreground">
+                        {isRTL ? 'جاري تحميل نموذج الدفع...' : 'Loading payment form...'}
+                      </span>
+                    </div>
+                  )}
+                  <div
+                    id="tap-card-container"
+                    ref={cardContainerRef}
+                    className={paymentStatus === 'loading_sdk' ? 'hidden' : ''}
+                  />
+                </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="cardExpiry">
-                        {isRTL ? 'تاريخ الانتهاء' : 'Expiry Date'}
-                      </Label>
-                      <Input
-                        id="cardExpiry"
-                        value={cardDetails.expiry}
-                        onChange={(e) => setCardDetails({ 
-                          ...cardDetails, 
-                          expiry: formatExpiry(e.target.value) 
-                        })}
-                        placeholder="MM/YY"
-                        maxLength={5}
-                      />
+                {paymentError && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{paymentError}</span>
+                  </div>
+                )}
+
+                {/* Order summary */}
+                <div className="p-4 rounded-xl bg-muted/30 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{isRTL ? 'الدورة' : 'Course'}</span>
+                    <span className="font-medium truncate max-w-[200px]">
+                      {isRTL && course.title_ar ? course.title_ar : course.title}
+                    </span>
+                  </div>
+                  {promoApplied && (
+                    <div className="flex justify-between text-sm text-primary">
+                      <span>{isRTL ? 'الخصم' : 'Discount'}</span>
+                      <span>-{(course.price * 0.2).toFixed(0)} {isRTL ? 'ر.س' : 'SAR'}</span>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cardCvv">CVV</Label>
-                      <Input
-                        id="cardCvv"
-                        type="password"
-                        value={cardDetails.cvv}
-                        onChange={(e) => setCardDetails({ 
-                          ...cardDetails, 
-                          cvv: e.target.value.replace(/\D/g, '').slice(0, 4) 
-                        })}
-                        placeholder="***"
-                        maxLength={4}
-                      />
-                    </div>
+                  )}
+                  <Separator />
+                  <div className="flex justify-between font-bold">
+                    <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
+                    <span className="text-primary">{discountedPrice} {isRTL ? 'ر.س' : 'SAR'}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 mt-6 p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
                   <Shield className="w-4 h-4 text-primary flex-shrink-0" />
                   <span>
-                    {isRTL 
-                      ? 'معلوماتك محمية بتشفير SSL آمن'
-                      : 'Your information is protected with secure SSL encryption'}
+                    {isRTL
+                      ? 'مدفوعاتك آمنة ومشفرة عبر Tap Payments'
+                      : 'Your payment is secure and encrypted via Tap Payments'}
                   </span>
                 </div>
               </motion.div>
             )}
 
-            {step === 'confirmation' && (
+            {/* Step 3: Result */}
+            {step === 'result' && (
               <motion.div
-                key="confirmation"
-                initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
-                transition={{ duration: 0.2 }}
+                key="result"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className="flex flex-col items-center justify-center py-8 text-center"
               >
-                <h4 className="font-semibold text-foreground mb-4">
-                  {isRTL ? 'تأكيد الطلب' : 'Order Confirmation'}
-                </h4>
-                
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-muted/30 space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        {isRTL ? 'الدورة' : 'Course'}
-                      </span>
-                      <span className="font-medium text-foreground truncate max-w-[200px]">
-                        {isRTL && course.title_ar ? course.title_ar : course.title}
-                      </span>
+                {paymentStatus === 'succeeded' ? (
+                  <>
+                    <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mb-4">
+                      <CheckCircle2 className="w-8 h-8 text-green-500" />
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        {isRTL ? 'طريقة الدفع' : 'Payment Method'}
-                      </span>
-                      <span className="font-medium text-foreground">
-                        {paymentMethods.find(m => m.id === paymentMethod)?.name}
-                      </span>
+                    <h4 className="text-xl font-bold text-foreground mb-2">
+                      {isRTL ? 'تم الدفع بنجاح!' : 'Payment Successful!'}
+                    </h4>
+                    <p className="text-muted-foreground">
+                      {isRTL
+                        ? 'تم تسجيلك في الدورة. يمكنك البدء بالتعلم الآن.'
+                        : 'You are now enrolled. You can start learning now.'}
+                    </p>
+                  </>
+                ) : paymentStatus === 'processing' ? (
+                  <>
+                    <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+                    <h4 className="text-xl font-bold text-foreground mb-2">
+                      {isRTL ? 'جاري معالجة الدفع...' : 'Processing Payment...'}
+                    </h4>
+                    <p className="text-muted-foreground">
+                      {isRTL ? 'يرجى الانتظار...' : 'Please wait...'}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                      <XCircle className="w-8 h-8 text-destructive" />
                     </div>
-                    {promoApplied && (
-                      <div className="flex justify-between text-primary">
-                        <span>{isRTL ? 'الخصم' : 'Discount'}</span>
-                        <span>-{(course.price * 0.2).toFixed(0)} {isRTL ? 'ر.س' : 'SAR'}</span>
-                      </div>
-                    )}
-                    <Separator />
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>{isRTL ? 'المجموع' : 'Total'}</span>
-                      <span className="text-primary">
-                        {discountedPrice} {isRTL ? 'ر.س' : 'SAR'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/10 text-sm">
-                    <Shield className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                    <span className="text-foreground">
-                      {isRTL 
-                        ? 'ستحصل على وصول فوري للدورة بعد إتمام الدفع'
-                        : 'You will get instant access to the course after payment'}
-                    </span>
-                  </div>
-                </div>
+                    <h4 className="text-xl font-bold text-foreground mb-2">
+                      {isRTL ? 'فشل الدفع' : 'Payment Failed'}
+                    </h4>
+                    <p className="text-muted-foreground mb-4">
+                      {paymentError || (isRTL ? 'حدث خطأ أثناء الدفع. يرجى المحاولة مرة أخرى.' : 'An error occurred. Please try again.')}
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        cardInitializedRef.current = false;
+                        resetPayment();
+                        setStep('payment');
+                      }}
+                    >
+                      {isRTL ? 'حاول مرة أخرى' : 'Try Again'}
+                    </Button>
+                  </>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Footer - Fixed at bottom */}
-        <div className="p-4 sm:p-6 border-t-2 border-border bg-muted/30 flex gap-3 flex-shrink-0">
-          {step !== 'payment' && (
-            <Button variant="outline" onClick={handleBack} className="flex-1">
-              {isRTL ? 'رجوع' : 'Back'}
-            </Button>
-          )}
-          
-          {step === 'confirmation' ? (
-            <Button 
-              onClick={handleConfirm} 
-              disabled={isProcessing}
-              className="flex-1 btn-cta"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="w-4 h-4 me-2 animate-spin" />
-                  {isRTL ? 'جاري المعالجة...' : 'Processing...'}
-                </>
-              ) : (
-                <>
-                  {isRTL ? 'تأكيد الدفع' : 'Confirm Payment'}
-                  <ArrowIcon className="w-4 h-4 ms-2" />
-                </>
+        {/* Footer */}
+        {step !== 'result' && (
+          <div className="p-4 sm:p-6 border-t-2 border-border flex-shrink-0">
+            <div className="flex gap-3">
+              {step === 'payment' && (
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    cardInitializedRef.current = false;
+                    setStep('info');
+                  }}
+                  disabled={paymentStatus === 'processing' || paymentStatus === 'tokenizing'}
+                >
+                  {isRTL ? 'رجوع' : 'Back'}
+                </Button>
               )}
+
+              {step === 'info' && (
+                <Button className="flex-1" variant="cta" onClick={handleProceedToPayment}>
+                  {isRTL ? 'متابعة للدفع' : 'Proceed to Payment'}
+                  <ArrowIcon className="w-4 h-4 ms-2" />
+                </Button>
+              )}
+
+              {step === 'payment' && (
+                <Button
+                  className="flex-1"
+                  variant="cta"
+                  onClick={handleSubmitPayment}
+                  disabled={
+                    !isReady ||
+                    paymentStatus === 'processing' ||
+                    paymentStatus === 'tokenizing'
+                  }
+                >
+                  {paymentStatus === 'tokenizing' || paymentStatus === 'processing' ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin me-2" />
+                      {isRTL ? 'جاري المعالجة...' : 'Processing...'}
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-4 h-4 me-2" />
+                      {isRTL ? `ادفع ${discountedPrice} ر.س` : `Pay ${discountedPrice} SAR`}
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Close button for result step */}
+        {step === 'result' && paymentStatus !== 'processing' && (
+          <div className="p-4 sm:p-6 border-t-2 border-border flex-shrink-0">
+            <Button className="w-full" onClick={() => onOpenChange(false)}>
+              {paymentStatus === 'succeeded'
+                ? (isRTL ? 'ابدأ التعلم' : 'Start Learning')
+                : (isRTL ? 'إغلاق' : 'Close')}
             </Button>
-          ) : (
-            <Button onClick={handleNext} className="flex-1 btn-cta">
-              {isRTL ? 'التالي' : 'Continue'}
-              <ArrowIcon className="w-4 h-4 ms-2" />
-            </Button>
-          )}
-        </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
