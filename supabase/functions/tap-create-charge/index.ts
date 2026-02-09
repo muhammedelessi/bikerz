@@ -7,7 +7,6 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -34,21 +33,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify user with their token
+    // Verify user with getUser
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(
-      authHeader.replace("Bearer ", "")
-    );
-    if (claimsError || !claimsData?.claims) {
+    const { data: userData, error: userError } = await userClient.auth.getUser();
+    if (userError || !userData?.user) {
+      console.error("Auth error:", userError?.message);
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    const userId = claimsData.claims.sub as string;
-    const userEmail = claimsData.claims.email as string;
+    const userId = userData.user.id;
+    const userEmail = userData.user.email || "";
 
     // ── Parse & validate request body ──
     const body = await req.json();
@@ -59,11 +57,10 @@ Deno.serve(async (req) => {
       customer_name,
       customer_email,
       customer_phone,
-      token_id, // Tap token from Card SDK
+      token_id,
       idempotency_key,
     } = body;
 
-    // Validate required fields
     if (!course_id || !amount || !token_id || !idempotency_key) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: course_id, amount, token_id, idempotency_key" }),
@@ -71,7 +68,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate amount is positive number
     const numericAmount = Number(amount);
     if (isNaN(numericAmount) || numericAmount <= 0 || numericAmount > 100000) {
       return new Response(
@@ -80,7 +76,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate currency
     const allowedCurrencies = ["SAR", "KWD", "USD", "AED", "BHD", "QAR", "OMR", "EGP"];
     if (!allowedCurrencies.includes(currency)) {
       return new Response(
@@ -89,10 +84,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use service role client for DB operations
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // ── Idempotency check: prevent double charges ──
+    // ── Idempotency check ──
     const { data: existingCharge } = await adminClient
       .from("tap_charges")
       .select("id, charge_id, status")
@@ -100,7 +94,6 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existingCharge) {
-      // Return existing charge info instead of creating duplicate
       return new Response(
         JSON.stringify({
           charge_id: existingCharge.charge_id,
@@ -111,7 +104,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Verify course exists and get price ──
+    // ── Verify course exists ──
     const { data: course, error: courseError } = await adminClient
       .from("courses")
       .select("id, price, currency, title")
@@ -125,7 +118,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify amount matches course price (allow for promo discounts but not exceeding)
     if (numericAmount > Number(course.price)) {
       return new Response(
         JSON.stringify({ error: "Amount exceeds course price" }),
@@ -193,9 +185,8 @@ Deno.serve(async (req) => {
         internal_id: chargeRecord.id,
       },
       source: {
-        id: token_id, // The Tap token from Card SDK
+        id: token_id,
       },
-      // Post URL for 3DS redirect-back (stays on same page)
       redirect: {
         url: `${req.headers.get("origin") || "https://bikerz.lovable.app"}/courses/${course_id}?payment=callback`,
       },
@@ -218,7 +209,6 @@ Deno.serve(async (req) => {
     if (!tapResponse.ok) {
       console.error("Tap API error:", JSON.stringify(tapData));
 
-      // Update charge record with failure
       await adminClient
         .from("tap_charges")
         .update({
@@ -237,7 +227,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Update charge record with Tap response ──
+    // ── Update charge record ──
     const chargeStatus = mapTapStatus(tapData.status);
     await adminClient
       .from("tap_charges")
@@ -251,17 +241,15 @@ Deno.serve(async (req) => {
       })
       .eq("id", chargeRecord.id);
 
-    // If charge is immediately captured (no 3DS), enroll user
+    // If captured immediately, enroll user
     if (chargeStatus === "succeeded") {
       await enrollUser(adminClient, userId, course_id);
     }
 
-    // Return client-safe data
     return new Response(
       JSON.stringify({
         charge_id: tapData.id,
         status: chargeStatus,
-        // If 3DS is required, return the redirect URL
         redirect_url: tapData.transaction?.url || null,
         amount: numericAmount,
         currency,
@@ -277,31 +265,20 @@ Deno.serve(async (req) => {
   }
 });
 
-// ── Helper: Map Tap status to our status ──
 function mapTapStatus(tapStatus: string): string {
   switch (tapStatus?.toUpperCase()) {
-    case "CAPTURED":
-      return "succeeded";
-    case "AUTHORIZED":
-      return "processing";
-    case "INITIATED":
-      return "processing";
-    case "FAILED":
-      return "failed";
-    case "CANCELLED":
-    case "ABANDONED":
-      return "cancelled";
-    case "DECLINED":
-      return "failed";
-    default:
-      return "pending";
+    case "CAPTURED": return "succeeded";
+    case "AUTHORIZED": return "processing";
+    case "INITIATED": return "processing";
+    case "FAILED": return "failed";
+    case "CANCELLED": case "ABANDONED": return "cancelled";
+    case "DECLINED": return "failed";
+    default: return "pending";
   }
 }
 
-// ── Helper: Remove sensitive data from Tap response before storing ──
 function sanitizeTapResponse(data: Record<string, unknown>): Record<string, unknown> {
   const sanitized = { ...data };
-  // Remove any card numbers or sensitive tokens
   if (sanitized.source && typeof sanitized.source === "object") {
     const source = { ...(sanitized.source as Record<string, unknown>) };
     delete source.token;
@@ -311,7 +288,6 @@ function sanitizeTapResponse(data: Record<string, unknown>): Record<string, unkn
   return sanitized;
 }
 
-// ── Helper: Enroll user in course after successful payment ──
 async function enrollUser(
   client: ReturnType<typeof createClient>,
   userId: string,

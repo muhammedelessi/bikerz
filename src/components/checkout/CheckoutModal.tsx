@@ -84,11 +84,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Initialize Tap Card SDK when moving to payment step
   useEffect(() => {
     if (step === 'payment' && publicKey && !cardInitializedRef.current) {
-      // Small delay to ensure DOM is ready
+      // Wait for DOM element to be rendered
       const timer = setTimeout(() => {
-        initializeCard('tap-card-container');
-        cardInitializedRef.current = true;
-      }, 300);
+        const container = document.getElementById('tap-card-container');
+        if (container) {
+          console.log('[Checkout] Initializing card SDK...');
+          initializeCard('tap-card-container');
+          cardInitializedRef.current = true;
+        } else {
+          console.error('[Checkout] Card container not found in DOM');
+        }
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, [step, publicKey, initializeCard]);
