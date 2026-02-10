@@ -179,6 +179,54 @@ export type Database = {
         }
         Relationships: []
       }
+      affiliates: {
+        Row: {
+          commission_type: string
+          commission_value: number
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          name_ar: string | null
+          status: string
+          total_commission_earned: number
+          total_conversions: number
+          total_revenue_generated: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          name_ar?: string | null
+          status?: string
+          total_commission_earned?: number
+          total_conversions?: number
+          total_revenue_generated?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          name_ar?: string | null
+          status?: string
+          total_commission_earned?: number
+          total_conversions?: number
+          total_revenue_generated?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       analytics_daily_aggregates: {
         Row: {
           aggregate_date: string
@@ -302,6 +350,180 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "chapters_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_rate_limits: {
+        Row: {
+          attempt_count: number
+          id: string
+          last_attempt_at: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          attempt_count?: number
+          id?: string
+          last_attempt_at?: string
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          attempt_count?: number
+          id?: string
+          last_attempt_at?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      coupon_usage_logs: {
+        Row: {
+          applied_at: string
+          charge_id: string | null
+          coupon_id: string
+          course_id: string | null
+          discount_amount: number
+          failure_reason: string | null
+          final_amount: number
+          id: string
+          order_id: string | null
+          original_amount: number
+          result: string
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string
+          charge_id?: string | null
+          coupon_id: string
+          course_id?: string | null
+          discount_amount?: number
+          failure_reason?: string | null
+          final_amount?: number
+          id?: string
+          order_id?: string | null
+          original_amount?: number
+          result: string
+          user_id: string
+        }
+        Update: {
+          applied_at?: string
+          charge_id?: string | null
+          coupon_id?: string
+          course_id?: string | null
+          discount_amount?: number
+          failure_reason?: string | null
+          final_amount?: number
+          id?: string
+          order_id?: string | null
+          original_amount?: number
+          result?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_usage_logs_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_usage_logs_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          affiliate_id: string | null
+          code: string
+          code_normalized: string
+          course_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          description_ar: string | null
+          expiry_date: string
+          id: string
+          is_deleted: boolean
+          is_global: boolean
+          is_stackable: boolean
+          max_per_user: number
+          max_usage: number
+          minimum_amount: number | null
+          start_date: string
+          status: string
+          type: string
+          updated_at: string
+          used_count: number
+          value: number
+        }
+        Insert: {
+          affiliate_id?: string | null
+          code: string
+          code_normalized?: string
+          course_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          description_ar?: string | null
+          expiry_date: string
+          id?: string
+          is_deleted?: boolean
+          is_global?: boolean
+          is_stackable?: boolean
+          max_per_user?: number
+          max_usage?: number
+          minimum_amount?: number | null
+          start_date?: string
+          status?: string
+          type?: string
+          updated_at?: string
+          used_count?: number
+          value?: number
+        }
+        Update: {
+          affiliate_id?: string | null
+          code?: string
+          code_normalized?: string
+          course_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          description_ar?: string | null
+          expiry_date?: string
+          id?: string
+          is_deleted?: boolean
+          is_global?: boolean
+          is_stackable?: boolean
+          max_per_user?: number
+          max_usage?: number
+          minimum_amount?: number | null
+          start_date?: string
+          status?: string
+          type?: string
+          updated_at?: string
+          used_count?: number
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupons_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupons_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
@@ -2251,7 +2473,37 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_coupon_usage: {
+        Args: {
+          p_charge_id: string
+          p_coupon_id: string
+          p_course_id: string
+          p_discount_amount: number
+          p_final_amount: number
+          p_order_id: string
+          p_original_amount: number
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      validate_and_apply_coupon: {
+        Args: {
+          p_code: string
+          p_course_id?: string
+          p_original_amount?: number
+          p_user_id: string
+        }
+        Returns: {
+          coupon_id: string
+          discount_amount: number
+          discount_type: string
+          discount_value: number
+          error_message: string
+          final_amount: number
+          valid: boolean
+        }[]
+      }
     }
     Enums: {
       app_role:

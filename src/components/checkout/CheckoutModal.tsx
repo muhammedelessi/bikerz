@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useTapPayment } from '@/hooks/useTapPayment';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -65,6 +66,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [step, setStep] = useState<CheckoutStep>('info');
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    coupon_id: string;
+    discount_type: string;
+    discount_value: number;
+    discount_amount: number;
+    final_amount: number;
+  } | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -72,7 +81,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const cardInitializedRef = useRef(false);
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
-  const discountedPrice = promoApplied ? course.price * 0.8 : course.price;
+  const discountedPrice = appliedCoupon ? appliedCoupon.final_amount : course.price;
+  const discountAmount = appliedCoupon ? appliedCoupon.discount_amount : 0;
+  const discountLabel = appliedCoupon
+    ? appliedCoupon.discount_type === 'percentage_discount'
+      ? `-${appliedCoupon.discount_value}%`
+      : `-${appliedCoupon.discount_amount} SAR`
+    : '';
 
   // Pre-fill customer info
   useEffect(() => {
@@ -115,18 +130,32 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setStep('info');
       setPromoCode('');
       setPromoApplied(false);
+      setAppliedCoupon(null);
+      setPromoLoading(false);
       cardInitializedRef.current = false;
       resetPayment();
     }
   }, [open, resetPayment]);
 
-  const handleApplyPromo = () => {
-    const code = promoCode.toLowerCase();
-    if (code === 'bikerz20' || code === 'welcome') {
-      setPromoApplied(true);
-      toast.success(isRTL ? 'تم تطبيق الخصم بنجاح!' : 'Discount applied successfully!');
-    } else {
-      toast.error(isRTL ? 'رمز الخصم غير صالح' : 'Invalid promo code');
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim() || promoLoading) return;
+    setPromoLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('coupon-validate', {
+        body: { code: promoCode.trim(), course_id: course.id, amount: course.price },
+      });
+      if (error) throw error;
+      if (data?.valid) {
+        setPromoApplied(true);
+        setAppliedCoupon(data);
+        toast.success(isRTL ? 'تم تطبيق الخصم بنجاح!' : 'Discount applied successfully!');
+      } else {
+        toast.error(data?.error || (isRTL ? 'رمز الخصم غير صالح' : 'Invalid promo code'));
+      }
+    } catch (err: any) {
+      toast.error(err.message || (isRTL ? 'فشل التحقق من الرمز' : 'Failed to validate code'));
+    } finally {
+      setPromoLoading(false);
     }
   };
 
@@ -145,6 +174,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       currency: 'SAR',
       customerName,
       customerEmail,
+      couponId: appliedCoupon?.coupon_id,
       customerPhone,
     });
   };
@@ -189,8 +219,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <span className="text-lg font-bold text-primary">
                   {discountedPrice} {isRTL ? 'ر.س' : 'SAR'}
                 </span>
-                {promoApplied && (
-                  <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">-20%</span>
+                {promoApplied && discountLabel && (
+                  <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">{discountLabel}</span>
                 )}
               </div>
             </div>

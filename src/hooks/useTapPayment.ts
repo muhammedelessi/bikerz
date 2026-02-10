@@ -11,6 +11,7 @@ interface TapPaymentConfig {
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
+  couponId?: string;
 }
 
 interface UseTapPaymentReturn {
