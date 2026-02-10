@@ -4,9 +4,11 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { Play, Clock, BookOpen, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Play, Clock, BookOpen, ChevronRight, ChevronLeft, Loader2, CheckCircle2, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import heroImage from '@/assets/hero-rider.jpg';
 
@@ -27,47 +29,38 @@ interface CourseWithStats extends Course {
   totalDurationMinutes: number;
 }
 
+interface Enrollment {
+  course_id: string;
+  progress_percentage: number;
+}
+
 const Courses: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
+  const { user } = useAuth();
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
 
   const { data: courses = [], isLoading } = useQuery({
     queryKey: ['courses-with-stats'],
     queryFn: async () => {
-      // Fetch courses with their chapters and lessons to calculate real stats
       const { data: coursesData, error: coursesError } = await supabase
         .from('courses')
         .select(`
-          id,
-          title,
-          title_ar,
-          description,
-          description_ar,
-          thumbnail_url,
-          difficulty_level,
-          price,
-          is_published,
+          id, title, title_ar, description, description_ar,
+          thumbnail_url, difficulty_level, price, is_published,
           chapters (
-            id,
-            is_published,
-            lessons (
-              id,
-              duration_minutes,
-              is_published
-            )
+            id, is_published,
+            lessons ( id, duration_minutes, is_published )
           )
         `)
         .eq('is_published', true)
         .order('created_at', { ascending: true });
-      
+
       if (coursesError) throw coursesError;
 
-      // Calculate real lesson count and duration from actual content
       const coursesWithStats: CourseWithStats[] = (coursesData || []).map((course: any) => {
         let lessonCount = 0;
         let totalDurationMinutes = 0;
-
         (course.chapters || []).forEach((chapter: any) => {
           if (chapter.is_published) {
             (chapter.lessons || []).forEach((lesson: any) => {
@@ -78,7 +71,6 @@ const Courses: React.FC = () => {
             });
           }
         });
-
         return {
           id: course.id,
           title: course.title,
@@ -93,14 +85,37 @@ const Courses: React.FC = () => {
           totalDurationMinutes,
         };
       });
-
       return coursesWithStats;
     },
   });
 
-  const getDifficultyLabel = (level: string) => {
-    const key = `courses.difficulty.${level}` as const;
-    return t(key);
+  // Fetch enrollments for logged-in user
+  const { data: enrollments = [] } = useQuery({
+    queryKey: ['user-enrollments', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('course_enrollments')
+        .select('course_id, progress_percentage')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return (data || []) as Enrollment[];
+    },
+    enabled: !!user,
+  });
+
+  const getEnrollment = (courseId: string) =>
+    enrollments.find(e => e.course_id === courseId);
+
+  const getDifficultyLabel = (level: string) => t(`courses.difficulty.${level}` as const);
+
+  const getDifficultyColor = (level: string) => {
+    switch (level) {
+      case 'beginner': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'intermediate': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'advanced': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      default: return 'bg-primary/20 text-primary border-primary/30';
+    }
   };
 
   const formatDuration = (minutes: number) => {
@@ -114,9 +129,8 @@ const Courses: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="pt-20 sm:pt-24 lg:pt-28">
-        {/* Header */}
         <section className="section-container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -132,14 +146,12 @@ const Courses: React.FC = () => {
             </p>
           </motion.div>
 
-          {/* Loading State */}
           {isLoading && (
             <div className="flex justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
           )}
 
-          {/* Empty State */}
           {!isLoading && courses.length === 0 && (
             <div className="text-center py-16">
               <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
@@ -154,13 +166,14 @@ const Courses: React.FC = () => {
             </div>
           )}
 
-          {/* Courses Grid - Single column on mobile */}
           {!isLoading && courses.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
               {courses.map((course, index) => {
                 const title = isRTL && course.title_ar ? course.title_ar : course.title;
                 const description = isRTL && course.description_ar ? course.description_ar : course.description;
-                
+                const enrollment = getEnrollment(course.id);
+                const isEnrolled = !!enrollment;
+
                 return (
                   <motion.div
                     key={course.id}
@@ -169,7 +182,15 @@ const Courses: React.FC = () => {
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                   >
                     <Link to={`/courses/${course.id}`}>
-                      <div className="group card-premium overflow-hidden transition-all duration-500 hover:border-primary/40">
+                      <div className="group card-premium overflow-hidden transition-all duration-500 hover:border-primary/40 relative">
+                        {/* Enrolled indicator */}
+                        {isEnrolled && (
+                          <div className="absolute top-3 start-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/90 backdrop-blur-sm text-primary-foreground text-xs font-semibold">
+                            <Zap className="w-3 h-3" />
+                            {isRTL ? 'مسجّل' : 'Enrolled'}
+                          </div>
+                        )}
+
                         {/* Image */}
                         <div className="relative h-40 sm:h-48 overflow-hidden">
                           <img
@@ -179,12 +200,12 @@ const Courses: React.FC = () => {
                             loading="lazy"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-                          <div className="absolute top-3 sm:top-4 end-3 sm:end-4">
-                            <span className="px-2.5 sm:px-3 py-1 rounded-full bg-secondary/80 backdrop-blur-sm text-secondary-foreground text-xs font-medium">
+                          <div className="absolute top-3 end-3">
+                            <span className={`px-2.5 py-1 rounded-full backdrop-blur-sm text-xs font-semibold border ${getDifficultyColor(course.difficulty_level)}`}>
                               {getDifficultyLabel(course.difficulty_level)}
                             </span>
                           </div>
-                          <div className="absolute bottom-3 sm:bottom-4 start-3 sm:start-4">
+                          <div className="absolute bottom-3 start-3">
                             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform shadow-glow">
                               <Play className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground ms-0.5" />
                             </div>
@@ -200,7 +221,22 @@ const Courses: React.FC = () => {
                             {description}
                           </p>
 
-                          {/* Meta - Now using real calculated values */}
+                          {/* Enrollment progress */}
+                          {isEnrolled && (
+                            <div className="mb-3">
+                              <div className="flex items-center justify-between text-xs mb-1.5">
+                                <span className="text-muted-foreground">
+                                  {isRTL ? 'التقدم' : 'Progress'}
+                                </span>
+                                <span className="font-semibold text-primary">
+                                  {enrollment.progress_percentage}%
+                                </span>
+                              </div>
+                              <Progress value={enrollment.progress_percentage} className="h-1.5" />
+                            </div>
+                          )}
+
+                          {/* Meta */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                               <div className="flex items-center gap-1.5">
@@ -212,7 +248,14 @@ const Courses: React.FC = () => {
                                 <span>{formatDuration(course.totalDurationMinutes)}</span>
                               </div>
                             </div>
-                            <Chevron className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                            {isEnrolled ? (
+                              <span className="text-xs font-medium text-primary flex items-center gap-1">
+                                {isRTL ? 'أكمل' : 'Continue'}
+                                <Chevron className="w-3.5 h-3.5" />
+                              </span>
+                            ) : (
+                              <Chevron className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                            )}
                           </div>
                         </div>
                       </div>

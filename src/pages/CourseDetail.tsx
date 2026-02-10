@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,25 +11,25 @@ import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import {
   Play,
   Clock,
   BookOpen,
   CheckCircle2,
   Lock,
-  User,
-  Star,
   ChevronLeft,
   ChevronRight,
-  FileText,
   Video,
   AlertCircle,
   ShoppingCart,
+  Target,
+  Zap,
+  Trophy,
+  BarChart3,
+  Users,
+  ArrowRight,
+  ArrowLeft,
+  Layers,
+  ClipboardList,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.jpg';
@@ -77,6 +77,7 @@ interface Course {
 interface LessonProgress {
   lesson_id: string;
   is_completed: boolean;
+  watch_time_seconds: number | null;
 }
 
 const CourseDetail: React.FC = () => {
@@ -86,7 +87,19 @@ const CourseDetail: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
+  const ForwardIcon = isRTL ? ArrowLeft : ArrowRight;
   const [showCheckout, setShowCheckout] = useState(false);
+  const [showStickyHeader, setShowStickyHeader] = useState(false);
+  const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
+
+  // Scroll-based sticky header
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowStickyHeader(window.scrollY > 350);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Fetch course details
   const { data: course, isLoading: courseLoading } = useQuery({
@@ -97,7 +110,6 @@ const CourseDetail: React.FC = () => {
         .select('*')
         .eq('id', id)
         .maybeSingle();
-
       if (error) throw error;
       return data as Course | null;
     },
@@ -113,10 +125,8 @@ const CourseDetail: React.FC = () => {
         .select('*')
         .eq('course_id', id)
         .order('position', { ascending: true });
-
       if (chaptersError) throw chaptersError;
 
-      // Fetch lessons for each chapter
       const chaptersWithLessons = await Promise.all(
         (chaptersData || []).map(async (chapter) => {
           const { data: lessons, error: lessonsError } = await supabase
@@ -124,16 +134,10 @@ const CourseDetail: React.FC = () => {
             .select('*')
             .eq('chapter_id', chapter.id)
             .order('position', { ascending: true });
-
           if (lessonsError) throw lessonsError;
-
-          return {
-            ...chapter,
-            lessons: lessons || [],
-          } as Chapter;
+          return { ...chapter, lessons: lessons || [] } as Chapter;
         })
       );
-
       return chaptersWithLessons;
     },
     enabled: !!id,
@@ -150,7 +154,6 @@ const CourseDetail: React.FC = () => {
         .eq('course_id', id)
         .eq('user_id', user.id)
         .maybeSingle();
-
       if (error) throw error;
       return data;
     },
@@ -162,16 +165,13 @@ const CourseDetail: React.FC = () => {
     queryKey: ['lesson-progress', id, user?.id],
     queryFn: async () => {
       if (!user || !chapters.length) return [];
-      
       const lessonIds = chapters.flatMap(ch => ch.lessons.map(l => l.id));
       if (!lessonIds.length) return [];
-
       const { data, error } = await supabase
         .from('lesson_progress')
-        .select('lesson_id, is_completed')
+        .select('lesson_id, is_completed, watch_time_seconds')
         .eq('user_id', user.id)
         .in('lesson_id', lessonIds);
-
       if (error) throw error;
       return (data || []) as LessonProgress[];
     },
@@ -182,16 +182,11 @@ const CourseDetail: React.FC = () => {
   const enrollMutation = useMutation({
     mutationFn: async () => {
       if (!user || !id) throw new Error('User not authenticated');
-      
       const { data, error } = await supabase
         .from('course_enrollments')
-        .insert({
-          user_id: user.id,
-          course_id: id,
-        })
+        .insert({ user_id: user.id, course_id: id })
         .select()
         .single();
-
       if (error) throw error;
       return data;
     },
@@ -204,16 +199,43 @@ const CourseDetail: React.FC = () => {
     },
   });
 
-  // Calculate progress
+  // Calculations
   const totalLessons = chapters.reduce((acc, ch) => acc + ch.lessons.length, 0);
   const completedLessons = lessonProgress.filter(lp => lp.is_completed).length;
   const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
-
   const isEnrolled = !!enrollment;
   const isLoading = courseLoading || chaptersLoading;
 
-  const isLessonCompleted = (lessonId: string) => {
-    return lessonProgress.some(lp => lp.lesson_id === lessonId && lp.is_completed);
+  // Dynamic estimated completion time
+  const totalDurationMinutes = useMemo(() => 
+    chapters.reduce((acc, ch) => 
+      acc + ch.lessons.reduce((la, l) => la + (l.duration_minutes || 5), 0), 0
+    ), [chapters]);
+
+  const remainingMinutes = useMemo(() => 
+    chapters.reduce((acc, ch) => 
+      acc + ch.lessons
+        .filter(l => !lessonProgress.some(lp => lp.lesson_id === l.id && lp.is_completed))
+        .reduce((la, l) => la + (l.duration_minutes || 5), 0), 0
+    ), [chapters, lessonProgress]);
+
+  const formatDuration = (mins: number) => {
+    if (mins < 60) return isRTL ? `${mins} دقيقة` : `${mins} min`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (m === 0) return isRTL ? `${h} ساعة` : `${h}h`;
+    return isRTL ? `${h} ساعة ${m} دقيقة` : `${h}h ${m}m`;
+  };
+
+  const isLessonCompleted = (lessonId: string) =>
+    lessonProgress.some(lp => lp.lesson_id === lessonId && lp.is_completed);
+
+  const getLessonState = (lessonId: string): 'completed' | 'in_progress' | 'not_started' => {
+    const progress = lessonProgress.find(lp => lp.lesson_id === lessonId);
+    if (!progress) return 'not_started';
+    if (progress.is_completed) return 'completed';
+    if ((progress.watch_time_seconds || 0) > 0) return 'in_progress';
+    return 'not_started';
   };
 
   const isLessonLocked = (lesson: Lesson, chapter: Chapter) => {
@@ -221,9 +243,46 @@ const CourseDetail: React.FC = () => {
     return false;
   };
 
-  const getDifficultyLabel = (level: string) => {
-    const key = `courses.difficulty.${level}` as const;
-    return t(key);
+  // Chapter progress
+  const getChapterProgress = (chapter: Chapter) => {
+    if (chapter.lessons.length === 0) return 0;
+    const completed = chapter.lessons.filter(l => isLessonCompleted(l.id)).length;
+    return Math.round((completed / chapter.lessons.length) * 100);
+  };
+
+  const getChapterDuration = (chapter: Chapter) => 
+    chapter.lessons.reduce((acc, l) => acc + (l.duration_minutes || 5), 0);
+
+  // Smart resume: find the best lesson to continue from
+  const resumeLesson = useMemo(() => {
+    const allLessons = chapters.flatMap(ch => ch.lessons);
+    // Priority 1: In-progress lesson (has watch time but not completed)
+    const inProgress = allLessons.find(l => {
+      const p = lessonProgress.find(lp => lp.lesson_id === l.id);
+      return p && !p.is_completed && (p.watch_time_seconds || 0) > 0;
+    });
+    if (inProgress) return inProgress;
+    // Priority 2: First not-started lesson
+    const nextLesson = allLessons.find(l => !isLessonCompleted(l.id));
+    return nextLesson || allLessons[0];
+  }, [chapters, lessonProgress]);
+
+  const getDifficultyColor = (level: string) => {
+    switch (level) {
+      case 'beginner': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'intermediate': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'advanced': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      default: return 'bg-primary/20 text-primary border-primary/30';
+    }
+  };
+
+  const toggleChapter = (chapterId: string) => {
+    setExpandedChapters(prev => {
+      const next = new Set(prev);
+      if (next.has(chapterId)) next.delete(chapterId);
+      else next.add(chapterId);
+      return next;
+    });
   };
 
   if (isLoading) {
@@ -262,147 +321,279 @@ const CourseDetail: React.FC = () => {
     );
   }
 
+  const courseTitle = isRTL && course.title_ar ? course.title_ar : course.title;
+  const courseDescription = isRTL && course.description_ar ? course.description_ar : course.description;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
+      {/* Sticky Header — appears on scroll */}
+      <AnimatePresence>
+        {showStickyHeader && (
+          <motion.header
+            initial={{ y: -80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -80, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed top-0 inset-x-0 z-[60] bg-card/95 backdrop-blur-xl border-b border-border safe-area-top"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <Link to="/courses" className="text-muted-foreground hover:text-foreground flex-shrink-0">
+                  <BackIcon className="w-5 h-5" />
+                </Link>
+                <h1 className="text-sm sm:text-base font-semibold text-foreground truncate">
+                  {courseTitle}
+                </h1>
+              </div>
+
+              <div className="flex items-center gap-3 flex-shrink-0">
+                {isEnrolled && (
+                  <div className="hidden sm:flex items-center gap-2">
+                    <Progress value={progressPercentage} className="w-20 h-2" />
+                    <span className="text-xs text-muted-foreground font-medium">{progressPercentage}%</span>
+                  </div>
+                )}
+                {isEnrolled && resumeLesson ? (
+                  <Button size="sm" className="btn-cta h-9 text-sm" asChild>
+                    <Link to={`/courses/${id}/lessons/${resumeLesson.id}`}>
+                      <Play className="w-3.5 h-3.5 me-1.5" />
+                      {isRTL ? 'أكمل التعلم' : 'Resume'}
+                    </Link>
+                  </Button>
+                ) : !isEnrolled && user ? (
+                  course.price === 0 ? (
+                    <Button size="sm" className="btn-cta h-9 text-sm" onClick={() => enrollMutation.mutate()} disabled={enrollMutation.isPending}>
+                      {isRTL ? 'سجّل مجاناً' : 'Enroll Free'}
+                    </Button>
+                  ) : (
+                    <Button size="sm" className="btn-cta h-9 text-sm" onClick={() => setShowCheckout(true)}>
+                      {isRTL ? 'اشترِ الآن' : 'Buy Now'}
+                    </Button>
+                  )
+                ) : !user ? (
+                  <Button size="sm" className="btn-cta h-9 text-sm" asChild>
+                    <Link to="/login">{isRTL ? 'تسجيل الدخول' : 'Login'}</Link>
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          </motion.header>
+        )}
+      </AnimatePresence>
+
       <main className="pt-24">
         {/* Hero Section */}
-        <section className="relative">
-          <div className="absolute inset-0 h-80 overflow-hidden">
+        <section className="relative overflow-hidden">
+          <div className="absolute inset-0 h-[420px] sm:h-[480px]">
             <img
               src={course.thumbnail_url || heroImage}
-              alt={isRTL && course.title_ar ? course.title_ar : course.title}
+              alt={courseTitle}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/75 to-background" />
           </div>
 
-          <div className="section-container relative z-10">
-            {/* Back Link */}
-            <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-6">
-              <BackIcon className="w-5 h-5 me-1" />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-8 pb-12">
+            {/* Back link */}
+            <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-8 text-sm">
+              <BackIcon className="w-4 h-4 me-1" />
               {t('courses.backToCourses')}
             </Link>
 
-            <div className="grid lg:grid-cols-3 gap-8">
-              {/* Course Info */}
-              <div className="lg:col-span-2">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <div className="flex flex-wrap gap-3 mb-4">
-                    <span className="px-3 py-1 rounded-full bg-secondary/80 text-secondary-foreground text-sm">
-                      {getDifficultyLabel(course.difficulty_level)}
+            <div className="grid lg:grid-cols-5 gap-8 lg:gap-12">
+              {/* Left: Course Info (3 cols) */}
+              <div className="lg:col-span-3">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                  {/* Badges */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getDifficultyColor(course.difficulty_level)}`}>
+                      {t(`courses.difficulty.${course.difficulty_level}`)}
                     </span>
                     {course.price === 0 && (
-                      <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-sm font-medium">
+                      <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold border border-primary/30">
                         {t('common.free')}
                       </span>
                     )}
                   </div>
 
-                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-                    {isRTL && course.title_ar ? course.title_ar : course.title}
+                  {/* Title */}
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-foreground mb-4 leading-tight">
+                    {courseTitle}
                   </h1>
 
-                  <p className="text-lg text-muted-foreground mb-6">
-                    {isRTL && course.description_ar ? course.description_ar : course.description}
-                  </p>
+                  {/* Description as course story */}
+                  {courseDescription && (
+                    <p className="text-base sm:text-lg text-muted-foreground mb-8 leading-relaxed max-w-2xl">
+                      {courseDescription}
+                    </p>
+                  )}
 
-                  <div className="flex flex-wrap items-center gap-6 text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="w-5 h-5" />
-                      <span>{totalLessons} {t('courses.lesson')}</span>
-                    </div>
-                    {course.duration_hours && (
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-5 h-5" />
-                        <span>{course.duration_hours} {t('courses.hours')}</span>
+                  {/* Stats Row */}
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
+                    <div className="flex items-center gap-2 text-foreground">
+                      <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+                        <BookOpen className="w-4 h-4 text-primary" />
                       </div>
-                    )}
+                      <div>
+                        <span className="font-semibold">{totalLessons}</span>
+                        <span className="text-muted-foreground ms-1">{isRTL ? 'درس' : 'lessons'}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-foreground">
+                      <div className="w-8 h-8 rounded-lg bg-secondary/30 flex items-center justify-center">
+                        <Clock className="w-4 h-4 text-secondary-foreground" />
+                      </div>
+                      <div>
+                        <span className="font-semibold">{formatDuration(totalDurationMinutes)}</span>
+                        <span className="text-muted-foreground ms-1">{isRTL ? 'إجمالي' : 'total'}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-foreground">
+                      <div className="w-8 h-8 rounded-lg bg-accent/30 flex items-center justify-center">
+                        <Layers className="w-4 h-4 text-accent-foreground" />
+                      </div>
+                      <div>
+                        <span className="font-semibold">{chapters.length}</span>
+                        <span className="text-muted-foreground ms-1">{isRTL ? 'فصول' : 'chapters'}</span>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               </div>
 
-              {/* Enrollment Card */}
-              <div className="lg:col-span-1">
+              {/* Right: Enrollment Card (2 cols, sticky) */}
+              <div className="lg:col-span-2">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
-                  className="card-premium p-6 sticky top-28"
+                  className="card-premium p-6 lg:sticky lg:top-28"
                 >
                   {isEnrolled ? (
-                    <>
-                      <div className="flex items-center gap-2 text-primary mb-4">
-                        <CheckCircle2 className="w-5 h-5" />
-                        <span className="font-medium">{t('courses.enrolled')}</span>
-                      </div>
-                      
-                      <div className="mb-4">
-                        <div className="flex justify-between text-sm mb-2">
-                          <span className="text-muted-foreground">{t('dashboard.progress')}</span>
-                          <span className="text-foreground font-medium">{progressPercentage}%</span>
+                    <div className="space-y-5">
+                      {/* Progress ring */}
+                      <div className="flex items-center gap-4">
+                        <div className="relative w-16 h-16 flex-shrink-0">
+                          <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+                            <circle cx="32" cy="32" r="28" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
+                            <circle
+                              cx="32" cy="32" r="28" fill="none"
+                              stroke="hsl(var(--primary))" strokeWidth="4"
+                              strokeLinecap="round"
+                              strokeDasharray={`${2 * Math.PI * 28}`}
+                              strokeDashoffset={`${2 * Math.PI * 28 * (1 - progressPercentage / 100)}`}
+                              className="transition-all duration-700"
+                            />
+                          </svg>
+                          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-foreground">
+                            {progressPercentage}%
+                          </span>
                         </div>
-                        <Progress value={progressPercentage} className="h-2" />
+                        <div>
+                          <div className="flex items-center gap-2 text-primary mb-1">
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span className="font-semibold text-sm">{isRTL ? 'مسجّل' : 'Enrolled'}</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {completedLessons} / {totalLessons} {isRTL ? 'مكتمل' : 'completed'}
+                          </p>
+                        </div>
                       </div>
 
-                      <p className="text-sm text-muted-foreground mb-4">
-                        {completedLessons} / {totalLessons} {t('courses.lessonsCompleted')}
-                      </p>
+                      {/* Remaining time */}
+                      {remainingMinutes > 0 && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 text-sm">
+                          <Clock className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">
+                            {isRTL ? `${formatDuration(remainingMinutes)} متبقية` : `${formatDuration(remainingMinutes)} remaining`}
+                          </span>
+                        </div>
+                      )}
 
-                      <Button className="w-full btn-cta" asChild>
-                        <Link to={`/courses/${id}/learn`}>
-                          <Play className="w-4 h-4 me-2" />
-                          {t('courses.continueLearning')}
-                        </Link>
-                      </Button>
-                    </>
+                      {/* Smart Resume Button */}
+                      {resumeLesson && (
+                        <Button className="w-full btn-cta h-12 text-base" asChild>
+                          <Link to={`/courses/${id}/lessons/${resumeLesson.id}`}>
+                            <Play className="w-5 h-5 me-2" />
+                            {isRTL ? 'أكمل التعلم' : 'Resume Learning'}
+                          </Link>
+                        </Button>
+                      )}
+
+                      {progressPercentage === 100 && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20">
+                          <Trophy className="w-5 h-5 text-primary" />
+                          <span className="text-sm font-medium text-primary">
+                            {isRTL ? '🎉 أكملت الدورة!' : '🎉 Course completed!'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   ) : (
-                    <>
-                      <div className="text-center mb-6">
-                        <span className="text-4xl font-bold text-foreground">
-                          {course.price === 0 
+                    <div className="space-y-5">
+                      {/* Price */}
+                      <div className="text-center py-2">
+                        <span className="text-4xl font-black text-foreground">
+                          {course.price === 0
                             ? t('common.free')
                             : `${course.price} ${t('common.sar')}`}
                         </span>
                       </div>
 
+                      {/* CTA */}
                       {user ? (
                         course.price === 0 ? (
-                          <Button 
-                            className="w-full btn-cta" 
+                          <Button
+                            className="w-full btn-cta h-12 text-base"
                             onClick={() => enrollMutation.mutate()}
                             disabled={enrollMutation.isPending}
                           >
-                            {enrollMutation.isPending 
+                            <Zap className="w-5 h-5 me-2" />
+                            {enrollMutation.isPending
                               ? t('courses.enrolling')
                               : t('courses.enrollForFree')}
                           </Button>
                         ) : (
-                          <Button 
-                            className="w-full btn-cta" 
+                          <Button
+                            className="w-full btn-cta h-12 text-base"
                             onClick={() => setShowCheckout(true)}
                           >
-                            <ShoppingCart className="w-4 h-4 me-2" />
+                            <ShoppingCart className="w-5 h-5 me-2" />
                             {t('courses.buyNow')}
                           </Button>
                         )
                       ) : (
-                        <Button className="w-full btn-cta" asChild>
+                        <Button className="w-full btn-cta h-12 text-base" asChild>
                           <Link to="/login">
                             {t('courses.loginToPurchase')}
                           </Link>
                         </Button>
                       )}
 
-                      <p className="text-xs text-muted-foreground text-center mt-4">
-                        {t('courses.fullAccess')}
-                      </p>
-                    </>
+                      {/* Course includes */}
+                      <div className="space-y-3 pt-2">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          {isRTL ? 'يشمل الاشتراك' : 'This course includes'}
+                        </p>
+                        <div className="space-y-2.5">
+                          {[
+                            { icon: Video, text: isRTL ? `${totalLessons} درس فيديو` : `${totalLessons} video lessons` },
+                            { icon: Clock, text: isRTL ? `${formatDuration(totalDurationMinutes)} محتوى` : `${formatDuration(totalDurationMinutes)} of content` },
+                            { icon: ClipboardList, text: isRTL ? 'اختبارات تفاعلية' : 'Interactive quizzes' },
+                            { icon: Trophy, text: isRTL ? 'شهادة إتمام' : 'Completion certificate' },
+                          ].map(({ icon: Icon, text }, i) => (
+                            <div key={i} className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                              <Icon className="w-4 h-4 text-primary/70 flex-shrink-0" />
+                              <span>{text}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </motion.div>
               </div>
@@ -410,104 +601,219 @@ const CourseDetail: React.FC = () => {
           </div>
         </section>
 
-        {/* Course Content */}
-        <section className="section-container">
+        {/* What You'll Learn */}
+        {chapters.length > 0 && (
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+                  <Target className="w-5 h-5 text-primary" />
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                  {isRTL ? 'ماذا ستتعلم' : 'What You\'ll Learn'}
+                </h2>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-3">
+                {chapters.slice(0, 6).map((chapter) => {
+                  const chTitle = isRTL && chapter.title_ar ? chapter.title_ar : chapter.title;
+                  const chDesc = isRTL && chapter.description_ar ? chapter.description_ar : chapter.description;
+                  return (
+                    <div key={chapter.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                      <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">{chTitle}</p>
+                        {chDesc && (
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{chDesc}</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </section>
+        )}
+
+        {/* Chapter Roadmap Timeline */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
           >
-            <h2 className="text-2xl font-bold text-foreground mb-6">
-              {t('courses.courseContent')}
-            </h2>
-
-            <div className="text-sm text-muted-foreground mb-4">
-              {chapters.length} {t('courses.chapters')} • {totalLessons} {t('courses.lessons')}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-secondary/30 flex items-center justify-center">
+                  <BarChart3 className="w-5 h-5 text-secondary-foreground" />
+                </div>
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                    {isRTL ? 'خطة التعلم' : 'Learning Roadmap'}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {chapters.length} {isRTL ? 'فصول' : 'chapters'} • {totalLessons} {isRTL ? 'دروس' : 'lessons'}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {chapters.length > 0 ? (
-              <Accordion type="multiple" className="space-y-3">
-                {chapters.map((chapter, chapterIndex) => (
-                  <AccordionItem
-                    key={chapter.id}
-                    value={chapter.id}
-                    className="card-premium border-border/50 overflow-hidden"
-                  >
-                    <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/30 transition-colors">
-                      <div className="flex items-center gap-4 text-start">
-                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-bold">
-                          {chapterIndex + 1}
-                        </span>
-                        <div>
-                          <h3 className="font-semibold text-foreground">
-                            {isRTL && chapter.title_ar ? chapter.title_ar : chapter.title}
-                          </h3>
-                          <p className="text-sm text-muted-foreground mt-0.5">
-                            {chapter.lessons.length} {t('courses.lessons')}
-                            {chapter.is_free && (
-                              <span className="ms-2 text-primary">
-                                ({t('common.free')})
-                              </span>
+              <div className="relative">
+                {/* Vertical timeline line */}
+                <div className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-4 bottom-4 w-0.5 bg-border`} />
+
+                <div className="space-y-6">
+                  {chapters.map((chapter, chapterIndex) => {
+                    const chTitle = isRTL && chapter.title_ar ? chapter.title_ar : chapter.title;
+                    const chProgress = getChapterProgress(chapter);
+                    const chDuration = getChapterDuration(chapter);
+                    const isComplete = chProgress === 100;
+                    const isExpanded = expandedChapters.has(chapter.id);
+                    const completedInChapter = chapter.lessons.filter(l => isLessonCompleted(l.id)).length;
+
+                    return (
+                      <motion.div
+                        key={chapter.id}
+                        initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: chapterIndex * 0.08 }}
+                        className="relative"
+                      >
+                        <div className={`flex gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                          {/* Timeline node */}
+                          <div className={`relative z-10 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${
+                            isComplete
+                              ? 'bg-primary border-primary text-primary-foreground'
+                              : chProgress > 0
+                                ? 'bg-primary/20 border-primary/50 text-primary'
+                                : 'bg-muted border-border text-muted-foreground'
+                          }`}>
+                            {isComplete ? (
+                              <CheckCircle2 className="w-4 h-4" />
+                            ) : (
+                              chapterIndex + 1
                             )}
-                          </p>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-0 pb-0">
-                      <div className="border-t border-border/50">
-                        {chapter.lessons.map((lesson, lessonIndex) => {
-                          const locked = isLessonLocked(lesson, chapter);
-                          const completed = isLessonCompleted(lesson.id);
+                          </div>
 
-                          return (
-                            <div
-                              key={lesson.id}
-                              className={`flex items-center gap-4 px-6 py-4 border-b border-border/30 last:border-b-0 transition-colors ${
-                                locked 
-                                  ? 'opacity-60' 
-                                  : 'hover:bg-muted/20 cursor-pointer'
-                              }`}
+                          {/* Chapter content */}
+                          <div className="flex-1 min-w-0">
+                            <button
+                              onClick={() => toggleChapter(chapter.id)}
+                              className="w-full text-start card-premium p-4 sm:p-5 transition-colors hover:border-primary/30"
                             >
-                              <div className="flex-shrink-0">
-                                {locked ? (
-                                  <Lock className="w-5 h-5 text-muted-foreground" />
-                                ) : completed ? (
-                                  <CheckCircle2 className="w-5 h-5 text-primary" />
-                                ) : (
-                                  <Play className="w-5 h-5 text-muted-foreground" />
-                                )}
-                              </div>
+                              <div className="flex items-start justify-between gap-3 mb-3">
+                                <div className="min-w-0">
+                                  <h3 className="font-semibold text-foreground text-base sm:text-lg">
+                                    {chTitle}
+                                  </h3>
+                                  <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <BookOpen className="w-3.5 h-3.5" />
+                                      {chapter.lessons.length} {isRTL ? 'دروس' : 'lessons'}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="w-3.5 h-3.5" />
+                                      {formatDuration(chDuration)}
+                                    </span>
+                                    {chapter.is_free && (
+                                      <span className="text-primary font-medium">
+                                        {isRTL ? 'مجاني' : 'Free'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
 
-                              <div className="flex-grow min-w-0">
-                                <Link
-                                  to={locked ? '#' : `/courses/${id}/lessons/${lesson.id}`}
-                                  className={locked ? 'pointer-events-none' : ''}
-                                >
-                                  <h4 className="font-medium text-foreground truncate">
-                                    {lessonIndex + 1}. {isRTL && lesson.title_ar ? lesson.title_ar : lesson.title}
-                                  </h4>
-                                </Link>
-                                {lesson.is_free && !isEnrolled && (
-                                  <span className="text-xs text-primary">
-                                    {isRTL ? 'معاينة مجانية' : 'Free Preview'}
+                                {/* Progress badge */}
+                                {isEnrolled && (
+                                  <span className={`text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0 ${
+                                    isComplete
+                                      ? 'bg-primary/20 text-primary'
+                                      : chProgress > 0
+                                        ? 'bg-muted text-foreground'
+                                        : 'bg-muted/50 text-muted-foreground'
+                                  }`}>
+                                    {completedInChapter}/{chapter.lessons.length}
                                   </span>
                                 )}
                               </div>
 
-                              <div className="flex-shrink-0 flex items-center gap-3 text-sm text-muted-foreground">
-                                {lesson.video_url && <Video className="w-4 h-4" />}
-                                {lesson.duration_minutes && (
-                                  <span>{lesson.duration_minutes} {isRTL ? 'د' : 'min'}</span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+                              {/* Progress bar */}
+                              {isEnrolled && chapter.lessons.length > 0 && (
+                                <Progress value={chProgress} className="h-1.5" />
+                              )}
+                            </button>
+
+                            {/* Expanded lessons */}
+                            <AnimatePresence>
+                              {isExpanded && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.25 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="mt-2 ms-0 space-y-1">
+                                    {chapter.lessons.map((lesson) => {
+                                      const locked = isLessonLocked(lesson, chapter);
+                                      const state = getLessonState(lesson.id);
+                                      const lTitle = isRTL && lesson.title_ar ? lesson.title_ar : lesson.title;
+
+                                      return (
+                                        <Link
+                                          key={lesson.id}
+                                          to={locked ? '#' : `/courses/${id}/lessons/${lesson.id}`}
+                                          className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-colors ${
+                                            locked
+                                              ? 'opacity-50 cursor-not-allowed'
+                                              : 'hover:bg-muted/50'
+                                          }`}
+                                          onClick={e => locked && e.preventDefault()}
+                                        >
+                                          <div className="flex-shrink-0">
+                                            {locked ? (
+                                              <Lock className="w-4 h-4 text-muted-foreground" />
+                                            ) : state === 'completed' ? (
+                                              <CheckCircle2 className="w-4 h-4 text-primary" />
+                                            ) : state === 'in_progress' ? (
+                                              <div className="w-4 h-4 rounded-full border-2 border-primary bg-primary/20" />
+                                            ) : (
+                                              <Play className="w-4 h-4 text-muted-foreground" />
+                                            )}
+                                          </div>
+                                          <span className="flex-1 truncate text-foreground">{lTitle}</span>
+                                          {lesson.duration_minutes && (
+                                            <span className="text-xs text-muted-foreground flex-shrink-0">
+                                              {lesson.duration_minutes}{isRTL ? 'د' : 'm'}
+                                            </span>
+                                          )}
+                                          {lesson.is_free && !isEnrolled && (
+                                            <span className="text-xs text-primary font-medium flex-shrink-0">
+                                              {isRTL ? 'مجاني' : 'Free'}
+                                            </span>
+                                          )}
+                                        </Link>
+                                      );
+                                    })}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
             ) : (
               <div className="card-premium p-12 text-center">
                 <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
