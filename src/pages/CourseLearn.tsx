@@ -42,6 +42,7 @@ import { toast } from 'sonner';
 import bikerzLogo from '@/assets/bikerz-logo.png';
 import ChapterTest from '@/components/course/ChapterTest';
 import VideoPlayer from '@/components/course/VideoPlayer';
+import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';
 import LessonDiscussion from '@/components/course/LessonDiscussion';
 import LessonQuiz from '@/components/course/LessonQuiz';
 import ReinforcementSuggestion from '@/components/learning/ReinforcementSuggestion';
@@ -54,6 +55,7 @@ interface Lesson {
   description: string | null;
   description_ar: string | null;
   video_url: string | null;
+  video_provider: string | null;
   duration_minutes: number | null;
   position: number;
   is_published: boolean;
@@ -664,8 +666,21 @@ const CourseLearn: React.FC = () => {
                           title={currentLesson.title}
                         />
                       </div>
+                    ) : currentLesson.video_provider === 'bunny' ? (
+                      // Bunny Stream Embed Player (iframe-based, no proxy needed)
+                      <BunnyVideoEmbed
+                        videoUrl={currentLesson.video_url}
+                        title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
+                        initialTime={getSavedWatchTime(currentLesson.id)}
+                        onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
+                        onEnded={() => {
+                          if (!isLessonCompleted(currentLesson.id)) {
+                            completeLessonMutation.mutate(currentLesson.id);
+                          }
+                        }}
+                      />
                     ) : (
-                      // Custom Video Player for direct video URLs
+                      // Native Video Player for direct video URLs (Supabase storage, MP4, etc.)
                       <VideoPlayer
                         src={currentLesson.video_url}
                         title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
