@@ -79,7 +79,6 @@ interface Course {
   duration_hours: number | null;
   total_lessons: number | null;
   is_published: boolean;
-  certificate_enabled: boolean;
   created_at: string;
   instructor_id: string | null;
 }
@@ -109,7 +108,6 @@ const AdminCourses: React.FC = () => {
     difficulty_level: 'beginner',
     duration_hours: 0,
     is_published: false,
-    certificate_enabled: true,
   });
 
   // Fetch courses
@@ -140,7 +138,6 @@ const AdminCourses: React.FC = () => {
         difficulty_level: data.difficulty_level,
         duration_hours: data.duration_hours || null,
         is_published: data.is_published,
-        certificate_enabled: data.certificate_enabled,
         status: data.is_published ? 'published' : 'draft',
       });
       if (error) throw error;
@@ -172,7 +169,6 @@ const AdminCourses: React.FC = () => {
           difficulty_level: data.difficulty_level,
           duration_hours: data.duration_hours || null,
           is_published: data.is_published,
-          certificate_enabled: data.certificate_enabled,
           status: data.is_published ? 'published' : 'draft',
         })
         .eq('id', id);
@@ -217,7 +213,6 @@ const AdminCourses: React.FC = () => {
       difficulty_level: 'beginner',
       duration_hours: 0,
       is_published: false,
-      certificate_enabled: true,
     });
   };
 
@@ -283,7 +278,6 @@ const AdminCourses: React.FC = () => {
       difficulty_level: course.difficulty_level,
       duration_hours: course.duration_hours || 0,
       is_published: Boolean(course.is_published),
-      certificate_enabled: course.certificate_enabled ?? true,
     });
     setEditingCourse(course);
   };
@@ -714,16 +708,6 @@ const AdminCourses: React.FC = () => {
                 />
                 <Label htmlFor="is_published" className="cursor-pointer">
                   {isRTL ? 'نشر الدورة' : 'Publish Course'}
-                </Label>
-              </div>
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="certificate_enabled"
-                  checked={Boolean(formData.certificate_enabled)}
-                  onCheckedChange={(checked) => setFormData({ ...formData, certificate_enabled: checked })}
-                />
-                <Label htmlFor="certificate_enabled" className="cursor-pointer">
-                  {isRTL ? 'تفعيل الشهادة' : 'Enable Certificate'}
                 </Label>
               </div>
             </div>

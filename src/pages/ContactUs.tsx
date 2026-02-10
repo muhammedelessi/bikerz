@@ -28,7 +28,7 @@ const ContactUs: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    category: 'other' as 'technical' | 'billing' | 'course_content' | 'account' | 'refund' | 'certificate' | 'other',
+    category: 'other' as 'technical' | 'billing' | 'course_content' | 'account' | 'refund' | 'other',
     subject: '',
     message: ''
   });
@@ -41,7 +41,6 @@ const ContactUs: React.FC = () => {
     { value: 'course_content', icon: BookOpen, label_en: 'Course Content', label_ar: 'محتوى الدورة' },
     { value: 'account', icon: User, label_en: 'Account Issues', label_ar: 'مشاكل الحساب' },
     { value: 'refund', icon: RefreshCw, label_en: 'Refund Request', label_ar: 'طلب استرداد' },
-    { value: 'certificate', icon: Award, label_en: 'Certificate', label_ar: 'الشهادة' },
     { value: 'other', icon: MoreHorizontal, label_en: 'Other', label_ar: 'أخرى' }
   ];
 

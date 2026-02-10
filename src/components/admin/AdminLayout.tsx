@@ -34,6 +34,7 @@ import {
   MessageSquare,
   MessagesSquare,
   HelpCircle,
+  Tag,
 } from 'lucide-react';
 import bikerzLogo from '@/assets/bikerz-logo.png';
 
@@ -55,6 +56,7 @@ const navItems: NavItem[] = [
   { icon: Users, labelEn: 'Users', labelAr: 'المستخدمين', href: '/admin/users' },
   { icon: GraduationCap, labelEn: 'Instructors', labelAr: 'المدربين', href: '/admin/instructors' },
   { icon: CreditCard, labelEn: 'Payments', labelAr: 'المدفوعات', href: '/admin/payments' },
+  { icon: Tag, labelEn: 'Coupons', labelAr: 'الكوبونات', href: '/admin/coupons' },
   { icon: BarChart3, labelEn: 'Analytics', labelAr: 'التحليلات', href: '/admin/analytics' },
   { icon: FileText, labelEn: 'Content', labelAr: 'المحتوى', href: '/admin/content' },
   { icon: MessagesSquare, labelEn: 'Discussions', labelAr: 'النقاشات', href: '/admin/discussions' },
