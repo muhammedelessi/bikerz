@@ -326,6 +326,7 @@ serve(async (req) => {
             width: video.width,
             height: video.height,
             availableResolutions: video.availableResolutions?.split(',') || [],
+            libraryId: bunnyLibraryId,
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
