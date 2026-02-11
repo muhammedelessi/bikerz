@@ -16,7 +16,8 @@ import {
   X,
   Gift,
   Sparkles,
-  Camera
+  Camera,
+  Check
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -60,6 +61,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
   const [ridingYears, setRidingYears] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [couponCopied, setCouponCopied] = useState(false);
 
   // Pre-fill with existing data if available
   useEffect(() => {
@@ -370,13 +372,13 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
             </div>
             
             <h3 className="text-xl font-bold mb-2">
-              {isRTL ? 'رائع! أنت جاهز تقريباً' : 'Awesome! You\'re almost ready'}
+              {isRTL ? '🎉 رائع! ملفك الشخصي مكتمل' : '🎉 Awesome! Profile Complete'}
             </h3>
             
             <p className="text-muted-foreground mb-6">
               {isRTL 
-                ? 'أكمل ملفك الشخصي واحصل على خصم 10% على أول دورة!' 
-                : 'Complete your profile and get 10% off your first course!'}
+                ? 'حصلت على كوبون خصم 10% على أول دورة!' 
+                : 'You earned a 10% discount coupon for your first course!'}
             </p>
 
             <div className="w-full p-4 rounded-lg bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30">
@@ -386,10 +388,41 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
                   {isRTL ? 'خصم 10%' : '10% OFF'}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">
+              
+              <div className="flex items-center justify-center gap-2 mt-3">
+                <code className="px-4 py-2 bg-background border-2 border-dashed border-primary/50 rounded-lg text-lg font-mono font-bold tracking-widest text-foreground">
+                  PROFILE10
+                </code>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 gap-2"
+                onClick={() => {
+                  navigator.clipboard.writeText('PROFILE10');
+                  setCouponCopied(true);
+                  toast.success(isRTL ? 'تم نسخ الكوبون!' : 'Coupon copied!');
+                  setTimeout(() => setCouponCopied(false), 2000);
+                }}
+              >
+                {couponCopied ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    {isRTL ? 'تم النسخ' : 'Copied!'}
+                  </>
+                ) : (
+                  <>
+                    <Gift className="w-4 h-4" />
+                    {isRTL ? 'نسخ الكوبون' : 'Copy Coupon'}
+                  </>
+                )}
+              </Button>
+              
+              <p className="text-xs text-muted-foreground mt-3">
                 {isRTL 
-                  ? 'كود الخصم: PROFILE10' 
-                  : 'Discount code: PROFILE10'}
+                  ? 'استخدم هذا الكوبون عند الشراء في صفحة الدفع' 
+                  : 'Use this coupon at checkout when purchasing a course'}
               </p>
             </div>
           </motion.div>

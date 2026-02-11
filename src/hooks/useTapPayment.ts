@@ -228,6 +228,7 @@ export function useTapPayment(): UseTapPaymentReturn {
             customer_phone: config.customerPhone,
             token_id: tokenId,
             idempotency_key: idempotencyKey,
+            coupon_id: config.couponId || null,
           },
         });
 
