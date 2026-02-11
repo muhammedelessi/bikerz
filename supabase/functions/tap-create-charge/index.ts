@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
       customer_phone,
       token_id,
       idempotency_key,
+      coupon_id,
     } = body;
 
     if (!course_id || !amount || !token_id || !idempotency_key) {
@@ -141,6 +142,8 @@ Deno.serve(async (req) => {
         metadata: {
           internal_order_id: idempotency_key,
           user_id: userId,
+          coupon_id: coupon_id || null,
+          original_amount: Number(course.price),
           environment: tapSecretKey.startsWith("sk_test") ? "test" : "live",
         },
       })

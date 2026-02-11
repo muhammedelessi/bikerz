@@ -318,10 +318,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       {promoApplied ? (isRTL ? 'مطبق' : 'Applied') : (isRTL ? 'تطبيق' : 'Apply')}
                     </Button>
                   </div>
-                  {promoApplied && (
+                  {promoApplied && appliedCoupon && (
                     <p className="text-sm text-primary flex items-center gap-1">
                       <Check className="w-4 h-4" />
-                      {isRTL ? 'تم تطبيق خصم 20%' : '20% discount applied'}
+                      {isRTL 
+                        ? `تم تطبيق خصم ${discountLabel} (وفّرت ${discountAmount} ر.س)` 
+                        : `${discountLabel} discount applied (saved ${discountAmount} SAR)`}
                     </p>
                   )}
                 </div>
@@ -374,10 +376,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       {isRTL && course.title_ar ? course.title_ar : course.title}
                     </span>
                   </div>
-                  {promoApplied && (
+                  {promoApplied && appliedCoupon && (
                     <div className="flex justify-between text-sm text-primary">
-                      <span>{isRTL ? 'الخصم' : 'Discount'}</span>
-                      <span>-{(course.price * 0.2).toFixed(0)} {isRTL ? 'ر.س' : 'SAR'}</span>
+                      <span>{isRTL ? 'الخصم' : 'Discount'} ({discountLabel})</span>
+                      <span>-{discountAmount} {isRTL ? 'ر.س' : 'SAR'}</span>
                     </div>
                   )}
                   <Separator />

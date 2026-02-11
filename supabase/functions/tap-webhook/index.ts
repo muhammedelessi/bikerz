@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
 
     const { data: existingCharge, error: fetchError } = await adminClient
       .from("tap_charges")
-      .select("id, user_id, course_id, status")
+      .select("id, user_id, course_id, status, amount, metadata")
       .eq("charge_id", chargeId)
       .maybeSingle();
 
@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
       })
       .eq("id", existingCharge.id);
 
-    // ── Handle successful payment: enroll user ──
+    // ── Handle successful payment: enroll user & increment coupon usage ──
     if (verifiedStatus === "succeeded" && existingCharge.course_id) {
       const { error: enrollError } = await adminClient
         .from("course_enrollments")
@@ -106,6 +106,27 @@ Deno.serve(async (req) => {
         console.error("Enrollment error:", enrollError.message);
       } else {
         console.log("User enrolled:", existingCharge.user_id, "in course:", existingCharge.course_id);
+      }
+
+      // Increment coupon usage if a coupon was applied
+      const meta = existingCharge.metadata as Record<string, unknown> | null;
+      const couponId = meta?.coupon_id as string | null;
+      if (couponId) {
+        const originalAmount = (meta?.original_amount as number) || verifiedCharge.amount || 0;
+        const finalAmount = verifiedCharge.amount || 0;
+        const discountAmount = originalAmount - finalAmount;
+        
+        const { data: couponResult } = await adminClient.rpc("increment_coupon_usage", {
+          p_coupon_id: couponId,
+          p_user_id: existingCharge.user_id,
+          p_course_id: existingCharge.course_id,
+          p_order_id: existingCharge.id,
+          p_charge_id: chargeId,
+          p_discount_amount: discountAmount,
+          p_original_amount: originalAmount,
+          p_final_amount: finalAmount,
+        });
+        console.log("Coupon usage incremented:", couponId, "result:", couponResult);
       }
 
       // Record revenue analytics
