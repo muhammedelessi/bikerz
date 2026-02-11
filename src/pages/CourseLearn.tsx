@@ -654,7 +654,7 @@ const CourseLearn: React.FC = () => {
               >
                 {/* Video Player - Full width, adaptive aspect ratio - Hidden for quiz-only lessons */}
                 {currentLesson?.video_url && (
-                  <div className="relative bg-black w-full">
+                  <div className="relative bg-black w-full max-h-[65vh]">
                     {isYouTubeUrl(currentLesson.video_url) ? (
                       // YouTube Embed Player
                       <div className="aspect-video">
@@ -744,11 +744,14 @@ const CourseLearn: React.FC = () => {
 
                   {/* Description */}
                   {currentLesson?.description && (
-                    <div className="prose prose-invert max-w-none mb-6 sm:mb-8">
-                      <p className="text-sm sm:text-base text-muted-foreground">
-                        {isRTL && currentLesson.description_ar ? currentLesson.description_ar : currentLesson.description}
-                      </p>
-                    </div>
+                    <div 
+                      className="prose prose-invert max-w-none mb-6 sm:mb-8 text-sm sm:text-base text-muted-foreground"
+                      dangerouslySetInnerHTML={{ 
+                        __html: isRTL && currentLesson.description_ar 
+                          ? currentLesson.description_ar 
+                          : currentLesson.description 
+                      }}
+                    />
                   )}
 
                   {/* Lesson Quiz - Interactive questions embedded in the lesson */}
@@ -969,7 +972,7 @@ const CourseLearn: React.FC = () => {
                             chapterIndex + 1
                           )}
                         </span>
-                        <span className="font-medium text-foreground truncate">
+                        <span className="font-medium text-foreground break-words line-clamp-2">
                           {isRTL && chapter.title_ar ? chapter.title_ar : chapter.title}
                         </span>
                       </div>
@@ -1005,7 +1008,7 @@ const CourseLearn: React.FC = () => {
                                   <Video className="w-4 h-4 text-muted-foreground" />
                                 )}
                               </div>
-                              <span className={`flex-1 truncate ${isActive ? 'text-primary font-medium' : 'text-foreground'}`}>
+                              <span className={`flex-1 break-words line-clamp-2 ${isActive ? 'text-primary font-medium' : 'text-foreground'}`}>
                                 {isRTL && lesson.title_ar ? lesson.title_ar : lesson.title}
                               </span>
                               {lesson.duration_minutes && (
