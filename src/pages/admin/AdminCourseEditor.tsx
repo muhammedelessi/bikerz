@@ -72,6 +72,7 @@ import { toast } from 'sonner';
 import BunnyVideoUploader from '@/components/admin/BunnyVideoUploader';
 import TestQuestionManager from '@/components/admin/TestQuestionManager';
 import LessonQuizManager from '@/components/admin/LessonQuizManager';
+import RichTextEditor from '@/components/admin/RichTextEditor';
 
 interface ChapterTest {
   id: string;
@@ -876,21 +877,19 @@ const AdminCourseEditor: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{isRTL ? 'الوصف (إنجليزي)' : 'Description (English)'}</Label>
-                <Textarea
+                <RichTextEditor
                   value={chapterForm.description}
-                  onChange={(e) => setChapterForm({ ...chapterForm, description: e.target.value })}
+                  onChange={(val) => setChapterForm({ ...chapterForm, description: val })}
                   placeholder="Description"
-                  rows={2}
                 />
               </div>
               <div className="space-y-2">
                 <Label>{isRTL ? 'الوصف (عربي)' : 'Description (Arabic)'}</Label>
-                <Textarea
+                <RichTextEditor
                   value={chapterForm.description_ar}
-                  onChange={(e) => setChapterForm({ ...chapterForm, description_ar: e.target.value })}
+                  onChange={(val) => setChapterForm({ ...chapterForm, description_ar: val })}
                   placeholder="الوصف"
                   dir="rtl"
-                  rows={2}
                 />
               </div>
             </div>
@@ -954,21 +953,19 @@ const AdminCourseEditor: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{isRTL ? 'الوصف (إنجليزي)' : 'Description (English)'}</Label>
-                <Textarea
+                <RichTextEditor
                   value={lessonForm.description}
-                  onChange={(e) => setLessonForm({ ...lessonForm, description: e.target.value })}
+                  onChange={(val) => setLessonForm({ ...lessonForm, description: val })}
                   placeholder="Description"
-                  rows={2}
                 />
               </div>
               <div className="space-y-2">
                 <Label>{isRTL ? 'الوصف (عربي)' : 'Description (Arabic)'}</Label>
-                <Textarea
+                <RichTextEditor
                   value={lessonForm.description_ar}
-                  onChange={(e) => setLessonForm({ ...lessonForm, description_ar: e.target.value })}
+                  onChange={(val) => setLessonForm({ ...lessonForm, description_ar: val })}
                   placeholder="الوصف"
                   dir="rtl"
-                  rows={2}
                 />
               </div>
             </div>
