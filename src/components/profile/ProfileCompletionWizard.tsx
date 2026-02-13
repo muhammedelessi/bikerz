@@ -180,10 +180,11 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
       
       if (error) throw error;
       
-      // Clear skip flags
+      // Clear skip flags and store coupon for auto-apply at checkout
       localStorage.removeItem('profile_completion_skipped');
       localStorage.removeItem('profile_completion_skip_time');
       localStorage.setItem('profile_completed', 'true');
+      localStorage.setItem('profile_coupon_code', 'PROFILE10');
       
       // Log activity
       await supabase.from('user_activity_timeline').insert({
