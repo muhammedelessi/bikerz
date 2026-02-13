@@ -124,7 +124,7 @@ export function useTapPayment(): UseTapPaymentReturn {
         // Render Tap Card form - pass element ID with # prefix
         const card = renderTapCard('#' + containerId, {
           publicKey,
-          merchant: { id: '' },
+          merchant: { id: '38039414' },
           transaction: {
             amount: '1',
             currency: Currencies?.SAR || 'SAR',
