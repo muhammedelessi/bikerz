@@ -96,6 +96,36 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (profile?.phone) setCustomerPhone(profile.phone);
   }, [profile, user]);
 
+  // Auto-apply PROFILE10 coupon from profile completion
+  useEffect(() => {
+    if (!open) return;
+    const savedCoupon = localStorage.getItem('profile_coupon_code');
+    if (savedCoupon && !promoApplied && !promoCode) {
+      setPromoCode(savedCoupon);
+      // Auto-trigger validation
+      const autoApply = async () => {
+        setPromoLoading(true);
+        try {
+          const { data, error } = await supabase.functions.invoke('coupon-validate', {
+            body: { code: savedCoupon, course_id: course.id, amount: course.price },
+          });
+          if (error) throw error;
+          if (data?.valid) {
+            setPromoApplied(true);
+            setAppliedCoupon(data);
+            toast.success(isRTL ? 'تم تطبيق خصم إكمال الملف الشخصي تلقائياً!' : 'Profile completion discount auto-applied!');
+            localStorage.removeItem('profile_coupon_code');
+          }
+        } catch {
+          // Silently fail auto-apply
+        } finally {
+          setPromoLoading(false);
+        }
+      };
+      autoApply();
+    }
+  }, [open]);
+
   // Initialize Tap Card SDK when moving to payment step
   useEffect(() => {
     if (step === 'payment' && publicKey && !cardInitializedRef.current) {

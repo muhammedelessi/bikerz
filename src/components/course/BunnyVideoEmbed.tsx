@@ -207,6 +207,12 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
     }
   }, [embedUrl]);
 
+  // Prevent right-click and content stealing
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    return false;
+  }, []);
+
   if (error) {
     return (
       <div
@@ -239,27 +245,36 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
 
   return (
     <div
-      className="relative w-full overflow-hidden bg-black"
+      className="relative w-full overflow-hidden bg-black select-none"
       style={{ aspectRatio: "16 / 9" }}
+      onContextMenu={handleContextMenu}
+      onDragStart={(e) => e.preventDefault()}
     >
       {embedUrl && (
         <iframe
           ref={iframeRef}
           src={embedUrl}
-          className="absolute inset-0 h-full w-full"
+          className="absolute inset-0 h-full w-full pointer-events-auto"
           frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
           title={title || "Video player"}
           loading="lazy"
           onLoad={handleIframeLoad}
           onError={handleIframeError}
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
         />
       )}
 
+      {/* Transparent overlay to block right-click on iframe */}
+      <div 
+        className="absolute inset-0 z-10 pointer-events-none"
+        onContextMenu={handleContextMenu}
+      />
+
       {/* Loading indicator */}
       {isLoading && (
-        <div className="absolute inset-0 grid place-items-center bg-background/80 backdrop-blur-sm">
+        <div className="absolute inset-0 grid place-items-center bg-background/80 backdrop-blur-sm z-20">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <span className="text-sm text-muted-foreground">

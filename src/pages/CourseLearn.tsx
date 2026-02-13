@@ -545,7 +545,10 @@ const CourseLearn: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen min-h-[100svh] bg-background flex flex-col">
+    <div 
+      className="min-h-screen min-h-[100svh] bg-background flex flex-col select-none"
+      onContextMenu={(e) => e.preventDefault()}
+    >
       {/* Enrollment Banner for non-enrolled users */}
       {!isEnrolled && (
         <div className="bg-gradient-to-r from-primary/90 to-primary text-primary-foreground py-3 px-4 sm:px-6">
