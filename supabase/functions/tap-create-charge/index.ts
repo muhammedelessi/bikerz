@@ -57,14 +57,13 @@ Deno.serve(async (req) => {
       customer_name,
       customer_email,
       customer_phone,
-      token_id,
       idempotency_key,
       coupon_id,
     } = body;
 
-    if (!course_id || !amount || !token_id || !idempotency_key) {
+    if (!course_id || !amount || !idempotency_key) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: course_id, amount, token_id, idempotency_key" }),
+        JSON.stringify({ error: "Missing required fields: course_id, amount, idempotency_key" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -158,8 +157,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Create Tap charge via API ──
-    const chargePayload = {
+    // Determine redirect URL back to the app
+    const origin = req.headers.get("origin") || "https://bikerz.lovable.app";
+    const redirectBackUrl = `${origin}/courses/${course_id}?payment=callback&charge_id=${chargeRecord.id}`;
+
+    // ── Create Tap charge via API using src_all (redirect-based) ──
+    const chargePayload: Record<string, unknown> = {
       amount: numericAmount,
       currency,
       threeDSecure: true,
@@ -188,10 +191,10 @@ Deno.serve(async (req) => {
         internal_id: chargeRecord.id,
       },
       source: {
-        id: token_id,
+        id: "src_all",
       },
       redirect: {
-        url: `${req.headers.get("origin") || "https://bikerz.lovable.app"}/courses/${course_id}?payment=callback`,
+        url: redirectBackUrl,
       },
     };
 
@@ -244,16 +247,19 @@ Deno.serve(async (req) => {
       })
       .eq("id", chargeRecord.id);
 
-    // If captured immediately, enroll user
+    // If captured immediately (rare with src_all), enroll user
     if (chargeStatus === "succeeded") {
       await enrollUser(adminClient, userId, course_id);
     }
+
+    // The redirect URL from Tap's response (hosted payment page)
+    const tapRedirectUrl = tapData.transaction?.url || null;
 
     return new Response(
       JSON.stringify({
         charge_id: tapData.id,
         status: chargeStatus,
-        redirect_url: tapData.transaction?.url || null,
+        redirect_url: tapRedirectUrl,
         amount: numericAmount,
         currency,
       }),

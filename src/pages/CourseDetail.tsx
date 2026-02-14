@@ -91,6 +91,42 @@ const CourseDetail: React.FC = () => {
   const [showCheckout, setShowCheckout] = useState(false);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
+  const [paymentVerifying, setPaymentVerifying] = useState(false);
+
+  // Handle payment callback from Tap redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tapId = params.get('tap_id');
+    if (!tapId || !user) return;
+
+    // Clean the URL
+    window.history.replaceState({}, '', `/courses/${id}`);
+
+    const verifyPayment = async () => {
+      setPaymentVerifying(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('tap-verify-charge', {
+          body: { charge_id: tapId },
+        });
+        if (error) throw error;
+        if (data?.status === 'succeeded') {
+          toast.success(isRTL ? 'تم الدفع بنجاح! تم تسجيلك في الدورة 🎉' : 'Payment successful! You are now enrolled 🎉');
+          queryClient.invalidateQueries({ queryKey: ['enrollment', id] });
+        } else if (data?.status === 'failed') {
+          toast.error(isRTL ? 'فشل الدفع. يرجى المحاولة مرة أخرى.' : 'Payment failed. Please try again.');
+        } else {
+          toast.info(isRTL ? 'جاري معالجة الدفع...' : 'Payment is being processed...');
+          queryClient.invalidateQueries({ queryKey: ['enrollment', id] });
+        }
+      } catch {
+        toast.error(isRTL ? 'تعذر التحقق من الدفع' : 'Could not verify payment');
+      } finally {
+        setPaymentVerifying(false);
+      }
+    };
+
+    verifyPayment();
+  }, [user, id]);
 
   // Scroll-based sticky header
   useEffect(() => {
