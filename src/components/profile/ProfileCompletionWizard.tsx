@@ -126,7 +126,11 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
     return publicUrl;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    // When moving from bike step (1) to reward step (2), save the profile
+    if (currentStep === 1) {
+      await saveProfile();
+    }
     if (currentStep < STEPS.length - 1) {
       setCurrentStep(currentStep + 1);
     }
@@ -150,7 +154,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
     );
   };
 
-  const handleComplete = async () => {
+  const saveProfile = async () => {
     if (!user) return;
     
     setIsSubmitting(true);
@@ -203,13 +207,19 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
       );
       
       onComplete?.();
-      onOpenChange(false);
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error(isRTL ? 'فشل في تحديث الملف الشخصي' : 'Failed to update profile');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleClaimCoupon = () => {
+    navigator.clipboard.writeText('PROFILE10');
+    localStorage.setItem('profile_coupon_code', 'PROFILE10');
+    toast.success(isRTL ? 'تم حفظ الكوبون! استخدمه عند الشراء' : 'Coupon saved! Use it at checkout');
+    onOpenChange(false);
   };
 
   const progress = ((currentStep + 1) / STEPS.length) * 100;
@@ -472,6 +482,8 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
             <Button variant="ghost" onClick={handleSkip} className="text-muted-foreground">
               {isRTL ? 'تخطي' : 'Skip for now'}
             </Button>
+          ) : currentStep === 2 ? (
+            null
           ) : (
             <Button variant="outline" onClick={handlePrev} disabled={isSubmitting}>
               <ChevronPrev className="w-4 h-4" />
@@ -479,14 +491,14 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
             </Button>
           )}
 
-          {currentStep < STEPS.length - 1 ? (
+          {currentStep === 0 ? (
             <Button onClick={handleNext}>
               {isRTL ? 'التالي' : 'Next'}
               <ChevronNext className="w-4 h-4" />
             </Button>
-          ) : (
+          ) : currentStep === 1 ? (
             <Button 
-              onClick={handleComplete} 
+              onClick={handleNext} 
               disabled={isSubmitting}
               className="bg-gradient-to-r from-primary to-accent"
             >
@@ -494,10 +506,18 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  {isRTL ? 'إكمال والحصول على الخصم' : 'Complete & Get Discount'}
+                  {isRTL ? 'إكمال و الحصول على خصم' : 'Complete & Get Discount'}
                   <Gift className="w-4 h-4" />
                 </>
               )}
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleClaimCoupon}
+              className="bg-gradient-to-r from-primary to-accent w-full"
+            >
+              <Gift className="w-4 h-4" />
+              {isRTL ? 'احصل على كوبون الخصم' : 'Claim Discount Coupon'}
             </Button>
           )}
         </div>
