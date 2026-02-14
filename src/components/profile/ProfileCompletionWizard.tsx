@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -226,6 +228,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
   
   const ChevronNext = isRTL ? ChevronLeft : ChevronRight;
   const ChevronPrev = isRTL ? ChevronRight : ChevronLeft;
+  const isMobile = useIsMobile();
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -376,7 +379,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
             key="complete"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center text-center py-6"
+            className="flex flex-col items-center text-center py-4 sm:py-6"
           >
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4">
               <Sparkles className="w-10 h-10 text-white" />
@@ -444,83 +447,120 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
     }
   };
 
+  const headerContent = (
+    <>
+      <div className="flex items-center gap-3">
+        {React.createElement(STEPS[currentStep].icon, {
+          className: "w-5 h-5 sm:w-6 sm:h-6 text-primary"
+        })}
+        <div>
+          {isMobile ? (
+            <>
+              <DrawerTitle className="text-base sm:text-lg">
+                {isRTL ? STEPS[currentStep].title_ar : STEPS[currentStep].title}
+              </DrawerTitle>
+              <DrawerDescription className="text-xs sm:text-sm">
+                {isRTL 
+                  ? `الخطوة ${currentStep + 1} من ${STEPS.length}` 
+                  : `Step ${currentStep + 1} of ${STEPS.length}`}
+              </DrawerDescription>
+            </>
+          ) : (
+            <>
+              <DialogTitle className="text-lg">
+                {isRTL ? STEPS[currentStep].title_ar : STEPS[currentStep].title}
+              </DialogTitle>
+              <DialogDescription className="text-sm">
+                {isRTL 
+                  ? `الخطوة ${currentStep + 1} من ${STEPS.length}` 
+                  : `Step ${currentStep + 1} of ${STEPS.length}`}
+              </DialogDescription>
+            </>
+          )}
+        </div>
+      </div>
+      <Progress value={progress} className="h-2 mt-3" />
+    </>
+  );
+
+  const bodyContent = (
+    <>
+      <div className="mt-3 sm:mt-4 min-h-0 overflow-y-auto max-h-[50vh] sm:max-h-[60vh] px-1">
+        <AnimatePresence mode="wait">
+          {renderStepContent()}
+        </AnimatePresence>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center justify-between gap-2 sm:gap-3 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t">
+        {currentStep === 0 ? (
+          <Button variant="ghost" onClick={handleSkip} className="text-muted-foreground text-sm">
+            {isRTL ? 'تخطي' : 'Skip for now'}
+          </Button>
+        ) : currentStep === 2 ? (
+          null
+        ) : (
+          <Button variant="outline" onClick={handlePrev} disabled={isSubmitting} size={isMobile ? "sm" : "default"}>
+            <ChevronPrev className="w-4 h-4" />
+            {isRTL ? 'السابق' : 'Previous'}
+          </Button>
+        )}
+
+        {currentStep === 0 ? (
+          <Button onClick={handleNext} size={isMobile ? "sm" : "default"}>
+            {isRTL ? 'التالي' : 'Next'}
+            <ChevronNext className="w-4 h-4" />
+          </Button>
+        ) : currentStep === 1 ? (
+          <Button 
+            onClick={handleNext} 
+            disabled={isSubmitting}
+            className="bg-gradient-to-r from-primary to-accent text-sm"
+            size={isMobile ? "sm" : "default"}
+          >
+            {isSubmitting ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                {isRTL ? 'إكمال و الحصول على خصم' : 'Complete & Get Discount'}
+                <Gift className="w-4 h-4" />
+              </>
+            )}
+          </Button>
+        ) : (
+          <Button 
+            onClick={handleClaimCoupon}
+            className="bg-gradient-to-r from-primary to-accent w-full text-sm"
+            size={isMobile ? "sm" : "default"}
+          >
+            <Gift className="w-4 h-4" />
+            {isRTL ? 'احصل على كوبون الخصم' : 'Claim Discount Coupon'}
+          </Button>
+        )}
+      </div>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="px-4 pb-6 pt-2 max-h-[90vh]">
+          <DrawerHeader className="px-0 pb-2">
+            {headerContent}
+          </DrawerHeader>
+          {bodyContent}
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {React.createElement(STEPS[currentStep].icon, {
-                className: "w-6 h-6 text-primary"
-              })}
-              <div>
-                <DialogTitle className="text-lg">
-                  {isRTL ? STEPS[currentStep].title_ar : STEPS[currentStep].title}
-                </DialogTitle>
-                <DialogDescription className="text-sm">
-                  {isRTL 
-                    ? `الخطوة ${currentStep + 1} من ${STEPS.length}` 
-                    : `Step ${currentStep + 1} of ${STEPS.length}`}
-                </DialogDescription>
-              </div>
-            </div>
-          </div>
-          
-          {/* Progress Bar */}
-          <Progress value={progress} className="h-2 mt-4" />
+          {headerContent}
         </DialogHeader>
-
-        <div className="mt-4 min-h-[300px]">
-          <AnimatePresence mode="wait">
-            {renderStepContent()}
-          </AnimatePresence>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center justify-between gap-3 mt-6 pt-4 border-t">
-          {currentStep === 0 ? (
-            <Button variant="ghost" onClick={handleSkip} className="text-muted-foreground">
-              {isRTL ? 'تخطي' : 'Skip for now'}
-            </Button>
-          ) : currentStep === 2 ? (
-            null
-          ) : (
-            <Button variant="outline" onClick={handlePrev} disabled={isSubmitting}>
-              <ChevronPrev className="w-4 h-4" />
-              {isRTL ? 'السابق' : 'Previous'}
-            </Button>
-          )}
-
-          {currentStep === 0 ? (
-            <Button onClick={handleNext}>
-              {isRTL ? 'التالي' : 'Next'}
-              <ChevronNext className="w-4 h-4" />
-            </Button>
-          ) : currentStep === 1 ? (
-            <Button 
-              onClick={handleNext} 
-              disabled={isSubmitting}
-              className="bg-gradient-to-r from-primary to-accent"
-            >
-              {isSubmitting ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  {isRTL ? 'إكمال و الحصول على خصم' : 'Complete & Get Discount'}
-                  <Gift className="w-4 h-4" />
-                </>
-              )}
-            </Button>
-          ) : (
-            <Button 
-              onClick={handleClaimCoupon}
-              className="bg-gradient-to-r from-primary to-accent w-full"
-            >
-              <Gift className="w-4 h-4" />
-              {isRTL ? 'احصل على كوبون الخصم' : 'Claim Discount Coupon'}
-            </Button>
-          )}
-        </div>
+        {bodyContent}
       </DialogContent>
     </Dialog>
   );
