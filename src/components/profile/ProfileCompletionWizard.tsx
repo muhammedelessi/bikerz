@@ -131,7 +131,11 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
   const handleNext = async () => {
     // When moving from bike step (1) to reward step (2), save the profile
     if (currentStep === 1) {
-      await saveProfile();
+      try {
+        await saveProfile();
+      } catch (e) {
+        console.error('Save failed, still advancing:', e);
+      }
     }
     if (currentStep < STEPS.length - 1) {
       setCurrentStep(currentStep + 1);
