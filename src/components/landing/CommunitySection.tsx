@@ -1,4 +1,5 @@
 import React from 'react';
+import AnimatedCounter from '@/components/common/AnimatedCounter';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -130,9 +131,10 @@ const CommunitySection: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <div className="text-2xl sm:text-3xl lg:text-4xl font-black text-primary mb-1">
-                      {stat.value}
-                    </div>
+                    <AnimatedCounter
+                      value={stat.value}
+                      className="text-2xl sm:text-3xl lg:text-4xl font-black text-primary mb-1 block"
+                    />
                     <div className="text-xs sm:text-sm text-muted-foreground">
                       {stat.label}
                     </div>
