@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -221,11 +222,14 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
     }
   };
 
+  const navigate = useNavigate();
+
   const handleClaimCoupon = () => {
     navigator.clipboard.writeText('PROFILE10');
     localStorage.setItem('profile_coupon_code', 'PROFILE10');
-    toast.success(isRTL ? 'تم حفظ الكوبون! استخدمه عند الشراء' : 'Coupon saved! Use it at checkout');
+    toast.success(isRTL ? 'تم نسخ الكوبون! تصفح الدورات الآن' : 'Coupon copied! Browse courses now');
     onOpenChange(false);
+    navigate('/courses');
   };
 
   const progress = ((currentStep + 1) / STEPS.length) * 100;
