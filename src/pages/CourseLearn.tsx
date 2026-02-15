@@ -655,12 +655,12 @@ const CourseLearn: React.FC = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                {/* Video Player - Full width, adaptive aspect ratio - Hidden for quiz-only lessons */}
+                {/* Video Player - Compact size, not covering content below */}
                 {currentLesson?.video_url && (
-                  <div className="relative bg-black w-full max-h-[65vh]">
+                  <div className="relative bg-black w-full max-h-[50vh]">
                     {isYouTubeUrl(currentLesson.video_url) ? (
                       // YouTube Embed Player
-                      <div className="aspect-video">
+                      <div className="aspect-video max-h-[50vh]">
                         <iframe
                           src={`https://www.youtube.com/embed/${getYouTubeVideoId(currentLesson.video_url)}?rel=0&modestbranding=1`}
                           className="w-full h-full"
@@ -701,6 +701,7 @@ const CourseLearn: React.FC = () => {
 
                 {/* Lesson Content */}
                 <div className="p-4 sm:p-6 lg:p-8 safe-area-bottom">
+                  {/* Lesson Title & Chapter */}
                   <div className="flex flex-col gap-4 mb-6">
                     <div className="min-w-0">
                       <span className="text-xs sm:text-sm text-primary font-medium">
