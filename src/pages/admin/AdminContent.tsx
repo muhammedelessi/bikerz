@@ -108,9 +108,10 @@ const AdminContent: React.FC = () => {
     mutationFn: async ({ key, value }: { key: string; value: ContentValue }) => {
       const { error } = await supabase
         .from('admin_settings')
-        .update({ value, updated_at: new Date().toISOString() })
-        .eq('key', key)
-        .eq('category', 'landing');
+        .upsert(
+          { key, value, category: 'landing', updated_at: new Date().toISOString() },
+          { onConflict: 'key' }
+        );
 
       if (error) throw error;
     },
@@ -118,6 +119,7 @@ const AdminContent: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-landing-content'] });
       queryClient.invalidateQueries({ queryKey: ['landing-content'] });
       queryClient.invalidateQueries({ queryKey: ['header-content'] });
+      queryClient.invalidateQueries({ queryKey: ['about-page-content'] });
       setHasChanges(false);
       toast.success(isRTL ? 'تم حفظ التغييرات' : 'Changes saved successfully');
     },
@@ -127,6 +129,15 @@ const AdminContent: React.FC = () => {
   });
 
   const handleSave = (key: string) => {
+    // For the 'pages' section, save all page sub-keys
+    if (key === 'pages') {
+      const pageKeys = ['privacy_page', 'terms_page', 'contact_page', 'about_page'];
+      const promises = pageKeys
+        .filter(k => editedContent[k])
+        .map(k => updateMutation.mutateAsync({ key: k, value: editedContent[k] }));
+      Promise.all(promises);
+      return;
+    }
     if (editedContent[key]) {
       updateMutation.mutate({ key, value: editedContent[key] });
     }
@@ -1450,9 +1461,240 @@ const AdminContent: React.FC = () => {
     const privacyData = editedContent.privacy_page || {};
     const termsData = editedContent.terms_page || {};
     const contactData = editedContent.contact_page || {};
+    const aboutData = editedContent.about_page || {};
 
     return (
       <div className="space-y-8">
+        {/* About Us Page */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">{isRTL ? 'صفحة من نحن' : 'About Us Page'}</h3>
+            <Badge variant="outline" className="ms-auto">
+              <a href="/about" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                <ExternalLink className="w-3 h-3" />
+                {isRTL ? 'معاينة' : 'Preview'}
+              </a>
+            </Badge>
+          </div>
+
+          <BilingualInput
+            labelEn="Page Title"
+            labelAr="عنوان الصفحة"
+            valueEn={aboutData.title_en || 'About BIKERZ'}
+            valueAr={aboutData.title_ar || 'عن بايكرز'}
+            onChangeEn={(v) => updateField('about_page', 'title_en', v)}
+            onChangeAr={(v) => updateField('about_page', 'title_ar', v)}
+          />
+
+          <BilingualInput
+            labelEn="Subtitle"
+            labelAr="العنوان الفرعي"
+            valueEn={aboutData.subtitle_en || 'Empowering riders across Saudi Arabia with professional motorcycle training'}
+            valueAr={aboutData.subtitle_ar || 'تمكين الدراجين في المملكة العربية السعودية من خلال التدريب الاحترافي'}
+            onChangeEn={(v) => updateField('about_page', 'subtitle_en', v)}
+            onChangeAr={(v) => updateField('about_page', 'subtitle_ar', v)}
+            isTextarea
+            rows={2}
+          />
+
+          <Separator />
+
+          <div className="flex items-center gap-2 mb-2">
+            <h4 className="font-medium text-sm">{isRTL ? 'قصتنا' : 'Our Story'}</h4>
+          </div>
+
+          <BilingualInput
+            labelEn="Story Title"
+            labelAr="عنوان القصة"
+            valueEn={aboutData.story_title_en || 'Our Story'}
+            valueAr={aboutData.story_title_ar || 'قصتنا'}
+            onChangeEn={(v) => updateField('about_page', 'story_title_en', v)}
+            onChangeAr={(v) => updateField('about_page', 'story_title_ar', v)}
+          />
+
+          <BilingualInput
+            labelEn="Story Paragraph 1"
+            labelAr="الفقرة الأولى"
+            valueEn={aboutData.story_p1_en || ''}
+            valueAr={aboutData.story_p1_ar || ''}
+            onChangeEn={(v) => updateField('about_page', 'story_p1_en', v)}
+            onChangeAr={(v) => updateField('about_page', 'story_p1_ar', v)}
+            isTextarea
+            rows={4}
+          />
+
+          <BilingualInput
+            labelEn="Story Paragraph 2"
+            labelAr="الفقرة الثانية"
+            valueEn={aboutData.story_p2_en || ''}
+            valueAr={aboutData.story_p2_ar || ''}
+            onChangeEn={(v) => updateField('about_page', 'story_p2_en', v)}
+            onChangeAr={(v) => updateField('about_page', 'story_p2_ar', v)}
+            isTextarea
+            rows={4}
+          />
+
+          <Separator />
+
+          <div className="flex items-center gap-2 mb-2">
+            <h4 className="font-medium text-sm">{isRTL ? 'المهمة والرؤية' : 'Mission & Vision'}</h4>
+          </div>
+
+          <BilingualInput
+            labelEn="Mission Title"
+            labelAr="عنوان المهمة"
+            valueEn={aboutData.mission_title_en || 'Our Mission'}
+            valueAr={aboutData.mission_title_ar || 'مهمتنا'}
+            onChangeEn={(v) => updateField('about_page', 'mission_title_en', v)}
+            onChangeAr={(v) => updateField('about_page', 'mission_title_ar', v)}
+          />
+
+          <BilingualInput
+            labelEn="Mission Description"
+            labelAr="وصف المهمة"
+            valueEn={aboutData.mission_desc_en || ''}
+            valueAr={aboutData.mission_desc_ar || ''}
+            onChangeEn={(v) => updateField('about_page', 'mission_desc_en', v)}
+            onChangeAr={(v) => updateField('about_page', 'mission_desc_ar', v)}
+            isTextarea
+            rows={3}
+          />
+
+          <BilingualInput
+            labelEn="Vision Title"
+            labelAr="عنوان الرؤية"
+            valueEn={aboutData.vision_title_en || 'Our Vision'}
+            valueAr={aboutData.vision_title_ar || 'رؤيتنا'}
+            onChangeEn={(v) => updateField('about_page', 'vision_title_en', v)}
+            onChangeAr={(v) => updateField('about_page', 'vision_title_ar', v)}
+          />
+
+          <BilingualInput
+            labelEn="Vision Description"
+            labelAr="وصف الرؤية"
+            valueEn={aboutData.vision_desc_en || ''}
+            valueAr={aboutData.vision_desc_ar || ''}
+            onChangeEn={(v) => updateField('about_page', 'vision_desc_en', v)}
+            onChangeAr={(v) => updateField('about_page', 'vision_desc_ar', v)}
+            isTextarea
+            rows={3}
+          />
+
+          <Separator />
+
+          <div className="flex items-center gap-2 mb-2">
+            <h4 className="font-medium text-sm">{isRTL ? 'القيم' : 'Values'}</h4>
+          </div>
+
+          <BilingualInput
+            labelEn="Values Section Title"
+            labelAr="عنوان قسم القيم"
+            valueEn={aboutData.values_title_en || 'Our Values'}
+            valueAr={aboutData.values_title_ar || 'قيمنا'}
+            onChangeEn={(v) => updateField('about_page', 'values_title_en', v)}
+            onChangeAr={(v) => updateField('about_page', 'values_title_ar', v)}
+          />
+
+          <BilingualInput
+            labelEn="Values Subtitle"
+            labelAr="العنوان الفرعي للقيم"
+            valueEn={aboutData.values_subtitle_en || ''}
+            valueAr={aboutData.values_subtitle_ar || ''}
+            onChangeEn={(v) => updateField('about_page', 'values_subtitle_en', v)}
+            onChangeAr={(v) => updateField('about_page', 'values_subtitle_ar', v)}
+          />
+
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="border border-border/30 rounded-lg p-4 space-y-3">
+              <Label className="text-sm font-medium text-muted-foreground">
+                {isRTL ? `القيمة ${i + 1}` : `Value ${i + 1}`}
+              </Label>
+              <BilingualInput
+                labelEn="Title"
+                labelAr="العنوان"
+                valueEn={aboutData[`value${i}_title_en`] || ''}
+                valueAr={aboutData[`value${i}_title_ar`] || ''}
+                onChangeEn={(v) => updateField('about_page', `value${i}_title_en`, v)}
+                onChangeAr={(v) => updateField('about_page', `value${i}_title_ar`, v)}
+              />
+              <BilingualInput
+                labelEn="Description"
+                labelAr="الوصف"
+                valueEn={aboutData[`value${i}_desc_en`] || ''}
+                valueAr={aboutData[`value${i}_desc_ar`] || ''}
+                onChangeEn={(v) => updateField('about_page', `value${i}_desc_en`, v)}
+                onChangeAr={(v) => updateField('about_page', `value${i}_desc_ar`, v)}
+              />
+              <IconSelector
+                value={aboutData[`value${i}_icon`] || ['Shield', 'Users', 'Award', 'Target'][i]}
+                onChange={(icon) => updateField('about_page', `value${i}_icon`, icon)}
+                label={isRTL ? 'الأيقونة' : 'Icon'}
+              />
+            </div>
+          ))}
+
+          <Separator />
+
+          <div className="flex items-center gap-2 mb-2">
+            <h4 className="font-medium text-sm">{isRTL ? 'معلومات الاتصال' : 'Contact Info'}</h4>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{isRTL ? 'الهاتف' : 'Phone'}</Label>
+              <Input
+                value={aboutData.phone || '+966 50 111 1111'}
+                onChange={(e) => updateField('about_page', 'phone', e.target.value)}
+                dir="ltr"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{isRTL ? 'البريد الإلكتروني' : 'Email'}</Label>
+              <Input
+                value={aboutData.email || 'info@bikerz.sa'}
+                onChange={(e) => updateField('about_page', 'email', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <BilingualInput
+            labelEn="Location"
+            labelAr="الموقع"
+            valueEn={aboutData.location_en || ''}
+            valueAr={aboutData.location_ar || ''}
+            onChangeEn={(v) => updateField('about_page', 'location_en', v)}
+            onChangeAr={(v) => updateField('about_page', 'location_ar', v)}
+          />
+
+          <BilingualInput
+            labelEn="Working Hours"
+            labelAr="ساعات العمل"
+            valueEn={aboutData.hours_en || 'Sun - Thu: 9AM - 6PM'}
+            valueAr={aboutData.hours_ar || 'الأحد - الخميس: 9 صباحاً - 6 مساءً'}
+            onChangeEn={(v) => updateField('about_page', 'hours_en', v)}
+            onChangeAr={(v) => updateField('about_page', 'hours_ar', v)}
+          />
+
+          <ImageUploader
+            value={aboutData.hero_image || ''}
+            onChange={(url) => updateField('about_page', 'hero_image', url)}
+            label={isRTL ? 'صورة القسم الرئيسي' : 'Hero Section Image'}
+            bucket="course-thumbnails"
+            folder="landing"
+          />
+
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={aboutData.is_enabled !== false}
+              onCheckedChange={(v) => updateField('about_page', 'is_enabled', v)}
+            />
+            <Label>{isRTL ? 'الصفحة مفعلة' : 'Page Enabled'}</Label>
+          </div>
+        </div>
+
+        <Separator />
+
         {/* Privacy Policy Page */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-4">

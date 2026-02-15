@@ -2,8 +2,11 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import * as LucideIcons from 'lucide-react';
 import { 
   Target, 
   Users, 
@@ -20,51 +23,64 @@ const AboutUs: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
 
-  const values = [
-    {
-      icon: Shield,
-      titleKey: 'aboutUs.values.safety.title',
-      descriptionKey: 'aboutUs.values.safety.description',
+  const { data: aboutData } = useQuery({
+    queryKey: ['about-page-content'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('admin_settings')
+        .select('value')
+        .eq('key', 'about_page')
+        .eq('category', 'landing')
+        .maybeSingle();
+
+      if (error) throw error;
+      return (data?.value as Record<string, string>) || {};
     },
-    {
-      icon: Users,
-      titleKey: 'aboutUs.values.community.title',
-      descriptionKey: 'aboutUs.values.community.description',
-    },
-    {
-      icon: Award,
-      titleKey: 'aboutUs.values.excellence.title',
-      descriptionKey: 'aboutUs.values.excellence.description',
-    },
-    {
-      icon: Target,
-      titleKey: 'aboutUs.values.passion.title',
-      descriptionKey: 'aboutUs.values.passion.description',
-    },
-  ];
+  });
+
+  const d = aboutData || {};
+
+  const getIcon = (iconName: string, fallback: React.ElementType) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Icon = (LucideIcons as any)[iconName];
+    return Icon || fallback;
+  };
+
+  const defaultIcons = [Shield, Users, Award, Target];
+  const values = [0, 1, 2, 3].map((i) => ({
+    icon: getIcon(d[`value${i}_icon`] || '', defaultIcons[i]),
+    title: isRTL
+      ? (d[`value${i}_title_ar`] || t(`aboutUs.values.${['safety','community','excellence','passion'][i]}.title`))
+      : (d[`value${i}_title_en`] || t(`aboutUs.values.${['safety','community','excellence','passion'][i]}.title`)),
+    description: isRTL
+      ? (d[`value${i}_desc_ar`] || t(`aboutUs.values.${['safety','community','excellence','passion'][i]}.description`))
+      : (d[`value${i}_desc_en`] || t(`aboutUs.values.${['safety','community','excellence','passion'][i]}.description`)),
+  }));
 
   const contactInfo = [
     {
       icon: MapPin,
-      labelKey: 'aboutUs.contact.location',
-      value: t('footer.location'),
+      label: isRTL ? 'الموقع' : 'Location',
+      value: isRTL ? (d.location_ar || t('footer.location')) : (d.location_en || t('footer.location')),
     },
     {
       icon: Phone,
-      labelKey: 'aboutUs.contact.phone',
-      value: '+966 50 111 1111',
+      label: isRTL ? 'الهاتف' : 'Phone',
+      value: d.phone || '+966 50 111 1111',
     },
     {
       icon: Mail,
-      labelKey: 'aboutUs.contact.email',
-      value: 'info@bikerz.sa',
+      label: isRTL ? 'البريد الإلكتروني' : 'Email',
+      value: d.email || 'info@bikerz.sa',
     },
     {
       icon: Clock,
-      labelKey: 'aboutUs.contact.hours',
-      valueKey: 'aboutUs.contact.hoursValue',
+      label: isRTL ? 'ساعات العمل' : 'Working Hours',
+      value: isRTL ? (d.hours_ar || t('aboutUs.contact.hoursValue')) : (d.hours_en || t('aboutUs.contact.hoursValue')),
     },
   ];
+
+  const bgImage = d.hero_image || heroImage;
 
   return (
     <div className="min-h-screen bg-background">
@@ -74,7 +90,7 @@ const AboutUs: React.FC = () => {
       <section className="relative pt-24 pb-16 sm:pt-32 sm:pb-24 overflow-hidden">
         <div className="absolute inset-0">
           <img
-            src={heroImage}
+            src={bgImage}
             alt="Motorcycle riders"
             className="w-full h-full object-cover opacity-30"
           />
@@ -89,10 +105,10 @@ const AboutUs: React.FC = () => {
             className="space-y-6"
           >
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-foreground">
-              {t('aboutUs.title')}
+              {isRTL ? (d.title_ar || t('aboutUs.title')) : (d.title_en || t('aboutUs.title'))}
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
-              {t('aboutUs.subtitle')}
+              {isRTL ? (d.subtitle_ar || t('aboutUs.subtitle')) : (d.subtitle_en || t('aboutUs.subtitle'))}
             </p>
           </motion.div>
         </div>
@@ -109,14 +125,14 @@ const AboutUs: React.FC = () => {
             className="max-w-4xl mx-auto"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6 text-center">
-              {t('aboutUs.story.title')}
+              {isRTL ? (d.story_title_ar || t('aboutUs.story.title')) : (d.story_title_en || t('aboutUs.story.title'))}
             </h2>
             <div className="prose prose-lg prose-invert mx-auto text-center">
               <p className="text-muted-foreground leading-relaxed">
-                {t('aboutUs.story.paragraph1')}
+                {isRTL ? (d.story_p1_ar || t('aboutUs.story.paragraph1')) : (d.story_p1_en || t('aboutUs.story.paragraph1'))}
               </p>
               <p className="text-muted-foreground leading-relaxed mt-4">
-                {t('aboutUs.story.paragraph2')}
+                {isRTL ? (d.story_p2_ar || t('aboutUs.story.paragraph2')) : (d.story_p2_en || t('aboutUs.story.paragraph2'))}
               </p>
             </div>
           </motion.div>
@@ -135,10 +151,10 @@ const AboutUs: React.FC = () => {
               className="space-y-6"
             >
               <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-                {t('aboutUs.mission.title')}
+                {isRTL ? (d.mission_title_ar || t('aboutUs.mission.title')) : (d.mission_title_en || t('aboutUs.mission.title'))}
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                {t('aboutUs.mission.description')}
+                {isRTL ? (d.mission_desc_ar || t('aboutUs.mission.description')) : (d.mission_desc_en || t('aboutUs.mission.description'))}
               </p>
             </motion.div>
             
@@ -150,10 +166,10 @@ const AboutUs: React.FC = () => {
               className="space-y-6"
             >
               <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-                {t('aboutUs.vision.title')}
+                {isRTL ? (d.vision_title_ar || t('aboutUs.vision.title')) : (d.vision_title_en || t('aboutUs.vision.title'))}
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                {t('aboutUs.vision.description')}
+                {isRTL ? (d.vision_desc_ar || t('aboutUs.vision.description')) : (d.vision_desc_en || t('aboutUs.vision.description'))}
               </p>
             </motion.div>
           </div>
@@ -171,10 +187,10 @@ const AboutUs: React.FC = () => {
             className="text-center mb-12"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              {t('aboutUs.values.title')}
+              {isRTL ? (d.values_title_ar || t('aboutUs.values.title')) : (d.values_title_en || t('aboutUs.values.title'))}
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              {t('aboutUs.values.subtitle')}
+              {isRTL ? (d.values_subtitle_ar || t('aboutUs.values.subtitle')) : (d.values_subtitle_en || t('aboutUs.values.subtitle'))}
             </p>
           </motion.div>
 
@@ -192,10 +208,10 @@ const AboutUs: React.FC = () => {
                   <value.icon className="w-7 h-7 text-primary" />
                 </div>
                 <h3 className="text-lg font-bold text-foreground mb-2">
-                  {t(value.titleKey)}
+                  {value.title}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {t(value.descriptionKey)}
+                  {value.description}
                 </p>
               </motion.div>
             ))}
@@ -235,10 +251,10 @@ const AboutUs: React.FC = () => {
                   <info.icon className="w-6 h-6 text-primary" />
                 </div>
                 <p className="text-sm text-muted-foreground mb-1">
-                  {t(info.labelKey)}
+                  {info.label}
                 </p>
                 <p className="font-semibold text-foreground" dir={info.icon === Phone ? 'ltr' : undefined}>
-                  {info.valueKey ? t(info.valueKey) : info.value}
+                  {info.value}
                 </p>
               </motion.div>
             ))}
