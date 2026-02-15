@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { useLanguage } from '@/contexts/LanguageContext';
-import communityImage from '@/assets/community-ride.jpg';
+import defaultCommunityImage from '@/assets/community-ride.jpg';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLandingContent, CommunityContent } from '@/hooks/useLandingContent';
@@ -55,6 +55,7 @@ const CommunitySection: React.FC = () => {
 
   const title = isRTL ? (content?.title_ar || 'انضم إلى الأخوية') : (content?.title_en || 'Join the Brotherhood');
   const subtitle = isRTL ? (content?.subtitle_ar || '') : (content?.subtitle_en || '');
+  const communityImage = (content as any)?.background_image || defaultCommunityImage;
 
   const displayStats = [
     { 

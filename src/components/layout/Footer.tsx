@@ -114,7 +114,7 @@ const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 lg:py-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 lg:gap-12">
           {/* Brand */}
-          <div className="sm:col-span-2 lg:col-span-1 space-y-4">
+          <div className="space-y-4">
             <Link to="/" className="inline-block">
               <img
                 src={bikerzLogo}
@@ -125,7 +125,7 @@ const Footer: React.FC = () => {
             <p className="text-muted-foreground text-sm max-w-xs">
               {tagline}
             </p>
-            <div className="flex gap-2 sm:gap-3">
+            <div className="flex flex-wrap gap-2">
               {socialLinks.map((social, index) => {
                 const IconComponent = getPlatformIcon(social.platform);
                 return (
@@ -134,10 +134,10 @@ const Footer: React.FC = () => {
                     href={social.url || '#'}
                     target={social.url && social.url !== '#' ? '_blank' : undefined}
                     rel={social.url && social.url !== '#' ? 'noopener noreferrer' : undefined}
-                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-muted/30 border border-border/30 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all duration-300 touch-target"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-muted/30 border border-border/30 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-all duration-300 touch-target"
                     aria-label={getPlatformLabel(social.platform)}
                   >
-                    <IconComponent className="w-5 h-5" />
+                    <IconComponent className="w-4 h-4" />
                   </a>
                 );
               })}
