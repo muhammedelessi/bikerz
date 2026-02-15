@@ -611,6 +611,8 @@ const AdminContent: React.FC = () => {
             value={heroData.background_image || ''}
             onChange={(url) => updateField('hero', 'background_image', url)}
             label={isRTL ? 'صورة الخلفية' : 'Background Image'}
+            bucket="course-thumbnails"
+            folder="landing"
           />
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -816,6 +818,7 @@ const AdminContent: React.FC = () => {
     const steps = journeyData.steps || [];
 
     const stepTemplate = {
+      number: `Step ${steps.length + 1}`,
       title_en: 'New Step',
       title_ar: 'خطوة جديدة',
       description_en: 'Step description',
@@ -869,9 +872,18 @@ const AdminContent: React.FC = () => {
             onRemove={(index) => removeArrayItem('journey', 'steps', index)}
             addLabel={isRTL ? 'إضافة خطوة' : 'Add Step'}
             minItems={1}
-            maxItems={6}
-            renderItem={(item: JourneyStep, index: number) => (
+            maxItems={20}
+            renderItem={(item: JourneyStep & { number?: string }, index: number) => (
               <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'رقم الخطوة' : 'Step Label'}</Label>
+                  <Input
+                    value={item.number || `Step ${index + 1}`}
+                    onChange={(e) => updateArrayItem('journey', 'steps', index, 'number', e.target.value)}
+                    placeholder="e.g. Step 1, Level 1"
+                  />
+                </div>
+
                 <IconSelector
                   value={item.icon || 'BookOpen'}
                   onChange={(icon) => updateArrayItem('journey', 'steps', index, 'icon', icon)}
@@ -1295,6 +1307,8 @@ const AdminContent: React.FC = () => {
             value={communityData.background_image || ''}
             onChange={(url) => updateField('community', 'background_image', url)}
             label={isRTL ? 'صورة الخلفية' : 'Background Image'}
+            bucket="course-thumbnails"
+            folder="landing"
           />
 
           <div className="grid gap-4 md:grid-cols-2">
