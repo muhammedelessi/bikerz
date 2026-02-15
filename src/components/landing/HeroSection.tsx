@@ -6,7 +6,7 @@ import { ArrowRight, ArrowLeft, Play } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import heroImage from '@/assets/hero-rider.jpg';
+import defaultHeroImage from '@/assets/hero-rider.jpg';
 import { useLandingContent, HeroContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -82,6 +82,8 @@ const HeroSection: React.FC = () => {
   const ctaText = getText('cta_en', 'cta_ar', 'Start Your Journey', 'ابدأ رحلتك');
   const secondaryCta = getText('secondary_cta_en', 'secondary_cta_ar', 'Explore Courses', 'استكشف الدورات');
   const badgeText = getText('badge_text_en', 'badge_text_ar', 'GCC Riders', 'راكب في الخليج');
+
+  const heroImage = (content as any)?.background_image || defaultHeroImage;
 
   return (
     <section className="relative min-h-[100svh] flex items-center justify-center overflow-hidden pt-16 sm:pt-20 lg:pt-24">
