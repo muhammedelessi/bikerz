@@ -1,4 +1,5 @@
 import React from 'react';
+import AnimatedCounter from '@/components/common/AnimatedCounter';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -187,7 +188,7 @@ const HeroSection: React.FC = () => {
           >
             {displayStats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-xl sm:text-2xl md:text-3xl font-black text-primary">{stat.value}</div>
+                <AnimatedCounter value={stat.value} className="text-xl sm:text-2xl md:text-3xl font-black text-primary" />
                 <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>
               </div>
             ))}
