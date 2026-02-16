@@ -85,11 +85,6 @@ const WhySection: React.FC = () => {
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                   className="group interactive-card"
                 >
-                  {image && (
-                    <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
-                      <img src={image} alt="" className="w-full h-full object-cover" loading="lazy" />
-                    </div>
-                  )}
                   
                   <div className="relative z-10 flex items-start gap-4 sm:gap-5">
                     <div className="flex-shrink-0">
