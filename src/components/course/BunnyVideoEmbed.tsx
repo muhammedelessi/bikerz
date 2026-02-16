@@ -246,7 +246,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   return (
     <div
       className="relative w-full overflow-hidden bg-black select-none"
-      style={{ aspectRatio: "16 / 9" }}
+      style={{ aspectRatio: "16 / 9", maxHeight: "40vh" }}
       onContextMenu={handleContextMenu}
       onDragStart={(e) => e.preventDefault()}
     >
