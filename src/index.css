@@ -87,19 +87,33 @@
 
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-en);
+    overflow-x: hidden;
   }
 
   html[dir="rtl"] body {
     font-family: var(--font-ar);
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight;
+  h1 {
+    @apply text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight;
+  }
+
+  h2 {
+    @apply text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight;
+  }
+
+  h3 {
+    @apply text-xl sm:text-2xl font-bold tracking-tight;
+  }
+
+  h4 {
+    @apply text-lg sm:text-xl font-bold tracking-tight;
   }
 
   /* RTL-specific styles */
@@ -113,13 +127,39 @@
 }
 
 @layer components {
+  /* ========================================
+     GLOBAL LAYOUT CONTAINER
+     Max width: 1200px, horizontal padding: 24px
+     ======================================== */
+  .section-container {
+    @apply mx-auto px-6 py-16 sm:py-20;
+    max-width: 1200px;
+  }
+
+  /* Page container - same max width but no vertical padding */
+  .page-container {
+    @apply mx-auto px-6;
+    max-width: 1200px;
+  }
+
+  /* ========================================
+     TYPOGRAPHY SYSTEM
+     ======================================== */
+  .section-title {
+    @apply text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-4;
+  }
+
+  .section-subtitle {
+    @apply text-base sm:text-lg text-muted-foreground text-center max-w-3xl mx-auto;
+  }
+
   /* Hero Section Styles */
   .hero-gradient {
     background: var(--gradient-hero);
   }
 
   .hero-text {
-    @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-tight;
+    @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight;
     background: linear-gradient(135deg, hsl(43 18% 85%) 0%, hsl(43 18% 65%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -127,12 +167,15 @@
   }
 
   .hero-subtitle {
-    @apply text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground font-light max-w-2xl px-4 sm:px-0;
+    @apply text-base sm:text-lg md:text-xl text-muted-foreground font-light max-w-2xl;
   }
 
-  /* Card Styles */
+  /* ========================================
+     CARD SYSTEM
+     Consistent internal padding: 24px
+     ======================================== */
   .card-premium {
-    @apply rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm;
+    @apply rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm p-6;
     background: var(--gradient-card);
     box-shadow: var(--shadow-md);
   }
@@ -142,9 +185,14 @@
     box-shadow: var(--shadow-glow);
   }
 
-  /* CTA Button Styles */
+  /* ========================================
+     BUTTON SYSTEM
+     Min height: 44px (touch target)
+     Consistent padding: 12px 24px
+     ======================================== */
   .btn-cta {
-    @apply px-6 py-3 sm:px-8 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-all duration-300;
+    @apply px-6 py-3 rounded-lg font-bold text-base transition-all duration-300;
+    min-height: 44px;
     background: var(--gradient-cta);
     box-shadow: var(--shadow-md), var(--shadow-glow);
   }
@@ -154,20 +202,18 @@
     box-shadow: var(--shadow-lg), 0 0 60px hsl(18 78% 45% / 0.5);
   }
 
-  /* Section Styles - Mobile First */
-  .section-container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20 lg:py-24;
+  /* ========================================
+     FORM INPUT SYSTEM
+     Consistent height: 48px, padding: 12px 16px
+     ======================================== */
+  .form-input {
+    @apply w-full px-4 py-3 rounded-lg bg-muted/50 border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-base;
+    min-height: 48px;
   }
 
-  .section-title {
-    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-3 sm:mb-4 px-2;
-  }
-
-  .section-subtitle {
-    @apply text-base sm:text-lg md:text-xl text-muted-foreground text-center max-w-3xl mx-auto px-4;
-  }
-
-  /* Journey Road */
+  /* ========================================
+     JOURNEY ROAD
+     ======================================== */
   .journey-line {
     @apply absolute left-1/2 -translate-x-1/2 w-1 bg-gradient-to-b from-primary via-secondary to-primary/30;
   }
@@ -177,9 +223,12 @@
     box-shadow: var(--shadow-glow);
   }
 
-  /* Interactive Cards - Mobile Optimized */
+  /* ========================================
+     INTERACTIVE CARDS
+     Padding: 24px, consistent border radius
+     ======================================== */
   .interactive-card {
-    @apply relative overflow-hidden rounded-xl sm:rounded-2xl border border-border/30 bg-card/60 backdrop-blur-sm p-4 sm:p-6 transition-all duration-500;
+    @apply relative overflow-hidden rounded-xl border border-border/30 bg-card/60 backdrop-blur-sm p-6 transition-all duration-500;
   }
 
   .interactive-card::before {
@@ -193,7 +242,7 @@
   }
 
   .interactive-card:hover {
-    @apply border-primary/40 -translate-y-1 sm:-translate-y-2;
+    @apply border-primary/40 -translate-y-1;
     box-shadow: var(--shadow-lg);
   }
 
@@ -212,13 +261,13 @@
 
   /* Video Player */
   .video-container {
-    @apply relative aspect-video rounded-lg sm:rounded-xl overflow-hidden bg-near-black;
+    @apply relative aspect-video rounded-xl overflow-hidden bg-near-black;
     box-shadow: var(--shadow-lg);
   }
 
   /* Admin Dashboard */
   .admin-card {
-    @apply rounded-lg sm:rounded-xl border border-border bg-card p-4 sm:p-6 transition-all duration-300 hover:border-primary/30;
+    @apply rounded-xl border border-border bg-card p-6 transition-all duration-300 hover:border-primary/30;
   }
 
   /* Progress Bar */
@@ -231,15 +280,11 @@
     background: var(--gradient-cta);
   }
 
-  /* Form Input - Touch Friendly */
-  .form-input {
-    @apply w-full px-4 py-3 sm:py-3 rounded-lg bg-muted/50 border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-base;
-    min-height: 48px; /* Touch target minimum */
-  }
-
-  /* Navigation */
+  /* ========================================
+     NAVIGATION
+     ======================================== */
   .nav-link {
-    @apply relative px-3 sm:px-4 py-2 text-muted-foreground hover:text-foreground transition-colors duration-300;
+    @apply relative px-4 py-2 text-muted-foreground hover:text-foreground transition-colors duration-300;
   }
 
   .nav-link::after {

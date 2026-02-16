@@ -132,7 +132,7 @@ const ContactUs: React.FC = () => {
       <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
         <Navbar />
         <main className="pt-24 pb-16">
-          <div className="container mx-auto px-4">
+            <div className="page-container">
             <div className="max-w-lg mx-auto">
               <Card className="text-center">
                 <CardContent className="pt-12 pb-8">
@@ -180,8 +180,8 @@ const ContactUs: React.FC = () => {
       
       <main className="pt-24 pb-16">
         {/* Header */}
-        <section className="bg-gradient-to-br from-primary/10 via-background to-secondary/10 py-16">
-          <div className="container mx-auto px-4">
+        <section className="bg-gradient-to-br from-primary/10 via-background to-secondary/10 py-16 sm:py-20">
+          <div className="page-container">
             <div className="max-w-3xl mx-auto text-center">
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <MessageSquare className="w-8 h-8 text-primary" />
@@ -197,8 +197,8 @@ const ContactUs: React.FC = () => {
         </section>
 
         {/* Main Content */}
-        <section className="py-16">
-          <div className="container mx-auto px-4">
+        <section className="py-16 sm:py-20">
+          <div className="page-container">
             <div className="max-w-6xl mx-auto">
               <div className="grid lg:grid-cols-3 gap-8">
                 {/* Contact Info */}

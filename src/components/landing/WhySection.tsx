@@ -31,7 +31,7 @@ const WhySection: React.FC = () => {
   const cards = content?.cards || [];
 
   return (
-    <section ref={ref} className="relative py-12 sm:py-16 md:py-20 lg:py-24 overflow-hidden">
+    <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5 hidden sm:block">
         <div
@@ -49,7 +49,7 @@ const WhySection: React.FC = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="text-center mb-10 sm:mb-12 lg:mb-16"
+          className="text-center mb-12"
         >
           {isLoading ? (
             <>
@@ -65,7 +65,7 @@ const WhySection: React.FC = () => {
         </motion.div>
 
         {/* Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {isLoading ? (
             Array.from({ length: 4 }).map((_, index) => (
               <Skeleton key={index} className="h-32 rounded-xl" />

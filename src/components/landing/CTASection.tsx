@@ -21,7 +21,7 @@ const CTASection: React.FC = () => {
   const trustBadges = content?.trust_badges || [];
 
   return (
-    <section ref={ref} className="relative py-12 sm:py-16 md:py-20 lg:py-24 overflow-hidden">
+    <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/20 to-primary/10" />
       

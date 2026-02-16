@@ -165,7 +165,7 @@ const Profile: React.FC = () => {
         </header>
 
         {/* Profile Content */}
-        <div className="p-4 sm:p-6 space-y-6 safe-area-bottom">
+        <div className="p-6 space-y-8 safe-area-bottom">
           {isLoading ? (
             <div className="space-y-6">
               <Skeleton className="h-48 rounded-xl" />

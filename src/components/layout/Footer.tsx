@@ -111,8 +111,8 @@ const Footer: React.FC = () => {
 
   return (
     <footer className="bg-card/50 border-t border-border/30 safe-area-bottom">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 lg:py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 lg:gap-12">
+      <div className="page-container py-12 sm:py-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="inline-block">
