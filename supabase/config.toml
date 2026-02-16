@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.tap-verify-charge]
 verify_jwt = false
+
+[functions.coupon-validate]
+verify_jwt = false
+
+[functions.transcode-video]
+verify_jwt = false
