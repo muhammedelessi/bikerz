@@ -101,8 +101,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           const { data, error } = await supabase.functions.invoke('coupon-validate', {
             body: { code: savedCoupon, course_id: course.id, amount: course.price },
           });
-          if (error) throw error;
-          if (data?.valid) {
+          if (!error && data?.valid) {
             setPromoApplied(true);
             setAppliedCoupon(data);
             toast.success(isRTL ? 'تم تطبيق خصم إكمال الملف الشخصي تلقائياً!' : 'Profile completion discount auto-applied!');
@@ -136,7 +135,20 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       const { data, error } = await supabase.functions.invoke('coupon-validate', {
         body: { code: promoCode.trim(), course_id: course.id, amount: course.price },
       });
-      if (error) throw error;
+      // supabase.functions.invoke returns { data: null, error } for non-2xx responses
+      // The error.context may contain the actual JSON response body
+      if (error) {
+        // Try to extract the error message from the response body
+        let errorMsg = isRTL ? 'فشل التحقق من الرمز' : 'Failed to validate code';
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const body = await error.context.json();
+            errorMsg = body?.error || errorMsg;
+          }
+        } catch {}
+        toast.error(errorMsg);
+        return;
+      }
       if (data?.valid) {
         setPromoApplied(true);
         setAppliedCoupon(data);
