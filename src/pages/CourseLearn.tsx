@@ -655,12 +655,11 @@ const CourseLearn: React.FC = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                {/* Video Player - Compact size, not covering content below */}
+                {/* Video Player - Compact size */}
                 {currentLesson?.video_url && (
-                  <div className="relative bg-black w-full max-h-[50vh]">
+                  <div className="relative bg-black w-full" style={{ maxHeight: '40vh' }}>
                     {isYouTubeUrl(currentLesson.video_url) ? (
-                      // YouTube Embed Player
-                      <div className="aspect-video max-h-[50vh]">
+                      <div className="aspect-video" style={{ maxHeight: '40vh' }}>
                         <iframe
                           src={`https://www.youtube.com/embed/${getYouTubeVideoId(currentLesson.video_url)}?rel=0&modestbranding=1`}
                           className="w-full h-full"
@@ -670,7 +669,6 @@ const CourseLearn: React.FC = () => {
                         />
                       </div>
                     ) : currentLesson.video_provider === 'bunny' ? (
-                      // Bunny Stream Embed Player (iframe-based, no proxy needed)
                       <BunnyVideoEmbed
                         videoUrl={currentLesson.video_url}
                         title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
@@ -683,7 +681,6 @@ const CourseLearn: React.FC = () => {
                         }}
                       />
                     ) : (
-                      // Native Video Player for direct video URLs (Supabase storage, MP4, etc.)
                       <VideoPlayer
                         src={currentLesson.video_url}
                         title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
