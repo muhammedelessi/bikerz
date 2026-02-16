@@ -93,7 +93,7 @@ const CommunitySection: React.FC = () => {
       </div>
 
       <div className="section-container relative z-10">
-        <div className="max-w-3xl">
+        <div className="max-w-4xl mx-auto text-center">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
