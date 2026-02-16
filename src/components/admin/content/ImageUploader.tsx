@@ -51,7 +51,10 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
       const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
 
       if (uploadError) throw uploadError;
 
@@ -61,9 +64,9 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
       onChange(data.publicUrl);
       toast.success('Image uploaded successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload image');
+      toast.error(error?.message || 'Failed to upload image');
     } finally {
       setUploading(false);
     }
