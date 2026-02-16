@@ -90,8 +90,8 @@ const TermsOfService: React.FC = () => {
       
       <main className="pt-24 pb-16">
         {/* Header */}
-        <section className="bg-gradient-to-br from-secondary/10 via-background to-primary/10 py-16">
-          <div className="container mx-auto px-4">
+        <section className="bg-gradient-to-br from-secondary/10 via-background to-primary/10 py-16 sm:py-20">
+          <div className="page-container">
             <div className="max-w-3xl mx-auto text-center">
               <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Scale className="w-8 h-8 text-secondary-foreground" />
@@ -110,9 +110,9 @@ const TermsOfService: React.FC = () => {
         </section>
 
         {/* Content */}
-        <section className="py-16">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto space-y-8">
+        <section className="py-16 sm:py-20">
+          <div className="page-container">
+            <div className="max-w-4xl mx-auto space-y-6">
               {/* Introduction */}
               <Card className="bg-muted/30">
                 <CardContent className="p-6">

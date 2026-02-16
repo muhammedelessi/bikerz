@@ -318,12 +318,12 @@ const Dashboard: React.FC = () => {
         </header>
 
         {/* Dashboard Content */}
-        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 safe-area-bottom">
+        <div className="p-6 space-y-8 safe-area-bottom">
           {/* Profile Completion Reminder */}
           <ProfileCompletionReminder variant="card" />
 
           {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {isLoading ? (
               <>
                 <Skeleton className="h-24 rounded-xl" />
@@ -396,7 +396,7 @@ const Dashboard: React.FC = () => {
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {enrolledCourses.map((enrollment, index) => {
                   const course = enrollment.course as EnrolledCourse['course'];
                   const title = isRTL && course.title_ar ? course.title_ar : course.title;
@@ -475,7 +475,7 @@ const Dashboard: React.FC = () => {
             <h2 className="text-lg sm:text-xl font-bold text-foreground mb-3 sm:mb-4">
               {isRTL ? 'إجراءات سريعة' : 'Quick Actions'}
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <Link to="/courses">
                 <div className="card-premium p-3 sm:p-4 flex items-center gap-3 sm:gap-4 hover:border-primary/40 active:scale-[0.99] transition-all touch-target">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">

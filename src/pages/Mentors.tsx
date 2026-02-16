@@ -91,7 +91,7 @@ const Mentors: React.FC = () => {
 
           {/* Loading State */}
           {isLoading && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="card-premium overflow-hidden">
                   <Skeleton className="h-48 w-full" />
@@ -131,7 +131,7 @@ const Mentors: React.FC = () => {
 
           {/* Mentors Grid */}
           {!isLoading && !error && mentors.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {mentors.map((mentor, index) => (
                 <motion.div
                   key={mentor.id}

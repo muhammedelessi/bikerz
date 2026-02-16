@@ -136,7 +136,7 @@ const Courses: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-center mb-8 sm:mb-10 lg:mb-12"
+            className="text-center mb-12"
           >
             <h1 className="section-title text-foreground mb-3 sm:mb-4">
               {t('courses.title')}
@@ -167,7 +167,7 @@ const Courses: React.FC = () => {
           )}
 
           {!isLoading && courses.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {courses.map((course, index) => {
                 const title = isRTL && course.title_ar ? course.title_ar : course.title;
                 const description = isRTL && course.description_ar ? course.description_ar : course.description;

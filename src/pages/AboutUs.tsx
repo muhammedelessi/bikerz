@@ -87,7 +87,7 @@ const AboutUs: React.FC = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative pt-24 pb-16 sm:pt-32 sm:pb-24 overflow-hidden">
+      <section className="relative pt-24 pb-16 sm:pt-32 sm:pb-20 overflow-hidden">
         <div className="absolute inset-0">
           <img
             src={bgImage}
@@ -115,7 +115,7 @@ const AboutUs: React.FC = () => {
       </section>
 
       {/* Our Story Section */}
-      <section className="py-16 sm:py-24 bg-card/30">
+      <section className="py-16 sm:py-20 bg-card/30">
         <div className="section-container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -140,7 +140,7 @@ const AboutUs: React.FC = () => {
       </section>
 
       {/* Mission Section */}
-      <section className="py-16 sm:py-24">
+      <section className="py-16 sm:py-20">
         <div className="section-container">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
@@ -177,7 +177,7 @@ const AboutUs: React.FC = () => {
       </section>
 
       {/* Values Section */}
-      <section className="py-16 sm:py-24 bg-card/30">
+      <section className="py-16 sm:py-20 bg-card/30">
         <div className="section-container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -220,7 +220,7 @@ const AboutUs: React.FC = () => {
       </section>
 
       {/* Contact Info Section */}
-      <section className="py-16 sm:py-24">
+      <section className="py-16 sm:py-20">
         <div className="section-container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

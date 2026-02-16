@@ -24,7 +24,7 @@ const JourneySection: React.FC = () => {
   const steps = content?.steps || [];
 
   return (
-    <section ref={ref} className="relative py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-b from-background via-secondary/10 to-background overflow-hidden">
+    <section ref={ref} className="relative py-16 sm:py-20 bg-gradient-to-b from-background via-secondary/10 to-background overflow-hidden">
       {/* Road Pattern Background */}
       <div className="absolute inset-0 opacity-5 hidden md:block">
         <div className="absolute left-1/2 -translate-x-1/2 w-4 h-full bg-gradient-to-b from-transparent via-muted-foreground to-transparent" />
@@ -43,7 +43,7 @@ const JourneySection: React.FC = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="text-center mb-10 sm:mb-16 lg:mb-20"
+          className="text-center mb-12"
         >
           {isLoading ? (
             <>
@@ -70,7 +70,7 @@ const JourneySection: React.FC = () => {
             />
           </div>
 
-          <div className="space-y-6 sm:space-y-8 lg:space-y-12">
+          <div className="space-y-8">
             {isLoading ? (
               Array.from({ length: 4 }).map((_, index) => (
                 <div key={index} className="flex items-start gap-4 sm:gap-6">

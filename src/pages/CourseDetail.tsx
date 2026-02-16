@@ -374,7 +374,7 @@ const CourseDetail: React.FC = () => {
             transition={{ duration: 0.25 }}
             className="fixed top-0 inset-x-0 z-[60] bg-card/95 backdrop-blur-xl border-b border-border safe-area-top"
           >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            <div className="page-container h-16 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
                 <Link to="/courses" className="text-muted-foreground hover:text-foreground flex-shrink-0">
                   <BackIcon className="w-5 h-5" />
@@ -431,7 +431,7 @@ const CourseDetail: React.FC = () => {
             <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/75 to-background" />
           </div>
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-8 pb-12">
+          <div className="page-container relative z-10 pt-8 pb-12">
             {/* Back link */}
             <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-8 text-sm">
               <BackIcon className="w-4 h-4 me-1" />

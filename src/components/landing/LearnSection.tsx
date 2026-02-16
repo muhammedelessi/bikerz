@@ -38,7 +38,7 @@ const LearnSection: React.FC = () => {
   const skills = content?.skills || [];
 
   return (
-    <section ref={ref} className="relative py-12 sm:py-16 md:py-20 lg:py-24 overflow-hidden">
+    <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden">
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-background to-primary/5" />
 
@@ -48,7 +48,7 @@ const LearnSection: React.FC = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="text-center mb-10 sm:mb-12 lg:mb-16"
+          className="text-center mb-12"
         >
           {isLoading ? (
             <>
@@ -64,7 +64,7 @@ const LearnSection: React.FC = () => {
         </motion.div>
 
         {/* Skills Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {isLoading ? (
             Array.from({ length: 8 }).map((_, index) => (
               <Skeleton key={index} className="h-20 rounded-xl" />
