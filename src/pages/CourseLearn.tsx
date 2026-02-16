@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -47,6 +47,7 @@ import LessonDiscussion from '@/components/course/LessonDiscussion';
 import LessonQuiz from '@/components/course/LessonQuiz';
 import ReinforcementSuggestion from '@/components/learning/ReinforcementSuggestion';
 import LessonRecapInsert from '@/components/learning/LessonRecapInsert';
+import NextLessonCountdown from '@/components/course/NextLessonCountdown';
 
 interface Lesson {
   id: string;
@@ -122,6 +123,7 @@ const CourseLearn: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(urlLessonId || null);
   const [showTest, setShowTest] = useState<string | null>(null);
+  const [showNextCountdown, setShowNextCountdown] = useState(false);
 
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ChevronLeft : ChevronRight;
@@ -480,9 +482,19 @@ const CourseLearn: React.FC = () => {
     setCurrentLessonId(lessonId);
     setShowTest(null);
     setSidebarOpen(false);
+    setShowNextCountdown(false);
     // Update URL to reflect the current lesson
     navigate(`/courses/${id}/lessons/${lessonId}`, { replace: true });
   };
+
+  const handleVideoEnded = useCallback(() => {
+    if (currentLessonId && !isLessonCompleted(currentLessonId)) {
+      completeLessonMutation.mutate(currentLessonId);
+    }
+    if (nextLesson) {
+      setShowNextCountdown(true);
+    }
+  }, [currentLessonId, nextLesson]);
 
   // Helper to extract YouTube video ID
   const getYouTubeVideoId = (url: string): string | null => {
@@ -674,11 +686,7 @@ const CourseLearn: React.FC = () => {
                         title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
                         initialTime={getSavedWatchTime(currentLesson.id)}
                         onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
-                        onEnded={() => {
-                          if (!isLessonCompleted(currentLesson.id)) {
-                            completeLessonMutation.mutate(currentLesson.id);
-                          }
-                        }}
+                        onEnded={handleVideoEnded}
                       />
                     ) : (
                       <VideoPlayer
@@ -686,11 +694,7 @@ const CourseLearn: React.FC = () => {
                         title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
                         initialTime={getSavedWatchTime(currentLesson.id)}
                         onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
-                        onEnded={() => {
-                          if (!isLessonCompleted(currentLesson.id)) {
-                            completeLessonMutation.mutate(currentLesson.id);
-                          }
-                        }}
+                        onEnded={handleVideoEnded}
                       />
                     )}
                   </div>
@@ -1115,6 +1119,17 @@ const CourseLearn: React.FC = () => {
           </ScrollArea>
         </aside>
       </div>
+
+      {/* Next Lesson Countdown */}
+      <AnimatePresence>
+        {showNextCountdown && nextLesson && (
+          <NextLessonCountdown
+            nextLessonTitle={isRTL && nextLesson.title_ar ? nextLesson.title_ar : nextLesson.title}
+            onGoToNext={() => goToLesson(nextLesson.id)}
+            onDismiss={() => setShowNextCountdown(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
