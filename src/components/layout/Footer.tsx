@@ -106,8 +106,8 @@ const Footer: React.FC = () => {
     ? (footerContent?.tagline_ar || t('footer.tagline'))
     : (footerContent?.tagline_en || t('footer.tagline'));
 
-  const email = footerContent?.email || 'info@bikerz.sa';
-  const phone = footerContent?.phone || '+966 50 111 1111';
+  const email = footerContent?.email || 'info@bikerz.com';
+  const phone = footerContent?.phone || '+966 56 256 2368';
 
   return (
     <footer className="bg-card/50 border-t border-border/30 safe-area-bottom">

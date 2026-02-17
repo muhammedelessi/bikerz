@@ -108,15 +108,15 @@ const ContactUs: React.FC = () => {
       icon: Phone,
       title_en: 'Phone',
       title_ar: 'الهاتف',
-      value_en: '+966 12 XXX XXXX',
-      value_ar: '+966 12 XXX XXXX'
+      value_en: '+966 56 256 2368',
+      value_ar: '+966 56 256 2368'
     },
     {
       icon: Mail,
       title_en: 'Email',
       title_ar: 'البريد الإلكتروني',
-      value_en: 'support@bikerz.sa',
-      value_ar: 'support@bikerz.sa'
+      value_en: 'info@bikerz.com',
+      value_ar: 'info@bikerz.com'
     },
     {
       icon: Clock,
