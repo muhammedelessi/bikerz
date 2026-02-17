@@ -168,6 +168,40 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       toast.error(isRTL ? 'يرجى ملء الحقول المطلوبة' : 'Please fill in required fields');
       return;
     }
+
+    // If 100% discount, enroll directly without payment
+    if (discountedPrice <= 0 && appliedCoupon) {
+      try {
+        resetPayment();
+        // Insert enrollment directly
+        const { error: enrollError } = await supabase
+          .from('course_enrollments')
+          .insert({ user_id: user!.id, course_id: course.id });
+
+        if (enrollError && !enrollError.message.includes('duplicate')) {
+          throw new Error(enrollError.message);
+        }
+
+        // Log coupon usage
+        await supabase.from('coupon_usage_logs').insert({
+          coupon_id: appliedCoupon.coupon_id,
+          user_id: user!.id,
+          course_id: course.id,
+          original_amount: course.price,
+          discount_amount: appliedCoupon.discount_amount,
+          final_amount: 0,
+          result: 'success',
+        });
+
+        toast.success(isRTL ? 'تم التسجيل بنجاح! الدورة مجانية بالكامل' : 'Enrolled successfully! Course is fully free');
+        onSuccess();
+        onOpenChange(false);
+      } catch (err: any) {
+        toast.error(err.message || (isRTL ? 'فشل التسجيل' : 'Enrollment failed'));
+      }
+      return;
+    }
+
     await submitPayment({
       courseId: course.id,
       amount: discountedPrice,
@@ -388,6 +422,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <>
                   <Loader2 className="w-4 h-4 animate-spin me-2" />
                   {isRTL ? 'جاري التوجيه للدفع...' : 'Redirecting to payment...'}
+                </>
+              ) : discountedPrice <= 0 && appliedCoupon ? (
+                <>
+                  <Check className="w-4 h-4 me-2" />
+                  {isRTL ? 'سجّل مجاناً' : 'Enroll for Free'}
                 </>
               ) : (
                 <>
