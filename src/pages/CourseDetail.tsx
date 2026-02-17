@@ -112,13 +112,13 @@ const CourseDetail: React.FC = () => {
         if (error) throw error;
         if (data?.status === 'succeeded') {
           toast.success(isRTL ? 'تم الدفع بنجاح! تم تسجيلك في الدورة 🎉' : 'Payment successful! You are now enrolled 🎉');
-          queryClient.invalidateQueries({ queryKey: ['enrollment', id] });
+          queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
           navigate(`/courses/${id}/learn`);
         } else if (data?.status === 'failed') {
           toast.error(isRTL ? 'فشل الدفع. يرجى المحاولة مرة أخرى.' : 'Payment failed. Please try again.');
         } else {
           toast.info(isRTL ? 'جاري معالجة الدفع...' : 'Payment is being processed...');
-          queryClient.invalidateQueries({ queryKey: ['enrollment', id] });
+          queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
         }
       } catch {
         toast.error(isRTL ? 'تعذر التحقق من الدفع' : 'Could not verify payment');
@@ -229,7 +229,7 @@ const CourseDetail: React.FC = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['enrollment', id] });
+      queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
       toast.success(isRTL ? 'تم التسجيل بنجاح!' : 'Successfully enrolled!');
       navigate(`/courses/${id}/learn`);
     },
@@ -879,7 +879,7 @@ const CourseDetail: React.FC = () => {
             thumbnail_url: course.thumbnail_url,
           }}
           onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['enrollment', id] });
+            queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
             navigate(`/courses/${id}/learn`);
           }}
         />
