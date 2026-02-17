@@ -294,14 +294,40 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <Gift className="w-4 h-4 inline-block me-2" />
                   {isRTL ? 'رمز الخصم' : 'Promo Code'}
                 </Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={promoCode}
-                    onChange={(e) => setPromoCode(e.target.value)}
-                    placeholder={isRTL ? 'أدخل رمز الخصم' : 'Enter promo code'}
-                    disabled={promoApplied || paymentStatus === 'processing'}
-                    className="flex-1"
-                  />
+              <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value)}
+                      placeholder={isRTL ? 'أدخل رمز الخصم' : 'Enter promo code'}
+                      disabled={promoApplied || paymentStatus === 'processing'}
+                      className="w-full pe-9"
+                    />
+                    {(promoCode && !promoApplied) && (
+                      <button
+                        type="button"
+                        onClick={() => setPromoCode('')}
+                        className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        aria-label={isRTL ? 'مسح' : 'Clear'}
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    )}
+                    {promoApplied && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPromoCode('');
+                          setPromoApplied(false);
+                          setAppliedCoupon(null);
+                        }}
+                        className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        aria-label={isRTL ? 'إزالة الخصم' : 'Remove coupon'}
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                   <Button variant="outline" onClick={handleApplyPromo} disabled={!promoCode || promoApplied || paymentStatus === 'processing'}>
                     {promoApplied ? (isRTL ? 'مطبق' : 'Applied') : (isRTL ? 'تطبيق' : 'Apply')}
                   </Button>
