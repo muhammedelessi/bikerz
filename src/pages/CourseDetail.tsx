@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -86,6 +86,7 @@ const CourseDetail: React.FC = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ArrowLeft : ArrowRight;
   const [showCheckout, setShowCheckout] = useState(false);
@@ -112,6 +113,7 @@ const CourseDetail: React.FC = () => {
         if (data?.status === 'succeeded') {
           toast.success(isRTL ? 'تم الدفع بنجاح! تم تسجيلك في الدورة 🎉' : 'Payment successful! You are now enrolled 🎉');
           queryClient.invalidateQueries({ queryKey: ['enrollment', id] });
+          navigate(`/courses/${id}/learn`);
         } else if (data?.status === 'failed') {
           toast.error(isRTL ? 'فشل الدفع. يرجى المحاولة مرة أخرى.' : 'Payment failed. Please try again.');
         } else {
@@ -229,6 +231,7 @@ const CourseDetail: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enrollment', id] });
       toast.success(isRTL ? 'تم التسجيل بنجاح!' : 'Successfully enrolled!');
+      navigate(`/courses/${id}/learn`);
     },
     onError: (error: any) => {
       toast.error(error.message || (isRTL ? 'فشل التسجيل' : 'Failed to enroll'));
@@ -876,7 +879,8 @@ const CourseDetail: React.FC = () => {
             thumbnail_url: course.thumbnail_url,
           }}
           onSuccess={() => {
-            enrollMutation.mutate();
+            queryClient.invalidateQueries({ queryKey: ['enrollment', id] });
+            navigate(`/courses/${id}/learn`);
           }}
         />
       )}
