@@ -230,10 +230,10 @@ const AboutUs: React.FC = () => {
             className="text-center mb-12"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              {t('aboutUs.contact.title')}
+              {isRTL ? (d.contact_title_ar || t('aboutUs.contact.title')) : (d.contact_title_en || t('aboutUs.contact.title'))}
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              {t('aboutUs.contact.subtitle')}
+              {isRTL ? (d.contact_subtitle_ar || t('aboutUs.contact.subtitle')) : (d.contact_subtitle_en || t('aboutUs.contact.subtitle'))}
             </p>
           </motion.div>
 

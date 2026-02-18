@@ -1640,6 +1640,24 @@ const AdminContent: React.FC = () => {
             <h4 className="font-medium text-sm">{isRTL ? 'معلومات الاتصال' : 'Contact Info'}</h4>
           </div>
 
+          <BilingualInput
+            labelEn="Contact Section Title"
+            labelAr="عنوان قسم الاتصال"
+            valueEn={aboutData.contact_title_en || 'Get in Touch'}
+            valueAr={aboutData.contact_title_ar || 'تواصل معنا'}
+            onChangeEn={(v) => updateField('about_page', 'contact_title_en', v)}
+            onChangeAr={(v) => updateField('about_page', 'contact_title_ar', v)}
+          />
+
+          <BilingualInput
+            labelEn="Contact Section Subtitle"
+            labelAr="العنوان الفرعي لقسم الاتصال"
+            valueEn={aboutData.contact_subtitle_en || ''}
+            valueAr={aboutData.contact_subtitle_ar || ''}
+            onChangeEn={(v) => updateField('about_page', 'contact_subtitle_en', v)}
+            onChangeAr={(v) => updateField('about_page', 'contact_subtitle_ar', v)}
+          />
+
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>{isRTL ? 'الهاتف' : 'Phone'}</Label>
