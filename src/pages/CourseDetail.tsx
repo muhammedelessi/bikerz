@@ -34,6 +34,7 @@ import {
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.jpg';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
+import EnrollmentCelebration from '@/components/course/EnrollmentCelebration';
 
 interface Lesson {
   id: string;
@@ -93,6 +94,7 @@ const CourseDetail: React.FC = () => {
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   const [paymentVerifying, setPaymentVerifying] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   // Handle payment callback from Tap redirect
   useEffect(() => {
@@ -111,9 +113,8 @@ const CourseDetail: React.FC = () => {
         });
         if (error) throw error;
         if (data?.status === 'succeeded') {
-          toast.success(isRTL ? 'تم الدفع بنجاح! تم تسجيلك في الدورة 🎉' : 'Payment successful! You are now enrolled 🎉');
           queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
-          navigate(`/courses/${id}/learn`);
+          setShowCelebration(true);
         } else if (data?.status === 'failed') {
           toast.error(isRTL ? 'فشل الدفع. يرجى المحاولة مرة أخرى.' : 'Payment failed. Please try again.');
         } else {
@@ -230,8 +231,7 @@ const CourseDetail: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
-      toast.success(isRTL ? 'تم التسجيل بنجاح!' : 'Successfully enrolled!');
-      navigate(`/courses/${id}/learn`);
+      setShowCelebration(true);
     },
     onError: (error: any) => {
       toast.error(error.message || (isRTL ? 'فشل التسجيل' : 'Failed to enroll'));
@@ -880,7 +880,19 @@ const CourseDetail: React.FC = () => {
           }}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
-            navigate(`/courses/${id}/learn`);
+            setShowCelebration(true);
+          }}
+        />
+      )}
+
+      {course && (
+        <EnrollmentCelebration
+          open={showCelebration}
+          courseTitle={course.title}
+          courseTitleAr={course.title_ar}
+          onContinue={() => {
+            setShowCelebration(false);
+            navigate(`/courses/${id}/learn?welcome=1`);
           }}
         />
       )}

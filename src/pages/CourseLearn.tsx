@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -115,6 +115,7 @@ interface LessonResource {
 const CourseLearn: React.FC = () => {
   const { id, lessonId: urlLessonId } = useParams<{ id: string; lessonId?: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
@@ -124,6 +125,7 @@ const CourseLearn: React.FC = () => {
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(urlLessonId || null);
   const [showTest, setShowTest] = useState<string | null>(null);
   const [showNextCountdown, setShowNextCountdown] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
 
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ChevronLeft : ChevronRight;
@@ -561,6 +563,99 @@ const CourseLearn: React.FC = () => {
       className="min-h-screen min-h-[100svh] bg-background flex flex-col select-none"
       onContextMenu={(e) => e.preventDefault()}
     >
+      {/* Welcome Screen */}
+      <AnimatePresence>
+        {showWelcome && course && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-background p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 30 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: -10 }}
+              transition={{ type: 'spring', damping: 22, stiffness: 260, delay: 0.1 }}
+              className="w-full max-w-lg text-center space-y-8"
+            >
+              {/* Logo */}
+              <motion.img
+                src={bikerzLogo}
+                alt="Bikerz"
+                className="h-12 sm:h-14 mx-auto"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              />
+
+              {/* Welcome message */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="space-y-3"
+              >
+                <h1 className="text-3xl sm:text-4xl font-black text-foreground">
+                  {isRTL ? 'أهلاً بك! 👋' : 'Welcome! 👋'}
+                </h1>
+                <p className="text-muted-foreground text-base sm:text-lg leading-relaxed max-w-md mx-auto">
+                  {isRTL 
+                    ? 'أنت على وشك بدء رحلة تعليمية ممتعة. استمتع بتعلم كل ما تحتاجه عن عالم الدراجات النارية.'
+                    : "You're about to start an exciting learning journey. Enjoy mastering everything about the motorcycle world."}
+                </p>
+              </motion.div>
+
+              {/* Course card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="bg-card border-2 border-border rounded-2xl p-5 space-y-3"
+              >
+                <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <BookOpen className="w-4 h-4" />
+                    <span>{totalLessons} {isRTL ? 'درس' : 'lessons'}</span>
+                  </div>
+                  {totalQuizzes > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <ClipboardList className="w-4 h-4" />
+                      <span>{totalQuizzes} {isRTL ? 'اختبار' : 'quizzes'}</span>
+                    </div>
+                  )}
+                </div>
+                <h2 className="text-xl font-bold text-foreground">
+                  {isRTL && course.title_ar ? course.title_ar : course.title}
+                </h2>
+              </motion.div>
+
+              {/* Start button */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                <Button
+                  variant="cta"
+                  className="w-full h-14 text-base font-bold rounded-2xl gap-2"
+                  onClick={() => {
+                    setShowWelcome(false);
+                    // Clean up URL param
+                    searchParams.delete('welcome');
+                    setSearchParams(searchParams, { replace: true });
+                  }}
+                >
+                  <Play className="w-5 h-5" />
+                  {isRTL ? 'ابدأ الدرس الأول' : 'Start First Lesson'}
+                </Button>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Enrollment Banner for non-enrolled users */}
       {!isEnrolled && (
         <div className="bg-gradient-to-r from-primary/90 to-primary text-primary-foreground py-3 px-4 sm:px-6">
