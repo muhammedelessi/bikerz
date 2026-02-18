@@ -2,15 +2,23 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Bike, Shield, Route, Trophy, LucideIcon } from 'lucide-react';
+import { 
+  Shield, Award, Navigation, Users, Bike, Route, Trophy,
+  CheckCircle2, Gauge, CornerDownRight, AlertTriangle, CloudRain, Map, Users2,
+  Home, Target, BookOpen, Megaphone, Heart, Star, Zap, Crown,
+  Flame, Rocket, Globe, Lock, Eye, Clock, Calendar, Bell,
+  Gift, Medal, Flag, Compass, Mountain, Sun, Moon, Wind,
+  LucideIcon
+} from 'lucide-react';
 import { useLandingContent, JourneyContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const iconMap: Record<string, LucideIcon> = {
-  Shield,
-  Bike,
-  Route,
-  Trophy,
+  Shield, Award, Navigation, Users, Bike, Route, Trophy,
+  CheckCircle2, Gauge, CornerDownRight, AlertTriangle, CloudRain, Map, Users2,
+  Home, Target, BookOpen, Megaphone, Heart, Star, Zap, Crown,
+  Flame, Rocket, Globe, Lock, Eye, Clock, Calendar, Bell,
+  Gift, Medal, Flag, Compass, Mountain, Sun, Moon, Wind,
 };
 
 const JourneySection: React.FC = () => {

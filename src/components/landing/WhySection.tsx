@@ -1,7 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { Shield, Award, Navigation, Users, LucideIcon } from 'lucide-react';
+import { 
+  Shield, Award, Navigation, Users, Bike, Route, Trophy,
+  CheckCircle2, Gauge, CornerDownRight, AlertTriangle, CloudRain, Map, Users2,
+  Home, Target, BookOpen, Megaphone, Heart, Star, Zap, Crown,
+  Flame, Rocket, Globe, Lock, Eye, Clock, Calendar, Bell,
+  Gift, Medal, Flag, Compass, Mountain, Sun, Moon, Wind,
+  LucideIcon
+} from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import safetyImage from '@/assets/safety-hands.jpg';
 import instructorImage from '@/assets/instructor.jpg';
@@ -9,10 +16,11 @@ import { useLandingContent, WhyContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const iconMap: Record<string, LucideIcon> = {
-  Shield,
-  Award,
-  Navigation,
-  Users,
+  Shield, Award, Navigation, Users, Bike, Route, Trophy,
+  CheckCircle2, Gauge, CornerDownRight, AlertTriangle, CloudRain, Map, Users2,
+  Home, Target, BookOpen, Megaphone, Heart, Star, Zap, Crown,
+  Flame, Rocket, Globe, Lock, Eye, Clock, Calendar, Bell,
+  Gift, Medal, Flag, Compass, Mountain, Sun, Moon, Wind,
 };
 
 const imageMap: Record<number, string | undefined> = {
