@@ -39,21 +39,7 @@ let cachedLibraryId: string | null = null;
 const fetchLibraryId = async (videoId: string): Promise<string | null> => {
   if (cachedLibraryId) return cachedLibraryId;
 
-  // Try bunny-stream function (authenticated, reliable)
-  try {
-    const { supabase } = await import("@/integrations/supabase/client");
-    const { data } = await supabase.functions.invoke("bunny-stream", {
-      body: { action: "get-playback-url", videoId },
-    });
-    if (data?.libraryId) {
-      cachedLibraryId = data.libraryId;
-      return data.libraryId;
-    }
-  } catch (err) {
-    console.warn("[BunnyVideoEmbed] bunny-stream failed:", err);
-  }
-
-  // Fallback: try bunny-embed edge function (public, no auth)
+  // Try bunny-embed first (public, no auth required — avoids 401 on expired sessions)
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -70,8 +56,22 @@ const fetchLibraryId = async (videoId: string): Promise<string | null> => {
         return result.libraryId;
       }
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    console.warn("[BunnyVideoEmbed] bunny-embed failed:", err);
+  }
+
+  // Fallback: try bunny-stream function (authenticated)
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data } = await supabase.functions.invoke("bunny-stream", {
+      body: { action: "get-playback-url", videoId },
+    });
+    if (data?.libraryId) {
+      cachedLibraryId = data.libraryId;
+      return data.libraryId;
+    }
+  } catch (err) {
+    console.warn("[BunnyVideoEmbed] bunny-stream failed:", err);
   }
 
   return null;
