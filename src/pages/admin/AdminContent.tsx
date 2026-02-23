@@ -16,7 +16,7 @@ import {
   Save, Loader2, Eye, Home, Target, Route, BookOpen, Megaphone, Users,
   Settings2, Palette, LayoutGrid, Type, MousePointer,
   Sparkles, PanelLeftClose, PanelLeft, Menu, ExternalLink, Share2,
-  FileText, Shield, Scale, MessageSquare
+  FileText, Shield, Scale, MessageSquare, LogIn, UserPlus
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import IconSelector from '@/components/admin/content/IconSelector';
@@ -131,7 +131,7 @@ const AdminContent: React.FC = () => {
   const handleSave = (key: string) => {
     // For the 'pages' section, save all page sub-keys
     if (key === 'pages') {
-      const pageKeys = ['privacy_page', 'terms_page', 'contact_page', 'about_page'];
+      const pageKeys = ['privacy_page', 'terms_page', 'contact_page', 'about_page', 'login_page', 'signup_page'];
       const promises = pageKeys
         .filter(k => editedContent[k])
         .map(k => updateMutation.mutateAsync({ key: k, value: editedContent[k] }));
@@ -1909,6 +1909,229 @@ const AdminContent: React.FC = () => {
             </a>
           </div>
         </div>
+
+        <Separator />
+
+        {/* Login Page */}
+        {(() => {
+          const loginData = editedContent.login_page || {};
+          return (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <LogIn className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold">{isRTL ? 'صفحة تسجيل الدخول' : 'Login Page'}</h3>
+                <Badge variant="outline" className="ms-auto">
+                  <a href="/login" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                    <ExternalLink className="w-3 h-3" />
+                    {isRTL ? 'معاينة' : 'Preview'}
+                  </a>
+                </Badge>
+              </div>
+
+              <BilingualInput
+                labelEn="Page Title"
+                labelAr="عنوان الصفحة"
+                valueEn={loginData.title_en || ''}
+                valueAr={loginData.title_ar || ''}
+                onChangeEn={(v) => updateField('login_page', 'title_en', v)}
+                onChangeAr={(v) => updateField('login_page', 'title_ar', v)}
+                placeholderEn="Welcome Back"
+                placeholderAr="مرحباً بعودتك"
+              />
+
+              <BilingualInput
+                labelEn="Subtitle"
+                labelAr="العنوان الفرعي"
+                valueEn={loginData.subtitle_en || ''}
+                valueAr={loginData.subtitle_ar || ''}
+                onChangeEn={(v) => updateField('login_page', 'subtitle_en', v)}
+                onChangeAr={(v) => updateField('login_page', 'subtitle_ar', v)}
+                placeholderEn="Sign in to continue your journey"
+                placeholderAr="سجل دخولك لمتابعة رحلتك"
+              />
+
+              <BilingualInput
+                labelEn="Login Button Text"
+                labelAr="نص زر الدخول"
+                valueEn={loginData.button_en || ''}
+                valueAr={loginData.button_ar || ''}
+                onChangeEn={(v) => updateField('login_page', 'button_en', v)}
+                onChangeAr={(v) => updateField('login_page', 'button_ar', v)}
+                placeholderEn="Sign In"
+                placeholderAr="تسجيل الدخول"
+              />
+
+              <BilingualInput
+                labelEn="Forgot Password Text"
+                labelAr="نص نسيت كلمة المرور"
+                valueEn={loginData.forgot_en || ''}
+                valueAr={loginData.forgot_ar || ''}
+                onChangeEn={(v) => updateField('login_page', 'forgot_en', v)}
+                onChangeAr={(v) => updateField('login_page', 'forgot_ar', v)}
+                placeholderEn="Forgot your password?"
+                placeholderAr="نسيت كلمة المرور؟"
+              />
+
+              <BilingualInput
+                labelEn="No Account Text"
+                labelAr="نص ليس لديك حساب"
+                valueEn={loginData.no_account_en || ''}
+                valueAr={loginData.no_account_ar || ''}
+                onChangeEn={(v) => updateField('login_page', 'no_account_en', v)}
+                onChangeAr={(v) => updateField('login_page', 'no_account_ar', v)}
+                placeholderEn="Don't have an account?"
+                placeholderAr="ليس لديك حساب؟"
+              />
+
+              <BilingualInput
+                labelEn="Signup Link Text"
+                labelAr="نص رابط التسجيل"
+                valueEn={loginData.signup_link_en || ''}
+                valueAr={loginData.signup_link_ar || ''}
+                onChangeEn={(v) => updateField('login_page', 'signup_link_en', v)}
+                onChangeAr={(v) => updateField('login_page', 'signup_link_ar', v)}
+                placeholderEn="Sign up"
+                placeholderAr="سجل الآن"
+              />
+
+              <ImageUploader
+                value={loginData.image || ''}
+                onChange={(url) => updateField('login_page', 'image', url)}
+                label={isRTL ? 'صورة الخلفية' : 'Background Image'}
+                bucket="course-thumbnails"
+                folder="auth"
+              />
+            </div>
+          );
+        })()}
+
+        <Separator />
+
+        {/* Signup Page */}
+        {(() => {
+          const signupData = editedContent.signup_page || {};
+          return (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <UserPlus className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold">{isRTL ? 'صفحة إنشاء الحساب' : 'Signup Page'}</h3>
+                <Badge variant="outline" className="ms-auto">
+                  <a href="/signup" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                    <ExternalLink className="w-3 h-3" />
+                    {isRTL ? 'معاينة' : 'Preview'}
+                  </a>
+                </Badge>
+              </div>
+
+              <BilingualInput
+                labelEn="Page Title"
+                labelAr="عنوان الصفحة"
+                valueEn={signupData.title_en || ''}
+                valueAr={signupData.title_ar || ''}
+                onChangeEn={(v) => updateField('signup_page', 'title_en', v)}
+                onChangeAr={(v) => updateField('signup_page', 'title_ar', v)}
+                placeholderEn="Create Your Account"
+                placeholderAr="أنشئ حسابك"
+              />
+
+              <BilingualInput
+                labelEn="Subtitle"
+                labelAr="العنوان الفرعي"
+                valueEn={signupData.subtitle_en || ''}
+                valueAr={signupData.subtitle_ar || ''}
+                onChangeEn={(v) => updateField('signup_page', 'subtitle_en', v)}
+                onChangeAr={(v) => updateField('signup_page', 'subtitle_ar', v)}
+                placeholderEn="Join the BIKERZ community"
+                placeholderAr="انضم إلى مجتمع بايكرز"
+              />
+
+              <BilingualInput
+                labelEn="Signup Button Text"
+                labelAr="نص زر التسجيل"
+                valueEn={signupData.button_en || ''}
+                valueAr={signupData.button_ar || ''}
+                onChangeEn={(v) => updateField('signup_page', 'button_en', v)}
+                onChangeAr={(v) => updateField('signup_page', 'button_ar', v)}
+                placeholderEn="Create Account"
+                placeholderAr="إنشاء حساب"
+              />
+
+              <BilingualInput
+                labelEn="Name Label"
+                labelAr="تسمية الاسم"
+                valueEn={signupData.name_label_en || ''}
+                valueAr={signupData.name_label_ar || ''}
+                onChangeEn={(v) => updateField('signup_page', 'name_label_en', v)}
+                onChangeAr={(v) => updateField('signup_page', 'name_label_ar', v)}
+                placeholderEn="Full Name"
+                placeholderAr="الاسم الكامل"
+              />
+
+              <BilingualInput
+                labelEn="Email Label"
+                labelAr="تسمية البريد"
+                valueEn={signupData.email_label_en || ''}
+                valueAr={signupData.email_label_ar || ''}
+                onChangeEn={(v) => updateField('signup_page', 'email_label_en', v)}
+                onChangeAr={(v) => updateField('signup_page', 'email_label_ar', v)}
+                placeholderEn="Email Address"
+                placeholderAr="البريد الإلكتروني"
+              />
+
+              <BilingualInput
+                labelEn="Password Label"
+                labelAr="تسمية كلمة المرور"
+                valueEn={signupData.password_label_en || ''}
+                valueAr={signupData.password_label_ar || ''}
+                onChangeEn={(v) => updateField('signup_page', 'password_label_en', v)}
+                onChangeAr={(v) => updateField('signup_page', 'password_label_ar', v)}
+                placeholderEn="Password"
+                placeholderAr="كلمة المرور"
+              />
+
+              <BilingualInput
+                labelEn="Confirm Password Label"
+                labelAr="تسمية تأكيد كلمة المرور"
+                valueEn={signupData.confirm_label_en || ''}
+                valueAr={signupData.confirm_label_ar || ''}
+                onChangeEn={(v) => updateField('signup_page', 'confirm_label_en', v)}
+                onChangeAr={(v) => updateField('signup_page', 'confirm_label_ar', v)}
+                placeholderEn="Confirm Password"
+                placeholderAr="تأكيد كلمة المرور"
+              />
+
+              <BilingualInput
+                labelEn="Has Account Text"
+                labelAr="نص لديك حساب"
+                valueEn={signupData.has_account_en || ''}
+                valueAr={signupData.has_account_ar || ''}
+                onChangeEn={(v) => updateField('signup_page', 'has_account_en', v)}
+                onChangeAr={(v) => updateField('signup_page', 'has_account_ar', v)}
+                placeholderEn="Already have an account?"
+                placeholderAr="لديك حساب بالفعل؟"
+              />
+
+              <BilingualInput
+                labelEn="Login Link Text"
+                labelAr="نص رابط الدخول"
+                valueEn={signupData.login_link_en || ''}
+                valueAr={signupData.login_link_ar || ''}
+                onChangeEn={(v) => updateField('signup_page', 'login_link_en', v)}
+                onChangeAr={(v) => updateField('signup_page', 'login_link_ar', v)}
+                placeholderEn="Sign in"
+                placeholderAr="تسجيل الدخول"
+              />
+
+              <ImageUploader
+                value={signupData.image || ''}
+                onChange={(url) => updateField('signup_page', 'image', url)}
+                label={isRTL ? 'صورة الخلفية' : 'Background Image'}
+                bucket="course-thumbnails"
+                folder="auth"
+              />
+            </div>
+          );
+        })()}
       </div>
     );
   };

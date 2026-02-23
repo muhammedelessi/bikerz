@@ -9,9 +9,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import LanguageToggle from '@/components/common/LanguageToggle';
 import ProfileCompletionWizard from '@/components/profile/ProfileCompletionWizard';
+import { useAuthPageContent } from '@/hooks/useAuthPageContent';
 import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import heroImage from '@/assets/community-ride.jpg';
+import defaultHeroImage from '@/assets/community-ride.jpg';
 import bikerzLogo from '@/assets/bikerz-logo.png';
 
 const Signup: React.FC = () => {
@@ -19,6 +20,7 @@ const Signup: React.FC = () => {
   const { isRTL } = useLanguage();
   const { signUp } = useAuth();
   const navigate = useNavigate();
+  const { data: authContent } = useAuthPageContent();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [name, setName] = useState('');
@@ -29,6 +31,18 @@ const Signup: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showProfileWizard, setShowProfileWizard] = useState(false);
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+
+  const cms = authContent?.signup || {};
+  const heroImage = cms.image || defaultHeroImage;
+  const title = (isRTL ? cms.title_ar : cms.title_en) || t('auth.signup.title');
+  const subtitle = (isRTL ? cms.subtitle_ar : cms.subtitle_en) || t('auth.signup.subtitle');
+  const buttonText = (isRTL ? cms.button_ar : cms.button_en) || t('auth.signup.button');
+  const nameLabel = (isRTL ? cms.name_label_ar : cms.name_label_en) || t('auth.signup.name');
+  const emailLabel = (isRTL ? cms.email_label_ar : cms.email_label_en) || t('auth.signup.email');
+  const passwordLabel = (isRTL ? cms.password_label_ar : cms.password_label_en) || t('auth.signup.password');
+  const confirmLabel = (isRTL ? cms.confirm_label_ar : cms.confirm_label_en) || t('auth.signup.confirmPassword');
+  const hasAccountText = (isRTL ? cms.has_account_ar : cms.has_account_en) || t('auth.signup.hasAccount');
+  const loginLinkText = (isRTL ? cms.login_link_ar : cms.login_link_en) || t('auth.signup.loginLink');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,14 +70,12 @@ const Signup: React.FC = () => {
     
     toast.success(t('auth.signup.success'));
     setIsLoading(false);
-    // Show profile completion wizard instead of navigating immediately
     setShowProfileWizard(true);
   };
 
   const handleProfileWizardClose = (open: boolean) => {
     setShowProfileWizard(open);
     if (!open) {
-      // Navigate to dashboard when wizard is closed (completed or skipped)
       navigate('/dashboard');
     }
   };
@@ -105,10 +117,10 @@ const Signup: React.FC = () => {
           <div className="card-premium p-5 sm:p-6 lg:p-8">
             <div className="text-center mb-6 sm:mb-8">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
-                {t('auth.signup.title')}
+                {title}
               </h1>
               <p className="text-sm sm:text-base text-muted-foreground">
-                {t('auth.signup.subtitle')}
+                {subtitle}
               </p>
             </div>
 
@@ -121,7 +133,7 @@ const Signup: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm sm:text-base">{t('auth.signup.name')}</Label>
+                <Label htmlFor="name" className="text-sm sm:text-base">{nameLabel}</Label>
                 <Input
                   id="name"
                   type="text"
@@ -134,7 +146,7 @@ const Signup: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm sm:text-base">{t('auth.signup.email')}</Label>
+                <Label htmlFor="email" className="text-sm sm:text-base">{emailLabel}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -147,7 +159,7 @@ const Signup: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm sm:text-base">{t('auth.signup.password')}</Label>
+                <Label htmlFor="password" className="text-sm sm:text-base">{passwordLabel}</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -170,7 +182,7 @@ const Signup: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-sm sm:text-base">{t('auth.signup.confirmPassword')}</Label>
+                <Label htmlFor="confirmPassword" className="text-sm sm:text-base">{confirmLabel}</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
@@ -201,7 +213,7 @@ const Signup: React.FC = () => {
                   <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                 ) : (
                   <>
-                    {t('auth.signup.button')}
+                    {buttonText}
                     <Arrow className="w-4 h-4" />
                   </>
                 )}
@@ -209,9 +221,9 @@ const Signup: React.FC = () => {
             </form>
 
             <div className="mt-5 sm:mt-6 text-center text-sm sm:text-base text-muted-foreground">
-              {t('auth.signup.hasAccount')}{' '}
+              {hasAccountText}{' '}
               <Link to="/login" className="text-primary hover:underline font-medium">
-                {t('auth.signup.loginLink')}
+                {loginLinkText}
               </Link>
             </div>
           </div>

@@ -8,9 +8,10 @@ import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import LanguageToggle from '@/components/common/LanguageToggle';
+import { useAuthPageContent } from '@/hooks/useAuthPageContent';
 import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import heroImage from '@/assets/hero-rider.jpg';
+import defaultHeroImage from '@/assets/hero-rider.jpg';
 import bikerzLogo from '@/assets/bikerz-logo.png';
 
 const Login: React.FC = () => {
@@ -18,12 +19,22 @@ const Login: React.FC = () => {
   const { isRTL } = useLanguage();
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const { data: authContent } = useAuthPageContent();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+
+  const cms = authContent?.login || {};
+  const heroImage = cms.image || defaultHeroImage;
+  const title = (isRTL ? cms.title_ar : cms.title_en) || t('auth.login.title');
+  const subtitle = (isRTL ? cms.subtitle_ar : cms.subtitle_en) || t('auth.login.subtitle');
+  const buttonText = (isRTL ? cms.button_ar : cms.button_en) || t('auth.login.button');
+  const forgotText = (isRTL ? cms.forgot_ar : cms.forgot_en) || t('auth.login.forgot');
+  const noAccountText = (isRTL ? cms.no_account_ar : cms.no_account_en) || t('auth.login.noAccount');
+  const signupLinkText = (isRTL ? cms.signup_link_ar : cms.signup_link_en) || t('auth.login.signupLink');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,10 +79,10 @@ const Login: React.FC = () => {
           <div className="card-premium p-5 sm:p-6 lg:p-8">
             <div className="text-center mb-6 sm:mb-8">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
-                {t('auth.login.title')}
+                {title}
               </h1>
               <p className="text-sm sm:text-base text-muted-foreground">
-                {t('auth.login.subtitle')}
+                {subtitle}
               </p>
             </div>
 
@@ -120,7 +131,7 @@ const Login: React.FC = () => {
 
               <div className="flex items-center justify-end">
                 <Link to="/forgot-password" className="text-sm text-primary hover:underline touch-target py-1">
-                  {t('auth.login.forgot')}
+                  {forgotText}
                 </Link>
               </div>
 
@@ -134,7 +145,7 @@ const Login: React.FC = () => {
                   <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                 ) : (
                   <>
-                    {t('auth.login.button')}
+                    {buttonText}
                     <Arrow className="w-4 h-4" />
                   </>
                 )}
@@ -142,9 +153,9 @@ const Login: React.FC = () => {
             </form>
 
             <div className="mt-5 sm:mt-6 text-center text-sm sm:text-base text-muted-foreground">
-              {t('auth.login.noAccount')}{' '}
+              {noAccountText}{' '}
               <Link to="/signup" className="text-primary hover:underline font-medium">
-                {t('auth.login.signupLink')}
+                {signupLinkText}
               </Link>
             </div>
           </div>
