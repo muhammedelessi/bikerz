@@ -193,7 +193,7 @@ const Footer: React.FC = () => {
             <h4 className="font-bold text-foreground mb-3 sm:mb-4">{t('footer.contact')}</h4>
             <div className="space-y-2 sm:space-y-3 text-muted-foreground text-sm">
               <p>{email}</p>
-              <p dir="ltr" className="text-start">{phone}</p>
+              <p style={{ unicodeBidi: 'plaintext' }}>{phone}</p>
               <p>{t('footer.location')}</p>
             </div>
           </div>
