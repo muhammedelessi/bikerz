@@ -657,43 +657,62 @@ const CourseDetail: React.FC = () => {
         </section>
 
         {/* What You'll Learn */}
-        {chapters.length > 0 && (
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
-                  <Target className="w-5 h-5 text-primary" />
+        {(() => {
+          const outcomes = Array.isArray((course as any).learning_outcomes) && (course as any).learning_outcomes.length > 0
+            ? (course as any).learning_outcomes as { text_en: string; text_ar: string }[]
+            : null;
+          const showSection = outcomes ? outcomes.length > 0 : chapters.length > 0;
+          if (!showSection) return null;
+          return (
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+                    <Target className="w-5 h-5 text-primary" />
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                    {isRTL ? 'ماذا ستتعلم' : 'What You\'ll Learn'}
+                  </h2>
                 </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-                  {isRTL ? 'ماذا ستتعلم' : 'What You\'ll Learn'}
-                </h2>
-              </div>
 
-              <div className="grid sm:grid-cols-2 gap-3">
-                {chapters.slice(0, 6).map((chapter) => {
-                  const chTitle = isRTL && chapter.title_ar ? chapter.title_ar : chapter.title;
-                  const chDesc = isRTL && chapter.description_ar ? chapter.description_ar : chapter.description;
-                  return (
-                    <div key={chapter.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                      <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground">{chTitle}</p>
-                        {chDesc && (
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{chDesc}</p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </section>
-        )}
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {outcomes ? (
+                    outcomes.map((item, idx) => {
+                      const text = isRTL && item.text_ar ? item.text_ar : item.text_en;
+                      return (
+                        <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                          <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                          <p className="text-sm font-medium text-foreground">{text}</p>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    chapters.slice(0, 6).map((chapter) => {
+                      const chTitle = isRTL && chapter.title_ar ? chapter.title_ar : chapter.title;
+                      const chDesc = isRTL && chapter.description_ar ? chapter.description_ar : chapter.description;
+                      return (
+                        <div key={chapter.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                          <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground">{chTitle}</p>
+                            {chDesc && (
+                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{chDesc}</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </motion.div>
+            </section>
+          );
+        })()}
 
         {/* Chapter Roadmap Timeline */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
