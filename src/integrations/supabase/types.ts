@@ -574,6 +574,7 @@ export type Database = {
           description: string | null
           description_ar: string | null
           difficulty_level: string
+          discount_percentage: number | null
           drip_enabled: boolean | null
           duration_hours: number | null
           id: string
@@ -597,6 +598,7 @@ export type Database = {
           description?: string | null
           description_ar?: string | null
           difficulty_level?: string
+          discount_percentage?: number | null
           drip_enabled?: boolean | null
           duration_hours?: number | null
           id?: string
@@ -620,6 +622,7 @@ export type Database = {
           description?: string | null
           description_ar?: string | null
           difficulty_level?: string
+          discount_percentage?: number | null
           drip_enabled?: boolean | null
           duration_hours?: number | null
           id?: string

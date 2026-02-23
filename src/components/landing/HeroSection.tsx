@@ -54,18 +54,20 @@ const HeroSection: React.FC = () => {
     return count > 0 ? `${count}+` : '0';
   };
 
+  const heroContent = content as any;
+
   const displayStats = [
     { 
-      value: formatCount(stats?.members || 0), 
-      label: isRTL ? 'عضو' : 'Members' 
+      value: heroContent?.stats_members_value || formatCount(stats?.members || 0), 
+      label: isRTL ? (heroContent?.stats_members_ar || 'عضو') : (heroContent?.stats_members_en || 'Members')
     },
     { 
-      value: formatCount(stats?.lessons || 0), 
-      label: isRTL ? 'درس' : 'Lessons' 
+      value: heroContent?.stats_lessons_value || formatCount(stats?.lessons || 0), 
+      label: isRTL ? (heroContent?.stats_lessons_ar || 'درس') : (heroContent?.stats_lessons_en || 'Lessons')
     },
     { 
-      value: stats?.successRate ? `${stats.successRate}%` : '0%', 
-      label: isRTL ? 'نجاح' : 'Success' 
+      value: heroContent?.stats_success_value || (stats?.successRate ? `${stats.successRate}%` : '0%'), 
+      label: isRTL ? (heroContent?.stats_success_ar || 'نجاح') : (heroContent?.stats_success_en || 'Success')
     },
   ];
 

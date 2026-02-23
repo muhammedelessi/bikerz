@@ -104,6 +104,7 @@ const AdminCourses: React.FC = () => {
     description_ar: '',
     thumbnail_url: '',
     price: 0,
+    discount_percentage: 0,
     currency: 'SAR',
     difficulty_level: 'beginner',
     duration_hours: 0,
@@ -134,6 +135,7 @@ const AdminCourses: React.FC = () => {
         description_ar: data.description_ar || null,
         thumbnail_url: data.thumbnail_url || null,
         price: data.price,
+        discount_percentage: data.discount_percentage || 0,
         currency: data.currency,
         difficulty_level: data.difficulty_level,
         duration_hours: data.duration_hours || null,
@@ -165,6 +167,7 @@ const AdminCourses: React.FC = () => {
           description_ar: data.description_ar || null,
           thumbnail_url: data.thumbnail_url || null,
           price: data.price,
+          discount_percentage: data.discount_percentage || 0,
           currency: data.currency,
           difficulty_level: data.difficulty_level,
           duration_hours: data.duration_hours || null,
@@ -209,6 +212,7 @@ const AdminCourses: React.FC = () => {
       description_ar: '',
       thumbnail_url: '',
       price: 0,
+      discount_percentage: 0,
       currency: 'SAR',
       difficulty_level: 'beginner',
       duration_hours: 0,
@@ -274,6 +278,7 @@ const AdminCourses: React.FC = () => {
       description_ar: course.description_ar || '',
       thumbnail_url: course.thumbnail_url || '',
       price: course.price,
+      discount_percentage: (course as any).discount_percentage || 0,
       currency: course.currency || 'SAR',
       difficulty_level: course.difficulty_level,
       duration_hours: course.duration_hours || 0,
@@ -657,6 +662,22 @@ const AdminCourses: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
+                <Label>{isRTL ? 'نسبة الخصم %' : 'Discount %'}</Label>
+                <Input
+                  type="number"
+                  value={formData.discount_percentage}
+                  onChange={(e) => setFormData({ ...formData, discount_percentage: Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)) })}
+                  min={0}
+                  max={100}
+                  placeholder="0"
+                />
+                {formData.discount_percentage > 0 && formData.price > 0 && (
+                  <p className="text-xs text-primary font-medium">
+                    {isRTL ? 'السعر بعد الخصم:' : 'After discount:'} {Math.round(formData.price * (1 - formData.discount_percentage / 100))} {formData.currency}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
                 <Label>{isRTL ? 'العملة' : 'Currency'}</Label>
                 <Select 
                   value={formData.currency} 
@@ -688,15 +709,15 @@ const AdminCourses: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>{isRTL ? 'المدة (ساعات)' : 'Duration (hours)'}</Label>
-                <Input
-                  type="number"
-                  value={formData.duration_hours}
-                  onChange={(e) => setFormData({ ...formData, duration_hours: parseInt(e.target.value) || 0 })}
-                  min={0}
-                />
-              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{isRTL ? 'المدة (ساعات)' : 'Duration (hours)'}</Label>
+              <Input
+                type="number"
+                value={formData.duration_hours}
+                onChange={(e) => setFormData({ ...formData, duration_hours: parseInt(e.target.value) || 0 })}
+                min={0}
+              />
             </div>
 
             <div className="flex flex-col sm:flex-row gap-6 pt-4">
