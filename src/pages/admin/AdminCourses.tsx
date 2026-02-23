@@ -109,6 +109,7 @@ const AdminCourses: React.FC = () => {
     difficulty_level: 'beginner',
     duration_hours: 0,
     is_published: false,
+    learning_outcomes: [] as { text_en: string; text_ar: string }[],
   });
 
   // Fetch courses
@@ -141,6 +142,7 @@ const AdminCourses: React.FC = () => {
         duration_hours: data.duration_hours || null,
         is_published: data.is_published,
         status: data.is_published ? 'published' : 'draft',
+        learning_outcomes: data.learning_outcomes.length > 0 ? data.learning_outcomes : [],
       });
       if (error) throw error;
     },
@@ -173,6 +175,7 @@ const AdminCourses: React.FC = () => {
           duration_hours: data.duration_hours || null,
           is_published: data.is_published,
           status: data.is_published ? 'published' : 'draft',
+          learning_outcomes: data.learning_outcomes.length > 0 ? data.learning_outcomes : [],
         })
         .eq('id', id);
       if (error) throw error;
@@ -217,6 +220,7 @@ const AdminCourses: React.FC = () => {
       difficulty_level: 'beginner',
       duration_hours: 0,
       is_published: false,
+      learning_outcomes: [],
     });
   };
 
@@ -283,6 +287,7 @@ const AdminCourses: React.FC = () => {
       difficulty_level: course.difficulty_level,
       duration_hours: course.duration_hours || 0,
       is_published: Boolean(course.is_published),
+      learning_outcomes: Array.isArray((course as any).learning_outcomes) ? (course as any).learning_outcomes : [],
     });
     setEditingCourse(course);
   };
@@ -710,6 +715,68 @@ const AdminCourses: React.FC = () => {
                 </Select>
               </div>
             </div>
+
+            {/* Learning Outcomes */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">{isRTL ? 'ماذا ستتعلم' : 'What You Will Learn'}</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFormData({
+                    ...formData,
+                    learning_outcomes: [...formData.learning_outcomes, { text_en: '', text_ar: '' }]
+                  })}
+                >
+                  <Plus className="w-4 h-4 me-1" />
+                  {isRTL ? 'إضافة' : 'Add'}
+                </Button>
+              </div>
+              {formData.learning_outcomes.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {isRTL ? 'لم يتم إضافة نقاط تعلم. سيتم عرض عناوين الفصول تلقائياً.' : 'No outcomes added. Chapter titles will be shown automatically.'}
+                </p>
+              )}
+              {formData.learning_outcomes.map((outcome, idx) => (
+                <div key={idx} className="flex gap-2 items-start border border-border/50 rounded-lg p-3">
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <Input
+                      value={outcome.text_en}
+                      onChange={(e) => {
+                        const updated = [...formData.learning_outcomes];
+                        updated[idx] = { ...updated[idx], text_en: e.target.value };
+                        setFormData({ ...formData, learning_outcomes: updated });
+                      }}
+                      placeholder={isRTL ? 'النص بالإنجليزية' : 'English text'}
+                    />
+                    <Input
+                      value={outcome.text_ar}
+                      onChange={(e) => {
+                        const updated = [...formData.learning_outcomes];
+                        updated[idx] = { ...updated[idx], text_ar: e.target.value };
+                        setFormData({ ...formData, learning_outcomes: updated });
+                      }}
+                      placeholder={isRTL ? 'النص بالعربية' : 'Arabic text'}
+                      dir="rtl"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-destructive flex-shrink-0"
+                    onClick={() => {
+                      const updated = formData.learning_outcomes.filter((_, i) => i !== idx);
+                      setFormData({ ...formData, learning_outcomes: updated });
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
             <div className="space-y-2">
               <Label>{isRTL ? 'المدة (ساعات)' : 'Duration (hours)'}</Label>
               <Input
