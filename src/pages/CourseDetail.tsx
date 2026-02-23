@@ -69,6 +69,7 @@ interface Course {
   description_ar: string | null;
   thumbnail_url: string | null;
   price: number;
+  discount_percentage: number | null;
   difficulty_level: string;
   duration_hours: number | null;
   total_lessons: number | null;
@@ -576,11 +577,27 @@ const CourseDetail: React.FC = () => {
                     <div className="space-y-5">
                       {/* Price */}
                       <div className="text-center py-2">
-                        <span className="text-4xl font-black text-foreground">
-                          {course.price === 0
-                            ? t('common.free')
-                            : `${course.price} ${t('common.sar')}`}
-                        </span>
+                        {course.discount_percentage && course.discount_percentage > 0 && course.price > 0 ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-center gap-2">
+                              <span className="text-lg text-muted-foreground line-through">
+                                {course.price} {t('common.sar')}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-sm font-bold">
+                                -{course.discount_percentage}%
+                              </span>
+                            </div>
+                            <span className="text-4xl font-black text-foreground">
+                              {Math.round(course.price * (1 - course.discount_percentage / 100))} {t('common.sar')}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-4xl font-black text-foreground">
+                            {course.price === 0
+                              ? t('common.free')
+                              : `${course.price} ${t('common.sar')}`}
+                          </span>
+                        )}
                       </div>
 
                       {/* CTA */}

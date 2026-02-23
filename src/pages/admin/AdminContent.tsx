@@ -559,15 +559,24 @@ const AdminContent: React.FC = () => {
 
         <Separator />
 
-        {/* Stats Labels */}
+        {/* Stats Values & Labels */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-4">
             <LayoutGrid className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold">{isRTL ? 'تسميات الإحصائيات' : 'Stats Labels'}</h3>
+            <h3 className="font-semibold">{isRTL ? 'قيم وتسميات الإحصائيات' : 'Stats Values & Labels'}</h3>
           </div>
+          <p className="text-xs text-muted-foreground mb-2">
+            {isRTL ? 'أدخل القيم لعرضها. اتركها فارغة لاستخدام البيانات الحقيقية من قاعدة البيانات.' : 'Enter values to display. Leave empty to use real data from the database.'}
+          </p>
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
+              <Label>{isRTL ? 'قيمة الأعضاء' : 'Members Value'}</Label>
+              <Input
+                value={heroData.stats_members_value || ''}
+                onChange={(e) => updateField('hero', 'stats_members_value', e.target.value)}
+                placeholder={isRTL ? 'مثال: 15K+' : 'e.g. 15K+'}
+              />
               <Label>Members Label (EN)</Label>
               <Input
                 value={heroData.stats_members_en || 'Members'}
@@ -581,6 +590,12 @@ const AdminContent: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
+              <Label>{isRTL ? 'قيمة الدروس' : 'Lessons Value'}</Label>
+              <Input
+                value={heroData.stats_lessons_value || ''}
+                onChange={(e) => updateField('hero', 'stats_lessons_value', e.target.value)}
+                placeholder={isRTL ? 'مثال: 200+' : 'e.g. 200+'}
+              />
               <Label>Lessons Label (EN)</Label>
               <Input
                 value={heroData.stats_lessons_en || 'Lessons'}
@@ -594,6 +609,12 @@ const AdminContent: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
+              <Label>{isRTL ? 'قيمة النجاح' : 'Success Value'}</Label>
+              <Input
+                value={heroData.stats_success_value || ''}
+                onChange={(e) => updateField('hero', 'stats_success_value', e.target.value)}
+                placeholder={isRTL ? 'مثال: 95%' : 'e.g. 95%'}
+              />
               <Label>Success Label (EN)</Label>
               <Input
                 value={heroData.stats_success_en || 'Success'}
