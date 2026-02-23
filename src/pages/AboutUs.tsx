@@ -253,8 +253,8 @@ const AboutUs: React.FC = () => {
                 <p className="text-sm text-muted-foreground mb-1">
                   {info.label}
                 </p>
-                <p className="font-semibold text-foreground" dir={info.icon === Phone ? 'ltr' : undefined}>
-                  {info.value}
+                <p className="font-semibold text-foreground">
+                  <span dir={info.icon === Phone ? 'ltr' : undefined}>{info.value}</span>
                 </p>
               </motion.div>
             ))}

@@ -73,6 +73,7 @@ import BunnyVideoUploader from '@/components/admin/BunnyVideoUploader';
 import TestQuestionManager from '@/components/admin/TestQuestionManager';
 import LessonQuizManager from '@/components/admin/LessonQuizManager';
 import RichTextEditor from '@/components/admin/RichTextEditor';
+import ImageUploader from '@/components/admin/content/ImageUploader';
 
 interface ChapterTest {
   id: string;
@@ -100,6 +101,7 @@ interface Lesson {
   description_ar: string | null;
   video_url: string | null;
   video_provider: string;
+  video_thumbnail: string | null;
   duration_minutes: number | null;
   position: number;
   is_published: boolean;
@@ -148,6 +150,7 @@ const AdminCourseEditor: React.FC = () => {
     description_ar: '',
     video_url: '',
     video_provider: 'youtube',
+    video_thumbnail: '',
     duration_minutes: 0,
     is_published: false,
     is_free: false,
@@ -306,6 +309,7 @@ const AdminCourseEditor: React.FC = () => {
         description_ar: data.description_ar || null,
         video_url: data.video_url || null,
         video_provider: data.video_provider,
+        video_thumbnail: data.video_thumbnail || null,
         duration_minutes: data.duration_minutes || null,
         position: maxPosition + 1,
         is_published: data.is_published,
@@ -336,6 +340,7 @@ const AdminCourseEditor: React.FC = () => {
           description_ar: data.description_ar || null,
           video_url: data.video_url || null,
           video_provider: data.video_provider,
+          video_thumbnail: data.video_thumbnail || null,
           duration_minutes: data.duration_minutes || null,
           is_published: data.is_published,
           is_free: data.is_free,
@@ -448,6 +453,7 @@ const AdminCourseEditor: React.FC = () => {
       description_ar: '',
       video_url: '',
       video_provider: 'youtube',
+      video_thumbnail: '',
       duration_minutes: 0,
       is_published: false,
       is_free: false,
@@ -481,6 +487,7 @@ const AdminCourseEditor: React.FC = () => {
       description_ar: lesson.description_ar || '',
       video_url: lesson.video_url || '',
       video_provider: lesson.video_provider || 'youtube',
+      video_thumbnail: lesson.video_thumbnail || '',
       duration_minutes: lesson.duration_minutes || 0,
       is_published: lesson.is_published,
       is_free: lesson.is_free,
@@ -1009,6 +1016,16 @@ const AdminCourseEditor: React.FC = () => {
                 />
               )}
             </div>
+            
+            {/* Video Thumbnail */}
+            <ImageUploader
+              value={lessonForm.video_thumbnail}
+              onChange={(url) => setLessonForm({ ...lessonForm, video_thumbnail: url })}
+              label={isRTL ? 'صورة مصغرة للفيديو' : 'Video Thumbnail'}
+              bucket="course-thumbnails"
+              folder="lesson-thumbnails"
+            />
+
             <div className="space-y-2">
               <Label>{isRTL ? 'المدة (دقائق)' : 'Duration (minutes)'}</Label>
               <Input
