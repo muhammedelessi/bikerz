@@ -481,6 +481,13 @@ const CourseLearn: React.FC = () => {
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
   const goToLesson = (lessonId: string) => {
+    // Find the lesson and its chapter to check if it's locked
+    const targetLesson = allLessons.find(l => l.id === lessonId);
+    const targetChapter = chapters.find(ch => ch.lessons.some(l => l.id === lessonId));
+    if (targetLesson && targetChapter && isLessonLocked(targetLesson, targetChapter)) {
+      toast.error(isRTL ? 'يجب عليك شراء الدورة للوصول لهذا الدرس' : 'You need to purchase the course to access this lesson');
+      return;
+    }
     setCurrentLessonId(lessonId);
     setShowTest(null);
     setSidebarOpen(false);
@@ -494,9 +501,13 @@ const CourseLearn: React.FC = () => {
       completeLessonMutation.mutate(currentLessonId);
     }
     if (nextLesson) {
-      setShowNextCountdown(true);
+      // Only show countdown if next lesson is accessible
+      const nextChapter = chapters.find(ch => ch.lessons.some(l => l.id === nextLesson.id));
+      if (nextChapter && !isLessonLocked(nextLesson, nextChapter)) {
+        setShowNextCountdown(true);
+      }
     }
-  }, [currentLessonId, nextLesson]);
+  }, [currentLessonId, nextLesson, chapters]);
 
   // Helper to extract YouTube video ID
   const getYouTubeVideoId = (url: string): string | null => {
@@ -978,12 +989,22 @@ const CourseLearn: React.FC = () => {
                       <div className="hidden sm:block" />
                     )}
                     
-                    {nextLesson ? (
-                      <Button onClick={() => goToLesson(nextLesson.id)} className="h-11 sm:h-10 order-1 sm:order-2">
-                        <span className="truncate">{isRTL ? 'الدرس التالي' : 'Next'}</span>
-                        <ForwardIcon className="w-4 h-4 ms-2" />
-                      </Button>
-                    ) : currentChapter?.test && isChapterComplete(currentChapter) ? (
+                    {nextLesson ? (() => {
+                      const nextChapter = chapters.find(ch => ch.lessons.some(l => l.id === nextLesson.id));
+                      const nextLocked = nextChapter ? isLessonLocked(nextLesson, nextChapter) : false;
+                      return nextLocked ? (
+                        <Button variant="outline" disabled className="h-11 sm:h-10 order-1 sm:order-2 opacity-50">
+                          <Lock className="w-4 h-4 me-2" />
+                          <span className="truncate">{isRTL ? 'الدرس التالي مقفل' : 'Next Lesson Locked'}</span>
+                        </Button>
+                      ) : (
+                        <Button onClick={() => goToLesson(nextLesson.id)} className="h-11 sm:h-10 order-1 sm:order-2">
+                          <span className="truncate">{isRTL ? 'الدرس التالي' : 'Next'}</span>
+                          <ForwardIcon className="w-4 h-4 ms-2" />
+                        </Button>
+                      );
+                    })()
+                     : currentChapter?.test && isChapterComplete(currentChapter) ? (
                       <Button onClick={() => setShowTest(currentChapter.id)} className="btn-cta h-11 sm:h-10 order-1 sm:order-2">
                         <ClipboardList className="w-4 h-4 me-2" />
                         {isRTL ? 'ابدأ الاختبار' : 'Take Test'}
