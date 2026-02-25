@@ -16,15 +16,26 @@ export const DATE_RANGES: Record<string, DateRange> = {
   'all': { label: 'All time', days: 9999 },
 };
 
+const SUCCESS_TAP_STATUS = new Set(['captured', 'approved', 'processing']);
+
+const getSinceDate = (dateRange: string) => {
+  const days = DATE_RANGES[dateRange]?.days ?? 30;
+  return subDays(new Date(), days);
+};
+
+const isSuccessfulTapStatus = (status?: string | null) =>
+  SUCCESS_TAP_STATUS.has((status || '').toLowerCase());
+
 // Global System Overview
-export function useSystemOverview() {
+export function useSystemOverview(dateRange: string = '30d') {
   return useQuery({
-    queryKey: ['analytics-system-overview'],
+    queryKey: ['analytics-system-overview', dateRange],
     queryFn: async () => {
       const now = new Date();
       const last24h = subHours(now, 24);
       const last7d = subDays(now, 7);
       const last30d = subDays(now, 30);
+      const since = getSinceDate(dateRange);
 
       const [
         totalUsersRes,
@@ -34,40 +45,53 @@ export function useSystemOverview() {
         enrollmentsRes,
         lessonsRes,
         lessonProgressRes,
-        paymentsRes,
-        recentPaymentsRes,
+        manualPaymentsRes,
+        tapPaymentsRes,
         concurrentRes,
         watchingNowRes,
       ] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact' }),
-        supabase.from('profiles').select('id', { count: 'exact' }).gte('created_at', last24h.toISOString()),
-        supabase.from('profiles').select('id', { count: 'exact' }).gte('created_at', last7d.toISOString()),
-        supabase.from('profiles').select('id', { count: 'exact' }).gte('created_at', last30d.toISOString()),
-        supabase.from('course_enrollments').select('id', { count: 'exact' }),
-        supabase.from('lessons').select('id', { count: 'exact' }),
-        supabase.from('lesson_progress').select('id, watch_time_seconds', { count: 'exact' }).eq('is_completed', true),
-        supabase.from('manual_payments').select('amount').eq('status', 'approved'),
-        supabase.from('manual_payments').select('amount, created_at').eq('status', 'approved').gte('created_at', last30d.toISOString()),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', last24h.toISOString()),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', last7d.toISOString()),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', last30d.toISOString()),
+        supabase.from('course_enrollments').select('id', { count: 'exact', head: true }),
+        supabase.from('lessons').select('id', { count: 'exact', head: true }),
+        supabase
+          .from('lesson_progress')
+          .select('id, watch_time_seconds', { count: 'exact' })
+          .eq('is_completed', true)
+          .gte('last_watched_at', since.toISOString()),
+        supabase.from('manual_payments').select('amount, created_at, status'),
+        supabase.from('tap_charges').select('amount, created_at, status'),
         supabase.from('realtime_presence').select('id', { count: 'exact' }).gte('last_heartbeat_at', subDays(now, 0.01).toISOString()),
         supabase.from('realtime_presence').select('id', { count: 'exact' }).eq('is_watching_video', true),
       ]);
 
+      const successfulManual = (manualPaymentsRes.data || []).filter((p) => (p.status || '').toLowerCase() === 'approved');
+      const successfulTap = (tapPaymentsRes.data || []).filter((p) => isSuccessfulTapStatus(p.status));
+      const allSuccessfulPayments = [...successfulManual, ...successfulTap];
+
       const totalWatchTimeSeconds = lessonProgressRes.data?.reduce((sum, p) => sum + (p.watch_time_seconds || 0), 0) || 0;
-      const totalRevenue = paymentsRes.data?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-      const recentRevenue = recentPaymentsRes.data?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+      const totalRevenue = allSuccessfulPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
       // Calculate today/week/month revenue
       const todayStart = startOfDay(now);
       const weekStart = startOfWeek(now);
       const monthStart = startOfMonth(now);
 
-      const revenueToday = recentPaymentsRes.data?.filter(p => new Date(p.created_at) >= todayStart).reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-      const revenueWeek = recentPaymentsRes.data?.filter(p => new Date(p.created_at) >= weekStart).reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-      const revenueMonth = recentPaymentsRes.data?.filter(p => new Date(p.created_at) >= monthStart).reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+      const revenueToday = allSuccessfulPayments
+        .filter((p) => p.created_at && new Date(p.created_at) >= todayStart)
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const revenueWeek = allSuccessfulPayments
+        .filter((p) => p.created_at && new Date(p.created_at) >= weekStart)
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const revenueMonth = allSuccessfulPayments
+        .filter((p) => p.created_at && new Date(p.created_at) >= monthStart)
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
       // Calculate RPAU (Revenue Per Active User)
       const activeUsers = users30dRes.count || 1;
-      const rpau = recentRevenue / activeUsers;
+      const rpau = revenueMonth / activeUsers;
 
       return {
         totalUsers: totalUsersRes.count || 0,
@@ -88,7 +112,7 @@ export function useSystemOverview() {
         totalLessons: lessonsRes.count || 0,
       };
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 10000,
   });
 }
 
@@ -160,6 +184,7 @@ export function useUserIntelligence(dateRange: string) {
         activeStreaks: (gamificationRes.data || []).filter(g => g.current_streak > 0).length,
       };
     },
+    refetchInterval: 15000,
   });
 }
 
@@ -252,6 +277,7 @@ export function useVideoAnalytics(dateRange: string, lessonId?: string) {
           : 0,
       };
     },
+    refetchInterval: 15000,
   });
 }
 
@@ -260,15 +286,14 @@ export function useCourseAnalytics(dateRange: string) {
   return useQuery({
     queryKey: ['analytics-courses', dateRange],
     queryFn: async () => {
-      const days = DATE_RANGES[dateRange]?.days || 30;
-      const since = subDays(new Date(), days);
+      const since = getSinceDate(dateRange);
 
       const [coursesRes, chaptersRes, lessonsRes, enrollmentsRes, progressRes] = await Promise.all([
         supabase.from('courses').select('id, title, title_ar, is_published'),
         supabase.from('chapters').select('id, course_id, title, position'),
         supabase.from('lessons').select('id, chapter_id, title, position'),
-        supabase.from('course_enrollments').select('*'),
-        supabase.from('lesson_progress').select('*'),
+        supabase.from('course_enrollments').select('id, user_id, course_id, enrolled_at, completed_at').gte('enrolled_at', since.toISOString()),
+        supabase.from('lesson_progress').select('user_id, lesson_id, is_completed, last_watched_at').gte('last_watched_at', since.toISOString()),
       ]);
 
       const courses = coursesRes.data || [];
@@ -283,10 +308,10 @@ export function useCourseAnalytics(dateRange: string) {
         const courseChapterIds = courseChapters.map(ch => ch.id);
         const courseLessons = lessons.filter(l => courseChapterIds.includes(l.chapter_id));
         const courseLessonIds = courseLessons.map(l => l.id);
-        
+
         const courseEnrollments = enrollments.filter(e => e.course_id === course.id);
         const completedEnrollments = courseEnrollments.filter(e => e.completed_at);
-        
+
         // Calculate lesson-to-lesson leakage
         const lessonCompletionCounts = courseLessons.map(lesson => {
           const completions = progress.filter(p => p.lesson_id === lesson.id && p.is_completed).length;
@@ -311,9 +336,9 @@ export function useCourseAnalytics(dateRange: string) {
         const userFirstDropoffs = courseEnrollments.map(e => {
           const userProgress = progress.filter(p => p.user_id === e.user_id && courseLessonIds.includes(p.lesson_id));
           const completedLessons = userProgress.filter(p => p.is_completed).length;
-          if (completedLessons === courseLessons.length) return null; // Completed all
+          if (completedLessons === courseLessons.length) return null;
           const enrollDate = new Date(e.enrolled_at);
-          const lastProgress = userProgress.sort((a, b) => 
+          const lastProgress = userProgress.sort((a, b) =>
             new Date(b.last_watched_at || 0).getTime() - new Date(a.last_watched_at || 0).getTime()
           )[0];
           if (!lastProgress?.last_watched_at) return null;
@@ -353,6 +378,7 @@ export function useCourseAnalytics(dateRange: string) {
           : 0,
       };
     },
+    refetchInterval: 15000,
   });
 }
 
@@ -361,46 +387,45 @@ export function useFunnelAnalytics(dateRange: string) {
   return useQuery({
     queryKey: ['analytics-funnel', dateRange],
     queryFn: async () => {
-      const days = DATE_RANGES[dateRange]?.days || 30;
-      const since = subDays(new Date(), days);
+      const since = getSinceDate(dateRange);
 
-      const [funnelRes, profilesRes, enrollmentsRes, paymentsRes, progressRes] = await Promise.all([
-        supabase.from('funnel_events').select('*').gte('created_at', since.toISOString()),
-        supabase.from('profiles').select('id, user_id, created_at'),
-        supabase.from('course_enrollments').select('*').gte('enrolled_at', since.toISOString()),
-        supabase.from('manual_payments').select('*').eq('status', 'approved').gte('created_at', since.toISOString()),
-        supabase.from('lesson_progress').select('*').gte('last_watched_at', since.toISOString()),
+      const [profilesRes, enrollmentsRes, manualPaymentsRes, tapPaymentsRes, progressRes] = await Promise.all([
+        supabase.from('profiles').select('user_id, created_at').gte('created_at', since.toISOString()),
+        supabase.from('course_enrollments').select('id, user_id, enrolled_at').gte('enrolled_at', since.toISOString()),
+        supabase.from('manual_payments').select('user_id, amount, status, created_at').gte('created_at', since.toISOString()),
+        supabase.from('tap_charges').select('user_id, amount, status, created_at').gte('created_at', since.toISOString()),
+        supabase.from('lesson_progress').select('user_id, lesson_id, is_completed, last_watched_at').gte('last_watched_at', since.toISOString()),
       ]);
 
       const profiles = profilesRes.data || [];
-      const enrollments = enrollmentsRes.data || [];
-      const payments = paymentsRes.data || [];
       const progress = progressRes.data || [];
+      const signupUserIds = new Set(profiles.map((p) => p.user_id));
 
-      // Calculate funnel steps
-      const signups = profiles.length;
-      
-      // Users who completed at least one lesson
-      const usersWithProgress = new Set(progress.filter(p => p.is_completed).map(p => p.user_id));
-      const firstLessonUsers = usersWithProgress.size;
-      
+      const cohortProgress = progress.filter((p) => signupUserIds.has(p.user_id) && p.is_completed);
+      const firstLessonUsers = new Set(cohortProgress.map((p) => p.user_id)).size;
+
       // Users who completed at least 2 lessons
-      const lessonCountByUser = progress.filter(p => p.is_completed).reduce((acc: Record<string, number>, p) => {
+      const lessonCountByUser = cohortProgress.reduce((acc: Record<string, number>, p) => {
         acc[p.user_id] = (acc[p.user_id] || 0) + 1;
         return acc;
       }, {});
-      const secondLessonUsers = Object.values(lessonCountByUser).filter(c => c >= 2).length;
+      const secondLessonUsers = Object.values(lessonCountByUser).filter((c) => c >= 2).length;
 
-      // Paid users
-      const paidUsers = new Set(payments.map(p => p.user_id)).size;
+      const successfulManual = (manualPaymentsRes.data || []).filter((p) => (p.status || '').toLowerCase() === 'approved');
+      const successfulTap = (tapPaymentsRes.data || []).filter((p) => isSuccessfulTapStatus(p.status));
+      const paidUsers = new Set([...successfulManual, ...successfulTap]
+        .filter((p) => signupUserIds.has(p.user_id))
+        .map((p) => p.user_id)).size;
 
-      // Active users (any activity in last 7 days)
+      // Active users (activity in last 7 days) from signup cohort
       const activeUsers = new Set(
         progress.filter(p => {
           const lastWatched = p.last_watched_at ? new Date(p.last_watched_at) : null;
-          return lastWatched && lastWatched >= subDays(new Date(), 7);
+          return lastWatched && lastWatched >= subDays(new Date(), 7) && signupUserIds.has(p.user_id);
         }).map(p => p.user_id)
       ).size;
+
+      const signups = profiles.length;
 
       const funnelSteps = [
         { step: 'Signups', count: signups, rate: 100 },
@@ -415,7 +440,7 @@ export function useFunnelAnalytics(dateRange: string) {
         from: funnelSteps[idx].step,
         to: step.step,
         dropRate: funnelSteps[idx].count > 0
-          ? Math.round(((funnelSteps[idx].count - step.count) / funnelSteps[idx].count) * 100)
+          ? Math.max(0, Math.round(((funnelSteps[idx].count - step.count) / funnelSteps[idx].count) * 100))
           : 0,
       }));
 
@@ -426,6 +451,7 @@ export function useFunnelAnalytics(dateRange: string) {
         activationRate: signups > 0 ? Math.round((firstLessonUsers / signups) * 100) : 0,
       };
     },
+    refetchInterval: 15000,
   });
 }
 
@@ -434,23 +460,44 @@ export function useRevenueAnalytics(dateRange: string) {
   return useQuery({
     queryKey: ['analytics-revenue', dateRange],
     queryFn: async () => {
-      const days = DATE_RANGES[dateRange]?.days || 30;
-      const since = subDays(new Date(), days);
+      const since = getSinceDate(dateRange);
 
-      const [paymentsRes, coursesRes, profilesRes] = await Promise.all([
-        supabase.from('manual_payments').select('*').eq('status', 'approved'),
+      const [manualPaymentsRes, tapPaymentsRes, coursesRes, profilesRes] = await Promise.all([
+        supabase.from('manual_payments').select('id, user_id, course_id, amount, status, created_at'),
+        supabase.from('tap_charges').select('id, user_id, course_id, amount, status, created_at'),
         supabase.from('courses').select('id, title, title_ar, price'),
-        supabase.from('profiles').select('id, user_id, created_at'),
+        supabase.from('profiles').select('user_id, created_at'),
       ]);
 
-      const payments = paymentsRes.data || [];
       const courses = coursesRes.data || [];
       const profiles = profilesRes.data || [];
+      const windowUsers = profiles.filter((p) => new Date(p.created_at) >= since);
 
-      // Revenue by course
+      const manualPayments = (manualPaymentsRes.data || []).map((p) => ({
+        ...p,
+        source: 'manual' as const,
+        statusNormalized: (p.status || '').toLowerCase(),
+      }));
+      const tapPayments = (tapPaymentsRes.data || []).map((p) => ({
+        ...p,
+        source: 'tap' as const,
+        statusNormalized: (p.status || '').toLowerCase(),
+      }));
+
+      const allPayments = [...manualPayments, ...tapPayments];
+      const successfulPayments = allPayments.filter((p) => {
+        if (p.source === 'manual') return p.statusNormalized === 'approved';
+        return isSuccessfulTapStatus(p.status);
+      });
+
+      const windowSuccessfulPayments = successfulPayments.filter((p) =>
+        p.created_at ? new Date(p.created_at) >= since : false
+      );
+
+      // Revenue by course (window)
       const revenueByCourse = courses.map(course => {
-        const coursePayments = payments.filter(p => p.course_id === course.id);
-        const totalRevenue = coursePayments.reduce((sum, p) => sum + Number(p.amount), 0);
+        const coursePayments = windowSuccessfulPayments.filter(p => p.course_id === course.id);
+        const totalRevenue = coursePayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
         return {
           id: course.id,
           title: course.title,
@@ -461,11 +508,12 @@ export function useRevenueAnalytics(dateRange: string) {
         };
       }).sort((a, b) => b.revenue - a.revenue);
 
-      // Monthly revenue trend
+      // Monthly revenue trend (lifetime)
       const monthlyRevenue: Record<string, number> = {};
-      payments.forEach(p => {
+      successfulPayments.forEach((p) => {
+        if (!p.created_at) return;
         const month = format(new Date(p.created_at), 'yyyy-MM');
-        monthlyRevenue[month] = (monthlyRevenue[month] || 0) + Number(p.amount);
+        monthlyRevenue[month] = (monthlyRevenue[month] || 0) + Number(p.amount || 0);
       });
 
       const monthlyTrend = Object.entries(monthlyRevenue)
@@ -479,23 +527,23 @@ export function useRevenueAnalytics(dateRange: string) {
         ? (recentMonths[recentMonths.length - 1]?.revenue || 0) - (recentMonths[0]?.revenue || 0)
         : 0;
 
-      // ARPU / ARPPU
-      const totalRevenue = payments.reduce((sum, p) => sum + Number(p.amount), 0);
-      const totalUsers = profiles.length;
-      const payingUsers = new Set(payments.map(p => p.user_id)).size;
+      // ARPU / ARPPU (window)
+      const totalRevenue = windowSuccessfulPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const totalUsers = windowUsers.length;
+      const payingUsers = new Set(windowSuccessfulPayments.map((p) => p.user_id)).size;
 
       const arpu = totalUsers > 0 ? totalRevenue / totalUsers : 0;
       const arppu = payingUsers > 0 ? totalRevenue / payingUsers : 0;
 
-      // LTV by cohort (simplified - by signup month)
+      // LTV by cohort (lifetime by signup month)
       const cohortRevenue: Record<string, { users: number; revenue: number }> = {};
       profiles.forEach(profile => {
         const cohort = format(new Date(profile.created_at), 'yyyy-MM');
         if (!cohortRevenue[cohort]) cohortRevenue[cohort] = { users: 0, revenue: 0 };
         cohortRevenue[cohort].users++;
-        
-        const userPayments = payments.filter(p => p.user_id === profile.user_id);
-        const userRevenue = userPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+
+        const userPayments = successfulPayments.filter((p) => p.user_id === profile.user_id);
+        const userRevenue = userPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
         cohortRevenue[cohort].revenue += userRevenue;
       });
 
@@ -505,9 +553,11 @@ export function useRevenueAnalytics(dateRange: string) {
         users: data.users,
       })).sort((a, b) => a.cohort.localeCompare(b.cohort));
 
-      // Refunds (simplified - no refund tracking in current schema, count as 0)
-      const refunds = 0;
-      const disputes = 0;
+      // Dynamic refunds/disputes from payment statuses
+      const refunds = allPayments.filter((p) => p.statusNormalized.includes('refund')).length;
+      const disputes = allPayments.filter((p) =>
+        p.statusNormalized.includes('dispute') || p.statusNormalized.includes('chargeback')
+      ).length;
 
       return {
         totalRevenue,
@@ -523,6 +573,7 @@ export function useRevenueAnalytics(dateRange: string) {
         payingUsers,
       };
     },
+    refetchInterval: 15000,
   });
 }
 
@@ -531,11 +582,13 @@ export function useRetentionAnalytics(dateRange: string) {
   return useQuery({
     queryKey: ['analytics-retention', dateRange],
     queryFn: async () => {
+      const since = getSinceDate(dateRange);
+
       const [engagementRes, gamificationRes, progressRes, profilesRes] = await Promise.all([
-        supabase.from('user_engagement_scores').select('*').order('score_date', { ascending: false }),
+        supabase.from('user_engagement_scores').select('*').gte('score_date', format(since, 'yyyy-MM-dd')).order('score_date', { ascending: false }),
         supabase.from('user_gamification').select('*'),
-        supabase.from('lesson_progress').select('user_id, lesson_id, is_completed, last_watched_at'),
-        supabase.from('profiles').select('user_id, created_at'),
+        supabase.from('lesson_progress').select('user_id, lesson_id, is_completed, last_watched_at').gte('last_watched_at', since.toISOString()),
+        supabase.from('profiles').select('user_id, created_at').gte('created_at', since.toISOString()),
       ]);
 
       const engagement = engagementRes.data || [];
@@ -576,7 +629,7 @@ export function useRetentionAnalytics(dateRange: string) {
         { label: '30+ days', min: 30, max: 9999, count: 0 },
       ];
 
-      Object.entries(lastActivityByUser).forEach(([userId, lastActivity]) => {
+      Object.values(lastActivityByUser).forEach((lastActivity) => {
         const daysInactive = differenceInDays(now, lastActivity);
         const window = inactiveWindows.find(w => daysInactive >= w.min && daysInactive <= w.max);
         if (window) window.count++;
@@ -614,6 +667,7 @@ export function useRetentionAnalytics(dateRange: string) {
           .filter(([_, date]) => differenceInDays(now, date) <= 7).length,
       };
     },
+    refetchInterval: 15000,
   });
 }
 
@@ -663,5 +717,6 @@ export function useInfrastructureMetrics(dateRange: string) {
           : 0,
       };
     },
+    refetchInterval: 15000,
   });
 }

@@ -92,7 +92,7 @@ const AdminAnalytics = () => {
 
           <div className="mt-6">
             <TabsContent value="overview" className="m-0">
-              <SystemOverview />
+              <SystemOverview dateRange={dateRange} />
             </TabsContent>
             <TabsContent value="users" className="m-0">
               <UserIntelligence dateRange={dateRange} />
