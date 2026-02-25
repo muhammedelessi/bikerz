@@ -71,7 +71,7 @@ export function useBunnyStream() {
   }, []);
 
   /**
-   * Create a new video entry in Bunny Stream
+   * Create a new video entry in Bunny Stream (standalone, kept for compatibility)
    */
   const createVideo = useCallback(async (title: string): Promise<{ videoId: string; libraryId: string } | null> => {
     try {
@@ -93,16 +93,14 @@ export function useBunnyStream() {
   }, []);
 
   /**
-   * Get upload credentials for TUS resumable upload
+   * Create video and get upload credentials in a single API call
    */
-  const getUploadCredentials = useCallback(async (videoId: string) => {
+  const createAndGetUploadCredentials = useCallback(async (title: string) => {
     const { data, error } = await supabase.functions.invoke('bunny-stream', {
-      body: { action: 'get-upload-url', videoId },
+      body: { action: 'create-and-upload', title },
     });
-
     if (error) throw error;
-    if (!data.success) throw new Error(data.error || 'Failed to get upload URL');
-
+    if (!data.success) throw new Error(data.error || 'Failed to create video');
     return data;
   }, []);
 
@@ -126,24 +124,27 @@ export function useBunnyStream() {
           progress: { percentage: 0, bytesUploaded: 0, bytesTotal: file.size, speed: 0, remainingTime: 0 },
         }));
 
-        // Step 1: Create video entry
-        const createResult = await createVideo(title);
-        if (!createResult) throw new Error('Failed to create video entry');
-
-        const { videoId, libraryId } = createResult;
+        // Single API call: create video + get upload credentials
+        const credentials = await createAndGetUploadCredentials(title);
+        const videoId = credentials.videoId;
         setUploadState(prev => ({ ...prev, videoId }));
 
-        // Step 2: Get upload credentials
-        const credentials = await getUploadCredentials(videoId);
-
-        // Step 3: Start TUS upload
+        // Start TUS upload with optimized settings
         lastProgressTimeRef.current = Date.now();
         lastBytesUploadedRef.current = 0;
 
+        // Adaptive chunk size: larger files get larger chunks for better throughput
+        const chunkSize = file.size > 500 * 1024 * 1024
+          ? 50 * 1024 * 1024  // 50MB chunks for files > 500MB
+          : file.size > 100 * 1024 * 1024
+          ? 25 * 1024 * 1024  // 25MB chunks for files > 100MB
+          : 10 * 1024 * 1024; // 10MB chunks for smaller files
+
         const upload = new tus.Upload(file, {
           endpoint: credentials.uploadUrl,
-          retryDelays: [0, 1000, 3000, 5000, 10000],
-          chunkSize: 5 * 1024 * 1024, // 5MB chunks
+          retryDelays: [0, 500, 1000, 3000, 5000],
+          chunkSize,
+          parallelUploads: 3, // Upload 3 chunks in parallel
           metadata: {
             filename: file.name,
             filetype: file.type,
@@ -221,7 +222,7 @@ export function useBunnyStream() {
         reject(error);
       }
     });
-  }, [createVideo, getUploadCredentials]);
+  }, [createAndGetUploadCredentials]);
 
   /**
    * Pause the current upload

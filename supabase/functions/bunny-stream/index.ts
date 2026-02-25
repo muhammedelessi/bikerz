@@ -253,10 +253,7 @@ serve(async (req) => {
         const tusEndpoint = `https://video.bunnycdn.com/tusupload`;
         
         // Generate authorization signature for TUS
-        // Bunny requires: SHA256(library_id + api_key + expiration_time + video_id)
         const expirationTime = Math.floor(Date.now() / 1000) + 86400; // 24 hours
-        
-        // Create the signature hash
         const signatureString = `${bunnyLibraryId}${bunnyApiKey}${expirationTime}${videoId}`;
         const encoder = new TextEncoder();
         const data = encoder.encode(signatureString);
@@ -270,6 +267,53 @@ serve(async (req) => {
             uploadUrl: tusEndpoint,
             videoId,
             libraryId: bunnyLibraryId,
+            expirationTime,
+            authorizationSignature,
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Combined: create video + get upload credentials in one call (faster)
+      case 'create-and-upload': {
+        const { title, collectionId }: CreateVideoRequest = body;
+
+        const { data: isAdmin } = await supabase.rpc('is_admin', { _user_id: userId });
+        if (!isAdmin) {
+          return new Response(
+            JSON.stringify({ error: 'Admin access required' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Step 1: Create video entry
+        const createPayload: any = { title };
+        if (collectionId) createPayload.collectionId = collectionId;
+
+        const video = await bunnyFetch(`/library/${bunnyLibraryId}/videos`, {
+          method: 'POST',
+          body: JSON.stringify(createPayload),
+        });
+
+        const videoId = video.guid;
+        console.log(`Created video: ${videoId} - ${title}`);
+
+        // Step 2: Generate TUS upload credentials immediately
+        const tusEndpoint = `https://video.bunnycdn.com/tusupload`;
+        const expirationTime = Math.floor(Date.now() / 1000) + 86400; // 24 hours
+        const signatureString = `${bunnyLibraryId}${bunnyApiKey}${expirationTime}${videoId}`;
+        const encoder = new TextEncoder();
+        const sigData = encoder.encode(signatureString);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', sigData);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const authorizationSignature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            videoId,
+            libraryId: bunnyLibraryId,
+            uploadUrl: tusEndpoint,
             expirationTime,
             authorizationSignature,
           }),
