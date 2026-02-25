@@ -73,9 +73,13 @@ const MetricCard = ({
   );
 };
 
-const SystemOverview: React.FC = () => {
+interface SystemOverviewProps {
+  dateRange: string;
+}
+
+const SystemOverview: React.FC<SystemOverviewProps> = ({ dateRange }) => {
   const { isRTL } = useLanguage();
-  const { data, isLoading } = useSystemOverview();
+  const { data, isLoading } = useSystemOverview(dateRange);
 
   const formatWatchTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`;
