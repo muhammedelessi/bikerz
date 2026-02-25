@@ -363,6 +363,50 @@ const CourseLearn: React.FC = () => {
           });
         if (error) throw error;
       }
+
+      // Recalculate and update course enrollment progress
+      if (id) {
+        // Get all lesson IDs for this course
+        const { data: courseChapters } = await supabase
+          .from('chapters')
+          .select('id')
+          .eq('course_id', id);
+        
+        if (courseChapters && courseChapters.length > 0) {
+          const chapterIds = courseChapters.map(ch => ch.id);
+          
+          const { data: courseLessons } = await supabase
+            .from('lessons')
+            .select('id')
+            .in('chapter_id', chapterIds)
+            .eq('is_published', true);
+          
+          const totalLessons = courseLessons?.length || 0;
+          
+          if (totalLessons > 0) {
+            const lessonIds = courseLessons!.map(l => l.id);
+            
+            const { count: completedCount } = await supabase
+              .from('lesson_progress')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', user.id)
+              .eq('is_completed', true)
+              .in('lesson_id', lessonIds);
+            
+            const progressPct = Math.round(((completedCount || 0) / totalLessons) * 100);
+            const isFullyComplete = progressPct >= 100;
+            
+            await supabase
+              .from('course_enrollments')
+              .update({ 
+                progress_percentage: progressPct,
+                ...(isFullyComplete ? { completed_at: new Date().toISOString() } : {})
+              })
+              .eq('user_id', user.id)
+              .eq('course_id', id);
+          }
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lesson-progress-learn'] });

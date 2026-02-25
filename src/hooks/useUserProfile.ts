@@ -140,9 +140,9 @@ export function useUserProfile() {
           .eq('user_id', userId),
         supabase
           .from('lesson_progress')
-          .select('id, is_completed, watch_time_seconds, lesson_id, completed_at')
+          .select('id, is_completed, watch_time_seconds, lesson_id, completed_at, last_watched_at')
           .eq('user_id', userId)
-          .order('completed_at', { ascending: false }),
+          .order('last_watched_at', { ascending: false, nullsFirst: false }),
         supabase
           .from('user_gamification')
           .select('total_xp')
@@ -175,11 +175,11 @@ export function useUserProfile() {
         ? Math.round(enrollments.reduce((acc, e) => acc + e.progress_percentage, 0) / totalCourses)
         : 0;
 
-      // Get last lesson details
+      // Get last lesson details (most recently watched, already sorted by last_watched_at desc)
       let lastLessonTitle = null;
       let lastLessonTitleAr = null;
       
-      const lastProgress = progress.find(p => p.is_completed);
+      const lastProgress = progress[0]; // First item is most recent due to ordering
       if (lastProgress) {
         const { data: lessonData } = await supabase
           .from('lessons')
