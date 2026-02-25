@@ -182,15 +182,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           throw new Error(enrollError.message);
         }
 
-        // Log coupon usage
-        await supabase.from('coupon_usage_logs').insert({
-          coupon_id: appliedCoupon.coupon_id,
-          user_id: user!.id,
-          course_id: course.id,
-          original_amount: course.price,
-          discount_amount: appliedCoupon.discount_amount,
-          final_amount: 0,
-          result: 'success',
+        // Log coupon usage and increment counter
+        await supabase.rpc('increment_coupon_usage', {
+          p_coupon_id: appliedCoupon.coupon_id,
+          p_user_id: user!.id,
+          p_course_id: course.id,
+          p_order_id: null,
+          p_charge_id: null,
+          p_discount_amount: appliedCoupon.discount_amount,
+          p_original_amount: course.price,
+          p_final_amount: 0,
         });
 
         toast.success(isRTL ? 'تم التسجيل بنجاح! الدورة مجانية بالكامل' : 'Enrolled successfully! Course is fully free');
