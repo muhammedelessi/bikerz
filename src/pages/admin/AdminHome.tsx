@@ -48,7 +48,8 @@ const AdminHome: React.FC = () => {
         { count: totalMentors },
         { data: enrollmentsData },
         { data: progressData },
-        { data: paymentsData },
+        { data: manualPaymentsData },
+        { data: tapPaymentsData },
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('courses').select('*', { count: 'exact', head: true }),
@@ -57,6 +58,7 @@ const AdminHome: React.FC = () => {
         supabase.from('course_enrollments').select('progress_percentage, completed_at, enrolled_at'),
         supabase.from('lesson_progress').select('watch_time_seconds, is_completed'),
         supabase.from('manual_payments').select('amount, status').eq('status', 'approved'),
+        supabase.from('tap_charges').select('amount, status').in('status', ['CAPTURED', 'captured', 'APPROVED', 'approved', 'processing']),
       ]);
 
       // Calculate completion rate
@@ -78,8 +80,10 @@ const AdminHome: React.FC = () => {
         ? Math.round((totalWatchTime / completedLessons) / 60)
         : 0;
 
-      // Calculate total revenue
-      const totalRevenue = (paymentsData || []).reduce((acc, p) => acc + Number(p.amount), 0);
+      // Calculate total revenue from both manual and tap payments
+      const manualRevenue = (manualPaymentsData || []).reduce((acc, p) => acc + Number(p.amount), 0);
+      const tapRevenue = (tapPaymentsData || []).reduce((acc, p) => acc + Number(p.amount), 0);
+      const totalRevenue = manualRevenue + tapRevenue;
 
       // Calculate active users (users with activity in last 7 days)
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();

@@ -346,10 +346,30 @@ const CourseLearn: React.FC = () => {
         .eq('user_id', user.id)
         .maybeSingle();
 
+      // Get the lesson's duration to estimate watch time if needed
+      const targetLesson = chapters.flatMap(ch => ch.lessons).find(l => l.id === lessonId);
+      const estimatedWatchTimeSec = (targetLesson?.duration_minutes || 5) * 60;
+
       if (existing) {
+        // Only update watch_time if it's currently 0 (estimate from lesson duration)
+        const { data: existingData } = await supabase
+          .from('lesson_progress')
+          .select('watch_time_seconds')
+          .eq('id', existing.id)
+          .single();
+
+        const updateData: Record<string, unknown> = {
+          is_completed: true,
+          completed_at: new Date().toISOString(),
+          last_watched_at: new Date().toISOString(),
+        };
+        if (!existingData?.watch_time_seconds || existingData.watch_time_seconds === 0) {
+          updateData.watch_time_seconds = estimatedWatchTimeSec;
+        }
+
         const { error } = await supabase
           .from('lesson_progress')
-          .update({ is_completed: true, completed_at: new Date().toISOString() })
+          .update(updateData)
           .eq('id', existing.id);
         if (error) throw error;
       } else {
@@ -360,6 +380,8 @@ const CourseLearn: React.FC = () => {
             user_id: user.id,
             is_completed: true,
             completed_at: new Date().toISOString(),
+            last_watched_at: new Date().toISOString(),
+            watch_time_seconds: estimatedWatchTimeSec,
           });
         if (error) throw error;
       }
