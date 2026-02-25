@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
     const { data: dbCharge } = await adminClient
       .from("tap_charges")
-      .select("id, user_id, course_id")
+      .select("id, user_id, course_id, metadata")
       .eq("charge_id", charge_id)
       .eq("user_id", userId)
       .maybeSingle();
@@ -89,6 +89,26 @@ Deno.serve(async (req) => {
           .insert({ user_id: userId, course_id: dbCharge.course_id });
         if (enrollError && !enrollError.message.includes("duplicate")) {
           console.error("Enrollment error:", enrollError.message);
+        }
+
+        // Increment coupon usage if a coupon was applied
+        const meta = dbCharge.metadata as Record<string, unknown> | null;
+        const couponId = meta?.coupon_id as string | null;
+        if (couponId) {
+          const originalAmount = (meta?.original_amount as number) || tapCharge.amount || 0;
+          const finalAmount = tapCharge.amount || 0;
+          const discountAmount = originalAmount - finalAmount;
+
+          await adminClient.rpc("increment_coupon_usage", {
+            p_coupon_id: couponId,
+            p_user_id: userId,
+            p_course_id: dbCharge.course_id,
+            p_order_id: dbCharge.id,
+            p_charge_id: charge_id,
+            p_discount_amount: discountAmount,
+            p_original_amount: originalAmount,
+            p_final_amount: finalAmount,
+          });
         }
       }
     }
