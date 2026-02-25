@@ -2,21 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { 
-  Upload, 
-  X, 
-  Video, 
-  CheckCircle, 
-  AlertCircle, 
-  Loader2, 
-  Pause, 
-  Play,
-  Cloud,
-  Zap,
-  RefreshCw
+  Upload, X, CheckCircle, AlertCircle, Loader2, Pause, Play,
+  Cloud, Zap, RefreshCw, Wifi, WifiOff, ArrowUpFromLine
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { useBunnyStream, formatBytes, formatTime, BunnyVideoStatus } from '@/hooks/useBunnyStream';
+import { useBunnyStream, formatBytes, formatTime, type UploadStage, type BunnyVideoStatus } from '@/hooks/useBunnyStream';
 
 interface BunnyVideoUploaderProps {
   onUploadComplete: (videoId: string, playbackUrl: string) => void;
@@ -25,16 +16,26 @@ interface BunnyVideoUploaderProps {
 }
 
 const ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
-const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5GB (Bunny Stream supports large files)
+const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024;
 
-type UploadStage = 'idle' | 'uploading' | 'processing' | 'ready' | 'error';
+const STAGE_CONFIG: Record<UploadStage, { label: string; labelAr: string; color: string }> = {
+  idle:       { label: 'Ready',        labelAr: 'جاهز',           color: 'text-muted-foreground' },
+  validating: { label: 'Validating',   labelAr: 'التحقق',         color: 'text-blue-500' },
+  uploading:  { label: 'Uploading',    labelAr: 'جاري الرفع',     color: 'text-primary' },
+  finalizing: { label: 'Finalizing',   labelAr: 'جاري الإنهاء',   color: 'text-amber-500' },
+  processing: { label: 'Processing',   labelAr: 'جاري المعالجة',  color: 'text-violet-500' },
+  ready:      { label: 'Ready',        labelAr: 'جاهز',           color: 'text-green-500' },
+  error:      { label: 'Error',        labelAr: 'خطأ',            color: 'text-destructive' },
+};
 
 const BunnyVideoUploader: React.FC<BunnyVideoUploaderProps> = ({
   onUploadComplete,
   currentVideoId,
   isRTL = false,
 }) => {
-  const [stage, setStage] = useState<UploadStage>(currentVideoId ? 'ready' : 'idle');
+  const [stage, setStage] = useState<'idle' | 'active' | 'processing' | 'ready' | 'error'>(
+    currentVideoId ? 'ready' : 'idle'
+  );
   const [processingStatus, setProcessingStatus] = useState<BunnyVideoStatus | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -50,7 +51,6 @@ const BunnyVideoUploader: React.FC<BunnyVideoUploaderProps> = ({
     getPlaybackInfo,
   } = useBunnyStream();
 
-  // Check existing video status on mount
   useEffect(() => {
     if (currentVideoId && stage === 'ready') {
       checkVideoStatus(currentVideoId);
@@ -62,7 +62,6 @@ const BunnyVideoUploader: React.FC<BunnyVideoUploaderProps> = ({
     if (status) {
       setProcessingStatus(status);
       if (!status.isReady && status.status !== 5 && status.status !== 6) {
-        // Still processing, wait for it
         setStage('processing');
         monitorProcessing(videoId);
       }
@@ -73,9 +72,8 @@ const BunnyVideoUploader: React.FC<BunnyVideoUploaderProps> = ({
     const finalStatus = await waitForProcessing(
       videoId,
       (status) => setProcessingStatus(status),
-      600000 // 10 minutes max
+      600000
     );
-
     if (finalStatus?.isReady) {
       setStage('ready');
       const playbackInfo = await getPlaybackInfo(videoId);
@@ -89,36 +87,25 @@ const BunnyVideoUploader: React.FC<BunnyVideoUploaderProps> = ({
     }
   };
 
-  const validateFile = (file: File): string | null => {
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return isRTL 
-        ? 'نوع الملف غير مدعوم. يرجى رفع ملف فيديو'
-        : 'Unsupported file type. Please upload a video file';
+  const handleUpload = async (file: File) => {
+    // Quick client-side check
+    if (!ALLOWED_TYPES.includes(file.type) && !file.name.match(/\.(mp4|webm|mov|avi|mkv)$/i)) {
+      toast.error(isRTL ? 'نوع الملف غير مدعوم' : 'Unsupported file type');
+      return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      return isRTL
-        ? 'حجم الملف كبير جداً. الحد الأقصى 5 جيجابايت'
-        : 'File is too large. Maximum size is 5GB';
-    }
-    return null;
-  };
-
-  const handleUpload = async (file: File) => {
-    const error = validateFile(file);
-    if (error) {
-      toast.error(error);
+      toast.error(isRTL ? 'حجم الملف كبير جداً (الحد الأقصى 5GB)' : 'File too large (max 5GB)');
       return;
     }
 
-    setStage('uploading');
-    
+    setStage('active');
+
     try {
-      const videoId = await uploadVideo(
+      await uploadVideo(
         file,
-        file.name.replace(/\.[^/.]+$/, ''), // Title without extension
+        file.name.replace(/\.[^/.]+$/, ''),
         undefined,
         async (completedVideoId) => {
-          // Upload complete, start monitoring processing
           setStage('processing');
           toast.success(isRTL ? 'تم رفع الفيديو! جاري المعالجة...' : 'Upload complete! Processing...');
           monitorProcessing(completedVideoId);
@@ -128,40 +115,24 @@ const BunnyVideoUploader: React.FC<BunnyVideoUploaderProps> = ({
           toast.error(err);
         }
       );
-    } catch (err) {
+    } catch {
       setStage('error');
-      toast.error(isRTL ? 'فشل رفع الفيديو' : 'Upload failed');
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); };
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file) handleUpload(file);
   };
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleUpload(file);
   };
-
-  const handleCancel = () => {
-    cancelUpload();
-    setStage('idle');
-    setProcessingStatus(null);
-  };
-
+  const handleCancel = () => { cancelUpload(); setStage('idle'); setProcessingStatus(null); };
   const handleRemove = () => {
     setStage('idle');
     setProcessingStatus(null);
@@ -169,35 +140,30 @@ const BunnyVideoUploader: React.FC<BunnyVideoUploaderProps> = ({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const { isUploading, isPaused, progress } = uploadState;
+  const { isPaused, progress } = uploadState;
+  const currentUploadStage = uploadState.stage;
 
   return (
     <div className="space-y-4">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="video/*"
-        onChange={handleFileSelect}
-        className="hidden"
-      />
+      <input ref={fileInputRef} type="file" accept="video/*" onChange={handleFileSelect} className="hidden" />
 
       {/* Info Banner */}
       <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
         <Cloud className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <div className="text-xs text-muted-foreground">
           <p className="font-medium text-foreground">
-            {isRTL ? 'بث عالي الجودة' : 'Premium Streaming'}
+            {isRTL ? 'بث عالي الجودة • رفع مباشر' : 'Premium Streaming • Direct Upload'}
           </p>
           <p className="mt-0.5">
             {isRTL 
-              ? 'يتم تحويل الفيديو تلقائياً إلى جودات متعددة (240p-1080p) وبثه عبر CDN عالمي'
-              : 'Videos are automatically transcoded to multiple qualities (240p-1080p) and streamed via global CDN'
+              ? 'رفع مباشر بسرعة عالية مع دعم الاستئناف التلقائي وتعدد المسارات • حتى 5GB'
+              : 'High-speed direct upload with auto-resume & parallel chunking • up to 5GB'
             }
           </p>
         </div>
       </div>
 
-      {/* Upload States */}
+      {/* IDLE – Drop Zone */}
       {stage === 'idle' && (
         <div
           onDragOver={handleDragOver}
@@ -205,9 +171,7 @@ const BunnyVideoUploader: React.FC<BunnyVideoUploaderProps> = ({
           onDrop={handleDrop}
           className={cn(
             "relative cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-all",
-            isDragging 
-              ? "border-primary bg-primary/5" 
-              : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30"
+            isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30"
           )}
           onClick={() => fileInputRef.current?.click()}
         >
@@ -223,63 +187,77 @@ const BunnyVideoUploader: React.FC<BunnyVideoUploaderProps> = ({
                 {isRTL ? 'أو انقر للاختيار • حتى 5 جيجابايت' : 'or click to browse • up to 5GB'}
               </p>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Zap className="h-3 w-3" />
-              <span>{isRTL ? 'دعم الرفع المتقطع' : 'Resumable uploads supported'}</span>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> {isRTL ? 'رفع متوازي' : '5x Parallel'}</span>
+              <span className="flex items-center gap-1"><RefreshCw className="h-3 w-3" /> {isRTL ? 'استئناف تلقائي' : 'Auto-Resume'}</span>
+              <span className="flex items-center gap-1"><ArrowUpFromLine className="h-3 w-3" /> {isRTL ? 'مباشر' : 'Direct'}</span>
             </div>
           </div>
         </div>
       )}
 
-      {stage === 'uploading' && progress && (
+      {/* ACTIVE – Uploading / Validating / Finalizing */}
+      {stage === 'active' && (
         <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+          {/* Header row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Loader2 className={cn("h-5 w-5 text-primary", !isPaused && "animate-spin")} />
               <div>
-                <p className="text-sm font-medium">
-                  {isPaused 
-                    ? (isRTL ? 'مُوقف مؤقتاً' : 'Paused')
-                    : (isRTL ? 'جاري الرفع...' : 'Uploading...')
-                  }
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {formatBytes(progress.bytesUploaded)} / {formatBytes(progress.bytesTotal)}
-                  {progress.speed > 0 && !isPaused && (
-                    <> • {formatBytes(progress.speed)}/s • {formatTime(progress.remainingTime)} {isRTL ? 'متبقي' : 'left'}</>
-                  )}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium">
+                    {isPaused
+                      ? (isRTL ? 'مُوقف مؤقتاً' : 'Paused')
+                      : (isRTL ? STAGE_CONFIG[currentUploadStage]?.labelAr : STAGE_CONFIG[currentUploadStage]?.label) || 'Uploading'
+                    }
+                  </p>
+                  {/* Stage badge */}
+                  <span className={cn(
+                    "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                    STAGE_CONFIG[currentUploadStage]?.color || 'text-muted-foreground'
+                  )}>
+                    {isPaused ? (
+                      <><WifiOff className="mr-1 h-2.5 w-2.5" /> {isRTL ? 'متوقف' : 'Paused'}</>
+                    ) : (
+                      <><Wifi className="mr-1 h-2.5 w-2.5" /> {isRTL ? 'متصل' : 'Connected'}</>
+                    )}
+                  </span>
+                </div>
+                {/* Stats line */}
+                {progress && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {formatBytes(progress.bytesUploaded)} / {formatBytes(progress.bytesTotal)}
+                    {progress.speed > 0 && !isPaused && (
+                      <> &bull; <span className="font-medium text-foreground">{formatBytes(progress.speed)}/s</span> &bull; {formatTime(progress.remainingTime)} {isRTL ? 'متبقي' : 'left'}</>
+                    )}
+                    {progress.retryCount > 0 && (
+                      <> &bull; <span className="text-amber-500">{progress.retryCount} {isRTL ? 'إعادة' : 'retries'}</span></>
+                    )}
+                  </p>
+                )}
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={isPaused ? resumeUpload : pauseUpload}
-              >
+            <div className="flex gap-1">
+              <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={isPaused ? resumeUpload : pauseUpload}>
                 {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={handleCancel}
-                className="text-destructive hover:text-destructive"
-              >
+              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={handleCancel}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
-          <Progress value={progress.percentage} className="h-2" />
-          <p className="text-center text-sm font-medium">{progress.percentage}%</p>
+
+          {/* Progress bar */}
+          <Progress value={progress?.percentage || 0} className="h-2" />
+          <p className="text-center text-sm font-semibold tabular-nums">{progress?.percentage || 0}%</p>
         </div>
       )}
 
+      {/* PROCESSING */}
       {stage === 'processing' && (
         <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
           <div className="flex items-center gap-3">
-            <RefreshCw className="h-5 w-5 animate-spin text-primary" />
+            <RefreshCw className="h-5 w-5 animate-spin text-violet-500" />
             <div>
               <p className="text-sm font-medium">
                 {isRTL ? 'جاري معالجة الفيديو...' : 'Processing video...'}
@@ -289,15 +267,12 @@ const BunnyVideoUploader: React.FC<BunnyVideoUploaderProps> = ({
               </p>
             </div>
           </div>
-          {processingStatus && (
-            <Progress value={processingStatus.encodeProgress} className="h-2" />
-          )}
-          <p className="text-center text-sm text-muted-foreground">
-            {processingStatus?.encodeProgress || 0}%
-          </p>
+          {processingStatus && <Progress value={processingStatus.encodeProgress} className="h-2" />}
+          <p className="text-center text-sm text-muted-foreground">{processingStatus?.encodeProgress || 0}%</p>
         </div>
       )}
 
+      {/* READY */}
       {stage === 'ready' && (
         <div className="rounded-lg border bg-muted/30 p-4">
           <div className="flex items-center gap-3">
@@ -305,49 +280,35 @@ const BunnyVideoUploader: React.FC<BunnyVideoUploaderProps> = ({
               <CheckCircle className="h-5 w-5 text-green-500" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium">
-                {isRTL ? 'الفيديو جاهز' : 'Video Ready'}
-              </p>
+              <p className="text-sm font-medium">{isRTL ? 'الفيديو جاهز' : 'Video Ready'}</p>
               {processingStatus && (
                 <p className="text-xs text-muted-foreground">
                   {processingStatus.duration && `${Math.floor(processingStatus.duration / 60)}:${String(Math.floor(processingStatus.duration % 60)).padStart(2, '0')}`}
-                  {processingStatus.availableResolutions?.length && (
-                    <> • {processingStatus.availableResolutions.join(', ')}</>
-                  )}
+                  {processingStatus.availableResolutions?.length ? ` • ${processingStatus.availableResolutions.join(', ')}` : ''}
                 </p>
               )}
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={handleRemove}
-              className="text-destructive hover:text-destructive"
-            >
+            <Button type="button" variant="ghost" size="icon" onClick={handleRemove} className="text-destructive hover:text-destructive">
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
       )}
 
+      {/* ERROR */}
       {stage === 'error' && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
           <div className="flex items-center gap-3">
             <AlertCircle className="h-5 w-5 text-destructive" />
             <div className="flex-1">
               <p className="text-sm font-medium text-destructive">
-                {isRTL ? 'فشل في معالجة الفيديو' : 'Video processing failed'}
+                {isRTL ? 'فشل في رفع/معالجة الفيديو' : 'Upload or processing failed'}
               </p>
               <p className="text-xs text-muted-foreground">
                 {uploadState.error || (isRTL ? 'حاول مرة أخرى' : 'Please try again')}
               </p>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setStage('idle')}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={() => setStage('idle')}>
               {isRTL ? 'إعادة المحاولة' : 'Retry'}
             </Button>
           </div>

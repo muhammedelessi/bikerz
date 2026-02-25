@@ -29,12 +29,16 @@ export interface BunnyPlaybackInfo {
   encodeProgress?: number;
 }
 
+export type UploadStage = 'idle' | 'validating' | 'uploading' | 'finalizing' | 'processing' | 'ready' | 'error';
+
 export interface UploadProgress {
   percentage: number;
   bytesUploaded: number;
   bytesTotal: number;
-  speed: number; // bytes per second
+  speed: number; // bytes per second (rolling average)
   remainingTime: number; // seconds
+  retryCount: number;
+  stage: UploadStage;
 }
 
 export interface BunnyUploadState {
@@ -43,6 +47,68 @@ export interface BunnyUploadState {
   progress: UploadProgress | null;
   videoId: string | null;
   error: string | null;
+  stage: UploadStage;
+}
+
+// ── localStorage helpers for cross-session resume ──
+const UPLOAD_KEY_PREFIX = 'bunny_upload_';
+
+interface StoredUploadSession {
+  videoId: string;
+  libraryId: string;
+  uploadUrl: string;
+  authorizationSignature: string;
+  expirationTime: number;
+  fileName: string;
+  fileSize: number;
+  fileLastModified: number;
+  createdAt: number;
+}
+
+function storeUploadSession(fileKey: string, session: StoredUploadSession) {
+  try {
+    localStorage.setItem(UPLOAD_KEY_PREFIX + fileKey, JSON.stringify(session));
+  } catch { /* quota exceeded – ignore */ }
+}
+
+function getStoredUploadSession(fileKey: string): StoredUploadSession | null {
+  try {
+    const raw = localStorage.getItem(UPLOAD_KEY_PREFIX + fileKey);
+    if (!raw) return null;
+    const session: StoredUploadSession = JSON.parse(raw);
+    // Expire if TUS signature expired (with 5 min buffer)
+    if (session.expirationTime < Math.floor(Date.now() / 1000) + 300) {
+      localStorage.removeItem(UPLOAD_KEY_PREFIX + fileKey);
+      return null;
+    }
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+function clearUploadSession(fileKey: string) {
+  try { localStorage.removeItem(UPLOAD_KEY_PREFIX + fileKey); } catch { /* */ }
+}
+
+function getFileKey(file: File): string {
+  return `${file.name}_${file.size}_${file.lastModified}`;
+}
+
+// ── Rolling average helper for smooth speed display ──
+class RollingAverage {
+  private samples: number[] = [];
+  private maxSamples: number;
+  constructor(maxSamples = 8) { this.maxSamples = maxSamples; }
+  push(value: number) {
+    this.samples.push(value);
+    if (this.samples.length > this.maxSamples) this.samples.shift();
+  }
+  get average(): number {
+    if (this.samples.length === 0) return 0;
+    return this.samples.reduce((a, b) => a + b, 0) / this.samples.length;
+  }
+  reset() { this.samples = []; }
 }
 
 /**
@@ -55,41 +121,26 @@ export function useBunnyStream() {
     progress: null,
     videoId: null,
     error: null,
+    stage: 'idle',
   });
 
   const tusUploadRef = useRef<tus.Upload | null>(null);
   const lastProgressTimeRef = useRef<number>(0);
   const lastBytesUploadedRef = useRef<number>(0);
+  const speedAvgRef = useRef(new RollingAverage(8));
+  const retryCountRef = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (tusUploadRef.current) {
-        tusUploadRef.current.abort();
-      }
+      tusUploadRef.current?.abort();
+      abortControllerRef.current?.abort();
     };
   }, []);
 
-  /**
-   * Create a new video entry in Bunny Stream (standalone, kept for compatibility)
-   */
-  const createVideo = useCallback(async (title: string): Promise<{ videoId: string; libraryId: string } | null> => {
-    try {
-      const { data: result, error: invokeError } = await supabase.functions.invoke('bunny-stream', {
-        body: { action: 'create-video', title },
-      });
-
-      if (invokeError) throw invokeError;
-      if (!result.success) throw new Error(result.error || 'Failed to create video');
-
-      return {
-        videoId: result.videoId,
-        libraryId: result.libraryId,
-      };
-    } catch (error) {
-      console.error('Failed to create video:', error);
-      throw error;
-    }
+  const setStage = useCallback((stage: UploadStage) => {
+    setUploadState(prev => ({ ...prev, stage }));
   }, []);
 
   /**
@@ -105,7 +156,26 @@ export function useBunnyStream() {
   }, []);
 
   /**
-   * Upload a video file using TUS resumable uploads
+   * Validate file before upload
+   */
+  const validateFile = useCallback((file: File): string | null => {
+    const ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
+    const MAX_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
+
+    if (!ALLOWED_TYPES.includes(file.type) && !file.name.match(/\.(mp4|webm|mov|avi|mkv)$/i)) {
+      return 'Unsupported file type. Please upload MP4, WebM, MOV, AVI, or MKV';
+    }
+    if (file.size > MAX_SIZE) {
+      return 'File is too large. Maximum size is 5GB';
+    }
+    if (file.size === 0) {
+      return 'File is empty';
+    }
+    return null;
+  }, []);
+
+  /**
+   * Upload a video file using TUS resumable uploads with high concurrency
    */
   const uploadVideo = useCallback(async (
     file: File,
@@ -116,38 +186,90 @@ export function useBunnyStream() {
   ): Promise<string> => {
     return new Promise(async (resolve, reject) => {
       try {
-        setUploadState(prev => ({
-          ...prev,
+        // ── Validation phase ──
+        setUploadState({
           isUploading: true,
           isPaused: false,
           error: null,
-          progress: { percentage: 0, bytesUploaded: 0, bytesTotal: file.size, speed: 0, remainingTime: 0 },
-        }));
+          videoId: null,
+          stage: 'validating',
+          progress: { percentage: 0, bytesUploaded: 0, bytesTotal: file.size, speed: 0, remainingTime: 0, retryCount: 0, stage: 'validating' },
+        });
 
-        // Single API call: create video + get upload credentials
-        const credentials = await createAndGetUploadCredentials(title);
-        const videoId = credentials.videoId;
-        setUploadState(prev => ({ ...prev, videoId }));
+        const validationError = validateFile(file);
+        if (validationError) {
+          throw new Error(validationError);
+        }
 
-        // Start TUS upload with optimized settings
+        // ── Check for resumable session in localStorage ──
+        const fileKey = getFileKey(file);
+        let credentials: any;
+        let videoId: string;
+        const storedSession = getStoredUploadSession(fileKey);
+
+        if (storedSession) {
+          // Reuse existing video + credentials (resume scenario)
+          credentials = {
+            videoId: storedSession.videoId,
+            libraryId: storedSession.libraryId,
+            uploadUrl: storedSession.uploadUrl,
+            authorizationSignature: storedSession.authorizationSignature,
+            expirationTime: storedSession.expirationTime,
+          };
+          videoId = storedSession.videoId;
+        } else {
+          // Single API call: create video + get upload credentials
+          credentials = await createAndGetUploadCredentials(title);
+          videoId = credentials.videoId;
+
+          // Store session for potential resume
+          storeUploadSession(fileKey, {
+            videoId,
+            libraryId: credentials.libraryId,
+            uploadUrl: credentials.uploadUrl,
+            authorizationSignature: credentials.authorizationSignature,
+            expirationTime: credentials.expirationTime,
+            fileName: file.name,
+            fileSize: file.size,
+            fileLastModified: file.lastModified,
+            createdAt: Date.now(),
+          });
+        }
+
+        setUploadState(prev => ({ ...prev, videoId, stage: 'uploading' }));
+
+        // ── Initialize speed tracking ──
         lastProgressTimeRef.current = Date.now();
         lastBytesUploadedRef.current = 0;
+        speedAvgRef.current.reset();
+        retryCountRef.current = 0;
 
-        // Adaptive chunk size: larger files get larger chunks for better throughput
-        const chunkSize = file.size > 500 * 1024 * 1024
-          ? 50 * 1024 * 1024  // 50MB chunks for files > 500MB
+        // Abort controller for cancel support
+        abortControllerRef.current = new AbortController();
+
+        // ── Adaptive chunk sizing ──
+        // Larger chunks = fewer round-trips = faster for big files
+        const chunkSize = file.size > 1024 * 1024 * 1024 // > 1GB
+          ? 50 * 1024 * 1024  // 50MB
+          : file.size > 500 * 1024 * 1024
+          ? 25 * 1024 * 1024  // 25MB
           : file.size > 100 * 1024 * 1024
-          ? 25 * 1024 * 1024  // 25MB chunks for files > 100MB
-          : 10 * 1024 * 1024; // 10MB chunks for smaller files
+          ? 15 * 1024 * 1024  // 15MB
+          : 10 * 1024 * 1024; // 10MB
+
+        // ── Concurrency: 5 parallel chunks for maximum throughput ──
+        const parallelUploads = file.size > 200 * 1024 * 1024 ? 5 : 3;
 
         const upload = new tus.Upload(file, {
           endpoint: credentials.uploadUrl,
-          retryDelays: [0, 500, 1000, 3000, 5000],
+          retryDelays: [0, 500, 1000, 2000, 5000, 10000, 15000],
           chunkSize,
-          parallelUploads: 3, // Upload 3 chunks in parallel
+          parallelUploads,
+          storeFingerprintForResuming: true,
+          removeFingerprintOnSuccess: true,
           metadata: {
             filename: file.name,
-            filetype: file.type,
+            filetype: file.type || 'video/mp4',
           },
           headers: {
             'AuthorizationSignature': credentials.authorizationSignature,
@@ -158,10 +280,18 @@ export function useBunnyStream() {
           onError: (error) => {
             console.error('TUS upload error:', error);
             const errorMessage = error.message || 'Upload failed';
+
+            // Check if it's a retry-able error vs terminal
+            if (errorMessage.includes('abort')) {
+              // User cancelled – don't show error
+              return;
+            }
+
             setUploadState(prev => ({
               ...prev,
               isUploading: false,
               error: errorMessage,
+              stage: 'error',
             }));
             onError?.(errorMessage);
             reject(new Error(errorMessage));
@@ -170,46 +300,77 @@ export function useBunnyStream() {
             const now = Date.now();
             const timeDiff = (now - lastProgressTimeRef.current) / 1000;
             const bytesDiff = bytesUploaded - lastBytesUploadedRef.current;
-            
-            const speed = timeDiff > 0 ? bytesDiff / timeDiff : 0;
+
+            // Only recalculate speed if enough time has passed (avoid jitter)
+            if (timeDiff >= 0.3) {
+              const instantSpeed = bytesDiff / timeDiff;
+              speedAvgRef.current.push(instantSpeed);
+              lastProgressTimeRef.current = now;
+              lastBytesUploadedRef.current = bytesUploaded;
+            }
+
+            const smoothSpeed = speedAvgRef.current.average;
             const remainingBytes = bytesTotal - bytesUploaded;
-            const remainingTime = speed > 0 ? remainingBytes / speed : 0;
-            
+            const remainingTime = smoothSpeed > 0 ? remainingBytes / smoothSpeed : 0;
+
             const progress: UploadProgress = {
-              percentage: Math.round((bytesUploaded / bytesTotal) * 100),
+              percentage: Math.min(Math.round((bytesUploaded / bytesTotal) * 100), 99), // cap at 99 until finalized
               bytesUploaded,
               bytesTotal,
-              speed,
+              speed: smoothSpeed,
               remainingTime,
+              retryCount: retryCountRef.current,
+              stage: 'uploading',
             };
 
-            lastProgressTimeRef.current = now;
-            lastBytesUploadedRef.current = bytesUploaded;
-
-            setUploadState(prev => ({ ...prev, progress }));
+            setUploadState(prev => ({ ...prev, progress, stage: 'uploading' }));
             onProgress?.(progress);
           },
+          onShouldRetry: (err, retryAttempt, _options) => {
+            retryCountRef.current = retryAttempt;
+            setUploadState(prev => ({
+              ...prev,
+              progress: prev.progress ? { ...prev.progress, retryCount: retryAttempt } : null,
+            }));
+            // Retry on network errors and 5xx, not on 4xx (except 409 conflict)
+            const status = (err as any)?.originalResponse?.getStatus?.();
+            if (status && status >= 400 && status < 500 && status !== 409) {
+              return false; // Don't retry client errors
+            }
+            return true; // Retry everything else
+          },
           onSuccess: () => {
+            // ── Finalizing stage ──
+            clearUploadSession(fileKey);
+
             setUploadState(prev => ({
               ...prev,
               isUploading: false,
-              progress: prev.progress ? { ...prev.progress, percentage: 100 } : null,
+              stage: 'finalizing',
+              progress: prev.progress ? { ...prev.progress, percentage: 100, stage: 'finalizing' } : null,
             }));
-            onComplete?.(videoId);
-            resolve(videoId);
+
+            // Brief delay to show finalizing, then signal complete
+            setTimeout(() => {
+              setUploadState(prev => ({
+                ...prev,
+                stage: 'processing',
+                progress: prev.progress ? { ...prev.progress, stage: 'processing' } : null,
+              }));
+              onComplete?.(videoId);
+              resolve(videoId);
+            }, 500);
           },
         });
 
         tusUploadRef.current = upload;
 
-        // Check for previous upload attempts
+        // Check for previous upload attempts (TUS fingerprint resume)
         const previousUploads = await upload.findPreviousUploads();
         if (previousUploads.length > 0) {
-          // Resume from previous upload
           upload.resumeFromPreviousUpload(previousUploads[0]);
         }
 
-        // Start the upload
         upload.start();
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Upload failed';
@@ -217,47 +378,48 @@ export function useBunnyStream() {
           ...prev,
           isUploading: false,
           error: errorMessage,
+          stage: 'error',
         }));
         onError?.(errorMessage);
         reject(error);
       }
     });
-  }, [createAndGetUploadCredentials]);
+  }, [createAndGetUploadCredentials, validateFile]);
 
   /**
    * Pause the current upload
    */
   const pauseUpload = useCallback(() => {
-    if (tusUploadRef.current) {
-      tusUploadRef.current.abort();
-      setUploadState(prev => ({ ...prev, isPaused: true }));
-    }
+    tusUploadRef.current?.abort();
+    setUploadState(prev => ({ ...prev, isPaused: true }));
   }, []);
 
   /**
    * Resume a paused upload
    */
   const resumeUpload = useCallback(() => {
-    if (tusUploadRef.current) {
-      tusUploadRef.current.start();
-      setUploadState(prev => ({ ...prev, isPaused: false }));
-    }
+    tusUploadRef.current?.start();
+    setUploadState(prev => ({ ...prev, isPaused: false }));
   }, []);
 
   /**
-   * Cancel the current upload
+   * Cancel the current upload and clean up
    */
   const cancelUpload = useCallback(() => {
-    if (tusUploadRef.current) {
-      tusUploadRef.current.abort();
-      tusUploadRef.current = null;
-    }
+    tusUploadRef.current?.abort();
+    tusUploadRef.current = null;
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    speedAvgRef.current.reset();
+    retryCountRef.current = 0;
+
     setUploadState({
       isUploading: false,
       isPaused: false,
       progress: null,
       videoId: null,
       error: null,
+      stage: 'idle',
     });
   }, []);
 
@@ -297,10 +459,10 @@ export function useBunnyStream() {
   const waitForProcessing = useCallback(async (
     videoId: string,
     onProgress?: (status: BunnyVideoStatus) => void,
-    maxWaitTime: number = 600000, // 10 minutes
+    maxWaitTime: number = 600000,
   ): Promise<BunnyVideoStatus | null> => {
     const startTime = Date.now();
-    const pollInterval = 3000; // 3 seconds
+    const pollInterval = 3000;
 
     return new Promise((resolve) => {
       const poll = async () => {
@@ -312,22 +474,11 @@ export function useBunnyStream() {
         const status = await getVideoStatus(videoId);
         if (status) {
           onProgress?.(status);
-
-          if (status.isReady) {
-            resolve(status);
-            return;
-          }
-
-          if (status.status === 5 || status.status === 6) {
-            // Failed
-            resolve(status);
-            return;
-          }
+          if (status.isReady) { resolve(status); return; }
+          if (status.status === 5 || status.status === 6) { resolve(status); return; }
         }
-
         setTimeout(poll, pollInterval);
       };
-
       poll();
     });
   }, [getVideoStatus]);
@@ -340,7 +491,6 @@ export function useBunnyStream() {
       const { data, error } = await supabase.functions.invoke('bunny-stream', {
         body: { action: 'get-playback-url', videoId },
       });
-
       if (error) throw error;
       return data;
     } catch (error) {
@@ -357,7 +507,6 @@ export function useBunnyStream() {
       const { data, error } = await supabase.functions.invoke('bunny-stream', {
         body: { action: 'delete-video', videoId },
       });
-
       if (error) throw error;
       return data.success;
     } catch (error) {
@@ -366,15 +515,30 @@ export function useBunnyStream() {
     }
   }, []);
 
+  /**
+   * Create a new video entry (kept for compatibility)
+   */
+  const createVideo = useCallback(async (title: string) => {
+    try {
+      const { data: result, error: invokeError } = await supabase.functions.invoke('bunny-stream', {
+        body: { action: 'create-video', title },
+      });
+      if (invokeError) throw invokeError;
+      if (!result.success) throw new Error(result.error || 'Failed to create video');
+      return { videoId: result.videoId, libraryId: result.libraryId };
+    } catch (error) {
+      console.error('Failed to create video:', error);
+      throw error;
+    }
+  }, []);
+
   return {
-    // Upload methods
     uploadVideo,
     pauseUpload,
     resumeUpload,
     cancelUpload,
     uploadState,
-
-    // Video management
+    validateFile,
     createVideo,
     getVideoStatus,
     waitForProcessing,
@@ -388,13 +552,10 @@ export function useBunnyStream() {
  */
 export function formatBytes(bytes: number, decimals: number = 2): string {
   if (bytes === 0) return '0 Bytes';
-
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
@@ -403,16 +564,10 @@ export function formatBytes(bytes: number, decimals: number = 2): string {
  */
 export function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds <= 0) return '--';
-  
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  }
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${secs}s`;
   return `${secs}s`;
 }
