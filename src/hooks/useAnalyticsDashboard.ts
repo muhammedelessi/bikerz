@@ -2,6 +2,35 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { subDays, subHours, format, startOfDay, startOfWeek, startOfMonth, differenceInDays } from 'date-fns';
 
+// Helper to fetch ALL rows from a table, bypassing the 1000-row default limit
+async function fetchAllRows(
+  tableName: string,
+  selectColumns: string,
+  filters?: (query: any) => any
+): Promise<any[]> {
+  const PAGE_SIZE = 1000;
+  let allData: any[] = [];
+  let page = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    let query = supabase.from(tableName as any).select(selectColumns).range(from, to);
+    if (filters) query = filters(query);
+    const { data, error } = await query;
+    if (error) {
+      console.error('Pagination fetch error:', error.message);
+      break;
+    }
+    allData = allData.concat(data || []);
+    hasMore = (data?.length || 0) === PAGE_SIZE;
+    page++;
+  }
+
+  return allData;
+}
+
 export interface DateRange {
   label: string;
   days: number;
@@ -45,8 +74,8 @@ export function useSystemOverview(dateRange: string = '30d') {
         enrollmentsRes,
         lessonsRes,
         lessonProgressRes,
-        manualPaymentsRes,
-        tapPaymentsRes,
+        manualPayments,
+        tapPayments,
         concurrentRes,
         watchingNowRes,
       ] = await Promise.all([
@@ -61,14 +90,14 @@ export function useSystemOverview(dateRange: string = '30d') {
           .select('id, watch_time_seconds', { count: 'exact' })
           .eq('is_completed', true)
           .gte('last_watched_at', since.toISOString()),
-        supabase.from('manual_payments').select('amount, created_at, status'),
-        supabase.from('tap_charges').select('amount, created_at, status'),
+        fetchAllRows('manual_payments', 'amount, created_at, status'),
+        fetchAllRows('tap_charges', 'amount, created_at, status'),
         supabase.from('realtime_presence').select('id', { count: 'exact' }).gte('last_heartbeat_at', subDays(now, 0.01).toISOString()),
         supabase.from('realtime_presence').select('id', { count: 'exact' }).eq('is_watching_video', true),
       ]);
 
-      const successfulManual = (manualPaymentsRes.data || []).filter((p) => (p.status || '').toLowerCase() === 'approved');
-      const successfulTap = (tapPaymentsRes.data || []).filter((p) => isSuccessfulTapStatus(p.status));
+      const successfulManual = manualPayments.filter((p) => (p.status || '').toLowerCase() === 'approved');
+      const successfulTap = tapPayments.filter((p) => isSuccessfulTapStatus(p.status));
       const allSuccessfulPayments = [...successfulManual, ...successfulTap];
 
       const totalWatchTimeSeconds = lessonProgressRes.data?.reduce((sum, p) => sum + (p.watch_time_seconds || 0), 0) || 0;
@@ -389,30 +418,30 @@ export function useFunnelAnalytics(dateRange: string) {
     queryFn: async () => {
       const since = getSinceDate(dateRange);
 
-      const [profilesRes, enrollmentsRes, manualPaymentsRes, tapPaymentsRes, progressRes] = await Promise.all([
+      const [profilesRes, enrollmentsRes, manualPayments, tapPayments, progressRes] = await Promise.all([
         supabase.from('profiles').select('user_id, created_at').gte('created_at', since.toISOString()),
         supabase.from('course_enrollments').select('id, user_id, enrolled_at').gte('enrolled_at', since.toISOString()),
-        supabase.from('manual_payments').select('user_id, amount, status, created_at').gte('created_at', since.toISOString()),
-        supabase.from('tap_charges').select('user_id, amount, status, created_at').gte('created_at', since.toISOString()),
+        fetchAllRows('manual_payments', 'user_id, amount, status, created_at', (q: any) => q.gte('created_at', since.toISOString())),
+        fetchAllRows('tap_charges', 'user_id, amount, status, created_at', (q: any) => q.gte('created_at', since.toISOString())),
         supabase.from('lesson_progress').select('user_id, lesson_id, is_completed, last_watched_at').gte('last_watched_at', since.toISOString()),
       ]);
 
       const profiles = profilesRes.data || [];
       const progress = progressRes.data || [];
-      const signupUserIds = new Set(profiles.map((p) => p.user_id));
+      const signupUserIds = new Set(profiles.map((p: any) => p.user_id));
 
-      const cohortProgress = progress.filter((p) => signupUserIds.has(p.user_id) && p.is_completed);
-      const firstLessonUsers = new Set(cohortProgress.map((p) => p.user_id)).size;
+      const cohortProgress = progress.filter((p: any) => signupUserIds.has(p.user_id) && p.is_completed);
+      const firstLessonUsers = new Set(cohortProgress.map((p: any) => p.user_id)).size;
 
       // Users who completed at least 2 lessons
-      const lessonCountByUser = cohortProgress.reduce((acc: Record<string, number>, p) => {
+      const lessonCountByUser = cohortProgress.reduce((acc: Record<string, number>, p: any) => {
         acc[p.user_id] = (acc[p.user_id] || 0) + 1;
         return acc;
       }, {});
       const secondLessonUsers = Object.values(lessonCountByUser).filter((c) => c >= 2).length;
 
-      const successfulManual = (manualPaymentsRes.data || []).filter((p) => (p.status || '').toLowerCase() === 'approved');
-      const successfulTap = (tapPaymentsRes.data || []).filter((p) => isSuccessfulTapStatus(p.status));
+      const successfulManual = manualPayments.filter((p: any) => (p.status || '').toLowerCase() === 'approved');
+      const successfulTap = tapPayments.filter((p: any) => isSuccessfulTapStatus(p.status));
       const paidUsers = new Set([...successfulManual, ...successfulTap]
         .filter((p) => signupUserIds.has(p.user_id))
         .map((p) => p.user_id)).size;
@@ -462,23 +491,23 @@ export function useRevenueAnalytics(dateRange: string) {
     queryFn: async () => {
       const since = getSinceDate(dateRange);
 
-      const [manualPaymentsRes, tapPaymentsRes, coursesRes, profilesRes] = await Promise.all([
-        supabase.from('manual_payments').select('id, user_id, course_id, amount, status, created_at'),
-        supabase.from('tap_charges').select('id, user_id, course_id, amount, status, created_at'),
+      const [manualPaymentsRaw, tapPaymentsRaw, coursesRes, profilesRes] = await Promise.all([
+        fetchAllRows('manual_payments', 'id, user_id, course_id, amount, status, created_at'),
+        fetchAllRows('tap_charges', 'id, user_id, course_id, amount, status, created_at'),
         supabase.from('courses').select('id, title, title_ar, price'),
         supabase.from('profiles').select('user_id, created_at'),
       ]);
 
       const courses = coursesRes.data || [];
       const profiles = profilesRes.data || [];
-      const windowUsers = profiles.filter((p) => new Date(p.created_at) >= since);
+      const windowUsers = profiles.filter((p: any) => new Date(p.created_at) >= since);
 
-      const manualPayments = (manualPaymentsRes.data || []).map((p) => ({
+      const manualPayments = manualPaymentsRaw.map((p: any) => ({
         ...p,
         source: 'manual' as const,
         statusNormalized: (p.status || '').toLowerCase(),
       }));
-      const tapPayments = (tapPaymentsRes.data || []).map((p) => ({
+      const tapPayments = tapPaymentsRaw.map((p: any) => ({
         ...p,
         source: 'tap' as const,
         statusNormalized: (p.status || '').toLowerCase(),
