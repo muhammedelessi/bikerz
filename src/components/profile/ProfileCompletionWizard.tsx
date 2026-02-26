@@ -62,6 +62,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
   const [bikeModel, setBikeModel] = useState('');
   const [engineSize, setEngineSize] = useState('');
   const [ridingYears, setRidingYears] = useState('');
+  const [noBike, setNoBike] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [couponCopied, setCouponCopied] = useState(false);
@@ -333,51 +334,80 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
             exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
             className="space-y-5"
           >
-            <div className="space-y-2">
-              <Label htmlFor="bikeBrand">
-                {isRTL ? 'ماركة الدراجة' : 'Bike Brand'}
-              </Label>
-              <select
-                id="bikeBrand"
-                value={bikeBrand}
-                onChange={(e) => setBikeBrand(e.target.value)}
-                className="w-full h-11 px-3 rounded-md border border-input bg-background text-foreground"
-              >
-                <option value="">{isRTL ? 'اختر الماركة' : 'Select brand'}</option>
-                {BIKE_BRANDS.map(brand => (
-                  <option key={brand} value={brand}>{brand}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="bikeModel">
-                {isRTL ? 'موديل الدراجة' : 'Bike Model'}
-              </Label>
-              <Input
-                id="bikeModel"
-                value={bikeModel}
-                onChange={(e) => setBikeModel(e.target.value)}
-                placeholder={isRTL ? 'مثال: CBR 600RR' : 'e.g., CBR 600RR'}
-                className="h-11"
+            {/* No bike toggle */}
+            <label className="flex items-center gap-3 p-3 rounded-lg border border-input bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
+              <input
+                type="checkbox"
+                checked={noBike}
+                onChange={(e) => {
+                  setNoBike(e.target.checked);
+                  if (e.target.checked) {
+                    setBikeBrand('');
+                    setBikeModel('');
+                    setEngineSize('');
+                  }
+                }}
+                className="h-4 w-4 rounded border-primary text-primary focus:ring-primary"
               />
-            </div>
+              <div>
+                <span className="text-sm font-medium text-foreground">
+                  {isRTL ? 'لا أملك دراجة حالياً' : "I don't have a bike yet"}
+                </span>
+                <p className="text-xs text-muted-foreground">
+                  {isRTL ? 'يمكنك إضافة بيانات الدراجة لاحقاً' : 'You can add bike info later'}
+                </p>
+              </div>
+            </label>
 
-            <div className="space-y-2">
-              <Label htmlFor="engineSize">
-                {isRTL ? 'حجم المحرك (سي سي)' : 'Engine Size (CC)'}
-              </Label>
-              <Input
-                id="engineSize"
-                type="number"
-                min="50"
-                max="3000"
-                value={engineSize}
-                onChange={(e) => setEngineSize(e.target.value)}
-                placeholder={isRTL ? 'مثال: 600' : 'e.g., 600'}
-                className="h-11"
-              />
-            </div>
+            {!noBike && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="bikeBrand">
+                    {isRTL ? 'ماركة الدراجة' : 'Bike Brand'}
+                  </Label>
+                  <select
+                    id="bikeBrand"
+                    value={bikeBrand}
+                    onChange={(e) => setBikeBrand(e.target.value)}
+                    className="w-full h-11 px-3 rounded-md border border-input bg-background text-foreground"
+                  >
+                    <option value="">{isRTL ? 'اختر الماركة' : 'Select brand'}</option>
+                    {BIKE_BRANDS.map(brand => (
+                      <option key={brand} value={brand}>{brand}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bikeModel">
+                    {isRTL ? 'موديل الدراجة' : 'Bike Model'}
+                  </Label>
+                  <Input
+                    id="bikeModel"
+                    value={bikeModel}
+                    onChange={(e) => setBikeModel(e.target.value)}
+                    placeholder={isRTL ? 'مثال: CBR 600RR' : 'e.g., CBR 600RR'}
+                    className="h-11"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="engineSize">
+                    {isRTL ? 'حجم المحرك (سي سي)' : 'Engine Size (CC)'}
+                  </Label>
+                  <Input
+                    id="engineSize"
+                    type="number"
+                    min="50"
+                    max="3000"
+                    value={engineSize}
+                    onChange={(e) => setEngineSize(e.target.value)}
+                    placeholder={isRTL ? 'مثال: 600' : 'e.g., 600'}
+                    className="h-11"
+                  />
+                </div>
+              </>
+            )}
           </motion.div>
         );
         
