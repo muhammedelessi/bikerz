@@ -523,7 +523,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
 
   const bodyContent = (
     <>
-      <div className="mt-3 sm:mt-4 min-h-0 overflow-y-auto max-h-[50vh] sm:max-h-[60vh] px-1">
+      <div className="mt-3 sm:mt-4 min-h-0 overflow-y-auto max-h-[60vh] sm:max-h-[70vh] px-1">
         <AnimatePresence mode="wait">
           {renderStepContent()}
         </AnimatePresence>
@@ -582,7 +582,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="px-4 pb-6 pt-2 max-h-[90vh]">
+        <DrawerContent className="px-4 pb-6 pt-2 max-h-[92vh] overflow-y-auto">
           <DrawerHeader className="px-0 pb-2">
             {headerContent}
           </DrawerHeader>
@@ -594,7 +594,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           {headerContent}
         </DialogHeader>
