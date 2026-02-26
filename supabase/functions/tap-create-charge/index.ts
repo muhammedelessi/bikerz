@@ -86,6 +86,40 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
+    // ── PROFILE COMPLETENESS CHECK (Backend Enforcement) ──
+    const { data: profileData, error: profileError } = await adminClient
+      .from("profiles")
+      .select("full_name, phone, city, country, profile_complete")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (profileError || !profileData) {
+      console.error("Profile check error:", profileError?.message);
+      return new Response(
+        JSON.stringify({ error: "User profile not found. Please complete your profile before payment." }),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate required profile fields server-side
+    const missingFields: string[] = [];
+    if (!profileData.full_name || profileData.full_name.trim().length < 3) missingFields.push("full_name");
+    if (!profileData.phone || profileData.phone.trim().length < 7) missingFields.push("phone");
+    if (!profileData.city || profileData.city.trim().length === 0) missingFields.push("city");
+    if (!profileData.country || profileData.country.trim().length === 0) missingFields.push("country");
+
+    if (missingFields.length > 0) {
+      console.warn("Incomplete profile for user:", userId, "missing:", missingFields);
+      return new Response(
+        JSON.stringify({
+          error: "Profile incomplete. Please fill all required fields before payment.",
+          missing_fields: missingFields,
+        }),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    // ── END PROFILE CHECK ──
+
     // ── Idempotency check ──
     const { data: existingCharge } = await adminClient
       .from("tap_charges")
@@ -134,9 +168,9 @@ Deno.serve(async (req) => {
         amount: numericAmount,
         currency,
         status: "pending",
-        customer_name: customer_name || "",
+        customer_name: customer_name || profileData.full_name || "",
         customer_email: customer_email || userEmail,
-        customer_phone: customer_phone || "",
+        customer_phone: customer_phone || profileData.phone || "",
         idempotency_key,
         metadata: {
           internal_order_id: idempotency_key,
@@ -144,6 +178,8 @@ Deno.serve(async (req) => {
           coupon_id: coupon_id || null,
           original_amount: Number(course.price),
           environment: tapSecretKey.startsWith("sk_test") ? "test" : "live",
+          billing_city: profileData.city,
+          billing_country: profileData.country,
         },
       })
       .select("id")

@@ -18,6 +18,11 @@ interface UserProfile {
   full_name: string | null;
   avatar_url: string | null;
   phone: string | null;
+  city: string | null;
+  country: string | null;
+  postal_code: string | null;
+  phone_verified: boolean;
+  profile_complete: boolean;
 }
 
 interface AuthContextType {
