@@ -6,6 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const PAYMENT_TIMEOUT = 30000; // 30s timeout for Tap API
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -33,6 +35,15 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Validate key type
+    if (tapSecretKey.startsWith("pk_")) {
+      console.error("TAP_SECRET_KEY contains a publishable key instead of secret key");
+      return new Response(
+        JSON.stringify({ error: "Payment service misconfigured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Verify user with getUser
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -49,7 +60,16 @@ Deno.serve(async (req) => {
     const userEmail = userData.user.email || "";
 
     // ── Parse & validate request body ──
-    const body = await req.json();
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid request body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const {
       course_id,
       amount,
@@ -59,7 +79,7 @@ Deno.serve(async (req) => {
       customer_phone,
       idempotency_key,
       coupon_id,
-    } = body;
+    } = body as Record<string, any>;
 
     if (!course_id || !amount || !idempotency_key) {
       return new Response(
@@ -128,14 +148,31 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existingCharge) {
-      return new Response(
-        JSON.stringify({
-          charge_id: existingCharge.charge_id,
-          status: existingCharge.status,
-          duplicate: true,
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      // If there's an existing succeeded or processing charge, return it
+      if (existingCharge.status === "succeeded" || existingCharge.status === "processing") {
+        return new Response(
+          JSON.stringify({
+            charge_id: existingCharge.charge_id,
+            status: existingCharge.status,
+            duplicate: true,
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      // If failed/cancelled, allow retry by deleting the old record
+      if (existingCharge.status === "failed" || existingCharge.status === "cancelled") {
+        await adminClient.from("tap_charges").delete().eq("id", existingCharge.id);
+      } else {
+        // Pending - return existing
+        return new Response(
+          JSON.stringify({
+            charge_id: existingCharge.charge_id,
+            status: existingCharge.status,
+            duplicate: true,
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // ── Verify course exists ──
@@ -156,6 +193,21 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Amount exceeds course price" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── Check if already enrolled ──
+    const { data: existingEnrollment } = await adminClient
+      .from("course_enrollments")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("course_id", course_id)
+      .maybeSingle();
+
+    if (existingEnrollment) {
+      return new Response(
+        JSON.stringify({ error: "You are already enrolled in this course" }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -214,11 +266,11 @@ Deno.serve(async (req) => {
         sms: !!customer_phone,
       },
       customer: {
-        first_name: customer_name?.split(" ")[0] || "Customer",
-        last_name: customer_name?.split(" ").slice(1).join(" ") || "",
+        first_name: (customer_name || profileData.full_name || "Customer").split(" ")[0],
+        last_name: (customer_name || profileData.full_name || "").split(" ").slice(1).join(" ") || "",
         email: customer_email || userEmail,
-        phone: customer_phone
-          ? { country_code: "966", number: customer_phone.replace(/^(\+?966|0)/, "") }
+        phone: (customer_phone || profileData.phone)
+          ? { country_code: "966", number: (customer_phone || profileData.phone || "").replace(/^(\+?966|0)/, "") }
           : undefined,
       },
       metadata: {
@@ -236,17 +288,61 @@ Deno.serve(async (req) => {
 
     console.log("Creating Tap charge for user:", userId, "amount:", numericAmount, currency);
 
-    const tapResponse = await fetch("https://api.tap.company/v2/charges", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${tapSecretKey}`,
-        "Content-Type": "application/json",
-        "x-idempotency-key": idempotency_key,
-      },
-      body: JSON.stringify(chargePayload),
-    });
+    let tapData: Record<string, any>;
+    let tapResponse: Response;
 
-    const tapData = await tapResponse.json();
+    try {
+      tapResponse = await fetch("https://api.tap.company/v2/charges", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tapSecretKey}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "x-idempotency-key": idempotency_key,
+        },
+        body: JSON.stringify(chargePayload),
+        signal: AbortSignal.timeout(PAYMENT_TIMEOUT),
+      });
+    } catch (fetchErr: any) {
+      console.error("Tap API network error:", fetchErr.message);
+      await adminClient
+        .from("tap_charges")
+        .update({ status: "failed", error_message: "Payment gateway timeout or network error" })
+        .eq("id", chargeRecord.id);
+      return new Response(
+        JSON.stringify({ error: "Payment gateway is temporarily unavailable. Please try again." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Defensive response parsing
+    const contentType = tapResponse.headers.get("content-type");
+    if (!contentType?.includes("application/json")) {
+      const textResponse = await tapResponse.text();
+      console.error("Tap returned non-JSON:", textResponse.substring(0, 200));
+      await adminClient
+        .from("tap_charges")
+        .update({ status: "failed", error_message: "Gateway returned invalid response" })
+        .eq("id", chargeRecord.id);
+      return new Response(
+        JSON.stringify({ error: "Payment gateway returned an invalid response. Please try again." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    try {
+      tapData = await tapResponse.json();
+    } catch {
+      console.error("Failed to parse Tap response as JSON");
+      await adminClient
+        .from("tap_charges")
+        .update({ status: "failed", error_message: "Malformed gateway response" })
+        .eq("id", chargeRecord.id);
+      return new Response(
+        JSON.stringify({ error: "Payment gateway returned a malformed response" }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (!tapResponse.ok) {
       console.error("Tap API error:", JSON.stringify(tapData));
@@ -291,6 +387,18 @@ Deno.serve(async (req) => {
     // The redirect URL from Tap's response (hosted payment page)
     const tapRedirectUrl = tapData.transaction?.url || null;
 
+    if (!tapRedirectUrl && chargeStatus !== "succeeded") {
+      console.error("No redirect URL from Tap:", JSON.stringify(tapData));
+      await adminClient
+        .from("tap_charges")
+        .update({ status: "failed", error_message: "No payment page URL received" })
+        .eq("id", chargeRecord.id);
+      return new Response(
+        JSON.stringify({ error: "Payment gateway did not provide a payment page. Please try again." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         charge_id: tapData.id,
@@ -301,7 +409,7 @@ Deno.serve(async (req) => {
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Unexpected error:", error.message);
     return new Response(
       JSON.stringify({ error: "An unexpected error occurred" }),

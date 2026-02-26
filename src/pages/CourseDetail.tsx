@@ -101,7 +101,9 @@ const CourseDetail: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tapId = params.get('tap_id');
-    if (!tapId || !user) return;
+    const paymentCallback = params.get('payment');
+    if ((!tapId && paymentCallback !== 'callback') || !user) return;
+    if (!tapId) return; // Tap must append tap_id on redirect
 
     // Clean the URL
     window.history.replaceState({}, '', `/courses/${id}`);
