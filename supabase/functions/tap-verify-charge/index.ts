@@ -91,6 +91,19 @@ Deno.serve(async (req) => {
           console.error("Enrollment error:", enrollError.message);
         }
 
+        // Record revenue analytics (idempotent - unique index prevents duplicates)
+        const { error: revenueError } = await adminClient.from("revenue_analytics").insert({
+          user_id: userId,
+          course_id: dbCharge.course_id,
+          event_type: "payment",
+          amount: tapCharge.amount || 0,
+          currency: tapCharge.currency || "SAR",
+          payment_id: dbCharge.id,
+        });
+        if (revenueError && !revenueError.message.includes("duplicate")) {
+          console.error("Revenue analytics insert error:", revenueError.message);
+        }
+
         // Increment coupon usage if a coupon was applied
         const meta = dbCharge.metadata as Record<string, unknown> | null;
         const couponId = meta?.coupon_id as string | null;

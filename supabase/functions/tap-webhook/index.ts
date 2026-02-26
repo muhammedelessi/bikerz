@@ -129,8 +129,8 @@ Deno.serve(async (req) => {
         console.log("Coupon usage incremented:", couponId, "result:", couponResult);
       }
 
-      // Record revenue analytics
-      await adminClient.from("revenue_analytics").insert({
+      // Record revenue analytics (idempotent - unique index prevents duplicates)
+      const { error: revenueError } = await adminClient.from("revenue_analytics").insert({
         user_id: existingCharge.user_id,
         course_id: existingCharge.course_id,
         event_type: "payment",
@@ -138,6 +138,9 @@ Deno.serve(async (req) => {
         currency: verifiedCharge.currency || "SAR",
         payment_id: existingCharge.id,
       });
+      if (revenueError && !revenueError.message.includes("duplicate")) {
+        console.error("Revenue analytics insert error:", revenueError.message);
+      }
     }
 
     return new Response(
