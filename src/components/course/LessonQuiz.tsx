@@ -8,26 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  CheckCircle2,
-  XCircle,
-  Zap,
-  HelpCircle,
-  RotateCcw,
-  Trophy,
-  Lightbulb,
+  CheckCircle2, XCircle, Zap, HelpCircle, RotateCcw, Trophy, Lightbulb,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
 import confetti from 'canvas-confetti';
 
-// Question types
 type QuestionType = 'single_choice' | 'multiple_choice' | 'dropdown';
 
 interface QuestionOption {
@@ -41,7 +30,6 @@ interface QuizQuestionData {
   question_ar?: string;
   question_type: QuestionType;
   options: QuestionOption[];
-  correct_answers: string[];
   explanation?: string;
   explanation_ar?: string;
 }
@@ -64,18 +52,24 @@ interface LessonQuizProps {
   onComplete?: (totalXp: number) => void;
 }
 
+// Track server-graded results per question
+interface GradedResult {
+  isCorrect: boolean;
+  xpEarned: number;
+}
+
 const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = false, onComplete }) => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  
+
   const questionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string[]>>({});
   const [submittedQuestions, setSubmittedQuestions] = useState<Set<string>>(new Set());
+  const [gradedResults, setGradedResults] = useState<Record<string, GradedResult>>({});
   const [showExplanation, setShowExplanation] = useState<Set<string>>(new Set());
   const [totalXpEarned, setTotalXpEarned] = useState(0);
 
-  // Parse data from Json to QuizQuestionData
   const parseData = (data: Json): QuizQuestionData => {
     if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
       const obj = data as Record<string, unknown>;
@@ -91,9 +85,7 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
             text_ar: o.text_ar ? String(o.text_ar) : undefined,
           };
         }) : [],
-        correct_answers: Array.isArray(obj.correct_answers) 
-          ? obj.correct_answers.map(String) 
-          : (obj.correct_answer ? [String(obj.correct_answer)] : []),
+        // correct_answers is NOT available from the view — grading is server-side
         explanation: obj.explanation ? String(obj.explanation) : undefined,
         explanation_ar: obj.explanation_ar ? String(obj.explanation_ar) : undefined,
       };
@@ -102,23 +94,22 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
       question: '',
       question_type: 'single_choice',
       options: [],
-      correct_answers: [],
     };
   };
 
-  // Fetch lesson quiz questions
+  // Fetch from the SAFE student view (no correct answers)
   const { data: questions = [], isLoading } = useQuery({
     queryKey: ['lesson-quiz', lessonId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('lesson_activities')
+        .from('lesson_activities_student' as any)
         .select('*')
         .eq('lesson_id', lessonId)
         .eq('activity_type', 'lesson_quiz')
         .eq('is_published', true)
         .order('position', { ascending: true });
       if (error) throw error;
-      return data.map(q => ({
+      return (data || []).map((q: any) => ({
         id: q.id,
         lesson_id: q.lesson_id,
         activity_type: q.activity_type,
@@ -133,14 +124,13 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
     enabled: !!lessonId,
   });
 
-  // Fetch existing attempts
+  // Fetch existing attempts to know which are already passed
   const { data: existingAttempts = [] } = useQuery({
     queryKey: ['lesson-quiz-attempts', lessonId, user?.id],
     queryFn: async () => {
       if (!user) return [];
       const activityIds = questions.map(q => q.id);
       if (activityIds.length === 0) return [];
-      
       const { data, error } = await supabase
         .from('user_activity_attempts')
         .select('activity_id, passed, xp_earned')
@@ -152,102 +142,64 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
     enabled: !!user && questions.length > 0,
   });
 
-  // Check if question was already answered correctly
   const isQuestionPassed = (activityId: string) => {
     return existingAttempts.some(a => a.activity_id === activityId && a.passed);
   };
 
-  // Scroll to next question after answering
   const scrollToNextQuestion = useCallback((currentQuestionId: string) => {
     const currentIndex = questions.findIndex(q => q.id === currentQuestionId);
     const nextQuestion = questions[currentIndex + 1];
-    
     if (nextQuestion && questionRefs.current[nextQuestion.id]) {
       setTimeout(() => {
-        questionRefs.current[nextQuestion.id]?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        });
-      }, 500); // Delay to let the feedback animation complete
+        questionRefs.current[nextQuestion.id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 500);
     } else if (currentIndex === questions.length - 1 && onComplete) {
-      // Last question answered
-      setTimeout(() => {
-        onComplete(totalXpEarned);
-      }, 1000);
+      setTimeout(() => { onComplete(totalXpEarned); }, 1000);
     }
   }, [questions, onComplete, totalXpEarned]);
 
-  // Submit answer mutation
+  // Server-side grading via RPC
   const submitAnswerMutation = useMutation({
-    mutationFn: async ({ 
-      activityId, 
-      answers, 
-      isCorrect, 
-      xpReward 
-    }: { 
-      activityId: string; 
-      answers: string[]; 
-      isCorrect: boolean; 
-      xpReward: number;
-    }) => {
+    mutationFn: async ({ activityId, answers }: { activityId: string; answers: string[] }) => {
       if (!user) throw new Error('Not authenticated');
-      
-      // Get attempt count
-      const { data: attempts } = await supabase
-        .from('user_activity_attempts')
-        .select('attempt_number')
-        .eq('user_id', user.id)
-        .eq('activity_id', activityId)
-        .order('attempt_number', { ascending: false })
-        .limit(1);
-      
-      const attemptNumber = attempts && attempts.length > 0 ? attempts[0].attempt_number + 1 : 1;
-      const earnedXp = isCorrect ? xpReward : 0;
-      
-      const { error } = await supabase
-        .from('user_activity_attempts')
-        .insert({
-          user_id: user.id,
-          activity_id: activityId,
-          answers: { selected: answers } as unknown as Json,
-          score: isCorrect ? 100 : 0,
-          max_score: 100,
-          passed: isCorrect,
-          xp_earned: earnedXp,
-          attempt_number: attemptNumber,
-        });
+
+      const { data, error } = await supabase.rpc('grade_lesson_activity', {
+        p_activity_id: activityId,
+        p_user_answers: answers,
+      });
+
       if (error) throw error;
-      
-      return { isCorrect, earnedXp, activityId };
+      const result = Array.isArray(data) ? data[0] : data;
+      return {
+        activityId,
+        isCorrect: result.is_correct as boolean,
+        xpEarned: result.xp_earned as number,
+      };
     },
-    onSuccess: ({ isCorrect, earnedXp, activityId }) => {
+    onSuccess: ({ activityId, isCorrect, xpEarned }) => {
+      setGradedResults(prev => ({ ...prev, [activityId]: { isCorrect, xpEarned } }));
       queryClient.invalidateQueries({ queryKey: ['lesson-quiz-attempts'] });
-      if (isCorrect && earnedXp > 0) {
-        setTotalXpEarned(prev => prev + earnedXp);
-        confetti({
-          particleCount: 50,
-          spread: 60,
-          origin: { y: 0.7 },
-          colors: ['#22c55e', '#3b82f6', '#f97316'],
-        });
+
+      if (isCorrect && xpEarned > 0) {
+        setTotalXpEarned(prev => prev + xpEarned);
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 }, colors: ['#22c55e', '#3b82f6', '#f97316'] });
       }
-      // Scroll to next question
       scrollToNextQuestion(activityId);
+    },
+    onError: () => {
+      toast.error(isRTL ? 'حدث خطأ أثناء التحقق' : 'Error checking answer');
     },
   });
 
   const handleSelectAnswer = (questionId: string, optionId: string, questionType: QuestionType) => {
     if (submittedQuestions.has(questionId)) return;
-    
     if (questionType === 'multiple_choice') {
-      // Toggle selection for checkboxes
       const current = selectedAnswers[questionId] || [];
       const newSelection = current.includes(optionId)
         ? current.filter(id => id !== optionId)
         : [...current, optionId];
       setSelectedAnswers({ ...selectedAnswers, [questionId]: newSelection });
     } else {
-      // Single selection for MCQ and dropdown
       setSelectedAnswers({ ...selectedAnswers, [questionId]: [optionId] });
     }
   };
@@ -259,27 +211,17 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
       return;
     }
 
-    const correctAnswers = question.data.correct_answers;
-    const isCorrect = 
-      answers.length === correctAnswers.length &&
-      answers.every(a => correctAnswers.includes(a));
-    
     setSubmittedQuestions(prev => new Set(prev).add(question.id));
-    
+
     if (question.data.explanation || question.data.explanation_ar) {
       setShowExplanation(prev => new Set(prev).add(question.id));
     }
-    
-    // Don't submit if already passed
+
     if (!isQuestionPassed(question.id)) {
-      submitAnswerMutation.mutate({
-        activityId: question.id,
-        answers,
-        isCorrect,
-        xpReward: question.xp_reward,
-      });
+      submitAnswerMutation.mutate({ activityId: question.id, answers });
     } else {
-      // Still scroll to next even if already passed
+      // Already passed — just mark and scroll
+      setGradedResults(prev => ({ ...prev, [question.id]: { isCorrect: true, xpEarned: 0 } }));
       scrollToNextQuestion(question.id);
     }
   };
@@ -291,6 +233,11 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
       return newSet;
     });
     setSelectedAnswers({ ...selectedAnswers, [questionId]: [] });
+    setGradedResults(prev => {
+      const copy = { ...prev };
+      delete copy[questionId];
+      return copy;
+    });
     setShowExplanation(prev => {
       const newSet = new Set(prev);
       newSet.delete(questionId);
@@ -298,42 +245,41 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
     });
   };
 
-  const getOptionClass = (questionId: string, optionId: string, correctAnswers: string[], isSubmitted: boolean) => {
+  // Option styling — after submission, we only know correct/incorrect from server result
+  const getOptionClass = (questionId: string, optionId: string, isSubmitted: boolean) => {
     const isSelected = (selectedAnswers[questionId] || []).includes(optionId);
-    const isCorrect = correctAnswers.includes(optionId);
-    
-    if (!isSubmitted) {
-      return isSelected
-        ? 'border-primary bg-primary/10'
-        : 'border-border hover:border-primary/50';
+    if (!isSubmitted || !gradedResults[questionId]) {
+      return isSelected ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50';
     }
-    
-    if (isCorrect) {
-      return 'border-green-500 bg-green-500/10';
-    }
-    if (isSelected && !isCorrect) {
-      return 'border-destructive bg-destructive/10';
-    }
+    const { isCorrect } = gradedResults[questionId];
+    // After grading: if correct, highlight selected as green; if wrong, highlight selected as red
+    if (isCorrect && isSelected) return 'border-green-500 bg-green-500/10';
+    if (!isCorrect && isSelected) return 'border-destructive bg-destructive/10';
     return 'border-border opacity-50';
   };
 
-  const isAnswerCorrect = (questionId: string, correctAnswers: string[]) => {
-    const answers = selectedAnswers[questionId] || [];
-    return answers.length === correctAnswers.length &&
-      answers.every(a => correctAnswers.includes(a));
+  const getOptionIndicator = (questionId: string, optionId: string, isSubmitted: boolean, questionType: QuestionType, optIndex: number) => {
+    const isSelected = (selectedAnswers[questionId] || []).includes(optionId);
+    if (!isSubmitted || !gradedResults[questionId]) {
+      if (isSelected) return 'border-primary bg-primary text-primary-foreground';
+      return 'border-current';
+    }
+    const { isCorrect } = gradedResults[questionId];
+    if (isCorrect && isSelected) return 'border-green-500 bg-green-500 text-white';
+    if (!isCorrect && isSelected) return 'border-destructive bg-destructive text-white';
+    return 'border-current';
   };
 
-  // Check if all questions are completed
-  const allQuestionsCompleted = questions.length > 0 && 
+  const isQuestionCorrect = (questionId: string) => {
+    return gradedResults[questionId]?.isCorrect || isQuestionPassed(questionId);
+  };
+
+  const allQuestionsCompleted = questions.length > 0 &&
     questions.every(q => submittedQuestions.has(q.id) || isQuestionPassed(q.id));
 
-  // Call onComplete when all questions are done
   useEffect(() => {
     if (allQuestionsCompleted && onComplete && totalXpEarned > 0) {
-      // Delay to let animations complete
-      const timer = setTimeout(() => {
-        onComplete(totalXpEarned);
-      }, 1500);
+      const timer = setTimeout(() => { onComplete(totalXpEarned); }, 1500);
       return () => clearTimeout(timer);
     }
   }, [allQuestionsCompleted, onComplete, totalXpEarned]);
@@ -341,19 +287,13 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
   if (isLoading) {
     return (
       <Card className="animate-pulse">
-        <CardHeader>
-          <div className="h-6 bg-muted rounded w-1/3" />
-        </CardHeader>
-        <CardContent>
-          <div className="h-20 bg-muted rounded" />
-        </CardContent>
+        <CardHeader><div className="h-6 bg-muted rounded w-1/3" /></CardHeader>
+        <CardContent><div className="h-20 bg-muted rounded" /></CardContent>
       </Card>
     );
   }
 
-  if (questions.length === 0) {
-    return null; // No quiz for this lesson
-  }
+  if (questions.length === 0) return null;
 
   const completedCount = questions.filter(q => submittedQuestions.has(q.id) || isQuestionPassed(q.id)).length;
 
@@ -368,13 +308,10 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
               {isRTL ? 'اختبر معلوماتك' : 'Test Your Knowledge'}
             </CardTitle>
             <div className="flex items-center gap-3 text-sm">
-              <span className="text-muted-foreground">
-                {completedCount} / {questions.length}
-              </span>
+              <span className="text-muted-foreground">{completedCount} / {questions.length}</span>
               {totalXpEarned > 0 && (
                 <div className="flex items-center gap-1 text-primary font-bold">
-                  <Zap className="w-4 h-4" />
-                  <span>+{totalXpEarned}</span>
+                  <Zap className="w-4 h-4" /><span>+{totalXpEarned}</span>
                 </div>
               )}
             </div>
@@ -386,8 +323,9 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
       {questions.map((question, index) => {
         const isSubmitted = submittedQuestions.has(question.id) || isQuestionPassed(question.id);
         const currentAnswers = selectedAnswers[question.id] || [];
-        const isCorrectAnswer = isSubmitted && isAnswerCorrect(question.id, question.data.correct_answers);
-        const hasExplanation = showExplanation.has(question.id) && 
+        const isCorrectAnswer = isSubmitted && isQuestionCorrect(question.id);
+        const isWaiting = isSubmitted && !gradedResults[question.id] && !isQuestionPassed(question.id);
+        const hasExplanation = showExplanation.has(question.id) &&
           (question.data.explanation || question.data.explanation_ar);
 
         return (
@@ -398,18 +336,18 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <Card className={`transition-all duration-300 ${isSubmitted ? (isCorrectAnswer ? 'ring-2 ring-green-500/30' : 'ring-2 ring-destructive/30') : ''}`}>
+            <Card className={`transition-all duration-300 ${isSubmitted && !isWaiting ? (isCorrectAnswer ? 'ring-2 ring-green-500/30' : 'ring-2 ring-destructive/30') : ''}`}>
               <CardContent className="pt-6 space-y-4">
                 {/* Question Number & Text */}
                 <div className="flex gap-3">
                   <div className={`
                     w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold
-                    ${isSubmitted 
+                    ${isSubmitted && !isWaiting
                       ? (isCorrectAnswer ? 'bg-green-500 text-white' : 'bg-destructive text-white')
                       : 'bg-primary/10 text-primary'
                     }
                   `}>
-                    {isSubmitted ? (
+                    {isSubmitted && !isWaiting ? (
                       isCorrectAnswer ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />
                     ) : (
                       index + 1
@@ -417,9 +355,7 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-foreground font-medium leading-relaxed">
-                      {isRTL && question.data.question_ar
-                        ? question.data.question_ar
-                        : question.data.question}
+                      {isRTL && question.data.question_ar ? question.data.question_ar : question.data.question}
                     </p>
                   </div>
                 </div>
@@ -431,7 +367,7 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
                     onValueChange={(value) => handleSelectAnswer(question.id, value, question.data.question_type)}
                     disabled={isSubmitted}
                   >
-                    <SelectTrigger className={isSubmitted ? getOptionClass(question.id, currentAnswers[0] || '', question.data.correct_answers, true) : ''}>
+                    <SelectTrigger className={isSubmitted ? getOptionClass(question.id, currentAnswers[0] || '', true) : ''}>
                       <SelectValue placeholder={isRTL ? 'اختر إجابة...' : 'Select an answer...'} />
                     </SelectTrigger>
                     <SelectContent>
@@ -454,35 +390,26 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
                         disabled={isSubmitted}
                         className={`
                           w-full p-3 rounded-lg border-2 text-start transition-all
-                          ${getOptionClass(question.id, option.id, question.data.correct_answers, isSubmitted)}
+                          ${getOptionClass(question.id, option.id, isSubmitted)}
                           ${!isSubmitted ? 'cursor-pointer' : 'cursor-default'}
                         `}
                       >
                         <div className="flex items-center gap-3">
                           <div className={`
                             w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 text-xs
-                            ${isSubmitted && question.data.correct_answers.includes(option.id)
-                              ? 'border-green-500 bg-green-500 text-white'
-                              : isSubmitted && currentAnswers.includes(option.id)
-                                ? 'border-destructive bg-destructive text-white'
-                                : currentAnswers.includes(option.id)
-                                  ? 'border-primary bg-primary text-primary-foreground'
-                                  : 'border-current'
-                            }
+                            ${getOptionIndicator(question.id, option.id, isSubmitted, question.data.question_type, optIndex)}
                           `}>
                             {question.data.question_type === 'multiple_choice' ? (
-                              <Checkbox 
+                              <Checkbox
                                 checked={currentAnswers.includes(option.id)}
                                 className="pointer-events-none border-0 w-4 h-4"
                               />
-                            ) : isSubmitted && question.data.correct_answers.includes(option.id) ? (
+                            ) : isSubmitted && gradedResults[question.id]?.isCorrect && currentAnswers.includes(option.id) ? (
                               <CheckCircle2 className="w-3 h-3" />
-                            ) : isSubmitted && currentAnswers.includes(option.id) ? (
+                            ) : isSubmitted && !gradedResults[question.id]?.isCorrect && currentAnswers.includes(option.id) ? (
                               <XCircle className="w-3 h-3" />
                             ) : (
-                              <span className="font-bold">
-                                {String.fromCharCode(65 + optIndex)}
-                              </span>
+                              <span className="font-bold">{String.fromCharCode(65 + optIndex)}</span>
                             )}
                           </div>
                           <span className="text-sm">
@@ -496,7 +423,7 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
 
                 {/* Explanation */}
                 <AnimatePresence>
-                  {hasExplanation && (
+                  {hasExplanation && !isWaiting && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -508,16 +435,14 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
                     >
                       <Lightbulb className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isCorrectAnswer ? 'text-green-500' : 'text-amber-500'}`} />
                       <p className="text-sm">
-                        {isRTL && question.data.explanation_ar
-                          ? question.data.explanation_ar
-                          : question.data.explanation}
+                        {isRTL && question.data.explanation_ar ? question.data.explanation_ar : question.data.explanation}
                       </p>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
                 {/* Result & Actions */}
-                {isSubmitted && (
+                {isSubmitted && !isWaiting && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -529,44 +454,36 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
                     {isCorrectAnswer ? (
                       <>
                         <Trophy className="w-5 h-5" />
-                        <span className="font-medium">
-                          {isRTL ? 'إجابة صحيحة!' : 'Correct!'}
-                        </span>
-                        {!isQuestionPassed(question.id) && (
+                        <span className="font-medium">{isRTL ? 'إجابة صحيحة!' : 'Correct!'}</span>
+                        {gradedResults[question.id]?.xpEarned > 0 && (
                           <span className="ms-auto flex items-center gap-1 text-primary">
-                            <Zap className="w-4 h-4" />
-                            +{question.xp_reward} XP
+                            <Zap className="w-4 h-4" />+{gradedResults[question.id].xpEarned} XP
                           </span>
                         )}
                       </>
                     ) : (
                       <>
                         <XCircle className="w-5 h-5" />
-                        <span className="font-medium">
-                          {isRTL ? 'إجابة خاطئة' : 'Incorrect'}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="ms-auto"
-                          onClick={() => handleRetry(question.id)}
-                        >
-                          <RotateCcw className="w-4 h-4 me-1" />
-                          {isRTL ? 'أعد المحاولة' : 'Retry'}
+                        <span className="font-medium">{isRTL ? 'إجابة خاطئة' : 'Incorrect'}</span>
+                        <Button variant="ghost" size="sm" className="ms-auto" onClick={() => handleRetry(question.id)}>
+                          <RotateCcw className="w-4 h-4 me-1" />{isRTL ? 'أعد المحاولة' : 'Retry'}
                         </Button>
                       </>
                     )}
                   </motion.div>
                 )}
 
+                {/* Waiting for server */}
+                {isWaiting && (
+                  <div className="flex items-center justify-center py-2 ms-11">
+                    <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  </div>
+                )}
+
                 {/* Submit Button */}
                 {!isSubmitted && (
                   <div className="flex justify-end ps-11">
-                    <Button
-                      size="sm"
-                      onClick={() => handleSubmitAnswer(question)}
-                      disabled={currentAnswers.length === 0}
-                    >
+                    <Button size="sm" onClick={() => handleSubmitAnswer(question)} disabled={currentAnswers.length === 0}>
                       {isRTL ? 'تحقق' : 'Check'}
                     </Button>
                   </div>
