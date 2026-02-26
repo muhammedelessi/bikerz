@@ -1718,6 +1718,13 @@ export type Database = {
             referencedRelation: "lesson_activities"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_activity_attempts_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_activities_student"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_activity_timeline: {
@@ -2433,6 +2440,62 @@ export type Database = {
       }
     }
     Views: {
+      lesson_activities_student: {
+        Row: {
+          activity_type: string | null
+          created_at: string | null
+          data: Json | null
+          difficulty_level: number | null
+          id: string | null
+          is_published: boolean | null
+          lesson_id: string | null
+          position: number | null
+          time_limit_seconds: number | null
+          title: string | null
+          title_ar: string | null
+          updated_at: string | null
+          xp_reward: number | null
+        }
+        Insert: {
+          activity_type?: string | null
+          created_at?: string | null
+          data?: never
+          difficulty_level?: number | null
+          id?: string | null
+          is_published?: boolean | null
+          lesson_id?: string | null
+          position?: number | null
+          time_limit_seconds?: number | null
+          title?: string | null
+          title_ar?: string | null
+          updated_at?: string | null
+          xp_reward?: number | null
+        }
+        Update: {
+          activity_type?: string | null
+          created_at?: string | null
+          data?: never
+          difficulty_level?: number | null
+          id?: string | null
+          is_published?: boolean | null
+          lesson_id?: string | null
+          position?: number | null
+          time_limit_seconds?: number | null
+          title?: string | null
+          title_ar?: string | null
+          updated_at?: string | null
+          xp_reward?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_activities_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_questions_student: {
         Row: {
           created_at: string | null
@@ -2479,6 +2542,14 @@ export type Database = {
       }
     }
     Functions: {
+      grade_lesson_activity: {
+        Args: { p_activity_id: string; p_user_answers: string[] }
+        Returns: {
+          attempt_number: number
+          is_correct: boolean
+          xp_earned: number
+        }[]
+      }
       grade_test_attempt: {
         Args: { p_test_id: string; p_user_answers: Json }
         Returns: {
