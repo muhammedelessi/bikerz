@@ -1243,12 +1243,17 @@ export type Database = {
           avatar_url: string | null
           bike_brand: string | null
           bike_model: string | null
+          city: string | null
+          country: string | null
           created_at: string
           engine_size_cc: number | null
           experience_level: string | null
           full_name: string | null
           id: string
           phone: string | null
+          phone_verified: boolean
+          postal_code: string | null
+          profile_complete: boolean
           rider_nickname: string | null
           riding_experience_years: number | null
           updated_at: string
@@ -1258,12 +1263,17 @@ export type Database = {
           avatar_url?: string | null
           bike_brand?: string | null
           bike_model?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           engine_size_cc?: number | null
           experience_level?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
+          phone_verified?: boolean
+          postal_code?: string | null
+          profile_complete?: boolean
           rider_nickname?: string | null
           riding_experience_years?: number | null
           updated_at?: string
@@ -1273,12 +1283,17 @@ export type Database = {
           avatar_url?: string | null
           bike_brand?: string | null
           bike_model?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           engine_size_cc?: number | null
           experience_level?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
+          phone_verified?: boolean
+          postal_code?: string | null
+          profile_complete?: boolean
           rider_nickname?: string | null
           riding_experience_years?: number | null
           updated_at?: string

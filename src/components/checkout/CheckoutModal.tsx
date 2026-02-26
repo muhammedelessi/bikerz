@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +15,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   CreditCard,
   Gift,
@@ -26,6 +34,9 @@ import {
   AlertCircle,
   CheckCircle2,
   XCircle,
+  User,
+  MapPin,
+  Lock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -40,6 +51,31 @@ interface CheckoutModalProps {
     thumbnail_url: string | null;
   };
   onSuccess: () => void;
+}
+
+type CheckoutStep = 'profile' | 'billing' | 'payment';
+
+const CHECKOUT_STEPS: CheckoutStep[] = ['profile', 'billing', 'payment'];
+
+const GCC_COUNTRIES = [
+  { code: 'SA', name: 'Saudi Arabia', name_ar: 'المملكة العربية السعودية' },
+  { code: 'AE', name: 'United Arab Emirates', name_ar: 'الإمارات العربية المتحدة' },
+  { code: 'KW', name: 'Kuwait', name_ar: 'الكويت' },
+  { code: 'BH', name: 'Bahrain', name_ar: 'البحرين' },
+  { code: 'QA', name: 'Qatar', name_ar: 'قطر' },
+  { code: 'OM', name: 'Oman', name_ar: 'عُمان' },
+  { code: 'EG', name: 'Egypt', name_ar: 'مصر' },
+  { code: 'JO', name: 'Jordan', name_ar: 'الأردن' },
+  { code: 'IQ', name: 'Iraq', name_ar: 'العراق' },
+  { code: 'OTHER', name: 'Other', name_ar: 'أخرى' },
+];
+
+interface ValidationErrors {
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  city?: string;
+  country?: string;
 }
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({
@@ -59,6 +95,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     reset: resetPayment,
   } = useTapPayment();
 
+  const [currentStep, setCurrentStep] = useState<CheckoutStep>('profile');
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoLoading, setPromoLoading] = useState(false);
@@ -69,11 +106,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     discount_amount: number;
     final_amount: number;
   } | null>(null);
-  const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+
+  // Form fields
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [profileSaving, setProfileSaving] = useState(false);
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
+  const BackArrowIcon = isRTL ? ArrowRight : ArrowLeft;
   const discountedPrice = appliedCoupon ? appliedCoupon.final_amount : course.price;
   const discountAmount = appliedCoupon ? appliedCoupon.discount_amount : 0;
   const discountLabel = appliedCoupon
@@ -82,14 +127,30 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       : `-${appliedCoupon.discount_amount} SAR`
     : '';
 
-  // Pre-fill customer info
+  // Pre-fill from profile
   useEffect(() => {
-    if (profile?.full_name) setCustomerName(profile.full_name);
-    if (user?.email) setCustomerEmail(user.email);
-    if (profile?.phone) setCustomerPhone(profile.phone);
-  }, [profile, user]);
+    if (!open) return;
+    if (profile?.full_name) setFullName(profile.full_name);
+    if (user?.email) setEmail(user.email);
+    if (profile?.phone) setPhone(profile.phone || '');
+    // Load billing from profile (new columns)
+    const loadBilling = async () => {
+      if (!user?.id) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('city, country, postal_code')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data) {
+        if (data.city) setCity(data.city);
+        if (data.country) setCountry(data.country);
+        if (data.postal_code) setPostalCode(data.postal_code);
+      }
+    };
+    loadBilling();
+  }, [profile, user, open]);
 
-  // Auto-apply PROFILE10 coupon from profile completion
+  // Auto-apply PROFILE10 coupon
   useEffect(() => {
     if (!open) return;
     const savedCoupon = localStorage.getItem('profile_coupon_code');
@@ -108,7 +169,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             localStorage.removeItem('profile_coupon_code');
           }
         } catch {
-          // Silently fail auto-apply
+          // Silently fail
         } finally {
           setPromoLoading(false);
         }
@@ -120,14 +181,100 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Reset on close
   useEffect(() => {
     if (!open) {
+      setCurrentStep('profile');
       setPromoCode('');
       setPromoApplied(false);
       setAppliedCoupon(null);
       setPromoLoading(false);
+      setErrors({});
       resetPayment();
     }
   }, [open, resetPayment]);
 
+  // Validation
+  const validateProfile = useCallback((): boolean => {
+    const newErrors: ValidationErrors = {};
+    if (!fullName.trim() || fullName.trim().length < 3) {
+      newErrors.fullName = isRTL ? 'الاسم الكامل مطلوب (3 أحرف على الأقل)' : 'Full name required (min 3 chars)';
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email)) {
+      newErrors.email = isRTL ? 'بريد إلكتروني صحيح مطلوب' : 'Valid email required';
+    }
+    const phoneRegex = /^[0-9+\s()-]{7,15}$/;
+    if (!phone.trim() || !phoneRegex.test(phone)) {
+      newErrors.phone = isRTL ? 'رقم هاتف صحيح مطلوب' : 'Valid phone number required';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [fullName, email, phone, isRTL]);
+
+  const validateBilling = useCallback((): boolean => {
+    const newErrors: ValidationErrors = {};
+    if (!city.trim()) {
+      newErrors.city = isRTL ? 'المدينة مطلوبة' : 'City is required';
+    }
+    if (!country) {
+      newErrors.country = isRTL ? 'الدولة مطلوبة' : 'Country is required';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [city, country, isRTL]);
+
+  const isProfileValid = fullName.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && /^[0-9+\s()-]{7,15}$/.test(phone);
+  const isBillingValid = city.trim().length > 0 && !!country;
+  const isPaymentReady = isProfileValid && isBillingValid && isReady;
+
+  // Save profile data to DB
+  const saveProfileData = async () => {
+    if (!user?.id) return false;
+    setProfileSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName.trim(),
+          phone: phone.trim(),
+          city: city.trim(),
+          country,
+          postal_code: postalCode.trim() || null,
+          profile_complete: true,
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      return true;
+    } catch (err: any) {
+      toast.error(isRTL ? 'فشل حفظ البيانات' : 'Failed to save profile data');
+      return false;
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  // Step navigation
+  const handleNextStep = async () => {
+    if (currentStep === 'profile') {
+      if (!validateProfile()) return;
+      setCurrentStep('billing');
+    } else if (currentStep === 'billing') {
+      if (!validateBilling()) return;
+      // Save profile + billing data before proceeding to payment
+      const saved = await saveProfileData();
+      if (!saved) return;
+      setCurrentStep('payment');
+    }
+  };
+
+  const handlePrevStep = () => {
+    if (currentStep === 'billing') setCurrentStep('profile');
+    else if (currentStep === 'payment') setCurrentStep('billing');
+  };
+
+  const currentStepIndex = CHECKOUT_STEPS.indexOf(currentStep);
+  const progressPercent = ((currentStepIndex + 1) / CHECKOUT_STEPS.length) * 100;
+
+  // Promo code
   const handleApplyPromo = async () => {
     if (!promoCode.trim() || promoLoading) return;
     setPromoLoading(true);
@@ -135,10 +282,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       const { data, error } = await supabase.functions.invoke('coupon-validate', {
         body: { code: promoCode.trim(), course_id: course.id, amount: course.price },
       });
-      // supabase.functions.invoke returns { data: null, error } for non-2xx responses
-      // The error.context may contain the actual JSON response body
       if (error) {
-        // Try to extract the error message from the response body
         let errorMsg = isRTL ? 'فشل التحقق من الرمز' : 'Failed to validate code';
         try {
           if (error.context && typeof error.context.json === 'function') {
@@ -163,17 +307,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
+  // Submit payment
   const handleSubmitPayment = async () => {
-    if (!customerName.trim() || !customerEmail.trim()) {
-      toast.error(isRTL ? 'يرجى ملء الحقول المطلوبة' : 'Please fill in required fields');
-      return;
-    }
+    if (!isPaymentReady) return;
 
-    // If 100% discount, enroll directly without payment
+    // If 100% discount, enroll directly
     if (discountedPrice <= 0 && appliedCoupon) {
       try {
         resetPayment();
-        // Insert enrollment directly
         const { error: enrollError } = await supabase
           .from('course_enrollments')
           .insert({ user_id: user!.id, course_id: course.id });
@@ -182,7 +323,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           throw new Error(enrollError.message);
         }
 
-        // Log coupon usage and increment counter
         await supabase.rpc('increment_coupon_usage', {
           p_coupon_id: appliedCoupon.coupon_id,
           p_user_id: user!.id,
@@ -207,10 +347,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       courseId: course.id,
       amount: discountedPrice,
       currency: 'SAR',
-      customerName,
-      customerEmail,
+      customerName: fullName,
+      customerEmail: email,
       couponId: appliedCoupon?.coupon_id,
-      customerPhone,
+      customerPhone: phone,
     });
   };
 
@@ -219,49 +359,116 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     onOpenChange(false);
   };
 
+  // Step labels
+  const stepLabels: Record<CheckoutStep, { en: string; ar: string }> = {
+    profile: { en: 'Personal Info', ar: 'المعلومات الشخصية' },
+    billing: { en: 'Billing Address', ar: 'عنوان الفاتورة' },
+    payment: { en: 'Payment', ar: 'الدفع' },
+  };
+
+  const renderFieldError = (field: keyof ValidationErrors) => {
+    if (!errors[field]) return null;
+    return (
+      <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+        <AlertCircle className="w-3 h-3" />
+        {errors[field]}
+      </p>
+    );
+  };
+
+  // Auth guard
+  if (!user) {
+    return (
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-[420px]">
+          <div className="flex flex-col items-center py-8 text-center space-y-4">
+            <Lock className="w-12 h-12 text-muted-foreground" />
+            <h3 className="text-lg font-bold">{isRTL ? 'يجب تسجيل الدخول أولاً' : 'Login Required'}</h3>
+            <p className="text-sm text-muted-foreground">
+              {isRTL ? 'يجب عليك تسجيل الدخول لإكمال عملية الشراء' : 'You must be logged in to complete a purchase'}
+            </p>
+            <Button className="btn-cta" asChild>
+              <a href="/login">{isRTL ? 'تسجيل الدخول' : 'Login'}</a>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] bg-card border-2 border-border shadow-2xl p-0 overflow-hidden flex flex-col mx-4">
+      <DialogContent className="sm:max-w-[520px] max-h-[92vh] bg-card border-2 border-border shadow-2xl p-0 overflow-hidden flex flex-col mx-4">
         {/* Header */}
-        <div className="bg-muted/30 p-4 sm:p-6 border-b-2 border-border flex-shrink-0">
+        <div className="bg-muted/30 p-4 sm:p-5 border-b-2 border-border flex-shrink-0">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
+            <DialogTitle className="text-lg font-bold">
               {isRTL ? 'إتمام الشراء' : 'Complete Purchase'}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex items-center gap-4 mt-4">
-            <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+
+          {/* Course info */}
+          <div className="flex items-center gap-3 mt-3">
+            <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
               {course.thumbnail_url ? (
                 <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-primary/20 flex items-center justify-center">
-                  <CreditCard className="w-6 h-6 text-primary" />
+                  <CreditCard className="w-5 h-5 text-primary" />
                 </div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-foreground truncate">
+              <h3 className="font-semibold text-sm text-foreground truncate">
                 {isRTL && course.title_ar ? course.title_ar : course.title}
               </h3>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-0.5">
                 {promoApplied && (
-                  <span className="text-sm text-muted-foreground line-through">
+                  <span className="text-xs text-muted-foreground line-through">
                     {course.price} {isRTL ? 'ر.س' : 'SAR'}
                   </span>
                 )}
-                <span className="text-lg font-bold text-primary">
+                <span className="text-base font-bold text-primary">
                   {discountedPrice} {isRTL ? 'ر.س' : 'SAR'}
                 </span>
                 {promoApplied && discountLabel && (
-                  <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">{discountLabel}</span>
+                  <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">{discountLabel}</span>
                 )}
               </div>
             </div>
           </div>
+
+          {/* Step indicator */}
+          <div className="mt-4 space-y-2">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              {CHECKOUT_STEPS.map((step, i) => (
+                <span
+                  key={step}
+                  className={`flex items-center gap-1 ${
+                    i <= currentStepIndex ? 'text-primary font-medium' : ''
+                  }`}
+                >
+                  {i < currentStepIndex ? (
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  ) : i === currentStepIndex ? (
+                    <span className="w-3.5 h-3.5 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">
+                      {i + 1}
+                    </span>
+                  ) : (
+                    <span className="w-3.5 h-3.5 rounded-full border border-muted-foreground/30 text-[10px] flex items-center justify-center">
+                      {i + 1}
+                    </span>
+                  )}
+                  {isRTL ? stepLabels[step].ar : stepLabels[step].en}
+                </span>
+              ))}
+            </div>
+            <Progress value={progressPercent} className="h-1.5" />
+          </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1 min-h-0">
+        <div className="p-5 overflow-y-auto flex-1 min-h-0">
           {paymentStatus === 'failed' ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -282,166 +489,308 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </Button>
             </motion.div>
           ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-4"
-            >
-              <h4 className="font-semibold text-foreground">
-                {isRTL ? 'معلومات الدفع' : 'Payment Information'}
-              </h4>
-
-              <div className="space-y-2">
-                <Label>{isRTL ? 'الاسم الكامل' : 'Full Name'} *</Label>
-                <Input
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder={isRTL ? 'أدخل اسمك الكامل' : 'Enter your full name'}
-                  disabled={paymentStatus === 'processing'}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>{isRTL ? 'البريد الإلكتروني' : 'Email'} *</Label>
-                <Input
-                  type="email"
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
-                  placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
-                  disabled={paymentStatus === 'processing'}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>{isRTL ? 'رقم الهاتف' : 'Phone Number'}</Label>
-                <Input
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  placeholder={isRTL ? '05xxxxxxxx' : '05xxxxxxxx'}
-                  disabled={paymentStatus === 'processing'}
-                />
-              </div>
-
-              {/* Promo Code */}
-              <Separator />
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">
-                  <Gift className="w-4 h-4 inline-block me-2" />
-                  {isRTL ? 'رمز الخصم' : 'Promo Code'}
-                </Label>
-              <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Input
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value)}
-                      placeholder={isRTL ? 'أدخل رمز الخصم' : 'Enter promo code'}
-                      disabled={promoApplied || paymentStatus === 'processing'}
-                      className="w-full pe-9"
-                    />
-                    {(promoCode && !promoApplied) && (
-                      <button
-                        type="button"
-                        onClick={() => setPromoCode('')}
-                        className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                        aria-label={isRTL ? 'مسح' : 'Clear'}
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </button>
-                    )}
-                    {promoApplied && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPromoCode('');
-                          setPromoApplied(false);
-                          setAppliedCoupon(null);
-                        }}
-                        className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        aria-label={isRTL ? 'إزالة الخصم' : 'Remove coupon'}
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </button>
-                    )}
+            <AnimatePresence mode="wait">
+              {/* Step 1: Personal Info */}
+              {currentStep === 'profile' && (
+                <motion.div
+                  key="profile"
+                  initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
+                  className="space-y-4"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <User className="w-4 h-4 text-primary" />
+                    <h4 className="font-semibold text-foreground">
+                      {isRTL ? 'المعلومات الشخصية' : 'Personal Information'}
+                    </h4>
                   </div>
-                  <Button variant="outline" onClick={handleApplyPromo} disabled={!promoCode || promoApplied || paymentStatus === 'processing'}>
-                    {promoApplied ? (isRTL ? 'مطبق' : 'Applied') : (isRTL ? 'تطبيق' : 'Apply')}
-                  </Button>
-                </div>
-                {promoApplied && appliedCoupon && (
-                  <p className="text-sm text-primary flex items-center gap-1">
-                    <Check className="w-4 h-4" />
-                    {isRTL 
-                      ? `تم تطبيق خصم ${discountLabel} (وفّرت ${discountAmount} ر.س)` 
-                      : `${discountLabel} discount applied (saved ${discountAmount} SAR)`}
+                  <p className="text-xs text-muted-foreground">
+                    {isRTL ? 'يجب تعبئة جميع الحقول لإتمام الشراء' : 'All fields are required to proceed with payment'}
                   </p>
-                )}
-              </div>
 
-              {/* Order Summary */}
-              <div className="p-4 rounded-xl bg-muted/30 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{isRTL ? 'الدورة' : 'Course'}</span>
-                  <span className="font-medium truncate max-w-[200px]">
-                    {isRTL && course.title_ar ? course.title_ar : course.title}
-                  </span>
-                </div>
-                {promoApplied && appliedCoupon && (
-                  <div className="flex justify-between text-sm text-primary">
-                    <span>{isRTL ? 'الخصم' : 'Discount'} ({discountLabel})</span>
-                    <span>-{discountAmount} {isRTL ? 'ر.س' : 'SAR'}</span>
+                  <div className="space-y-2">
+                    <Label>{isRTL ? 'الاسم الكامل' : 'Full Name'} <span className="text-destructive">*</span></Label>
+                    <Input
+                      value={fullName}
+                      onChange={(e) => { setFullName(e.target.value); setErrors(prev => ({ ...prev, fullName: undefined })); }}
+                      placeholder={isRTL ? 'أدخل اسمك الكامل' : 'Enter your full legal name'}
+                      className={errors.fullName ? 'border-destructive' : ''}
+                    />
+                    {renderFieldError('fullName')}
                   </div>
-                )}
-                <Separator />
-                <div className="flex justify-between font-bold">
-                  <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
-                  <span className="text-primary">{discountedPrice} {isRTL ? 'ر.س' : 'SAR'}</span>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
-                <Shield className="w-4 h-4 text-primary flex-shrink-0" />
-                <span>
-                  {isRTL
-                    ? 'سيتم توجيهك إلى صفحة الدفع الآمنة لإدخال بيانات البطاقة'
-                    : 'You will be redirected to a secure payment page to enter your card details'}
-                </span>
-              </div>
-            </motion.div>
+                  <div className="space-y-2">
+                    <Label>{isRTL ? 'البريد الإلكتروني' : 'Email'} <span className="text-destructive">*</span></Label>
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
+                      placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
+                      className={errors.email ? 'border-destructive' : ''}
+                    />
+                    {renderFieldError('email')}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{isRTL ? 'رقم الهاتف' : 'Phone Number'} <span className="text-destructive">*</span></Label>
+                    <Input
+                      value={phone}
+                      onChange={(e) => { setPhone(e.target.value); setErrors(prev => ({ ...prev, phone: undefined })); }}
+                      placeholder={isRTL ? '05xxxxxxxx' : '05xxxxxxxx'}
+                      className={errors.phone ? 'border-destructive' : ''}
+                    />
+                    {renderFieldError('phone')}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 2: Billing */}
+              {currentStep === 'billing' && (
+                <motion.div
+                  key="billing"
+                  initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
+                  className="space-y-4"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    <h4 className="font-semibold text-foreground">
+                      {isRTL ? 'عنوان الفاتورة' : 'Billing Address'}
+                    </h4>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{isRTL ? 'الدولة' : 'Country'} <span className="text-destructive">*</span></Label>
+                    <Select value={country} onValueChange={(v) => { setCountry(v); setErrors(prev => ({ ...prev, country: undefined })); }}>
+                      <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
+                        <SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GCC_COUNTRIES.map((c) => (
+                          <SelectItem key={c.code} value={c.code}>
+                            {isRTL ? c.name_ar : c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {renderFieldError('country')}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
+                    <Input
+                      value={city}
+                      onChange={(e) => { setCity(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
+                      placeholder={isRTL ? 'أدخل مدينتك' : 'Enter your city'}
+                      className={errors.city ? 'border-destructive' : ''}
+                    />
+                    {renderFieldError('city')}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{isRTL ? 'الرمز البريدي' : 'Postal Code'} <span className="text-muted-foreground text-xs">({isRTL ? 'اختياري' : 'optional'})</span></Label>
+                    <Input
+                      value={postalCode}
+                      onChange={(e) => setPostalCode(e.target.value)}
+                      placeholder={isRTL ? 'الرمز البريدي' : 'Postal code'}
+                    />
+                  </div>
+
+                  {/* Summary preview */}
+                  <div className="p-3 rounded-lg bg-muted/30 mt-2">
+                    <p className="text-xs text-muted-foreground mb-2 font-medium">{isRTL ? 'ملخص البيانات' : 'Data Summary'}</p>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{isRTL ? 'الاسم' : 'Name'}</span>
+                        <span className="font-medium">{fullName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{isRTL ? 'الهاتف' : 'Phone'}</span>
+                        <span className="font-medium" dir="ltr">{phone}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{isRTL ? 'البريد' : 'Email'}</span>
+                        <span className="font-medium truncate max-w-[180px]" dir="ltr">{email}</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 3: Payment */}
+              {currentStep === 'payment' && (
+                <motion.div
+                  key="payment"
+                  initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
+                  className="space-y-4"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <CreditCard className="w-4 h-4 text-primary" />
+                    <h4 className="font-semibold text-foreground">
+                      {isRTL ? 'تأكيد الدفع' : 'Confirm Payment'}
+                    </h4>
+                  </div>
+
+                  {/* Promo Code */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      <Gift className="w-4 h-4 inline-block me-2" />
+                      {isRTL ? 'رمز الخصم' : 'Promo Code'}
+                    </Label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Input
+                          value={promoCode}
+                          onChange={(e) => setPromoCode(e.target.value)}
+                          placeholder={isRTL ? 'أدخل رمز الخصم' : 'Enter promo code'}
+                          disabled={promoApplied || paymentStatus === 'processing'}
+                          className="w-full pe-9"
+                        />
+                        {promoCode && !promoApplied && (
+                          <button
+                            type="button"
+                            onClick={() => setPromoCode('')}
+                            className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        )}
+                        {promoApplied && (
+                          <button
+                            type="button"
+                            onClick={() => { setPromoCode(''); setPromoApplied(false); setAppliedCoupon(null); }}
+                            className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      <Button variant="outline" onClick={handleApplyPromo} disabled={!promoCode || promoApplied || paymentStatus === 'processing'}>
+                        {promoApplied ? (isRTL ? 'مطبق' : 'Applied') : (isRTL ? 'تطبيق' : 'Apply')}
+                      </Button>
+                    </div>
+                    {promoApplied && appliedCoupon && (
+                      <p className="text-sm text-primary flex items-center gap-1">
+                        <Check className="w-4 h-4" />
+                        {isRTL 
+                          ? `تم تطبيق خصم ${discountLabel} (وفّرت ${discountAmount} ر.س)` 
+                          : `${discountLabel} discount applied (saved ${discountAmount} SAR)`}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Order Summary */}
+                  <div className="p-4 rounded-xl bg-muted/30 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{isRTL ? 'الدورة' : 'Course'}</span>
+                      <span className="font-medium truncate max-w-[200px]">
+                        {isRTL && course.title_ar ? course.title_ar : course.title}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{isRTL ? 'العميل' : 'Customer'}</span>
+                      <span className="font-medium">{fullName}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{isRTL ? 'الموقع' : 'Location'}</span>
+                      <span className="font-medium">{city}{country ? `, ${GCC_COUNTRIES.find(c => c.code === country)?.[isRTL ? 'name_ar' : 'name'] || country}` : ''}</span>
+                    </div>
+                    {promoApplied && appliedCoupon && (
+                      <div className="flex justify-between text-sm text-primary">
+                        <span>{isRTL ? 'الخصم' : 'Discount'} ({discountLabel})</span>
+                        <span>-{discountAmount} {isRTL ? 'ر.س' : 'SAR'}</span>
+                      </div>
+                    )}
+                    <Separator />
+                    <div className="flex justify-between font-bold">
+                      <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
+                      <span className="text-primary">{discountedPrice} {isRTL ? 'ر.س' : 'SAR'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+                    <Shield className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span>
+                      {isRTL
+                        ? 'سيتم توجيهك إلى صفحة الدفع الآمنة لإدخال بيانات البطاقة'
+                        : 'You will be redirected to a secure payment page to enter your card details'}
+                    </span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           )}
         </div>
 
         {/* Footer */}
         {paymentStatus !== 'failed' && (
-          <div className="p-4 sm:p-6 border-t-2 border-border flex-shrink-0">
-            <Button
-              className="w-full"
-              variant="cta"
-              onClick={handleSubmitPayment}
-              disabled={paymentStatus === 'processing' || !customerName.trim() || !customerEmail.trim()}
-            >
-              {paymentStatus === 'processing' ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin me-2" />
-                  {isRTL ? 'جاري التوجيه للدفع...' : 'Redirecting to payment...'}
-                </>
-              ) : discountedPrice <= 0 && appliedCoupon ? (
-                <>
-                  <Check className="w-4 h-4 me-2" />
-                  {isRTL ? 'سجّل مجاناً' : 'Enroll for Free'}
-                </>
-              ) : (
-                <>
-                  <Shield className="w-4 h-4 me-2" />
-                  {isRTL ? `ادفع ${discountedPrice} ر.س` : `Pay ${discountedPrice} SAR`}
-                </>
+          <div className="p-4 sm:p-5 border-t-2 border-border flex-shrink-0 space-y-2">
+            <div className="flex gap-2">
+              {currentStep !== 'profile' && (
+                <Button
+                  variant="outline"
+                  onClick={handlePrevStep}
+                  disabled={paymentStatus === 'processing' || profileSaving}
+                  className="flex-shrink-0"
+                >
+                  <BackArrowIcon className="w-4 h-4" />
+                </Button>
               )}
-            </Button>
+
+              {currentStep !== 'payment' ? (
+                <Button
+                  className="flex-1 btn-cta"
+                  onClick={handleNextStep}
+                  disabled={
+                    profileSaving ||
+                    (currentStep === 'profile' && !isProfileValid) ||
+                    (currentStep === 'billing' && !isBillingValid)
+                  }
+                >
+                  {profileSaving ? (
+                    <Loader2 className="w-4 h-4 animate-spin me-2" />
+                  ) : null}
+                  {currentStep === 'billing'
+                    ? (isRTL ? 'حفظ والمتابعة' : 'Save & Continue')
+                    : (isRTL ? 'التالي' : 'Next')}
+                  <ArrowIcon className="w-4 h-4 ms-2" />
+                </Button>
+              ) : (
+                <Button
+                  className="flex-1"
+                  variant="cta"
+                  onClick={handleSubmitPayment}
+                  disabled={paymentStatus === 'processing' || !isPaymentReady}
+                >
+                  {paymentStatus === 'processing' ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin me-2" />
+                      {isRTL ? 'جاري التوجيه للدفع...' : 'Redirecting to payment...'}
+                    </>
+                  ) : discountedPrice <= 0 && appliedCoupon ? (
+                    <>
+                      <Check className="w-4 h-4 me-2" />
+                      {isRTL ? 'سجّل مجاناً' : 'Enroll for Free'}
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4 me-2" />
+                      {isRTL ? `ادفع ${discountedPrice} ر.س` : `Pay ${discountedPrice} SAR`}
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
         {/* Close for failed */}
         {paymentStatus === 'failed' && (
-          <div className="p-4 sm:p-6 border-t-2 border-border flex-shrink-0">
+          <div className="p-4 sm:p-5 border-t-2 border-border flex-shrink-0">
             <Button className="w-full" variant="outline" onClick={() => onOpenChange(false)}>
               {isRTL ? 'إغلاق' : 'Close'}
             </Button>
