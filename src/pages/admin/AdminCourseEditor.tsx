@@ -67,6 +67,7 @@ import {
   Eye,
   ArrowLeft,
   ArrowRight,
+  Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import BunnyVideoUploader from '@/components/admin/BunnyVideoUploader';
@@ -143,7 +144,19 @@ const AdminCourseEditor: React.FC = () => {
   });
 
   // Lesson form state
-  const [lessonForm, setLessonForm] = useState({
+  const [lessonForm, setLessonForm] = useState<{
+    title: string;
+    title_ar: string;
+    description: string;
+    description_ar: string;
+    video_url: string;
+    video_provider: string;
+    video_thumbnail: string;
+    duration_minutes: number;
+    is_published: boolean;
+    is_free: boolean;
+    _replacingVideo?: boolean;
+  }>({
     title: '',
     title_ar: '',
     description: '',
@@ -457,6 +470,7 @@ const AdminCourseEditor: React.FC = () => {
       duration_minutes: 0,
       is_published: false,
       is_free: false,
+      _replacingVideo: false,
     });
   };
 
@@ -980,7 +994,7 @@ const AdminCourseEditor: React.FC = () => {
               <Label>{isRTL ? 'الفيديو' : 'Video'}</Label>
               
               {/* Show existing video if present */}
-              {lessonForm.video_url && (
+              {lessonForm.video_url && !lessonForm._replacingVideo && (
                 <div className="p-4 bg-muted/50 border border-border rounded-lg space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -989,31 +1003,61 @@ const AdminCourseEditor: React.FC = () => {
                         {isRTL ? 'فيديو مرفق' : 'Video Attached'}
                       </span>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => setLessonForm({ ...lessonForm, video_url: '', video_provider: 'bunny' })}
-                    >
-                      <Trash2 className="w-4 h-4 me-1" />
-                      {isRTL ? 'إزالة' : 'Remove'}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setLessonForm({ ...lessonForm, _replacingVideo: true } as any)}
+                      >
+                        <Upload className="w-4 h-4 me-1" />
+                        {isRTL ? 'استبدال الفيديو' : 'Replace Video'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setLessonForm({ ...lessonForm, video_url: '', video_provider: 'bunny' })}
+                      >
+                        <Trash2 className="w-4 h-4 me-1" />
+                        {isRTL ? 'إزالة' : 'Remove'}
+                      </Button>
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground break-all">{lessonForm.video_url}</p>
                 </div>
               )}
               
-              {/* Upload new video */}
-              {!lessonForm.video_url && (
-                <BunnyVideoUploader
-                  onUploadComplete={(videoId, playbackUrl) => {
-                    setLessonForm({ 
-                      ...lessonForm, 
-                      video_url: playbackUrl, 
-                      video_provider: 'bunny' 
-                    });
-                  }}
-                />
+              {/* Upload new / replacement video */}
+              {(!lessonForm.video_url || (lessonForm as any)._replacingVideo) && (
+                <div className="space-y-2">
+                  {(lessonForm as any)._replacingVideo && (
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">
+                        {isRTL ? 'رفع فيديو بديل' : 'Upload replacement video'}
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const { _replacingVideo, ...rest } = lessonForm as any;
+                          setLessonForm(rest);
+                        }}
+                      >
+                        {isRTL ? 'إلغاء الاستبدال' : 'Cancel Replace'}
+                      </Button>
+                    </div>
+                  )}
+                  <BunnyVideoUploader
+                    onUploadComplete={(videoId, playbackUrl) => {
+                      const { _replacingVideo, ...rest } = lessonForm as any;
+                      setLessonForm({ 
+                        ...rest, 
+                        video_url: playbackUrl, 
+                        video_provider: 'bunny' 
+                      });
+                    }}
+                  />
+                </div>
               )}
             </div>
             
