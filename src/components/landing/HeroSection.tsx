@@ -56,17 +56,31 @@ const HeroSection: React.FC = () => {
 
   const heroContent = content as any;
 
+  // CMS override values always take priority over DB-computed stats
+  const membersValue = heroContent?.stats_members_value 
+    ? String(heroContent.stats_members_value) 
+    : formatCount(stats?.members || 0);
+  const lessonsValue = heroContent?.stats_lessons_value 
+    ? String(heroContent.stats_lessons_value) 
+    : formatCount(stats?.lessons || 0);
+  const successValue = heroContent?.stats_success_value 
+    ? `${heroContent.stats_success_value}%` 
+    : (stats?.successRate ? `${stats.successRate}%` : '0%');
+
+  const showStats = heroContent?.show_stats !== false;
+  const showBadge = heroContent?.show_badge !== false;
+
   const displayStats = [
     { 
-      value: heroContent?.stats_members_value || formatCount(stats?.members || 0), 
+      value: membersValue, 
       label: isRTL ? (heroContent?.stats_members_ar || 'عضو') : (heroContent?.stats_members_en || 'Members')
     },
     { 
-      value: heroContent?.stats_lessons_value || formatCount(stats?.lessons || 0), 
+      value: lessonsValue, 
       label: isRTL ? (heroContent?.stats_lessons_ar || 'درس') : (heroContent?.stats_lessons_en || 'Lessons')
     },
     { 
-      value: heroContent?.stats_success_value || (stats?.successRate ? `${stats.successRate}%` : '0%'), 
+      value: successValue, 
       label: isRTL ? (heroContent?.stats_success_ar || 'نجاح') : (heroContent?.stats_success_en || 'Success')
     },
   ];
@@ -130,17 +144,19 @@ const HeroSection: React.FC = () => {
           className="space-y-6 sm:space-y-8"
         >
           {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-sm"
-          >
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-xs sm:text-sm text-primary font-medium">
-              {formatCount(stats?.members || 0)} {badgeText}
-            </span>
-          </motion.div>
+          {showBadge && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-sm"
+            >
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-xs sm:text-sm text-primary font-medium">
+                {membersValue} {badgeText}
+              </span>
+            </motion.div>
+          )}
 
           {/* Title */}
           {contentLoading ? (
@@ -182,19 +198,21 @@ const HeroSection: React.FC = () => {
           </motion.div>
 
           {/* Stats Row */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
-            className="grid grid-cols-3 gap-4 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-8 pt-8 sm:pt-12"
-          >
-            {displayStats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <AnimatedCounter value={stat.value} className="text-xl sm:text-2xl md:text-3xl font-black text-primary" />
-                <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>
-              </div>
-            ))}
-          </motion.div>
+          {showStats && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.8 }}
+              className="grid grid-cols-3 gap-4 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-8 pt-8 sm:pt-12"
+            >
+              {displayStats.map((stat, index) => (
+                <div key={index} className="text-center">
+                  <AnimatedCounter value={stat.value} className="text-xl sm:text-2xl md:text-3xl font-black text-primary" />
+                  <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>
+                </div>
+              ))}
+            </motion.div>
+          )}
         </motion.div>
       </div>
 
