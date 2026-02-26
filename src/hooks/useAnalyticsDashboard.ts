@@ -31,6 +31,21 @@ async function fetchAllRows(
   return allData;
 }
 
+// Helper for count-only queries (no row limit issue)
+async function fetchCount(
+  tableName: string,
+  filters?: (query: any) => any
+): Promise<number> {
+  let query = supabase.from(tableName as any).select('id', { count: 'exact', head: true });
+  if (filters) query = filters(query);
+  const { count, error } = await query;
+  if (error) {
+    console.error('Count fetch error:', error.message);
+    return 0;
+  }
+  return count || 0;
+}
+
 export interface DateRange {
   label: string;
   days: number;
@@ -67,43 +82,40 @@ export function useSystemOverview(dateRange: string = '30d') {
       const since = getSinceDate(dateRange);
 
       const [
-        totalUsersRes,
-        users24hRes,
-        users7dRes,
-        users30dRes,
-        enrollmentsRes,
-        lessonsRes,
-        lessonProgressRes,
+        totalUsers,
+        users24h,
+        users7d,
+        users30d,
+        totalEnrollments,
+        totalLessons,
+        lessonProgress,
         manualPayments,
         tapPayments,
-        concurrentRes,
-        watchingNowRes,
+        concurrentUsers,
+        watchingNow,
       ] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', last24h.toISOString()),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', last7d.toISOString()),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', last30d.toISOString()),
-        supabase.from('course_enrollments').select('id', { count: 'exact', head: true }),
-        supabase.from('lessons').select('id', { count: 'exact', head: true }),
-        supabase
-          .from('lesson_progress')
-          .select('id, watch_time_seconds', { count: 'exact' })
-          .eq('is_completed', true)
-          .gte('last_watched_at', since.toISOString()),
+        fetchCount('profiles'),
+        fetchCount('profiles', (q: any) => q.gte('created_at', last24h.toISOString())),
+        fetchCount('profiles', (q: any) => q.gte('created_at', last7d.toISOString())),
+        fetchCount('profiles', (q: any) => q.gte('created_at', last30d.toISOString())),
+        fetchCount('course_enrollments'),
+        fetchCount('lessons'),
+        fetchAllRows('lesson_progress', 'id, watch_time_seconds', (q: any) =>
+          q.eq('is_completed', true).gte('last_watched_at', since.toISOString())
+        ),
         fetchAllRows('manual_payments', 'amount, created_at, status'),
         fetchAllRows('tap_charges', 'amount, created_at, status'),
-        supabase.from('realtime_presence').select('id', { count: 'exact' }).gte('last_heartbeat_at', subDays(now, 0.01).toISOString()),
-        supabase.from('realtime_presence').select('id', { count: 'exact' }).eq('is_watching_video', true),
+        fetchCount('realtime_presence', (q: any) => q.gte('last_heartbeat_at', subDays(now, 0.01).toISOString())),
+        fetchCount('realtime_presence', (q: any) => q.eq('is_watching_video', true)),
       ]);
 
       const successfulManual = manualPayments.filter((p) => (p.status || '').toLowerCase() === 'approved');
       const successfulTap = tapPayments.filter((p) => isSuccessfulTapStatus(p.status));
       const allSuccessfulPayments = [...successfulManual, ...successfulTap];
 
-      const totalWatchTimeSeconds = lessonProgressRes.data?.reduce((sum, p) => sum + (p.watch_time_seconds || 0), 0) || 0;
+      const totalWatchTimeSeconds = lessonProgress.reduce((sum: number, p: any) => sum + (p.watch_time_seconds || 0), 0);
       const totalRevenue = allSuccessfulPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-      // Calculate today/week/month revenue
       const todayStart = startOfDay(now);
       const weekStart = startOfWeek(now);
       const monthStart = startOfMonth(now);
@@ -118,27 +130,26 @@ export function useSystemOverview(dateRange: string = '30d') {
         .filter((p) => p.created_at && new Date(p.created_at) >= monthStart)
         .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-      // Calculate RPAU (Revenue Per Active User)
-      const activeUsers = users30dRes.count || 1;
+      const activeUsers = users30d || 1;
       const rpau = revenueMonth / activeUsers;
 
       return {
-        totalUsers: totalUsersRes.count || 0,
-        users24h: users24hRes.count || 0,
-        users7d: users7dRes.count || 0,
-        users30d: users30dRes.count || 0,
-        concurrentUsers: concurrentRes.count || 0,
-        videosWatchingNow: watchingNowRes.count || 0,
+        totalUsers,
+        users24h,
+        users7d,
+        users30d,
+        concurrentUsers,
+        videosWatchingNow: watchingNow,
         totalWatchTimeMinutes: Math.round(totalWatchTimeSeconds / 60),
         totalWatchTimeHours: Math.round(totalWatchTimeSeconds / 3600),
-        totalLessonsCompleted: lessonProgressRes.count || 0,
+        totalLessonsCompleted: lessonProgress.length,
         revenueToday,
         revenueWeek,
         revenueMonth,
         revenueLifetime: totalRevenue,
         rpau: Math.round(rpau * 100) / 100,
-        totalEnrollments: enrollmentsRes.count || 0,
-        totalLessons: lessonsRes.count || 0,
+        totalEnrollments,
+        totalLessons,
       };
     },
     refetchInterval: 10000,
@@ -154,43 +165,42 @@ export function useUserIntelligence(dateRange: string) {
       const since = subDays(new Date(), days);
 
       const [
-        profilesRes,
-        gamificationRes,
-        xpRes,
-        sessionsRes,
-        engagementRes,
+        profiles,
+        gamification,
+        xp,
+        sessions,
+        engagement,
       ] = await Promise.all([
-        supabase.from('profiles').select('id, user_id, created_at, experience_level').gte('created_at', since.toISOString()),
-        supabase.from('user_gamification').select('user_id, total_xp, level, current_streak, longest_streak, last_activity_date'),
-        supabase.from('xp_transactions').select('user_id, amount, source_type, created_at').gte('created_at', since.toISOString()),
-        supabase.from('user_sessions').select('*').gte('started_at', since.toISOString()),
-        supabase.from('user_engagement_scores').select('*').gte('score_date', format(since, 'yyyy-MM-dd')),
+        fetchAllRows('profiles', 'id, user_id, created_at, experience_level', (q: any) => q.gte('created_at', since.toISOString())),
+        fetchAllRows('user_gamification', 'user_id, total_xp, level, current_streak, longest_streak, last_activity_date'),
+        fetchAllRows('xp_transactions', 'user_id, amount, source_type, created_at', (q: any) => q.gte('created_at', since.toISOString())),
+        fetchAllRows('user_sessions', 'user_id, device_type, duration_seconds, started_at', (q: any) => q.gte('started_at', since.toISOString())),
+        fetchAllRows('user_engagement_scores', 'user_id, engagement_score, churn_risk_score, score_date', (q: any) => q.gte('score_date', format(since, 'yyyy-MM-dd'))),
       ]);
 
       // Group sessions by device
-      const sessionsByDevice = (sessionsRes.data || []).reduce((acc: Record<string, number[]>, s) => {
+      const sessionsByDevice = sessions.reduce((acc: Record<string, number[]>, s: any) => {
         const device = s.device_type || 'unknown';
         if (!acc[device]) acc[device] = [];
         if (s.duration_seconds) acc[device].push(s.duration_seconds);
         return acc;
       }, {});
 
-      // Calculate average session duration by device
       const avgSessionByDevice = Object.entries(sessionsByDevice).map(([device, durations]) => ({
         device,
-        avgDuration: Math.round(durations.reduce((a, b) => a + b, 0) / durations.length / 60), // in minutes
-        count: durations.length,
+        avgDuration: Math.round((durations as number[]).reduce((a, b) => a + b, 0) / (durations as number[]).length / 60),
+        count: (durations as number[]).length,
       }));
 
       // Experience level distribution
-      const expLevelDist = (profilesRes.data || []).reduce((acc: Record<string, number>, p) => {
+      const expLevelDist = profiles.reduce((acc: Record<string, number>, p: any) => {
         const level = p.experience_level || 'FUTURE RIDER';
         acc[level] = (acc[level] || 0) + 1;
         return acc;
       }, {});
 
-      // Engagement score distribution (percentiles)
-      const scores = (engagementRes.data || []).map(e => e.engagement_score).sort((a, b) => a - b);
+      // Engagement score distribution
+      const scores = engagement.map((e: any) => e.engagement_score).filter((s: any) => s != null).sort((a: number, b: number) => a - b);
       const getPercentile = (arr: number[], p: number) => {
         if (arr.length === 0) return 0;
         const idx = Math.ceil(arr.length * p / 100) - 1;
@@ -198,19 +208,19 @@ export function useUserIntelligence(dateRange: string) {
       };
 
       return {
-        newUsers: profilesRes.data?.length || 0,
+        newUsers: profiles.length,
         experienceLevelDistribution: expLevelDist,
         avgSessionByDevice,
-        totalSessions: sessionsRes.data?.length || 0,
+        totalSessions: sessions.length,
         engagementScores: {
           p25: getPercentile(scores, 25),
           p50: getPercentile(scores, 50),
           p75: getPercentile(scores, 75),
           p90: getPercentile(scores, 90),
-          avg: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0,
+          avg: scores.length ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length) : 0,
         },
-        churnRiskUsers: (engagementRes.data || []).filter(e => e.churn_risk_score > 70).length,
-        activeStreaks: (gamificationRes.data || []).filter(g => g.current_streak > 0).length,
+        churnRiskUsers: engagement.filter((e: any) => e.churn_risk_score > 70).length,
+        activeStreaks: gamification.filter((g: any) => g.current_streak > 0).length,
       };
     },
     refetchInterval: 15000,
@@ -225,49 +235,48 @@ export function useVideoAnalytics(dateRange: string, lessonId?: string) {
       const days = DATE_RANGES[dateRange]?.days || 30;
       const since = subDays(new Date(), days);
 
-      let watchQuery = supabase.from('video_watch_sessions').select('*').gte('started_at', since.toISOString());
-      let eventsQuery = supabase.from('video_playback_events').select('*').gte('created_at', since.toISOString());
-      
-      if (lessonId) {
-        watchQuery = watchQuery.eq('lesson_id', lessonId);
-        eventsQuery = eventsQuery.eq('lesson_id', lessonId);
-      }
-
-      const [watchRes, eventsRes, lessonsRes] = await Promise.all([
-        watchQuery,
-        eventsQuery.limit(10000),
-        supabase.from('lessons').select('id, title, title_ar, duration_minutes, chapter_id'),
+      const [watchSessions, events, lessons] = await Promise.all([
+        fetchAllRows('video_watch_sessions',
+          'lesson_id, total_watch_time_seconds, completion_percentage, completed, pause_count, rewind_count, seek_count, total_buffering_time_ms, buffering_events',
+          (q: any) => {
+            q = q.gte('started_at', since.toISOString());
+            if (lessonId) q = q.eq('lesson_id', lessonId);
+            return q;
+          }
+        ),
+        fetchAllRows('video_playback_events',
+          'lesson_id, event_type, video_position_seconds, buffering_duration_ms',
+          (q: any) => {
+            q = q.gte('created_at', since.toISOString());
+            if (lessonId) q = q.eq('lesson_id', lessonId);
+            return q;
+          }
+        ),
+        fetchAllRows('lessons', 'id, title, title_ar, duration_minutes, chapter_id'),
       ]);
 
-      const watchSessions = watchRes.data || [];
-      const events = eventsRes.data || [];
-      const lessons = lessonsRes.data || [];
-
       // Calculate per-lesson metrics
-      const lessonMetrics = lessons.map(lesson => {
-        const lessonSessions = watchSessions.filter(w => w.lesson_id === lesson.id);
-        const lessonEvents = events.filter(e => e.lesson_id === lesson.id);
+      const lessonMetrics = lessons.map((lesson: any) => {
+        const lessonSessions = watchSessions.filter((w: any) => w.lesson_id === lesson.id);
+        const lessonEvents = events.filter((e: any) => e.lesson_id === lesson.id);
 
-        const completions = lessonSessions.filter(s => s.completed).length;
+        const completions = lessonSessions.filter((s: any) => s.completed).length;
         const totalViews = lessonSessions.length;
         const avgCompletion = lessonSessions.length
-          ? lessonSessions.reduce((sum, s) => sum + s.completion_percentage, 0) / lessonSessions.length
+          ? lessonSessions.reduce((sum: number, s: any) => sum + (s.completion_percentage || 0), 0) / lessonSessions.length
           : 0;
 
-        // Calculate drop-off points
-        const dropOffEvents = lessonEvents.filter(e => e.event_type === 'ended' || e.event_type === 'pause');
-        const dropOffPositions = dropOffEvents.map(e => e.video_position_seconds || 0);
+        const dropOffEvents = lessonEvents.filter((e: any) => e.event_type === 'ended' || e.event_type === 'pause');
+        const dropOffPositions = dropOffEvents.map((e: any) => e.video_position_seconds || 0);
         const medianDropOff = dropOffPositions.length
-          ? dropOffPositions.sort((a, b) => a - b)[Math.floor(dropOffPositions.length / 2)]
+          ? dropOffPositions.sort((a: number, b: number) => a - b)[Math.floor(dropOffPositions.length / 2)]
           : 0;
 
-        // Buffering stats
-        const bufferingEvents = lessonEvents.filter(e => e.event_type === 'buffering');
+        const bufferingEvents = lessonEvents.filter((e: any) => e.event_type === 'buffering');
         const avgBufferingPerViewer = totalViews > 0 ? bufferingEvents.length / totalViews : 0;
 
-        // Pause and rewind counts
-        const pauseCount = lessonSessions.reduce((sum, s) => sum + (s.pause_count || 0), 0);
-        const rewindCount = lessonSessions.reduce((sum, s) => sum + (s.rewind_count || 0), 0);
+        const pauseCount = lessonSessions.reduce((sum: number, s: any) => sum + (s.pause_count || 0), 0);
+        const rewindCount = lessonSessions.reduce((sum: number, s: any) => sum + (s.rewind_count || 0), 0);
 
         return {
           id: lesson.id,
@@ -285,14 +294,12 @@ export function useVideoAnalytics(dateRange: string, lessonId?: string) {
         };
       });
 
-      // Sort for rankings
       const bestPerforming = [...lessonMetrics].sort((a, b) => b.completionRate - a.completionRate).slice(0, 5);
       const worstPerforming = [...lessonMetrics].sort((a, b) => a.completionRate - b.completionRate).slice(0, 5);
       const mostRewatched = [...lessonMetrics].sort((a, b) => b.rewindCount - a.rewindCount).slice(0, 5);
 
-      // Overall stats
-      const totalWatchTime = watchSessions.reduce((sum, s) => sum + (s.total_watch_time_seconds || 0), 0);
-      const totalBufferingTime = watchSessions.reduce((sum, s) => sum + (s.total_buffering_time_ms || 0), 0);
+      const totalWatchTime = watchSessions.reduce((sum: number, s: any) => sum + (s.total_watch_time_seconds || 0), 0);
+      const totalBufferingTime = watchSessions.reduce((sum: number, s: any) => sum + (s.total_buffering_time_ms || 0), 0);
 
       return {
         lessonMetrics,
@@ -302,7 +309,7 @@ export function useVideoAnalytics(dateRange: string, lessonId?: string) {
         totalWatchTimeMins: Math.round(totalWatchTime / 60),
         totalBufferingTimeSecs: Math.round(totalBufferingTime / 1000),
         avgCompletionRate: lessonMetrics.length
-          ? Math.round(lessonMetrics.reduce((sum, l) => sum + l.completionRate, 0) / lessonMetrics.length)
+          ? Math.round(lessonMetrics.reduce((sum: number, l: any) => sum + l.completionRate, 0) / lessonMetrics.length)
           : 0,
       };
     },
@@ -317,62 +324,51 @@ export function useCourseAnalytics(dateRange: string) {
     queryFn: async () => {
       const since = getSinceDate(dateRange);
 
-      const [coursesRes, chaptersRes, lessonsRes, enrollmentsRes, progressRes] = await Promise.all([
-        supabase.from('courses').select('id, title, title_ar, is_published'),
-        supabase.from('chapters').select('id, course_id, title, position'),
-        supabase.from('lessons').select('id, chapter_id, title, position'),
-        supabase.from('course_enrollments').select('id, user_id, course_id, enrolled_at, completed_at').gte('enrolled_at', since.toISOString()),
-        supabase.from('lesson_progress').select('user_id, lesson_id, is_completed, last_watched_at').gte('last_watched_at', since.toISOString()),
+      const [courses, chapters, lessons, enrollments, progress] = await Promise.all([
+        fetchAllRows('courses', 'id, title, title_ar, is_published'),
+        fetchAllRows('chapters', 'id, course_id, title, position'),
+        fetchAllRows('lessons', 'id, chapter_id, title, position'),
+        fetchAllRows('course_enrollments', 'id, user_id, course_id, enrolled_at, completed_at', (q: any) => q.gte('enrolled_at', since.toISOString())),
+        fetchAllRows('lesson_progress', 'user_id, lesson_id, is_completed, last_watched_at', (q: any) => q.gte('last_watched_at', since.toISOString())),
       ]);
 
-      const courses = coursesRes.data || [];
-      const chapters = chaptersRes.data || [];
-      const lessons = lessonsRes.data || [];
-      const enrollments = enrollmentsRes.data || [];
-      const progress = progressRes.data || [];
+      const courseAnalytics = courses.map((course: any) => {
+        const courseChapters = chapters.filter((ch: any) => ch.course_id === course.id);
+        const courseChapterIds = courseChapters.map((ch: any) => ch.id);
+        const courseLessons = lessons.filter((l: any) => courseChapterIds.includes(l.chapter_id));
+        const courseLessonIds = courseLessons.map((l: any) => l.id);
 
-      // Build course analytics
-      const courseAnalytics = courses.map(course => {
-        const courseChapters = chapters.filter(ch => ch.course_id === course.id);
-        const courseChapterIds = courseChapters.map(ch => ch.id);
-        const courseLessons = lessons.filter(l => courseChapterIds.includes(l.chapter_id));
-        const courseLessonIds = courseLessons.map(l => l.id);
+        const courseEnrollments = enrollments.filter((e: any) => e.course_id === course.id);
+        const completedEnrollments = courseEnrollments.filter((e: any) => e.completed_at);
 
-        const courseEnrollments = enrollments.filter(e => e.course_id === course.id);
-        const completedEnrollments = courseEnrollments.filter(e => e.completed_at);
-
-        // Calculate lesson-to-lesson leakage
-        const lessonCompletionCounts = courseLessons.map(lesson => {
-          const completions = progress.filter(p => p.lesson_id === lesson.id && p.is_completed).length;
+        const lessonCompletionCounts = courseLessons.map((lesson: any) => {
+          const completions = progress.filter((p: any) => p.lesson_id === lesson.id && p.is_completed).length;
           return { lessonId: lesson.id, position: lesson.position, completions };
-        }).sort((a, b) => a.position - b.position);
+        }).sort((a: any, b: any) => a.position - b.position);
 
-        // Calculate leakage between lessons
-        const leakageRates = lessonCompletionCounts.slice(1).map((current, idx) => {
+        const leakageRates = lessonCompletionCounts.slice(1).map((current: any, idx: number) => {
           const prev = lessonCompletionCounts[idx];
           if (prev.completions === 0) return 0;
           return Math.round(((prev.completions - current.completions) / prev.completions) * 100);
         });
 
-        // First lesson to second lesson retention
         const firstLessonCompletions = lessonCompletionCounts[0]?.completions || 0;
         const secondLessonCompletions = lessonCompletionCounts[1]?.completions || 0;
         const neverStartLesson2Pct = firstLessonCompletions > 0
           ? Math.round(((firstLessonCompletions - secondLessonCompletions) / firstLessonCompletions) * 100)
           : 0;
 
-        // Time to first drop-off (avg days until first incomplete lesson)
-        const userFirstDropoffs = courseEnrollments.map(e => {
-          const userProgress = progress.filter(p => p.user_id === e.user_id && courseLessonIds.includes(p.lesson_id));
-          const completedLessons = userProgress.filter(p => p.is_completed).length;
+        const userFirstDropoffs = courseEnrollments.map((e: any) => {
+          const userProgress = progress.filter((p: any) => p.user_id === e.user_id && courseLessonIds.includes(p.lesson_id));
+          const completedLessons = userProgress.filter((p: any) => p.is_completed).length;
           if (completedLessons === courseLessons.length) return null;
           const enrollDate = new Date(e.enrolled_at);
-          const lastProgress = userProgress.sort((a, b) =>
+          const lastProgress = userProgress.sort((a: any, b: any) =>
             new Date(b.last_watched_at || 0).getTime() - new Date(a.last_watched_at || 0).getTime()
           )[0];
           if (!lastProgress?.last_watched_at) return null;
           return differenceInDays(new Date(lastProgress.last_watched_at), enrollDate);
-        }).filter(d => d !== null) as number[];
+        }).filter((d: any) => d !== null) as number[];
 
         const avgTimeToDropoff = userFirstDropoffs.length
           ? Math.round(userFirstDropoffs.reduce((a, b) => a + b, 0) / userFirstDropoffs.length)
@@ -391,7 +387,7 @@ export function useCourseAnalytics(dateRange: string) {
           neverStartLesson2Pct,
           avgTimeToDropoffDays: avgTimeToDropoff,
           avgLeakageRate: leakageRates.length
-            ? Math.round(leakageRates.reduce((a, b) => a + b, 0) / leakageRates.length)
+            ? Math.round(leakageRates.reduce((a: number, b: number) => a + b, 0) / leakageRates.length)
             : 0,
           totalChapters: courseChapters.length,
           totalLessons: courseLessons.length,
@@ -401,9 +397,9 @@ export function useCourseAnalytics(dateRange: string) {
       return {
         courses: courseAnalytics,
         totalCourses: courses.length,
-        publishedCourses: courses.filter(c => c.is_published).length,
+        publishedCourses: courses.filter((c: any) => c.is_published).length,
         avgCompletionRate: courseAnalytics.length
-          ? Math.round(courseAnalytics.reduce((sum, c) => sum + c.completionRate, 0) / courseAnalytics.length)
+          ? Math.round(courseAnalytics.reduce((sum: number, c: any) => sum + c.completionRate, 0) / courseAnalytics.length)
           : 0,
       };
     },
@@ -418,27 +414,23 @@ export function useFunnelAnalytics(dateRange: string) {
     queryFn: async () => {
       const since = getSinceDate(dateRange);
 
-      const [profilesRes, enrollmentsRes, manualPayments, tapPayments, progressRes] = await Promise.all([
-        supabase.from('profiles').select('user_id, created_at').gte('created_at', since.toISOString()),
-        supabase.from('course_enrollments').select('id, user_id, enrolled_at').gte('enrolled_at', since.toISOString()),
+      const [profiles, enrollments, manualPayments, tapPayments, progress] = await Promise.all([
+        fetchAllRows('profiles', 'user_id, created_at', (q: any) => q.gte('created_at', since.toISOString())),
+        fetchAllRows('course_enrollments', 'id, user_id, enrolled_at', (q: any) => q.gte('enrolled_at', since.toISOString())),
         fetchAllRows('manual_payments', 'user_id, amount, status, created_at', (q: any) => q.gte('created_at', since.toISOString())),
         fetchAllRows('tap_charges', 'user_id, amount, status, created_at', (q: any) => q.gte('created_at', since.toISOString())),
-        supabase.from('lesson_progress').select('user_id, lesson_id, is_completed, last_watched_at').gte('last_watched_at', since.toISOString()),
+        fetchAllRows('lesson_progress', 'user_id, lesson_id, is_completed, last_watched_at', (q: any) => q.gte('last_watched_at', since.toISOString())),
       ]);
 
-      const profiles = profilesRes.data || [];
-      const progress = progressRes.data || [];
       const signupUserIds = new Set(profiles.map((p: any) => p.user_id));
-
       const cohortProgress = progress.filter((p: any) => signupUserIds.has(p.user_id) && p.is_completed);
       const firstLessonUsers = new Set(cohortProgress.map((p: any) => p.user_id)).size;
 
-      // Users who completed at least 2 lessons
       const lessonCountByUser = cohortProgress.reduce((acc: Record<string, number>, p: any) => {
         acc[p.user_id] = (acc[p.user_id] || 0) + 1;
         return acc;
       }, {});
-      const secondLessonUsers = Object.values(lessonCountByUser).filter((c) => c >= 2).length;
+      const secondLessonUsers = Object.values(lessonCountByUser).filter((c) => (c as number) >= 2).length;
 
       const successfulManual = manualPayments.filter((p: any) => (p.status || '').toLowerCase() === 'approved');
       const successfulTap = tapPayments.filter((p: any) => isSuccessfulTapStatus(p.status));
@@ -446,12 +438,11 @@ export function useFunnelAnalytics(dateRange: string) {
         .filter((p) => signupUserIds.has(p.user_id))
         .map((p) => p.user_id)).size;
 
-      // Active users (activity in last 7 days) from signup cohort
       const activeUsers = new Set(
-        progress.filter(p => {
+        progress.filter((p: any) => {
           const lastWatched = p.last_watched_at ? new Date(p.last_watched_at) : null;
           return lastWatched && lastWatched >= subDays(new Date(), 7) && signupUserIds.has(p.user_id);
-        }).map(p => p.user_id)
+        }).map((p: any) => p.user_id)
       ).size;
 
       const signups = profiles.length;
@@ -464,7 +455,6 @@ export function useFunnelAnalytics(dateRange: string) {
         { step: 'Active (7d)', count: activeUsers, rate: signups > 0 ? Math.round((activeUsers / signups) * 100) : 0 },
       ];
 
-      // Calculate drop rates between steps
       const dropRates = funnelSteps.slice(1).map((step, idx) => ({
         from: funnelSteps[idx].step,
         to: step.step,
@@ -491,15 +481,13 @@ export function useRevenueAnalytics(dateRange: string) {
     queryFn: async () => {
       const since = getSinceDate(dateRange);
 
-      const [manualPaymentsRaw, tapPaymentsRaw, coursesRes, profilesRes] = await Promise.all([
+      const [manualPaymentsRaw, tapPaymentsRaw, courses, profiles] = await Promise.all([
         fetchAllRows('manual_payments', 'id, user_id, course_id, amount, status, created_at'),
         fetchAllRows('tap_charges', 'id, user_id, course_id, amount, status, created_at'),
-        supabase.from('courses').select('id, title, title_ar, price'),
-        supabase.from('profiles').select('user_id, created_at'),
+        fetchAllRows('courses', 'id, title, title_ar, price'),
+        fetchAllRows('profiles', 'user_id, created_at'),
       ]);
 
-      const courses = coursesRes.data || [];
-      const profiles = profilesRes.data || [];
       const windowUsers = profiles.filter((p: any) => new Date(p.created_at) >= since);
 
       const manualPayments = manualPaymentsRaw.map((p: any) => ({
@@ -524,8 +512,8 @@ export function useRevenueAnalytics(dateRange: string) {
       );
 
       // Revenue by course (window)
-      const revenueByCourse = courses.map(course => {
-        const coursePayments = windowSuccessfulPayments.filter(p => p.course_id === course.id);
+      const revenueByCourse = courses.map((course: any) => {
+        const coursePayments = windowSuccessfulPayments.filter((p) => p.course_id === course.id);
         const totalRevenue = coursePayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
         return {
           id: course.id,
@@ -550,7 +538,6 @@ export function useRevenueAnalytics(dateRange: string) {
         .sort((a, b) => a.month.localeCompare(b.month))
         .slice(-12);
 
-      // Calculate velocity (trend slope)
       const recentMonths = monthlyTrend.slice(-3);
       const velocity = recentMonths.length >= 2
         ? (recentMonths[recentMonths.length - 1]?.revenue || 0) - (recentMonths[0]?.revenue || 0)
@@ -564,9 +551,9 @@ export function useRevenueAnalytics(dateRange: string) {
       const arpu = totalUsers > 0 ? totalRevenue / totalUsers : 0;
       const arppu = payingUsers > 0 ? totalRevenue / payingUsers : 0;
 
-      // LTV by cohort (lifetime by signup month)
+      // LTV by cohort
       const cohortRevenue: Record<string, { users: number; revenue: number }> = {};
-      profiles.forEach(profile => {
+      profiles.forEach((profile: any) => {
         const cohort = format(new Date(profile.created_at), 'yyyy-MM');
         if (!cohortRevenue[cohort]) cohortRevenue[cohort] = { users: 0, revenue: 0 };
         cohortRevenue[cohort].users++;
@@ -582,7 +569,6 @@ export function useRevenueAnalytics(dateRange: string) {
         users: data.users,
       })).sort((a, b) => a.cohort.localeCompare(b.cohort));
 
-      // Dynamic refunds/disputes from payment statuses
       const refunds = allPayments.filter((p) => p.statusNormalized.includes('refund')).length;
       const disputes = allPayments.filter((p) =>
         p.statusNormalized.includes('dispute') || p.statusNormalized.includes('chargeback')
@@ -613,20 +599,15 @@ export function useRetentionAnalytics(dateRange: string) {
     queryFn: async () => {
       const since = getSinceDate(dateRange);
 
-      const [engagementRes, gamificationRes, progressRes, profilesRes] = await Promise.all([
-        supabase.from('user_engagement_scores').select('*').gte('score_date', format(since, 'yyyy-MM-dd')).order('score_date', { ascending: false }),
-        supabase.from('user_gamification').select('*'),
-        supabase.from('lesson_progress').select('user_id, lesson_id, is_completed, last_watched_at').gte('last_watched_at', since.toISOString()),
-        supabase.from('profiles').select('user_id, created_at').gte('created_at', since.toISOString()),
+      const [engagement, gamification, progress, profiles] = await Promise.all([
+        fetchAllRows('user_engagement_scores', 'user_id, engagement_score, churn_risk_score, score_date', (q: any) => q.gte('score_date', format(since, 'yyyy-MM-dd')).order('score_date', { ascending: false })),
+        fetchAllRows('user_gamification', 'user_id, current_streak, longest_streak'),
+        fetchAllRows('lesson_progress', 'user_id, lesson_id, is_completed, last_watched_at', (q: any) => q.gte('last_watched_at', since.toISOString())),
+        fetchAllRows('profiles', 'user_id, created_at', (q: any) => q.gte('created_at', since.toISOString())),
       ]);
 
-      const engagement = engagementRes.data || [];
-      const gamification = gamificationRes.data || [];
-      const progress = progressRes.data || [];
-      const profiles = profilesRes.data || [];
-
-      // Users at risk of churning (high churn score)
-      const latestEngagement = engagement.reduce((acc: Record<string, typeof engagement[0]>, e) => {
+      // Latest engagement per user
+      const latestEngagement = engagement.reduce((acc: Record<string, any>, e: any) => {
         if (!acc[e.user_id] || e.score_date > acc[e.user_id].score_date) {
           acc[e.user_id] = e;
         }
@@ -634,12 +615,12 @@ export function useRetentionAnalytics(dateRange: string) {
       }, {});
 
       const atRiskUsers = Object.values(latestEngagement)
-        .filter(e => e.churn_risk_score > 60)
-        .sort((a, b) => b.churn_risk_score - a.churn_risk_score)
+        .filter((e: any) => e.churn_risk_score > 60)
+        .sort((a: any, b: any) => b.churn_risk_score - a.churn_risk_score)
         .slice(0, 20);
 
       // Last activity by user
-      const lastActivityByUser = progress.reduce((acc: Record<string, Date>, p) => {
+      const lastActivityByUser = progress.reduce((acc: Record<string, Date>, p: any) => {
         if (p.last_watched_at) {
           const lastWatched = new Date(p.last_watched_at);
           if (!acc[p.user_id] || lastWatched > acc[p.user_id]) {
@@ -649,7 +630,6 @@ export function useRetentionAnalytics(dateRange: string) {
         return acc;
       }, {});
 
-      // Inactivity windows
       const now = new Date();
       const inactiveWindows = [
         { label: '1-7 days', min: 1, max: 7, count: 0 },
@@ -658,31 +638,29 @@ export function useRetentionAnalytics(dateRange: string) {
         { label: '30+ days', min: 30, max: 9999, count: 0 },
       ];
 
-      Object.values(lastActivityByUser).forEach((lastActivity) => {
+      (Object.values(lastActivityByUser) as Date[]).forEach((lastActivity) => {
         const daysInactive = differenceInDays(now, lastActivity);
         const window = inactiveWindows.find(w => daysInactive >= w.min && daysInactive <= w.max);
         if (window) window.count++;
       });
 
-      // Streak distribution
       const streakDistribution = [
-        { label: '0 days', count: gamification.filter(g => g.current_streak === 0).length },
-        { label: '1-3 days', count: gamification.filter(g => g.current_streak >= 1 && g.current_streak <= 3).length },
-        { label: '4-7 days', count: gamification.filter(g => g.current_streak >= 4 && g.current_streak <= 7).length },
-        { label: '8-14 days', count: gamification.filter(g => g.current_streak >= 8 && g.current_streak <= 14).length },
-        { label: '15+ days', count: gamification.filter(g => g.current_streak >= 15).length },
+        { label: '0 days', count: gamification.filter((g: any) => g.current_streak === 0).length },
+        { label: '1-3 days', count: gamification.filter((g: any) => g.current_streak >= 1 && g.current_streak <= 3).length },
+        { label: '4-7 days', count: gamification.filter((g: any) => g.current_streak >= 4 && g.current_streak <= 7).length },
+        { label: '8-14 days', count: gamification.filter((g: any) => g.current_streak >= 8 && g.current_streak <= 14).length },
+        { label: '15+ days', count: gamification.filter((g: any) => g.current_streak >= 15).length },
       ];
 
-      // Churn prediction (users inactive > 14 days with low engagement)
       const predictedChurn = Object.entries(lastActivityByUser)
         .filter(([userId, lastActivity]) => {
-          const daysInactive = differenceInDays(now, lastActivity);
+          const daysInactive = differenceInDays(now, lastActivity as Date);
           const userEngagement = latestEngagement[userId];
           return daysInactive > 14 && (!userEngagement || userEngagement.engagement_score < 30);
         }).length;
 
       return {
-        atRiskUsers: atRiskUsers.map(u => ({
+        atRiskUsers: atRiskUsers.map((u: any) => ({
           userId: u.user_id,
           churnRisk: u.churn_risk_score,
           engagementScore: u.engagement_score,
@@ -693,7 +671,7 @@ export function useRetentionAnalytics(dateRange: string) {
         predictedChurnCount: predictedChurn,
         totalTrackedUsers: profiles.length,
         activeUsersLast7Days: Object.entries(lastActivityByUser)
-          .filter(([_, date]) => differenceInDays(now, date) <= 7).length,
+          .filter(([_, date]) => differenceInDays(now, date as Date) <= 7).length,
       };
     },
     refetchInterval: 15000,
@@ -708,27 +686,20 @@ export function useInfrastructureMetrics(dateRange: string) {
       const days = DATE_RANGES[dateRange]?.days || 30;
       const since = subDays(new Date(), days);
 
-      const [metricsRes, watchSessionsRes, eventsRes] = await Promise.all([
-        supabase.from('infrastructure_metrics').select('*').gte('recorded_at', since.toISOString()),
-        supabase.from('video_watch_sessions').select('total_buffering_time_ms, buffering_events, total_watch_time_seconds').gte('started_at', since.toISOString()),
-        supabase.from('video_playback_events').select('event_type, buffering_duration_ms').eq('event_type', 'error').gte('created_at', since.toISOString()),
+      const [metrics, watchSessions, errorEvents] = await Promise.all([
+        fetchAllRows('infrastructure_metrics', 'metric_type, value, percentile, region, sample_count, recorded_at', (q: any) => q.gte('recorded_at', since.toISOString())),
+        fetchAllRows('video_watch_sessions', 'total_buffering_time_ms, buffering_events, total_watch_time_seconds', (q: any) => q.gte('started_at', since.toISOString())),
+        fetchAllRows('video_playback_events', 'event_type, buffering_duration_ms', (q: any) => q.eq('event_type', 'error').gte('created_at', since.toISOString())),
       ]);
 
-      const metrics = metricsRes.data || [];
-      const watchSessions = watchSessionsRes.data || [];
-      const errorEvents = eventsRes.data || [];
-
-      // Calculate buffering ratio
-      const totalWatchTime = watchSessions.reduce((sum, s) => sum + (s.total_watch_time_seconds || 0), 0);
-      const totalBufferingTime = watchSessions.reduce((sum, s) => sum + ((s.total_buffering_time_ms || 0) / 1000), 0);
+      const totalWatchTime = watchSessions.reduce((sum: number, s: any) => sum + (s.total_watch_time_seconds || 0), 0);
+      const totalBufferingTime = watchSessions.reduce((sum: number, s: any) => sum + ((s.total_buffering_time_ms || 0) / 1000), 0);
       const bufferingRatio = totalWatchTime > 0 ? (totalBufferingTime / totalWatchTime) * 100 : 0;
 
-      // Error rate
       const totalEvents = watchSessions.length;
       const errorRate = totalEvents > 0 ? (errorEvents.length / totalEvents) * 100 : 0;
 
-      // Group metrics by type
-      const metricsByType = metrics.reduce((acc: Record<string, typeof metrics>, m) => {
+      const metricsByType = metrics.reduce((acc: Record<string, any[]>, m: any) => {
         if (!acc[m.metric_type]) acc[m.metric_type] = [];
         acc[m.metric_type].push(m);
         return acc;
@@ -739,10 +710,10 @@ export function useInfrastructureMetrics(dateRange: string) {
         errorRate: Math.round(errorRate * 100) / 100,
         totalErrors: errorEvents.length,
         metricsByType,
-        videoStartTimeP95: metricsByType['video_start_time']?.find(m => m.percentile === 'p95')?.value || 0,
-        videoStartTimeP99: metricsByType['video_start_time']?.find(m => m.percentile === 'p99')?.value || 0,
+        videoStartTimeP95: metricsByType['video_start_time']?.find((m: any) => m.percentile === 'p95')?.value || 0,
+        videoStartTimeP99: metricsByType['video_start_time']?.find((m: any) => m.percentile === 'p99')?.value || 0,
         avgBufferingPerSession: watchSessions.length > 0
-          ? Math.round(watchSessions.reduce((sum, s) => sum + (s.buffering_events || 0), 0) / watchSessions.length * 100) / 100
+          ? Math.round(watchSessions.reduce((sum: number, s: any) => sum + (s.buffering_events || 0), 0) / watchSessions.length * 100) / 100
           : 0,
       };
     },

@@ -269,7 +269,7 @@ const UserIntelligence: React.FC<UserIntelligenceProps> = ({ dateRange }) => {
                         style={{ backgroundColor: item.color }}
                       />
                       <span className="text-sm flex-1 truncate">{item.name}</span>
-                      <span className="text-sm font-medium">{item.value}</span>
+                      <span className="text-sm font-medium">{item.value as number}</span>
                     </div>
                   ))}
                 </div>
