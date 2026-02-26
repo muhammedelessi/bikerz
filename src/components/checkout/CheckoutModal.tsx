@@ -484,7 +484,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <p className="text-muted-foreground mb-4">
                 {paymentError || (isRTL ? 'حدث خطأ أثناء الدفع. يرجى المحاولة مرة أخرى.' : 'An error occurred. Please try again.')}
               </p>
-              <Button variant="outline" onClick={() => resetPayment()}>
+              <Button variant="outline" onClick={() => { resetPayment(); setCurrentStep('payment'); }}>
                 {isRTL ? 'حاول مرة أخرى' : 'Try Again'}
               </Button>
             </motion.div>
