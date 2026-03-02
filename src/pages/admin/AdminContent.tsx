@@ -955,11 +955,14 @@ const AdminContent: React.FC = () => {
     const skills = learnData.skills || [];
 
     const skillTemplate = {
+      text_en: 'New Skill',
+      text_ar: 'مهارة جديدة',
       title_en: 'New Skill',
       title_ar: 'مهارة جديدة',
       description_en: 'Skill description',
       description_ar: 'وصف المهارة',
       icon: 'Zap',
+      key: `skill-${Date.now()}`,
     };
 
     return (
@@ -1060,6 +1063,15 @@ const AdminContent: React.FC = () => {
                   label={isRTL ? 'الأيقونة' : 'Icon'}
                 />
                 
+                <BilingualInput
+                  labelEn="Card Label (shown on landing page)"
+                  labelAr="نص البطاقة (يظهر في الصفحة الرئيسية)"
+                  valueEn={(item as unknown as Record<string, string>).text_en || ''}
+                  valueAr={(item as unknown as Record<string, string>).text_ar || ''}
+                  onChangeEn={(v) => updateArrayItem('learn', 'skills', index, 'text_en', v)}
+                  onChangeAr={(v) => updateArrayItem('learn', 'skills', index, 'text_ar', v)}
+                />
+
                 <BilingualInput
                   labelEn="Skill Title"
                   labelAr="عنوان المهارة"
