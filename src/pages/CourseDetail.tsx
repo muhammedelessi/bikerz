@@ -626,7 +626,7 @@ const CourseDetail: React.FC = () => {
                         )
                       ) : (
                         <Button className="w-full btn-cta h-12 text-base" asChild>
-                          <Link to="/login">
+                          <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
                             {t('courses.loginToPurchase')}
                           </Link>
                         </Button>
