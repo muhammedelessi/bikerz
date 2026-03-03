@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,8 @@ const Signup: React.FC = () => {
   const { isRTL } = useLanguage();
   const { signUp } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
   const { data: authContent } = useAuthPageContent();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -76,7 +78,7 @@ const Signup: React.FC = () => {
   const handleProfileWizardClose = (open: boolean) => {
     setShowProfileWizard(open);
     if (!open) {
-      navigate('/dashboard');
+      navigate(returnTo || '/dashboard');
     }
   };
 
@@ -222,7 +224,7 @@ const Signup: React.FC = () => {
 
             <div className="mt-5 sm:mt-6 text-center text-sm sm:text-base text-muted-foreground">
               {hasAccountText}{' '}
-              <Link to="/login" className="text-primary hover:underline font-medium">
+              <Link to={returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : '/login'} className="text-primary hover:underline font-medium">
                 {loginLinkText}
               </Link>
             </div>

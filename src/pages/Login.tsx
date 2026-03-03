@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,8 @@ const Login: React.FC = () => {
   const { isRTL } = useLanguage();
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
   const { data: authContent } = useAuthPageContent();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -50,7 +52,7 @@ const Login: React.FC = () => {
     }
     
     toast.success(t('auth.login.success'));
-    navigate('/dashboard');
+    navigate(returnTo || '/dashboard');
   };
 
   return (
@@ -154,7 +156,7 @@ const Login: React.FC = () => {
 
             <div className="mt-5 sm:mt-6 text-center text-sm sm:text-base text-muted-foreground">
               {noAccountText}{' '}
-              <Link to="/signup" className="text-primary hover:underline font-medium">
+              <Link to={returnTo ? `/signup?returnTo=${encodeURIComponent(returnTo)}` : '/signup'} className="text-primary hover:underline font-medium">
                 {signupLinkText}
               </Link>
             </div>
