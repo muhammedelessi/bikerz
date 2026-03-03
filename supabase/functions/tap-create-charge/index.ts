@@ -175,10 +175,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Verify course exists ──
+    // ── Verify course exists and compute server-side price ──
     const { data: course, error: courseError } = await adminClient
       .from("courses")
-      .select("id, price, currency, title")
+      .select("id, price, currency, title, discount_percentage")
       .eq("id", course_id)
       .single();
 
@@ -189,7 +189,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (numericAmount > Number(course.price)) {
+    // Calculate the actual price after course-level discount (server-authoritative)
+    const courseDiscountPct = course.discount_percentage && Number(course.discount_percentage) > 0 ? Number(course.discount_percentage) : 0;
+    const serverBasePrice = courseDiscountPct > 0
+      ? Math.round(Number(course.price) * (1 - courseDiscountPct / 100) * 100) / 100
+      : Number(course.price);
+
+    // Validate that client-sent amount doesn't exceed the server-calculated price
+    if (numericAmount > serverBasePrice) {
       return new Response(
         JSON.stringify({ error: "Amount exceeds course price" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -228,7 +235,8 @@ Deno.serve(async (req) => {
           internal_order_id: idempotency_key,
           user_id: userId,
           coupon_id: coupon_id || null,
-          original_amount: Number(course.price),
+            original_amount: Number(course.price),
+            discounted_base_price: serverBasePrice,
           environment: tapSecretKey.startsWith("sk_test") ? "test" : "live",
           billing_city: profileData.city,
           billing_country: profileData.country,
