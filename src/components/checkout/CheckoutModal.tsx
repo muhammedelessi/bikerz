@@ -354,7 +354,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     await submitPayment({
       courseId: course.id,
-      amount: discountedPrice,
       currency: 'SAR',
       customerName: fullName,
       customerEmail: email,

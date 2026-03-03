@@ -5,9 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 type PaymentStatus = 'idle' | 'processing' | 'succeeded' | 'failed';
 
 interface TapPaymentConfig {
-  amount: number;
-  currency: string;
   courseId: string;
+  currency: string;
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
@@ -27,10 +26,8 @@ export function useTapPayment(): UseTapPaymentReturn {
   const [status, setStatus] = useState<PaymentStatus>('idle');
   const [error, setError] = useState<string | null>(null);
 
-  // Check readiness - just need a session
   const isReady = status === 'idle' && !!session?.access_token;
 
-  // Submit payment - creates a charge with src_all and redirects to Tap hosted page
   const submitPayment = useCallback(
     async (config: TapPaymentConfig) => {
       if (!session?.access_token) {
@@ -42,14 +39,12 @@ export function useTapPayment(): UseTapPaymentReturn {
       setError(null);
 
       try {
-        // Generate idempotency key
         const idempotencyKey = `${config.courseId}_${session.user.id}_${Date.now()}`;
 
-        // Create charge via backend - no token needed, uses src_all for redirect
+        // Server computes the price — client only sends identifiers
         const { data, error: fnError } = await supabase.functions.invoke('tap-create-charge', {
           body: {
             course_id: config.courseId,
-            amount: config.amount,
             currency: config.currency,
             customer_name: config.customerName,
             customer_email: config.customerEmail,
@@ -67,9 +62,8 @@ export function useTapPayment(): UseTapPaymentReturn {
           throw new Error(data.error);
         }
 
-        console.log('[Tap] Charge response:', data?.status, data?.charge_id);
+        console.log('[Tap] Charge response:', data?.status, data?.charge_id, 'amount:', data?.amount);
 
-        // Redirect to Tap hosted payment page
         if (data?.redirect_url) {
           window.location.href = data.redirect_url;
         } else if (data?.status === 'succeeded') {
