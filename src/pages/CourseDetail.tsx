@@ -914,6 +914,7 @@ const CourseDetail: React.FC = () => {
             title: course.title,
             title_ar: course.title_ar,
             price: course.price,
+            discount_percentage: course.discount_percentage,
             thumbnail_url: course.thumbnail_url,
           }}
           onSuccess={() => {

@@ -48,6 +48,7 @@ interface CheckoutModalProps {
     title: string;
     title_ar: string | null;
     price: number;
+    discount_percentage?: number | null;
     thumbnail_url: string | null;
   };
   onSuccess: () => void;
@@ -119,7 +120,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
   const BackArrowIcon = isRTL ? ArrowRight : ArrowLeft;
-  const discountedPrice = appliedCoupon ? appliedCoupon.final_amount : course.price;
+
+  // Apply course-level discount first (discount_percentage from DB)
+  const courseDiscountPct = course.discount_percentage && course.discount_percentage > 0 ? course.discount_percentage : 0;
+  const basePrice = courseDiscountPct > 0
+    ? Math.round(course.price * (1 - courseDiscountPct / 100) * 100) / 100
+    : course.price;
+
+  // Then apply coupon discount on top of the already-discounted base price
+  const discountedPrice = appliedCoupon ? appliedCoupon.final_amount : basePrice;
   const discountAmount = appliedCoupon ? appliedCoupon.discount_amount : 0;
   const discountLabel = appliedCoupon
     ? appliedCoupon.discount_type === 'percentage_discount'
@@ -160,7 +169,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         setPromoLoading(true);
         try {
           const { data, error } = await supabase.functions.invoke('coupon-validate', {
-            body: { code: savedCoupon, course_id: course.id, amount: course.price },
+            body: { code: savedCoupon, course_id: course.id, amount: basePrice },
           });
           if (!error && data?.valid) {
             setPromoApplied(true);
@@ -280,7 +289,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setPromoLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('coupon-validate', {
-        body: { code: promoCode.trim(), course_id: course.id, amount: course.price },
+        body: { code: promoCode.trim(), course_id: course.id, amount: basePrice },
       });
       if (error) {
         let errorMsg = isRTL ? 'فشل التحقق من الرمز' : 'Failed to validate code';
@@ -330,7 +339,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           p_order_id: null,
           p_charge_id: null,
           p_discount_amount: appliedCoupon.discount_amount,
-          p_original_amount: course.price,
+          p_original_amount: basePrice,
           p_final_amount: 0,
         });
 
