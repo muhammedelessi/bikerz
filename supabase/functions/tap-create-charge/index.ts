@@ -35,7 +35,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate key type
     if (tapSecretKey.startsWith("pk_")) {
       console.error("TAP_SECRET_KEY contains a publishable key instead of secret key");
       return new Response(
@@ -44,7 +43,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify user with getUser
+    // Verify user
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -59,7 +58,7 @@ Deno.serve(async (req) => {
     const userId = userData.user.id;
     const userEmail = userData.user.email || "";
 
-    // ── Parse & validate request body ──
+    // ── Parse request body ──
     let body: Record<string, unknown>;
     try {
       body = await req.json();
@@ -72,7 +71,6 @@ Deno.serve(async (req) => {
 
     const {
       course_id,
-      amount,
       currency = "SAR",
       customer_name,
       customer_email,
@@ -81,17 +79,9 @@ Deno.serve(async (req) => {
       coupon_id,
     } = body as Record<string, any>;
 
-    if (!course_id || !amount || !idempotency_key) {
+    if (!course_id || !idempotency_key) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: course_id, amount, idempotency_key" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const numericAmount = Number(amount);
-    if (isNaN(numericAmount) || numericAmount <= 0 || numericAmount > 100000) {
-      return new Response(
-        JSON.stringify({ error: "Invalid amount" }),
+        JSON.stringify({ error: "Missing required fields: course_id, idempotency_key" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -106,7 +96,7 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // ── PROFILE COMPLETENESS CHECK (Backend Enforcement) ──
+    // ── PROFILE COMPLETENESS CHECK ──
     const { data: profileData, error: profileError } = await adminClient
       .from("profiles")
       .select("full_name, phone, city, country, profile_complete")
@@ -121,7 +111,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate required profile fields server-side
     const missingFields: string[] = [];
     if (!profileData.full_name || profileData.full_name.trim().length < 3) missingFields.push("full_name");
     if (!profileData.phone || profileData.phone.trim().length < 7) missingFields.push("phone");
@@ -138,7 +127,6 @@ Deno.serve(async (req) => {
         { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    // ── END PROFILE CHECK ──
 
     // ── Idempotency check ──
     const { data: existingCharge } = await adminClient
@@ -148,7 +136,6 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existingCharge) {
-      // If there's an existing succeeded or processing charge, return it
       if (existingCharge.status === "succeeded" || existingCharge.status === "processing") {
         return new Response(
           JSON.stringify({
@@ -159,11 +146,9 @@ Deno.serve(async (req) => {
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      // If failed/cancelled, allow retry by deleting the old record
       if (existingCharge.status === "failed" || existingCharge.status === "cancelled") {
         await adminClient.from("tap_charges").delete().eq("id", existingCharge.id);
       } else {
-        // Pending - return existing
         return new Response(
           JSON.stringify({
             charge_id: existingCharge.charge_id,
@@ -175,7 +160,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Verify course exists and compute server-side price ──
+    // ── SERVER-AUTHORITATIVE PRICING ──
+    // Fetch course and compute price from DB — never trust client amount
     const { data: course, error: courseError } = await adminClient
       .from("courses")
       .select("id, price, currency, title, discount_percentage")
@@ -189,19 +175,58 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Calculate the actual price after course-level discount (server-authoritative)
+    const originalPrice = Number(course.price);
     const courseDiscountPct = course.discount_percentage && Number(course.discount_percentage) > 0 ? Number(course.discount_percentage) : 0;
-    const serverBasePrice = courseDiscountPct > 0
-      ? Math.round(Number(course.price) * (1 - courseDiscountPct / 100) * 100) / 100
-      : Number(course.price);
+    let finalAmount = courseDiscountPct > 0
+      ? Math.round(originalPrice * (1 - courseDiscountPct / 100) * 100) / 100
+      : originalPrice;
+    const priceAfterCourseDiscount = finalAmount;
 
-    // Validate that client-sent amount doesn't exceed the server-calculated price
-    if (numericAmount > serverBasePrice) {
+    // Apply coupon discount if provided (server-side validation)
+    let couponDiscount = 0;
+    if (coupon_id) {
+      const { data: coupon } = await adminClient
+        .from("coupons")
+        .select("id, type, value, status, is_deleted, start_date, expiry_date, used_count, max_usage, course_id, is_global, minimum_amount")
+        .eq("id", coupon_id)
+        .maybeSingle();
+
+      if (coupon && coupon.status === "active" && !coupon.is_deleted
+          && new Date() >= new Date(coupon.start_date)
+          && new Date() <= new Date(coupon.expiry_date)
+          && coupon.used_count < coupon.max_usage) {
+        // Check course scope
+        const scopeValid = coupon.is_global || !coupon.course_id || coupon.course_id === course_id;
+        const minValid = !coupon.minimum_amount || finalAmount >= Number(coupon.minimum_amount);
+
+        if (scopeValid && minValid) {
+          if (coupon.type === "percentage_discount") {
+            couponDiscount = Math.round(finalAmount * (Number(coupon.value) / 100) * 100) / 100;
+          } else if (coupon.type === "fixed_amount_discount") {
+            couponDiscount = Math.min(Number(coupon.value), finalAmount);
+          } else if (coupon.type === "promotion") {
+            couponDiscount = Number(coupon.value);
+          }
+          finalAmount = Math.max(finalAmount - couponDiscount, 0);
+        }
+      }
+    }
+
+    if (finalAmount <= 0) {
       return new Response(
-        JSON.stringify({ error: "Amount exceeds course price" }),
+        JSON.stringify({ error: "Final amount is zero. Use free enrollment instead." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log(
+      "Server-authoritative pricing:",
+      `original=${originalPrice}`,
+      `courseDiscount=${courseDiscountPct}%`,
+      `afterCourseDiscount=${priceAfterCourseDiscount}`,
+      `couponDiscount=${couponDiscount}`,
+      `finalAmount=${finalAmount}`
+    );
 
     // ── Check if already enrolled ──
     const { data: existingEnrollment } = await adminClient
@@ -224,7 +249,7 @@ Deno.serve(async (req) => {
       .insert({
         user_id: userId,
         course_id,
-        amount: numericAmount,
+        amount: finalAmount,
         currency,
         status: "pending",
         customer_name: customer_name || profileData.full_name || "",
@@ -235,8 +260,11 @@ Deno.serve(async (req) => {
           internal_order_id: idempotency_key,
           user_id: userId,
           coupon_id: coupon_id || null,
-            original_amount: Number(course.price),
-            discounted_base_price: serverBasePrice,
+          original_price: originalPrice,
+          course_discount_pct: courseDiscountPct,
+          price_after_course_discount: priceAfterCourseDiscount,
+          coupon_discount: couponDiscount,
+          final_amount: finalAmount,
           environment: tapSecretKey.startsWith("sk_test") ? "test" : "live",
           billing_city: profileData.city,
           billing_country: profileData.country,
@@ -253,13 +281,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Determine redirect URL back to the app
+    // Determine redirect URL
     const origin = req.headers.get("origin") || "https://bikerz.lovable.app";
     const redirectBackUrl = `${origin}/courses/${course_id}?payment=callback&charge_id=${chargeRecord.id}`;
 
-    // ── Create Tap charge via API using src_all (redirect-based) ──
+    // ── Create Tap charge ──
     const chargePayload: Record<string, unknown> = {
-      amount: numericAmount,
+      amount: finalAmount,
       currency,
       threeDSecure: true,
       save_card: false,
@@ -294,7 +322,7 @@ Deno.serve(async (req) => {
       },
     };
 
-    console.log("Creating Tap charge for user:", userId, "amount:", numericAmount, currency);
+    console.log("Creating Tap charge for user:", userId, "amount:", finalAmount, currency);
 
     let tapData: Record<string, any>;
     let tapResponse: Response;
@@ -323,7 +351,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Defensive response parsing
     const contentType = tapResponse.headers.get("content-type");
     if (!contentType?.includes("application/json")) {
       const textResponse = await tapResponse.text();
@@ -354,7 +381,6 @@ Deno.serve(async (req) => {
 
     if (!tapResponse.ok) {
       console.error("Tap API error:", JSON.stringify(tapData));
-
       await adminClient
         .from("tap_charges")
         .update({
@@ -363,7 +389,6 @@ Deno.serve(async (req) => {
           tap_response: sanitizeTapResponse(tapData),
         })
         .eq("id", chargeRecord.id);
-
       return new Response(
         JSON.stringify({
           error: tapData?.errors?.[0]?.description || "Payment failed",
@@ -387,12 +412,10 @@ Deno.serve(async (req) => {
       })
       .eq("id", chargeRecord.id);
 
-    // If captured immediately (rare with src_all), enroll user
     if (chargeStatus === "succeeded") {
       await enrollUser(adminClient, userId, course_id);
     }
 
-    // The redirect URL from Tap's response (hosted payment page)
     const tapRedirectUrl = tapData.transaction?.url || null;
 
     if (!tapRedirectUrl && chargeStatus !== "succeeded") {
@@ -412,7 +435,7 @@ Deno.serve(async (req) => {
         charge_id: tapData.id,
         status: chargeStatus,
         redirect_url: tapRedirectUrl,
-        amount: numericAmount,
+        amount: finalAmount,
         currency,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
