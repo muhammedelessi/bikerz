@@ -435,11 +435,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="flex items-center gap-2 mt-0.5">
                 {promoApplied && (
                   <span className="text-xs text-muted-foreground line-through">
-                    {course.price} {isRTL ? 'ر.س' : 'SAR'}
+                    {formatPrice(course.price, isRTL)}
                   </span>
                 )}
                 <span className="text-base font-bold text-primary">
-                  {discountedPrice} {isRTL ? 'ر.س' : 'SAR'}
+                  {formatPrice(discountedPrice, isRTL)}
                 </span>
                 {promoApplied && discountLabel && (
                   <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">{discountLabel}</span>
