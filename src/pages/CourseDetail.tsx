@@ -34,7 +34,7 @@ import {
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.jpg';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
-import EnrollmentCelebration from '@/components/course/EnrollmentCelebration';
+
 
 interface Lesson {
   id: string;
