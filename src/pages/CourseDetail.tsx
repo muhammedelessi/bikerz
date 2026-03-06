@@ -34,7 +34,7 @@ import {
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.jpg';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
-import EnrollmentCelebration from '@/components/course/EnrollmentCelebration';
+
 
 interface Lesson {
   id: string;
@@ -95,44 +95,8 @@ const CourseDetail: React.FC = () => {
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   const [paymentVerifying, setPaymentVerifying] = useState(false);
-  const [showCelebration, setShowCelebration] = useState(false);
 
-  // Handle payment callback from Tap redirect
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tapId = params.get('tap_id');
-    const paymentCallback = params.get('payment');
-    if ((!tapId && paymentCallback !== 'callback') || !user) return;
-    if (!tapId) return; // Tap must append tap_id on redirect
-
-    // Clean the URL
-    window.history.replaceState({}, '', `/courses/${id}`);
-
-    const verifyPayment = async () => {
-      setPaymentVerifying(true);
-      try {
-        const { data, error } = await supabase.functions.invoke('tap-verify-charge', {
-          body: { charge_id: tapId },
-        });
-        if (error) throw error;
-        if (data?.status === 'succeeded') {
-          queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
-          setShowCelebration(true);
-        } else if (data?.status === 'failed') {
-          toast.error(isRTL ? 'فشل الدفع. يرجى المحاولة مرة أخرى.' : 'Payment failed. Please try again.');
-        } else {
-          toast.info(isRTL ? 'جاري معالجة الدفع...' : 'Payment is being processed...');
-          queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
-        }
-      } catch {
-        toast.error(isRTL ? 'تعذر التحقق من الدفع' : 'Could not verify payment');
-      } finally {
-        setPaymentVerifying(false);
-      }
-    };
-
-    verifyPayment();
-  }, [user, id]);
+  // Payment callback now handled by /payment-success/:courseId page
 
   // Scroll-based sticky header
   useEffect(() => {
@@ -234,7 +198,7 @@ const CourseDetail: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
-      setShowCelebration(true);
+      navigate(`/payment-success/${id}?tap_id=free_enrollment`);
     },
     onError: (error: any) => {
       toast.error(error.message || (isRTL ? 'فشل التسجيل' : 'Failed to enroll'));
@@ -919,19 +883,7 @@ const CourseDetail: React.FC = () => {
           }}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
-            setShowCelebration(true);
-          }}
-        />
-      )}
-
-      {course && (
-        <EnrollmentCelebration
-          open={showCelebration}
-          courseTitle={course.title}
-          courseTitleAr={course.title_ar}
-          onContinue={() => {
-            setShowCelebration(false);
-            navigate(`/courses/${id}/learn?welcome=1`);
+            navigate(`/payment-success/${id}?tap_id=free_enrollment`);
           }}
         />
       )}

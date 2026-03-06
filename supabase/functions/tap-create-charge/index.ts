@@ -281,9 +281,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Determine redirect URL
+    // Determine redirect URL — send user to the dedicated success page
     const origin = req.headers.get("origin") || "https://bikerz.lovable.app";
-    const redirectBackUrl = `${origin}/courses/${course_id}?payment=callback&charge_id=${chargeRecord.id}`;
+    const redirectBackUrl = `${origin}/payment-success/${course_id}`;
 
     // ── Create Tap charge ──
     const chargePayload: Record<string, unknown> = {
