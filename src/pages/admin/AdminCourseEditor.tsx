@@ -68,6 +68,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Upload,
+  CheckCircle2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import BunnyVideoUploader from '@/components/admin/BunnyVideoUploader';
