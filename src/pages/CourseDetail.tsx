@@ -95,7 +95,6 @@ const CourseDetail: React.FC = () => {
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   const [paymentVerifying, setPaymentVerifying] = useState(false);
-  const [showCelebration, setShowCelebration] = useState(false);
 
   // Handle payment callback from Tap redirect
   useEffect(() => {
