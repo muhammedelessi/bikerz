@@ -810,7 +810,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   ) : (
                     <>
                       <Lock className="w-4 h-4 me-2" />
-                      {isRTL ? `ادفع ${discountedPrice} ر.س` : `Pay ${discountedPrice} SAR`}
+                      {isRTL ? `ادفع ${formatPrice(discountedPrice, true)}` : `Pay ${formatPrice(discountedPrice, false)}`}
                     </>
                   )}
                 </Button>
