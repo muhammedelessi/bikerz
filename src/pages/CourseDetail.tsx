@@ -883,19 +883,7 @@ const CourseDetail: React.FC = () => {
           }}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
-            setShowCelebration(true);
-          }}
-        />
-      )}
-
-      {course && (
-        <EnrollmentCelebration
-          open={showCelebration}
-          courseTitle={course.title}
-          courseTitleAr={course.title_ar}
-          onContinue={() => {
-            setShowCelebration(false);
-            navigate(`/courses/${id}/learn?welcome=1`);
+            navigate(`/payment-success/${id}?tap_id=free_enrollment`);
           }}
         />
       )}
