@@ -14,8 +14,8 @@ import bikerLogo from '@/assets/bikerz-logo.png';
 type VerifyStatus = 'verifying' | 'succeeded' | 'failed' | 'processing';
 
 const PaymentSuccess: React.FC = () => {
-  const { courseId } = useParams<{ courseId: string }>();
   const [searchParams] = useSearchParams();
+  const courseId = searchParams.get('course');
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
