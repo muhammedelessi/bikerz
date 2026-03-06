@@ -135,7 +135,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const discountLabel = appliedCoupon
     ? appliedCoupon.discount_type === 'percentage_discount'
       ? `-${appliedCoupon.discount_value}%`
-      : `-${appliedCoupon.discount_amount} SAR`
+      : `-${formatPrice(appliedCoupon.discount_amount, isRTL)}`
     : '';
 
   // Pre-fill from profile
