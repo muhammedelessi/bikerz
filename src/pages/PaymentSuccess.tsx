@@ -40,9 +40,15 @@ const PaymentSuccess: React.FC = () => {
     enabled: !!courseId,
   });
 
-  // Verify payment
+  // Verify payment (skip for free enrollments)
   useEffect(() => {
-    if (!tapId || !user) return;
+    if (!user) return;
+
+    // Free enrollment or coupon-based — already enrolled, skip verification
+    if (!tapId || tapId === 'free_enrollment') {
+      setVerifyStatus('succeeded');
+      return;
+    }
 
     const verify = async () => {
       try {
