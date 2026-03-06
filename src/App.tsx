@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
 import ScrollToTop from "@/components/common/ScrollToTop";
@@ -149,16 +150,18 @@ const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
-        <AuthProvider>
-          <TooltipProvider>
+        <CurrencyProvider>
+          <AuthProvider>
+            <TooltipProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
               <ScrollToTop />
               <AppRoutes />
             </BrowserRouter>
-          </TooltipProvider>
-        </AuthProvider>
+            </TooltipProvider>
+          </AuthProvider>
+        </CurrencyProvider>
       </LanguageProvider>
     </QueryClientProvider>
   </HelmetProvider>
