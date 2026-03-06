@@ -132,6 +132,7 @@ const AdminCourseEditor: React.FC = () => {
   // Confirmation dialogs
   const [deleteChapterConfirm, setDeleteChapterConfirm] = useState<{ id: string; title: string } | null>(null);
   const [deleteLessonConfirm, setDeleteLessonConfirm] = useState<{ id: string; title: string } | null>(null);
+  const [previewVideoReplacing, setPreviewVideoReplacing] = useState(false);
 
   // Chapter form state
   const [chapterForm, setChapterForm] = useState({
