@@ -21,6 +21,7 @@ import Mentors from "./pages/Mentors";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 // Admin Pages
 import AdminHome from "./pages/admin/AdminHome";
