@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import SEOHead from '@/components/common/SEOHead';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
@@ -210,6 +211,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
+      <SEOHead title="My Dashboard" description="Access your BIKERZ Academy dashboard. Track your course progress, manage enrollments, and continue learning." noindex />
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div

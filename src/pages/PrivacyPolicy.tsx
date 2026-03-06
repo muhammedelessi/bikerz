@@ -1,4 +1,5 @@
 import React from 'react';
+import SEOHead from '@/components/common/SEOHead';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
@@ -79,6 +80,7 @@ const PrivacyPolicy: React.FC = () => {
 
   return (
     <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+      <SEOHead title="Privacy Policy" description="Read BIKERZ Academy's privacy policy. Learn how we collect, use, and protect your personal information." canonical="/privacy" breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Privacy Policy', url: '/privacy' }]} />
       <Navbar />
       
       <main className="pt-24 pb-16">

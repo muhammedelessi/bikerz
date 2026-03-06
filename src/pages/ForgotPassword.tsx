@@ -9,6 +9,7 @@ import { ArrowRight, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import bikerzLogo from '@/assets/bikerz-logo.png';
+import SEOHead from '@/components/common/SEOHead';
 
 const ForgotPassword: React.FC = () => {
   const { t } = useTranslation();
@@ -50,6 +51,7 @@ const ForgotPassword: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEOHead title="Reset Password" description="Reset your BIKERZ Academy password. Enter your email to receive a password reset link." canonical="/forgot-password" noindex />
       {/* Header */}
       <header className="py-4 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex justify-between items-center">

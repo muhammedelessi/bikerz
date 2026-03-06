@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { Star, Bike, Award, Users, MessageCircle, UserX } from 'lucide-react';
 import instructorImage from '@/assets/instructor.jpg';
+import SEOHead from '@/components/common/SEOHead';
 
 interface Mentor {
   id: string;
@@ -70,6 +71,12 @@ const Mentors: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Expert Motorcycle Riding Mentors"
+        description="Meet our certified motorcycle riding mentors. Experienced instructors ready to guide you from beginner to confident rider."
+        canonical="/mentors"
+        breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Mentors', url: '/mentors' }]}
+      />
       <Navbar />
       
       <main className="pt-24">

@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import * as LucideIcons from 'lucide-react';
+import SEOHead from '@/components/common/SEOHead';
 import { 
   Target, 
   Users, 
@@ -84,6 +85,12 @@ const AboutUs: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="About Us - Our Mission & Story"
+        description="Learn about BIKERZ Academy's mission to make motorcycle riding safe and accessible. Meet our team of certified instructors and discover our training philosophy."
+        canonical="/about"
+        breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'About Us', url: '/about' }]}
+      />
       <Navbar />
       
       {/* Hero Section */}
