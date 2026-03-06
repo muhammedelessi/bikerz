@@ -693,34 +693,55 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     )}
                   </div>
 
-                  {/* Order Summary */}
-                  <div className="p-4 rounded-xl bg-muted/30 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{isRTL ? 'الدورة' : 'Course'}</span>
-                      <span className="font-medium truncate max-w-[200px]">
-                        {isRTL && course.title_ar ? course.title_ar : course.title}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{isRTL ? 'العميل' : 'Customer'}</span>
-                      <span className="font-medium">{fullName}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{isRTL ? 'الموقع' : 'Location'}</span>
-                      <span className="font-medium">{city}{country ? `, ${GCC_COUNTRIES.find(c => c.code === country)?.[isRTL ? 'name_ar' : 'name'] || country}` : ''}</span>
-                    </div>
-                    {promoApplied && appliedCoupon && (
-                      <div className="flex justify-between text-sm text-primary">
-                        <span>{isRTL ? 'الخصم' : 'Discount'} ({discountLabel})</span>
-                        <span>-{discountAmount} {isRTL ? 'ر.س' : 'SAR'}</span>
+                  {/* Order Summary with Tax Breakdown */}
+                  {(() => {
+                    const taxInfo = calculateTax(discountedPrice);
+                    const currencyLabel = isRTL ? currency.symbolAr : currency.symbol;
+                    return (
+                      <div className="p-4 rounded-xl bg-muted/30 space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">{isRTL ? 'الدورة' : 'Course'}</span>
+                          <span className="font-medium truncate max-w-[200px]">
+                            {isRTL && course.title_ar ? course.title_ar : course.title}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">{isRTL ? 'العميل' : 'Customer'}</span>
+                          <span className="font-medium">{fullName}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">{isRTL ? 'الموقع' : 'Location'}</span>
+                          <span className="font-medium">{city}{country ? `, ${GCC_COUNTRIES.find(c => c.code === country)?.[isRTL ? 'name_ar' : 'name'] || country}` : ''}</span>
+                        </div>
+                        {promoApplied && appliedCoupon && (
+                          <div className="flex justify-between text-sm text-primary">
+                            <span>{isRTL ? 'الخصم' : 'Discount'} ({discountLabel})</span>
+                            <span>-{formatPrice(discountAmount, isRTL)}</span>
+                          </div>
+                        )}
+                        <Separator />
+                        {/* Tax breakdown */}
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">{isRTL ? 'المبلغ قبل الضريبة' : 'Subtotal (excl. tax)'}</span>
+                          <span className="font-medium">{taxInfo.subtotal} {currencyLabel}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">{isRTL ? currency.vatLabelAr : currency.vatLabel}</span>
+                          <span className="font-medium">{taxInfo.tax} {currencyLabel}</span>
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between font-bold">
+                          <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
+                          <span className="text-primary">{taxInfo.total} {currencyLabel}</span>
+                        </div>
+                        {currency.code !== 'SAR' && (
+                          <p className="text-[10px] text-muted-foreground text-center mt-1">
+                            {isRTL ? `* سيتم تحصيل المبلغ بالريال السعودي (${discountedPrice} ر.س)` : `* You will be charged in SAR (${discountedPrice} SAR)`}
+                          </p>
+                        )}
                       </div>
-                    )}
-                    <Separator />
-                    <div className="flex justify-between font-bold">
-                      <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
-                      <span className="text-primary">{discountedPrice} {isRTL ? 'ر.س' : 'SAR'}</span>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
                     <Shield className="w-4 h-4 text-primary flex-shrink-0" />
