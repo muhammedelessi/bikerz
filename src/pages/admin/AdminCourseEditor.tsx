@@ -627,6 +627,84 @@ const AdminCourseEditor: React.FC = () => {
         </Card>
       </div>
 
+      {/* Preview / Introductory Video */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Play className="w-5 h-5 text-primary" />
+            {isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introductory Video'}
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {isRTL
+              ? 'هذا الفيديو يظهر في صفحة الدورة لجميع الزوار لتعريفهم بمحتوى الدورة'
+              : 'This video is shown on the course page for all visitors to preview the course content'}
+          </p>
+        </CardHeader>
+        <CardContent>
+          {course.preview_video_url && !previewVideoReplacing ? (
+            <div className="space-y-4">
+              <div className="aspect-video rounded-xl overflow-hidden bg-muted border border-border">
+                <iframe
+                  src={`https://iframe.mediadelivery.net/embed/${(() => {
+                    const match = course.preview_video_url?.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+                    return match ? `${course.preview_video_url?.includes('b-cdn.net') ? '' : ''}` : '';
+                  })}?autoplay=false`}
+                  className="w-full h-full"
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                  allowFullScreen
+                  style={{ border: 'none' }}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-green-500 border-green-500">
+                  <CheckCircle2 className="w-3 h-3 me-1" />
+                  {isRTL ? 'تم الرفع' : 'Uploaded'}
+                </Badge>
+                <div className="flex-1" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPreviewVideoReplacing(true)}
+                >
+                  <Upload className="w-4 h-4 me-2" />
+                  {isRTL ? 'استبدال الفيديو' : 'Replace Video'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive"
+                  onClick={async () => {
+                    await supabase.from('courses').update({ preview_video_url: null }).eq('id', id);
+                    queryClient.invalidateQueries({ queryKey: ['admin-course', id] });
+                    toast.success(isRTL ? 'تم حذف الفيديو التعريفي' : 'Preview video removed');
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 me-2" />
+                  {isRTL ? 'حذف' : 'Remove'}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <BunnyVideoUploader
+                onUploadComplete={async (videoId, playbackUrl) => {
+                  await supabase.from('courses').update({ preview_video_url: playbackUrl }).eq('id', id);
+                  queryClient.invalidateQueries({ queryKey: ['admin-course', id] });
+                  setPreviewVideoReplacing(false);
+                  toast.success(isRTL ? 'تم رفع الفيديو التعريفي بنجاح' : 'Preview video uploaded successfully');
+                }}
+                isRTL={isRTL}
+              />
+              {previewVideoReplacing && (
+                <Button variant="ghost" size="sm" onClick={() => setPreviewVideoReplacing(false)}>
+                  {isRTL ? 'إلغاء' : 'Cancel'}
+                </Button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Chapters */}
       {chapters.length === 0 ? (
         <Card>
