@@ -687,8 +687,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <p className="text-sm text-primary flex items-center gap-1">
                         <Check className="w-4 h-4" />
                         {isRTL 
-                          ? `تم تطبيق خصم ${discountLabel} (وفّرت ${discountAmount} ر.س)` 
-                          : `${discountLabel} discount applied (saved ${discountAmount} SAR)`}
+                          ? `تم تطبيق خصم ${discountLabel} (وفّرت ${formatPrice(discountAmount, true)})` 
+                          : `${discountLabel} discount applied (saved ${formatPrice(discountAmount, false)})`}
                       </p>
                     )}
                   </div>
