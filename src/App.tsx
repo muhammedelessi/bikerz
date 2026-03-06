@@ -159,8 +159,9 @@ const App = () => (
               <ScrollToTop />
               <AppRoutes />
             </BrowserRouter>
-          </TooltipProvider>
-        </AuthProvider>
+            </TooltipProvider>
+          </AuthProvider>
+        </CurrencyProvider>
       </LanguageProvider>
     </QueryClientProvider>
   </HelmetProvider>
