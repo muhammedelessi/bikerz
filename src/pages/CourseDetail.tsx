@@ -624,6 +624,34 @@ const CourseDetail: React.FC = () => {
           </div>
         </section>
 
+        {/* Preview / Introductory Video */}
+        {course.preview_video_url && (
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+                  <Play className="w-5 h-5 text-primary" />
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                  {isRTL ? 'نظرة على الدورة' : 'Course Preview'}
+                </h2>
+              </div>
+
+              <div className="aspect-video rounded-2xl overflow-hidden border border-border bg-muted shadow-lg max-w-4xl">
+                <BunnyVideoEmbed
+                  videoUrl={course.preview_video_url}
+                  title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
+                />
+              </div>
+            </motion.div>
+          </section>
+        )}
+
         {/* What You'll Learn */}
         {(() => {
           const outcomes = Array.isArray((course as any).learning_outcomes) && (course as any).learning_outcomes.length > 0
