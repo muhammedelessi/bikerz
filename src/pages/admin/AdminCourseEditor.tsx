@@ -76,6 +76,7 @@ import TestQuestionManager from '@/components/admin/TestQuestionManager';
 import LessonQuizManager from '@/components/admin/LessonQuizManager';
 import RichTextEditor from '@/components/admin/RichTextEditor';
 import ImageUploader from '@/components/admin/content/ImageUploader';
+import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';
 
 interface ChapterTest {
   id: string;
