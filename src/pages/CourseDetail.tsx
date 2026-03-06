@@ -560,21 +560,21 @@ const CourseDetail: React.FC = () => {
                           <div className="space-y-1">
                             <div className="flex items-center justify-center gap-2">
                               <span className="text-lg text-muted-foreground line-through">
-                                {course.price} {t('common.sar')}
+                                {formatPrice(course.price, isRTL)}
                               </span>
                               <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-sm font-bold">
                                 -{course.discount_percentage}%
                               </span>
                             </div>
                             <span className="text-4xl font-black text-foreground">
-                              {Math.round(course.price * (1 - course.discount_percentage / 100))} {t('common.sar')}
+                              {formatPrice(Math.round(course.price * (1 - course.discount_percentage / 100)), isRTL)}
                             </span>
                           </div>
                         ) : (
                           <span className="text-4xl font-black text-foreground">
                             {course.price === 0
                               ? t('common.free')
-                              : `${course.price} ${t('common.sar')}`}
+                              : formatPrice(course.price, isRTL)}
                           </span>
                         )}
                       </div>
