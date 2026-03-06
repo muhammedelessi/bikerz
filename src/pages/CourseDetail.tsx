@@ -90,6 +90,7 @@ const CourseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
+  const { formatPrice, convertPrice } = useCurrency();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
