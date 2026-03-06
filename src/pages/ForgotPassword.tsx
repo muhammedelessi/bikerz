@@ -51,6 +51,7 @@ const ForgotPassword: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEOHead title="Reset Password" description="Reset your BIKERZ Academy password. Enter your email to receive a password reset link." canonical="/forgot-password" noindex />
       {/* Header */}
       <header className="py-4 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex justify-between items-center">

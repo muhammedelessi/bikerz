@@ -211,6 +211,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
+      <SEOHead title="My Dashboard" description="Access your BIKERZ Academy dashboard. Track your course progress, manage enrollments, and continue learning." noindex />
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div

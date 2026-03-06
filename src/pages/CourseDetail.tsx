@@ -335,6 +335,14 @@ const CourseDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title={courseTitle || 'Course Details'}
+        description={courseDescription?.substring(0, 160) || 'Explore this motorcycle riding course on BIKERZ Academy.'}
+        canonical={`/courses/${id}`}
+        ogType="article"
+        ogImage={course.thumbnail_url || undefined}
+        breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Courses', url: '/courses' }, { name: courseTitle || 'Course', url: `/courses/${id}` }]}
+      />
       <Navbar />
 
       {/* Sticky Header — appears on scroll */}

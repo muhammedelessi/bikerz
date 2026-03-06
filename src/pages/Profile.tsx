@@ -83,6 +83,7 @@ const Profile: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
+      <SEOHead title="My Profile" description="Manage your BIKERZ Academy profile, achievements, and rider identity." noindex />
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
