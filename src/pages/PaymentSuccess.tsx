@@ -48,15 +48,6 @@ const PaymentSuccess: React.FC = () => {
   const [confettiFired, setConfettiFired] = useState(false);
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
-  // Wait for auth to be ready
-  if (!isReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   // Fetch course info
   const { data: course } = useQuery({
     queryKey: ['course-success', courseId],
@@ -73,7 +64,7 @@ const PaymentSuccess: React.FC = () => {
 
   // Verify payment (skip for free enrollments)
   useEffect(() => {
-    if (!user) return;
+    if (!isReady || !user) return;
 
     // Free enrollment or coupon-based — already enrolled, skip verification
     if (!tapId || tapId === 'free_enrollment') {
