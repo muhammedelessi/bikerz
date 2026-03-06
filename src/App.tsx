@@ -117,7 +117,7 @@ const AppRoutes = () => (
     <Route path="/courses/:id/learn" element={<CourseLearn />} />
     <Route path="/courses/:id/lessons/:lessonId" element={<CourseLearn />} />
     <Route path="/mentors" element={<Mentors />} />
-    <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+    <Route path="/payment-success" element={<PaymentSuccess />} />
     
     {/* Protected Routes */}
     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

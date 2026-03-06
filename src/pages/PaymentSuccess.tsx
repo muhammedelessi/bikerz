@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -10,6 +9,29 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import bikerLogo from '@/assets/bikerz-logo.png';
+import type { User } from '@supabase/supabase-js';
+
+function useAuthReady() {
+  const [isReady, setIsReady] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setIsReady(true);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return { user, isReady };
+}
 
 type VerifyStatus = 'verifying' | 'succeeded' | 'failed' | 'processing';
 
@@ -18,7 +40,7 @@ const PaymentSuccess: React.FC = () => {
   const courseId = searchParams.get('course');
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
-  const { user } = useAuth();
+  const { user, isReady } = useAuthReady();
   const queryClient = useQueryClient();
   const tapId = searchParams.get('tap_id');
 
@@ -42,7 +64,7 @@ const PaymentSuccess: React.FC = () => {
 
   // Verify payment (skip for free enrollments)
   useEffect(() => {
-    if (!user) return;
+    if (!isReady || !user) return;
 
     // Free enrollment or coupon-based — already enrolled, skip verification
     if (!tapId || tapId === 'free_enrollment') {
@@ -93,6 +115,15 @@ const PaymentSuccess: React.FC = () => {
   }, [verifyStatus, confettiFired]);
 
   const courseTitle = isRTL && course?.title_ar ? course.title_ar : course?.title;
+
+  // Wait for auth to be ready
+  if (!isReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   // Failed state
   if (verifyStatus === 'failed') {
