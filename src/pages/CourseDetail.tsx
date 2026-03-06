@@ -198,7 +198,7 @@ const CourseDetail: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
-      navigate(`/payment-success/${id}?tap_id=free_enrollment`);
+      navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
     },
     onError: (error: any) => {
       toast.error(error.message || (isRTL ? 'فشل التسجيل' : 'Failed to enroll'));
@@ -883,7 +883,7 @@ const CourseDetail: React.FC = () => {
           }}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
-            navigate(`/payment-success/${id}?tap_id=free_enrollment`);
+            navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
           }}
         />
       )}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,8 +14,8 @@ import bikerLogo from '@/assets/bikerz-logo.png';
 type VerifyStatus = 'verifying' | 'succeeded' | 'failed' | 'processing';
 
 const PaymentSuccess: React.FC = () => {
-  const { courseId } = useParams<{ courseId: string }>();
   const [searchParams] = useSearchParams();
+  const courseId = searchParams.get('course');
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
