@@ -14,6 +14,10 @@ import SEOHead from '@/components/common/SEOHead';
 const ForgotPassword: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
+
+  // SEOHead will be added in the return
+  const { t } = useTranslation();
+  const { isRTL } = useLanguage();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   
   const [email, setEmail] = useState('');

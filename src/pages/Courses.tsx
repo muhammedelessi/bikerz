@@ -129,6 +129,12 @@ const Courses: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Motorcycle Riding Courses"
+        description="Browse our expert-led motorcycle riding courses. From beginner basics to advanced techniques, find the perfect course to boost your riding skills."
+        canonical="/courses"
+        breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Courses', url: '/courses' }]}
+      />
       <Navbar />
 
       <main className="pt-20 sm:pt-24 lg:pt-28">

@@ -85,6 +85,12 @@ const AboutUs: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="About Us - Our Mission & Story"
+        description="Learn about BIKERZ Academy's mission to make motorcycle riding safe and accessible. Meet our team of certified instructors and discover our training philosophy."
+        canonical="/about"
+        breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'About Us', url: '/about' }]}
+      />
       <Navbar />
       
       {/* Hero Section */}

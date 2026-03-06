@@ -85,6 +85,7 @@ const Signup: React.FC = () => {
 
   return (
     <div className="min-h-screen min-h-[100svh] flex flex-col lg:flex-row">
+      <SEOHead title="Sign Up" description="Create your BIKERZ Academy account and start learning motorcycle riding from expert instructors today." canonical="/signup" />
       {/* Image Section - Hidden on mobile */}
       <div className="hidden lg:block flex-1 relative">
         <img

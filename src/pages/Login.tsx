@@ -58,6 +58,7 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen min-h-[100svh] flex flex-col lg:flex-row">
+      <SEOHead title="Login" description="Sign in to your BIKERZ Academy account to access your motorcycle riding courses and track your progress." canonical="/login" />
       {/* Form Section */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-background safe-area-inset order-2 lg:order-1">
         <motion.div
