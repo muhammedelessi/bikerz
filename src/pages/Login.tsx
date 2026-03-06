@@ -13,6 +13,7 @@ import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import defaultHeroImage from '@/assets/hero-rider.jpg';
 import bikerzLogo from '@/assets/bikerz-logo.png';
+import SEOHead from '@/components/common/SEOHead';
 
 const Login: React.FC = () => {
   const { t } = useTranslation();

@@ -1,4 +1,5 @@
 import React from 'react';
+import SEOHead from '@/components/common/SEOHead';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';

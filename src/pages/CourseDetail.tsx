@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import SEOHead from '@/components/common/SEOHead';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';

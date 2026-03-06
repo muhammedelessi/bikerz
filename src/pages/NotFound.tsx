@@ -1,4 +1,5 @@
 import { useLocation, Link } from "react-router-dom";
+import SEOHead from '@/components/common/SEOHead';
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";

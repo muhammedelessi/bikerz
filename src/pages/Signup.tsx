@@ -13,6 +13,7 @@ import { useAuthPageContent } from '@/hooks/useAuthPageContent';
 import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import defaultHeroImage from '@/assets/community-ride.jpg';
+import SEOHead from '@/components/common/SEOHead';
 import bikerzLogo from '@/assets/bikerz-logo.png';
 
 const Signup: React.FC = () => {
