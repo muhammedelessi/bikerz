@@ -34,6 +34,7 @@ import {
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.jpg';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
+import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';
 
 
 interface Lesson {
