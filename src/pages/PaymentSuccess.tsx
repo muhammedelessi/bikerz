@@ -116,6 +116,15 @@ const PaymentSuccess: React.FC = () => {
 
   const courseTitle = isRTL && course?.title_ar ? course.title_ar : course?.title;
 
+  // Wait for auth to be ready
+  if (!isReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   // Failed state
   if (verifyStatus === 'failed') {
     return (
