@@ -647,15 +647,9 @@ const AdminCourseEditor: React.FC = () => {
           {course.preview_video_url && !previewVideoReplacing ? (
             <div className="space-y-4">
               <div className="aspect-video rounded-xl overflow-hidden bg-muted border border-border">
-                <iframe
-                  src={`https://iframe.mediadelivery.net/embed/${(() => {
-                    const match = course.preview_video_url?.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
-                    return match ? `${course.preview_video_url?.includes('b-cdn.net') ? '' : ''}` : '';
-                  })}?autoplay=false`}
-                  className="w-full h-full"
-                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
-                  allowFullScreen
-                  style={{ border: 'none' }}
+                <BunnyVideoEmbed
+                  videoUrl={course.preview_video_url}
+                  title={isRTL ? 'فيديو تعريفي' : 'Preview Video'}
                 />
               </div>
               <div className="flex items-center gap-2">
