@@ -104,18 +104,6 @@ const CourseDetail: React.FC = () => {
 
   // Payment callback now handled by /payment-success/:courseId page
 
-  // Meta Pixel: ViewContent event
-  useEffect(() => {
-    if (course && id) {
-      trackViewContent({
-        content_name: course.title,
-        content_ids: [id],
-        content_type: 'product',
-        value: course.price,
-        currency: 'SAR',
-      });
-    }
-  }, [course, id]);
 
   // Scroll-based sticky header
   useEffect(() => {
