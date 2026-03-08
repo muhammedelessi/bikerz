@@ -368,6 +368,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
+    // Meta Pixel: AddPaymentInfo
+    trackAddPaymentInfo({
+      content_ids: [course.id],
+      value: discountedPrice,
+      currency: 'SAR',
+    });
+
     await submitPayment({
       courseId: course.id,
       currency: 'SAR',
