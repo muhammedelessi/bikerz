@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import bikerLogo from '@/assets/bikerz-logo.png';
+import { trackPurchase } from '@/utils/metaPixel';
 import type { User } from '@supabase/supabase-js';
 
 function useAuthReady() {
