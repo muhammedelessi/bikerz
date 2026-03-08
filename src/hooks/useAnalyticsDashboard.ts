@@ -235,7 +235,7 @@ export function useVideoAnalytics(dateRange: string, lessonId?: string) {
       const days = DATE_RANGES[dateRange]?.days || 30;
       const since = subDays(new Date(), days);
 
-      const [watchSessions, events, lessons] = await Promise.all([
+      const [watchSessions, events, lessons, lessonProgressData] = await Promise.all([
         fetchAllRows('video_watch_sessions',
           'lesson_id, total_watch_time_seconds, completion_percentage, completed, pause_count, rewind_count, seek_count, total_buffering_time_ms, buffering_events',
           (q: any) => {
@@ -253,30 +253,61 @@ export function useVideoAnalytics(dateRange: string, lessonId?: string) {
           }
         ),
         fetchAllRows('lessons', 'id, title, title_ar, duration_minutes, chapter_id'),
+        fetchAllRows('lesson_progress', 'user_id, lesson_id, is_completed, watch_time_seconds, last_watched_at', (q: any) => {
+          q = q.gte('last_watched_at', since.toISOString());
+          if (lessonId) q = q.eq('lesson_id', lessonId);
+          return q;
+        }),
       ]);
 
-      // Calculate per-lesson metrics
+      const hasWatchSessions = watchSessions.length > 0;
+
+      // Calculate per-lesson metrics using both sources
       const lessonMetrics = lessons.map((lesson: any) => {
         const lessonSessions = watchSessions.filter((w: any) => w.lesson_id === lesson.id);
         const lessonEvents = events.filter((e: any) => e.lesson_id === lesson.id);
+        const lessonProgress = lessonProgressData.filter((p: any) => p.lesson_id === lesson.id);
 
-        const completions = lessonSessions.filter((s: any) => s.completed).length;
-        const totalViews = lessonSessions.length;
-        const avgCompletion = lessonSessions.length
-          ? lessonSessions.reduce((sum: number, s: any) => sum + (s.completion_percentage || 0), 0) / lessonSessions.length
-          : 0;
+        // Use video_watch_sessions if available, otherwise fall back to lesson_progress
+        let totalViews: number;
+        let completions: number;
+        let avgCompletion: number;
+        let totalWatchTimeSec: number;
+        let pauseCount: number;
+        let rewindCount: number;
+        let bufferingEventsPerViewer: number;
+        let medianDropOff: number;
 
-        const dropOffEvents = lessonEvents.filter((e: any) => e.event_type === 'ended' || e.event_type === 'pause');
-        const dropOffPositions = dropOffEvents.map((e: any) => e.video_position_seconds || 0);
-        const medianDropOff = dropOffPositions.length
-          ? dropOffPositions.sort((a: number, b: number) => a - b)[Math.floor(dropOffPositions.length / 2)]
-          : 0;
+        if (hasWatchSessions && lessonSessions.length > 0) {
+          totalViews = lessonSessions.length;
+          completions = lessonSessions.filter((s: any) => s.completed).length;
+          avgCompletion = lessonSessions.reduce((sum: number, s: any) => sum + (s.completion_percentage || 0), 0) / lessonSessions.length;
+          totalWatchTimeSec = lessonSessions.reduce((sum: number, s: any) => sum + (s.total_watch_time_seconds || 0), 0);
+          pauseCount = lessonSessions.reduce((sum: number, s: any) => sum + (s.pause_count || 0), 0);
+          rewindCount = lessonSessions.reduce((sum: number, s: any) => sum + (s.rewind_count || 0), 0);
 
-        const bufferingEvents = lessonEvents.filter((e: any) => e.event_type === 'buffering');
-        const avgBufferingPerViewer = totalViews > 0 ? bufferingEvents.length / totalViews : 0;
+          const dropOffEvents = lessonEvents.filter((e: any) => e.event_type === 'ended' || e.event_type === 'pause');
+          const dropOffPositions = dropOffEvents.map((e: any) => e.video_position_seconds || 0);
+          medianDropOff = dropOffPositions.length
+            ? dropOffPositions.sort((a: number, b: number) => a - b)[Math.floor(dropOffPositions.length / 2)]
+            : 0;
 
-        const pauseCount = lessonSessions.reduce((sum: number, s: any) => sum + (s.pause_count || 0), 0);
-        const rewindCount = lessonSessions.reduce((sum: number, s: any) => sum + (s.rewind_count || 0), 0);
+          const bufferingEvts = lessonEvents.filter((e: any) => e.event_type === 'buffering');
+          bufferingEventsPerViewer = totalViews > 0 ? bufferingEvts.length / totalViews : 0;
+        } else {
+          // Fallback to lesson_progress data
+          totalViews = lessonProgress.length;
+          completions = lessonProgress.filter((p: any) => p.is_completed).length;
+          const durationSec = (lesson.duration_minutes || 0) * 60;
+          avgCompletion = totalViews > 0 && durationSec > 0
+            ? Math.min(100, lessonProgress.reduce((sum: number, p: any) => sum + ((p.watch_time_seconds || 0) / durationSec) * 100, 0) / totalViews)
+            : totalViews > 0 ? (completions / totalViews) * 100 : 0;
+          totalWatchTimeSec = lessonProgress.reduce((sum: number, p: any) => sum + (p.watch_time_seconds || 0), 0);
+          pauseCount = 0;
+          rewindCount = 0;
+          medianDropOff = 0;
+          bufferingEventsPerViewer = 0;
+        }
 
         return {
           id: lesson.id,
@@ -288,17 +319,25 @@ export function useVideoAnalytics(dateRange: string, lessonId?: string) {
           completionRate: totalViews > 0 ? Math.round((completions / totalViews) * 100) : 0,
           avgWatchPercentage: Math.round(avgCompletion),
           medianDropOffSecond: Math.round(medianDropOff),
-          bufferingEventsPerViewer: Math.round(avgBufferingPerViewer * 100) / 100,
+          bufferingEventsPerViewer: Math.round(bufferingEventsPerViewer * 100) / 100,
           pauseCount,
           rewindCount,
+          totalWatchTimeSec,
         };
       });
 
-      const bestPerforming = [...lessonMetrics].sort((a, b) => b.completionRate - a.completionRate).slice(0, 5);
-      const worstPerforming = [...lessonMetrics].sort((a, b) => a.completionRate - b.completionRate).slice(0, 5);
-      const mostRewatched = [...lessonMetrics].sort((a, b) => b.rewindCount - a.rewindCount).slice(0, 5);
+      // Filter out lessons with no activity for ranking
+      const activeLessons = lessonMetrics.filter((l) => l.totalViews > 0);
 
-      const totalWatchTime = watchSessions.reduce((sum: number, s: any) => sum + (s.total_watch_time_seconds || 0), 0);
+      const bestPerforming = [...activeLessons].sort((a, b) => b.completionRate - a.completionRate).slice(0, 5);
+      const worstPerforming = [...activeLessons].sort((a, b) => a.completionRate - b.completionRate).slice(0, 5);
+      const mostRewatched = hasWatchSessions
+        ? [...activeLessons].sort((a, b) => b.rewindCount - a.rewindCount).slice(0, 5)
+        : [...activeLessons].sort((a, b) => b.totalViews - a.totalViews).slice(0, 5);
+
+      const totalWatchTime = hasWatchSessions
+        ? watchSessions.reduce((sum: number, s: any) => sum + (s.total_watch_time_seconds || 0), 0)
+        : lessonProgressData.reduce((sum: number, p: any) => sum + (p.watch_time_seconds || 0), 0);
       const totalBufferingTime = watchSessions.reduce((sum: number, s: any) => sum + (s.total_buffering_time_ms || 0), 0);
 
       return {
@@ -308,8 +347,8 @@ export function useVideoAnalytics(dateRange: string, lessonId?: string) {
         mostRewatched,
         totalWatchTimeMins: Math.round(totalWatchTime / 60),
         totalBufferingTimeSecs: Math.round(totalBufferingTime / 1000),
-        avgCompletionRate: lessonMetrics.length
-          ? Math.round(lessonMetrics.reduce((sum: number, l: any) => sum + l.completionRate, 0) / lessonMetrics.length)
+        avgCompletionRate: activeLessons.length
+          ? Math.round(activeLessons.reduce((sum: number, l: any) => sum + l.completionRate, 0) / activeLessons.length)
           : 0,
       };
     },
