@@ -40,6 +40,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { trackInitiateCheckout, trackAddPaymentInfo } from '@/utils/metaPixel';
 
 interface CheckoutModalProps {
   open: boolean;
