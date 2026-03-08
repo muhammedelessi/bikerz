@@ -132,27 +132,31 @@ export function useAnalyticsTracking() {
   const updatePresence = useCallback(async (userId: string | null, path: string) => {
     if (!userId) return;
 
-    await supabase
-      .from('realtime_presence')
-      .upsert(
-        {
+    try {
+      const { error } = await supabase
+        .from('realtime_presence')
+        .upsert(
+          {
+            user_id: userId,
+            session_id: sessionIdRef.current,
+            current_page: path,
+            is_watching_video: path.includes('/learn') || path.includes('/lessons/'),
+            last_heartbeat_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id' }
+        );
+      if (error) {
+        // Fallback: try insert
+        await supabase.from('realtime_presence').insert({
           user_id: userId,
           session_id: sessionIdRef.current,
           current_page: path,
           is_watching_video: path.includes('/learn') || path.includes('/lessons/'),
-          last_heartbeat_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_id' }
-      )
-      .catch(() => {
-        // If upsert fails (no unique constraint on user_id), try insert
-        supabase.from('realtime_presence').insert({
-          user_id: userId,
-          session_id: sessionIdRef.current,
-          current_page: path,
-          is_watching_video: path.includes('/learn') || path.includes('/lessons/'),
-        }).catch(() => {});
-      });
+        });
+      }
+    } catch {
+      // Silent fail
+    }
   }, []);
 
   // Main effect: run on route change
