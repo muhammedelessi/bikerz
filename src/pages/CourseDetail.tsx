@@ -191,6 +191,19 @@ const CourseDetail: React.FC = () => {
     enabled: !!id && !!user && chapters.length > 0,
   });
 
+  // Meta Pixel: ViewContent event
+  useEffect(() => {
+    if (course && id) {
+      trackViewContent({
+        content_name: course.title,
+        content_ids: [id],
+        content_type: 'product',
+        value: course.price,
+        currency: 'SAR',
+      });
+    }
+  }, [course, id]);
+
   // Enroll mutation
   const enrollMutation = useMutation({
     mutationFn: async () => {
