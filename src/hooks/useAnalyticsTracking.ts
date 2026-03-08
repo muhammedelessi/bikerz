@@ -113,15 +113,16 @@ export function useAnalyticsTracking() {
       time_on_page_seconds: timeOnPrevPage,
     });
 
-    // Increment page_views on session
+    // Update session last_activity
     if (sessionIdRef.current) {
-      await supabase.rpc('increment_session_page_views' as any, { p_session_id: sessionIdRef.current }).catch(() => {
-        // Fallback: just update last_activity
-        supabase
+      try {
+        await supabase
           .from('user_sessions')
           .update({ last_activity_at: new Date().toISOString() })
-          .eq('id', sessionIdRef.current!);
-      });
+          .eq('id', sessionIdRef.current);
+      } catch {
+        // Silent fail
+      }
     }
 
     pageEntryRef.current = Date.now();
