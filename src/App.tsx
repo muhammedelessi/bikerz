@@ -8,6 +8,7 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
 import ScrollToTop from "@/components/common/ScrollToTop";
+import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -103,47 +104,56 @@ const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+// Analytics tracker component - must be inside BrowserRouter
+const AnalyticsTracker = () => {
+  useAnalyticsTracking();
+  return null;
+};
+
 const AppRoutes = () => (
-  <Routes>
-    {/* Public Routes */}
-    <Route path="/" element={<Index />} />
-    <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
-    <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
-    <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
-    <Route path="/about" element={<AboutUs />} />
-    <Route path="/privacy" element={<PrivacyPolicy />} />
-    <Route path="/terms" element={<TermsOfService />} />
-    <Route path="/contact" element={<ContactUs />} />
-    <Route path="/courses" element={<Courses />} />
-    <Route path="/courses/:id" element={<CourseDetail />} />
-    <Route path="/courses/:id/learn" element={<CourseLearn />} />
-    <Route path="/courses/:id/lessons/:lessonId" element={<CourseLearn />} />
-    <Route path="/mentors" element={<Mentors />} />
-    <Route path="/payment-success" element={<PaymentSuccess />} />
-    
-    {/* Protected Routes */}
-    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-    <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-    
-    {/* Admin Routes */}
-    <Route path="/admin" element={<AdminRoute><AdminHome /></AdminRoute>} />
-    <Route path="/admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
-    <Route path="/admin/courses/new" element={<AdminRoute><AdminCourseEditor /></AdminRoute>} />
-    <Route path="/admin/courses/:id" element={<AdminRoute><AdminCourseEditor /></AdminRoute>} />
-    <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-    <Route path="/admin/instructors" element={<AdminRoute><AdminInstructors /></AdminRoute>} />
-    <Route path="/admin/payments" element={<AdminRoute><AdminPayments /></AdminRoute>} />
-    <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
-    <Route path="/admin/roles" element={<AdminRoute><AdminRoles /></AdminRoute>} />
-    <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
-    <Route path="/admin/support" element={<AdminRoute><AdminSupport /></AdminRoute>} />
-    <Route path="/admin/discussions" element={<AdminRoute><AdminLessonDiscussions /></AdminRoute>} />
-    <Route path="/admin/content" element={<AdminRoute><AdminContent /></AdminRoute>} />
-    <Route path="/admin/coupons" element={<AdminRoute><AdminCoupons /></AdminRoute>} />
-    
-    {/* 404 */}
-    <Route path="*" element={<NotFound />} />
-  </Routes>
+  <>
+    <AnalyticsTracker />
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Index />} />
+      <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
+      <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
+      <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
+      <Route path="/about" element={<AboutUs />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/contact" element={<ContactUs />} />
+      <Route path="/courses" element={<Courses />} />
+      <Route path="/courses/:id" element={<CourseDetail />} />
+      <Route path="/courses/:id/learn" element={<CourseLearn />} />
+      <Route path="/courses/:id/lessons/:lessonId" element={<CourseLearn />} />
+      <Route path="/mentors" element={<Mentors />} />
+      <Route path="/payment-success" element={<PaymentSuccess />} />
+      
+      {/* Protected Routes */}
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      
+      {/* Admin Routes */}
+      <Route path="/admin" element={<AdminRoute><AdminHome /></AdminRoute>} />
+      <Route path="/admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
+      <Route path="/admin/courses/new" element={<AdminRoute><AdminCourseEditor /></AdminRoute>} />
+      <Route path="/admin/courses/:id" element={<AdminRoute><AdminCourseEditor /></AdminRoute>} />
+      <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+      <Route path="/admin/instructors" element={<AdminRoute><AdminInstructors /></AdminRoute>} />
+      <Route path="/admin/payments" element={<AdminRoute><AdminPayments /></AdminRoute>} />
+      <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
+      <Route path="/admin/roles" element={<AdminRoute><AdminRoles /></AdminRoute>} />
+      <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
+      <Route path="/admin/support" element={<AdminRoute><AdminSupport /></AdminRoute>} />
+      <Route path="/admin/discussions" element={<AdminRoute><AdminLessonDiscussions /></AdminRoute>} />
+      <Route path="/admin/content" element={<AdminRoute><AdminContent /></AdminRoute>} />
+      <Route path="/admin/coupons" element={<AdminRoute><AdminCoupons /></AdminRoute>} />
+      
+      {/* 404 */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  </>
 );
 
 const App = () => (
