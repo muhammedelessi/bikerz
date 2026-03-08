@@ -40,6 +40,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { trackInitiateCheckout, trackAddPaymentInfo } from '@/utils/metaPixel';
 
 interface CheckoutModalProps {
   open: boolean;
@@ -188,6 +189,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       autoApply();
     }
   }, [open]);
+
+  // Meta Pixel: InitiateCheckout when modal opens
+  useEffect(() => {
+    if (open && course) {
+      trackInitiateCheckout({
+        content_name: course.title,
+        content_ids: [course.id],
+        value: course.price,
+        currency: 'SAR',
+        num_items: 1,
+      });
+    }
+  }, [open, course]);
 
   // Reset on close
   useEffect(() => {
@@ -353,6 +367,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       }
       return;
     }
+
+    // Meta Pixel: AddPaymentInfo
+    trackAddPaymentInfo({
+      content_ids: [course.id],
+      value: discountedPrice,
+      currency: 'SAR',
+    });
 
     await submitPayment({
       courseId: course.id,

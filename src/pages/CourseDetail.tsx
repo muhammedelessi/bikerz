@@ -37,6 +37,7 @@ import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.jpg';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
 import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';
+import { trackViewContent } from '@/utils/metaPixel';
 
 
 interface Lesson {
@@ -102,6 +103,7 @@ const CourseDetail: React.FC = () => {
   const [paymentVerifying, setPaymentVerifying] = useState(false);
 
   // Payment callback now handled by /payment-success/:courseId page
+
 
   // Scroll-based sticky header
   useEffect(() => {
@@ -188,6 +190,19 @@ const CourseDetail: React.FC = () => {
     },
     enabled: !!id && !!user && chapters.length > 0,
   });
+
+  // Meta Pixel: ViewContent event
+  useEffect(() => {
+    if (course && id) {
+      trackViewContent({
+        content_name: course.title,
+        content_ids: [id],
+        content_type: 'product',
+        value: course.price,
+        currency: 'SAR',
+      });
+    }
+  }, [course, id]);
 
   // Enroll mutation
   const enrollMutation = useMutation({
