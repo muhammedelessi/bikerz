@@ -190,6 +190,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   }, [open]);
 
+  // Meta Pixel: InitiateCheckout when modal opens
+  useEffect(() => {
+    if (open && course) {
+      trackInitiateCheckout({
+        content_name: course.title,
+        content_ids: [course.id],
+        value: course.price,
+        currency: 'SAR',
+        num_items: 1,
+      });
+    }
+  }, [open, course]);
+
   // Reset on close
   useEffect(() => {
     if (!open) {
