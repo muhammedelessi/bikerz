@@ -55,13 +55,26 @@ const PaymentSuccess: React.FC = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from('courses')
-        .select('title, title_ar, total_lessons, duration_hours')
+        .select('title, title_ar, total_lessons, duration_hours, price')
         .eq('id', courseId!)
         .single();
       return data;
     },
     enabled: !!courseId,
   });
+
+  // Meta Pixel: Purchase event on successful verification
+  useEffect(() => {
+    if (verifyStatus === 'succeeded' && course && courseId) {
+      trackPurchase({
+        content_name: course.title,
+        content_ids: [courseId],
+        content_type: 'product',
+        value: course.price ?? 0,
+        currency: 'SAR',
+      });
+    }
+  }, [verifyStatus, course, courseId]);
 
   // Verify payment (skip for free enrollments)
   useEffect(() => {
