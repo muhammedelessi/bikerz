@@ -360,6 +360,8 @@ const AdminUsers: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>{isRTL ? 'المستخدم' : 'User'}</TableHead>
+                  <TableHead>{isRTL ? 'البريد' : 'Email'}</TableHead>
+                  <TableHead>{isRTL ? 'الموقع' : 'Location'}</TableHead>
                   <TableHead>{isRTL ? 'الأدوار' : 'Roles'}</TableHead>
                   <TableHead>{isRTL ? 'التسجيلات' : 'Enrollments'}</TableHead>
                   <TableHead>{isRTL ? 'تاريخ الانضمام' : 'Joined'}</TableHead>
@@ -384,6 +386,12 @@ const AdminUsers: React.FC = () => {
                           <p className="text-sm text-muted-foreground">{user.phone || '-'}</p>
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm text-muted-foreground">{user.email || '-'}</p>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm text-foreground">{[user.city, user.country].filter(Boolean).join(', ') || '-'}</p>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
