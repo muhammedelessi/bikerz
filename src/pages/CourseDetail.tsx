@@ -461,13 +461,13 @@ const CourseDetail: React.FC = () => {
 
                   {/* Description as course story */}
                   {courseDescription && (
-                    <p className="text-base sm:text-lg text-muted-foreground mb-8 leading-relaxed max-w-2xl">
+                    <p className="text-sm sm:text-base lg:text-lg text-muted-foreground mb-6 sm:mb-8 leading-relaxed max-w-2xl">
                       {courseDescription}
                     </p>
                   )}
 
                   {/* Stats Row */}
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
+                  <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-3 text-sm">
                     <div className="flex items-center gap-2 text-foreground">
                       <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
                         <BookOpen className="w-4 h-4 text-primary" />
