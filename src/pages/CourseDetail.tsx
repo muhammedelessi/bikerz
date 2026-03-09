@@ -670,7 +670,7 @@ const CourseDetail: React.FC = () => {
                 </h2>
               </div>
 
-              <div className="rounded-2xl overflow-hidden border border-border bg-black shadow-lg max-w-4xl">
+              <div className="rounded-xl sm:rounded-2xl overflow-hidden border border-border bg-black shadow-lg max-w-4xl">
                 {previewVideoPlaying ? (
                   <div className="aspect-video">
                     <BunnyVideoEmbed
