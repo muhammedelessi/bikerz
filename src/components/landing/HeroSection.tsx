@@ -67,8 +67,8 @@ const HeroSection: React.FC = () => {
     ? `${heroContent.stats_success_value}%` 
     : (stats?.successRate ? `${stats.successRate}%` : '0%');
 
-  const showStats = heroContent?.show_stats !== false;
-  const showBadge = heroContent?.show_badge !== false;
+  const showStats = heroContent?.show_stats !== false && heroContent?.show_stats !== 'false';
+  const showBadge = heroContent?.show_badge !== false && heroContent?.show_badge !== 'false';
 
   const displayStats = [
     { 

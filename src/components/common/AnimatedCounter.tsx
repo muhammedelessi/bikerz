@@ -9,12 +9,12 @@ interface AnimatedCounterProps {
 
 const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ value, className, duration = 1500 }) => {
   const [displayValue, setDisplayValue] = useState('0');
-  const [hasAnimated, setHasAnimated] = useState(false);
+  const [lastAnimatedValue, setLastAnimatedValue] = useState<string | null>(null);
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.3 });
 
   useEffect(() => {
-    if (!inView || hasAnimated) return;
-    setHasAnimated(true);
+    if (!inView || value === lastAnimatedValue) return;
+    setLastAnimatedValue(value);
 
     // Parse the value: extract number, prefix, suffix
     const match = value.match(/^([^\d]*)([\d.]+)(.*)$/);
@@ -53,7 +53,7 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ value, className, dur
     };
 
     requestAnimationFrame(animate);
-  }, [inView, hasAnimated, value, duration]);
+  }, [inView, lastAnimatedValue, value, duration]);
 
   return (
     <span ref={ref} className={className}>
