@@ -64,7 +64,18 @@ interface Profile {
   user_id: string;
   full_name: string | null;
   phone: string | null;
+  phone_verified: boolean;
   avatar_url: string | null;
+  city: string | null;
+  country: string | null;
+  postal_code: string | null;
+  bike_brand: string | null;
+  bike_model: string | null;
+  engine_size_cc: number | null;
+  experience_level: string | null;
+  riding_experience_years: number | null;
+  rider_nickname: string | null;
+  profile_complete: boolean;
   created_at: string;
 }
 
@@ -75,7 +86,16 @@ interface UserRole {
 interface UserWithDetails extends Profile {
   roles: UserRole[];
   enrollmentCount: number;
+  email?: string;
 }
+
+// Small helper for the detail dialog
+const InfoItem = ({ label, value }: { label: string; value: string | null }) => (
+  <div className="p-3 rounded-lg bg-muted/50">
+    <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
+    <p className="text-sm font-medium text-foreground">{value || '—'}</p>
+  </div>
+);
 
 const AdminUsers: React.FC = () => {
   const { t } = useTranslation();
@@ -115,6 +135,19 @@ const AdminUsers: React.FC = () => {
 
       if (enrollError) throw enrollError;
 
+      // Fetch emails from tap_charges (most recent per user)
+      const { data: charges } = await supabase
+        .from('tap_charges')
+        .select('user_id, customer_email')
+        .not('customer_email', 'is', null);
+
+      const emailMap = new Map<string, string>();
+      (charges || []).forEach((c: any) => {
+        if (c.customer_email && !emailMap.has(c.user_id)) {
+          emailMap.set(c.user_id, c.customer_email);
+        }
+      });
+
       // Combine data
       const usersWithDetails: UserWithDetails[] = (profiles || []).map(profile => {
         const userRoles = (roles || [])
@@ -128,6 +161,7 @@ const AdminUsers: React.FC = () => {
           ...profile,
           roles: userRoles,
           enrollmentCount,
+          email: emailMap.get(profile.user_id) || undefined,
         };
       });
 
@@ -156,8 +190,11 @@ const AdminUsers: React.FC = () => {
 
   // Filter users
   const filteredUsers = users.filter(user => {
+    const q = searchQuery.toLowerCase();
     const matchesSearch = 
-      (user.full_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (user.full_name?.toLowerCase().includes(q)) ||
+      (user.email?.toLowerCase().includes(q)) ||
+      (user.phone?.toLowerCase().includes(q)) ||
       user.user_id.includes(searchQuery);
     
     const matchesRole = roleFilter === 'all' || 
@@ -323,6 +360,8 @@ const AdminUsers: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>{isRTL ? 'المستخدم' : 'User'}</TableHead>
+                  <TableHead>{isRTL ? 'البريد' : 'Email'}</TableHead>
+                  <TableHead>{isRTL ? 'الموقع' : 'Location'}</TableHead>
                   <TableHead>{isRTL ? 'الأدوار' : 'Roles'}</TableHead>
                   <TableHead>{isRTL ? 'التسجيلات' : 'Enrollments'}</TableHead>
                   <TableHead>{isRTL ? 'تاريخ الانضمام' : 'Joined'}</TableHead>
@@ -347,6 +386,12 @@ const AdminUsers: React.FC = () => {
                           <p className="text-sm text-muted-foreground">{user.phone || '-'}</p>
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm text-muted-foreground">{user.email || '-'}</p>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm text-foreground">{[user.city, user.country].filter(Boolean).join(', ') || '-'}</p>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
@@ -407,14 +452,14 @@ const AdminUsers: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* User Detail Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isRTL ? 'تفاصيل المستخدم' : 'User Details'}</DialogTitle>
           </DialogHeader>
           {selectedUser && (
             <div className="space-y-6">
+              {/* Header */}
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
                   <AvatarImage src={selectedUser.avatar_url || ''} />
@@ -424,7 +469,7 @@ const AdminUsers: React.FC = () => {
                 </Avatar>
                 <div>
                   <h3 className="text-xl font-semibold">{selectedUser.full_name || 'No name'}</h3>
-                  <p className="text-muted-foreground">{selectedUser.phone || 'No phone'}</p>
+                  <p className="text-sm text-muted-foreground">{selectedUser.email || 'No email'}</p>
                   <div className="flex gap-1 mt-2">
                     {selectedUser.roles.map((r, i) => (
                       <span key={i}>{getRoleBadge(r.role)}</span>
@@ -433,6 +478,51 @@ const AdminUsers: React.FC = () => {
                 </div>
               </div>
 
+              {/* Personal Information */}
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  {isRTL ? 'المعلومات الشخصية' : 'Personal Information'}
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <InfoItem label={isRTL ? 'الاسم الكامل' : 'Full Name'} value={selectedUser.full_name} />
+                  <InfoItem label={isRTL ? 'الكنية' : 'Nickname'} value={selectedUser.rider_nickname} />
+                  <InfoItem label={isRTL ? 'رقم الهاتف' : 'Phone'} value={selectedUser.phone} />
+                  <InfoItem label={isRTL ? 'الهاتف موثق' : 'Phone Verified'} value={selectedUser.phone_verified ? (isRTL ? 'نعم ✓' : 'Yes ✓') : (isRTL ? 'لا ✗' : 'No ✗')} />
+                  <InfoItem label={isRTL ? 'البريد الإلكتروني' : 'Email'} value={selectedUser.email || null} />
+                  <InfoItem label={isRTL ? 'الملف مكتمل' : 'Profile Complete'} value={selectedUser.profile_complete ? (isRTL ? 'نعم ✓' : 'Yes ✓') : (isRTL ? 'لا ✗' : 'No ✗')} />
+                </div>
+              </div>
+
+              {/* Location */}
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-primary" />
+                  {isRTL ? 'العنوان' : 'Location'}
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <InfoItem label={isRTL ? 'البلد' : 'Country'} value={selectedUser.country} />
+                  <InfoItem label={isRTL ? 'المدينة' : 'City'} value={selectedUser.city} />
+                  <InfoItem label={isRTL ? 'الرمز البريدي' : 'Postal Code'} value={selectedUser.postal_code} />
+                </div>
+              </div>
+
+              {/* Bike Information */}
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-primary" />
+                  {isRTL ? 'معلومات الدراجة' : 'Bike Information'}
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <InfoItem label={isRTL ? 'ماركة الدراجة' : 'Bike Brand'} value={selectedUser.bike_brand} />
+                  <InfoItem label={isRTL ? 'موديل الدراجة' : 'Bike Model'} value={selectedUser.bike_model} />
+                  <InfoItem label={isRTL ? 'حجم المحرك' : 'Engine Size'} value={selectedUser.engine_size_cc ? `${selectedUser.engine_size_cc} cc` : null} />
+                  <InfoItem label={isRTL ? 'مستوى الخبرة' : 'Experience Level'} value={selectedUser.experience_level} />
+                  <InfoItem label={isRTL ? 'سنوات القيادة' : 'Riding Years'} value={selectedUser.riding_experience_years?.toString() || null} />
+                </div>
+              </div>
+
+              {/* Stats */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-lg bg-muted/50">
                   <p className="text-sm text-muted-foreground">{isRTL ? 'التسجيلات' : 'Enrollments'}</p>
