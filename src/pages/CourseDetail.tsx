@@ -102,6 +102,7 @@ const CourseDetail: React.FC = () => {
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   const [paymentVerifying, setPaymentVerifying] = useState(false);
+  const [previewVideoPlaying, setPreviewVideoPlaying] = useState(false);
 
   // Payment callback now handled by /payment-success/:courseId page
 
