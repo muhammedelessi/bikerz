@@ -422,7 +422,7 @@ const CourseDetail: React.FC = () => {
       <main className="pt-24">
         {/* Hero Section */}
         <section className="relative overflow-hidden">
-          <div className="absolute inset-0 h-[420px] sm:h-[480px]">
+          <div className="absolute inset-0 h-[320px] sm:h-[420px] lg:h-[480px]">
             <img
               src={course.thumbnail_url || heroImage}
               alt={courseTitle}
@@ -431,14 +431,14 @@ const CourseDetail: React.FC = () => {
             <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/75 to-background" />
           </div>
 
-          <div className="page-container relative z-10 pt-8 pb-12">
+          <div className="page-container relative z-10 pt-6 sm:pt-8 pb-8 sm:pb-12">
             {/* Back link */}
             <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-8 text-sm">
               <BackIcon className="w-4 h-4 me-1" />
               {t('courses.backToCourses')}
             </Link>
 
-            <div className="grid lg:grid-cols-5 gap-8 lg:gap-12">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-12">
               {/* Left: Course Info (3 cols) */}
               <div className="lg:col-span-3">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
@@ -455,19 +455,19 @@ const CourseDetail: React.FC = () => {
                   </div>
 
                   {/* Title */}
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-foreground mb-4 leading-tight">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-foreground mb-3 sm:mb-4 leading-tight">
                     {courseTitle}
                   </h1>
 
                   {/* Description as course story */}
                   {courseDescription && (
-                    <p className="text-base sm:text-lg text-muted-foreground mb-8 leading-relaxed max-w-2xl">
+                    <p className="text-sm sm:text-base lg:text-lg text-muted-foreground mb-6 sm:mb-8 leading-relaxed max-w-2xl">
                       {courseDescription}
                     </p>
                   )}
 
                   {/* Stats Row */}
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
+                  <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-3 text-sm">
                     <div className="flex items-center gap-2 text-foreground">
                       <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
                         <BookOpen className="w-4 h-4 text-primary" />
@@ -502,12 +502,12 @@ const CourseDetail: React.FC = () => {
               </div>
 
               {/* Right: Enrollment Card (2 cols, sticky) */}
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-2 order-first lg:order-last">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
-                  className="card-premium p-6 lg:sticky lg:top-28"
+                  className="card-premium p-4 sm:p-6 lg:sticky lg:top-28"
                 >
                   {isEnrolled ? (
                     <div className="space-y-5">
@@ -654,23 +654,23 @@ const CourseDetail: React.FC = () => {
 
         {/* Preview / Introductory Video */}
         {course.preview_video_url && (
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
-                  <Play className="w-5 h-5 text-primary" />
+              <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary/15 flex items-center justify-center">
+                  <Play className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                <h2 className="text-lg sm:text-2xl font-bold text-foreground">
                   {isRTL ? 'نظرة على الدورة' : 'Course Preview'}
                 </h2>
               </div>
 
-              <div className="rounded-2xl overflow-hidden border border-border bg-black shadow-lg max-w-4xl">
+              <div className="rounded-xl sm:rounded-2xl overflow-hidden border border-border bg-black shadow-lg max-w-4xl">
                 {previewVideoPlaying ? (
                   <div className="aspect-video">
                     <BunnyVideoEmbed
@@ -715,23 +715,23 @@ const CourseDetail: React.FC = () => {
           const showSection = outcomes ? outcomes.length > 0 : chapters.length > 0;
           if (!showSection) return null;
           return (
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
-                    <Target className="w-5 h-5 text-primary" />
+                <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary/15 flex items-center justify-center">
+                    <Target className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                  <h2 className="text-lg sm:text-2xl font-bold text-foreground">
                     {isRTL ? 'ماذا ستتعلم' : 'What You\'ll Learn'}
                   </h2>
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {outcomes ? (
                     outcomes.map((item, idx) => {
                       const text = isRTL && item.text_ar ? item.text_ar : item.text_en;
@@ -766,23 +766,23 @@ const CourseDetail: React.FC = () => {
         })()}
 
         {/* Chapter Roadmap Timeline */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6 sm:mb-8">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-secondary/30 flex items-center justify-center">
-                  <BarChart3 className="w-5 h-5 text-secondary-foreground" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-secondary/30 flex items-center justify-center">
+                  <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-secondary-foreground" />
                 </div>
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                  <h2 className="text-lg sm:text-2xl font-bold text-foreground">
                     {isRTL ? 'خطة التعلم' : 'Learning Roadmap'}
                   </h2>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     {chapters.length} {isRTL ? 'فصول' : 'chapters'} • {totalLessons} {isRTL ? 'دروس' : 'lessons'}
                   </p>
                 </div>
