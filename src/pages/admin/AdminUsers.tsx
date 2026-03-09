@@ -190,8 +190,11 @@ const AdminUsers: React.FC = () => {
 
   // Filter users
   const filteredUsers = users.filter(user => {
+    const q = searchQuery.toLowerCase();
     const matchesSearch = 
-      (user.full_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (user.full_name?.toLowerCase().includes(q)) ||
+      (user.email?.toLowerCase().includes(q)) ||
+      (user.phone?.toLowerCase().includes(q)) ||
       user.user_id.includes(searchQuery);
     
     const matchesRole = roleFilter === 'all' || 
