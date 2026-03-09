@@ -8,6 +8,7 @@ interface BunnyVideoEmbedProps {
   onProgress?: (progress: number) => void;
   onTimeUpdate?: (timeSeconds: number) => void;
   initialTime?: number;
+  isPreview?: boolean;
 }
 
 // Extract Bunny video ID from CDN URL
@@ -84,6 +85,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   onProgress,
   onTimeUpdate,
   initialTime = 0,
+  isPreview = false,
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -245,8 +247,8 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
 
   return (
     <div
-      className="relative w-full overflow-hidden bg-black select-none"
-      style={{ aspectRatio: "16 / 9", maxHeight: "55vh" }}
+      className="relative w-full overflow-hidden select-none"
+      style={{ aspectRatio: "16 / 9", ...(isPreview ? {} : { maxHeight: "55vh" }), backgroundColor: "transparent" }}
       onContextMenu={handleContextMenu}
       onDragStart={(e) => e.preventDefault()}
     >
