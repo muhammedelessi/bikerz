@@ -53,7 +53,7 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ value, className, dur
     };
 
     requestAnimationFrame(animate);
-  }, [inView, hasAnimated, value, duration]);
+  }, [inView, lastAnimatedValue, value, duration]);
 
   return (
     <span ref={ref} className={className}>
