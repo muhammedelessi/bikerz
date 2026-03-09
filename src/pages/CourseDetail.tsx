@@ -670,11 +670,38 @@ const CourseDetail: React.FC = () => {
                 </h2>
               </div>
 
-              <div className="aspect-video rounded-2xl overflow-hidden border border-border bg-muted shadow-lg max-w-4xl">
-                <BunnyVideoEmbed
-                  videoUrl={course.preview_video_url}
-                  title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
-                />
+              <div className="rounded-2xl overflow-hidden border border-border bg-black shadow-lg max-w-4xl">
+                {previewVideoPlaying ? (
+                  <div className="aspect-video">
+                    <BunnyVideoEmbed
+                      videoUrl={course.preview_video_url}
+                      title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setPreviewVideoPlaying(true)}
+                    className="relative w-full aspect-video group cursor-pointer focus:outline-none"
+                    aria-label={isRTL ? 'تشغيل الفيديو التعريفي' : 'Play preview video'}
+                  >
+                    <img
+                      src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
+                      alt={isRTL ? 'صورة مصغرة للفيديو' : 'Video thumbnail'}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl">
+                        <Play className="w-7 h-7 sm:w-9 sm:h-9 text-primary-foreground ms-1" fill="currentColor" />
+                      </div>
+                    </div>
+                    <div className="absolute bottom-4 start-4">
+                      <span className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-sm font-medium backdrop-blur-sm">
+                        {isRTL ? 'شاهد الفيديو التعريفي' : 'Watch Preview'}
+                      </span>
+                    </div>
+                  </button>
+                )}
               </div>
             </motion.div>
           </section>

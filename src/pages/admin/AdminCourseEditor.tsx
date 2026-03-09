@@ -643,7 +643,7 @@ const AdminCourseEditor: React.FC = () => {
               : 'This video is shown on the course page for all visitors to preview the course content'}
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           {course.preview_video_url && !previewVideoReplacing ? (
             <div className="space-y-4">
               <div className="aspect-video rounded-xl overflow-hidden bg-muted border border-border">
@@ -699,6 +699,26 @@ const AdminCourseEditor: React.FC = () => {
               )}
             </div>
           )}
+
+          {/* Preview Video Thumbnail */}
+          <div className="border-t border-border pt-4">
+            <ImageUploader
+              value={(course as any).preview_video_thumbnail || ''}
+              onChange={async (url) => {
+                await supabase.from('courses').update({ preview_video_thumbnail: url }).eq('id', id);
+                queryClient.invalidateQueries({ queryKey: ['admin-course', id] });
+                toast.success(isRTL ? 'تم تحديث صورة الفيديو المصغرة' : 'Video thumbnail updated');
+              }}
+              label={isRTL ? 'صورة مصغرة للفيديو التعريفي' : 'Preview Video Thumbnail'}
+              bucket="course-thumbnails"
+              folder="preview-thumbnails"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              {isRTL
+                ? 'هذه الصورة تظهر قبل تشغيل الفيديو التعريفي. إذا لم يتم تعيينها، سيتم استخدام صورة الدورة الرئيسية.'
+                : 'This image is shown before the preview video plays. If not set, the course thumbnail will be used.'}
+            </p>
+          </div>
         </CardContent>
       </Card>
 
