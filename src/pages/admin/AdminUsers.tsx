@@ -64,7 +64,18 @@ interface Profile {
   user_id: string;
   full_name: string | null;
   phone: string | null;
+  phone_verified: boolean;
   avatar_url: string | null;
+  city: string | null;
+  country: string | null;
+  postal_code: string | null;
+  bike_brand: string | null;
+  bike_model: string | null;
+  engine_size_cc: number | null;
+  experience_level: string | null;
+  riding_experience_years: number | null;
+  rider_nickname: string | null;
+  profile_complete: boolean;
   created_at: string;
 }
 
@@ -75,6 +86,7 @@ interface UserRole {
 interface UserWithDetails extends Profile {
   roles: UserRole[];
   enrollmentCount: number;
+  email?: string;
 }
 
 const AdminUsers: React.FC = () => {
