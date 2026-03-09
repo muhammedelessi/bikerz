@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useGHLSync } from '@/hooks/useGHLSync';
 
 export interface ExtendedProfile {
   id: string;
