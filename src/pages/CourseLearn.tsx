@@ -126,6 +126,7 @@ const CourseLearn: React.FC = () => {
   const [showTest, setShowTest] = useState<string | null>(null);
   const [showNextCountdown, setShowNextCountdown] = useState(false);
   const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
+  const autoCompletedRef = React.useRef<Set<string>>(new Set());
 
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ChevronLeft : ChevronRight;
@@ -563,17 +564,37 @@ const CourseLearn: React.FC = () => {
   };
 
   const handleVideoEnded = useCallback(() => {
-    if (currentLessonId && !isLessonCompleted(currentLessonId)) {
+    if (currentLessonId && !isLessonCompleted(currentLessonId) && !autoCompletedRef.current.has(currentLessonId)) {
+      autoCompletedRef.current.add(currentLessonId);
       completeLessonMutation.mutate(currentLessonId);
     }
     if (nextLesson) {
-      // Only show countdown if next lesson is accessible
       const nextChapter = chapters.find(ch => ch.lessons.some(l => l.id === nextLesson.id));
       if (nextChapter && !isLessonLocked(nextLesson, nextChapter)) {
         setShowNextCountdown(true);
       }
     }
   }, [currentLessonId, nextLesson, chapters]);
+
+  // Auto-complete lesson when video reaches 90% progress
+  const handleVideoProgress = useCallback((progress: number) => {
+    if (
+      currentLessonId &&
+      progress >= 90 &&
+      !isLessonCompleted(currentLessonId) &&
+      !autoCompletedRef.current.has(currentLessonId)
+    ) {
+      autoCompletedRef.current.add(currentLessonId);
+      completeLessonMutation.mutate(currentLessonId);
+      // Show countdown to next lesson
+      if (nextLesson) {
+        const nextChapter = chapters.find(ch => ch.lessons.some(l => l.id === nextLesson.id));
+        if (nextChapter && !isLessonLocked(nextLesson, nextChapter)) {
+          setShowNextCountdown(true);
+        }
+      }
+    }
+  }, [currentLessonId, nextLesson, chapters, lessonProgress]);
 
   // Helper to extract YouTube video ID
   const getYouTubeVideoId = (url: string): string | null => {
@@ -858,6 +879,7 @@ const CourseLearn: React.FC = () => {
                         title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
                         initialTime={getSavedWatchTime(currentLesson.id)}
                         onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
+                        onProgress={handleVideoProgress}
                         onEnded={handleVideoEnded}
                       />
                     ) : (
