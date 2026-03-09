@@ -1,0 +1,1 @@
+ALTER TABLE public.courses ADD COLUMN preview_video_thumbnail text DEFAULT NULL;
