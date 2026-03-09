@@ -135,6 +135,19 @@ const AdminUsers: React.FC = () => {
 
       if (enrollError) throw enrollError;
 
+      // Fetch emails from tap_charges (most recent per user)
+      const { data: charges } = await supabase
+        .from('tap_charges')
+        .select('user_id, customer_email')
+        .not('customer_email', 'is', null);
+
+      const emailMap = new Map<string, string>();
+      (charges || []).forEach((c: any) => {
+        if (c.customer_email && !emailMap.has(c.user_id)) {
+          emailMap.set(c.user_id, c.customer_email);
+        }
+      });
+
       // Combine data
       const usersWithDetails: UserWithDetails[] = (profiles || []).map(profile => {
         const userRoles = (roles || [])
@@ -148,6 +161,7 @@ const AdminUsers: React.FC = () => {
           ...profile,
           roles: userRoles,
           enrollmentCount,
+          email: emailMap.get(profile.user_id) || undefined,
         };
       });
 
