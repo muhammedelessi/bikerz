@@ -90,6 +90,8 @@ export function useUserProfile() {
       if (error) throw error;
 
       setProfile(prev => prev ? { ...prev, ...updates } : null);
+      // Sync updated profile to GHL CRM
+      syncContact(updates as Record<string, unknown>);
       toast.success('Profile updated successfully');
     } catch (error) {
       console.error('Error updating profile:', error);
