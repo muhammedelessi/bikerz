@@ -419,14 +419,14 @@ const AdminUsers: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* User Detail Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isRTL ? 'تفاصيل المستخدم' : 'User Details'}</DialogTitle>
           </DialogHeader>
           {selectedUser && (
             <div className="space-y-6">
+              {/* Header */}
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
                   <AvatarImage src={selectedUser.avatar_url || ''} />
@@ -436,7 +436,7 @@ const AdminUsers: React.FC = () => {
                 </Avatar>
                 <div>
                   <h3 className="text-xl font-semibold">{selectedUser.full_name || 'No name'}</h3>
-                  <p className="text-muted-foreground">{selectedUser.phone || 'No phone'}</p>
+                  <p className="text-sm text-muted-foreground">{selectedUser.email || 'No email'}</p>
                   <div className="flex gap-1 mt-2">
                     {selectedUser.roles.map((r, i) => (
                       <span key={i}>{getRoleBadge(r.role)}</span>
@@ -445,6 +445,51 @@ const AdminUsers: React.FC = () => {
                 </div>
               </div>
 
+              {/* Personal Information */}
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  {isRTL ? 'المعلومات الشخصية' : 'Personal Information'}
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <InfoItem label={isRTL ? 'الاسم الكامل' : 'Full Name'} value={selectedUser.full_name} />
+                  <InfoItem label={isRTL ? 'الكنية' : 'Nickname'} value={selectedUser.rider_nickname} />
+                  <InfoItem label={isRTL ? 'رقم الهاتف' : 'Phone'} value={selectedUser.phone} />
+                  <InfoItem label={isRTL ? 'الهاتف موثق' : 'Phone Verified'} value={selectedUser.phone_verified ? (isRTL ? 'نعم ✓' : 'Yes ✓') : (isRTL ? 'لا ✗' : 'No ✗')} />
+                  <InfoItem label={isRTL ? 'البريد الإلكتروني' : 'Email'} value={selectedUser.email || null} />
+                  <InfoItem label={isRTL ? 'الملف مكتمل' : 'Profile Complete'} value={selectedUser.profile_complete ? (isRTL ? 'نعم ✓' : 'Yes ✓') : (isRTL ? 'لا ✗' : 'No ✗')} />
+                </div>
+              </div>
+
+              {/* Location */}
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-primary" />
+                  {isRTL ? 'العنوان' : 'Location'}
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <InfoItem label={isRTL ? 'البلد' : 'Country'} value={selectedUser.country} />
+                  <InfoItem label={isRTL ? 'المدينة' : 'City'} value={selectedUser.city} />
+                  <InfoItem label={isRTL ? 'الرمز البريدي' : 'Postal Code'} value={selectedUser.postal_code} />
+                </div>
+              </div>
+
+              {/* Bike Information */}
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-primary" />
+                  {isRTL ? 'معلومات الدراجة' : 'Bike Information'}
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <InfoItem label={isRTL ? 'ماركة الدراجة' : 'Bike Brand'} value={selectedUser.bike_brand} />
+                  <InfoItem label={isRTL ? 'موديل الدراجة' : 'Bike Model'} value={selectedUser.bike_model} />
+                  <InfoItem label={isRTL ? 'حجم المحرك' : 'Engine Size'} value={selectedUser.engine_size_cc ? `${selectedUser.engine_size_cc} cc` : null} />
+                  <InfoItem label={isRTL ? 'مستوى الخبرة' : 'Experience Level'} value={selectedUser.experience_level} />
+                  <InfoItem label={isRTL ? 'سنوات القيادة' : 'Riding Years'} value={selectedUser.riding_experience_years?.toString() || null} />
+                </div>
+              </div>
+
+              {/* Stats */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-lg bg-muted/50">
                   <p className="text-sm text-muted-foreground">{isRTL ? 'التسجيلات' : 'Enrollments'}</p>
