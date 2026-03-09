@@ -13,7 +13,48 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate user
+    // Parse the request body first
+    const body = await req.json()
+    const { action, data } = body
+
+    // Check if this is a test ping (no auth required)
+    if (action === 'test_ping') {
+      console.log('GHL test ping - sending test data to webhook')
+      
+      const testPayload = {
+        event: 'test_ping',
+        email: 'test@bikerz.com',
+        full_name: 'Test Rider - Bikerz Academy',
+        phone: '+966500000000',
+        city: 'Riyadh',
+        country: 'Saudi Arabia',
+        experience_level: 'intermediate',
+        bike_brand: 'Yamaha',
+        bike_model: 'MT-07',
+        tags: 'test,academy-student',
+        source: 'Bikerz Academy',
+        timestamp: new Date().toISOString(),
+      }
+
+      const webhookRes = await fetch(GHL_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(testPayload),
+      })
+
+      const responseText = await webhookRes.text()
+      console.log(`GHL test webhook response [${webhookRes.status}]: ${responseText}`)
+
+      return new Response(JSON.stringify({ 
+        success: webhookRes.ok, 
+        status: webhookRes.status,
+        response: responseText 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // For real actions, require authentication
     const authHeader = req.headers.get('Authorization')
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -25,18 +66,17 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     )
 
-    const token = authHeader.replace('Bearer ', '')
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token)
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      console.error('Auth error:', userError)
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const userId = claimsData.claims.sub as string
-    const userEmail = claimsData.claims.email as string
+    const userId = user.id
+    const userEmail = user.email || ''
 
-    const { action, data } = await req.json()
+    console.log(`GHL sync action: ${action}, user: ${userEmail}`)
 
-    // Build webhook payload based on action
     const webhookPayload: Record<string, unknown> = {
       event: action,
       user_id: userId,
@@ -83,7 +123,8 @@ Deno.serve(async (req) => {
         })
     }
 
-    // Send to GHL webhook
+    console.log('Sending to GHL webhook:', JSON.stringify(webhookPayload))
+
     const webhookRes = await fetch(GHL_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -91,10 +132,10 @@ Deno.serve(async (req) => {
     })
 
     const responseText = await webhookRes.text()
+    console.log(`GHL webhook response [${webhookRes.status}]: ${responseText}`)
 
     if (!webhookRes.ok) {
-      console.error(`GHL webhook failed [${webhookRes.status}]: ${responseText}`)
-      throw new Error(`GHL webhook failed with status ${webhookRes.status}`)
+      throw new Error(`GHL webhook failed with status ${webhookRes.status}: ${responseText}`)
     }
 
     return new Response(JSON.stringify({ success: true }), {
