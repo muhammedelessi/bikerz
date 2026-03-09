@@ -25,6 +25,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useGHLSync } from '@/hooks/useGHLSync';
 
 interface ProfileCompletionWizardProps {
   open: boolean;
