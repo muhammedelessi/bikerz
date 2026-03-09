@@ -174,7 +174,7 @@ const Courses: React.FC = () => {
           )}
 
           {!isLoading && courses.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {courses.map((course, index) => {
                 const title = isRTL && course.title_ar ? course.title_ar : course.title;
                 const description = isRTL && course.description_ar ? course.description_ar : course.description;

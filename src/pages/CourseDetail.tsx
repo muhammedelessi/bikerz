@@ -766,23 +766,23 @@ const CourseDetail: React.FC = () => {
         })()}
 
         {/* Chapter Roadmap Timeline */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6 sm:mb-8">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-secondary/30 flex items-center justify-center">
-                  <BarChart3 className="w-5 h-5 text-secondary-foreground" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-secondary/30 flex items-center justify-center">
+                  <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-secondary-foreground" />
                 </div>
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                  <h2 className="text-lg sm:text-2xl font-bold text-foreground">
                     {isRTL ? 'خطة التعلم' : 'Learning Roadmap'}
                   </h2>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     {chapters.length} {isRTL ? 'فصول' : 'chapters'} • {totalLessons} {isRTL ? 'دروس' : 'lessons'}
                   </p>
                 </div>
