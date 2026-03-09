@@ -670,12 +670,18 @@ const CourseDetail: React.FC = () => {
                 </h2>
               </div>
 
-              <div className="rounded-xl sm:rounded-2xl overflow-hidden border border-border bg-black shadow-lg max-w-4xl">
+              <div className="rounded-xl sm:rounded-2xl overflow-hidden border border-border shadow-lg max-w-4xl">
                 {previewVideoPlaying ? (
-                  <div className="aspect-video">
+                  <div className="aspect-video relative">
+                    <iframe
+                      src=""
+                      className="absolute inset-0 w-full h-full"
+                      style={{ display: 'none' }}
+                    />
                     <BunnyVideoEmbed
                       videoUrl={course.preview_video_url}
                       title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
+                      isPreview
                     />
                   </div>
                 ) : (

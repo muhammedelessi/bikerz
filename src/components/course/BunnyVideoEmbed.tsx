@@ -8,6 +8,7 @@ interface BunnyVideoEmbedProps {
   onProgress?: (progress: number) => void;
   onTimeUpdate?: (timeSeconds: number) => void;
   initialTime?: number;
+  isPreview?: boolean;
 }
 
 // Extract Bunny video ID from CDN URL
