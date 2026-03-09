@@ -73,6 +73,7 @@ interface Course {
   description_ar: string | null;
   thumbnail_url: string | null;
   preview_video_url: string | null;
+  preview_video_thumbnail: string | null;
   price: number;
   discount_percentage: number | null;
   difficulty_level: string;
