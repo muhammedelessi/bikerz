@@ -581,6 +581,7 @@ export type Database = {
           instructor_id: string | null
           is_published: boolean
           learning_outcomes: Json | null
+          preview_video_thumbnail: string | null
           preview_video_url: string | null
           price: number
           seo_description: string | null
@@ -606,6 +607,7 @@ export type Database = {
           instructor_id?: string | null
           is_published?: boolean
           learning_outcomes?: Json | null
+          preview_video_thumbnail?: string | null
           preview_video_url?: string | null
           price?: number
           seo_description?: string | null
@@ -631,6 +633,7 @@ export type Database = {
           instructor_id?: string | null
           is_published?: boolean
           learning_outcomes?: Json | null
+          preview_video_thumbnail?: string | null
           preview_video_url?: string | null
           price?: number
           seo_description?: string | null
