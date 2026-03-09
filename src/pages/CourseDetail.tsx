@@ -455,7 +455,7 @@ const CourseDetail: React.FC = () => {
                   </div>
 
                   {/* Title */}
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-foreground mb-4 leading-tight">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-foreground mb-3 sm:mb-4 leading-tight">
                     {courseTitle}
                   </h1>
 
