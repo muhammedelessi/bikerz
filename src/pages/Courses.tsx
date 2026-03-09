@@ -199,7 +199,7 @@ const Courses: React.FC = () => {
                         )}
 
                         {/* Image */}
-                        <div className="relative h-40 sm:h-48 overflow-hidden">
+                        <div className="relative aspect-[16/10] sm:aspect-[16/9] overflow-hidden">
                           <img
                             src={course.thumbnail_url || heroImage}
                             alt={title}
