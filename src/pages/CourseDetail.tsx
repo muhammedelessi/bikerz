@@ -715,23 +715,23 @@ const CourseDetail: React.FC = () => {
           const showSection = outcomes ? outcomes.length > 0 : chapters.length > 0;
           if (!showSection) return null;
           return (
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
-                    <Target className="w-5 h-5 text-primary" />
+                <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary/15 flex items-center justify-center">
+                    <Target className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                  <h2 className="text-lg sm:text-2xl font-bold text-foreground">
                     {isRTL ? 'ماذا ستتعلم' : 'What You\'ll Learn'}
                   </h2>
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {outcomes ? (
                     outcomes.map((item, idx) => {
                       const text = isRTL && item.text_ar ? item.text_ar : item.text_en;
