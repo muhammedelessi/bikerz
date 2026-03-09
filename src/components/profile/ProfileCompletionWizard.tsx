@@ -200,6 +200,14 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
       localStorage.setItem('profile_completed', 'true');
       localStorage.setItem('profile_coupon_code', 'PROFILE10');
       
+      // Sync contact to GHL CRM
+      syncContact({
+        full_name: profile?.full_name || riderNickname || null,
+        phone: phone || null,
+        bike_brand: bikeBrand || null,
+        bike_model: bikeModel || null,
+      });
+
       // Log activity
       await supabase.from('user_activity_timeline').insert({
         user_id: user.id,
