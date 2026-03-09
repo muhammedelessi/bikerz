@@ -879,6 +879,7 @@ const CourseLearn: React.FC = () => {
                         title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
                         initialTime={getSavedWatchTime(currentLesson.id)}
                         onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
+                        onProgress={handleVideoProgress}
                         onEnded={handleVideoEnded}
                       />
                     ) : (
