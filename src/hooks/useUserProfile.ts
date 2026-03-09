@@ -68,6 +68,7 @@ export function calculateExperienceLevel(totalXp: number, completedLessons: numb
 
 export function useUserProfile() {
   const { user } = useAuth();
+  const { syncContact } = useGHLSync();
   const [profile, setProfile] = useState<ExtendedProfile | null>(null);
   const [learningStats, setLearningStats] = useState<LearningStats | null>(null);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
