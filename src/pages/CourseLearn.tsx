@@ -126,6 +126,7 @@ const CourseLearn: React.FC = () => {
   const [showTest, setShowTest] = useState<string | null>(null);
   const [showNextCountdown, setShowNextCountdown] = useState(false);
   const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
+  const autoCompletedRef = React.useRef<Set<string>>(new Set());
 
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ChevronLeft : ChevronRight;
