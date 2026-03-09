@@ -89,6 +89,14 @@ interface UserWithDetails extends Profile {
   email?: string;
 }
 
+// Small helper for the detail dialog
+const InfoItem = ({ label, value }: { label: string; value: string | null }) => (
+  <div className="p-3 rounded-lg bg-muted/50">
+    <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
+    <p className="text-sm font-medium text-foreground">{value || '—'}</p>
+  </div>
+);
+
 const AdminUsers: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
