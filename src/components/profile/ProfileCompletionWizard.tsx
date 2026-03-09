@@ -25,6 +25,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useGHLSync } from '@/hooks/useGHLSync';
 
 interface ProfileCompletionWizardProps {
   open: boolean;
@@ -51,6 +52,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user, profile } = useAuth();
+  const { syncContact } = useGHLSync();
   
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -198,6 +200,14 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
       localStorage.setItem('profile_completed', 'true');
       localStorage.setItem('profile_coupon_code', 'PROFILE10');
       
+      // Sync contact to GHL CRM
+      syncContact({
+        full_name: profile?.full_name || riderNickname || null,
+        phone: phone || null,
+        bike_brand: bikeBrand || null,
+        bike_model: bikeModel || null,
+      });
+
       // Log activity
       await supabase.from('user_activity_timeline').insert({
         user_id: user.id,

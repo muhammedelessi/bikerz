@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useGHLSync } from '@/hooks/useGHLSync';
 
 export interface ExtendedProfile {
   id: string;
@@ -67,6 +68,7 @@ export function calculateExperienceLevel(totalXp: number, completedLessons: numb
 
 export function useUserProfile() {
   const { user } = useAuth();
+  const { syncContact } = useGHLSync();
   const [profile, setProfile] = useState<ExtendedProfile | null>(null);
   const [learningStats, setLearningStats] = useState<LearningStats | null>(null);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -88,6 +90,8 @@ export function useUserProfile() {
       if (error) throw error;
 
       setProfile(prev => prev ? { ...prev, ...updates } : null);
+      // Sync updated profile to GHL CRM
+      syncContact(updates as Record<string, unknown>);
       toast.success('Profile updated successfully');
     } catch (error) {
       console.error('Error updating profile:', error);
