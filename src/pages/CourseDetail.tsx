@@ -438,7 +438,7 @@ const CourseDetail: React.FC = () => {
               {t('courses.backToCourses')}
             </Link>
 
-            <div className="grid lg:grid-cols-5 gap-8 lg:gap-12">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-12">
               {/* Left: Course Info (3 cols) */}
               <div className="lg:col-span-3">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
