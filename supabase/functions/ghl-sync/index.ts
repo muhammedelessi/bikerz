@@ -13,6 +13,48 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Parse the request body first
+    const body = await req.json()
+    const { action, data } = body
+
+    // Check if this is a test ping (no auth required)
+    if (action === 'test_ping') {
+      console.log('GHL test ping - sending test data to webhook')
+      
+      const testPayload = {
+        event: 'test_ping',
+        email: 'test@bikerz.com',
+        full_name: 'Test Rider - Bikerz Academy',
+        phone: '+966500000000',
+        city: 'Riyadh',
+        country: 'Saudi Arabia',
+        experience_level: 'intermediate',
+        bike_brand: 'Yamaha',
+        bike_model: 'MT-07',
+        tags: 'test,academy-student',
+        source: 'Bikerz Academy',
+        timestamp: new Date().toISOString(),
+      }
+
+      const webhookRes = await fetch(GHL_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(testPayload),
+      })
+
+      const responseText = await webhookRes.text()
+      console.log(`GHL test webhook response [${webhookRes.status}]: ${responseText}`)
+
+      return new Response(JSON.stringify({ 
+        success: webhookRes.ok, 
+        status: webhookRes.status,
+        response: responseText 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // For real actions, require authentication
     const authHeader = req.headers.get('Authorization')
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -32,8 +74,6 @@ Deno.serve(async (req) => {
 
     const userId = user.id
     const userEmail = user.email || ''
-
-    const { action, data } = await req.json()
 
     console.log(`GHL sync action: ${action}, user: ${userEmail}`)
 
