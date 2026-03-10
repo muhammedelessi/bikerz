@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,7 @@ import {
   Save, Loader2, Eye, Home, Target, Route, BookOpen, Megaphone, Users,
   Settings2, Palette, LayoutGrid, Type, MousePointer,
   Sparkles, PanelLeftClose, PanelLeft, Menu, ExternalLink, Share2,
-  FileText, Shield, Scale, MessageSquare, LogIn, UserPlus
+  FileText, Shield, Scale, MessageSquare, LogIn, UserPlus, ChevronDown
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import IconSelector from '@/components/admin/content/IconSelector';
@@ -129,15 +129,6 @@ const AdminContent: React.FC = () => {
   });
 
   const handleSave = (key: string) => {
-    // For the 'pages' section, save all page sub-keys
-    if (key === 'pages') {
-      const pageKeys = ['privacy_page', 'terms_page', 'contact_page', 'about_page', 'login_page', 'signup_page'];
-      const promises = pageKeys
-        .filter(k => editedContent[k])
-        .map(k => updateMutation.mutateAsync({ key: k, value: editedContent[k] }));
-      Promise.all(promises);
-      return;
-    }
     if (editedContent[key]) {
       updateMutation.mutate({ key, value: editedContent[key] });
     }
@@ -211,17 +202,27 @@ const AdminContent: React.FC = () => {
     setHasChanges(true);
   };
 
-  const sections = [
-    { key: 'header', icon: Menu, label: isRTL ? 'القائمة الرئيسية' : 'Header Menu' },
-    { key: 'hero', icon: Home, label: isRTL ? 'القسم الرئيسي' : 'Hero Section' },
-    { key: 'why', icon: Target, label: isRTL ? 'لماذا نحن' : 'Why Us' },
-    { key: 'journey', icon: Route, label: isRTL ? 'رحلة التعلم' : 'Journey' },
-    { key: 'learn', icon: BookOpen, label: isRTL ? 'ما ستتعلمه' : 'What You Learn' },
-    { key: 'cta', icon: Megaphone, label: isRTL ? 'دعوة للعمل' : 'Call to Action' },
-    { key: 'community', icon: Users, label: isRTL ? 'المجتمع' : 'Community' },
-    { key: 'footer', icon: Share2, label: isRTL ? 'التذييل والسوشيال' : 'Footer & Social' },
-    { key: 'pages', icon: FileText, label: isRTL ? 'الصفحات' : 'Pages' },
+  const mainSections = [
+    { key: 'header', icon: Menu, label: isRTL ? 'القائمة الرئيسية' : 'Header', desc: isRTL ? 'الشعار والتنقل' : 'Logo & navigation' },
+    { key: 'hero', icon: Home, label: isRTL ? 'القسم الرئيسي' : 'Hero', desc: isRTL ? 'البانر والإحصائيات' : 'Main banner & stats' },
+    { key: 'why', icon: Target, label: isRTL ? 'لماذا نحن' : 'Why Us', desc: isRTL ? 'المميزات والفوائد' : 'Features & benefits' },
+    { key: 'journey', icon: Route, label: isRTL ? 'رحلة التعلم' : 'Journey', desc: isRTL ? 'خطوات المسار' : 'Learning path steps' },
+    { key: 'learn', icon: BookOpen, label: isRTL ? 'ما ستتعلمه' : 'What You Learn', desc: isRTL ? 'المهارات والمحتوى' : 'Skills & content' },
+    { key: 'cta', icon: Megaphone, label: isRTL ? 'دعوة للعمل' : 'Call to Action', desc: isRTL ? 'أزرار التحويل' : 'Conversion buttons' },
+    { key: 'community', icon: Users, label: isRTL ? 'المجتمع' : 'Community', desc: isRTL ? 'قسم المجتمع' : 'Community section' },
+    { key: 'footer', icon: Share2, label: isRTL ? 'التذييل والسوشيال' : 'Footer & Social', desc: isRTL ? 'الروابط والسوشيال' : 'Links & social media' },
   ];
+
+  const pageSections = [
+    { key: 'about_page', icon: Users, label: isRTL ? 'من نحن' : 'About Us', desc: isRTL ? 'صفحة التعريف' : 'Company info page' },
+    { key: 'privacy_page', icon: Shield, label: isRTL ? 'سياسة الخصوصية' : 'Privacy Policy', desc: isRTL ? 'سياسة البيانات' : 'Data policy page' },
+    { key: 'terms_page', icon: Scale, label: isRTL ? 'شروط الخدمة' : 'Terms of Service', desc: isRTL ? 'الشروط والأحكام' : 'Terms & conditions' },
+    { key: 'contact_page', icon: MessageSquare, label: isRTL ? 'اتصل بنا' : 'Contact Us', desc: isRTL ? 'نموذج التواصل' : 'Contact form page' },
+    { key: 'login_page', icon: LogIn, label: isRTL ? 'تسجيل الدخول' : 'Login Page', desc: isRTL ? 'صفحة الدخول' : 'Sign in page' },
+    { key: 'signup_page', icon: UserPlus, label: isRTL ? 'إنشاء حساب' : 'Signup Page', desc: isRTL ? 'صفحة التسجيل' : 'Registration page' },
+  ];
+
+  const [pagesOpen, setPagesOpen] = useState(pageSections.some(p => p.key === activeSection));
 
   // ============= HEADER MENU EDITOR =============
   const renderHeaderSection = () => {
@@ -2148,6 +2149,160 @@ const AdminContent: React.FC = () => {
     );
   };
 
+  const renderAboutPageSection = () => {
+    const aboutData = editedContent.about_page || {};
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Users className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">{isRTL ? 'صفحة من نحن' : 'About Us Page'}</h3>
+          <Badge variant="outline" className="ms-auto">
+            <a href="/about" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+              <ExternalLink className="w-3 h-3" />
+              {isRTL ? 'معاينة' : 'Preview'}
+            </a>
+          </Badge>
+        </div>
+        <BilingualInput labelEn="Page Title" labelAr="عنوان الصفحة" valueEn={aboutData.title_en || 'About BIKERZ'} valueAr={aboutData.title_ar || 'عن بايكرز'} onChangeEn={(v) => updateField('about_page', 'title_en', v)} onChangeAr={(v) => updateField('about_page', 'title_ar', v)} />
+        <BilingualInput labelEn="Subtitle" labelAr="العنوان الفرعي" valueEn={aboutData.subtitle_en || ''} valueAr={aboutData.subtitle_ar || ''} onChangeEn={(v) => updateField('about_page', 'subtitle_en', v)} onChangeAr={(v) => updateField('about_page', 'subtitle_ar', v)} isTextarea rows={2} />
+        <Separator />
+        <div className="flex items-center gap-2 mb-2"><h4 className="font-medium text-sm">{isRTL ? 'قصتنا' : 'Our Story'}</h4></div>
+        <BilingualInput labelEn="Story Title" labelAr="عنوان القصة" valueEn={aboutData.story_title_en || 'Our Story'} valueAr={aboutData.story_title_ar || 'قصتنا'} onChangeEn={(v) => updateField('about_page', 'story_title_en', v)} onChangeAr={(v) => updateField('about_page', 'story_title_ar', v)} />
+        <BilingualInput labelEn="Story Paragraph 1" labelAr="الفقرة الأولى" valueEn={aboutData.story_p1_en || ''} valueAr={aboutData.story_p1_ar || ''} onChangeEn={(v) => updateField('about_page', 'story_p1_en', v)} onChangeAr={(v) => updateField('about_page', 'story_p1_ar', v)} isTextarea rows={4} />
+        <BilingualInput labelEn="Story Paragraph 2" labelAr="الفقرة الثانية" valueEn={aboutData.story_p2_en || ''} valueAr={aboutData.story_p2_ar || ''} onChangeEn={(v) => updateField('about_page', 'story_p2_en', v)} onChangeAr={(v) => updateField('about_page', 'story_p2_ar', v)} isTextarea rows={4} />
+        <Separator />
+        <div className="flex items-center gap-2 mb-2"><h4 className="font-medium text-sm">{isRTL ? 'المهمة' : 'Mission'}</h4></div>
+        <BilingualInput labelEn="Mission Title" labelAr="عنوان المهمة" valueEn={aboutData.mission_title_en || 'Our Mission'} valueAr={aboutData.mission_title_ar || 'مهمتنا'} onChangeEn={(v) => updateField('about_page', 'mission_title_en', v)} onChangeAr={(v) => updateField('about_page', 'mission_title_ar', v)} />
+        <BilingualInput labelEn="Mission Description" labelAr="وصف المهمة" valueEn={aboutData.mission_desc_en || ''} valueAr={aboutData.mission_desc_ar || ''} onChangeEn={(v) => updateField('about_page', 'mission_desc_en', v)} onChangeAr={(v) => updateField('about_page', 'mission_desc_ar', v)} isTextarea rows={3} />
+        <Separator />
+        <div className="flex items-center gap-2 mb-2"><h4 className="font-medium text-sm">{isRTL ? 'القيم' : 'Values'}</h4></div>
+        <BilingualInput labelEn="Values Section Title" labelAr="عنوان قسم القيم" valueEn={aboutData.values_title_en || 'Our Values'} valueAr={aboutData.values_title_ar || 'قيمنا'} onChangeEn={(v) => updateField('about_page', 'values_title_en', v)} onChangeAr={(v) => updateField('about_page', 'values_title_ar', v)} />
+        <BilingualInput labelEn="Values Subtitle" labelAr="العنوان الفرعي للقيم" valueEn={aboutData.values_subtitle_en || ''} valueAr={aboutData.values_subtitle_ar || ''} onChangeEn={(v) => updateField('about_page', 'values_subtitle_en', v)} onChangeAr={(v) => updateField('about_page', 'values_subtitle_ar', v)} />
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="border border-border/30 rounded-lg p-4 space-y-3">
+            <Label className="text-sm font-medium text-muted-foreground">{isRTL ? `القيمة ${i + 1}` : `Value ${i + 1}`}</Label>
+            <BilingualInput labelEn="Title" labelAr="العنوان" valueEn={aboutData[`value${i}_title_en`] || ''} valueAr={aboutData[`value${i}_title_ar`] || ''} onChangeEn={(v) => updateField('about_page', `value${i}_title_en`, v)} onChangeAr={(v) => updateField('about_page', `value${i}_title_ar`, v)} />
+            <BilingualInput labelEn="Description" labelAr="الوصف" valueEn={aboutData[`value${i}_desc_en`] || ''} valueAr={aboutData[`value${i}_desc_ar`] || ''} onChangeEn={(v) => updateField('about_page', `value${i}_desc_en`, v)} onChangeAr={(v) => updateField('about_page', `value${i}_desc_ar`, v)} />
+            <IconSelector value={aboutData[`value${i}_icon`] || ['Shield', 'Users', 'Award', 'Target'][i]} onChange={(icon) => updateField('about_page', `value${i}_icon`, icon)} label={isRTL ? 'الأيقونة' : 'Icon'} />
+          </div>
+        ))}
+        <Separator />
+        <div className="flex items-center gap-2 mb-2"><h4 className="font-medium text-sm">{isRTL ? 'معلومات الاتصال' : 'Contact Info'}</h4></div>
+        <BilingualInput labelEn="Contact Section Title" labelAr="عنوان قسم الاتصال" valueEn={aboutData.contact_title_en || 'Get in Touch'} valueAr={aboutData.contact_title_ar || 'تواصل معنا'} onChangeEn={(v) => updateField('about_page', 'contact_title_en', v)} onChangeAr={(v) => updateField('about_page', 'contact_title_ar', v)} />
+        <BilingualInput labelEn="Contact Section Subtitle" labelAr="العنوان الفرعي لقسم الاتصال" valueEn={aboutData.contact_subtitle_en || ''} valueAr={aboutData.contact_subtitle_ar || ''} onChangeEn={(v) => updateField('about_page', 'contact_subtitle_en', v)} onChangeAr={(v) => updateField('about_page', 'contact_subtitle_ar', v)} />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2"><Label>{isRTL ? 'الهاتف' : 'Phone'}</Label><Input value={aboutData.phone || '+966 50 111 1111'} onChange={(e) => updateField('about_page', 'phone', e.target.value)} dir="ltr" /></div>
+          <div className="space-y-2"><Label>{isRTL ? 'البريد الإلكتروني' : 'Email'}</Label><Input value={aboutData.email || 'info@bikerz.sa'} onChange={(e) => updateField('about_page', 'email', e.target.value)} /></div>
+        </div>
+        <BilingualInput labelEn="Location" labelAr="الموقع" valueEn={aboutData.location_en || ''} valueAr={aboutData.location_ar || ''} onChangeEn={(v) => updateField('about_page', 'location_en', v)} onChangeAr={(v) => updateField('about_page', 'location_ar', v)} />
+        <BilingualInput labelEn="Working Hours" labelAr="ساعات العمل" valueEn={aboutData.hours_en || 'Sun - Thu: 9AM - 6PM'} valueAr={aboutData.hours_ar || 'الأحد - الخميس: 9 صباحاً - 6 مساءً'} onChangeEn={(v) => updateField('about_page', 'hours_en', v)} onChangeAr={(v) => updateField('about_page', 'hours_ar', v)} />
+        <ImageUploader value={aboutData.hero_image || ''} onChange={(url) => updateField('about_page', 'hero_image', url)} label={isRTL ? 'صورة القسم الرئيسي' : 'Hero Section Image'} bucket="course-thumbnails" folder="landing" />
+        <div className="flex items-center gap-2"><Switch checked={aboutData.is_enabled !== false} onCheckedChange={(v) => updateField('about_page', 'is_enabled', v)} /><Label>{isRTL ? 'الصفحة مفعلة' : 'Page Enabled'}</Label></div>
+      </div>
+    );
+  };
+
+  const renderPrivacyPageSection = () => {
+    const privacyData = editedContent.privacy_page || {};
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Shield className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">{isRTL ? 'صفحة سياسة الخصوصية' : 'Privacy Policy Page'}</h3>
+          <Badge variant="outline" className="ms-auto"><a href="/privacy" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1"><ExternalLink className="w-3 h-3" />{isRTL ? 'معاينة' : 'Preview'}</a></Badge>
+        </div>
+        <div className="space-y-2"><Label>{isRTL ? 'تاريخ آخر تحديث' : 'Last Updated Date'}</Label><Input type="date" value={privacyData.last_updated || '2024-01-01'} onChange={(e) => updateField('privacy_page', 'last_updated', e.target.value)} /></div>
+        <div className="flex items-center gap-2"><Switch checked={privacyData.is_enabled !== false} onCheckedChange={(v) => updateField('privacy_page', 'is_enabled', v)} /><Label>{isRTL ? 'الصفحة مفعلة' : 'Page Enabled'}</Label></div>
+        <p className="text-sm text-muted-foreground">{isRTL ? 'محتوى صفحة سياسة الخصوصية يستخدم قوالب افتراضية. يمكنك تعديل التاريخ وحالة التفعيل.' : 'Privacy policy page content uses default templates. You can modify the date and enable/disable status.'}</p>
+      </div>
+    );
+  };
+
+  const renderTermsPageSection = () => {
+    const termsData = editedContent.terms_page || {};
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Scale className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">{isRTL ? 'صفحة شروط الخدمة' : 'Terms of Service Page'}</h3>
+          <Badge variant="outline" className="ms-auto"><a href="/terms" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1"><ExternalLink className="w-3 h-3" />{isRTL ? 'معاينة' : 'Preview'}</a></Badge>
+        </div>
+        <div className="space-y-2"><Label>{isRTL ? 'تاريخ آخر تحديث' : 'Last Updated Date'}</Label><Input type="date" value={termsData.last_updated || '2024-01-01'} onChange={(e) => updateField('terms_page', 'last_updated', e.target.value)} /></div>
+        <div className="flex items-center gap-2"><Switch checked={termsData.is_enabled !== false} onCheckedChange={(v) => updateField('terms_page', 'is_enabled', v)} /><Label>{isRTL ? 'الصفحة مفعلة' : 'Page Enabled'}</Label></div>
+        <p className="text-sm text-muted-foreground">{isRTL ? 'محتوى صفحة شروط الخدمة يستخدم قوالب افتراضية. يمكنك تعديل التاريخ وحالة التفعيل.' : 'Terms of service page content uses default templates. You can modify the date and enable/disable status.'}</p>
+      </div>
+    );
+  };
+
+  const renderContactPageSection = () => {
+    const contactData = editedContent.contact_page || {};
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <MessageSquare className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">{isRTL ? 'صفحة اتصل بنا' : 'Contact Us Page'}</h3>
+          <Badge variant="outline" className="ms-auto"><a href="/contact" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1"><ExternalLink className="w-3 h-3" />{isRTL ? 'معاينة' : 'Preview'}</a></Badge>
+        </div>
+        <BilingualInput labelEn="Page Title" labelAr="عنوان الصفحة" valueEn={contactData.title_en || 'Contact Us'} valueAr={contactData.title_ar || 'اتصل بنا'} onChangeEn={(v) => updateField('contact_page', 'title_en', v)} onChangeAr={(v) => updateField('contact_page', 'title_ar', v)} />
+        <BilingualInput labelEn="Page Subtitle" labelAr="العنوان الفرعي" valueEn={contactData.subtitle_en || "Have questions or need help? We're here for you."} valueAr={contactData.subtitle_ar || 'لديك أسئلة أو تحتاج مساعدة؟ نحن هنا من أجلك.'} onChangeEn={(v) => updateField('contact_page', 'subtitle_en', v)} onChangeAr={(v) => updateField('contact_page', 'subtitle_ar', v)} isTextarea rows={2} />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2"><Label>{isRTL ? 'البريد الإلكتروني' : 'Contact Email'}</Label><Input value={contactData.email || 'support@bikerz.sa'} onChange={(e) => updateField('contact_page', 'email', e.target.value)} placeholder="support@bikerz.sa" /></div>
+          <div className="space-y-2"><Label>{isRTL ? 'رقم الهاتف' : 'Phone Number'}</Label><Input value={contactData.phone || '+966 12 XXX XXXX'} onChange={(e) => updateField('contact_page', 'phone', e.target.value)} placeholder="+966 12 XXX XXXX" dir="ltr" /></div>
+        </div>
+        <BilingualInput labelEn="Location" labelAr="الموقع" valueEn={contactData.location_en || 'Jeddah, Saudi Arabia'} valueAr={contactData.location_ar || 'جدة، المملكة العربية السعودية'} onChangeEn={(v) => updateField('contact_page', 'location_en', v)} onChangeAr={(v) => updateField('contact_page', 'location_ar', v)} />
+        <BilingualInput labelEn="Working Hours" labelAr="ساعات العمل" valueEn={contactData.hours_en || 'Sun - Thu: 9AM - 6PM'} valueAr={contactData.hours_ar || 'الأحد - الخميس: 9 صباحاً - 6 مساءً'} onChangeEn={(v) => updateField('contact_page', 'hours_en', v)} onChangeAr={(v) => updateField('contact_page', 'hours_ar', v)} />
+        <div className="flex items-center gap-2"><Switch checked={contactData.is_enabled !== false} onCheckedChange={(v) => updateField('contact_page', 'is_enabled', v)} /><Label>{isRTL ? 'الصفحة مفعلة' : 'Page Enabled'}</Label></div>
+        <div className="bg-muted/50 rounded-lg p-4 mt-4">
+          <p className="text-sm text-muted-foreground flex items-center gap-2"><MessageSquare className="w-4 h-4" />{isRTL ? 'نماذج الاتصال ترسل تلقائياً إلى نظام التذاكر.' : 'Contact forms automatically submit to the ticketing system.'}</p>
+          <a href="/admin/support" className="text-sm text-primary hover:underline mt-2 inline-block">{isRTL ? 'الذهاب إلى لوحة الدعم ←' : '→ Go to Support Panel'}</a>
+        </div>
+      </div>
+    );
+  };
+
+  const renderLoginPageSection = () => {
+    const loginData = editedContent.login_page || {};
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <LogIn className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">{isRTL ? 'صفحة تسجيل الدخول' : 'Login Page'}</h3>
+          <Badge variant="outline" className="ms-auto"><a href="/login" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1"><ExternalLink className="w-3 h-3" />{isRTL ? 'معاينة' : 'Preview'}</a></Badge>
+        </div>
+        <BilingualInput labelEn="Page Title" labelAr="عنوان الصفحة" valueEn={loginData.title_en || ''} valueAr={loginData.title_ar || ''} onChangeEn={(v) => updateField('login_page', 'title_en', v)} onChangeAr={(v) => updateField('login_page', 'title_ar', v)} placeholderEn="Welcome Back" placeholderAr="مرحباً بعودتك" />
+        <BilingualInput labelEn="Subtitle" labelAr="العنوان الفرعي" valueEn={loginData.subtitle_en || ''} valueAr={loginData.subtitle_ar || ''} onChangeEn={(v) => updateField('login_page', 'subtitle_en', v)} onChangeAr={(v) => updateField('login_page', 'subtitle_ar', v)} placeholderEn="Sign in to continue your journey" placeholderAr="سجل دخولك لمتابعة رحلتك" />
+        <BilingualInput labelEn="Login Button Text" labelAr="نص زر الدخول" valueEn={loginData.button_en || ''} valueAr={loginData.button_ar || ''} onChangeEn={(v) => updateField('login_page', 'button_en', v)} onChangeAr={(v) => updateField('login_page', 'button_ar', v)} placeholderEn="Sign In" placeholderAr="تسجيل الدخول" />
+        <BilingualInput labelEn="Forgot Password Text" labelAr="نص نسيت كلمة المرور" valueEn={loginData.forgot_en || ''} valueAr={loginData.forgot_ar || ''} onChangeEn={(v) => updateField('login_page', 'forgot_en', v)} onChangeAr={(v) => updateField('login_page', 'forgot_ar', v)} placeholderEn="Forgot your password?" placeholderAr="نسيت كلمة المرور؟" />
+        <BilingualInput labelEn="No Account Text" labelAr="نص ليس لديك حساب" valueEn={loginData.no_account_en || ''} valueAr={loginData.no_account_ar || ''} onChangeEn={(v) => updateField('login_page', 'no_account_en', v)} onChangeAr={(v) => updateField('login_page', 'no_account_ar', v)} placeholderEn="Don't have an account?" placeholderAr="ليس لديك حساب؟" />
+        <BilingualInput labelEn="Signup Link Text" labelAr="نص رابط التسجيل" valueEn={loginData.signup_link_en || ''} valueAr={loginData.signup_link_ar || ''} onChangeEn={(v) => updateField('login_page', 'signup_link_en', v)} onChangeAr={(v) => updateField('login_page', 'signup_link_ar', v)} placeholderEn="Sign up" placeholderAr="سجل الآن" />
+        <ImageUploader value={loginData.image || ''} onChange={(url) => updateField('login_page', 'image', url)} label={isRTL ? 'صورة الخلفية' : 'Background Image'} bucket="course-thumbnails" folder="auth" />
+      </div>
+    );
+  };
+
+  const renderSignupPageSection = () => {
+    const signupData = editedContent.signup_page || {};
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <UserPlus className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">{isRTL ? 'صفحة إنشاء الحساب' : 'Signup Page'}</h3>
+          <Badge variant="outline" className="ms-auto"><a href="/signup" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1"><ExternalLink className="w-3 h-3" />{isRTL ? 'معاينة' : 'Preview'}</a></Badge>
+        </div>
+        <BilingualInput labelEn="Page Title" labelAr="عنوان الصفحة" valueEn={signupData.title_en || ''} valueAr={signupData.title_ar || ''} onChangeEn={(v) => updateField('signup_page', 'title_en', v)} onChangeAr={(v) => updateField('signup_page', 'title_ar', v)} placeholderEn="Create Your Account" placeholderAr="أنشئ حسابك" />
+        <BilingualInput labelEn="Subtitle" labelAr="العنوان الفرعي" valueEn={signupData.subtitle_en || ''} valueAr={signupData.subtitle_ar || ''} onChangeEn={(v) => updateField('signup_page', 'subtitle_en', v)} onChangeAr={(v) => updateField('signup_page', 'subtitle_ar', v)} placeholderEn="Join the BIKERZ community" placeholderAr="انضم إلى مجتمع بايكرز" />
+        <BilingualInput labelEn="Signup Button Text" labelAr="نص زر التسجيل" valueEn={signupData.button_en || ''} valueAr={signupData.button_ar || ''} onChangeEn={(v) => updateField('signup_page', 'button_en', v)} onChangeAr={(v) => updateField('signup_page', 'button_ar', v)} placeholderEn="Create Account" placeholderAr="إنشاء حساب" />
+        <BilingualInput labelEn="Full Name Label" labelAr="تسمية الاسم الكامل" valueEn={signupData.name_label_en || ''} valueAr={signupData.name_label_ar || ''} onChangeEn={(v) => updateField('signup_page', 'name_label_en', v)} onChangeAr={(v) => updateField('signup_page', 'name_label_ar', v)} placeholderEn="Full Name" placeholderAr="الاسم الكامل" />
+        <BilingualInput labelEn="Email Label" labelAr="تسمية البريد" valueEn={signupData.email_label_en || ''} valueAr={signupData.email_label_ar || ''} onChangeEn={(v) => updateField('signup_page', 'email_label_en', v)} onChangeAr={(v) => updateField('signup_page', 'email_label_ar', v)} placeholderEn="Email Address" placeholderAr="البريد الإلكتروني" />
+        <BilingualInput labelEn="Password Label" labelAr="تسمية كلمة المرور" valueEn={signupData.password_label_en || ''} valueAr={signupData.password_label_ar || ''} onChangeEn={(v) => updateField('signup_page', 'password_label_en', v)} onChangeAr={(v) => updateField('signup_page', 'password_label_ar', v)} placeholderEn="Password" placeholderAr="كلمة المرور" />
+        <BilingualInput labelEn="Confirm Password Label" labelAr="تسمية تأكيد كلمة المرور" valueEn={signupData.confirm_label_en || ''} valueAr={signupData.confirm_label_ar || ''} onChangeEn={(v) => updateField('signup_page', 'confirm_label_en', v)} onChangeAr={(v) => updateField('signup_page', 'confirm_label_ar', v)} placeholderEn="Confirm Password" placeholderAr="تأكيد كلمة المرور" />
+        <BilingualInput labelEn="Has Account Text" labelAr="نص لديك حساب" valueEn={signupData.has_account_en || ''} valueAr={signupData.has_account_ar || ''} onChangeEn={(v) => updateField('signup_page', 'has_account_en', v)} onChangeAr={(v) => updateField('signup_page', 'has_account_ar', v)} placeholderEn="Already have an account?" placeholderAr="لديك حساب بالفعل؟" />
+        <BilingualInput labelEn="Login Link Text" labelAr="نص رابط الدخول" valueEn={signupData.login_link_en || ''} valueAr={signupData.login_link_ar || ''} onChangeEn={(v) => updateField('signup_page', 'login_link_en', v)} onChangeAr={(v) => updateField('signup_page', 'login_link_ar', v)} placeholderEn="Sign in" placeholderAr="تسجيل الدخول" />
+        <ImageUploader value={signupData.image || ''} onChange={(url) => updateField('signup_page', 'image', url)} label={isRTL ? 'صورة الخلفية' : 'Background Image'} bucket="course-thumbnails" folder="auth" />
+      </div>
+    );
+  };
+
   const renderSectionContent = (key: string) => {
     switch (key) {
       case 'header': return renderHeaderSection();
@@ -2158,10 +2313,18 @@ const AdminContent: React.FC = () => {
       case 'cta': return renderCTASection();
       case 'community': return renderCommunitySection();
       case 'footer': return renderFooterSection();
-      case 'pages': return renderPagesSection();
+      case 'about_page': return renderAboutPageSection();
+      case 'privacy_page': return renderPrivacyPageSection();
+      case 'terms_page': return renderTermsPageSection();
+      case 'contact_page': return renderContactPageSection();
+      case 'login_page': return renderLoginPageSection();
+      case 'signup_page': return renderSignupPageSection();
       default: return null;
     }
   };
+
+  const allSections = [...mainSections, ...pageSections];
+  const currentSection = allSections.find(s => s.key === activeSection);
 
   if (isLoading) {
     return (
@@ -2227,62 +2390,100 @@ const AdminContent: React.FC = () => {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex gap-6 flex-1 min-h-0 overflow-hidden">
-          {/* Editor Panel */}
-          <div className={`flex flex-col min-h-0 overflow-hidden ${showPreview ? 'w-1/2' : 'w-full'}`}>
-            <Tabs value={activeSection} onValueChange={setActiveSection} className="flex flex-col flex-1 min-h-0">
-              {/* Tab List - Fixed */}
-              <TabsList className="grid w-full grid-cols-5 lg:grid-cols-9 flex-shrink-0 mb-4">
-                {sections.map(section => (
-                  <TabsTrigger key={section.key} value={section.key} className="flex items-center gap-1 px-2">
-                    <section.icon className="w-4 h-4 flex-shrink-0" />
-                    <span className="hidden xl:inline text-xs truncate">{section.label}</span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              {/* Tab Content - Scrollable */}
-              <div className="flex-1 min-h-0 overflow-hidden">
-                {sections.map(section => (
-                  <TabsContent 
-                    key={section.key} 
-                    value={section.key} 
-                    className="h-full m-0 data-[state=inactive]:hidden"
-                  >
-                    <Card className="h-full flex flex-col overflow-hidden">
-                      <CardHeader className="flex-shrink-0 pb-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle className="flex items-center gap-2">
-                              <section.icon className="w-5 h-5" />
-                              {section.label}
-                            </CardTitle>
-                            <CardDescription>
-                              {isRTL 
-                                ? 'قم بتحرير المحتوى باللغتين العربية والإنجليزية'
-                                : 'Edit content in both English and Arabic'
-                              }
-                            </CardDescription>
-                          </div>
-                          <Button onClick={() => handleSave(section.key)} disabled={updateMutation.isPending} size="sm">
-                            {updateMutation.isPending ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Save className="w-4 h-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="flex-1 overflow-hidden p-0">
-                        <ScrollArea className="h-full px-6 pb-6">
-                          {renderSectionContent(section.key)}
-                        </ScrollArea>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                ))}
+        <div className="flex gap-0 flex-1 min-h-0 overflow-hidden">
+          {/* Vertical Sidebar Navigation */}
+          <div className="w-[220px] flex-shrink-0 border-e border-border bg-muted/30 overflow-y-auto">
+            <div className="py-2">
+              {/* Main Sections */}
+              <div className="px-3 py-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {isRTL ? 'الأقسام' : 'Sections'}
+                </span>
               </div>
-            </Tabs>
+              {mainSections.map(section => (
+                <button
+                  key={section.key}
+                  onClick={() => setActiveSection(section.key)}
+                  className={`w-full flex items-start gap-3 px-3 py-2.5 text-start transition-colors ${
+                    activeSection === section.key
+                      ? 'bg-primary/10 text-primary border-e-2 border-primary'
+                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                  }`}
+                >
+                  <section.icon className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{section.label}</div>
+                    <div className="text-[11px] text-muted-foreground truncate">{section.desc}</div>
+                  </div>
+                </button>
+              ))}
+
+              {/* Pages Group */}
+              <Collapsible open={pagesOpen} onOpenChange={setPagesOpen}>
+                <CollapsibleTrigger className="w-full flex items-center gap-2 px-3 py-2 mt-2 text-start">
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex-1">
+                    {isRTL ? 'الصفحات' : 'Pages'}
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${pagesOpen ? 'rotate-180' : ''}`} />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  {pageSections.map(section => (
+                    <button
+                      key={section.key}
+                      onClick={() => { setActiveSection(section.key); setPagesOpen(true); }}
+                      className={`w-full flex items-start gap-3 px-3 ps-6 py-2 text-start transition-colors ${
+                        activeSection === section.key
+                          ? 'bg-primary/10 text-primary border-e-2 border-primary'
+                          : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                      }`}
+                    >
+                      <section.icon className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium truncate">{section.label}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">{section.desc}</div>
+                      </div>
+                    </button>
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+          </div>
+
+          {/* Editor Panel */}
+          <div className={`flex flex-col min-h-0 overflow-hidden flex-1 ${showPreview ? 'w-1/2' : ''}`}>
+            {currentSection && (
+              <Card className="h-full flex flex-col overflow-hidden rounded-none border-0 border-e">
+                <CardHeader className="flex-shrink-0 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        {React.createElement(currentSection.icon, { className: "w-5 h-5" })}
+                        {currentSection.label}
+                      </CardTitle>
+                      <CardDescription>
+                        {isRTL 
+                          ? 'قم بتحرير المحتوى باللغتين العربية والإنجليزية'
+                          : 'Edit content in both English and Arabic'
+                        }
+                      </CardDescription>
+                    </div>
+                    <Button onClick={() => handleSave(activeSection)} disabled={updateMutation.isPending} size="sm">
+                      {updateMutation.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-hidden p-0">
+                  <ScrollArea className="h-full px-6 pb-6">
+                    {renderSectionContent(activeSection)}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Live Preview Panel */}
