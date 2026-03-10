@@ -16,7 +16,7 @@ import {
   Save, Loader2, Eye, Home, Target, Route, BookOpen, Megaphone, Users,
   Settings2, Palette, LayoutGrid, Type, MousePointer,
   Sparkles, PanelLeftClose, PanelLeft, Menu, ExternalLink, Share2,
-  FileText, Shield, Scale, MessageSquare, LogIn, UserPlus
+  FileText, Shield, Scale, MessageSquare, LogIn, UserPlus, ChevronDown
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import IconSelector from '@/components/admin/content/IconSelector';
