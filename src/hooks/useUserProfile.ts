@@ -106,7 +106,15 @@ export function useUserProfile() {
 
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/avatar.${fileExt}`;
+      const fileName = `${user.id}/avatar_${Date.now()}.${fileExt}`;
+
+      // Delete old avatar file from storage
+      if (profile?.avatar_url) {
+        const oldPath = profile.avatar_url.split('/avatars/')[1]?.split('?')[0];
+        if (oldPath) {
+          await supabase.storage.from('avatars').remove([oldPath]);
+        }
+      }
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -118,10 +126,10 @@ export function useUserProfile() {
         .from('avatars')
         .getPublicUrl(fileName);
 
-      // Update profile with new avatar URL
-      await updateProfile({ avatar_url: publicUrl });
+      const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
+      await updateProfile({ avatar_url: cacheBustedUrl });
 
-      return publicUrl;
+      return cacheBustedUrl;
     } catch (error) {
       console.error('Error uploading avatar:', error);
       toast.error('Failed to upload avatar');
