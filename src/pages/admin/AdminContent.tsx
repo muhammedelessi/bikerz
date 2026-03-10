@@ -129,15 +129,6 @@ const AdminContent: React.FC = () => {
   });
 
   const handleSave = (key: string) => {
-    // For the 'pages' section, save all page sub-keys
-    if (key === 'pages') {
-      const pageKeys = ['privacy_page', 'terms_page', 'contact_page', 'about_page', 'login_page', 'signup_page'];
-      const promises = pageKeys
-        .filter(k => editedContent[k])
-        .map(k => updateMutation.mutateAsync({ key: k, value: editedContent[k] }));
-      Promise.all(promises);
-      return;
-    }
     if (editedContent[key]) {
       updateMutation.mutate({ key, value: editedContent[key] });
     }
