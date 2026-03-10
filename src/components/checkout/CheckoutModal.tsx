@@ -384,13 +384,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       phone,
       courseName: course.title,
       orderStatus: 'purchased',
-      answers: {
-        form: 'checkout',
-        course_id: course.id,
-        amount: discountedPrice,
-        currency: 'SAR',
-        coupon: promoApplied ? promoCode : undefined,
-      },
       isRTL,
     });
 

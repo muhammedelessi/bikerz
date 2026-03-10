@@ -12,17 +12,17 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { full_name, email, phone, courseName, orderStatus, source, answers } = body
+    const { full_name, email, phone, city, country, courseName, orderStatus, source } = body
 
     const payload = {
-      full_name: full_name || '',
       email: email || '',
       phone: phone || '',
-      courseName: courseName || '',
-      orderStatus: orderStatus || 'not purchased',
+      full_name: full_name || '',
+      city: city || '',
+      country: country || '',
       source: source || 'direct',
-      answers: typeof answers === 'object' ? JSON.stringify(answers) : (answers || ''),
-      timestamp: new Date().toISOString(),
+      orderStatus: orderStatus || 'not purchased',
+      courseName: courseName || '',
     }
 
     console.log('GHL form webhook payload:', JSON.stringify(payload))

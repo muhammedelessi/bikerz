@@ -32,9 +32,10 @@ interface FormWebhookData {
   full_name?: string;
   email?: string;
   phone?: string;
+  city?: string;
+  country?: string;
   courseName?: string;
   orderStatus?: string;
-  answers?: Record<string, unknown> | string;
   isRTL?: boolean;
 }
 
