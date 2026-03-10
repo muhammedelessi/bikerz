@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +36,7 @@ const Signup: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showProfileWizard, setShowProfileWizard] = useState(false);
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+  const { sendFormData } = useGHLFormWebhook();
 
   const cms = authContent?.signup || {};
   const heroImage = cms.image || defaultHeroImage;
@@ -86,6 +88,15 @@ const Signup: React.FC = () => {
     } catch (syncErr) {
       console.error('GHL signup sync failed:', syncErr);
     }
+
+    // Send to GHL form webhook
+    sendFormData({
+      full_name: name,
+      email,
+      orderStatus: 'not purchased',
+      answers: { form: 'signup' },
+      isRTL,
+    });
 
     toast.success(t('auth.signup.success'));
     setIsLoading(false);

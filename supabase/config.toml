@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.ghl-sync]
 verify_jwt = false
+
+[functions.ghl-form-webhook]
+verify_jwt = false

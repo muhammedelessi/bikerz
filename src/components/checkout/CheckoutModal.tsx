@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trackInitiateCheckout, trackAddPaymentInfo } from '@/utils/metaPixel';
+import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
 
 interface CheckoutModalProps {
   open: boolean;
@@ -98,6 +99,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     submitPayment,
     reset: resetPayment,
   } = useTapPayment();
+  const { sendFormData } = useGHLFormWebhook();
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('profile');
   const [promoCode, setPromoCode] = useState('');
@@ -373,6 +375,23 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       content_ids: [course.id],
       value: discountedPrice,
       currency: 'SAR',
+    });
+
+    // Send to GHL form webhook
+    sendFormData({
+      full_name: fullName,
+      email,
+      phone,
+      courseName: course.title,
+      orderStatus: 'purchased',
+      answers: {
+        form: 'checkout',
+        course_id: course.id,
+        amount: discountedPrice,
+        currency: 'SAR',
+        coupon: promoApplied ? promoCode : undefined,
+      },
+      isRTL,
     });
 
     await submitPayment({
