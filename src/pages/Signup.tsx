@@ -36,6 +36,7 @@ const Signup: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showProfileWizard, setShowProfileWizard] = useState(false);
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+  const { sendFormData } = useGHLFormWebhook();
 
   const cms = authContent?.signup || {};
   const heroImage = cms.image || defaultHeroImage;
