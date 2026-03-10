@@ -422,7 +422,7 @@ const CourseDetail: React.FC = () => {
       <main className="pt-24">
         {/* Hero Section */}
         <section className="relative overflow-hidden">
-          <div className="absolute inset-0 h-[320px] sm:h-[420px] lg:h-[480px]">
+          <div className="absolute inset-0 h-[480px] sm:h-[420px] lg:h-[480px]">
             <img
               src={course.thumbnail_url || heroImage}
               alt={courseTitle}
