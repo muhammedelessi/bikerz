@@ -216,14 +216,6 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
         email: user.email || '',
         phone: phone || '',
         orderStatus: 'not purchased',
-        answers: {
-          form: 'profile_completion',
-          rider_nickname: riderNickname,
-          bike_brand: bikeBrand,
-          bike_model: bikeModel,
-          engine_size_cc: engineSize,
-          riding_experience_years: ridingYears,
-        },
         isRTL,
       });
 

@@ -82,13 +82,6 @@ const ContactUs: React.FC = () => {
         full_name: formData.name || user?.user_metadata?.full_name || '',
         email: formData.email || user?.email || '',
         orderStatus: 'not purchased',
-        answers: {
-          form: 'contact',
-          category: formData.category,
-          subject: formData.subject,
-          message: formData.message,
-          ticket_number: ticketNum,
-        },
         isRTL,
       });
     },

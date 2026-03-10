@@ -94,7 +94,6 @@ const Signup: React.FC = () => {
       full_name: name,
       email,
       orderStatus: 'not purchased',
-      answers: { form: 'signup' },
       isRTL,
     });
 
