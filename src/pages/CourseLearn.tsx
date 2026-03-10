@@ -822,7 +822,7 @@ const CourseLearn: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden relative justify-end">
+      <div className="flex flex-1 overflow-hidden relative items-start">
         {/* Mobile Overlay */}
         {sidebarOpen && (
           <div
