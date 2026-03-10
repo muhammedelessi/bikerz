@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trackInitiateCheckout, trackAddPaymentInfo } from '@/utils/metaPixel';
+import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
 
 interface CheckoutModalProps {
   open: boolean;
