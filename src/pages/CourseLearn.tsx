@@ -822,7 +822,7 @@ const CourseLearn: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex flex-1 overflow-hidden relative justify-end">
         {/* Mobile Overlay */}
         {sidebarOpen && (
           <div
@@ -862,7 +862,7 @@ const CourseLearn: React.FC = () => {
               >
                 {/* Video Player - Compact size */}
                 {currentLesson?.video_url && (
-                  <div className="relative bg-black w-full max-w-3xl mx-auto">
+                  <div className="relative bg-black w-full max-w-3xl">
                     {isYouTubeUrl(currentLesson.video_url) ? (
                       <div className="aspect-video" style={{ maxHeight: '55vh' }}>
                         <iframe
