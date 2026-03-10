@@ -3,62 +3,62 @@
   <!-- Homepage -->
   <url>
     <loc>https://academy.bikerz.com/</loc>
-    <lastmod>2026-03-06</lastmod>
-    <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <changefreq>daily</changefreq>
+    <lastmod>2026-03-10</lastmod>
   </url>
 
   <!-- Core Pages -->
   <url>
     <loc>https://academy.bikerz.com/courses</loc>
-    <lastmod>2026-03-06</lastmod>
-    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+    <lastmod>2026-03-10</lastmod>
   </url>
   <url>
     <loc>https://academy.bikerz.com/about</loc>
-    <lastmod>2026-03-06</lastmod>
-    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+    <lastmod>2026-03-10</lastmod>
   </url>
   <url>
     <loc>https://academy.bikerz.com/contact</loc>
-    <lastmod>2026-03-06</lastmod>
-    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+    <lastmod>2026-03-10</lastmod>
   </url>
   <url>
     <loc>https://academy.bikerz.com/mentors</loc>
-    <lastmod>2026-03-06</lastmod>
-    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+    <lastmod>2026-03-10</lastmod>
   </url>
 
   <!-- Auth Pages -->
   <url>
     <loc>https://academy.bikerz.com/login</loc>
-    <lastmod>2026-03-06</lastmod>
-    <changefreq>monthly</changefreq>
     <priority>0.5</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-03-10</lastmod>
   </url>
   <url>
     <loc>https://academy.bikerz.com/signup</loc>
-    <lastmod>2026-03-06</lastmod>
-    <changefreq>monthly</changefreq>
     <priority>0.5</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-03-10</lastmod>
   </url>
 
   <!-- Legal / Utility Pages -->
   <url>
     <loc>https://academy.bikerz.com/privacy</loc>
-    <lastmod>2026-03-06</lastmod>
-    <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+    <changefreq>yearly</changefreq>
+    <lastmod>2026-03-10</lastmod>
   </url>
   <url>
     <loc>https://academy.bikerz.com/terms</loc>
-    <lastmod>2026-03-06</lastmod>
-    <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+    <changefreq>yearly</changefreq>
+    <lastmod>2026-03-10</lastmod>
   </url>
 </urlset>
