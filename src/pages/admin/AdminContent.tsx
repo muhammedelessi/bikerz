@@ -211,17 +211,27 @@ const AdminContent: React.FC = () => {
     setHasChanges(true);
   };
 
-  const sections = [
-    { key: 'header', icon: Menu, label: isRTL ? 'القائمة الرئيسية' : 'Header Menu' },
-    { key: 'hero', icon: Home, label: isRTL ? 'القسم الرئيسي' : 'Hero Section' },
-    { key: 'why', icon: Target, label: isRTL ? 'لماذا نحن' : 'Why Us' },
-    { key: 'journey', icon: Route, label: isRTL ? 'رحلة التعلم' : 'Journey' },
-    { key: 'learn', icon: BookOpen, label: isRTL ? 'ما ستتعلمه' : 'What You Learn' },
-    { key: 'cta', icon: Megaphone, label: isRTL ? 'دعوة للعمل' : 'Call to Action' },
-    { key: 'community', icon: Users, label: isRTL ? 'المجتمع' : 'Community' },
-    { key: 'footer', icon: Share2, label: isRTL ? 'التذييل والسوشيال' : 'Footer & Social' },
-    { key: 'pages', icon: FileText, label: isRTL ? 'الصفحات' : 'Pages' },
+  const mainSections = [
+    { key: 'header', icon: Menu, label: isRTL ? 'القائمة الرئيسية' : 'Header', desc: isRTL ? 'الشعار والتنقل' : 'Logo & navigation' },
+    { key: 'hero', icon: Home, label: isRTL ? 'القسم الرئيسي' : 'Hero', desc: isRTL ? 'البانر والإحصائيات' : 'Main banner & stats' },
+    { key: 'why', icon: Target, label: isRTL ? 'لماذا نحن' : 'Why Us', desc: isRTL ? 'المميزات والفوائد' : 'Features & benefits' },
+    { key: 'journey', icon: Route, label: isRTL ? 'رحلة التعلم' : 'Journey', desc: isRTL ? 'خطوات المسار' : 'Learning path steps' },
+    { key: 'learn', icon: BookOpen, label: isRTL ? 'ما ستتعلمه' : 'What You Learn', desc: isRTL ? 'المهارات والمحتوى' : 'Skills & content' },
+    { key: 'cta', icon: Megaphone, label: isRTL ? 'دعوة للعمل' : 'Call to Action', desc: isRTL ? 'أزرار التحويل' : 'Conversion buttons' },
+    { key: 'community', icon: Users, label: isRTL ? 'المجتمع' : 'Community', desc: isRTL ? 'قسم المجتمع' : 'Community section' },
+    { key: 'footer', icon: Share2, label: isRTL ? 'التذييل والسوشيال' : 'Footer & Social', desc: isRTL ? 'الروابط والسوشيال' : 'Links & social media' },
   ];
+
+  const pageSections = [
+    { key: 'about_page', icon: Users, label: isRTL ? 'من نحن' : 'About Us', desc: isRTL ? 'صفحة التعريف' : 'Company info page' },
+    { key: 'privacy_page', icon: Shield, label: isRTL ? 'سياسة الخصوصية' : 'Privacy Policy', desc: isRTL ? 'سياسة البيانات' : 'Data policy page' },
+    { key: 'terms_page', icon: Scale, label: isRTL ? 'شروط الخدمة' : 'Terms of Service', desc: isRTL ? 'الشروط والأحكام' : 'Terms & conditions' },
+    { key: 'contact_page', icon: MessageSquare, label: isRTL ? 'اتصل بنا' : 'Contact Us', desc: isRTL ? 'نموذج التواصل' : 'Contact form page' },
+    { key: 'login_page', icon: LogIn, label: isRTL ? 'تسجيل الدخول' : 'Login Page', desc: isRTL ? 'صفحة الدخول' : 'Sign in page' },
+    { key: 'signup_page', icon: UserPlus, label: isRTL ? 'إنشاء حساب' : 'Signup Page', desc: isRTL ? 'صفحة التسجيل' : 'Registration page' },
+  ];
+
+  const [pagesOpen, setPagesOpen] = useState(pageSections.some(p => p.key === activeSection));
 
   // ============= HEADER MENU EDITOR =============
   const renderHeaderSection = () => {
