@@ -19,6 +19,7 @@ import {
   Mail, Phone, MapPin, Clock, MessageSquare, Send, 
   Loader2, CheckCircle, HelpCircle, CreditCard, BookOpen, User, RefreshCw, Award, MoreHorizontal
 } from 'lucide-react';
+import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
 
 const ContactUs: React.FC = () => {
   const { t } = useTranslation();
