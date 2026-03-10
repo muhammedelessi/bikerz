@@ -477,9 +477,9 @@ const Dashboard: React.FC = () => {
             <h2 className="text-lg sm:text-xl font-bold text-foreground mb-3 sm:mb-4">
               {isRTL ? 'إجراءات سريعة' : 'Quick Actions'}
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Link to="/courses">
-                <div className="card-premium p-3 sm:p-4 flex items-center gap-3 sm:gap-4 hover:border-primary/40 active:scale-[0.99] transition-all touch-target">
+            <div className="flex flex-col sm:flex-row gap-4 w-full">
+              <Link to="/courses" className="block flex-1">
+                <div className="card-premium p-3 sm:p-4 flex items-center gap-3 sm:gap-4 hover:border-primary/40 active:scale-[0.99] transition-all touch-target w-full">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <BookOpen className="w-5 h-5 text-primary" />
                   </div>
@@ -488,8 +488,8 @@ const Dashboard: React.FC = () => {
                   </span>
                 </div>
               </Link>
-              <Link to="/mentors">
-                <div className="card-premium p-3 sm:p-4 flex items-center gap-3 sm:gap-4 hover:border-primary/40 active:scale-[0.99] transition-all touch-target">
+              <Link to="/mentors" className="block flex-1">
+                <div className="card-premium p-3 sm:p-4 flex items-center gap-3 sm:gap-4 hover:border-primary/40 active:scale-[0.99] transition-all touch-target w-full">
                   <div className="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center flex-shrink-0">
                     <Users className="w-5 h-5 text-secondary" />
                   </div>
