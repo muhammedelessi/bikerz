@@ -22,27 +22,28 @@ const HeroSection: React.FC = () => {
   const { data: stats } = useQuery({
     queryKey: ['hero-stats'],
     queryFn: async () => {
-      const [
-        { count: usersCount },
-        { count: lessonsCount },
-        { data: enrollmentStats },
-      ] = await Promise.all([
+      const [profilesRes, lessonsRes, enrollmentsRes] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('lessons').select('*', { count: 'exact', head: true }).eq('is_published', true),
         supabase.from('course_enrollments').select('progress_percentage'),
       ]);
 
-      const successfulEnrollments = (enrollmentStats || []).filter(e => e.progress_percentage >= 70).length;
-      const totalEnrollments = (enrollmentStats || []).length;
-      const successRate = totalEnrollments > 0 
-        ? Math.round((successfulEnrollments / totalEnrollments) * 100) 
+      if (profilesRes.error) console.error('[hero-stats] profiles error:', profilesRes.error.message);
+      if (lessonsRes.error) console.error('[hero-stats] lessons error:', lessonsRes.error.message);
+      if (enrollmentsRes.error) console.error('[hero-stats] enrollments error:', enrollmentsRes.error.message);
+
+      const usersCount = profilesRes.count ?? 0;
+      const lessonsCount = lessonsRes.count ?? 0;
+      const enrollmentStats = enrollmentsRes.data ?? [];
+
+      console.log('[hero-stats]', { usersCount, lessonsCount, enrollments: enrollmentStats.length });
+
+      const successfulEnrollments = enrollmentStats.filter(e => (e.progress_percentage ?? 0) >= 70).length;
+      const successRate = enrollmentStats.length > 0
+        ? Math.round((successfulEnrollments / enrollmentStats.length) * 100)
         : 0;
 
-      return {
-        members: usersCount || 0,
-        lessons: lessonsCount || 0,
-        successRate,
-      };
+      return { members: usersCount, lessons: lessonsCount, successRate };
     },
     staleTime: 5 * 60 * 1000,
   });
