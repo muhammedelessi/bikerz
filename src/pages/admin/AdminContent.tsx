@@ -2390,62 +2390,100 @@ const AdminContent: React.FC = () => {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex gap-6 flex-1 min-h-0 overflow-hidden">
-          {/* Editor Panel */}
-          <div className={`flex flex-col min-h-0 overflow-hidden ${showPreview ? 'w-1/2' : 'w-full'}`}>
-            <Tabs value={activeSection} onValueChange={setActiveSection} className="flex flex-col flex-1 min-h-0">
-              {/* Tab List - Fixed */}
-              <TabsList className="grid w-full grid-cols-5 lg:grid-cols-9 flex-shrink-0 mb-4">
-                {sections.map(section => (
-                  <TabsTrigger key={section.key} value={section.key} className="flex items-center gap-1 px-2">
-                    <section.icon className="w-4 h-4 flex-shrink-0" />
-                    <span className="hidden xl:inline text-xs truncate">{section.label}</span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              {/* Tab Content - Scrollable */}
-              <div className="flex-1 min-h-0 overflow-hidden">
-                {sections.map(section => (
-                  <TabsContent 
-                    key={section.key} 
-                    value={section.key} 
-                    className="h-full m-0 data-[state=inactive]:hidden"
-                  >
-                    <Card className="h-full flex flex-col overflow-hidden">
-                      <CardHeader className="flex-shrink-0 pb-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle className="flex items-center gap-2">
-                              <section.icon className="w-5 h-5" />
-                              {section.label}
-                            </CardTitle>
-                            <CardDescription>
-                              {isRTL 
-                                ? 'قم بتحرير المحتوى باللغتين العربية والإنجليزية'
-                                : 'Edit content in both English and Arabic'
-                              }
-                            </CardDescription>
-                          </div>
-                          <Button onClick={() => handleSave(section.key)} disabled={updateMutation.isPending} size="sm">
-                            {updateMutation.isPending ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Save className="w-4 h-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="flex-1 overflow-hidden p-0">
-                        <ScrollArea className="h-full px-6 pb-6">
-                          {renderSectionContent(section.key)}
-                        </ScrollArea>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                ))}
+        <div className="flex gap-0 flex-1 min-h-0 overflow-hidden">
+          {/* Vertical Sidebar Navigation */}
+          <div className="w-[220px] flex-shrink-0 border-e border-border bg-muted/30 overflow-y-auto">
+            <div className="py-2">
+              {/* Main Sections */}
+              <div className="px-3 py-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {isRTL ? 'الأقسام' : 'Sections'}
+                </span>
               </div>
-            </Tabs>
+              {mainSections.map(section => (
+                <button
+                  key={section.key}
+                  onClick={() => setActiveSection(section.key)}
+                  className={`w-full flex items-start gap-3 px-3 py-2.5 text-start transition-colors ${
+                    activeSection === section.key
+                      ? 'bg-primary/10 text-primary border-e-2 border-primary'
+                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                  }`}
+                >
+                  <section.icon className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{section.label}</div>
+                    <div className="text-[11px] text-muted-foreground truncate">{section.desc}</div>
+                  </div>
+                </button>
+              ))}
+
+              {/* Pages Group */}
+              <Collapsible open={pagesOpen} onOpenChange={setPagesOpen}>
+                <CollapsibleTrigger className="w-full flex items-center gap-2 px-3 py-2 mt-2 text-start">
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex-1">
+                    {isRTL ? 'الصفحات' : 'Pages'}
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${pagesOpen ? 'rotate-180' : ''}`} />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  {pageSections.map(section => (
+                    <button
+                      key={section.key}
+                      onClick={() => { setActiveSection(section.key); setPagesOpen(true); }}
+                      className={`w-full flex items-start gap-3 px-3 ps-6 py-2 text-start transition-colors ${
+                        activeSection === section.key
+                          ? 'bg-primary/10 text-primary border-e-2 border-primary'
+                          : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                      }`}
+                    >
+                      <section.icon className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium truncate">{section.label}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">{section.desc}</div>
+                      </div>
+                    </button>
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+          </div>
+
+          {/* Editor Panel */}
+          <div className={`flex flex-col min-h-0 overflow-hidden flex-1 ${showPreview ? 'w-1/2' : ''}`}>
+            {currentSection && (
+              <Card className="h-full flex flex-col overflow-hidden rounded-none border-0 border-e">
+                <CardHeader className="flex-shrink-0 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        {React.createElement(currentSection.icon, { className: "w-5 h-5" })}
+                        {currentSection.label}
+                      </CardTitle>
+                      <CardDescription>
+                        {isRTL 
+                          ? 'قم بتحرير المحتوى باللغتين العربية والإنجليزية'
+                          : 'Edit content in both English and Arabic'
+                        }
+                      </CardDescription>
+                    </div>
+                    <Button onClick={() => handleSave(activeSection)} disabled={updateMutation.isPending} size="sm">
+                      {updateMutation.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-hidden p-0">
+                  <ScrollArea className="h-full px-6 pb-6">
+                    {renderSectionContent(activeSection)}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Live Preview Panel */}
