@@ -377,6 +377,23 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       currency: 'SAR',
     });
 
+    // Send to GHL form webhook
+    sendFormData({
+      full_name: fullName,
+      email,
+      phone,
+      courseName: course.title,
+      orderStatus: 'purchased',
+      answers: {
+        form: 'checkout',
+        course_id: course.id,
+        amount: discountedPrice,
+        currency: 'SAR',
+        coupon: promoApplied ? promoCode : undefined,
+      },
+      isRTL,
+    });
+
     await submitPayment({
       courseId: course.id,
       currency: 'SAR',

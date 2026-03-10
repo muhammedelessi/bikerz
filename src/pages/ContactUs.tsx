@@ -76,6 +76,21 @@ const ContactUs: React.FC = () => {
       setTicketNumber(ticketNum);
       setIsSubmitted(true);
       toast.success(isRTL ? 'تم إرسال طلبك بنجاح!' : 'Your request has been submitted!');
+
+      // Send to GHL form webhook
+      sendFormData({
+        full_name: formData.name || user?.user_metadata?.full_name || '',
+        email: formData.email || user?.email || '',
+        orderStatus: 'not purchased',
+        answers: {
+          form: 'contact',
+          category: formData.category,
+          subject: formData.subject,
+          message: formData.message,
+          ticket_number: ticketNum,
+        },
+        isRTL,
+      });
     },
     onError: (error: Error) => {
       toast.error(error.message || (isRTL ? 'فشل في إرسال الطلب' : 'Failed to submit request'));

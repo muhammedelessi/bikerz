@@ -210,6 +210,23 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
         bike_model: bikeModel || null,
       });
 
+      // Send to GHL form webhook
+      sendFormData({
+        full_name: profile?.full_name || riderNickname || '',
+        email: user.email || '',
+        phone: phone || '',
+        orderStatus: 'not purchased',
+        answers: {
+          form: 'profile_completion',
+          rider_nickname: riderNickname,
+          bike_brand: bikeBrand,
+          bike_model: bikeModel,
+          engine_size_cc: engineSize,
+          riding_experience_years: ridingYears,
+        },
+        isRTL,
+      });
+
       // Log activity
       await supabase.from('user_activity_timeline').insert({
         user_id: user.id,

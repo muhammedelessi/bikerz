@@ -89,6 +89,15 @@ const Signup: React.FC = () => {
       console.error('GHL signup sync failed:', syncErr);
     }
 
+    // Send to GHL form webhook
+    sendFormData({
+      full_name: name,
+      email,
+      orderStatus: 'not purchased',
+      answers: { form: 'signup' },
+      isRTL,
+    });
+
     toast.success(t('auth.signup.success'));
     setIsLoading(false);
     setShowProfileWizard(true);
