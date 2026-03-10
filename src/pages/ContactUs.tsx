@@ -26,6 +26,7 @@ const ContactUs: React.FC = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { sendFormData } = useGHLFormWebhook();
 
   const [formData, setFormData] = useState({
     name: '',
