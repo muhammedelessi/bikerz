@@ -54,6 +54,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
   const { isRTL } = useLanguage();
   const { user, profile } = useAuth();
   const { syncContact } = useGHLSync();
+  const { sendFormData } = useGHLFormWebhook();
   
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
