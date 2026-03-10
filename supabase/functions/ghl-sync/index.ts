@@ -96,6 +96,8 @@ Deno.serve(async (req) => {
         webhookPayload.bike_brand = data?.bike_brand || ''
         webhookPayload.bike_model = data?.bike_model || ''
         webhookPayload.rider_nickname = data?.rider_nickname || ''
+        // Override email if provided in data (e.g. during signup)
+        if (data?.email) webhookPayload.email = data.email
         webhookPayload.tags = 'academy-student'
         break
       }
