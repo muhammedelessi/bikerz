@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { supabase } from '@/integrations/supabase/client';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -71,6 +72,21 @@ const Signup: React.FC = () => {
       return;
     }
     
+    // Sync new contact to GHL CRM immediately after signup
+    try {
+      await supabase.functions.invoke('ghl-sync', {
+        body: {
+          action: 'create_or_update_contact',
+          data: {
+            full_name: name,
+            email,
+          },
+        },
+      });
+    } catch (syncErr) {
+      console.error('GHL signup sync failed:', syncErr);
+    }
+
     toast.success(t('auth.signup.success'));
     setIsLoading(false);
     setShowProfileWizard(true);
