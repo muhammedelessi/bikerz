@@ -862,9 +862,9 @@ const CourseLearn: React.FC = () => {
               >
                 {/* Video Player - Compact size */}
                 {currentLesson?.video_url && (
-                  <div className="relative bg-black w-full overflow-hidden" style={{ maxHeight: '55vh' }}>
+                  <div className="relative bg-black w-full aspect-video">
                     {isYouTubeUrl(currentLesson.video_url) ? (
-                      <div className="aspect-video" style={{ maxHeight: '55vh' }}>
+                      <div className="aspect-video">
                         <iframe
                           src={`https://www.youtube.com/embed/${getYouTubeVideoId(currentLesson.video_url)}?rel=0&modestbranding=1`}
                           className="w-full h-full"
