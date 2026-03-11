@@ -254,34 +254,19 @@ async function upsertAndSendGHLWebhook(
 
     const address = [profile?.city, profile?.country, profile?.postal_code].filter(Boolean).join(", ");
 
-    // Parse courses JSON into array and inject amount for current course
-    let parsedCourses: Array<Record<string, unknown>> = [];
-    try {
-      parsedCourses = JSON.parse(coursesJson);
-    } catch {
-      parsedCourses = [];
-    }
-    parsedCourses = parsedCourses.map((c: Record<string, unknown>) =>
-      c.courseName === courseName
-        ? { ...c, amount: String(verifiedCharge?.amount || charge.amount || "") }
-        : c
-    );
-
     const payload = {
-      contact: {
-        email: authUser?.user?.email || (verifiedCharge?.receipt as Record<string, unknown>)?.email || "",
-        phone: profile?.phone || "",
-        full_name: profile?.full_name || "",
-        city: profile?.city || "",
-        country: profile?.country || "",
-        address,
-        source: "direct",
-      },
-      courses: parsedCourses,
-      summary: {
-        totalPurchased,
-        totalCourses: parsedCourses.length,
-      },
+      email: authUser?.user?.email || (verifiedCharge?.receipt as Record<string, unknown>)?.email || "",
+      phone: profile?.phone || "",
+      full_name: profile?.full_name || "",
+      city: profile?.city || "",
+      country: profile?.country || "",
+      address,
+      courseName,
+      amount: String(verifiedCharge?.amount || charge.amount || ""),
+      source: "direct",
+      orderStatus: ghlOrderStatus,
+      courses: coursesJson,
+      totalPurchased,
     };
 
     console.log("Sending GHL webhook for status:", status, "payload:", JSON.stringify(payload));

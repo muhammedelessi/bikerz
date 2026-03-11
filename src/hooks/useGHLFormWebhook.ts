@@ -27,46 +27,28 @@ if (typeof window !== 'undefined') {
   }
 }
 
-interface ContactData {
+interface FormWebhookData {
+  full_name?: string;
   email?: string;
   phone?: string;
-  full_name?: string;
   city?: string;
   country?: string;
   address?: string;
-  source?: string;
-}
-
-interface CourseItem {
-  courseName: string;
-  orderStatus: string;
+  courseName?: string;
   amount?: string;
-  date: string;
-}
-
-interface WebhookPayload {
-  contact: ContactData;
-  courses?: CourseItem[];
-  summary?: {
-    totalPurchased: number;
-    totalCourses: number;
-  };
-  // Internal flags (not sent to webhook)
+  orderStatus?: string;
+  courses?: string;
+  totalPurchased?: number;
   isRTL?: boolean;
   silent?: boolean;
 }
 
 export function useGHLFormWebhook() {
-  const sendFormData = useCallback(async (data: WebhookPayload) => {
-    const { isRTL, silent, contact, courses, summary } = data;
-
+  const sendFormData = useCallback(async (data: FormWebhookData) => {
+    const { isRTL, silent, ...rest } = data;
     const payload = {
-      contact: {
-        ...contact,
-        source: contact.source || getVisitSource(),
-      },
-      courses: courses || [],
-      summary: summary || { totalPurchased: 0, totalCourses: 0 },
+      ...rest,
+      source: getVisitSource(),
     };
 
     try {
@@ -97,10 +79,10 @@ export function useGHLFormWebhook() {
     courseId: string,
     courseName: string,
     orderStatus: string,
-    amount: string,
-    contactData: ContactData & { isRTL?: boolean; silent?: boolean }
+    extraData: Omit<FormWebhookData, 'courses' | 'totalPurchased' | 'orderStatus' | 'courseName'>
   ) => {
     try {
+      // Upsert and get full array
       const { data, error: rpcError } = await supabase.rpc('upsert_course_status', {
         p_user_id: userId,
         p_course_id: courseId,
@@ -116,29 +98,12 @@ export function useGHLFormWebhook() {
       const coursesJson = row?.courses_json || '[]';
       const totalPurchased = row?.total_purchased ?? 0;
 
-      let parsedCourses: CourseItem[] = [];
-      try {
-        parsedCourses = JSON.parse(coursesJson);
-      } catch {
-        parsedCourses = [];
-      }
-
-      // Inject amount into the current course entry
-      parsedCourses = parsedCourses.map((c: CourseItem) =>
-        c.courseName === courseName ? { ...c, amount } : c
-      );
-
-      const { isRTL, silent, ...contact } = contactData;
-
       return sendFormData({
-        contact,
-        courses: parsedCourses,
-        summary: {
-          totalPurchased,
-          totalCourses: parsedCourses.length,
-        },
-        isRTL,
-        silent,
+        ...extraData,
+        courseName,
+        orderStatus,
+        courses: coursesJson,
+        totalPurchased,
       });
     } catch (err) {
       console.error('sendCourseStatus failed:', err);
@@ -151,7 +116,7 @@ export function useGHLFormWebhook() {
    */
   const sendWithCourses = useCallback(async (
     userId: string,
-    contactData: ContactData & { isRTL?: boolean; silent?: boolean }
+    extraData: FormWebhookData
   ) => {
     try {
       const { data, error: rpcError } = await supabase.rpc('get_user_course_statuses', {
@@ -166,29 +131,14 @@ export function useGHLFormWebhook() {
       const coursesJson = row?.courses_json || '[]';
       const totalPurchased = row?.total_purchased ?? 0;
 
-      let parsedCourses: CourseItem[] = [];
-      try {
-        parsedCourses = JSON.parse(coursesJson);
-      } catch {
-        parsedCourses = [];
-      }
-
-      const { isRTL, silent, ...contact } = contactData;
-
       return sendFormData({
-        contact,
-        courses: parsedCourses,
-        summary: {
-          totalPurchased,
-          totalCourses: parsedCourses.length,
-        },
-        isRTL,
-        silent,
+        ...extraData,
+        courses: coursesJson,
+        totalPurchased,
       });
     } catch (err) {
       console.error('sendWithCourses failed:', err);
-      const { isRTL, silent, ...contact } = contactData;
-      return sendFormData({ contact, isRTL, silent });
+      return sendFormData(extraData);
     }
   }, [sendFormData]);
 
