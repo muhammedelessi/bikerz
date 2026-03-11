@@ -10,6 +10,9 @@ export interface ExtendedProfile {
   full_name: string | null;
   avatar_url: string | null;
   phone: string | null;
+  city: string | null;
+  country: string | null;
+  postal_code: string | null;
   rider_nickname: string | null;
   bike_brand: string | null;
   bike_model: string | null;
