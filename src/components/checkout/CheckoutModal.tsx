@@ -364,20 +364,24 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           p_final_amount: 0,
         });
 
-        // Send GHL webhook for free enrollment
-        sendFormData({
-          full_name: fullName,
-          email,
-          phone,
-          city,
-          country,
-          address: composedAddress,
-          courseName: course.title,
-          amount: '0',
-          orderStatus: 'purchased',
-          isRTL,
-          silent: true,
-        });
+        // Send GHL webhook for free enrollment with per-course tracking
+        sendCourseStatus(
+          user!.id,
+          course.id,
+          course.title,
+          'purchased',
+          {
+            full_name: fullName,
+            email,
+            phone,
+            city,
+            country,
+            address: composedAddress,
+            amount: '0',
+            isRTL,
+            silent: true,
+          }
+        );
 
         toast.success(isRTL ? 'تم التسجيل بنجاح! الدورة مجانية بالكامل' : 'Enrolled successfully! Course is fully free');
         onSuccess();
