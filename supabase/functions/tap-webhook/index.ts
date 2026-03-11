@@ -207,7 +207,7 @@ function mapToGHLOrderStatus(status: string): string {
   }
 }
 
-async function sendGHLWebhook(
+async function upsertAndSendGHLWebhook(
   adminClient: ReturnType<typeof createClient>,
   charge: { user_id: string; course_id: string | null; amount: number; metadata: unknown },
   verifiedCharge: Record<string, unknown>,
@@ -235,10 +235,27 @@ async function sendGHLWebhook(
       courseName = course?.title || "";
     }
 
+    const ghlOrderStatus = mapToGHLOrderStatus(status);
+
+    // Upsert course status and get full courses array
+    let coursesJson = "[]";
+    let totalPurchased = 0;
+    if (charge.course_id) {
+      const { data: upsertResult } = await adminClient.rpc("upsert_course_status", {
+        p_user_id: charge.user_id,
+        p_course_id: charge.course_id,
+        p_course_name: courseName,
+        p_order_status: ghlOrderStatus,
+      });
+      const row = Array.isArray(upsertResult) ? upsertResult[0] : upsertResult;
+      coursesJson = row?.courses_json || "[]";
+      totalPurchased = row?.total_purchased ?? 0;
+    }
+
     const address = [profile?.city, profile?.country, profile?.postal_code].filter(Boolean).join(", ");
 
     const payload = {
-      email: authUser?.user?.email || verifiedCharge?.receipt?.email || "",
+      email: authUser?.user?.email || (verifiedCharge?.receipt as Record<string, unknown>)?.email || "",
       phone: profile?.phone || "",
       full_name: profile?.full_name || "",
       city: profile?.city || "",
@@ -247,7 +264,9 @@ async function sendGHLWebhook(
       courseName,
       amount: String(verifiedCharge?.amount || charge.amount || ""),
       source: "direct",
-      orderStatus: mapToGHLOrderStatus(status),
+      orderStatus: ghlOrderStatus,
+      courses: coursesJson,
+      totalPurchased,
     };
 
     console.log("Sending GHL webhook for status:", status, "payload:", JSON.stringify(payload));
