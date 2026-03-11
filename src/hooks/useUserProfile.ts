@@ -68,7 +68,7 @@ export function calculateExperienceLevel(totalXp: number, completedLessons: numb
 
 export function useUserProfile() {
   const { user } = useAuth();
-  const { syncContact } = useGHLSync();
+  const { sendFormData } = useGHLFormWebhook();
   const [profile, setProfile] = useState<ExtendedProfile | null>(null);
   const [learningStats, setLearningStats] = useState<LearningStats | null>(null);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -90,8 +90,22 @@ export function useUserProfile() {
       if (error) throw error;
 
       setProfile(prev => prev ? { ...prev, ...updates } : null);
-      // Sync updated profile to GHL CRM
-      syncContact(updates as Record<string, unknown>);
+
+      // Send updated fields to GHL via form webhook (uses email to match contact)
+      const ghlPayload: Record<string, string | undefined> = {
+        email: user.email,
+      };
+      if (updates.full_name !== undefined) ghlPayload.full_name = updates.full_name || '';
+      if (updates.phone !== undefined) ghlPayload.phone = updates.phone || '';
+      if (updates.city !== undefined) ghlPayload.city = updates.city || '';
+      if (updates.country !== undefined) ghlPayload.country = updates.country || '';
+      if (updates.city !== undefined || updates.country !== undefined) {
+        const mergedProfile = { ...profile, ...updates };
+        ghlPayload.address = [mergedProfile?.city, mergedProfile?.country].filter(Boolean).join(', ');
+      }
+
+      sendFormData({ ...ghlPayload, silent: true });
+
       toast.success('Profile updated successfully');
     } catch (error) {
       console.error('Error updating profile:', error);
