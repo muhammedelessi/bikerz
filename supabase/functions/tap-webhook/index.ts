@@ -93,6 +93,9 @@ Deno.serve(async (req) => {
       })
       .eq("id", existingCharge.id);
 
+    // ── Send GHL webhook on every status change ──
+    await sendGHLWebhook(adminClient, existingCharge, verifiedCharge, verifiedStatus);
+
     // ── Handle successful payment: enroll user & increment coupon usage ──
     if (verifiedStatus === "succeeded" && existingCharge.course_id) {
       const { error: enrollError } = await adminClient
@@ -186,4 +189,78 @@ function sanitizeTapResponse(data: Record<string, unknown>): Record<string, unkn
   }
   delete sanitized.card;
   return sanitized;
+}
+
+const GHL_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/ddAvdgekc94cWL9NBHK1/webhook-trigger/9a3cf7c3-0405-4667-ad02-e9c89073feb4';
+
+function mapToGHLOrderStatus(status: string): string {
+  switch (status) {
+    case "succeeded":
+      return "purchased";
+    case "processing":
+      return "pending";
+    case "failed":
+    case "cancelled":
+      return "cancelled";
+    default:
+      return "pending";
+  }
+}
+
+async function sendGHLWebhook(
+  adminClient: ReturnType<typeof createClient>,
+  charge: { user_id: string; course_id: string | null; amount: number; metadata: unknown },
+  verifiedCharge: Record<string, unknown>,
+  status: string
+) {
+  try {
+    // Fetch user profile for contact details
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("full_name, phone, city, country, postal_code")
+      .eq("user_id", charge.user_id)
+      .maybeSingle();
+
+    // Fetch user email from auth
+    const { data: authUser } = await adminClient.auth.admin.getUserById(charge.user_id);
+
+    // Fetch course name
+    let courseName = "";
+    if (charge.course_id) {
+      const { data: course } = await adminClient
+        .from("courses")
+        .select("title")
+        .eq("id", charge.course_id)
+        .maybeSingle();
+      courseName = course?.title || "";
+    }
+
+    const address = [profile?.city, profile?.country, profile?.postal_code].filter(Boolean).join(", ");
+
+    const payload = {
+      email: authUser?.user?.email || verifiedCharge?.receipt?.email || "",
+      phone: profile?.phone || "",
+      full_name: profile?.full_name || "",
+      city: profile?.city || "",
+      country: profile?.country || "",
+      address,
+      courseName,
+      amount: String(verifiedCharge?.amount || charge.amount || ""),
+      source: "direct",
+      orderStatus: mapToGHLOrderStatus(status),
+    };
+
+    console.log("Sending GHL webhook for status:", status, "payload:", JSON.stringify(payload));
+
+    const res = await fetch(GHL_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    console.log("GHL webhook response:", res.status);
+  } catch (err) {
+    // Non-blocking: don't fail the webhook processing if GHL fails
+    console.error("GHL webhook send failed:", err);
+  }
 }
