@@ -91,11 +91,9 @@ const Signup: React.FC = () => {
 
     // Send to GHL form webhook with courses array
     sendFormData({
-      full_name: name,
-      email,
-      orderStatus: 'not purchased',
-      courses: '[]',
-      totalPurchased: 0,
+      contact: { full_name: name, email },
+      courses: [],
+      summary: { totalPurchased: 0, totalCourses: 0 },
       isRTL,
     });
 

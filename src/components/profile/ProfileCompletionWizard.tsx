@@ -212,10 +212,11 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
 
       // Send to GHL form webhook
       sendFormData({
-        full_name: profile?.full_name || riderNickname || '',
-        email: user.email || '',
-        phone: phone || '',
-        orderStatus: 'not purchased',
+        contact: {
+          full_name: profile?.full_name || riderNickname || '',
+          email: user.email || '',
+          phone: phone || '',
+        },
         isRTL,
       });
 
