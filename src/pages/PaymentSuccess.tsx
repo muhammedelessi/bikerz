@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import bikerLogo from '@/assets/bikerz-logo.png';
 import { trackPurchase } from '@/utils/metaPixel';
-import { useGHLSync } from '@/hooks/useGHLSync';
+import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
 import type { User } from '@supabase/supabase-js';
 
 function useAuthReady() {
