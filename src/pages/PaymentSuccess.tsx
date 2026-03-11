@@ -75,16 +75,18 @@ const PaymentSuccess: React.FC = () => {
         value: course.price ?? 0,
         currency: 'SAR',
       });
-      // Sync payment to GHL CRM
-      trackPayment({
-        amount: course.price ?? 0,
-        currency: 'SAR',
-        course_id: courseId,
-        course_title: course.title,
-        status: 'completed',
-      });
-      // Also sync/create the contact
-      syncContact({});
+      // Send GHL webhook with "purchased" status (flat payload)
+      sendCourseStatus(
+        user!.id,
+        courseId,
+        course.title,
+        'purchased',
+        {
+          email: user!.email || '',
+          amount: String(course.price ?? 0),
+          silent: true,
+        }
+      );
     }
   }, [verifyStatus, course, courseId]);
 
