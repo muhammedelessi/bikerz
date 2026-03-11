@@ -45,7 +45,7 @@ const PaymentSuccess: React.FC = () => {
   const { user, isReady } = useAuthReady();
   const queryClient = useQueryClient();
   const tapId = searchParams.get('tap_id');
-  const { trackPayment, syncContact } = useGHLSync();
+  const { sendCourseStatus } = useGHLFormWebhook();
 
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>('verifying');
   const [confettiFired, setConfettiFired] = useState(false);
