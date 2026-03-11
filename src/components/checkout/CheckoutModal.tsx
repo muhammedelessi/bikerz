@@ -99,7 +99,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     submitPayment,
     reset: resetPayment,
   } = useTapPayment();
-  const { sendFormData } = useGHLFormWebhook();
+  const { sendCourseStatus } = useGHLFormWebhook();
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('profile');
   const [promoCode, setPromoCode] = useState('');
