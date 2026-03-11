@@ -93,8 +93,8 @@ Deno.serve(async (req) => {
       })
       .eq("id", existingCharge.id);
 
-    // ── Send GHL webhook on every status change ──
-    await sendGHLWebhook(adminClient, existingCharge, verifiedCharge, verifiedStatus);
+    // ── Upsert course status and send GHL webhook on every status change ──
+    await upsertAndSendGHLWebhook(adminClient, existingCharge, verifiedCharge, verifiedStatus);
 
     // ── Handle successful payment: enroll user & increment coupon usage ──
     if (verifiedStatus === "succeeded" && existingCharge.course_id) {
