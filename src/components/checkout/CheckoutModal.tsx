@@ -400,19 +400,23 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     });
 
     // Send GHL webhook with "pending" status when initiating payment
-    sendFormData({
-      full_name: fullName,
-      email,
-      phone,
-      city,
-      country,
-      address: composedAddress,
-      courseName: course.title,
-      amount: String(discountedPrice),
-      orderStatus: 'pending',
-      isRTL,
-      silent: true,
-    });
+    sendCourseStatus(
+      user!.id,
+      course.id,
+      course.title,
+      'pending',
+      {
+        full_name: fullName,
+        email,
+        phone,
+        city,
+        country,
+        address: composedAddress,
+        amount: String(discountedPrice),
+        isRTL,
+        silent: true,
+      }
+    );
 
     await submitPayment({
       courseId: course.id,
