@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import bikerLogo from '@/assets/bikerz-logo.png';
 import { trackPurchase } from '@/utils/metaPixel';
-import { useGHLSync } from '@/hooks/useGHLSync';
+import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
 import type { User } from '@supabase/supabase-js';
 
 function useAuthReady() {
@@ -45,7 +45,7 @@ const PaymentSuccess: React.FC = () => {
   const { user, isReady } = useAuthReady();
   const queryClient = useQueryClient();
   const tapId = searchParams.get('tap_id');
-  const { trackPayment, syncContact } = useGHLSync();
+  const { sendCourseStatus } = useGHLFormWebhook();
 
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>('verifying');
   const [confettiFired, setConfettiFired] = useState(false);
@@ -75,16 +75,18 @@ const PaymentSuccess: React.FC = () => {
         value: course.price ?? 0,
         currency: 'SAR',
       });
-      // Sync payment to GHL CRM
-      trackPayment({
-        amount: course.price ?? 0,
-        currency: 'SAR',
-        course_id: courseId,
-        course_title: course.title,
-        status: 'completed',
-      });
-      // Also sync/create the contact
-      syncContact({});
+      // Send GHL webhook with "purchased" status (flat payload)
+      sendCourseStatus(
+        user!.id,
+        courseId,
+        course.title,
+        'purchased',
+        {
+          email: user!.email || '',
+          amount: String(course.price ?? 0),
+          silent: true,
+        }
+      );
     }
   }, [verifyStatus, course, courseId]);
 
