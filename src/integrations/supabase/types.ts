@@ -1798,6 +1798,47 @@ export type Database = {
           },
         ]
       }
+      user_course_statuses: {
+        Row: {
+          course_id: string
+          course_name: string
+          created_at: string
+          id: string
+          order_status: string
+          status_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          course_name?: string
+          created_at?: string
+          id?: string
+          order_status?: string
+          status_date?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          course_name?: string
+          created_at?: string
+          id?: string
+          order_status?: string
+          status_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_course_statuses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_daily_progress: {
         Row: {
           challenge_id: string
@@ -2545,6 +2586,13 @@ export type Database = {
       }
     }
     Functions: {
+      get_user_course_statuses: {
+        Args: { p_user_id: string }
+        Returns: {
+          courses_json: string
+          total_purchased: number
+        }[]
+      }
       grade_lesson_activity: {
         Args: { p_activity_id: string; p_user_answers: string[] }
         Returns: {
@@ -2582,6 +2630,18 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      upsert_course_status: {
+        Args: {
+          p_course_id: string
+          p_course_name: string
+          p_order_status: string
+          p_user_id: string
+        }
+        Returns: {
+          courses_json: string
+          total_purchased: number
+        }[]
+      }
       validate_and_apply_coupon: {
         Args: {
           p_code: string
