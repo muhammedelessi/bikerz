@@ -370,6 +370,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           course.id,
           course.title,
           'purchased',
+          '0',
           {
             full_name: fullName,
             email,
@@ -377,7 +378,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             city,
             country,
             address: composedAddress,
-            amount: '0',
             isRTL,
             silent: true,
           }
