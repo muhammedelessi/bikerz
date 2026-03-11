@@ -338,6 +338,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const handleSubmitPayment = async () => {
     if (!isPaymentReady) return;
 
+   // Compose address from billing fields
+    const composedAddress = [city, country, postalCode].filter(Boolean).join(', ');
+
     // If 100% discount, enroll directly
     if (discountedPrice <= 0 && appliedCoupon) {
       try {
@@ -361,6 +364,21 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           p_final_amount: 0,
         });
 
+        // Send GHL webhook for free enrollment
+        sendFormData({
+          full_name: fullName,
+          email,
+          phone,
+          city,
+          country,
+          address: composedAddress,
+          courseName: course.title,
+          amount: '0',
+          orderStatus: 'purchased',
+          isRTL,
+          silent: true,
+        });
+
         toast.success(isRTL ? 'تم التسجيل بنجاح! الدورة مجانية بالكامل' : 'Enrolled successfully! Course is fully free');
         onSuccess();
         onOpenChange(false);
@@ -377,14 +395,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       currency: 'SAR',
     });
 
-    // Send to GHL form webhook
+    // Send GHL webhook with "pending" status when initiating payment
     sendFormData({
       full_name: fullName,
       email,
       phone,
+      city,
+      country,
+      address: composedAddress,
       courseName: course.title,
-      orderStatus: 'purchased',
+      amount: String(discountedPrice),
+      orderStatus: 'pending',
       isRTL,
+      silent: true,
     });
 
     await submitPayment({
