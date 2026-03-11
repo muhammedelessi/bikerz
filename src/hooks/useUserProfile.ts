@@ -107,7 +107,12 @@ export function useUserProfile() {
         ghlPayload.address = [mergedProfile?.city, mergedProfile?.country].filter(Boolean).join(', ');
       }
 
-      sendFormData({ ...ghlPayload, silent: true });
+      console.log('[GHL] Profile update webhook payload:', ghlPayload);
+      sendFormData({ ...ghlPayload, silent: true }).then(ok => {
+        console.log('[GHL] Profile update webhook result:', ok);
+      }).catch(err => {
+        console.error('[GHL] Profile update webhook error:', err);
+      });
 
       toast.success('Profile updated successfully');
     } catch (error) {
