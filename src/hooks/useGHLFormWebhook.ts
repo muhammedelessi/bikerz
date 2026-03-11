@@ -34,14 +34,17 @@ interface FormWebhookData {
   phone?: string;
   city?: string;
   country?: string;
+  address?: string;
   courseName?: string;
+  amount?: string;
   orderStatus?: string;
   isRTL?: boolean;
+  silent?: boolean;
 }
 
 export function useGHLFormWebhook() {
   const sendFormData = useCallback(async (data: FormWebhookData) => {
-    const { isRTL, ...rest } = data;
+    const { isRTL, silent, ...rest } = data;
     const payload = {
       ...rest,
       source: getVisitSource(),
@@ -54,11 +57,15 @@ export function useGHLFormWebhook() {
 
       if (error) throw error;
 
-      toast.success(isRTL ? '✅ تم إرسال البيانات بنجاح' : '✅ Data submitted successfully');
+      if (!silent) {
+        toast.success(isRTL ? '✅ تم إرسال البيانات بنجاح' : '✅ Data submitted successfully');
+      }
       return true;
     } catch (err) {
       console.error('GHL form webhook failed:', err);
-      toast.error(isRTL ? '❌ فشل في إرسال البيانات' : '❌ Failed to submit data');
+      if (!silent) {
+        toast.error(isRTL ? '❌ فشل في إرسال البيانات' : '❌ Failed to submit data');
+      }
       return false;
     }
   }, []);
