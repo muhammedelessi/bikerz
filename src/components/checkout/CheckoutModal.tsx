@@ -99,7 +99,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     submitPayment,
     reset: resetPayment,
   } = useTapPayment();
-  const { sendFormData } = useGHLFormWebhook();
+  const { sendCourseStatus } = useGHLFormWebhook();
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('profile');
   const [promoCode, setPromoCode] = useState('');
@@ -364,20 +364,24 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           p_final_amount: 0,
         });
 
-        // Send GHL webhook for free enrollment
-        sendFormData({
-          full_name: fullName,
-          email,
-          phone,
-          city,
-          country,
-          address: composedAddress,
-          courseName: course.title,
-          amount: '0',
-          orderStatus: 'purchased',
-          isRTL,
-          silent: true,
-        });
+        // Send GHL webhook for free enrollment with per-course tracking
+        sendCourseStatus(
+          user!.id,
+          course.id,
+          course.title,
+          'purchased',
+          {
+            full_name: fullName,
+            email,
+            phone,
+            city,
+            country,
+            address: composedAddress,
+            amount: '0',
+            isRTL,
+            silent: true,
+          }
+        );
 
         toast.success(isRTL ? 'تم التسجيل بنجاح! الدورة مجانية بالكامل' : 'Enrolled successfully! Course is fully free');
         onSuccess();
@@ -396,19 +400,23 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     });
 
     // Send GHL webhook with "pending" status when initiating payment
-    sendFormData({
-      full_name: fullName,
-      email,
-      phone,
-      city,
-      country,
-      address: composedAddress,
-      courseName: course.title,
-      amount: String(discountedPrice),
-      orderStatus: 'pending',
-      isRTL,
-      silent: true,
-    });
+    sendCourseStatus(
+      user!.id,
+      course.id,
+      course.title,
+      'pending',
+      {
+        full_name: fullName,
+        email,
+        phone,
+        city,
+        country,
+        address: composedAddress,
+        amount: String(discountedPrice),
+        isRTL,
+        silent: true,
+      }
+    );
 
     await submitPayment({
       courseId: course.id,
