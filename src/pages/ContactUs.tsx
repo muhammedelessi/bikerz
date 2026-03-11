@@ -79,9 +79,10 @@ const ContactUs: React.FC = () => {
 
       // Send to GHL form webhook
       sendFormData({
-        full_name: formData.name || user?.user_metadata?.full_name || '',
-        email: formData.email || user?.email || '',
-        orderStatus: 'not purchased',
+        contact: {
+          full_name: formData.name || user?.user_metadata?.full_name || '',
+          email: formData.email || user?.email || '',
+        },
         isRTL,
       });
     },

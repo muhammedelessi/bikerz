@@ -95,19 +95,19 @@ export function useUserProfile() {
       setProfile(prev => prev ? { ...prev, ...updates } : null);
 
       // Send updated fields to GHL via form webhook (uses email to match contact)
-      const ghlPayload: Record<string, string | undefined> = {
+      const contactUpdate: Record<string, string | undefined> = {
         email: user.email,
       };
-      if (updates.full_name !== undefined) ghlPayload.full_name = updates.full_name || '';
-      if (updates.phone !== undefined) ghlPayload.phone = updates.phone || '';
-      if (updates.city !== undefined) ghlPayload.city = updates.city || '';
-      if (updates.country !== undefined) ghlPayload.country = updates.country || '';
+      if (updates.full_name !== undefined) contactUpdate.full_name = updates.full_name || '';
+      if (updates.phone !== undefined) contactUpdate.phone = updates.phone || '';
+      if (updates.city !== undefined) contactUpdate.city = updates.city || '';
+      if (updates.country !== undefined) contactUpdate.country = updates.country || '';
       if (updates.city !== undefined || updates.country !== undefined) {
         const mergedProfile = { ...profile, ...updates };
-        ghlPayload.address = [mergedProfile?.city, mergedProfile?.country].filter(Boolean).join(', ');
+        contactUpdate.address = [mergedProfile?.city, mergedProfile?.country].filter(Boolean).join(', ');
       }
 
-      sendFormData({ ...ghlPayload, silent: true });
+      sendFormData({ contact: contactUpdate, silent: true });
 
       toast.success('Profile updated successfully');
     } catch (error) {
