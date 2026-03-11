@@ -89,11 +89,13 @@ const Signup: React.FC = () => {
       console.error('GHL signup sync failed:', syncErr);
     }
 
-    // Send to GHL form webhook
+    // Send to GHL form webhook with courses array
     sendFormData({
       full_name: name,
       email,
       orderStatus: 'not purchased',
+      courses: '[]',
+      totalPurchased: 0,
       isRTL,
     });
 
