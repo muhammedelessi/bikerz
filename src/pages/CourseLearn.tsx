@@ -882,8 +882,8 @@ const CourseLearn: React.FC = () => {
           />
         )}
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-auto">
+        {/* Main Content - scrolls independently, leaves space for fixed sidebar on desktop */}
+        <main className={`flex-1 overflow-auto ${isRTL ? 'lg:me-80' : 'lg:me-80'}`}>
           <AnimatePresence mode="wait">
             {showTest && testChapter?.test ? (
               <motion.div
