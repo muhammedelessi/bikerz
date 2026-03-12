@@ -328,6 +328,12 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
   initialTime = 0,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const onEndedRef = useRef(onEnded);
+  const onProgressRef = useRef(onProgress);
+  const onTimeUpdateRef = useRef(onTimeUpdate);
+  useEffect(() => { onEndedRef.current = onEnded; }, [onEnded]);
+  useEffect(() => { onProgressRef.current = onProgress; }, [onProgress]);
+  useEffect(() => { onTimeUpdateRef.current = onTimeUpdate; }, [onTimeUpdate]);
   const hlsRef = useRef<Hls | null>(null);
   const hlsInitializingRef = useRef(false); // Track HLS setup to suppress native errors
   const restoredRef = useRef(false);
