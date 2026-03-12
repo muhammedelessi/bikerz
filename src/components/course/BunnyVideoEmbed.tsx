@@ -127,6 +127,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   const fireOnEnded = useCallback(() => {
     if (endedCalledRef.current) return;
     endedCalledRef.current = true;
+    console.log("[BunnyEmbed] fireOnEnded called! progressRef:", progressRef.current, "durationRef:", durationRef.current);
 
     if (endedTimeoutRef.current) {
       clearTimeout(endedTimeoutRef.current);
@@ -257,10 +258,14 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       try {
+        const raw = event.data;
         const data =
-          typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+          typeof raw === "string" ? JSON.parse(raw) : raw;
 
         if (!data || typeof data !== "object") return;
+
+        // Debug: log ALL parsed messages from iframe
+        console.log("[BunnyEmbed] postMessage received:", JSON.stringify(data).slice(0, 300), "origin:", event.origin);
 
         const record = data as Record<string, unknown>;
         const payload =

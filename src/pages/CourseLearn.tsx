@@ -579,6 +579,7 @@ const CourseLearn: React.FC = () => {
   };
 
   const handleVideoEnded = useCallback(() => {
+    console.log("[CourseLearn] handleVideoEnded called, currentLessonId:", currentLessonId, "nextLesson:", nextLesson?.id);
     if (
       currentLessonId &&
       !lessonProgressRef.current.some(lp => lp.lesson_id === currentLessonId && lp.is_completed) &&
@@ -590,8 +591,13 @@ const CourseLearn: React.FC = () => {
     if (nextLesson) {
       const nextChapter = chapters.find(ch => ch.lessons.some(l => l.id === nextLesson.id));
       if (nextChapter && !isLessonLocked(nextLesson, nextChapter)) {
+        console.log("[CourseLearn] Setting showNextCountdown = true");
         setShowNextCountdown(true);
+      } else {
+        console.log("[CourseLearn] Next lesson is locked or no chapter found");
       }
+    } else {
+      console.log("[CourseLearn] No next lesson available");
     }
   }, [currentLessonId, nextLesson, chapters]);
 
