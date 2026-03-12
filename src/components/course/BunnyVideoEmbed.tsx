@@ -94,8 +94,10 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
 
   // Fallback refs for reliable end detection
   const progressRef = useRef<number>(0);
+  const durationRef = useRef<number | null>(null);
   const endedCalledRef = useRef(false);
   const endedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onEndedRef = useRef(onEnded);
   const onProgressRef = useRef(onProgress);
   const onTimeUpdateRef = useRef(onTimeUpdate);
