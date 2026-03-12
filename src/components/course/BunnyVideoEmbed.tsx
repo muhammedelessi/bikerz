@@ -44,12 +44,16 @@ const loadPlayerJs = async (): Promise<void> => {
     );
 
     if (existingScript) {
-      existingScript.addEventListener("load", () => resolve(), { once: true });
-      existingScript.addEventListener(
-        "error",
-        () => reject(new Error("Failed to load Bunny Player.js")),
-        { once: true }
-      );
+      if (window.playerjs?.Player) {
+        resolve();
+        return;
+      }
+
+      const onLoad = () => resolve();
+      const onError = () => reject(new Error("Failed to load Bunny Player.js"));
+
+      existingScript.addEventListener("load", onLoad, { once: true });
+      existingScript.addEventListener("error", onError, { once: true });
       return;
     }
 
@@ -59,11 +63,16 @@ const loadPlayerJs = async (): Promise<void> => {
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("Failed to load Bunny Player.js"));
     document.head.appendChild(script);
-  }).then(() => {
-    if (!window.playerjs?.Player) {
-      throw new Error("Bunny Player.js did not initialize");
-    }
-  });
+  })
+    .then(() => {
+      if (!window.playerjs?.Player) {
+        throw new Error("Bunny Player.js did not initialize");
+      }
+    })
+    .catch((error) => {
+      playerJsLoaderPromise = null;
+      throw error;
+    });
 
   return playerJsLoaderPromise;
 };
