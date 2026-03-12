@@ -608,6 +608,39 @@ const CourseLearn: React.FC = () => {
     }
   }, [currentLessonId, nextLesson, chapters]);
 
+  // Interval-based auto-complete fallback for .mp4 videos
+  useEffect(() => {
+    if (!currentLessonId || !currentLesson?.video_url || currentLesson?.video_provider === 'bunny') return;
+
+    const interval = setInterval(() => {
+      const container = videoContainerRef.current;
+      if (!container) return;
+      const videoEl = container.querySelector('video');
+      if (!videoEl || !videoEl.duration || videoEl.paused) return;
+
+      const progress = (videoEl.currentTime / videoEl.duration) * 100;
+
+      if (progress >= 90 && !autoCompletedRef.current.has(currentLessonId) &&
+          !lessonProgressRef.current.some(lp => lp.lesson_id === currentLessonId && lp.is_completed)) {
+        autoCompletedRef.current.add(currentLessonId);
+        completeLessonMutation.mutate(currentLessonId);
+        if (nextLesson) {
+          const nextChapter = chapters.find(ch => ch.lessons.some(l => l.id === nextLesson.id));
+          if (nextChapter && !isLessonLocked(nextLesson, nextChapter)) {
+            setShowNextCountdown(true);
+          }
+        }
+      }
+
+      if (videoEl.duration - videoEl.currentTime <= 1.5 && !autoCompletedRef.current.has(currentLessonId + '_ended')) {
+        autoCompletedRef.current.add(currentLessonId + '_ended');
+        handleVideoEnded();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentLessonId, currentLesson, nextLesson, chapters]);
+
   // Helper to extract YouTube video ID
   const getYouTubeVideoId = (url: string): string | null => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
