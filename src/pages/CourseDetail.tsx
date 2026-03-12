@@ -431,7 +431,7 @@ const CourseDetail: React.FC = () => {
             <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/75 to-background" />
           </div>
 
-          <div className="page-container relative z-10 pt-6 sm:pt-8 pb-8 sm:pb-12">
+          <div className="page-container relative z-10 pt-4 sm:pt-8 pb-8 sm:pb-12 px-4 sm:px-6">
             {/* Back link */}
             <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-8 text-sm">
               <BackIcon className="w-4 h-4 me-1" />
