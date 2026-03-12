@@ -793,7 +793,7 @@ const CourseDetail: React.FC = () => {
             {chapters.length > 0 ? (
               <div className="relative">
                 {/* Vertical timeline line */}
-                <div className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-4 bottom-4 w-0.5 bg-border`} />
+                <div className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-4 bottom-4 w-0.5 bg-border hidden sm:block`} />
 
                 <div className="space-y-6">
                   {chapters.map((chapter, chapterIndex) => {
