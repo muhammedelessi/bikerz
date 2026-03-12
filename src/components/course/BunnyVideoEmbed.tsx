@@ -313,7 +313,6 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
           loading="lazy"
           onLoad={handleIframeLoad}
           onError={handleIframeError}
-          sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
         />
       )}
 

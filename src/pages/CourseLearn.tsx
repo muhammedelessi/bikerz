@@ -931,6 +931,7 @@ const CourseLearn: React.FC = () => {
                          currentLesson.video_url?.includes('b-cdn.net') || 
                          currentLesson.video_url?.includes('mediadelivery.net')) ? (
                       <BunnyVideoEmbed
+                        key={currentLesson.id}
                         videoUrl={currentLesson.video_url}
                         title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
                         initialTime={initialTimeRef.current}
