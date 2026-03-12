@@ -9,6 +9,7 @@ interface BunnyVideoEmbedProps {
   onTimeUpdate?: (timeSeconds: number) => void;
   initialTime?: number;
   isPreview?: boolean;
+  autoPlay?: boolean;
 }
 
 type PlayerJsPayload = Record<string, unknown> | string | number | null | undefined;
