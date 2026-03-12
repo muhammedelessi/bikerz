@@ -873,6 +873,9 @@ const CourseLearn: React.FC = () => {
         </div>
       </header>
 
+      {/* Spacer for fixed header */}
+      <div className="h-14 sm:h-16 flex-shrink-0" />
+
       <div className="flex flex-1 overflow-hidden relative">
         {/* Mobile Overlay */}
         {sidebarOpen && (
