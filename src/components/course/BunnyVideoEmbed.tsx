@@ -284,15 +284,6 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
         const clamped = Math.max(0, Math.min(100, computedProgress));
         progressRef.current = clamped;
         onProgressRef.current?.(clamped);
-
-        if (clamped >= 95 && !endedCalledRef.current && !endedTimeoutRef.current) {
-          endedTimeoutRef.current = setTimeout(() => {
-            fireOnEnded();
-          }, 2500);
-        } else if (clamped < 95 && endedTimeoutRef.current) {
-          clearTimeout(endedTimeoutRef.current);
-          endedTimeoutRef.current = null;
-        }
       }
 
       if (
