@@ -592,11 +592,11 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
       const d = video.duration;
       if (!Number.isFinite(t) || !Number.isFinite(d) || d <= 0) return;
 
-      onProgress?.((t / d) * 100);
+      onProgressRef.current?.((t / d) * 100);
 
-      if (onTimeUpdate && Math.abs(t - lastReportedTimeRef.current) >= 5) {
+      if (Math.abs(t - lastReportedTimeRef.current) >= 5) {
         lastReportedTimeRef.current = t;
-        onTimeUpdate(Math.floor(t));
+        onTimeUpdateRef.current?.(Math.floor(t));
       }
     };
 
