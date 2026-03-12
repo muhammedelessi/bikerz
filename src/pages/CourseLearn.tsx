@@ -591,7 +591,7 @@ const CourseLearn: React.FC = () => {
     if (
       currentLessonId &&
       progress >= 90 &&
-      !lessonProgress.some(lp => lp.lesson_id === currentLessonId && lp.is_completed) &&
+      !lessonProgressRef.current.some(lp => lp.lesson_id === currentLessonId && lp.is_completed) &&
       !autoCompletedRef.current.has(currentLessonId)
     ) {
       autoCompletedRef.current.add(currentLessonId);
@@ -603,7 +603,7 @@ const CourseLearn: React.FC = () => {
         }
       }
     }
-  }, [currentLessonId, nextLesson, chapters, lessonProgress]);
+  }, [currentLessonId, nextLesson, chapters]);
 
   // Helper to extract YouTube video ID
   const getYouTubeVideoId = (url: string): string | null => {
