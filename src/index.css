@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -13,7 +13,7 @@
     --deep-green: 163 47% 20%;
     --near-black: 180 3% 11%;
     --gray: 0 0% 55%;
-    
+
     /* Semantic Tokens */
     --background: 180 3% 11%;
     --foreground: 43 18% 72%;
@@ -60,8 +60,8 @@
     --shadow-glow-green: 0 0 40px hsl(163 47% 20% / 0.4);
 
     /* Typography */
-    --font-en: 'Roboto', system-ui, sans-serif;
-    --font-ar: 'Almarai', 'Roboto', system-ui, sans-serif;
+    --font-en: "Roboto", system-ui, sans-serif;
+    --font-ar: "Almarai", "Roboto", system-ui, sans-serif;
 
     /* Sidebar */
     --sidebar-background: 180 5% 10%;
@@ -191,7 +191,8 @@
 
   .hero-text {
     @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight;
-    background: linear-gradient(135deg, hsl(43 18% 85%) 0%, hsl(43 18% 65%) 100%);
+
+    background: linear-gradient(135deg, hsl(180 10% 8%) 0%, hsl(180 10% 20%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -230,7 +231,9 @@
 
   .btn-cta:hover {
     @apply scale-105;
-    box-shadow: var(--shadow-lg), 0 0 60px hsl(18 78% 45% / 0.5);
+    box-shadow:
+      var(--shadow-lg),
+      0 0 60px hsl(18 78% 45% / 0.5);
   }
 
   /* ========================================
@@ -264,8 +267,12 @@
 
   .interactive-card::before {
     @apply absolute inset-0 opacity-0 transition-opacity duration-500;
-    content: '';
-    background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), hsl(18 78% 45% / 0.15) 0%, transparent 50%);
+    content: "";
+    background: radial-gradient(
+      circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      hsl(18 78% 45% / 0.15) 0%,
+      transparent 50%
+    );
   }
 
   .interactive-card:hover::before {
@@ -320,7 +327,7 @@
 
   .nav-link::after {
     @apply absolute bottom-0 left-0 w-full h-0.5 bg-primary scale-x-0 transition-transform duration-300 origin-right;
-    content: '';
+    content: "";
   }
 
   .nav-link:hover::after {
@@ -405,34 +412,71 @@
     animation: fadeInUp 0.8s ease-out forwards;
   }
 
-  .stagger-1 { animation-delay: 0.1s; }
-  .stagger-2 { animation-delay: 0.2s; }
-  .stagger-3 { animation-delay: 0.3s; }
-  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-1 {
+    animation-delay: 0.1s;
+  }
+  .stagger-2 {
+    animation-delay: 0.2s;
+  }
+  .stagger-3 {
+    animation-delay: 0.3s;
+  }
+  .stagger-4 {
+    animation-delay: 0.4s;
+  }
 
   @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
   }
 
   @keyframes slideUp {
-    from { opacity: 0; transform: translateY(40px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   @keyframes slideInRight {
-    from { opacity: 0; transform: translateX(40px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+      opacity: 0;
+      transform: translateX(40px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 
   @keyframes slideInLeft {
-    from { opacity: 0; transform: translateX(-40px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+      opacity: 0;
+      transform: translateX(-40px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 
   @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   /* RTL utilities */

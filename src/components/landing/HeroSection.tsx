@@ -1,47 +1,46 @@
-import React from 'react';
-import AnimatedCounter from '@/components/common/AnimatedCounter';
-import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { ArrowRight, ArrowLeft, Play } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import defaultHeroImage from '@/assets/hero-rider.jpg';
-import { useLandingContent, HeroContent } from '@/hooks/useLandingContent';
-import { Skeleton } from '@/components/ui/skeleton';
+import React from "react";
+import AnimatedCounter from "@/components/common/AnimatedCounter";
+import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, ArrowLeft, Play } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import defaultHeroImage from "@/assets/hero-rider.jpg";
+import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const HeroSection: React.FC = () => {
   const { isRTL } = useLanguage();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   // Fetch dynamic content from database
-  const { data: content, isLoading: contentLoading } = useLandingContent<HeroContent>('hero');
+  const { data: content, isLoading: contentLoading } = useLandingContent<HeroContent>("hero");
 
   // Fetch real stats from database
   const { data: stats } = useQuery({
-    queryKey: ['hero-stats'],
+    queryKey: ["hero-stats"],
     queryFn: async () => {
       const [profilesRes, lessonsRes, enrollmentsRes] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('lessons').select('*', { count: 'exact', head: true }).eq('is_published', true),
-        supabase.from('course_enrollments').select('progress_percentage'),
+        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("lessons").select("*", { count: "exact", head: true }).eq("is_published", true),
+        supabase.from("course_enrollments").select("progress_percentage"),
       ]);
 
-      if (profilesRes.error) console.error('[hero-stats] profiles error:', profilesRes.error.message);
-      if (lessonsRes.error) console.error('[hero-stats] lessons error:', lessonsRes.error.message);
-      if (enrollmentsRes.error) console.error('[hero-stats] enrollments error:', enrollmentsRes.error.message);
+      if (profilesRes.error) console.error("[hero-stats] profiles error:", profilesRes.error.message);
+      if (lessonsRes.error) console.error("[hero-stats] lessons error:", lessonsRes.error.message);
+      if (enrollmentsRes.error) console.error("[hero-stats] enrollments error:", enrollmentsRes.error.message);
 
       const usersCount = profilesRes.count ?? 0;
       const lessonsCount = lessonsRes.count ?? 0;
       const enrollmentStats = enrollmentsRes.data ?? [];
 
-      console.log('[hero-stats]', { usersCount, lessonsCount, enrollments: enrollmentStats.length });
+      console.log("[hero-stats]", { usersCount, lessonsCount, enrollments: enrollmentStats.length });
 
-      const successfulEnrollments = enrollmentStats.filter(e => (e.progress_percentage ?? 0) >= 70).length;
-      const successRate = enrollmentStats.length > 0
-        ? Math.round((successfulEnrollments / enrollmentStats.length) * 100)
-        : 0;
+      const successfulEnrollments = enrollmentStats.filter((e) => (e.progress_percentage ?? 0) >= 70).length;
+      const successRate =
+        enrollmentStats.length > 0 ? Math.round((successfulEnrollments / enrollmentStats.length) * 100) : 0;
 
       return { members: usersCount, lessons: lessonsCount, successRate };
     },
@@ -52,54 +51,58 @@ const HeroSection: React.FC = () => {
     if (count >= 1000) {
       return `${Math.floor(count / 1000)}K+`;
     }
-    return count > 0 ? `${count}+` : '0';
+    return count > 0 ? `${count}+` : "0";
   };
 
   const heroContent = content as any;
 
   // CMS override values always take priority over DB-computed stats
-  const membersValue = heroContent?.stats_members_value 
-    ? String(heroContent.stats_members_value) 
+  const membersValue = heroContent?.stats_members_value
+    ? String(heroContent.stats_members_value)
     : formatCount(stats?.members || 0);
-  const lessonsValue = heroContent?.stats_lessons_value 
-    ? String(heroContent.stats_lessons_value) 
+  const lessonsValue = heroContent?.stats_lessons_value
+    ? String(heroContent.stats_lessons_value)
     : formatCount(stats?.lessons || 0);
-  const successValue = heroContent?.stats_success_value 
-    ? `${heroContent.stats_success_value}%` 
-    : (stats?.successRate ? `${stats.successRate}%` : '0%');
+  const successValue = heroContent?.stats_success_value
+    ? `${heroContent.stats_success_value}%`
+    : stats?.successRate
+      ? `${stats.successRate}%`
+      : "0%";
 
-  const showStats = heroContent?.show_stats !== false && heroContent?.show_stats !== 'false';
-  const showBadge = heroContent?.show_badge !== false && heroContent?.show_badge !== 'false';
+  const showStats = heroContent?.show_stats !== false && heroContent?.show_stats !== "false";
+  const showBadge = heroContent?.show_badge !== false && heroContent?.show_badge !== "false";
 
   const displayStats = [
-    { 
-      value: membersValue, 
-      label: isRTL ? (heroContent?.stats_members_ar || 'عضو') : (heroContent?.stats_members_en || 'Members')
+    {
+      value: membersValue,
+      label: isRTL ? heroContent?.stats_members_ar || "عضو" : heroContent?.stats_members_en || "Members",
     },
-    { 
-      value: lessonsValue, 
-      label: isRTL ? (heroContent?.stats_lessons_ar || 'درس') : (heroContent?.stats_lessons_en || 'Lessons')
+    {
+      value: lessonsValue,
+      label: isRTL ? heroContent?.stats_lessons_ar || "درس" : heroContent?.stats_lessons_en || "Lessons",
     },
-    { 
-      value: successValue, 
-      label: isRTL ? (heroContent?.stats_success_ar || 'نجاح') : (heroContent?.stats_success_en || 'Success')
+    {
+      value: successValue,
+      label: isRTL ? heroContent?.stats_success_ar || "نجاح" : heroContent?.stats_success_en || "Success",
     },
   ];
 
   // Get text based on language
   const getText = (enKey: keyof HeroContent, arKey: keyof HeroContent, fallbackEn: string, fallbackAr: string) => {
     if (!content) return isRTL ? fallbackAr : fallbackEn;
-    return isRTL ? (content[arKey] || fallbackAr) : (content[enKey] || fallbackEn);
+    return isRTL ? content[arKey] || fallbackAr : content[enKey] || fallbackEn;
   };
 
-  const title = getText('title_en', 'title_ar', 'Master the Art of Riding', 'أتقن فن القيادة');
-  const subtitle = getText('subtitle_en', 'subtitle_ar', 
-    'Join 15,000+ GCC riders on their journey from beginner to confident road master.',
-    'انضم إلى أكثر من 15,000 راكب في الخليج في رحلتهم من المبتدئين إلى أساتذة الطريق.'
+  const title = getText("title_en", "title_ar", "Master the Art of Riding", "أتقن فن القيادة");
+  const subtitle = getText(
+    "subtitle_en",
+    "subtitle_ar",
+    "Join 15,000+ GCC riders on their journey from beginner to confident road master.",
+    "انضم إلى أكثر من 15,000 راكب في الخليج في رحلتهم من المبتدئين إلى أساتذة الطريق.",
   );
-  const ctaText = getText('cta_en', 'cta_ar', 'Start Your Journey', 'ابدأ رحلتك');
-  const secondaryCta = getText('secondary_cta_en', 'secondary_cta_ar', 'Explore Courses', 'استكشف الدورات');
-  const badgeText = getText('badge_text_en', 'badge_text_ar', 'GCC Riders', 'راكب في الخليج');
+  const ctaText = getText("cta_en", "cta_ar", "Start Your Journey", "ابدأ رحلتك");
+  const secondaryCta = getText("secondary_cta_en", "secondary_cta_ar", "Explore Courses", "استكشف الدورات");
+  const badgeText = getText("badge_text_en", "badge_text_ar", "GCC Riders", "راكب في الخليج");
 
   const heroImage = (content as any)?.background_image || defaultHeroImage;
 
@@ -114,7 +117,7 @@ const HeroSection: React.FC = () => {
           loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/50 to-background" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/60 via-transparent to-background/60 hidden sm:block" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50 hidden sm:block" />{" "}
       </div>
 
       {/* Animated Lines */}
@@ -163,18 +166,14 @@ const HeroSection: React.FC = () => {
           {contentLoading ? (
             <Skeleton className="h-16 w-3/4 mx-auto" />
           ) : (
-            <h1 className="hero-text max-w-5xl mx-auto leading-[1.15]">
-              {title}
-            </h1>
+            <h1 className="hero-text max-w-5xl mx-auto leading-[1.15]">{title}</h1>
           )}
 
           {/* Subtitle */}
           {contentLoading ? (
             <Skeleton className="h-8 w-2/3 mx-auto" />
           ) : (
-            <p className="hero-subtitle mx-auto">
-              {subtitle}
-            </p>
+            <p className="hero-subtitle mx-auto">{subtitle}</p>
           )}
 
           {/* CTAs */}
@@ -208,7 +207,10 @@ const HeroSection: React.FC = () => {
             >
               {displayStats.map((stat, index) => (
                 <div key={index} className="text-center">
-                  <AnimatedCounter value={stat.value} className="text-xl sm:text-2xl md:text-3xl font-black text-primary" />
+                  <AnimatedCounter
+                    value={stat.value}
+                    className="text-xl sm:text-2xl md:text-3xl font-black text-primary"
+                  />
                   <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>
                 </div>
               ))}
