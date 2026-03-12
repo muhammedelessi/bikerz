@@ -128,6 +128,7 @@ const CourseLearn: React.FC = () => {
   const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
   const autoCompletedRef = React.useRef<Set<string>>(new Set());
   const lessonProgressRef = React.useRef<LessonProgress[]>([]);
+  const videoContainerRef = React.useRef<HTMLDivElement>(null);
 
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ChevronLeft : ChevronRight;
@@ -482,6 +483,8 @@ const CourseLearn: React.FC = () => {
     lessonProgressRef.current = lessonProgress;
   }, [lessonProgress]);
 
+
+
   // Get saved watch time for current lesson
   const getSavedWatchTime = (lessonId: string): number => {
     const progress = lessonProgress.find(lp => lp.lesson_id === lessonId);
@@ -604,6 +607,39 @@ const CourseLearn: React.FC = () => {
       }
     }
   }, [currentLessonId, nextLesson, chapters]);
+
+  // Interval-based auto-complete fallback for .mp4 videos
+  useEffect(() => {
+    if (!currentLessonId || !currentLesson?.video_url || currentLesson?.video_provider === 'bunny') return;
+
+    const interval = setInterval(() => {
+      const container = videoContainerRef.current;
+      if (!container) return;
+      const videoEl = container.querySelector('video');
+      if (!videoEl || !videoEl.duration || videoEl.paused) return;
+
+      const progress = (videoEl.currentTime / videoEl.duration) * 100;
+
+      if (progress >= 90 && !autoCompletedRef.current.has(currentLessonId) &&
+          !lessonProgressRef.current.some(lp => lp.lesson_id === currentLessonId && lp.is_completed)) {
+        autoCompletedRef.current.add(currentLessonId);
+        completeLessonMutation.mutate(currentLessonId);
+        if (nextLesson) {
+          const nextChapter = chapters.find(ch => ch.lessons.some(l => l.id === nextLesson.id));
+          if (nextChapter && !isLessonLocked(nextLesson, nextChapter)) {
+            setShowNextCountdown(true);
+          }
+        }
+      }
+
+      if (videoEl.duration - videoEl.currentTime <= 1.5 && !autoCompletedRef.current.has(currentLessonId + '_ended')) {
+        autoCompletedRef.current.add(currentLessonId + '_ended');
+        handleVideoEnded();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentLessonId, currentLesson, nextLesson, chapters]);
 
   // Helper to extract YouTube video ID
   const getYouTubeVideoId = (url: string): string | null => {
@@ -892,15 +928,17 @@ const CourseLearn: React.FC = () => {
                         onEnded={handleVideoEnded}
                       />
                     ) : (
-                      <VideoPlayer
-                        key={currentLesson.id}
-                        src={currentLesson.video_url}
-                        title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
-                        initialTime={getSavedWatchTime(currentLesson.id)}
-                        onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
-                        onProgress={handleVideoProgress}
-                        onEnded={handleVideoEnded}
-                      />
+                      <div ref={videoContainerRef} className="w-full h-full">
+                        <VideoPlayer
+                          key={currentLesson.id}
+                          src={currentLesson.video_url}
+                          title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
+                          initialTime={getSavedWatchTime(currentLesson.id)}
+                          onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
+                          onProgress={handleVideoProgress}
+                          onEnded={handleVideoEnded}
+                        />
+                      </div>
                     )}
                   </div>
                 )}
