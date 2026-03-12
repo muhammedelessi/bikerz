@@ -110,10 +110,17 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   // Reset refs when video changes
   useEffect(() => {
     progressRef.current = 0;
+    durationRef.current = null;
     endedCalledRef.current = false;
+
     if (endedTimeoutRef.current) {
       clearTimeout(endedTimeoutRef.current);
       endedTimeoutRef.current = null;
+    }
+
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
     }
   }, [videoUrl]);
 
