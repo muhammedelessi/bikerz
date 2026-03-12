@@ -127,11 +127,85 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   const fireOnEnded = useCallback(() => {
     if (endedCalledRef.current) return;
     endedCalledRef.current = true;
+
     if (endedTimeoutRef.current) {
       clearTimeout(endedTimeoutRef.current);
       endedTimeoutRef.current = null;
     }
+
     onEndedRef.current?.();
+  }, []);
+
+  const updatePlaybackState = useCallback((params: {
+    currentTime?: number;
+    duration?: number;
+    progress?: number;
+  }) => {
+    const { currentTime, duration, progress } = params;
+
+    if (typeof currentTime === "number" && Number.isFinite(currentTime)) {
+      onTimeUpdateRef.current?.(Math.floor(Math.max(0, currentTime)));
+    }
+
+    if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) {
+      durationRef.current = duration;
+    }
+
+    let computedProgress: number | null = null;
+
+    if (typeof progress === "number" && Number.isFinite(progress)) {
+      computedProgress = progress <= 1 ? progress * 100 : progress;
+    } else if (
+      typeof currentTime === "number" &&
+      Number.isFinite(currentTime) &&
+      typeof durationRef.current === "number" &&
+      durationRef.current > 0
+    ) {
+      computedProgress = (currentTime / durationRef.current) * 100;
+    }
+
+    if (computedProgress === null) return;
+
+    const clampedProgress = Math.max(0, Math.min(100, computedProgress));
+    progressRef.current = clampedProgress;
+    onProgressRef.current?.(clampedProgress);
+
+    if (clampedProgress >= 95 && !endedCalledRef.current && !endedTimeoutRef.current) {
+      endedTimeoutRef.current = setTimeout(() => {
+        fireOnEnded();
+      }, 3000);
+    } else if (clampedProgress < 95 && endedTimeoutRef.current) {
+      clearTimeout(endedTimeoutRef.current);
+      endedTimeoutRef.current = null;
+    }
+
+    if (
+      typeof currentTime === "number" &&
+      typeof durationRef.current === "number" &&
+      durationRef.current - currentTime <= 1
+    ) {
+      fireOnEnded();
+    }
+  }, [fireOnEnded]);
+
+  const requestPlaybackSnapshot = useCallback(() => {
+    const targetWindow = iframeRef.current?.contentWindow;
+    if (!targetWindow) return;
+
+    const requests: Array<Record<string, string> | string> = [
+      { method: "getCurrentTime" },
+      { method: "getDuration" },
+      { event: "getCurrentTime" },
+      { event: "getDuration" },
+      { type: "getCurrentTime" },
+      { type: "getDuration" },
+      "getCurrentTime",
+      "getDuration",
+    ];
+
+    requests.forEach((request) => {
+      targetWindow.postMessage(request, "*");
+    });
   }, []);
 
   const videoId = useMemo(() => extractBunnyVideoId(videoUrl), [videoUrl]);
