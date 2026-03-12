@@ -603,24 +603,10 @@ const CourseLearn: React.FC = () => {
     }
   }, [currentLessonId, nextLesson, chapters]);
 
-  // Auto-complete lesson when video reaches 90% progress
-  const handleVideoProgress = useCallback((progress: number) => {
-    if (
-      currentLessonId &&
-      progress >= 90 &&
-      !lessonProgressRef.current.some(lp => lp.lesson_id === currentLessonId && lp.is_completed) &&
-      !autoCompletedRef.current.has(currentLessonId)
-    ) {
-      autoCompletedRef.current.add(currentLessonId);
-      completeLessonMutation.mutate(currentLessonId);
-      if (nextLesson) {
-        const nextChapter = chapters.find(ch => ch.lessons.some(l => l.id === nextLesson.id));
-        if (nextChapter && !isLessonLocked(nextLesson, nextChapter)) {
-          setShowNextCountdown(true);
-        }
-      }
-    }
-  }, [currentLessonId, nextLesson, chapters]);
+  // Track video progress (watch time only, no auto-complete)
+  const handleVideoProgress = useCallback((_progress: number) => {
+    // Progress tracking only — completion is handled in handleVideoEnded
+  }, []);
 
   // Interval-based auto-complete fallback for .mp4 videos
   useEffect(() => {
