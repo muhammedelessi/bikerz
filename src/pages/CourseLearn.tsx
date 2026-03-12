@@ -893,6 +893,7 @@ const CourseLearn: React.FC = () => {
                       />
                     ) : (
                       <VideoPlayer
+                        key={currentLesson.id}
                         src={currentLesson.video_url}
                         title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
                         initialTime={getSavedWatchTime(currentLesson.id)}
