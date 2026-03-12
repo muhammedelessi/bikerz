@@ -662,7 +662,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
       video.removeEventListener("ended", onEndedInternal);
       video.removeEventListener("play", onPlayInternal);
     };
-  }, [applyPersistedAudioSettings, initialTime, onEnded, onProgress, onTimeUpdate, src, forceHlsJs, isHls, isBunny]);
+  }, [src]);
 
   return (
     <div className="relative w-full max-w-full overflow-hidden rounded-lg border border-border bg-muted" style={{ aspectRatio: '16 / 9' }}>
