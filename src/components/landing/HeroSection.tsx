@@ -116,8 +116,8 @@ const HeroSection: React.FC = () => {
           className="w-full h-full object-cover object-center"
           loading="eager"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-background" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-black/60 hidden sm:block" />{" "}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/50 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50 hidden sm:block" />{" "}
       </div>
 
       {/* Animated Lines */}
