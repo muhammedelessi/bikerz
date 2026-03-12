@@ -548,18 +548,18 @@ const CourseLearn: React.FC = () => {
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
   const goToLesson = (lessonId: string) => {
-    // Find the lesson and its chapter to check if it's locked
     const targetLesson = allLessons.find(l => l.id === lessonId);
     const targetChapter = chapters.find(ch => ch.lessons.some(l => l.id === lessonId));
     if (targetLesson && targetChapter && isLessonLocked(targetLesson, targetChapter)) {
       toast.error(isRTL ? 'يجب عليك شراء الدورة للوصول لهذا الدرس' : 'You need to purchase the course to access this lesson');
       return;
     }
+    setShowNextCountdown(false);
     setCurrentLessonId(lessonId);
     setShowTest(null);
     setSidebarOpen(false);
-    setShowNextCountdown(false);
-    // Update URL to reflect the current lesson
+    // Reset auto-complete ref so new lesson can be auto-completed
+    autoCompletedRef.current.delete(lessonId);
     navigate(`/courses/${id}/lessons/${lessonId}`, { replace: true });
   };
 
