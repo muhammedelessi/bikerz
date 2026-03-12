@@ -338,6 +338,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
   const hlsInitializingRef = useRef(false); // Track HLS setup to suppress native errors
   const restoredRef = useRef(false);
   const lastReportedTimeRef = useRef(0);
+  const endedFiredRef = useRef(false);
 
   const [showStartOverlay, setShowStartOverlay] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
