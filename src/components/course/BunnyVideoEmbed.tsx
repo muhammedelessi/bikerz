@@ -341,7 +341,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
       }
 
       const params = new URLSearchParams({
-        autoplay: "false",
+        autoplay: autoPlay ? "true" : "false",
         preload: "true",
         responsive: "true",
       });
