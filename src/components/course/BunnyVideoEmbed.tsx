@@ -202,6 +202,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   onTimeUpdate,
   initialTime = 0,
   isPreview = false,
+  autoPlay = false,
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
