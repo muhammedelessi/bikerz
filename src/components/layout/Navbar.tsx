@@ -324,12 +324,12 @@ const Navbar: React.FC = () => {
                 </nav>
 
                 {/* Theme Toggle Row */}
-                <div className="px-4 pb-2">
+                {/* <div className="px-4 pb-2">
                   <div className="flex items-center justify-between py-3 px-4 rounded-xl bg-muted/30">
                     <span className="text-base text-foreground">{isRTL ? 'الوضع النهاري' : 'Dark Mode'}</span>
                     <ThemeToggle />
                   </div>
-                </div>
+                </div> */}
 
                 {/* Footer - Auth Buttons */}
                 <div className="p-4 border-t border-border space-y-3 safe-area-bottom">
