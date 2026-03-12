@@ -1366,16 +1366,6 @@ const CourseLearn: React.FC = () => {
         </aside>
       </div>
 
-      {/* Next Lesson Countdown */}
-      <AnimatePresence>
-        {showNextCountdown && nextLesson && (
-          <NextLessonCountdown
-            nextLessonTitle={isRTL && nextLesson.title_ar ? nextLesson.title_ar : nextLesson.title}
-            onGoToNext={() => goToLesson(nextLesson.id, true)}
-            onDismiss={() => setShowNextCountdown(false)}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 };
