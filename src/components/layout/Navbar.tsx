@@ -188,6 +188,7 @@ const Navbar: React.FC = () => {
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-2 sm:gap-3">
+              <ThemeToggle />
               {showLanguageToggle && <LanguageToggle />}
               
               <div className="hidden md:flex items-center gap-2">
