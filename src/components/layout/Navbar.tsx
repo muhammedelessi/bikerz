@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, LogOut, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LanguageToggle from '@/components/common/LanguageToggle';
+import ThemeToggle from '@/components/ThemeToggle';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -187,6 +188,7 @@ const Navbar: React.FC = () => {
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-2 sm:gap-3">
+              <ThemeToggle />
               {showLanguageToggle && <LanguageToggle />}
               
               <div className="hidden md:flex items-center gap-2">
@@ -320,6 +322,14 @@ const Navbar: React.FC = () => {
                     ))}
                   </div>
                 </nav>
+
+                {/* Theme Toggle Row */}
+                <div className="px-4 pb-2">
+                  <div className="flex items-center justify-between py-3 px-4 rounded-xl bg-muted/30">
+                    <span className="text-base text-foreground">{isRTL ? 'الوضع النهاري' : 'Dark Mode'}</span>
+                    <ThemeToggle />
+                  </div>
+                </div>
 
                 {/* Footer - Auth Buttons */}
                 <div className="p-4 border-t border-border space-y-3 safe-area-bottom">
