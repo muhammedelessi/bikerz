@@ -125,6 +125,7 @@ const CourseLearn: React.FC = () => {
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(urlLessonId || null);
   const [showTest, setShowTest] = useState<string | null>(null);
   const [showNextCountdown, setShowNextCountdown] = useState(false);
+  const [autoPlayNext, setAutoPlayNext] = useState(false);
   const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
   const autoCompletedRef = React.useRef<Set<string>>(new Set());
   const lessonProgressRef = React.useRef<LessonProgress[]>([]);
@@ -562,7 +563,7 @@ const CourseLearn: React.FC = () => {
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
-  const goToLesson = (lessonId: string) => {
+  const goToLesson = (lessonId: string, autoPlay = false) => {
     const targetLesson = allLessons.find(l => l.id === lessonId);
     const targetChapter = chapters.find(ch => ch.lessons.some(l => l.id === lessonId));
     if (targetLesson && targetChapter && isLessonLocked(targetLesson, targetChapter)) {
@@ -570,6 +571,7 @@ const CourseLearn: React.FC = () => {
       return;
     }
     setShowNextCountdown(false);
+    setAutoPlayNext(autoPlay);
     setCurrentLessonId(lessonId);
     setShowTest(null);
     setSidebarOpen(false);
@@ -941,6 +943,7 @@ const CourseLearn: React.FC = () => {
                         videoUrl={currentLesson.video_url}
                         title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
                         initialTime={initialTimeRef.current}
+                        autoPlay={autoPlayNext}
                         onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
                         onProgress={handleVideoProgress}
                         onEnded={handleVideoEnded}
@@ -1396,7 +1399,7 @@ const CourseLearn: React.FC = () => {
         {showNextCountdown && nextLesson && (
           <NextLessonCountdown
             nextLessonTitle={isRTL && nextLesson.title_ar ? nextLesson.title_ar : nextLesson.title}
-            onGoToNext={() => goToLesson(nextLesson.id)}
+            onGoToNext={() => goToLesson(nextLesson.id, true)}
             onDismiss={() => setShowNextCountdown(false)}
           />
         )}

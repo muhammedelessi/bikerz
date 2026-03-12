@@ -9,6 +9,7 @@ interface BunnyVideoEmbedProps {
   onTimeUpdate?: (timeSeconds: number) => void;
   initialTime?: number;
   isPreview?: boolean;
+  autoPlay?: boolean;
 }
 
 type PlayerJsPayload = Record<string, unknown> | string | number | null | undefined;
@@ -201,6 +202,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   onTimeUpdate,
   initialTime = 0,
   isPreview = false,
+  autoPlay = false,
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -339,7 +341,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
       }
 
       const params = new URLSearchParams({
-        autoplay: "false",
+        autoplay: autoPlay ? "true" : "false",
         preload: "true",
         responsive: "true",
       });
@@ -358,7 +360,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [videoId, initialTime]);
+  }, [videoId, initialTime, autoPlay]);
 
   // Hook Bunny Player.js events once iframe source is ready
   useEffect(() => {
