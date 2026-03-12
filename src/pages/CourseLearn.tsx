@@ -585,12 +585,11 @@ const CourseLearn: React.FC = () => {
     if (
       currentLessonId &&
       progress >= 90 &&
-      !isLessonCompleted(currentLessonId) &&
+      !lessonProgress.some(lp => lp.lesson_id === currentLessonId && lp.is_completed) &&
       !autoCompletedRef.current.has(currentLessonId)
     ) {
       autoCompletedRef.current.add(currentLessonId);
       completeLessonMutation.mutate(currentLessonId);
-      // Show countdown to next lesson
       if (nextLesson) {
         const nextChapter = chapters.find(ch => ch.lessons.some(l => l.id === nextLesson.id));
         if (nextChapter && !isLessonLocked(nextLesson, nextChapter)) {
