@@ -918,7 +918,9 @@ const CourseLearn: React.FC = () => {
                           title={currentLesson.title}
                         />
                       </div>
-                    ) : currentLesson.video_provider === 'bunny' ? (
+                    ) : (currentLesson.video_provider === 'bunny' || 
+                         currentLesson.video_url?.includes('b-cdn.net') || 
+                         currentLesson.video_url?.includes('mediadelivery.net')) ? (
                       <BunnyVideoEmbed
                         videoUrl={currentLesson.video_url}
                         title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
