@@ -231,9 +231,18 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
     return () => window.removeEventListener("message", handleMessage);
   }, [fireOnEnded]);
 
+  // Fallback: if no progress events received after iframe loads, fire onEnded after a generous timeout
+  // This handles cases where postMessage is completely blocked
+  const noEventsFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleIframeLoad = useCallback(() => {
     // Give Bunny player a moment to initialize
     setTimeout(() => setIsLoading(false), 1500);
+
+    // Clear any previous no-events fallback
+    if (noEventsFallbackRef.current) {
+      clearTimeout(noEventsFallbackRef.current);
+    }
   }, []);
 
   const handleIframeError = useCallback(() => {
