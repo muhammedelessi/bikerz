@@ -360,7 +360,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [videoId, initialTime]);
+  }, [videoId, initialTime, autoPlay]);
 
   // Hook Bunny Player.js events once iframe source is ready
   useEffect(() => {
