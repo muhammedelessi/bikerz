@@ -52,7 +52,7 @@ const NextLessonCountdown: React.FC<NextLessonCountdownProps> = ({
             />
           </svg>
           <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-foreground">
-            {countdown}
+            {Math.max(0, countdown)}
           </span>
         </div>
 
