@@ -484,6 +484,11 @@ const CourseLearn: React.FC = () => {
     lessonProgressRef.current = lessonProgress;
   }, [lessonProgress]);
 
+  // Store initialTime in ref so it only updates on lesson change, not on progress updates
+  useEffect(() => {
+    initialTimeRef.current = getSavedWatchTime(currentLessonId || '');
+  }, [currentLessonId]);
+
 
 
   // Get saved watch time for current lesson
