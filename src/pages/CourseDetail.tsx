@@ -419,7 +419,7 @@ const CourseDetail: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <main className="pt-24">
+      <main className="pt-16 sm:pt-20 lg:pt-24">
         {/* Hero Section */}
         <section className="relative overflow-hidden">
           <div className="absolute inset-0 h-[480px] sm:h-[420px] lg:h-[480px]">
