@@ -11,6 +11,72 @@ interface BunnyVideoEmbedProps {
   isPreview?: boolean;
 }
 
+type PlayerJsPayload = Record<string, unknown> | string | number | null | undefined;
+
+interface PlayerJsInstance {
+  on: (eventName: string, callback: (payload?: PlayerJsPayload) => void) => void;
+  off: (eventName: string, callback?: (payload?: PlayerJsPayload) => void) => void;
+  getCurrentTime: (callback: (value: number) => void) => void;
+  getDuration: (callback: (value: number) => void) => void;
+  setCurrentTime: (seconds: number) => void;
+}
+
+declare global {
+  interface Window {
+    playerjs?: {
+      Player: new (target: HTMLIFrameElement | string) => PlayerJsInstance;
+    };
+  }
+}
+
+const PLAYER_JS_SRC = "https://assets.mediadelivery.net/playerjs/playerjs-latest.min.js";
+
+let playerJsLoaderPromise: Promise<void> | null = null;
+
+const loadPlayerJs = async (): Promise<void> => {
+  if (typeof window === "undefined") return;
+  if (window.playerjs?.Player) return;
+  if (playerJsLoaderPromise) return playerJsLoaderPromise;
+
+  playerJsLoaderPromise = new Promise<void>((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>(
+      `script[src="${PLAYER_JS_SRC}"]`
+    );
+
+    if (existingScript) {
+      if (window.playerjs?.Player) {
+        resolve();
+        return;
+      }
+
+      const onLoad = () => resolve();
+      const onError = () => reject(new Error("Failed to load Bunny Player.js"));
+
+      existingScript.addEventListener("load", onLoad, { once: true });
+      existingScript.addEventListener("error", onError, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = PLAYER_JS_SRC;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Bunny Player.js"));
+    document.head.appendChild(script);
+  })
+    .then(() => {
+      if (!window.playerjs?.Player) {
+        throw new Error("Bunny Player.js did not initialize");
+      }
+    })
+    .catch((error) => {
+      playerJsLoaderPromise = null;
+      throw error;
+    });
+
+  return playerJsLoaderPromise;
+};
+
 // Extract Bunny video ID from CDN URL
 // Pattern: https://vz-XXXX.b-cdn.net/{videoId}/playlist.m3u8
 const extractBunnyVideoId = (url: string): string | null => {
@@ -78,6 +144,55 @@ const fetchLibraryId = async (videoId: string): Promise<string | null> => {
   return null;
 };
 
+const parseTimeUpdatePayload = (
+  payload: PlayerJsPayload
+): { currentTime?: number; duration?: number; progress?: number } => {
+  let parsed = payload;
+
+  if (typeof parsed === "string") {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch {
+      return {};
+    }
+  }
+
+  if (typeof parsed === "number") {
+    return { currentTime: parsed };
+  }
+
+  if (!parsed || typeof parsed !== "object") {
+    return {};
+  }
+
+  const source = parsed as Record<string, unknown>;
+  const data =
+    source.data && typeof source.data === "object"
+      ? (source.data as Record<string, unknown>)
+      : source;
+
+  const currentTime =
+    typeof data.seconds === "number"
+      ? data.seconds
+      : typeof data.currentTime === "number"
+        ? data.currentTime
+        : typeof data.time === "number"
+          ? data.time
+          : undefined;
+
+  const duration =
+    typeof data.duration === "number" ? data.duration : undefined;
+
+  const progress =
+    typeof data.percent === "number"
+      ? data.percent
+      : typeof data.progress === "number"
+        ? data.progress
+        : undefined;
+
+  return { currentTime, duration, progress };
+};
+
 const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   videoUrl,
   title,
@@ -92,27 +207,28 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
 
-  // Fallback refs for reliable end detection
-  const progressRef = useRef<number>(0);
-  const durationRef = useRef<number | null>(null);
-  const endedCalledRef = useRef(false);
-  const endedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onEndedRef = useRef(onEnded);
   const onProgressRef = useRef(onProgress);
   const onTimeUpdateRef = useRef(onTimeUpdate);
+  const durationRef = useRef<number | null>(null);
+  const progressRef = useRef(0);
+  const endedCalledRef = useRef(false);
+  const endedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Keep callback refs fresh
-  useEffect(() => { onEndedRef.current = onEnded; }, [onEnded]);
-  useEffect(() => { onProgressRef.current = onProgress; }, [onProgress]);
-  useEffect(() => { onTimeUpdateRef.current = onTimeUpdate; }, [onTimeUpdate]);
-
-  // Reset refs when video changes
   useEffect(() => {
-    progressRef.current = 0;
-    durationRef.current = null;
-    endedCalledRef.current = false;
+    onEndedRef.current = onEnded;
+  }, [onEnded]);
 
+  useEffect(() => {
+    onProgressRef.current = onProgress;
+  }, [onProgress]);
+
+  useEffect(() => {
+    onTimeUpdateRef.current = onTimeUpdate;
+  }, [onTimeUpdate]);
+
+  const clearTimers = useCallback(() => {
     if (endedTimeoutRef.current) {
       clearTimeout(endedTimeoutRef.current);
       endedTimeoutRef.current = null;
@@ -122,94 +238,82 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
       clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
     }
-  }, [videoUrl]);
+  }, []);
 
   const fireOnEnded = useCallback(() => {
     if (endedCalledRef.current) return;
     endedCalledRef.current = true;
-    console.log("[BunnyEmbed] fireOnEnded called! progressRef:", progressRef.current, "durationRef:", durationRef.current);
-
-    if (endedTimeoutRef.current) {
-      clearTimeout(endedTimeoutRef.current);
-      endedTimeoutRef.current = null;
-    }
-
+    clearTimers();
     onEndedRef.current?.();
-  }, []);
+  }, [clearTimers]);
 
-  const updatePlaybackState = useCallback((params: {
-    currentTime?: number;
-    duration?: number;
-    progress?: number;
-  }) => {
-    const { currentTime, duration, progress } = params;
+  const updatePlaybackState = useCallback(
+    ({
+      currentTime,
+      duration,
+      progress,
+    }: {
+      currentTime?: number;
+      duration?: number;
+      progress?: number;
+    }) => {
+      if (typeof currentTime === "number" && Number.isFinite(currentTime)) {
+        onTimeUpdateRef.current?.(Math.floor(Math.max(0, currentTime)));
+      }
 
-    if (typeof currentTime === "number" && Number.isFinite(currentTime)) {
-      onTimeUpdateRef.current?.(Math.floor(Math.max(0, currentTime)));
-    }
+      if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) {
+        durationRef.current = duration;
+      }
 
-    if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) {
-      durationRef.current = duration;
-    }
+      let computedProgress: number | null = null;
 
-    let computedProgress: number | null = null;
+      if (typeof progress === "number" && Number.isFinite(progress)) {
+        computedProgress = progress <= 1 ? progress * 100 : progress;
+      } else if (
+        typeof currentTime === "number" &&
+        Number.isFinite(currentTime) &&
+        typeof durationRef.current === "number" &&
+        durationRef.current > 0
+      ) {
+        computedProgress = (currentTime / durationRef.current) * 100;
+      }
 
-    if (typeof progress === "number" && Number.isFinite(progress)) {
-      computedProgress = progress <= 1 ? progress * 100 : progress;
-    } else if (
-      typeof currentTime === "number" &&
-      Number.isFinite(currentTime) &&
-      typeof durationRef.current === "number" &&
-      durationRef.current > 0
-    ) {
-      computedProgress = (currentTime / durationRef.current) * 100;
-    }
+      if (computedProgress !== null) {
+        const clamped = Math.max(0, Math.min(100, computedProgress));
+        progressRef.current = clamped;
+        onProgressRef.current?.(clamped);
 
-    if (computedProgress === null) return;
+        if (clamped >= 95 && !endedCalledRef.current && !endedTimeoutRef.current) {
+          endedTimeoutRef.current = setTimeout(() => {
+            fireOnEnded();
+          }, 2500);
+        } else if (clamped < 95 && endedTimeoutRef.current) {
+          clearTimeout(endedTimeoutRef.current);
+          endedTimeoutRef.current = null;
+        }
+      }
 
-    const clampedProgress = Math.max(0, Math.min(100, computedProgress));
-    progressRef.current = clampedProgress;
-    onProgressRef.current?.(clampedProgress);
-
-    if (clampedProgress >= 95 && !endedCalledRef.current && !endedTimeoutRef.current) {
-      endedTimeoutRef.current = setTimeout(() => {
+      if (
+        typeof currentTime === "number" &&
+        typeof durationRef.current === "number" &&
+        durationRef.current > 0 &&
+        durationRef.current - currentTime <= 1
+      ) {
         fireOnEnded();
-      }, 3000);
-    } else if (clampedProgress < 95 && endedTimeoutRef.current) {
-      clearTimeout(endedTimeoutRef.current);
-      endedTimeoutRef.current = null;
-    }
-
-    if (
-      typeof currentTime === "number" &&
-      typeof durationRef.current === "number" &&
-      durationRef.current - currentTime <= 1
-    ) {
-      fireOnEnded();
-    }
-  }, [fireOnEnded]);
-
-  const requestPlaybackSnapshot = useCallback(() => {
-    const targetWindow = iframeRef.current?.contentWindow;
-    if (!targetWindow) return;
-
-    const requests: Array<Record<string, string> | string> = [
-      { method: "getCurrentTime" },
-      { method: "getDuration" },
-      { event: "getCurrentTime" },
-      { event: "getDuration" },
-      { type: "getCurrentTime" },
-      { type: "getDuration" },
-      "getCurrentTime",
-      "getDuration",
-    ];
-
-    requests.forEach((request) => {
-      targetWindow.postMessage(request, "*");
-    });
-  }, []);
+      }
+    },
+    [fireOnEnded]
+  );
 
   const videoId = useMemo(() => extractBunnyVideoId(videoUrl), [videoUrl]);
+
+  // Reset internal tracking when lesson/video changes
+  useEffect(() => {
+    endedCalledRef.current = false;
+    durationRef.current = null;
+    progressRef.current = 0;
+    clearTimers();
+  }, [videoUrl, clearTimers]);
 
   // Fetch library ID and build embed URL
   useEffect(() => {
@@ -222,8 +326,10 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
     let cancelled = false;
 
     const init = async () => {
-      const libraryId = await fetchLibraryId(videoId);
+      setIsLoading(true);
+      setError(null);
 
+      const libraryId = await fetchLibraryId(videoId);
       if (cancelled) return;
 
       if (!libraryId) {
@@ -254,140 +360,131 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
     };
   }, [videoId, initialTime]);
 
-  // Listen for postMessage events from Bunny player
+  // Hook Bunny Player.js events once iframe source is ready
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
+    if (!embedUrl || !iframeRef.current) return;
+
+    let cancelled = false;
+    let player: PlayerJsInstance | null = null;
+
+    const setupPlayer = async () => {
       try {
-        const raw = event.data;
-        const data =
-          typeof raw === "string" ? JSON.parse(raw) : raw;
+        await loadPlayerJs();
+        if (cancelled || !iframeRef.current || !window.playerjs?.Player) return;
 
-        if (!data || typeof data !== "object") return;
+        player = new window.playerjs.Player(iframeRef.current);
 
-        // Debug: log ALL parsed messages from iframe
-        console.log("[BunnyEmbed] postMessage received:", JSON.stringify(data).slice(0, 300), "origin:", event.origin);
+        const handleReady = () => {
+          if (cancelled || !player) return;
 
-        const record = data as Record<string, unknown>;
-        const payload =
-          record.data && typeof record.data === "object"
-            ? (record.data as Record<string, unknown>)
-            : {};
-
-        const eventName =
-          typeof record.event === "string" ? record.event.toLowerCase() : "";
-        const methodName =
-          typeof record.method === "string" ? record.method : "";
-
-        let currentTime =
-          typeof payload.currentTime === "number"
-            ? payload.currentTime
-            : typeof payload.seconds === "number"
-              ? payload.seconds
-              : typeof payload.time === "number"
-                ? payload.time
-                : typeof record.currentTime === "number"
-                  ? record.currentTime
-                  : typeof record.seconds === "number"
-                    ? record.seconds
-                    : typeof record.time === "number"
-                      ? record.time
-                      : undefined;
-
-        let duration =
-          typeof payload.duration === "number"
-            ? payload.duration
-            : typeof record.duration === "number"
-              ? record.duration
-              : undefined;
-
-        let progress =
-          typeof payload.progress === "number"
-            ? payload.progress
-            : typeof payload.percent === "number"
-              ? payload.percent
-              : typeof record.progress === "number"
-                ? record.progress
-                : typeof record.percent === "number"
-                  ? record.percent
-                  : undefined;
-
-        if (methodName === "getCurrentTime" && typeof record.value === "number") {
-          currentTime = record.value;
-        }
-
-        if (methodName === "getDuration" && typeof record.value === "number") {
-          duration = record.value;
-        }
-
-        if (eventName === "videoend" || eventName === "ended") {
-          fireOnEnded();
-          return;
-        }
-
-        if (eventName === "ready" || eventName === "videoready") {
-          setIsLoading(false);
           setError(null);
-          requestPlaybackSnapshot();
+          setIsLoading(false);
+
+          if (initialTime > 0) {
+            try {
+              player.setCurrentTime(Math.floor(initialTime));
+            } catch {
+              // ignore seek failures
+            }
+          }
+
+          player.getDuration((value) => {
+            if (cancelled || typeof value !== "number") return;
+            updatePlaybackState({ duration: value });
+          });
+
+          player.getCurrentTime((value) => {
+            if (cancelled || typeof value !== "number") return;
+            updatePlaybackState({ currentTime: value });
+          });
+        };
+
+        const handleTimeUpdate = (payload?: PlayerJsPayload) => {
+          if (cancelled) return;
+          updatePlaybackState(parseTimeUpdatePayload(payload));
+        };
+
+        const handleEnded = () => {
+          if (!cancelled) {
+            fireOnEnded();
+          }
+        };
+
+        const handleError = () => {
+          if (!cancelled) {
+            setError("Failed to load video player.");
+            setIsLoading(false);
+          }
+        };
+
+        player.on("ready", handleReady);
+        player.on("timeupdate", handleTimeUpdate);
+        player.on("ended", handleEnded);
+        player.on("error", handleError);
+
+        pollIntervalRef.current = setInterval(() => {
+          if (!player || cancelled || endedCalledRef.current) return;
+
+          player.getCurrentTime((value) => {
+            if (cancelled || typeof value !== "number") return;
+            updatePlaybackState({ currentTime: value });
+          });
+
+          player.getDuration((value) => {
+            if (cancelled || typeof value !== "number") return;
+            updatePlaybackState({ duration: value });
+          });
+        }, 2000);
+
+        const cleanup = () => {
+          if (!player) return;
+          try {
+            player.off("ready", handleReady);
+            player.off("timeupdate", handleTimeUpdate);
+            player.off("ended", handleEnded);
+            player.off("error", handleError);
+          } catch {
+            // Ignore cleanup failures
+          }
+        };
+
+        if (cancelled) {
+          cleanup();
         }
 
-        const hasTimingData =
-          typeof currentTime === "number" ||
-          typeof duration === "number" ||
-          typeof progress === "number";
-
-        const isProgressEvent = ["videoprogress", "timeupdate", "progress"].includes(eventName);
-        const isMethodResponse = methodName === "getCurrentTime" || methodName === "getDuration";
-
-        if (hasTimingData && (isProgressEvent || isMethodResponse || !eventName)) {
-          updatePlaybackState({ currentTime, duration, progress });
+        return cleanup;
+      } catch (setupError) {
+        console.error("[BunnyVideoEmbed] Failed to initialize Player.js:", setupError);
+        if (!cancelled) {
+          setError("Failed to initialize video player.");
+          setIsLoading(false);
         }
-      } catch {
-        // Ignore non-JSON messages
       }
     };
 
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [fireOnEnded, requestPlaybackSnapshot, updatePlaybackState]);
+    let teardown: (() => void) | undefined;
 
-  const handleIframeLoad = useCallback(() => {
-    // Give Bunny player a moment to initialize
-    setTimeout(() => setIsLoading(false), 1500);
+    setupPlayer().then((cleanup) => {
+      teardown = cleanup;
+    });
 
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
-
-    requestPlaybackSnapshot();
-    pollIntervalRef.current = setInterval(() => {
-      requestPlaybackSnapshot();
-    }, 2000);
-  }, [requestPlaybackSnapshot]);
-
-  useEffect(() => {
     return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
-      }
+      cancelled = true;
+      clearTimers();
+      teardown?.();
     };
-  }, []);
-
-  const handleIframeError = useCallback(() => {
-    setError("Failed to load video player.");
-    setIsLoading(false);
-  }, []);
+  }, [embedUrl, initialTime, updatePlaybackState, fireOnEnded, clearTimers]);
 
   const handleRetry = useCallback(() => {
+    endedCalledRef.current = false;
     setError(null);
     setIsLoading(true);
+
     if (iframeRef.current && embedUrl) {
       iframeRef.current.src = embedUrl;
     }
   }, [embedUrl]);
 
-  // Prevent right-click and content stealing
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     return false;
@@ -440,13 +537,11 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
           allowFullScreen
           title={title || "Video player"}
           loading="lazy"
-          onLoad={handleIframeLoad}
-          onError={handleIframeError}
         />
       )}
 
       {/* Transparent overlay to block right-click on iframe */}
-      <div 
+      <div
         className="absolute inset-0 z-10 pointer-events-none"
         onContextMenu={handleContextMenu}
       />
@@ -456,9 +551,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
         <div className="absolute inset-0 grid place-items-center bg-background/80 backdrop-blur-sm z-20">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="text-sm text-muted-foreground">
-              Loading video...
-            </span>
+            <span className="text-sm text-muted-foreground">Loading video...</span>
           </div>
         </div>
       )}
@@ -467,3 +560,4 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
 };
 
 export default BunnyVideoEmbed;
+
