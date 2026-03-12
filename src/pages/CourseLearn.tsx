@@ -893,15 +893,17 @@ const CourseLearn: React.FC = () => {
                         onEnded={handleVideoEnded}
                       />
                     ) : (
-                      <VideoPlayer
-                        key={currentLesson.id}
-                        src={currentLesson.video_url}
-                        title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
-                        initialTime={getSavedWatchTime(currentLesson.id)}
-                        onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
-                        onProgress={handleVideoProgress}
-                        onEnded={handleVideoEnded}
-                      />
+                      <div ref={videoContainerRef} className="w-full h-full">
+                        <VideoPlayer
+                          key={currentLesson.id}
+                          src={currentLesson.video_url}
+                          title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
+                          initialTime={getSavedWatchTime(currentLesson.id)}
+                          onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
+                          onProgress={handleVideoProgress}
+                          onEnded={handleVideoEnded}
+                        />
+                      </div>
                     )}
                   </div>
                 )}
