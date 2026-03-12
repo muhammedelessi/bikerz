@@ -419,10 +419,10 @@ const CourseDetail: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <main className="pt-24">
+      <main className="pt-16 sm:pt-20 lg:pt-24">
         {/* Hero Section */}
         <section className="relative overflow-hidden">
-          <div className="absolute inset-0 h-[480px] sm:h-[420px] lg:h-[480px]">
+          <div className="absolute inset-0 h-[300px] sm:h-[420px] lg:h-[480px]">
             <img
               src={course.thumbnail_url || heroImage}
               alt={courseTitle}
@@ -431,7 +431,7 @@ const CourseDetail: React.FC = () => {
             <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/75 to-background" />
           </div>
 
-          <div className="page-container relative z-10 pt-6 sm:pt-8 pb-8 sm:pb-12">
+          <div className="page-container relative z-10 pt-4 sm:pt-8 pb-8 sm:pb-12 px-4 sm:px-6">
             {/* Back link */}
             <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-8 text-sm">
               <BackIcon className="w-4 h-4 me-1" />
@@ -502,12 +502,12 @@ const CourseDetail: React.FC = () => {
               </div>
 
               {/* Right: Enrollment Card (2 cols, sticky) */}
-              <div className="lg:col-span-2 order-first lg:order-last">
+              <div className="lg:col-span-2 order-last lg:order-last">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
-                  className="card-premium p-4 sm:p-6 lg:sticky lg:top-28"
+                  className="card-premium p-4 sm:p-6 lg:sticky lg:top-28 mx-0"
                 >
                   {isEnrolled ? (
                     <div className="space-y-5">
@@ -793,7 +793,7 @@ const CourseDetail: React.FC = () => {
             {chapters.length > 0 ? (
               <div className="relative">
                 {/* Vertical timeline line */}
-                <div className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-4 bottom-4 w-0.5 bg-border`} />
+                <div className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-4 bottom-4 w-0.5 bg-border hidden sm:block`} />
 
                 <div className="space-y-6">
                   {chapters.map((chapter, chapterIndex) => {
