@@ -572,7 +572,7 @@ const CourseLearn: React.FC = () => {
   const handleVideoEnded = useCallback(() => {
     if (
       currentLessonId &&
-      !lessonProgress.some(lp => lp.lesson_id === currentLessonId && lp.is_completed) &&
+      !lessonProgressRef.current.some(lp => lp.lesson_id === currentLessonId && lp.is_completed) &&
       !autoCompletedRef.current.has(currentLessonId)
     ) {
       autoCompletedRef.current.add(currentLessonId);
@@ -584,7 +584,7 @@ const CourseLearn: React.FC = () => {
         setShowNextCountdown(true);
       }
     }
-  }, [currentLessonId, nextLesson, chapters, lessonProgress]);
+  }, [currentLessonId, nextLesson, chapters]);
 
   // Auto-complete lesson when video reaches 90% progress
   const handleVideoProgress = useCallback((progress: number) => {
