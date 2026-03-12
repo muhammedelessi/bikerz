@@ -401,6 +401,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
   useEffect(() => {
     restoredRef.current = false;
     lastReportedTimeRef.current = 0;
+    endedFiredRef.current = false;
     setShowStartOverlay(true);
     setIsBuffering(false);
     setError(null);
