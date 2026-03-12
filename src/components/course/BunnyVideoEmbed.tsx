@@ -94,8 +94,10 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
 
   // Fallback refs for reliable end detection
   const progressRef = useRef<number>(0);
+  const durationRef = useRef<number | null>(null);
   const endedCalledRef = useRef(false);
   const endedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onEndedRef = useRef(onEnded);
   const onProgressRef = useRef(onProgress);
   const onTimeUpdateRef = useRef(onTimeUpdate);
@@ -108,21 +110,102 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   // Reset refs when video changes
   useEffect(() => {
     progressRef.current = 0;
+    durationRef.current = null;
     endedCalledRef.current = false;
+
     if (endedTimeoutRef.current) {
       clearTimeout(endedTimeoutRef.current);
       endedTimeoutRef.current = null;
+    }
+
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
     }
   }, [videoUrl]);
 
   const fireOnEnded = useCallback(() => {
     if (endedCalledRef.current) return;
     endedCalledRef.current = true;
+
     if (endedTimeoutRef.current) {
       clearTimeout(endedTimeoutRef.current);
       endedTimeoutRef.current = null;
     }
+
     onEndedRef.current?.();
+  }, []);
+
+  const updatePlaybackState = useCallback((params: {
+    currentTime?: number;
+    duration?: number;
+    progress?: number;
+  }) => {
+    const { currentTime, duration, progress } = params;
+
+    if (typeof currentTime === "number" && Number.isFinite(currentTime)) {
+      onTimeUpdateRef.current?.(Math.floor(Math.max(0, currentTime)));
+    }
+
+    if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) {
+      durationRef.current = duration;
+    }
+
+    let computedProgress: number | null = null;
+
+    if (typeof progress === "number" && Number.isFinite(progress)) {
+      computedProgress = progress <= 1 ? progress * 100 : progress;
+    } else if (
+      typeof currentTime === "number" &&
+      Number.isFinite(currentTime) &&
+      typeof durationRef.current === "number" &&
+      durationRef.current > 0
+    ) {
+      computedProgress = (currentTime / durationRef.current) * 100;
+    }
+
+    if (computedProgress === null) return;
+
+    const clampedProgress = Math.max(0, Math.min(100, computedProgress));
+    progressRef.current = clampedProgress;
+    onProgressRef.current?.(clampedProgress);
+
+    if (clampedProgress >= 95 && !endedCalledRef.current && !endedTimeoutRef.current) {
+      endedTimeoutRef.current = setTimeout(() => {
+        fireOnEnded();
+      }, 3000);
+    } else if (clampedProgress < 95 && endedTimeoutRef.current) {
+      clearTimeout(endedTimeoutRef.current);
+      endedTimeoutRef.current = null;
+    }
+
+    if (
+      typeof currentTime === "number" &&
+      typeof durationRef.current === "number" &&
+      durationRef.current - currentTime <= 1
+    ) {
+      fireOnEnded();
+    }
+  }, [fireOnEnded]);
+
+  const requestPlaybackSnapshot = useCallback(() => {
+    const targetWindow = iframeRef.current?.contentWindow;
+    if (!targetWindow) return;
+
+    const requests: Array<Record<string, string> | string> = [
+      { method: "getCurrentTime" },
+      { method: "getDuration" },
+      { event: "getCurrentTime" },
+      { event: "getDuration" },
+      { type: "getCurrentTime" },
+      { type: "getDuration" },
+      "getCurrentTime",
+      "getDuration",
+    ];
+
+    requests.forEach((request) => {
+      targetWindow.postMessage(request, "*");
+    });
   }, []);
 
   const videoId = useMemo(() => extractBunnyVideoId(videoUrl), [videoUrl]);
@@ -173,54 +256,85 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   // Listen for postMessage events from Bunny player
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Accept messages from any origin — Bunny uses multiple domains
       try {
         const data =
           typeof event.data === "string" ? JSON.parse(event.data) : event.data;
 
-        // Skip non-Bunny messages (must have an event field)
-        if (!data || !data.event) return;
+        if (!data || typeof data !== "object") return;
 
-        if (data.event === "videoProgress" || data.event === "timeupdate") {
-          const currentTime = data.data?.currentTime ?? data.data?.seconds;
-          const duration = data.data?.duration;
-          const progress = data.data?.progress ?? data.data?.percent;
+        const record = data as Record<string, unknown>;
+        const payload =
+          record.data && typeof record.data === "object"
+            ? (record.data as Record<string, unknown>)
+            : {};
 
-          if (onTimeUpdateRef.current && typeof currentTime === "number") {
-            onTimeUpdateRef.current(Math.floor(currentTime));
-          }
+        const eventName =
+          typeof record.event === "string" ? record.event.toLowerCase() : "";
+        const methodName =
+          typeof record.method === "string" ? record.method : "";
 
-          let computedProgress: number | null = null;
-          if (typeof progress === "number") {
-            computedProgress = progress * 100;
-          } else if (
-            typeof currentTime === "number" &&
-            typeof duration === "number" &&
-            duration > 0
-          ) {
-            computedProgress = (currentTime / duration) * 100;
-          }
+        let currentTime =
+          typeof payload.currentTime === "number"
+            ? payload.currentTime
+            : typeof payload.seconds === "number"
+              ? payload.seconds
+              : typeof payload.time === "number"
+                ? payload.time
+                : typeof record.currentTime === "number"
+                  ? record.currentTime
+                  : typeof record.seconds === "number"
+                    ? record.seconds
+                    : typeof record.time === "number"
+                      ? record.time
+                      : undefined;
 
-          if (computedProgress !== null) {
-            progressRef.current = computedProgress;
-            onProgressRef.current?.(computedProgress);
+        let duration =
+          typeof payload.duration === "number"
+            ? payload.duration
+            : typeof record.duration === "number"
+              ? record.duration
+              : undefined;
 
-            // Fallback: if progress >= 95% and onEnded hasn't fired, schedule it
-            if (computedProgress >= 95 && !endedCalledRef.current && !endedTimeoutRef.current) {
-              endedTimeoutRef.current = setTimeout(() => {
-                fireOnEnded();
-              }, 3000);
-            }
-          }
+        let progress =
+          typeof payload.progress === "number"
+            ? payload.progress
+            : typeof payload.percent === "number"
+              ? payload.percent
+              : typeof record.progress === "number"
+                ? record.progress
+                : typeof record.percent === "number"
+                  ? record.percent
+                  : undefined;
+
+        if (methodName === "getCurrentTime" && typeof record.value === "number") {
+          currentTime = record.value;
         }
 
-        if (data.event === "videoEnd" || data.event === "ended") {
+        if (methodName === "getDuration" && typeof record.value === "number") {
+          duration = record.value;
+        }
+
+        if (eventName === "videoend" || eventName === "ended") {
           fireOnEnded();
+          return;
         }
 
-        if (data.event === "ready" || data.event === "videoReady") {
+        if (eventName === "ready" || eventName === "videoready") {
           setIsLoading(false);
           setError(null);
+          requestPlaybackSnapshot();
+        }
+
+        const hasTimingData =
+          typeof currentTime === "number" ||
+          typeof duration === "number" ||
+          typeof progress === "number";
+
+        const isProgressEvent = ["videoprogress", "timeupdate", "progress"].includes(eventName);
+        const isMethodResponse = methodName === "getCurrentTime" || methodName === "getDuration";
+
+        if (hasTimingData && (isProgressEvent || isMethodResponse || !eventName)) {
+          updatePlaybackState({ currentTime, duration, progress });
         }
       } catch {
         // Ignore non-JSON messages
@@ -229,20 +343,30 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [fireOnEnded]);
-
-  // Fallback: if no progress events received after iframe loads, fire onEnded after a generous timeout
-  // This handles cases where postMessage is completely blocked
-  const noEventsFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  }, [fireOnEnded, requestPlaybackSnapshot, updatePlaybackState]);
 
   const handleIframeLoad = useCallback(() => {
     // Give Bunny player a moment to initialize
     setTimeout(() => setIsLoading(false), 1500);
 
-    // Clear any previous no-events fallback
-    if (noEventsFallbackRef.current) {
-      clearTimeout(noEventsFallbackRef.current);
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
     }
+
+    requestPlaybackSnapshot();
+    pollIntervalRef.current = setInterval(() => {
+      requestPlaybackSnapshot();
+    }, 2000);
+  }, [requestPlaybackSnapshot]);
+
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
   }, []);
 
   const handleIframeError = useCallback(() => {
