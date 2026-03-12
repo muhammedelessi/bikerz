@@ -128,6 +128,7 @@ const CourseLearn: React.FC = () => {
   const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
   const autoCompletedRef = React.useRef<Set<string>>(new Set());
   const lessonProgressRef = React.useRef<LessonProgress[]>([]);
+  const videoContainerRef = React.useRef<HTMLDivElement>(null);
 
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ChevronLeft : ChevronRight;
