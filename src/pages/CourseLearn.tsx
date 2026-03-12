@@ -897,6 +897,16 @@ const CourseLearn: React.FC = () => {
                 {/* Video Player - Compact size */}
                 {currentLesson?.video_url && (
                   <div className="relative bg-black w-full aspect-video">
+                    {/* Next Lesson Countdown - overlay on video */}
+                    <AnimatePresence>
+                      {showNextCountdown && nextLesson && (
+                        <NextLessonCountdown
+                          nextLessonTitle={isRTL && nextLesson.title_ar ? nextLesson.title_ar : nextLesson.title}
+                          onGoToNext={() => goToLesson(nextLesson.id, true)}
+                          onDismiss={() => setShowNextCountdown(false)}
+                        />
+                      )}
+                    </AnimatePresence>
                     {isYouTubeUrl(currentLesson.video_url) ? (
                       <div className="aspect-video">
                         <iframe
