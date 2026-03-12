@@ -127,6 +127,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   const fireOnEnded = useCallback(() => {
     if (endedCalledRef.current) return;
     endedCalledRef.current = true;
+    console.log("[BunnyEmbed] fireOnEnded called! progressRef:", progressRef.current, "durationRef:", durationRef.current);
 
     if (endedTimeoutRef.current) {
       clearTimeout(endedTimeoutRef.current);
