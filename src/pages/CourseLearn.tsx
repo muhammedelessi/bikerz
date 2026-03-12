@@ -477,6 +477,11 @@ const CourseLearn: React.FC = () => {
     },
   });
 
+  // Keep ref in sync with latest lessonProgress to avoid stale closures
+  useEffect(() => {
+    lessonProgressRef.current = lessonProgress;
+  }, [lessonProgress]);
+
   // Get saved watch time for current lesson
   const getSavedWatchTime = (lessonId: string): number => {
     const progress = lessonProgress.find(lp => lp.lesson_id === lessonId);
