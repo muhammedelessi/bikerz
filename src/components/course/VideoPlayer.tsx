@@ -634,7 +634,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
       setShowStartOverlay(true);
     };
 
-    const onEndedInternal = () => onEnded?.();
+    const onEndedInternal = () => onEndedRef.current?.();
     const onPlayInternal = () => setShowStartOverlay(false);
 
     video.addEventListener("loadstart", onLoadStart);
