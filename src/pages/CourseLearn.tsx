@@ -127,6 +127,7 @@ const CourseLearn: React.FC = () => {
   const [showNextCountdown, setShowNextCountdown] = useState(false);
   const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
   const autoCompletedRef = React.useRef<Set<string>>(new Set());
+  const lessonProgressRef = React.useRef<LessonProgress[]>([]);
 
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ChevronLeft : ChevronRight;
@@ -476,6 +477,11 @@ const CourseLearn: React.FC = () => {
     },
   });
 
+  // Keep ref in sync with latest lessonProgress to avoid stale closures
+  useEffect(() => {
+    lessonProgressRef.current = lessonProgress;
+  }, [lessonProgress]);
+
   // Get saved watch time for current lesson
   const getSavedWatchTime = (lessonId: string): number => {
     const progress = lessonProgress.find(lp => lp.lesson_id === lessonId);
@@ -566,7 +572,7 @@ const CourseLearn: React.FC = () => {
   const handleVideoEnded = useCallback(() => {
     if (
       currentLessonId &&
-      !lessonProgress.some(lp => lp.lesson_id === currentLessonId && lp.is_completed) &&
+      !lessonProgressRef.current.some(lp => lp.lesson_id === currentLessonId && lp.is_completed) &&
       !autoCompletedRef.current.has(currentLessonId)
     ) {
       autoCompletedRef.current.add(currentLessonId);
@@ -578,14 +584,14 @@ const CourseLearn: React.FC = () => {
         setShowNextCountdown(true);
       }
     }
-  }, [currentLessonId, nextLesson, chapters, lessonProgress]);
+  }, [currentLessonId, nextLesson, chapters]);
 
   // Auto-complete lesson when video reaches 90% progress
   const handleVideoProgress = useCallback((progress: number) => {
     if (
       currentLessonId &&
       progress >= 90 &&
-      !lessonProgress.some(lp => lp.lesson_id === currentLessonId && lp.is_completed) &&
+      !lessonProgressRef.current.some(lp => lp.lesson_id === currentLessonId && lp.is_completed) &&
       !autoCompletedRef.current.has(currentLessonId)
     ) {
       autoCompletedRef.current.add(currentLessonId);
@@ -597,7 +603,7 @@ const CourseLearn: React.FC = () => {
         }
       }
     }
-  }, [currentLessonId, nextLesson, chapters, lessonProgress]);
+  }, [currentLessonId, nextLesson, chapters]);
 
   // Helper to extract YouTube video ID
   const getYouTubeVideoId = (url: string): string | null => {
