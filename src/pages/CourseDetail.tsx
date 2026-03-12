@@ -422,11 +422,11 @@ const CourseDetail: React.FC = () => {
       <main className="pt-16 sm:pt-20 lg:pt-24">
         {/* Hero Section */}
         <section className="relative overflow-hidden">
-           <div className="absolute inset-0 h-[380px] sm:h-[420px] lg:h-[480px]">
+           <div className="absolute inset-0 h-[260px] sm:h-[420px] lg:h-[480px]">
             <img
               src={course.thumbnail_url || heroImage}
               alt={courseTitle}
-              className="w-full h-full object-cover object-top sm:object-cover sm:object-center"
+              className="w-full h-full object-contain object-top bg-near-black sm:object-cover sm:object-center"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-background/60 to-background" />
           </div>
