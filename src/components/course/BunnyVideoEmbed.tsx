@@ -92,6 +92,39 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
 
+  // Fallback refs for reliable end detection
+  const progressRef = useRef<number>(0);
+  const endedCalledRef = useRef(false);
+  const endedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onEndedRef = useRef(onEnded);
+  const onProgressRef = useRef(onProgress);
+  const onTimeUpdateRef = useRef(onTimeUpdate);
+
+  // Keep callback refs fresh
+  useEffect(() => { onEndedRef.current = onEnded; }, [onEnded]);
+  useEffect(() => { onProgressRef.current = onProgress; }, [onProgress]);
+  useEffect(() => { onTimeUpdateRef.current = onTimeUpdate; }, [onTimeUpdate]);
+
+  // Reset refs when video changes
+  useEffect(() => {
+    progressRef.current = 0;
+    endedCalledRef.current = false;
+    if (endedTimeoutRef.current) {
+      clearTimeout(endedTimeoutRef.current);
+      endedTimeoutRef.current = null;
+    }
+  }, [videoUrl]);
+
+  const fireOnEnded = useCallback(() => {
+    if (endedCalledRef.current) return;
+    endedCalledRef.current = true;
+    if (endedTimeoutRef.current) {
+      clearTimeout(endedTimeoutRef.current);
+      endedTimeoutRef.current = null;
+    }
+    onEndedRef.current?.();
+  }, []);
+
   const videoId = useMemo(() => extractBunnyVideoId(videoUrl), [videoUrl]);
 
   // Fetch library ID and build embed URL
@@ -140,7 +173,6 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   // Listen for postMessage events from Bunny player
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Only accept messages from Bunny's iframe
       if (
         !event.origin.includes("mediadelivery.net") &&
         !event.origin.includes("bunnycdn")
@@ -152,30 +184,41 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
         const data =
           typeof event.data === "string" ? JSON.parse(event.data) : event.data;
 
-        // Bunny player events
         if (data.event === "videoProgress" || data.event === "timeupdate") {
           const currentTime = data.data?.currentTime ?? data.data?.seconds;
           const duration = data.data?.duration;
           const progress = data.data?.progress ?? data.data?.percent;
 
-          if (onTimeUpdate && typeof currentTime === "number") {
-            onTimeUpdate(Math.floor(currentTime));
+          if (onTimeUpdateRef.current && typeof currentTime === "number") {
+            onTimeUpdateRef.current(Math.floor(currentTime));
           }
 
-          if (onProgress && typeof progress === "number") {
-            onProgress(progress * 100);
+          let computedProgress: number | null = null;
+          if (typeof progress === "number") {
+            computedProgress = progress * 100;
           } else if (
-            onProgress &&
             typeof currentTime === "number" &&
             typeof duration === "number" &&
             duration > 0
           ) {
-            onProgress((currentTime / duration) * 100);
+            computedProgress = (currentTime / duration) * 100;
+          }
+
+          if (computedProgress !== null) {
+            progressRef.current = computedProgress;
+            onProgressRef.current?.(computedProgress);
+
+            // Fallback: if progress >= 95% and onEnded hasn't fired, schedule it
+            if (computedProgress >= 95 && !endedCalledRef.current && !endedTimeoutRef.current) {
+              endedTimeoutRef.current = setTimeout(() => {
+                fireOnEnded();
+              }, 3000);
+            }
           }
         }
 
         if (data.event === "videoEnd" || data.event === "ended") {
-          onEnded?.();
+          fireOnEnded();
         }
 
         if (data.event === "ready" || data.event === "videoReady") {
@@ -189,7 +232,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [onEnded, onProgress, onTimeUpdate]);
+  }, [fireOnEnded]);
 
   const handleIframeLoad = useCallback(() => {
     // Give Bunny player a moment to initialize
