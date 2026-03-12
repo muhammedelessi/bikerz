@@ -338,6 +338,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
   const hlsInitializingRef = useRef(false); // Track HLS setup to suppress native errors
   const restoredRef = useRef(false);
   const lastReportedTimeRef = useRef(0);
+  const endedFiredRef = useRef(false);
 
   const [showStartOverlay, setShowStartOverlay] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
@@ -400,6 +401,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
   useEffect(() => {
     restoredRef.current = false;
     lastReportedTimeRef.current = 0;
+    endedFiredRef.current = false;
     setShowStartOverlay(true);
     setIsBuffering(false);
     setError(null);
@@ -593,6 +595,12 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
       if (!Number.isFinite(t) || !Number.isFinite(d) || d <= 0) return;
 
       onProgressRef.current?.((t / d) * 100);
+
+      // Fallback: fire onEnded when video is within 1s of finishing
+      if (d - t <= 1 && !endedFiredRef.current) {
+        endedFiredRef.current = true;
+        onEndedRef.current?.();
+      }
 
       if (Math.abs(t - lastReportedTimeRef.current) >= 5) {
         lastReportedTimeRef.current = t;
