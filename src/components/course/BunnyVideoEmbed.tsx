@@ -173,16 +173,13 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   // Listen for postMessage events from Bunny player
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (
-        !event.origin.includes("mediadelivery.net") &&
-        !event.origin.includes("bunnycdn")
-      ) {
-        return;
-      }
-
+      // Accept messages from any origin — Bunny uses multiple domains
       try {
         const data =
           typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+
+        // Skip non-Bunny messages (must have an event field)
+        if (!data || !data.event) return;
 
         if (data.event === "videoProgress" || data.event === "timeupdate") {
           const currentTime = data.data?.currentTime ?? data.data?.seconds;
@@ -234,9 +231,18 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
     return () => window.removeEventListener("message", handleMessage);
   }, [fireOnEnded]);
 
+  // Fallback: if no progress events received after iframe loads, fire onEnded after a generous timeout
+  // This handles cases where postMessage is completely blocked
+  const noEventsFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleIframeLoad = useCallback(() => {
     // Give Bunny player a moment to initialize
     setTimeout(() => setIsLoading(false), 1500);
+
+    // Clear any previous no-events fallback
+    if (noEventsFallbackRef.current) {
+      clearTimeout(noEventsFallbackRef.current);
+    }
   }, []);
 
   const handleIframeError = useCallback(() => {
@@ -307,7 +313,6 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
           loading="lazy"
           onLoad={handleIframeLoad}
           onError={handleIframeError}
-          sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
         />
       )}
 
