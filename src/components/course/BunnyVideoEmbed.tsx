@@ -173,16 +173,13 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   // Listen for postMessage events from Bunny player
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (
-        !event.origin.includes("mediadelivery.net") &&
-        !event.origin.includes("bunnycdn")
-      ) {
-        return;
-      }
-
+      // Accept messages from any origin — Bunny uses multiple domains
       try {
         const data =
           typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+
+        // Skip non-Bunny messages (must have an event field)
+        if (!data || !data.event) return;
 
         if (data.event === "videoProgress" || data.event === "timeupdate") {
           const currentTime = data.data?.currentTime ?? data.data?.seconds;
