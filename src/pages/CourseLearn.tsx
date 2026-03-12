@@ -575,21 +575,21 @@ const CourseLearn: React.FC = () => {
     setCurrentLessonId(lessonId);
     setShowTest(null);
     setSidebarOpen(false);
-    // Reset auto-complete ref so new lesson can be auto-completed
-    autoCompletedRef.current.delete(lessonId);
+    // Reset ended fallback marker for target lesson
+    autoCompletedRef.current.delete(`${lessonId}_ended`);
     navigate(`/courses/${id}/lessons/${lessonId}`, { replace: true });
   };
 
   const handleVideoEnded = useCallback(() => {
     console.log("[CourseLearn] handleVideoEnded called, currentLessonId:", currentLessonId, "nextLesson:", nextLesson?.id);
+
     if (
       currentLessonId &&
-      !lessonProgressRef.current.some(lp => lp.lesson_id === currentLessonId && lp.is_completed) &&
-      !autoCompletedRef.current.has(currentLessonId)
+      !lessonProgressRef.current.some(lp => lp.lesson_id === currentLessonId && lp.is_completed)
     ) {
-      autoCompletedRef.current.add(currentLessonId);
       completeLessonMutation.mutate(currentLessonId);
     }
+
     if (nextLesson) {
       const nextChapter = chapters.find(ch => ch.lessons.some(l => l.id === nextLesson.id));
       if (nextChapter && !isLessonLocked(nextLesson, nextChapter)) {
