@@ -1175,9 +1175,9 @@ const CourseLearn: React.FC = () => {
           </AnimatePresence>
         </main>
 
-        {/* Sidebar */}
+        {/* Sidebar - Fixed on desktop like Udemy, slide-in drawer on mobile */}
         <aside
-          className={`fixed lg:sticky top-14 sm:top-16 lg:top-0 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] w-[300px] sm:w-80 max-w-[85vw] bg-card border-s border-border transform transition-transform duration-300 ease-out z-50 lg:z-auto ${
+          className={`fixed top-14 sm:top-16 bottom-0 w-[300px] sm:w-80 max-w-[85vw] bg-card border-s border-border transform transition-transform duration-300 ease-out z-50 lg:z-40 ${
             sidebarOpen ? 'translate-x-0' : isRTL ? '-translate-x-full lg:translate-x-0' : 'translate-x-full lg:translate-x-0'
           } ${isRTL ? 'left-0' : 'right-0'}`}
         >
