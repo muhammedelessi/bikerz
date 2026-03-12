@@ -128,6 +128,7 @@ const CourseLearn: React.FC = () => {
   const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
   const autoCompletedRef = React.useRef<Set<string>>(new Set());
   const lessonProgressRef = React.useRef<LessonProgress[]>([]);
+  const initialTimeRef = React.useRef<number>(0);
   const videoContainerRef = React.useRef<HTMLDivElement>(null);
 
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
@@ -482,6 +483,11 @@ const CourseLearn: React.FC = () => {
   useEffect(() => {
     lessonProgressRef.current = lessonProgress;
   }, [lessonProgress]);
+
+  // Store initialTime in ref so it only updates on lesson change, not on progress updates
+  useEffect(() => {
+    initialTimeRef.current = getSavedWatchTime(currentLessonId || '');
+  }, [currentLessonId]);
 
 
 
@@ -924,7 +930,7 @@ const CourseLearn: React.FC = () => {
                       <BunnyVideoEmbed
                         videoUrl={currentLesson.video_url}
                         title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
-                        initialTime={getSavedWatchTime(currentLesson.id)}
+                        initialTime={initialTimeRef.current}
                         onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
                         onProgress={handleVideoProgress}
                         onEnded={handleVideoEnded}
@@ -935,7 +941,7 @@ const CourseLearn: React.FC = () => {
                           key={currentLesson.id}
                           src={currentLesson.video_url}
                           title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
-                          initialTime={getSavedWatchTime(currentLesson.id)}
+                          initialTime={initialTimeRef.current}
                           onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
                           onProgress={handleVideoProgress}
                           onEnded={handleVideoEnded}
