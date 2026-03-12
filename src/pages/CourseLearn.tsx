@@ -125,6 +125,7 @@ const CourseLearn: React.FC = () => {
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(urlLessonId || null);
   const [showTest, setShowTest] = useState<string | null>(null);
   const [showNextCountdown, setShowNextCountdown] = useState(false);
+  const [autoPlayNext, setAutoPlayNext] = useState(false);
   const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
   const autoCompletedRef = React.useRef<Set<string>>(new Set());
   const lessonProgressRef = React.useRef<LessonProgress[]>([]);
