@@ -596,6 +596,12 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
 
       onProgressRef.current?.((t / d) * 100);
 
+      // Fallback: fire onEnded when video is within 1s of finishing
+      if (d - t <= 1 && !endedFiredRef.current) {
+        endedFiredRef.current = true;
+        onEndedRef.current?.();
+      }
+
       if (Math.abs(t - lastReportedTimeRef.current) >= 5) {
         lastReportedTimeRef.current = t;
         onTimeUpdateRef.current?.(Math.floor(t));
