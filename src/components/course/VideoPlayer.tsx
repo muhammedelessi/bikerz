@@ -328,6 +328,12 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
   initialTime = 0,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const onEndedRef = useRef(onEnded);
+  const onProgressRef = useRef(onProgress);
+  const onTimeUpdateRef = useRef(onTimeUpdate);
+  useEffect(() => { onEndedRef.current = onEnded; }, [onEnded]);
+  useEffect(() => { onProgressRef.current = onProgress; }, [onProgress]);
+  useEffect(() => { onTimeUpdateRef.current = onTimeUpdate; }, [onTimeUpdate]);
   const hlsRef = useRef<Hls | null>(null);
   const hlsInitializingRef = useRef(false); // Track HLS setup to suppress native errors
   const restoredRef = useRef(false);
@@ -586,11 +592,11 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
       const d = video.duration;
       if (!Number.isFinite(t) || !Number.isFinite(d) || d <= 0) return;
 
-      onProgress?.((t / d) * 100);
+      onProgressRef.current?.((t / d) * 100);
 
-      if (onTimeUpdate && Math.abs(t - lastReportedTimeRef.current) >= 5) {
+      if (Math.abs(t - lastReportedTimeRef.current) >= 5) {
         lastReportedTimeRef.current = t;
-        onTimeUpdate(Math.floor(t));
+        onTimeUpdateRef.current?.(Math.floor(t));
       }
     };
 
@@ -628,7 +634,7 @@ const NativeVideoPlayer: React.FC<VideoPlayerProps> = ({
       setShowStartOverlay(true);
     };
 
-    const onEndedInternal = () => onEnded?.();
+    const onEndedInternal = () => onEndedRef.current?.();
     const onPlayInternal = () => setShowStartOverlay(false);
 
     video.addEventListener("loadstart", onLoadStart);
