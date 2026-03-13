@@ -219,7 +219,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   /** SAR total after 15% VAT — the exact amount Tap will charge */
   const getSarTotalWithVat = useCallback(
-    (sarPrice: number): number => Math.round(sarPrice * 1.15),
+    (sarPrice: number): number => Math.ceil(sarPrice * 1.15),
     []
   );
 
