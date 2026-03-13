@@ -239,7 +239,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     (sarPrice: number): number => {
       if (currencyCode === 'SAR') return getSarTotalWithVat(sarPrice);
       const subtotal = convertPrice(sarPrice);
-      return subtotal + Math.round(subtotal * (VAT_RATE / 100));
+      return subtotal + Math.ceil(subtotal * (VAT_RATE / 100));
     },
     [currencyCode, convertPrice, getSarTotalWithVat]
   );
