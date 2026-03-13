@@ -368,6 +368,15 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
     let cancelled = false;
     let player: PlayerJsInstance | null = null;
 
+    // iOS Safari fallback: if Player.js "ready" never fires, hide spinner
+    // after the iframe has had time to render (8s timeout)
+    iframeLoadFallbackRef.current = setTimeout(() => {
+      if (!cancelled && !playerReadyRef.current) {
+        console.warn("[BunnyVideoEmbed] Player.js ready timeout – removing loading overlay (iOS fallback)");
+        setIsLoading(false);
+      }
+    }, 8000);
+
     const setupPlayer = async () => {
       try {
         await loadPlayerJs();
@@ -378,8 +387,15 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
         const handleReady = () => {
           if (cancelled || !player) return;
 
+          playerReadyRef.current = true;
           setError(null);
           setIsLoading(false);
+
+          // Clear the iOS fallback since ready fired
+          if (iframeLoadFallbackRef.current) {
+            clearTimeout(iframeLoadFallbackRef.current);
+            iframeLoadFallbackRef.current = null;
+          }
 
           if (initialTime > 0) {
             try {
@@ -457,7 +473,8 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
       } catch (setupError) {
         console.error("[BunnyVideoEmbed] Failed to initialize Player.js:", setupError);
         if (!cancelled) {
-          setError("Failed to initialize video player.");
+          // On iOS, Player.js may fail to load but the iframe itself works fine
+          // Don't show error, just hide loading
           setIsLoading(false);
         }
       }
@@ -475,6 +492,17 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
       teardown?.();
     };
   }, [embedUrl, initialTime, updatePlaybackState, fireOnEnded, clearTimers]);
+
+  // Iframe native onLoad handler – fallback for iOS where Player.js may not connect
+  const handleIframeLoad = useCallback(() => {
+    // Give Player.js 3 more seconds after iframe loads; if it doesn't fire ready, clear spinner
+    setTimeout(() => {
+      if (!playerReadyRef.current) {
+        console.warn("[BunnyVideoEmbed] iframe loaded but Player.js not ready – clearing spinner");
+        setIsLoading(false);
+      }
+    }, 3000);
+  }, []);
 
   const handleRetry = useCallback(() => {
     endedCalledRef.current = false;
