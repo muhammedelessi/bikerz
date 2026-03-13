@@ -594,6 +594,11 @@ const CourseDetail: React.FC = () => {
                               : formatPrice(course.price, isRTL)}
                           </span>
                         )}
+                        {course.price > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {isRTL ? 'السعر غير شامل الضريبة' : 'Price excludes VAT'}
+                          </p>
+                        )}
                       </div>
 
                       {/* CTA */}
