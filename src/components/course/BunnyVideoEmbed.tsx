@@ -217,6 +217,8 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   const endedCalledRef = useRef(false);
   const endedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const iframeLoadFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const playerReadyRef = useRef(false);
 
   useEffect(() => {
     onEndedRef.current = onEnded;
