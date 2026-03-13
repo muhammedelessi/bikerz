@@ -565,7 +565,9 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
           allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
           title={title || "Video player"}
-          loading="lazy"
+          onLoad={handleIframeLoad}
+          // Avoid loading="lazy" – iOS Safari may not trigger load for lazy iframes
+          // playsinline is handled by Bunny's embed params
         />
       )}
 
