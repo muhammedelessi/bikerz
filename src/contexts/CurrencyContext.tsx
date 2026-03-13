@@ -138,6 +138,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       convertPrice,
       formatPrice,
       calculateTax,
+      calculateTotalWithTax,
       isDetecting,
       detectedCountry,
     }}>
