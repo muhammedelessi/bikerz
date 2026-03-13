@@ -876,7 +876,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <Lock className="w-4 h-4 me-2" />
                       {(() => {
                         const totalWithTax = calculateTotalWithTax(discountedPrice);
-                        const sym = isRTL ? currency.symbolAr : currency.symbol;
+                        const sym = isRTL ? symbolAr : symbol;
                         return isRTL ? `ادفع ${totalWithTax} ${sym}` : `Pay ${totalWithTax} ${sym}`;
                       })()}
                     </>
