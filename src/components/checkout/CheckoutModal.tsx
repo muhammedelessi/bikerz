@@ -798,9 +798,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
                           <span className="text-primary">{taxInfo.total} {currencyLabel}</span>
                         </div>
-                        {currency.code !== 'SAR' && (
+                        {!isSAR && (
                           <p className="text-[10px] text-muted-foreground text-center mt-1">
-                            {isRTL ? `* سيتم تحصيل المبلغ بالريال السعودي (${Math.round(discountedPrice * 1.15)} ر.س)` : `* You will be charged in SAR (${Math.round(discountedPrice * 1.15)} SAR)`}
+                            {isRTL ? `* سيتم تحصيل المبلغ بالريال السعودي (${getSarTotalWithVat(discountedPrice)} ر.س)` : `* You will be charged in SAR (${getSarTotalWithVat(discountedPrice)} SAR)`}
                           </p>
                         )}
                       </div>
