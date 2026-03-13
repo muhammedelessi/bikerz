@@ -800,7 +800,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         </div>
                         {currency.code !== 'SAR' && (
                           <p className="text-[10px] text-muted-foreground text-center mt-1">
-                            {isRTL ? `* سيتم تحصيل المبلغ بالريال السعودي (${discountedPrice} ر.س)` : `* You will be charged in SAR (${discountedPrice} SAR)`}
+                            {isRTL ? `* سيتم تحصيل المبلغ بالريال السعودي (${Math.round(discountedPrice * 1.15)} ر.س)` : `* You will be charged in SAR (${Math.round(discountedPrice * 1.15)} SAR)`}
                           </p>
                         )}
                       </div>
