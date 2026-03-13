@@ -90,7 +90,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { currency, convertPrice, formatPrice, calculateTax } = useCurrency();
+  const { currency, convertPrice, formatPrice, calculateTax, calculateTotalWithTax } = useCurrency();
   const { user, profile } = useAuth();
   const {
     status: paymentStatus,
@@ -800,7 +800,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         </div>
                         {currency.code !== 'SAR' && (
                           <p className="text-[10px] text-muted-foreground text-center mt-1">
-                            {isRTL ? `* سيتم تحصيل المبلغ بالريال السعودي (${discountedPrice} ر.س)` : `* You will be charged in SAR (${discountedPrice} SAR)`}
+                            {isRTL ? `* سيتم تحصيل المبلغ بالريال السعودي (${Math.round(discountedPrice * 1.15)} ر.س)` : `* You will be charged in SAR (${Math.round(discountedPrice * 1.15)} SAR)`}
                           </p>
                         )}
                       </div>
@@ -874,7 +874,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   ) : (
                     <>
                       <Lock className="w-4 h-4 me-2" />
-                      {isRTL ? `ادفع ${formatPrice(discountedPrice, true)}` : `Pay ${formatPrice(discountedPrice, false)}`}
+                      {(() => {
+                        const totalWithTax = calculateTotalWithTax(discountedPrice);
+                        const sym = isRTL ? currency.symbolAr : currency.symbol;
+                        return isRTL ? `ادفع ${totalWithTax} ${sym}` : `Pay ${totalWithTax} ${sym}`;
+                      })()}
                     </>
                   )}
                 </Button>

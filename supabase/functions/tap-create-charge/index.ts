@@ -177,10 +177,10 @@ Deno.serve(async (req) => {
 
     const originalPrice = Number(course.price);
     const courseDiscountPct = course.discount_percentage && Number(course.discount_percentage) > 0 ? Number(course.discount_percentage) : 0;
-    let finalAmount = courseDiscountPct > 0
+    let priceBeforeTax = courseDiscountPct > 0
       ? Math.round(originalPrice * (1 - courseDiscountPct / 100) * 100) / 100
       : originalPrice;
-    const priceAfterCourseDiscount = finalAmount;
+    const priceAfterCourseDiscount = priceBeforeTax;
 
     // Apply coupon discount if provided (server-side validation)
     let couponDiscount = 0;
@@ -197,27 +197,31 @@ Deno.serve(async (req) => {
           && coupon.used_count < coupon.max_usage) {
         // Check course scope
         const scopeValid = coupon.is_global || !coupon.course_id || coupon.course_id === course_id;
-        const minValid = !coupon.minimum_amount || finalAmount >= Number(coupon.minimum_amount);
+        const minValid = !coupon.minimum_amount || priceBeforeTax >= Number(coupon.minimum_amount);
 
         if (scopeValid && minValid) {
           if (coupon.type === "percentage_discount") {
-            couponDiscount = Math.round(finalAmount * (Number(coupon.value) / 100) * 100) / 100;
+            couponDiscount = Math.round(priceBeforeTax * (Number(coupon.value) / 100) * 100) / 100;
           } else if (coupon.type === "fixed_amount_discount") {
-            couponDiscount = Math.min(Number(coupon.value), finalAmount);
+            couponDiscount = Math.min(Number(coupon.value), priceBeforeTax);
           } else if (coupon.type === "promotion") {
             couponDiscount = Number(coupon.value);
           }
-          finalAmount = Math.max(finalAmount - couponDiscount, 0);
+          priceBeforeTax = Math.max(priceBeforeTax - couponDiscount, 0);
         }
       }
     }
 
-    if (finalAmount <= 0) {
+    if (priceBeforeTax <= 0) {
       return new Response(
         JSON.stringify({ error: "Final amount is zero. Use free enrollment instead." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Add VAT on top of the pre-tax price (15% for SAR)
+    const vatRate = 0.15;
+    const finalAmount = Math.round(priceBeforeTax * (1 + vatRate));
 
     console.log(
       "Server-authoritative pricing:",
@@ -225,6 +229,8 @@ Deno.serve(async (req) => {
       `courseDiscount=${courseDiscountPct}%`,
       `afterCourseDiscount=${priceAfterCourseDiscount}`,
       `couponDiscount=${couponDiscount}`,
+      `priceBeforeTax=${priceBeforeTax}`,
+      `vatRate=${vatRate * 100}%`,
       `finalAmount=${finalAmount}`
     );
 
@@ -264,6 +270,8 @@ Deno.serve(async (req) => {
           course_discount_pct: courseDiscountPct,
           price_after_course_discount: priceAfterCourseDiscount,
           coupon_discount: couponDiscount,
+          price_before_tax: priceBeforeTax,
+          vat_rate: vatRate * 100,
           final_amount: finalAmount,
           environment: tapSecretKey.startsWith("sk_test") ? "test" : "live",
           billing_city: profileData.city,
