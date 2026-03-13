@@ -310,6 +310,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   // Reset internal tracking when lesson/video changes
   useEffect(() => {
     endedCalledRef.current = false;
+    playerReadyRef.current = false;
     durationRef.current = null;
     progressRef.current = 0;
     clearTimers();
