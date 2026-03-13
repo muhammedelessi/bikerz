@@ -90,7 +90,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { currency, convertPrice, formatPrice, calculateTax } = useCurrency();
+  const { currency, convertPrice, formatPrice, calculateTax, calculateTotalWithTax } = useCurrency();
   const { user, profile } = useAuth();
   const {
     status: paymentStatus,
