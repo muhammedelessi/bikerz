@@ -270,6 +270,8 @@ Deno.serve(async (req) => {
           course_discount_pct: courseDiscountPct,
           price_after_course_discount: priceAfterCourseDiscount,
           coupon_discount: couponDiscount,
+          price_before_tax: priceBeforeTax,
+          vat_rate: vatRate * 100,
           final_amount: finalAmount,
           environment: tapSecretKey.startsWith("sk_test") ? "test" : "live",
           billing_city: profileData.city,
