@@ -1,72 +1,160 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
-type CurrencyCode = 'SAR' | 'EGP';
+export type CurrencyCode =
+  | 'SAR' | 'AED' | 'KWD' | 'BHD' | 'QAR' | 'OMR' | 'JOD'
+  | 'EGP' | 'IQD' | 'SYP' | 'LBP' | 'YER' | 'LYD' | 'TND'
+  | 'DZD' | 'MAD' | 'SDG' | 'SOS' | 'MRU' | 'KMF' | 'DJF'
+  | 'ILS' | 'USD';
 
-interface CurrencyConfig {
-  code: CurrencyCode;
+interface CurrencyMeta {
   symbol: string;
   symbolAr: string;
-  rate: number; // conversion rate from SAR
-  vatRate: number; // VAT percentage
-  vatLabel: string;
-  vatLabelAr: string;
-  countryCode: string;
-  phoneCountryCode: string;
 }
 
-const CURRENCY_CONFIGS: Record<CurrencyCode, CurrencyConfig> = {
-  SAR: {
-    code: 'SAR',
-    symbol: 'SAR',
-    symbolAr: 'ر.س',
-    rate: 1,
-    vatRate: 15,
-    vatLabel: 'VAT (15%)',
-    vatLabelAr: 'ضريبة القيمة المضافة (15%)',
-    countryCode: 'SA',
-    phoneCountryCode: '966',
-  },
-  EGP: {
-    code: 'EGP',
-    symbol: 'EGP',
-    symbolAr: 'ج.م',
-    rate: 13.2, // approximate SAR to EGP rate
-    vatRate: 14,
-    vatLabel: 'VAT (14%)',
-    vatLabelAr: 'ضريبة القيمة المضافة (14%)',
-    countryCode: 'EG',
-    phoneCountryCode: '20',
-  },
+const CURRENCY_META: Record<CurrencyCode, CurrencyMeta> = {
+  SAR: { symbol: 'SAR', symbolAr: 'ر.س' },
+  AED: { symbol: 'AED', symbolAr: 'د.إ' },
+  KWD: { symbol: 'KWD', symbolAr: 'د.ك' },
+  BHD: { symbol: 'BHD', symbolAr: 'د.ب' },
+  QAR: { symbol: 'QAR', symbolAr: 'ر.ق' },
+  OMR: { symbol: 'OMR', symbolAr: 'ر.ع' },
+  JOD: { symbol: 'JOD', symbolAr: 'د.أ' },
+  EGP: { symbol: 'EGP', symbolAr: 'ج.م' },
+  IQD: { symbol: 'IQD', symbolAr: 'د.ع' },
+  SYP: { symbol: 'SYP', symbolAr: 'ل.س' },
+  LBP: { symbol: 'LBP', symbolAr: 'ل.ل' },
+  YER: { symbol: 'YER', symbolAr: 'ر.ي' },
+  LYD: { symbol: 'LYD', symbolAr: 'د.ل' },
+  TND: { symbol: 'TND', symbolAr: 'د.ت' },
+  DZD: { symbol: 'DZD', symbolAr: 'د.ج' },
+  MAD: { symbol: 'MAD', symbolAr: 'د.م' },
+  SDG: { symbol: 'SDG', symbolAr: 'ج.س' },
+  SOS: { symbol: 'SOS', symbolAr: 'ش.ص' },
+  MRU: { symbol: 'MRU', symbolAr: 'أ.م' },
+  KMF: { symbol: 'KMF', symbolAr: 'ف.ق' },
+  DJF: { symbol: 'DJF', symbolAr: 'ف.ج' },
+  ILS: { symbol: 'ILS', symbolAr: '₪' },
+  USD: { symbol: 'USD', symbolAr: '$' },
 };
 
+const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
+  SA: 'SAR', AE: 'AED', KW: 'KWD', BH: 'BHD', QA: 'QAR', OM: 'OMR',
+  JO: 'JOD', EG: 'EGP', IQ: 'IQD', SY: 'SYP', LB: 'LBP', YE: 'YER',
+  LY: 'LYD', TN: 'TND', DZ: 'DZD', MA: 'MAD', SD: 'SDG', SO: 'SOS',
+  MR: 'MRU', KM: 'KMF', DJ: 'DJF', PS: 'ILS', IL: 'ILS',
+};
+
+// Fallback rates (SAR → X) used if live fetch fails
+const FALLBACK_RATES: Record<CurrencyCode, number> = {
+  SAR: 1, AED: 0.98, KWD: 0.082, BHD: 0.1, QAR: 0.97, OMR: 0.103,
+  JOD: 0.189, EGP: 13.2, IQD: 349.5, SYP: 3467, LBP: 23870,
+  YER: 66.8, LYD: 1.29, TND: 0.83, DZD: 35.9, MAD: 2.65,
+  SDG: 160.5, SOS: 152, MRU: 10.6, KMF: 117.3, DJF: 47.4,
+  ILS: 0.97, USD: 0.267,
+};
+
+const VAT_RATE = 15; // Saudi VAT — server always charges 15%
+
+const RATES_CACHE_KEY = 'bikerz_exchange_rates';
+const CURRENCY_CACHE_KEY = 'bikerz_currency';
+const COUNTRY_CACHE_KEY = 'bikerz_detected_country';
+const CACHE_TTL_MS = 3600_000; // 1 hour
+
+interface CachedRates {
+  rates: Record<string, number>;
+  fetchedAt: number;
+}
+
 interface CurrencyContextType {
-  currency: CurrencyConfig;
+  currencyCode: CurrencyCode;
+  symbol: string;
+  symbolAr: string;
   setCurrency: (code: CurrencyCode) => void;
+  /** Convert a SAR price to local currency, Math.round()'d */
   convertPrice: (sarPrice: number) => number;
+  /** Format a SAR price as local currency string */
   formatPrice: (sarPrice: number, isRTL?: boolean) => string;
+  /** Get SAR total with 15% VAT, Math.round()'d — this is what Tap charges */
+  getSarTotalWithVat: (sarPrice: number) => number;
+  /** Tax breakdown in local currency for display */
   calculateTax: (sarPrice: number) => { subtotal: number; tax: number; total: number };
+  /** Same as getSarTotalWithVat (kept for backward compat) */
   calculateTotalWithTax: (sarPrice: number) => number;
   isDetecting: boolean;
   detectedCountry: string | null;
+  vatRate: number;
+  vatLabel: string;
+  vatLabelAr: string;
+  isSAR: boolean;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currencyCode, setCurrencyCode] = useState<CurrencyCode>(() => {
-    const saved = localStorage.getItem('bikerz_currency');
-    if (saved === 'EGP' || saved === 'SAR') return saved;
+  const [currencyCode, setCurrencyCodeState] = useState<CurrencyCode>(() => {
+    const saved = sessionStorage.getItem(CURRENCY_CACHE_KEY);
+    if (saved && saved in CURRENCY_META) return saved as CurrencyCode;
     return 'SAR';
   });
+  const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [isDetecting, setIsDetecting] = useState(true);
-  const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
+  const [detectedCountry, setDetectedCountry] = useState<string | null>(() =>
+    sessionStorage.getItem(COUNTRY_CACHE_KEY)
+  );
 
-  const currency = CURRENCY_CONFIGS[currencyCode];
+  const meta = CURRENCY_META[currencyCode];
+  const isSAR = currencyCode === 'SAR';
 
-  // Auto-detect location on mount
+  // ── Fetch live exchange rates ──
   useEffect(() => {
-    const saved = localStorage.getItem('bikerz_currency');
-    if (saved === 'EGP' || saved === 'SAR') {
+    const loadRates = async () => {
+      // Check sessionStorage cache
+      const cached = sessionStorage.getItem(RATES_CACHE_KEY);
+      if (cached) {
+        try {
+          const parsed: CachedRates = JSON.parse(cached);
+          if (Date.now() - parsed.fetchedAt < CACHE_TTL_MS) {
+            setRates(prev => ({ ...prev, ...parsed.rates }));
+            return;
+          }
+        } catch { /* ignore corrupt cache */ }
+      }
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch('https://open.er-api.com/v6/latest/SAR', {
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.rates) {
+            const newRates: Record<string, number> = { SAR: 1 };
+            for (const code of Object.keys(CURRENCY_META)) {
+              if (data.rates[code] != null) {
+                newRates[code] = data.rates[code];
+              }
+            }
+            setRates(prev => ({ ...prev, ...newRates }));
+            sessionStorage.setItem(
+              RATES_CACHE_KEY,
+              JSON.stringify({ rates: newRates, fetchedAt: Date.now() } as CachedRates)
+            );
+          }
+        }
+      } catch {
+        // Silently fall back to hardcoded rates
+      }
+    };
+
+    loadRates();
+  }, []);
+
+  // ── Auto-detect country on mount ──
+  useEffect(() => {
+    const savedCurrency = sessionStorage.getItem(CURRENCY_CACHE_KEY);
+    if (savedCurrency && savedCurrency in CURRENCY_META) {
       setIsDetecting(false);
       return;
     }
@@ -75,24 +163,26 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5000);
-        
         const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
         clearTimeout(timeout);
-        
         if (res.ok) {
           const data = await res.json();
-          const country = data?.country_code?.toUpperCase();
-          setDetectedCountry(country || null);
-          
-          if (country === 'EG') {
-            setCurrencyCode('EGP');
-            localStorage.setItem('bikerz_currency', 'EGP');
+          const country = data?.country_code?.toUpperCase() || null;
+          setDetectedCountry(country);
+          if (country) sessionStorage.setItem(COUNTRY_CACHE_KEY, country);
+
+          const detected = country ? COUNTRY_TO_CURRENCY[country] : undefined;
+          if (detected) {
+            setCurrencyCodeState(detected);
+            sessionStorage.setItem(CURRENCY_CACHE_KEY, detected);
           } else {
-            localStorage.setItem('bikerz_currency', 'SAR');
+            // Non-Arab country → USD
+            setCurrencyCodeState('USD');
+            sessionStorage.setItem(CURRENCY_CACHE_KEY, 'USD');
           }
         }
       } catch {
-        // Silently fail - default to SAR
+        // Default SAR
       } finally {
         setIsDetecting(false);
       }
@@ -101,46 +191,76 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     detectLocation();
   }, []);
 
-  const setCurrency = (code: CurrencyCode) => {
-    setCurrencyCode(code);
-    localStorage.setItem('bikerz_currency', code);
-  };
+  const setCurrency = useCallback((code: CurrencyCode) => {
+    setCurrencyCodeState(code);
+    sessionStorage.setItem(CURRENCY_CACHE_KEY, code);
+  }, []);
 
-  const convertPrice = (sarPrice: number): number => {
-    if (currencyCode === 'SAR') return sarPrice;
-    return Math.round(sarPrice * currency.rate * 100) / 100;
-  };
+  const rate = rates[currencyCode] ?? FALLBACK_RATES[currencyCode] ?? 1;
 
-  const formatPrice = (sarPrice: number, isRTL = false): string => {
-    const converted = convertPrice(sarPrice);
-    const symbol = isRTL ? currency.symbolAr : currency.symbol;
-    return `${converted} ${symbol}`;
-  };
+  /** Convert SAR → local, rounded */
+  const convertPrice = useCallback(
+    (sarPrice: number): number => {
+      if (currencyCode === 'SAR') return Math.round(sarPrice);
+      return Math.round(sarPrice * rate);
+    },
+    [currencyCode, rate]
+  );
 
-  const calculateTax = (sarPrice: number) => {
-    const converted = convertPrice(sarPrice);
-    // Price from DB is pre-tax; add VAT on top
-    const subtotal = converted;
-    const tax = Math.round(converted * (currency.vatRate / 100) * 100) / 100;
-    const total = Math.round(subtotal + tax);
-    return { subtotal, tax, total };
-  };
+  /** Format SAR price as local currency string */
+  const formatPrice = useCallback(
+    (sarPrice: number, isRTL = false): string => {
+      const converted = convertPrice(sarPrice);
+      const sym = isRTL ? meta.symbolAr : meta.symbol;
+      return `${converted} ${sym}`;
+    },
+    [convertPrice, meta]
+  );
 
-  const calculateTotalWithTax = (sarPrice: number): number => {
-    const converted = convertPrice(sarPrice);
-    return Math.round(converted * (1 + currency.vatRate / 100));
-  };
+  /** SAR total after 15% VAT — the exact amount Tap will charge */
+  const getSarTotalWithVat = useCallback(
+    (sarPrice: number): number => Math.round(sarPrice * 1.15),
+    []
+  );
+
+  /** Tax breakdown in local currency for display purposes */
+  const calculateTax = useCallback(
+    (sarPrice: number) => {
+      const subtotal = convertPrice(sarPrice);
+      const tax = Math.round(subtotal * (VAT_RATE / 100));
+      const total = subtotal + tax;
+      return { subtotal, tax, total };
+    },
+    [convertPrice]
+  );
+
+  /** Alias for backward compat */
+  const calculateTotalWithTax = useCallback(
+    (sarPrice: number): number => {
+      if (currencyCode === 'SAR') return getSarTotalWithVat(sarPrice);
+      const subtotal = convertPrice(sarPrice);
+      return subtotal + Math.round(subtotal * (VAT_RATE / 100));
+    },
+    [currencyCode, convertPrice, getSarTotalWithVat]
+  );
 
   return (
     <CurrencyContext.Provider value={{
-      currency,
+      currencyCode,
+      symbol: meta.symbol,
+      symbolAr: meta.symbolAr,
       setCurrency,
       convertPrice,
       formatPrice,
+      getSarTotalWithVat,
       calculateTax,
       calculateTotalWithTax,
       isDetecting,
       detectedCountry,
+      vatRate: VAT_RATE,
+      vatLabel: `VAT (${VAT_RATE}%)`,
+      vatLabelAr: `ضريبة القيمة المضافة (${VAT_RATE}%)`,
+      isSAR,
     }}>
       {children}
     </CurrencyContext.Provider>
