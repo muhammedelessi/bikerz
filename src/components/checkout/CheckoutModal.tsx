@@ -790,7 +790,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           <span className="font-medium">{taxInfo.subtotal} {currencyLabel}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">{isRTL ? currency.vatLabelAr : currency.vatLabel}</span>
+                          <span className="text-muted-foreground">{isRTL ? vatLabelAr : vatLabel}</span>
                           <span className="font-medium">{taxInfo.tax} {currencyLabel}</span>
                         </div>
                         <Separator />
