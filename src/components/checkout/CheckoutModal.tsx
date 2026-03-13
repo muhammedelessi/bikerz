@@ -760,7 +760,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {/* Order Summary with Tax Breakdown */}
                   {(() => {
                     const taxInfo = calculateTax(discountedPrice);
-                    const currencyLabel = isRTL ? currency.symbolAr : currency.symbol;
+                    const currencyLabel = isRTL ? symbolAr : symbol;
                     return (
                       <div className="p-4 rounded-xl bg-muted/30 space-y-2">
                         <div className="flex justify-between text-sm">
