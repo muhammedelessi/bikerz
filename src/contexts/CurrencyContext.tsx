@@ -201,8 +201,8 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   /** Convert SAR → local, rounded */
   const convertPrice = useCallback(
     (sarPrice: number): number => {
-      if (currencyCode === 'SAR') return Math.round(sarPrice);
-      return Math.round(sarPrice * rate);
+      if (currencyCode === 'SAR') return Math.ceil(sarPrice);
+      return Math.ceil(sarPrice * rate);
     },
     [currencyCode, rate]
   );
@@ -219,7 +219,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   /** SAR total after 15% VAT — the exact amount Tap will charge */
   const getSarTotalWithVat = useCallback(
-    (sarPrice: number): number => Math.round(sarPrice * 1.15),
+    (sarPrice: number): number => Math.ceil(sarPrice * 1.15),
     []
   );
 
@@ -227,7 +227,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const calculateTax = useCallback(
     (sarPrice: number) => {
       const subtotal = convertPrice(sarPrice);
-      const tax = Math.round(subtotal * (VAT_RATE / 100));
+      const tax = Math.ceil(subtotal * (VAT_RATE / 100));
       const total = subtotal + tax;
       return { subtotal, tax, total };
     },
@@ -239,7 +239,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     (sarPrice: number): number => {
       if (currencyCode === 'SAR') return getSarTotalWithVat(sarPrice);
       const subtotal = convertPrice(sarPrice);
-      return subtotal + Math.round(subtotal * (VAT_RATE / 100));
+      return subtotal + Math.ceil(subtotal * (VAT_RATE / 100));
     },
     [currencyCode, convertPrice, getSarTotalWithVat]
   );
