@@ -227,7 +227,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const calculateTax = useCallback(
     (sarPrice: number) => {
       const subtotal = convertPrice(sarPrice);
-      const tax = Math.round(subtotal * (VAT_RATE / 100));
+      const tax = Math.ceil(subtotal * (VAT_RATE / 100));
       const total = subtotal + tax;
       return { subtotal, tax, total };
     },
