@@ -119,10 +119,16 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const calculateTax = (sarPrice: number) => {
     const converted = convertPrice(sarPrice);
-    // Prices are VAT-inclusive; extract tax from total
-    const subtotal = Math.round((converted / (1 + currency.vatRate / 100)) * 100) / 100;
-    const tax = Math.round((converted - subtotal) * 100) / 100;
-    return { subtotal, tax, total: converted };
+    // Price from DB is pre-tax; add VAT on top
+    const subtotal = converted;
+    const tax = Math.round(converted * (currency.vatRate / 100) * 100) / 100;
+    const total = Math.round(subtotal + tax);
+    return { subtotal, tax, total };
+  };
+
+  const calculateTotalWithTax = (sarPrice: number): number => {
+    const converted = convertPrice(sarPrice);
+    return Math.round(converted * (1 + currency.vatRate / 100));
   };
 
   return (
