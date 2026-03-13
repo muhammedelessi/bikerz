@@ -129,7 +129,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Apply course-level discount first (discount_percentage from DB)
   const courseDiscountPct = course.discount_percentage && course.discount_percentage > 0 ? course.discount_percentage : 0;
   const basePrice = courseDiscountPct > 0
-    ? Math.round(course.price * (1 - courseDiscountPct / 100) * 100) / 100
+    ? Math.ceil(course.price * (1 - courseDiscountPct / 100))
     : course.price;
 
   // Then apply coupon discount on top of the already-discounted base price

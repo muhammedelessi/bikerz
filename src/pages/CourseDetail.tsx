@@ -584,7 +584,7 @@ const CourseDetail: React.FC = () => {
                               </span>
                             </div>
                             <span className="text-4xl font-black text-foreground">
-                              {formatPrice(Math.round(course.price * (1 - course.discount_percentage / 100)), isRTL)}
+                              {formatPrice(Math.ceil(course.price * (1 - course.discount_percentage / 100)), isRTL)}
                             </span>
                           </div>
                         ) : (
