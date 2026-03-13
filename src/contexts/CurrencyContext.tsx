@@ -45,6 +45,7 @@ interface CurrencyContextType {
   convertPrice: (sarPrice: number) => number;
   formatPrice: (sarPrice: number, isRTL?: boolean) => string;
   calculateTax: (sarPrice: number) => { subtotal: number; tax: number; total: number };
+  calculateTotalWithTax: (sarPrice: number) => number;
   isDetecting: boolean;
   detectedCountry: string | null;
 }
