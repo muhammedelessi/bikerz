@@ -242,6 +242,11 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
       clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
     }
+
+    if (iframeLoadFallbackRef.current) {
+      clearTimeout(iframeLoadFallbackRef.current);
+      iframeLoadFallbackRef.current = null;
+    }
   }, []);
 
   const fireOnEnded = useCallback(() => {
