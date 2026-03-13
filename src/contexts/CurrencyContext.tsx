@@ -201,8 +201,8 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   /** Convert SAR → local, rounded */
   const convertPrice = useCallback(
     (sarPrice: number): number => {
-      if (currencyCode === 'SAR') return Math.round(sarPrice);
-      return Math.round(sarPrice * rate);
+      if (currencyCode === 'SAR') return Math.ceil(sarPrice);
+      return Math.ceil(sarPrice * rate);
     },
     [currencyCode, rate]
   );
