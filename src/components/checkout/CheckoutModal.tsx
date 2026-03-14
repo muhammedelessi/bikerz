@@ -758,7 +758,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </div>
                     <div>
                       <h4 className="text-lg font-bold text-foreground mb-1">
-                        {isRTL ? 'أكمل معلومات دراجتك واحصل على خصم 10%!' : 'Complete your bike info to get 10% discount!'}
+                        {isRTL ? 'أكمل ملفك الشخصي واحصل على خصم 10%!' : 'Complete your profile and get 10% off!'}
                       </h4>
                       <p className="text-sm text-muted-foreground">
                         {isRTL
