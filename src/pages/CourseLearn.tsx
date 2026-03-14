@@ -612,6 +612,21 @@ const CourseLearn: React.FC = () => {
       completeLessonMutation.mutate(currentLessonId);
     }
 
+    // Show purchase encouragement for non-enrolled users watching free lessons
+    if (!isEnrolled && currentLessonId && course?.price && course.price > 0) {
+      // Check if this is a free lesson and if we haven't shown the modal for this lesson yet
+      const currentLessonData = allLessons.find(l => l.id === currentLessonId);
+      const currentChapterData = chapters.find(ch => ch.lessons.some(l => l.id === currentLessonId));
+      const isFreeLesson = currentLessonData?.is_free || currentChapterData?.is_free;
+      
+      if (isFreeLesson && !purchaseModalShownRef.current.has(currentLessonId)) {
+        purchaseModalShownRef.current.add(currentLessonId);
+        // Small delay so completion toast shows first
+        setTimeout(() => setShowPurchaseModal(true), 800);
+        return; // Don't show next lesson countdown when showing purchase modal
+      }
+    }
+
     if (nextLesson) {
       const nextChapter = chapters.find(ch => ch.lessons.some(l => l.id === nextLesson.id));
       if (nextChapter && !isLessonLocked(nextLesson, nextChapter)) {
@@ -623,7 +638,7 @@ const CourseLearn: React.FC = () => {
     } else {
       console.log("[CourseLearn] No next lesson available");
     }
-  }, [currentLessonId, nextLesson, chapters]);
+  }, [currentLessonId, nextLesson, chapters, isEnrolled, course]);
 
   // Track video progress (watch time only, no auto-complete)
   const handleVideoProgress = useCallback((_progress: number) => {
