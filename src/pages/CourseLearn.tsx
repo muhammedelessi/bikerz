@@ -131,6 +131,9 @@ const CourseLearn: React.FC = () => {
   const [showNextCountdown, setShowNextCountdown] = useState(false);
   const [autoPlayNext, setAutoPlayNext] = useState(false);
   const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const purchaseModalShownRef = React.useRef<Set<string>>(new Set());
   const autoCompletedRef = React.useRef<Set<string>>(new Set());
   const lessonProgressRef = React.useRef<LessonProgress[]>([]);
   const initialTimeRef = React.useRef<number>(0);
