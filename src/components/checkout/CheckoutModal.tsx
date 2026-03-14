@@ -59,9 +59,9 @@ interface CheckoutModalProps {
   onSuccess: () => void;
 }
 
-type CheckoutStep = 'profile' | 'billing' | 'payment';
+type CheckoutStep = 'profile' | 'billing' | 'profile-reminder' | 'payment';
 
-const CHECKOUT_STEPS: CheckoutStep[] = ['profile', 'billing', 'payment'];
+const CHECKOUT_STEPS_DISPLAY: CheckoutStep[] = ['profile', 'billing', 'payment'];
 
 const GCC_COUNTRIES = [
   { code: 'SA', name: 'Saudi Arabia', name_ar: 'المملكة العربية السعودية' },
