@@ -186,9 +186,17 @@ Deno.serve(async (req) => {
     const originalPrice = Number(course.price);
     const courseDiscountPct = course.discount_percentage && Number(course.discount_percentage) > 0 ? Number(course.discount_percentage) : 0;
     let priceBeforeTax = courseDiscountPct > 0
-      ? Math.round(originalPrice * (1 - courseDiscountPct / 100) * 100) / 100
+      ? Math.ceil(originalPrice * (1 - courseDiscountPct / 100))
       : originalPrice;
     const priceAfterCourseDiscount = priceBeforeTax;
+
+    // Apply 10% bike info discount if profile bike info is complete
+    let bikeDiscount = 0;
+    if (bikeInfoComplete) {
+      bikeDiscount = Math.ceil(priceBeforeTax * 0.10);
+      priceBeforeTax = priceBeforeTax - bikeDiscount;
+    }
+    const priceAfterBikeDiscount = priceBeforeTax;
 
     // Apply coupon discount if provided (server-side validation)
     let couponDiscount = 0;
@@ -236,6 +244,9 @@ Deno.serve(async (req) => {
       `original=${originalPrice}`,
       `courseDiscount=${courseDiscountPct}%`,
       `afterCourseDiscount=${priceAfterCourseDiscount}`,
+      `bikeInfoComplete=${bikeInfoComplete}`,
+      `bikeDiscount=${bikeDiscount}`,
+      `afterBikeDiscount=${priceAfterBikeDiscount}`,
       `couponDiscount=${couponDiscount}`,
       `priceBeforeTax=${priceBeforeTax}`,
       `vatRate=${vatRate * 100}%`,
