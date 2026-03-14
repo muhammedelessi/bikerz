@@ -753,12 +753,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </div>
                     <div>
                       <h4 className="text-lg font-bold text-foreground mb-1">
-                        {isRTL ? 'أكمل ملفك الشخصي واحصل على خصومات حصرية!' : 'Complete your profile to unlock exclusive discounts!'}
+                        {isRTL ? 'أكمل معلومات دراجتك واحصل على خصم 10%!' : 'Complete your bike info to get 10% discount!'}
                       </h4>
                       <p className="text-sm text-muted-foreground">
                         {isRTL
-                          ? 'أضف معلومات الدراجة ولقب الراكب للحصول على عروض مخصصة لك'
-                          : 'Add your bike details and rider nickname to get personalized offers'}
+                          ? 'أضف العلامة التجارية والموديل وسعة المحرك وسنوات الخبرة للحصول على الخصم تلقائياً'
+                          : 'Add your bike brand, model, engine size, and years of experience to unlock the discount automatically'}
                       </p>
                     </div>
 
