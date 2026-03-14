@@ -612,18 +612,27 @@ const CourseLearn: React.FC = () => {
       completeLessonMutation.mutate(currentLessonId);
     }
 
-    // Show purchase encouragement for non-enrolled users watching free lessons
-    if (!isEnrolled && currentLessonId && course?.price && course.price > 0) {
-      // Check if this is a free lesson and if we haven't shown the modal for this lesson yet
-      const currentLessonData = allLessons.find(l => l.id === currentLessonId);
-      const currentChapterData = chapters.find(ch => ch.lessons.some(l => l.id === currentLessonId));
-      const isFreeLesson = currentLessonData?.is_free || currentChapterData?.is_free;
-      
-      if (isFreeLesson && !purchaseModalShownRef.current.has(currentLessonId)) {
-        purchaseModalShownRef.current.add(currentLessonId);
-        // Small delay so completion toast shows first
-        setTimeout(() => setShowPurchaseModal(true), 800);
-        return; // Don't show next lesson countdown when showing purchase modal
+    // Show purchase encouragement when ALL free lessons are completed (non-enrolled users only)
+    if (!isEnrolled && currentLessonId && course?.price && course.price > 0 && !purchaseModalShownRef.current.has('__all_free_done__')) {
+      const freeLessons = allLessons.filter(l => {
+        const ch = chapters.find(ch => ch.lessons.some(ll => ll.id === l.id));
+        return l.is_free || ch?.is_free;
+      });
+
+      if (freeLessons.length > 0) {
+        // Include the lesson that just ended as completed (progress state may not have updated yet)
+        const completedIds = new Set(
+          lessonProgressRef.current.filter(lp => lp.is_completed).map(lp => lp.lesson_id)
+        );
+        completedIds.add(currentLessonId);
+
+        const allFreeCompleted = freeLessons.every(l => completedIds.has(l.id));
+
+        if (allFreeCompleted) {
+          purchaseModalShownRef.current.add('__all_free_done__');
+          setTimeout(() => setShowPurchaseModal(true), 800);
+          return;
+        }
       }
     }
 
