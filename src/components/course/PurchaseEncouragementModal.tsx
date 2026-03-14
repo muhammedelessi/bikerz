@@ -37,7 +37,7 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
 
   const profileDiscount = profileDiscountApplied ? Math.ceil(priceAfterCourseDiscount * 0.10) : 0;
   const priceAfterAllDiscounts = priceAfterCourseDiscount - profileDiscount;
-  const finalPrice = getSarTotalWithVat(priceAfterAllDiscounts);
+  const finalPrice = priceAfterAllDiscounts;
 
   const hasAnyDiscount = courseDiscountPct > 0 || profileDiscountApplied;
 
