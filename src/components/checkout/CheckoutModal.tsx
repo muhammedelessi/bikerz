@@ -34,6 +34,7 @@ import {
   ArrowLeft,
   Loader2,
   AlertCircle,
+  Sparkles,
   CheckCircle2,
   XCircle,
   User,
