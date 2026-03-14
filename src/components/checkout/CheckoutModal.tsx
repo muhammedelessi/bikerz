@@ -301,11 +301,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (!user?.id) return false;
     const { data } = await supabase
       .from('profiles')
-      .select('phone, city, country, bike_brand, bike_model, rider_nickname')
+      .select('phone, city, country, bike_brand, bike_model, engine_size_cc, riding_experience_years, rider_nickname')
       .eq('user_id', user.id)
       .maybeSingle();
     if (!data) return false;
-    return !data.phone || !data.city || !data.country || !data.bike_brand || !data.bike_model || !data.rider_nickname;
+    // Profile is incomplete if bike info is missing (triggers reminder about 10% discount)
+    const hasBikeInfo = !!(data.bike_brand && data.bike_model && data.engine_size_cc && data.riding_experience_years);
+    return !hasBikeInfo || !data.phone || !data.city || !data.country || !data.rider_nickname;
   }, [user?.id]);
 
   const handleNextStep = async () => {
