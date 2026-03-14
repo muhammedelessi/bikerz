@@ -151,27 +151,32 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       : `-${formatPrice(appliedCoupon.discount_amount, isRTL)}`
     : '';
 
-  // Pre-fill from profile
+  // Pre-fill from profile and check bike info
   useEffect(() => {
     if (!open) return;
     if (profile?.full_name) setFullName(profile.full_name);
     if (user?.email) setEmail(user.email);
     if (profile?.phone) setPhone(profile.phone || '');
-    // Load billing from profile (new columns)
-    const loadBilling = async () => {
+    // Load billing and bike info from profile
+    const loadProfileData = async () => {
       if (!user?.id) return;
       const { data } = await supabase
         .from('profiles')
-        .select('city, country, postal_code')
+        .select('city, country, postal_code, bike_brand, bike_model, engine_size_cc, riding_experience_years')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data) {
         if (data.city) setCity(data.city);
         if (data.country) setCountry(data.country);
         if (data.postal_code) setPostalCode(data.postal_code);
+        // Check bike info completeness
+        const hasBikeInfo = !!(data.bike_brand && data.bike_model && data.engine_size_cc && data.riding_experience_years);
+        setBikeInfoComplete(hasBikeInfo);
+      } else {
+        setBikeInfoComplete(false);
       }
     };
-    loadBilling();
+    loadProfileData();
   }, [profile, user, open]);
 
   // Auto-apply PROFILE10 coupon
