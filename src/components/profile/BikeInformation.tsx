@@ -97,6 +97,7 @@ export const BikeInformation: React.FC<BikeInformationProps> = ({
                 value={formData[field.key as keyof typeof formData]}
                 onChange={(e) => setFormData(prev => ({ ...prev, [field.key]: e.target.value }))}
                 placeholder={field.label}
+                className={field.type === 'number' ? '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none' : ''}
               />
             ) : (
               <p className="text-foreground font-medium">
