@@ -326,8 +326,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  const currentStepIndex = CHECKOUT_STEPS.indexOf(currentStep);
-  const progressPercent = ((currentStepIndex + 1) / CHECKOUT_STEPS.length) * 100;
+  // For display purposes, map profile-reminder to billing index
+  const displayStep = currentStep === 'profile-reminder' ? 'billing' : currentStep;
+  const currentStepIndex = CHECKOUT_STEPS_DISPLAY.indexOf(displayStep as any);
+  const progressPercent = currentStep === 'profile-reminder'
+    ? 75
+    : ((currentStepIndex + 1) / CHECKOUT_STEPS_DISPLAY.length) * 100;
 
   // Promo code
   const handleApplyPromo = async () => {
