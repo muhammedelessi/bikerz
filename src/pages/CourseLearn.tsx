@@ -100,6 +100,7 @@ interface Course {
   duration_hours: number | null;
   total_lessons: number | null;
   instructor_id: string | null;
+  discount_percentage: number | null;
 }
 
 interface LessonProgress {
