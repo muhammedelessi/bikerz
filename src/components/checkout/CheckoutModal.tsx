@@ -284,15 +284,35 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   // Step navigation
+  // Check if rider profile details are incomplete (bike info, etc.)
+  const checkProfileCompleteness = useCallback(async (): Promise<boolean> => {
+    if (!user?.id) return false;
+    const { data } = await supabase
+      .from('profiles')
+      .select('phone, city, country, bike_brand, bike_model, rider_nickname')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!data) return false;
+    return !data.phone || !data.city || !data.country || !data.bike_brand || !data.bike_model || !data.rider_nickname;
+  }, [user?.id]);
+
   const handleNextStep = async () => {
     if (currentStep === 'profile') {
       if (!validateProfile()) return;
       setCurrentStep('billing');
     } else if (currentStep === 'billing') {
       if (!validateBilling()) return;
-      // Save profile + billing data before proceeding to payment
       const saved = await saveProfileData();
       if (!saved) return;
+      // Check if profile is incomplete for reminder
+      const incomplete = await checkProfileCompleteness();
+      if (incomplete) {
+        setProfileIncomplete(true);
+        setCurrentStep('profile-reminder');
+      } else {
+        setCurrentStep('payment');
+      }
+    } else if (currentStep === 'profile-reminder') {
       setCurrentStep('payment');
     }
   };
