@@ -920,11 +920,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           <span className="font-medium">{taxInfo.tax} {currencyLabel}</span>
                         </div>
                         <Separator />
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">{isRTL ? vatLabelAr : vatLabel}</span>
-                          <span className="font-medium">{taxInfo.tax} {currencyLabel}</span>
-                        </div>
-                        <Separator />
                         <div className="flex justify-between font-bold">
                           <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
                           <span className="text-primary">{taxInfo.total} {currencyLabel}</span>
