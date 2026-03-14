@@ -615,8 +615,7 @@ const CourseLearn: React.FC = () => {
     // Show purchase encouragement when ALL free lessons are completed (non-enrolled users only)
     if (!isEnrolled && currentLessonId && course?.price && course.price > 0 && !purchaseModalShownRef.current.has('__all_free_done__')) {
       const freeLessons = allLessons.filter(l => {
-        const ch = chapters.find(ch => ch.lessons.some(ll => ll.id === l.id));
-        return l.is_free || ch?.is_free;
+        return l.is_free;
       });
 
       if (freeLessons.length > 0) {
