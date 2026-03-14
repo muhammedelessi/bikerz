@@ -574,8 +574,8 @@ const CourseLearn: React.FC = () => {
     return lessonProgress.some(lp => lp.lesson_id === lessonId && lp.is_completed);
   };
 
-  const isLessonLocked = (lesson: Lesson, chapter: Chapter) => {
-    if (!isEnrolled && !lesson.is_free && !chapter.is_free) return true;
+  const isLessonLocked = (lesson: Lesson, _chapter: Chapter) => {
+    if (!isEnrolled && !lesson.is_free) return true;
     return false;
   };
 
