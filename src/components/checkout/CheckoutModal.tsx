@@ -553,7 +553,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {formatPrice(discountedPrice, isRTL)}
                 </span>
                 {bikeDiscountApplied && (
-                  <span className="text-xs bg-green-500/20 text-green-600 px-1.5 py-0.5 rounded-full">-10%</span>
+                  <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">-10%</span>
                 )}
                 {promoApplied && discountLabel && (
                   <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">{discountLabel}</span>
@@ -893,9 +893,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           <span className="text-muted-foreground">{isRTL ? 'الموقع' : 'Location'}</span>
                           <span className="font-medium">{city}{country ? `, ${GCC_COUNTRIES.find(c => c.code === country)?.[isRTL ? 'name_ar' : 'name'] || country}` : ''}</span>
                         </div>
+                        <Separator />
+                        {/* Price breakdown */}
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">{isRTL ? 'المبلغ الأصلي' : 'Original Price'}</span>
+                          <span className="font-medium">{formatPrice(basePriceBeforeBike, isRTL)}</span>
+                        </div>
                         {bikeDiscountApplied && (
-                          <div className="flex justify-between text-sm text-green-600">
-                            <span>{isRTL ? 'خصم معلومات الدراجة' : 'Bike Info Discount'} (-10%)</span>
+                          <div className="flex justify-between text-sm text-primary">
+                            <span>{isRTL ? 'خصم اكتمال الملف' : 'Profile Completion Discount'} (-10%)</span>
                             <span>-{formatPrice(bikeDiscountAmount, isRTL)}</span>
                           </div>
                         )}
@@ -905,12 +911,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                             <span>-{formatPrice(discountAmount, isRTL)}</span>
                           </div>
                         )}
-                        <Separator />
-                        {/* Tax breakdown */}
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">{isRTL ? 'المبلغ قبل الضريبة' : 'Subtotal (excl. tax)'}</span>
                           <span className="font-medium">{taxInfo.subtotal} {currencyLabel}</span>
                         </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">{isRTL ? vatLabelAr : vatLabel}</span>
+                          <span className="font-medium">{taxInfo.tax} {currencyLabel}</span>
+                        </div>
+                        <Separator />
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">{isRTL ? vatLabelAr : vatLabel}</span>
                           <span className="font-medium">{taxInfo.tax} {currencyLabel}</span>
