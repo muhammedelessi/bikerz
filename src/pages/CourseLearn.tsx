@@ -48,6 +48,8 @@ import LessonQuiz from '@/components/course/LessonQuiz';
 import ReinforcementSuggestion from '@/components/learning/ReinforcementSuggestion';
 import LessonRecapInsert from '@/components/learning/LessonRecapInsert';
 import NextLessonCountdown from '@/components/course/NextLessonCountdown';
+import PurchaseEncouragementModal from '@/components/course/PurchaseEncouragementModal';
+import CheckoutModal from '@/components/checkout/CheckoutModal';
 
 interface Lesson {
   id: string;
@@ -97,6 +99,7 @@ interface Course {
   duration_hours: number | null;
   total_lessons: number | null;
   instructor_id: string | null;
+  discount_percentage: number | null;
 }
 
 interface LessonProgress {
@@ -127,6 +130,9 @@ const CourseLearn: React.FC = () => {
   const [showNextCountdown, setShowNextCountdown] = useState(false);
   const [autoPlayNext, setAutoPlayNext] = useState(false);
   const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const purchaseModalShownRef = React.useRef<Set<string>>(new Set());
   const autoCompletedRef = React.useRef<Set<string>>(new Set());
   const lessonProgressRef = React.useRef<LessonProgress[]>([]);
   const initialTimeRef = React.useRef<number>(0);
@@ -221,6 +227,22 @@ const CourseLearn: React.FC = () => {
       return data;
     },
     enabled: !!id && !!user,
+  });
+
+  // Check if user has complete bike info (for profile discount)
+  const { data: bikeInfoComplete = false } = useQuery({
+    queryKey: ['bike-info-complete', user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data } = await supabase
+        .from('profiles')
+        .select('bike_brand, bike_model, engine_size_cc, riding_experience_years')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!data) return false;
+      return !!(data.bike_brand && data.bike_model && data.engine_size_cc && data.riding_experience_years);
+    },
+    enabled: !!user,
   });
 
   // Fetch lesson progress
@@ -590,6 +612,21 @@ const CourseLearn: React.FC = () => {
       completeLessonMutation.mutate(currentLessonId);
     }
 
+    // Show purchase encouragement for non-enrolled users watching free lessons
+    if (!isEnrolled && currentLessonId && course?.price && course.price > 0) {
+      // Check if this is a free lesson and if we haven't shown the modal for this lesson yet
+      const currentLessonData = allLessons.find(l => l.id === currentLessonId);
+      const currentChapterData = chapters.find(ch => ch.lessons.some(l => l.id === currentLessonId));
+      const isFreeLesson = currentLessonData?.is_free || currentChapterData?.is_free;
+      
+      if (isFreeLesson && !purchaseModalShownRef.current.has(currentLessonId)) {
+        purchaseModalShownRef.current.add(currentLessonId);
+        // Small delay so completion toast shows first
+        setTimeout(() => setShowPurchaseModal(true), 800);
+        return; // Don't show next lesson countdown when showing purchase modal
+      }
+    }
+
     if (nextLesson) {
       const nextChapter = chapters.find(ch => ch.lessons.some(l => l.id === nextLesson.id));
       if (nextChapter && !isLessonLocked(nextLesson, nextChapter)) {
@@ -601,7 +638,7 @@ const CourseLearn: React.FC = () => {
     } else {
       console.log("[CourseLearn] No next lesson available");
     }
-  }, [currentLessonId, nextLesson, chapters]);
+  }, [currentLessonId, nextLesson, chapters, isEnrolled, course]);
 
   // Track video progress (watch time only, no auto-complete)
   const handleVideoProgress = useCallback((_progress: number) => {
@@ -1375,6 +1412,50 @@ const CourseLearn: React.FC = () => {
           </ScrollArea>
         </aside>
       </div>
+
+      {/* Purchase Encouragement Modal */}
+      {course && !isEnrolled && (
+        <PurchaseEncouragementModal
+          open={showPurchaseModal}
+          onClose={() => setShowPurchaseModal(false)}
+          onBuyNow={() => {
+            setShowPurchaseModal(false);
+            if (user) {
+              setShowCheckout(true);
+            } else {
+              navigate('/login', { state: { from: `/courses/${id}` } });
+            }
+          }}
+          course={{
+            title: course.title,
+            title_ar: course.title_ar,
+            thumbnail_url: course.thumbnail_url,
+            price: course.price,
+            discount_percentage: course.discount_percentage,
+          }}
+          profileDiscountApplied={bikeInfoComplete}
+        />
+      )}
+
+      {/* Checkout Modal */}
+      {course && (
+        <CheckoutModal
+          open={showCheckout}
+          onOpenChange={setShowCheckout}
+          course={{
+            id: course.id,
+            title: course.title,
+            title_ar: course.title_ar,
+            price: course.price,
+            discount_percentage: course.discount_percentage,
+            thumbnail_url: course.thumbnail_url,
+          }}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['enrollment-learn', id, user?.id] });
+            navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
+          }}
+        />
+      )}
 
     </div>
   );
