@@ -547,7 +547,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {/* Step indicator */}
           <div className="mt-4 space-y-2">
             <div className="flex justify-between text-xs text-muted-foreground">
-              {CHECKOUT_STEPS.map((step, i) => (
+              {CHECKOUT_STEPS_DISPLAY.map((step, i) => (
                 <span
                   key={step}
                   className={`flex items-center gap-1 ${
