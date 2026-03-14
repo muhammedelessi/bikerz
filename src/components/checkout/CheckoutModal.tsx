@@ -553,7 +553,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {formatPrice(discountedPrice, isRTL)}
                 </span>
                 {bikeDiscountApplied && (
-                  <span className="text-xs bg-green-500/20 text-green-600 px-1.5 py-0.5 rounded-full">-10%</span>
+                  <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">-10%</span>
                 )}
                 {promoApplied && discountLabel && (
                   <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">{discountLabel}</span>
