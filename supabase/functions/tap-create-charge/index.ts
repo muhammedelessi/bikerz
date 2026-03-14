@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
     // ── PROFILE COMPLETENESS CHECK ──
     const { data: profileData, error: profileError } = await adminClient
       .from("profiles")
-      .select("full_name, phone, city, country, profile_complete")
+      .select("full_name, phone, city, country, profile_complete, bike_brand, bike_model, engine_size_cc, riding_experience_years")
       .eq("user_id", userId)
       .maybeSingle();
 
@@ -127,6 +127,14 @@ Deno.serve(async (req) => {
         { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Check bike info completeness for 10% discount
+    const bikeInfoComplete = !!(
+      profileData.bike_brand && profileData.bike_brand.trim() &&
+      profileData.bike_model && profileData.bike_model.trim() &&
+      profileData.engine_size_cc && profileData.engine_size_cc > 0 &&
+      profileData.riding_experience_years !== null && profileData.riding_experience_years !== undefined
+    );
 
     // ── Idempotency check ──
     const { data: existingCharge } = await adminClient
