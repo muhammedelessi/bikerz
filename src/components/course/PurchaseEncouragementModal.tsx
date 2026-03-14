@@ -120,7 +120,7 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  {isRTL ? 'شامل ضريبة القيمة المضافة' : 'VAT included'}
+                  {isRTL ? 'السعر غير شامل الضريبة' : 'Price excludes VAT'}
                 </p>
               </div>
 
