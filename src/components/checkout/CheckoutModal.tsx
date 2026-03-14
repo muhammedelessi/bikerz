@@ -870,6 +870,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           <span className="text-muted-foreground">{isRTL ? 'الموقع' : 'Location'}</span>
                           <span className="font-medium">{city}{country ? `, ${GCC_COUNTRIES.find(c => c.code === country)?.[isRTL ? 'name_ar' : 'name'] || country}` : ''}</span>
                         </div>
+                        {bikeDiscountApplied && (
+                          <div className="flex justify-between text-sm text-green-600">
+                            <span>{isRTL ? 'خصم معلومات الدراجة' : 'Bike Info Discount'} (-10%)</span>
+                            <span>-{formatPrice(bikeDiscountAmount, isRTL)}</span>
+                          </div>
+                        )}
                         {promoApplied && appliedCoupon && (
                           <div className="flex justify-between text-sm text-primary">
                             <span>{isRTL ? 'الخصم' : 'Discount'} ({discountLabel})</span>
