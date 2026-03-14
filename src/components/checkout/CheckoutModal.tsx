@@ -725,6 +725,54 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </motion.div>
               )}
 
+              {/* Profile Completion Reminder */}
+              {currentStep === 'profile-reminder' && (
+                <motion.div
+                  key="profile-reminder"
+                  initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
+                  className="space-y-5"
+                >
+                  <div className="flex flex-col items-center text-center py-4 space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Sparkles className="w-8 h-8 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-foreground mb-1">
+                        {isRTL ? 'أكمل ملفك الشخصي واحصل على خصومات حصرية!' : 'Complete your profile to unlock exclusive discounts!'}
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        {isRTL
+                          ? 'أضف معلومات الدراجة ولقب الراكب للحصول على عروض مخصصة لك'
+                          : 'Add your bike details and rider nickname to get personalized offers'}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 w-full">
+                      <Button
+                        className="flex-1"
+                        onClick={() => {
+                          onOpenChange(false);
+                          navigate('/profile');
+                        }}
+                      >
+                        <User className="w-4 h-4 me-2" />
+                        {isRTL ? 'إكمال الملف الشخصي' : 'Complete Profile'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => setCurrentStep('payment')}
+                      >
+                        {isRTL ? 'المتابعة على أي حال' : 'Continue Anyway'}
+                        <ArrowIcon className="w-4 h-4 ms-2" />
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               {/* Step 3: Payment */}
               {currentStep === 'payment' && (
                 <motion.div
