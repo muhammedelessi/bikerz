@@ -50,7 +50,6 @@ import LessonRecapInsert from '@/components/learning/LessonRecapInsert';
 import NextLessonCountdown from '@/components/course/NextLessonCountdown';
 import PurchaseEncouragementModal from '@/components/course/PurchaseEncouragementModal';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
-import { useUserProfile } from '@/hooks/useUserProfile';
 
 interface Lesson {
   id: string;
