@@ -319,7 +319,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const handlePrevStep = () => {
     if (currentStep === 'billing') setCurrentStep('profile');
-    else if (currentStep === 'payment') setCurrentStep('billing');
+    else if (currentStep === 'profile-reminder') setCurrentStep('billing');
+    else if (currentStep === 'payment') {
+      if (profileIncomplete) setCurrentStep('profile-reminder');
+      else setCurrentStep('billing');
+    }
   };
 
   const currentStepIndex = CHECKOUT_STEPS.indexOf(currentStep);
