@@ -469,6 +469,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const stepLabels: Record<CheckoutStep, { en: string; ar: string }> = {
     profile: { en: 'Personal Info', ar: 'المعلومات الشخصية' },
     billing: { en: 'Billing Address', ar: 'عنوان الفاتورة' },
+    'profile-reminder': { en: 'Profile', ar: 'الملف الشخصي' },
     payment: { en: 'Payment', ar: 'الدفع' },
   };
 
