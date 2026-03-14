@@ -660,20 +660,31 @@ const AdminCourses: React.FC = () => {
               <div className="space-y-2">
                 <Label>{isRTL ? 'السعر' : 'Price'}</Label>
                 <Input
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                  min={0}
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.price || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                      setFormData({ ...formData, price: val === '' ? 0 : parseFloat(val) || 0 });
+                    }
+                  }}
+                  placeholder="0"
                 />
               </div>
               <div className="space-y-2">
                 <Label>{isRTL ? 'نسبة الخصم %' : 'Discount %'}</Label>
                 <Input
-                  type="number"
-                  value={formData.discount_percentage}
-                  onChange={(e) => setFormData({ ...formData, discount_percentage: Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)) })}
-                  min={0}
-                  max={100}
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.discount_percentage || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                      const num = val === '' ? 0 : parseFloat(val) || 0;
+                      setFormData({ ...formData, discount_percentage: Math.min(100, Math.max(0, num)) });
+                    }
+                  }}
                   placeholder="0"
                 />
                 {formData.discount_percentage > 0 && formData.price > 0 && (
