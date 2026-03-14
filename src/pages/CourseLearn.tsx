@@ -1413,6 +1413,50 @@ const CourseLearn: React.FC = () => {
         </aside>
       </div>
 
+      {/* Purchase Encouragement Modal */}
+      {course && !isEnrolled && (
+        <PurchaseEncouragementModal
+          open={showPurchaseModal}
+          onClose={() => setShowPurchaseModal(false)}
+          onBuyNow={() => {
+            setShowPurchaseModal(false);
+            if (user) {
+              setShowCheckout(true);
+            } else {
+              navigate('/login', { state: { from: `/courses/${id}` } });
+            }
+          }}
+          course={{
+            title: course.title,
+            title_ar: course.title_ar,
+            thumbnail_url: course.thumbnail_url,
+            price: course.price,
+            discount_percentage: course.discount_percentage,
+          }}
+          profileDiscountApplied={bikeInfoComplete}
+        />
+      )}
+
+      {/* Checkout Modal */}
+      {course && (
+        <CheckoutModal
+          open={showCheckout}
+          onOpenChange={setShowCheckout}
+          course={{
+            id: course.id,
+            title: course.title,
+            title_ar: course.title_ar,
+            price: course.price,
+            discount_percentage: course.discount_percentage,
+            thumbnail_url: course.thumbnail_url,
+          }}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['enrollment-learn', id, user?.id] });
+            navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
+          }}
+        />
+      )}
+
     </div>
   );
 };
