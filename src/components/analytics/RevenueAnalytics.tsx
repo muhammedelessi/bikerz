@@ -182,8 +182,8 @@ const RevenueAnalytics: React.FC<RevenueAnalyticsProps> = ({ dateRange }) => {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="month" className="text-xs" />
-                  <YAxis className="text-xs" tickFormatter={(v) => formatCurrency(v)} />
+                  <XAxis dataKey="month" className="text-xs" reversed={isRTL} />
+                  <YAxis className="text-xs" tickFormatter={(v) => formatCurrency(v)} orientation={isRTL ? 'right' : 'left'} />
                   <RechartsTooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
