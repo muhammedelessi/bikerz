@@ -959,6 +959,8 @@ const AdminCourses: React.FC = () => {
                   </div>
                 );
               })}
+            </div>
+
             <div className="space-y-2">
               <Label>{isRTL ? 'المدة (ساعات)' : 'Duration (hours)'}</Label>
               <Input
