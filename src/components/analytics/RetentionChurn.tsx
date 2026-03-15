@@ -134,8 +134,8 @@ const RetentionChurn: React.FC<RetentionChurnProps> = ({ dateRange }) => {
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={data?.inactiveWindows || []}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="label" className="text-xs" />
-                  <YAxis className="text-xs" />
+                  <XAxis dataKey="label" className="text-xs" reversed={isRTL} />
+                  <YAxis className="text-xs" orientation={isRTL ? 'right' : 'left'} />
                   <RechartsTooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
