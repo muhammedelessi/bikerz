@@ -1038,35 +1038,31 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     : (isRTL ? 'التالي' : 'Next')}
                   <ArrowIcon className="w-4 h-4 ms-2" />
                 </Button>
-              ) : (
+              ) : discountedPrice <= 0 && appliedCoupon ? (
                 <Button
                   className="flex-1"
                   variant="cta"
-                  onClick={handleSubmitPayment}
+                  onClick={() => handleSubmitPayment('card')}
                   disabled={paymentStatus === 'processing' || !isPaymentReady}
                 >
                   {paymentStatus === 'processing' ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin me-2" />
-                      {isRTL ? 'جاري التوجيه للدفع...' : 'Redirecting to payment...'}
+                      {isRTL ? 'جاري التسجيل...' : 'Enrolling...'}
                     </>
-                  ) : discountedPrice <= 0 && appliedCoupon ? (
+                  ) : (
                     <>
                       <Check className="w-4 h-4 me-2" />
                       {isRTL ? 'سجّل مجاناً' : 'Enroll for Free'}
                     </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4 me-2" />
-                      {(() => {
-                        const totalWithTax = calculateTotalWithTax(discountedPrice);
-                        const sym = isRTL ? symbolAr : symbol;
-                        return isRTL ? `ادفع ${totalWithTax} ${sym}` : `Pay ${totalWithTax} ${sym}`;
-                      })()}
-                    </>
                   )}
                 </Button>
-              )}
+              ) : paymentStatus === 'processing' ? (
+                <Button className="flex-1" variant="cta" disabled>
+                  <Loader2 className="w-4 h-4 animate-spin me-2" />
+                  {isRTL ? 'جاري التوجيه للدفع...' : 'Redirecting to payment...'}
+                </Button>
+              ) : null}
             </div>
           </div>
         )}
