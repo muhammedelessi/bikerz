@@ -184,14 +184,6 @@ Deno.serve(async (req) => {
       : originalPrice;
     const priceAfterCourseDiscount = priceBeforeTax;
 
-    // Apply 10% bike info discount if profile bike info is complete
-    let bikeDiscount = 0;
-    if (bikeInfoComplete) {
-      bikeDiscount = Math.ceil(priceBeforeTax * 0.10);
-      priceBeforeTax = priceBeforeTax - bikeDiscount;
-    }
-    const priceAfterBikeDiscount = priceBeforeTax;
-
     // Apply coupon discount if provided (server-side validation)
     let couponDiscount = 0;
     if (coupon_id) {
