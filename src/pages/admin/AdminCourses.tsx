@@ -100,6 +100,8 @@ const AdminCourses: React.FC = () => {
   interface CountryPrice {
     id?: string;
     country_code: string;
+    original_price: number;
+    discount_percentage: number;
     price: number;
     currency: string;
   }
@@ -327,11 +329,13 @@ const AdminCourses: React.FC = () => {
     // Load country prices
     const { data: prices } = await supabase
       .from('course_country_prices')
-      .select('id, country_code, price, currency')
+      .select('id, country_code, price, currency, original_price, discount_percentage')
       .eq('course_id', course.id);
     setCountryPrices((prices || []).map(p => ({
       id: p.id,
       country_code: p.country_code,
+      original_price: Number((p as any).original_price) || Number(p.price),
+      discount_percentage: Number((p as any).discount_percentage) || 0,
       price: Number(p.price),
       currency: p.currency,
     })));
@@ -378,6 +382,8 @@ const AdminCourses: React.FC = () => {
       const rows = countryPrices.map(cp => ({
         course_id: courseId,
         country_code: cp.country_code,
+        original_price: cp.original_price,
+        discount_percentage: cp.discount_percentage,
         price: cp.price,
         currency: cp.currency,
       }));
@@ -386,11 +392,18 @@ const AdminCourses: React.FC = () => {
   };
 
   const addCountryPrice = () => {
-    setCountryPrices([...countryPrices, { country_code: '', price: 0, currency: '' }]);
+    setCountryPrices([...countryPrices, { country_code: '', original_price: 0, discount_percentage: 0, price: 0, currency: '' }]);
   };
 
   const removeCountryPrice = (index: number) => {
     setCountryPrices(countryPrices.filter((_, i) => i !== index));
+  };
+
+  const recalcCountryPrice = (originalPrice: number, discountPct: number): number => {
+    if (discountPct > 0 && discountPct <= 100) {
+      return Math.ceil(originalPrice * (1 - discountPct / 100));
+    }
+    return originalPrice;
   };
 
   const updateCountryPrice = (index: number, field: keyof CountryPrice, value: any) => {
@@ -398,6 +411,12 @@ const AdminCourses: React.FC = () => {
     if (field === 'country_code') {
       const country = ARAB_COUNTRIES.find(c => c.code === value);
       updated[index] = { ...updated[index], country_code: value, currency: country?.currency || '' };
+    } else if (field === 'original_price') {
+      const op = typeof value === 'number' ? value : parseFloat(value) || 0;
+      updated[index] = { ...updated[index], original_price: op, price: recalcCountryPrice(op, updated[index].discount_percentage) };
+    } else if (field === 'discount_percentage') {
+      const dp = typeof value === 'number' ? value : parseFloat(value) || 0;
+      updated[index] = { ...updated[index], discount_percentage: dp, price: recalcCountryPrice(updated[index].original_price, dp) };
     } else {
       updated[index] = { ...updated[index], [field]: value };
     }
@@ -910,52 +929,86 @@ const AdminCourses: React.FC = () => {
                 const usedCodes = countryPrices.filter((_, i) => i !== idx).map(p => p.country_code);
                 const availableCountries = ARAB_COUNTRIES.filter(c => !usedCodes.includes(c.code));
                 return (
-                  <div key={idx} className="flex gap-2 items-center border border-border/50 rounded-lg p-3">
-                    <div className="flex-1 grid grid-cols-3 gap-2">
-                      <Select
-                        value={cp.country_code}
-                        onValueChange={(val) => updateCountryPrice(idx, 'country_code', val)}
+                  <div key={idx} className="border border-border/50 rounded-lg p-3 space-y-2">
+                    <div className="flex gap-2 items-center">
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <Select
+                          value={cp.country_code}
+                          onValueChange={(val) => updateCountryPrice(idx, 'country_code', val)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={isRTL ? 'الدولة' : 'Country'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableCountries.map(c => (
+                              <SelectItem key={c.code} value={c.code}>
+                                {isRTL ? c.name_ar : c.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          value={cp.currency}
+                          readOnly
+                          disabled
+                          className="bg-muted"
+                          placeholder={isRTL ? 'العملة' : 'Currency'}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-destructive flex-shrink-0"
+                        onClick={() => removeCountryPrice(idx)}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder={isRTL ? 'الدولة' : 'Country'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableCountries.map(c => (
-                            <SelectItem key={c.code} value={c.code}>
-                              {isRTL ? c.name_ar : c.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        value={cp.price || ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                            updateCountryPrice(idx, 'price', val === '' ? 0 : parseFloat(val) || 0);
-                          }
-                        }}
-                        placeholder={isRTL ? 'السعر' : 'Price'}
-                      />
-                      <Input
-                        value={cp.currency}
-                        readOnly
-                        disabled
-                        className="bg-muted"
-                        placeholder={isRTL ? 'العملة' : 'Currency'}
-                      />
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 text-destructive flex-shrink-0"
-                      onClick={() => removeCountryPrice(idx)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">{isRTL ? 'السعر الأصلي' : 'Original Price'}</Label>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          value={cp.original_price || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                              updateCountryPrice(idx, 'original_price', val === '' ? 0 : parseFloat(val) || 0);
+                            }
+                          }}
+                          placeholder={isRTL ? 'السعر الأصلي' : 'Original'}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">{isRTL ? 'نسبة الخصم %' : 'Discount %'}</Label>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          value={cp.discount_percentage || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                              const num = val === '' ? 0 : parseFloat(val) || 0;
+                              if (num <= 100) {
+                                updateCountryPrice(idx, 'discount_percentage', num);
+                              }
+                            }
+                          }}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">{isRTL ? 'السعر النهائي' : 'Final Price'}</Label>
+                        <Input
+                          value={cp.price}
+                          readOnly
+                          disabled
+                          className="bg-muted font-semibold"
+                        />
+                      </div>
+                    </div>
                   </div>
                 );
               })}
