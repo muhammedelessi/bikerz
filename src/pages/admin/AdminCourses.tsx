@@ -392,11 +392,18 @@ const AdminCourses: React.FC = () => {
   };
 
   const addCountryPrice = () => {
-    setCountryPrices([...countryPrices, { country_code: '', price: 0, currency: '' }]);
+    setCountryPrices([...countryPrices, { country_code: '', original_price: 0, discount_percentage: 0, price: 0, currency: '' }]);
   };
 
   const removeCountryPrice = (index: number) => {
     setCountryPrices(countryPrices.filter((_, i) => i !== index));
+  };
+
+  const recalcCountryPrice = (originalPrice: number, discountPct: number): number => {
+    if (discountPct > 0 && discountPct <= 100) {
+      return Math.ceil(originalPrice * (1 - discountPct / 100));
+    }
+    return originalPrice;
   };
 
   const updateCountryPrice = (index: number, field: keyof CountryPrice, value: any) => {
@@ -404,6 +411,12 @@ const AdminCourses: React.FC = () => {
     if (field === 'country_code') {
       const country = ARAB_COUNTRIES.find(c => c.code === value);
       updated[index] = { ...updated[index], country_code: value, currency: country?.currency || '' };
+    } else if (field === 'original_price') {
+      const op = typeof value === 'number' ? value : parseFloat(value) || 0;
+      updated[index] = { ...updated[index], original_price: op, price: recalcCountryPrice(op, updated[index].discount_percentage) };
+    } else if (field === 'discount_percentage') {
+      const dp = typeof value === 'number' ? value : parseFloat(value) || 0;
+      updated[index] = { ...updated[index], discount_percentage: dp, price: recalcCountryPrice(updated[index].original_price, dp) };
     } else {
       updated[index] = { ...updated[index], [field]: value };
     }
