@@ -105,6 +105,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     reset: resetPayment,
   } = useTapPayment();
   const { sendCourseStatus } = useGHLFormWebhook();
+  const { supportsApplePay, supportsGooglePay } = usePaymentMethodDetection();
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('profile');
   const [profileIncomplete, setProfileIncomplete] = useState(false);
