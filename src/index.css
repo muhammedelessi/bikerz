@@ -257,7 +257,13 @@
      JOURNEY ROAD
      ======================================== */
   .journey-line {
-    @apply absolute left-1/2 -translate-x-1/2 w-1 bg-gradient-to-b from-primary via-secondary to-primary/30;
+    @apply absolute w-1 bg-gradient-to-b from-primary via-secondary to-primary/30;
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+  }
+
+  html[dir="rtl"] .journey-line {
+    transform: translateX(50%);
   }
 
   .journey-dot {
