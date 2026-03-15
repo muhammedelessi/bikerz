@@ -224,7 +224,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setAppliedCoupon(null);
       setPromoLoading(false);
       setErrors({});
-      setBikeInfoComplete(null);
       resetPayment();
     }
   }, [open, resetPayment]);
