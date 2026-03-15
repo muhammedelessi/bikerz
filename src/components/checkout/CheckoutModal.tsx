@@ -174,7 +174,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     loadProfileData();
   }, [profile, user, open]);
 
-  // Auto-apply PROFILE10 coupon
+  // Auto-apply saved coupon
   useEffect(() => {
     if (!open) return;
     const savedCoupon = localStorage.getItem('profile_coupon_code');
@@ -189,7 +189,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           if (!error && data?.valid) {
             setPromoApplied(true);
             setAppliedCoupon(data);
-            toast.success(isRTL ? 'تم تطبيق خصم إكمال الملف الشخصي تلقائياً!' : 'Profile completion discount auto-applied!');
+            toast.success(isRTL ? 'تم تطبيق الكوبون تلقائياً!' : 'Coupon auto-applied!');
             localStorage.removeItem('profile_coupon_code');
           }
         } catch {
