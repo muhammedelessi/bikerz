@@ -171,7 +171,6 @@ const App = () => (
               <SocialProofNotification />
               <AppRoutes />
             </BrowserRouter>
-            </BrowserRouter>
             </TooltipProvider>
           </AuthProvider>
         </CurrencyProvider>
