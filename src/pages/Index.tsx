@@ -7,6 +7,7 @@ import JourneySection from "@/components/landing/JourneySection";
 import LearnSection from "@/components/landing/LearnSection";
 import CommunitySection from "@/components/landing/CommunitySection";
 import CTASection from "@/components/landing/CTASection";
+import TrustBar from "@/components/landing/TrustBar";
 import SEOHead from "@/components/common/SEOHead";
 
 const Index: React.FC = () => {
