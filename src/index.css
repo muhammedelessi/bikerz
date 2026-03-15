@@ -334,12 +334,15 @@
   }
 
   .nav-link::after {
-    @apply absolute bottom-0 left-0 w-full h-0.5 bg-primary scale-x-0 transition-transform duration-300 origin-right;
+    @apply absolute bottom-0 w-full h-0.5 bg-primary scale-x-0 transition-transform duration-300;
     content: "";
+    inset-inline-start: 0;
+    transform-origin: inline-end;
   }
 
   .nav-link:hover::after {
-    @apply scale-x-100 origin-left;
+    @apply scale-x-100;
+    transform-origin: inline-start;
   }
 
   .nav-link.active {
