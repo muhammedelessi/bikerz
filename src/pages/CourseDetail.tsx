@@ -590,7 +590,7 @@ const CourseDetail: React.FC = () => {
                                   </span>
                                 </div>
                                 <span className="text-4xl font-black text-foreground">
-                                  {discountedDisplayPrice} {isRTL ? (CURRENCY_META_MAP[courseCurrency]?.symbolAr || courseCurrency) : courseCurrency}
+                                  {discountedDisplayPrice} {courseCurrency}
                                 </span>
                               </div>
                             );
