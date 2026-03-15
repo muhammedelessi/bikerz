@@ -537,7 +537,9 @@ export type Database = {
           course_id: string
           created_at: string
           currency: string
+          discount_percentage: number
           id: string
+          original_price: number
           price: number
           updated_at: string
         }
@@ -546,7 +548,9 @@ export type Database = {
           course_id: string
           created_at?: string
           currency?: string
+          discount_percentage?: number
           id?: string
+          original_price?: number
           price?: number
           updated_at?: string
         }
@@ -555,7 +559,9 @@ export type Database = {
           course_id?: string
           created_at?: string
           currency?: string
+          discount_percentage?: number
           id?: string
+          original_price?: number
           price?: number
           updated_at?: string
         }
