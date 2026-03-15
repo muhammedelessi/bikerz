@@ -910,22 +910,24 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       {/* Apple Pay - shown only on supported devices */}
                       {supportsApplePay && (
                         <Button
-                          className="w-full h-11 bg-foreground hover:bg-foreground/90 text-background border-0"
+                          className="w-full h-12 bg-white hover:bg-gray-100 text-black border border-border rounded-lg gap-2"
                           onClick={() => handleSubmitPayment('apple_pay')}
                           disabled={paymentStatus === 'processing' || !isPaymentReady}
                         >
-                          <ApplePayIcon />
+                          <span className="text-black">
+                            <ApplePayIcon className="h-6 w-auto" />
+                          </span>
                         </Button>
                       )}
 
                       {/* Google Pay - shown only on supported devices */}
                       {supportsGooglePay && (
                         <Button
-                          className="w-full h-11 bg-background hover:bg-muted text-foreground border border-border"
+                          className="w-full h-12 bg-white hover:bg-gray-100 text-gray-800 border border-border rounded-lg gap-2"
                           onClick={() => handleSubmitPayment('google_pay')}
                           disabled={paymentStatus === 'processing' || !isPaymentReady}
                         >
-                          <GooglePayIcon />
+                          <GooglePayIcon className="h-6 w-auto" />
                         </Button>
                       )}
 
@@ -939,15 +941,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                       {/* Card payment */}
                       <Button
-                        className="w-full h-11"
+                        className="w-full h-12 rounded-lg"
                         variant="outline"
                         onClick={() => handleSubmitPayment('card')}
                         disabled={paymentStatus === 'processing' || !isPaymentReady}
                       >
                         <CreditCard className="w-4 h-4 me-2" />
                         <span className="me-2">{isRTL ? 'بطاقة ائتمان' : 'Credit / Debit Card'}</span>
-                        <div className="flex items-center gap-1 ms-auto">
-                          <VisaIcon />
+                        <div className="flex items-center gap-1.5 ms-auto">
+                          <VisaIcon light />
                           <MastercardIcon />
                         </div>
                       </Button>
