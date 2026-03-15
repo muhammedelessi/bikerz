@@ -97,6 +97,8 @@ interface CurrencyContextType {
   convertPrice: (sarPrice: number) => number;
   /** Get price for a specific course considering country-specific pricing */
   getCoursePrice: (courseId: string, sarPrice: number) => number;
+  /** Get full price info for a course (original, discount, final) considering country pricing */
+  getCoursePriceInfo: (courseId: string, sarPrice: number, courseDiscountPct?: number) => CoursePriceInfo;
   /** Get the currency code for a course price (may differ from user currency if country price exists) */
   getCourseCurrency: (courseId: string) => CurrencyCode;
   /** Format a SAR price as local currency string */
