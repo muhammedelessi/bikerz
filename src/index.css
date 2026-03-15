@@ -155,6 +155,15 @@
   html[dir="ltr"] {
     --font-primary: var(--font-en);
   }
+
+  /* Global RTL text alignment */
+  html[dir="rtl"] body {
+    text-align: right;
+  }
+
+  html[dir="ltr"] body {
+    text-align: left;
+  }
 }
 
 @layer components {
