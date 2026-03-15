@@ -97,6 +97,38 @@ const AdminCourses: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   // Form state
+  interface CountryPrice {
+    id?: string;
+    country_code: string;
+    price: number;
+    currency: string;
+  }
+
+  const ARAB_COUNTRIES = [
+    { code: 'SA', name: 'Saudi Arabia', name_ar: 'السعودية', currency: 'SAR' },
+    { code: 'AE', name: 'UAE', name_ar: 'الإمارات', currency: 'AED' },
+    { code: 'KW', name: 'Kuwait', name_ar: 'الكويت', currency: 'KWD' },
+    { code: 'BH', name: 'Bahrain', name_ar: 'البحرين', currency: 'BHD' },
+    { code: 'QA', name: 'Qatar', name_ar: 'قطر', currency: 'QAR' },
+    { code: 'OM', name: 'Oman', name_ar: 'عُمان', currency: 'OMR' },
+    { code: 'EG', name: 'Egypt', name_ar: 'مصر', currency: 'EGP' },
+    { code: 'JO', name: 'Jordan', name_ar: 'الأردن', currency: 'JOD' },
+    { code: 'IQ', name: 'Iraq', name_ar: 'العراق', currency: 'IQD' },
+    { code: 'SY', name: 'Syria', name_ar: 'سوريا', currency: 'SYP' },
+    { code: 'LB', name: 'Lebanon', name_ar: 'لبنان', currency: 'LBP' },
+    { code: 'YE', name: 'Yemen', name_ar: 'اليمن', currency: 'YER' },
+    { code: 'LY', name: 'Libya', name_ar: 'ليبيا', currency: 'LYD' },
+    { code: 'TN', name: 'Tunisia', name_ar: 'تونس', currency: 'TND' },
+    { code: 'DZ', name: 'Algeria', name_ar: 'الجزائر', currency: 'DZD' },
+    { code: 'MA', name: 'Morocco', name_ar: 'المغرب', currency: 'MAD' },
+    { code: 'SD', name: 'Sudan', name_ar: 'السودان', currency: 'SDG' },
+    { code: 'SO', name: 'Somalia', name_ar: 'الصومال', currency: 'SOS' },
+    { code: 'MR', name: 'Mauritania', name_ar: 'موريتانيا', currency: 'MRU' },
+    { code: 'KM', name: 'Comoros', name_ar: 'جزر القمر', currency: 'KMF' },
+    { code: 'DJ', name: 'Djibouti', name_ar: 'جيبوتي', currency: 'DJF' },
+    { code: 'PS', name: 'Palestine', name_ar: 'فلسطين', currency: 'ILS' },
+  ];
+
   const [formData, setFormData] = useState({
     title: '',
     title_ar: '',
@@ -111,6 +143,8 @@ const AdminCourses: React.FC = () => {
     is_published: false,
     learning_outcomes: [] as { text_en: string; text_ar: string }[],
   });
+
+  const [countryPrices, setCountryPrices] = useState<CountryPrice[]>([]);
 
   // Fetch courses
   const { data: courses = [], isLoading } = useQuery({
