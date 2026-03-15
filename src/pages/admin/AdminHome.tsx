@@ -386,8 +386,8 @@ const AdminHome: React.FC = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={coursePerformance} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis type="number" className="text-xs" />
-                      <YAxis dataKey="name" type="category" className="text-xs" width={100} />
+                      <XAxis type="number" className="text-xs" reversed={isRTL} />
+                      <YAxis dataKey="name" type="category" className="text-xs" width={isRTL ? 150 : 120} orientation={isRTL ? 'right' : 'left'} />
                       <Tooltip 
                         contentStyle={{ 
                           backgroundColor: 'hsl(var(--card))', 

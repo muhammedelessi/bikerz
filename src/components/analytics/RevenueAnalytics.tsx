@@ -182,8 +182,8 @@ const RevenueAnalytics: React.FC<RevenueAnalyticsProps> = ({ dateRange }) => {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="month" className="text-xs" />
-                  <YAxis className="text-xs" tickFormatter={(v) => formatCurrency(v)} />
+                  <XAxis dataKey="month" className="text-xs" reversed={isRTL} />
+                  <YAxis className="text-xs" tickFormatter={(v) => formatCurrency(v)} orientation={isRTL ? 'right' : 'left'} />
                   <RechartsTooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
@@ -270,8 +270,8 @@ const RevenueAnalytics: React.FC<RevenueAnalyticsProps> = ({ dateRange }) => {
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={data.cohortLTV.slice(-12)}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="cohort" className="text-xs" />
-                <YAxis className="text-xs" />
+                <XAxis dataKey="cohort" className="text-xs" reversed={isRTL} />
+                <YAxis className="text-xs" orientation={isRTL ? 'right' : 'left'} />
                 <RechartsTooltip
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',

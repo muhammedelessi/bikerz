@@ -264,8 +264,9 @@ const FunnelConversion: React.FC<FunnelConversionProps> = ({ dateRange }) => {
                   dataKey="step"
                   className="text-xs"
                   tickFormatter={(value) => (isRTL ? stepLabelsAr[value] || value : value)}
+                  reversed={isRTL}
                 />
-                <YAxis className="text-xs" />
+                <YAxis className="text-xs" orientation={isRTL ? 'right' : 'left'} />
                 <RechartsTooltip
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',

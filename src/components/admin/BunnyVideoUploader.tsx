@@ -217,9 +217,9 @@ const BunnyVideoUploader: React.FC<BunnyVideoUploaderProps> = ({
                     STAGE_CONFIG[currentUploadStage]?.color || 'text-muted-foreground'
                   )}>
                     {isPaused ? (
-                      <><WifiOff className="mr-1 h-2.5 w-2.5" /> {isRTL ? 'متوقف' : 'Paused'}</>
+                      <><WifiOff className="me-1 h-2.5 w-2.5" /> {isRTL ? 'متوقف' : 'Paused'}</>
                     ) : (
-                      <><Wifi className="mr-1 h-2.5 w-2.5" /> {isRTL ? 'متصل' : 'Connected'}</>
+                      <><Wifi className="me-1 h-2.5 w-2.5" /> {isRTL ? 'متصل' : 'Connected'}</>
                     )}
                   </span>
                 </div>

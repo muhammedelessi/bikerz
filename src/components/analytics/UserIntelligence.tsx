@@ -197,8 +197,8 @@ const UserIntelligence: React.FC<UserIntelligenceProps> = ({ dateRange }) => {
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={data.avgSessionByDevice}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="device" className="text-xs" />
-                  <YAxis className="text-xs" />
+                  <XAxis dataKey="device" className="text-xs" reversed={isRTL} />
+                  <YAxis className="text-xs" orientation={isRTL ? 'right' : 'left'} />
                   <RechartsTooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',

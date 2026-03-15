@@ -49,7 +49,7 @@ function SortableList<T>({
           className="relative bg-card/50 border border-border rounded-lg p-4"
         >
           {/* Controls */}
-          <div className="absolute right-3 top-3 flex items-center gap-1">
+          <div className="absolute end-3 top-3 flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
@@ -80,7 +80,7 @@ function SortableList<T>({
           </div>
 
           {/* Item Number */}
-          <div className="absolute left-3 top-3 flex items-center gap-2 text-muted-foreground">
+          <div className="absolute start-3 top-3 flex items-center gap-2 text-muted-foreground">
             <GripVertical className="w-4 h-4" />
             <span className="text-xs font-medium">#{index + 1}</span>
           </div>
