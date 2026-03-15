@@ -35,12 +35,12 @@ const JourneySection: React.FC = () => {
     <section ref={ref} className="relative py-16 sm:py-20 bg-gradient-to-b from-background via-secondary/10 to-background overflow-hidden">
       {/* Road Pattern Background */}
       <div className="absolute inset-0 opacity-5 hidden md:block">
-        <div className="absolute left-1/2 -translate-x-1/2 w-4 h-full bg-gradient-to-b from-transparent via-muted-foreground to-transparent" />
+        <div className="absolute w-4 h-full bg-gradient-to-b from-transparent via-muted-foreground to-transparent" style={{ insetInlineStart: '50%', transform: isRTL ? 'translateX(50%)' : 'translateX(-50%)' }} />
         {[...Array(20)].map((_, i) => (
           <div
             key={i}
-            className="absolute left-1/2 -translate-x-1/2 w-1 h-8 bg-muted-foreground"
-            style={{ top: `${i * 5 + 5}%` }}
+            className="absolute w-1 h-8 bg-muted-foreground"
+            style={{ top: `${i * 5 + 5}%`, insetInlineStart: '50%', transform: isRTL ? 'translateX(50%)' : 'translateX(-50%)' }}
           />
         ))}
       </div>
@@ -69,7 +69,7 @@ const JourneySection: React.FC = () => {
         {/* Journey Steps */}
         <div className="relative max-w-4xl mx-auto">
           {/* Vertical Line */}
-          <div className="absolute left-6 sm:left-8 lg:left-1/2 lg:-translate-x-1/2 top-0 bottom-0 w-0.5 sm:w-px">
+          <div className={`absolute top-0 bottom-0 w-0.5 sm:w-px ${isRTL ? 'right-6 sm:right-8 lg:right-1/2 lg:translate-x-1/2' : 'left-6 sm:left-8 lg:left-1/2 lg:-translate-x-1/2'}`}>
             <motion.div
               initial={{ height: 0 }}
               animate={inView ? { height: '100%' } : {}}

@@ -166,7 +166,6 @@ export const ReinforcementSuggestion = ({
           exit={{ opacity: 0, y: -10 }}
           className={cn(
             "flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10",
-            isRTL && "flex-row-reverse text-right",
             className
           )}
         >
@@ -196,13 +195,11 @@ export const ReinforcementSuggestion = ({
         transition={{ duration: 0.3, ease: 'easeOut' }}
         className={cn(
           "p-4 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20",
-          isRTL && "text-right",
           className
         )}
       >
         <div className={cn(
           "flex items-start gap-4",
-          isRTL && "flex-row-reverse"
         )}>
           <div className="p-2 rounded-lg bg-primary/10">
             <Icon className="h-6 w-6 text-primary" />
@@ -226,7 +223,6 @@ export const ReinforcementSuggestion = ({
 
         <div className={cn(
           "flex gap-2 mt-4",
-          isRTL && "flex-row-reverse"
         )}>
           <Button
             variant="default"

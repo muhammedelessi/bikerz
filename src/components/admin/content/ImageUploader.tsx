@@ -102,7 +102,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           <Button
             variant="destructive"
             size="icon"
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={handleClear}
           >
             <X className="w-4 h-4" />

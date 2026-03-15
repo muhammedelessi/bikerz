@@ -155,6 +155,15 @@
   html[dir="ltr"] {
     --font-primary: var(--font-en);
   }
+
+  /* Global RTL text alignment */
+  html[dir="rtl"] body {
+    text-align: right;
+  }
+
+  html[dir="ltr"] body {
+    text-align: left;
+  }
 }
 
 @layer components {
@@ -248,7 +257,13 @@
      JOURNEY ROAD
      ======================================== */
   .journey-line {
-    @apply absolute left-1/2 -translate-x-1/2 w-1 bg-gradient-to-b from-primary via-secondary to-primary/30;
+    @apply absolute w-1 bg-gradient-to-b from-primary via-secondary to-primary/30;
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+  }
+
+  html[dir="rtl"] .journey-line {
+    transform: translateX(50%);
   }
 
   .journey-dot {
@@ -325,12 +340,15 @@
   }
 
   .nav-link::after {
-    @apply absolute bottom-0 left-0 w-full h-0.5 bg-primary scale-x-0 transition-transform duration-300 origin-right;
+    @apply absolute bottom-0 w-full h-0.5 bg-primary scale-x-0 transition-transform duration-300;
     content: "";
+    inset-inline-start: 0;
+    transform-origin: inline-end;
   }
 
   .nav-link:hover::after {
-    @apply scale-x-100 origin-left;
+    @apply scale-x-100;
+    transform-origin: inline-start;
   }
 
   .nav-link.active {
@@ -485,6 +503,19 @@
 
   html[dir="rtl"] .rtl\:flip {
     transform: scaleX(-1);
+  }
+
+  /* RTL-aware spacing overrides for common patterns */
+  html[dir="rtl"] .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 1;
+  }
+
+  html[dir="rtl"] .space-x-2 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 1;
+  }
+
+  html[dir="rtl"] .space-x-3 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 1;
   }
 
   /* Scrollbar styling */
