@@ -958,7 +958,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       {/* Google Pay - shown only on supported devices */}
                       {supportsGooglePay && (
                         <Button
-                          className="w-full h-11 bg-white hover:bg-gray-50 text-foreground border border-border"
+                          className="w-full h-11 bg-background hover:bg-muted text-foreground border border-border"
                           onClick={() => handleSubmitPayment('google_pay')}
                           disabled={paymentStatus === 'processing' || !isPaymentReady}
                         >
