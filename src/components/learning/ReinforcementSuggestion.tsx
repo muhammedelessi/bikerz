@@ -166,7 +166,6 @@ export const ReinforcementSuggestion = ({
           exit={{ opacity: 0, y: -10 }}
           className={cn(
             "flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10",
-            isRTL && "flex-row-reverse text-right",
             className
           )}
         >
