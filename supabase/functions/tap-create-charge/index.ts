@@ -129,13 +129,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check bike info completeness for 10% discount
-    const bikeInfoComplete = !!(
-      profileData.bike_brand && profileData.bike_brand.trim() &&
-      profileData.bike_model && profileData.bike_model.trim() &&
-      profileData.engine_size_cc && profileData.engine_size_cc > 0 &&
-      profileData.riding_experience_years !== null && profileData.riding_experience_years !== undefined
-    );
 
     // ── Idempotency check ──
     const { data: existingCharge } = await adminClient
