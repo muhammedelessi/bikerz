@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useTapPayment } from '@/hooks/useTapPayment';
+import { useTapPayment, PaymentMethod } from '@/hooks/useTapPayment';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -44,6 +44,8 @@ import {
 import { toast } from 'sonner';
 import { trackInitiateCheckout, trackAddPaymentInfo } from '@/utils/metaPixel';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
+import { usePaymentMethodDetection } from '@/hooks/usePaymentMethodDetection';
+import { ApplePayIcon, GooglePayIcon, VisaIcon, MastercardIcon } from '@/components/checkout/PaymentMethodIcons';
 
 interface CheckoutModalProps {
   open: boolean;
