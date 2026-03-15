@@ -112,11 +112,11 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         <Tabs defaultValue="upload" className="w-full">
           <TabsList className="w-full">
             <TabsTrigger value="upload" className="flex-1">
-              <Upload className="w-4 h-4 mr-2" />
+              <Upload className="w-4 h-4 me-2" />
               Upload
             </TabsTrigger>
             <TabsTrigger value="url" className="flex-1">
-              <Link className="w-4 h-4 mr-2" />
+              <Link className="w-4 h-4 me-2" />
               URL
             </TabsTrigger>
           </TabsList>
