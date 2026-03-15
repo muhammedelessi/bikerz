@@ -19,11 +19,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import {
   Search, MoreHorizontal, DollarSign, Clock, CheckCircle, XCircle,
-  Eye, Check, X, Download, CreditCard, Banknote,
+  Eye, Check, X, Download, CreditCard, Banknote, User, MapPin,
+  Phone, Mail, AlertTriangle, FileText, Shield,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -48,10 +51,21 @@ interface UnifiedPayment {
   card_last_four?: string | null;
   customer_name?: string | null;
   customer_email?: string | null;
+  customer_phone?: string | null;
   error_message?: string | null;
+  webhook_verified?: boolean | null;
+  metadata?: Record<string, unknown> | null;
+  tap_response?: Record<string, unknown> | null;
   // joined
-  profile?: { full_name: string | null } | null;
-  course?: { title: string | null; title_ar: string | null } | null;
+  profile?: {
+    full_name: string | null;
+    phone: string | null;
+    city: string | null;
+    country: string | null;
+    postal_code: string | null;
+    profile_complete: boolean;
+  } | null;
+  course?: { title: string | null; title_ar: string | null; price: number | null; discount_percentage: number | null } | null;
 }
 
 const normalizeStatus = (status: string, source: 'manual' | 'tap'): string => {
@@ -112,7 +126,11 @@ const AdminPayments = () => {
         card_last_four: p.card_last_four,
         customer_name: p.customer_name,
         customer_email: p.customer_email,
+        customer_phone: p.customer_phone,
         error_message: p.error_message,
+        webhook_verified: p.webhook_verified,
+        metadata: p.metadata as Record<string, unknown> | null,
+        tap_response: p.tap_response as Record<string, unknown> | null,
         payment_method: p.payment_method || 'card',
       }));
 
@@ -120,13 +138,12 @@ const AdminPayments = () => {
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
-      // Fetch profiles and courses
       const userIds = [...new Set(all.map((p) => p.user_id))];
       const courseIds = [...new Set(all.filter((p) => p.course_id).map((p) => p.course_id!))];
 
       const [profilesRes, coursesRes] = await Promise.all([
-        userIds.length > 0 ? supabase.from('profiles').select('user_id, full_name').in('user_id', userIds) : { data: [] },
-        courseIds.length > 0 ? supabase.from('courses').select('id, title, title_ar').in('id', courseIds) : { data: [] },
+        userIds.length > 0 ? supabase.from('profiles').select('user_id, full_name, phone, city, country, postal_code, profile_complete').in('user_id', userIds) : { data: [] },
+        courseIds.length > 0 ? supabase.from('courses').select('id, title, title_ar, price, discount_percentage').in('id', courseIds) : { data: [] },
       ]);
 
       return all.map((p) => ({
@@ -188,7 +205,8 @@ const AdminPayments = () => {
     const matchesSearch =
       displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       payment.reference_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      payment.charge_id?.toLowerCase().includes(searchQuery.toLowerCase());
+      payment.charge_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      payment.customer_email?.toLowerCase().includes(searchQuery.toLowerCase());
     const normalized = normalizeStatus(payment.status, payment.source);
     const matchesStatus = statusFilter === 'all' || normalized === statusFilter;
     return matchesSearch && matchesStatus;
@@ -254,6 +272,95 @@ const AdminPayments = () => {
     </Badge>;
   };
 
+  const getPaymentMethodLabel = (payment: UnifiedPayment) => {
+    if (payment.source === 'manual') return payment.payment_method || '-';
+    const method = payment.payment_method?.toLowerCase() || '';
+    if (method.includes('apple')) return 'Apple Pay';
+    if (method.includes('google')) return 'Google Pay';
+    if (payment.card_brand) {
+      return `${payment.card_brand} •••• ${payment.card_last_four || ''}`;
+    }
+    return method || 'Card';
+  };
+
+  // Extract price breakdown from metadata/tap_response
+  const getPriceBreakdown = (payment: UnifiedPayment) => {
+    const meta = payment.metadata || {};
+    const originalAmount = (meta.original_amount as number) || (meta.price_before_tax as number) || null;
+    const couponDiscount = (meta.coupon_discount as number) || 0;
+    const couponCode = (meta.coupon_code as string) || null;
+    const vatAmount = (meta.vat_amount as number) || null;
+    const courseDiscount = (meta.course_discount as number) || 0;
+
+    // Calculate VAT: amount includes 15% VAT, so pre-VAT = amount / 1.15
+    const amountBeforeVAT = vatAmount !== null ? payment.amount - vatAmount : Math.round((payment.amount / 1.15) * 100) / 100;
+    const calculatedVAT = vatAmount !== null ? vatAmount : Math.round((payment.amount - amountBeforeVAT) * 100) / 100;
+
+    return { originalAmount, couponDiscount, couponCode, vatAmount: calculatedVAT, amountBeforeVAT, courseDiscount };
+  };
+
+  // Extract failure details from tap_response
+  const getFailureDetails = (payment: UnifiedPayment) => {
+    if (normalizeStatus(payment.status, payment.source) !== 'rejected') return null;
+    const resp = payment.tap_response || {};
+    const response = resp.response as Record<string, unknown> | undefined;
+    const gateway = resp.gateway as Record<string, unknown> | undefined;
+    return {
+      reason: payment.error_message || (response?.message as string) || (isRTL ? 'فشل الدفع' : 'Payment failed'),
+      code: (response?.code as string) || (gateway?.response?.toString()) || null,
+      gatewayResponse: (gateway?.response as string) || null,
+    };
+  };
+
+  // CSV Export
+  const exportToCSV = () => {
+    if (!filteredPayments?.length) return;
+    const headers = [
+      'Date', 'Customer Name', 'Email', 'Phone', 'City', 'Country',
+      'Course', 'Amount', 'Currency', 'Status', 'Payment Method',
+      'Transaction ID', 'Source', 'Error Message', 'Profile Complete',
+    ];
+    const rows = filteredPayments.map((p) => {
+      const displayName = p.source === 'tap' ? p.customer_name || p.profile?.full_name : p.profile?.full_name;
+      return [
+        format(new Date(p.created_at), 'yyyy-MM-dd HH:mm:ss'),
+        displayName || '',
+        p.customer_email || '',
+        p.customer_phone || p.profile?.phone || '',
+        p.profile?.city || '',
+        p.profile?.country || '',
+        p.course?.title || '',
+        p.amount.toFixed(2),
+        p.currency,
+        normalizeStatus(p.status, p.source),
+        getPaymentMethodLabel(p),
+        p.charge_id || p.reference_number || '',
+        p.source,
+        p.error_message || '',
+        p.profile?.profile_complete ? 'Yes' : 'No',
+      ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',');
+    });
+
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `payments_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const DetailRow = ({ label, value, icon: Icon, className = '' }: { label: string; value: React.ReactNode; icon?: any; className?: string }) => (
+    <div className={`flex items-start gap-2 ${className}`}>
+      {Icon && <Icon className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />}
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <div className="text-sm font-medium break-all">{value || '-'}</div>
+      </div>
+    </div>
+  );
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -267,9 +374,9 @@ const AdminPayments = () => {
               {isRTL ? 'جميع المدفوعات — البطاقات واليدوية' : 'All payments — card & manual'}
             </p>
           </div>
-          <Button variant="outline">
+          <Button variant="outline" onClick={exportToCSV} disabled={!filteredPayments?.length}>
             <Download className="w-4 h-4 me-2" />
-            {isRTL ? 'تصدير' : 'Export'}
+            {isRTL ? 'تصدير CSV' : 'Export CSV'}
           </Button>
         </div>
 
@@ -302,7 +409,7 @@ const AdminPayments = () => {
               <div className="relative flex-1">
                 <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder={isRTL ? 'البحث بالاسم أو رقم المرجع...' : 'Search by name or reference...'}
+                  placeholder={isRTL ? 'البحث بالاسم أو البريد أو رقم المرجع...' : 'Search by name, email, or reference...'}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="ps-10"
@@ -349,9 +456,21 @@ const AdminPayments = () => {
                     const displayName = payment.source === 'tap'
                       ? payment.customer_name || payment.profile?.full_name || 'Unknown'
                       : payment.profile?.full_name || 'Unknown';
+                    const isFailed = normalizeStatus(payment.status, payment.source) === 'rejected';
                     return (
-                      <TableRow key={`${payment.source}-${payment.id}`}>
-                        <TableCell className="font-medium">{displayName}</TableCell>
+                      <TableRow
+                        key={`${payment.source}-${payment.id}`}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => { setSelectedPayment(payment); setAdminNotes(''); }}
+                      >
+                        <TableCell>
+                          <div>
+                            <span className="font-medium">{displayName}</span>
+                            {payment.customer_email && (
+                              <p className="text-xs text-muted-foreground">{payment.customer_email}</p>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           {isRTL
                             ? payment.course?.title_ar || payment.course?.title || 'N/A'
@@ -359,17 +478,24 @@ const AdminPayments = () => {
                         </TableCell>
                         <TableCell>{payment.amount.toFixed(2)} {payment.currency}</TableCell>
                         <TableCell>{getSourceBadge(payment.source)}</TableCell>
-                        <TableCell className="capitalize">
-                          {payment.source === 'tap' && payment.card_brand
-                            ? `${payment.card_brand} •••• ${payment.card_last_four || ''}`
-                            : payment.payment_method || '-'}
-                        </TableCell>
+                        <TableCell className="capitalize">{getPaymentMethodLabel(payment)}</TableCell>
                         <TableCell>{format(new Date(payment.created_at), 'MMM dd, yyyy')}</TableCell>
-                        <TableCell>{getStatusBadge(payment.status, payment.source)}</TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {getStatusBadge(payment.status, payment.source)}
+                            {isFailed && payment.error_message && (
+                              <p className="text-xs text-red-500 max-w-[150px] truncate" title={payment.error_message}>
+                                {payment.error_message}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon"><MoreHorizontal className="w-4 h-4" /></Button>
+                              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
                               <DropdownMenuItem onClick={() => { setSelectedPayment(payment); setAdminNotes(''); }}>
@@ -411,111 +537,251 @@ const AdminPayments = () => {
           </CardContent>
         </Card>
 
-        {/* Detail Dialog */}
+        {/* Detail Dialog — expanded */}
         <Dialog open={!!selectedPayment} onOpenChange={() => setSelectedPayment(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>{isRTL ? 'تفاصيل الدفع' : 'Payment Details'}</DialogTitle>
+          <DialogContent className="max-w-2xl max-h-[90vh] p-0">
+            <DialogHeader className="p-6 pb-0">
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                {isRTL ? 'تفاصيل الطلب' : 'Order Details'}
+              </DialogTitle>
               <DialogDescription>
-                {isRTL ? 'مراجعة واتخاذ إجراء بشأن هذا الدفع' : 'Review and take action on this payment'}
+                {selectedPayment?.charge_id || selectedPayment?.reference_number || selectedPayment?.id}
               </DialogDescription>
             </DialogHeader>
 
             {selectedPayment && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
+              <ScrollArea className="max-h-[calc(90vh-100px)] px-6 pb-6">
+                <div className="space-y-5">
+                  {/* Status Banner */}
+                  {(() => {
+                    const failureDetails = getFailureDetails(selectedPayment);
+                    if (failureDetails) {
+                      return (
+                        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg space-y-2">
+                          <div className="flex items-center gap-2 text-red-500 font-semibold">
+                            <AlertTriangle className="w-5 h-5" />
+                            {isRTL ? 'فشل الدفع' : 'Payment Failed'}
+                          </div>
+                          <p className="text-sm text-red-400">{failureDetails.reason}</p>
+                          {failureDetails.code && (
+                            <p className="text-xs text-red-400/70">
+                              {isRTL ? 'رمز الخطأ' : 'Error Code'}: <span className="font-mono">{failureDetails.code}</span>
+                            </p>
+                          )}
+                          {failureDetails.gatewayResponse && (
+                            <p className="text-xs text-red-400/70">
+                              {isRTL ? 'استجابة البوابة' : 'Gateway Response'}: {failureDetails.gatewayResponse}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {/* Customer Info Section */}
                   <div>
-                    <p className="text-muted-foreground">{isRTL ? 'المبلغ' : 'Amount'}</p>
-                    <p className="font-semibold text-lg">{selectedPayment.amount.toFixed(2)} {selectedPayment.currency}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">{isRTL ? 'الحالة' : 'Status'}</p>
-                    <div className="mt-1">{getStatusBadge(selectedPayment.status, selectedPayment.source)}</div>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">{isRTL ? 'النوع' : 'Type'}</p>
-                    <div className="mt-1">{getSourceBadge(selectedPayment.source)}</div>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">{isRTL ? 'طريقة الدفع' : 'Method'}</p>
-                    <p className="font-medium capitalize">{selectedPayment.payment_method || '-'}</p>
-                  </div>
-                  {selectedPayment.source === 'manual' && (
-                    <div>
-                      <p className="text-muted-foreground">{isRTL ? 'رقم المرجع' : 'Reference'}</p>
-                      <p className="font-mono">{selectedPayment.reference_number || '-'}</p>
+                    <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      {isRTL ? 'معلومات العميل' : 'Customer Information'}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 p-3 bg-muted/30 rounded-lg">
+                      <DetailRow
+                        icon={User}
+                        label={isRTL ? 'الاسم الكامل' : 'Full Name'}
+                        value={selectedPayment.customer_name || selectedPayment.profile?.full_name || '-'}
+                      />
+                      <DetailRow
+                        icon={Mail}
+                        label={isRTL ? 'البريد الإلكتروني' : 'Email'}
+                        value={selectedPayment.customer_email || '-'}
+                      />
+                      <DetailRow
+                        icon={Phone}
+                        label={isRTL ? 'الهاتف' : 'Phone'}
+                        value={selectedPayment.customer_phone || selectedPayment.profile?.phone || '-'}
+                      />
+                      <DetailRow
+                        icon={MapPin}
+                        label={isRTL ? 'المدينة' : 'City'}
+                        value={selectedPayment.profile?.city || '-'}
+                      />
+                      <DetailRow
+                        icon={MapPin}
+                        label={isRTL ? 'الدولة' : 'Country'}
+                        value={selectedPayment.profile?.country || '-'}
+                      />
+                      <DetailRow
+                        icon={Shield}
+                        label={isRTL ? 'حالة الملف الشخصي' : 'Profile Status'}
+                        value={
+                          selectedPayment.profile?.profile_complete
+                            ? <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-xs">{isRTL ? 'مكتمل' : 'Complete'}</Badge>
+                            : <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-xs">{isRTL ? 'غير مكتمل' : 'Incomplete'}</Badge>
+                        }
+                      />
                     </div>
-                  )}
-                  {selectedPayment.source === 'tap' && (
+                  </div>
+
+                  <Separator />
+
+                  {/* Payment Info Section */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <CreditCard className="w-4 h-4" />
+                      {isRTL ? 'معلومات الدفع' : 'Payment Information'}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 p-3 bg-muted/30 rounded-lg">
+                      <DetailRow
+                        label={isRTL ? 'الدورة' : 'Course'}
+                        value={isRTL
+                          ? selectedPayment.course?.title_ar || selectedPayment.course?.title || '-'
+                          : selectedPayment.course?.title || '-'
+                        }
+                      />
+                      <DetailRow
+                        label={isRTL ? 'حالة الدفع' : 'Payment Status'}
+                        value={getStatusBadge(selectedPayment.status, selectedPayment.source)}
+                      />
+
+                      {/* Price breakdown */}
+                      {(() => {
+                        const breakdown = getPriceBreakdown(selectedPayment);
+                        return (
+                          <>
+                            {breakdown.originalAmount && (
+                              <DetailRow
+                                label={isRTL ? 'السعر الأصلي' : 'Original Price'}
+                                value={`${breakdown.originalAmount.toFixed(2)} ${selectedPayment.currency}`}
+                              />
+                            )}
+                            {breakdown.courseDiscount > 0 && (
+                              <DetailRow
+                                label={isRTL ? 'خصم الدورة' : 'Course Discount'}
+                                value={<span className="text-green-500">-{breakdown.courseDiscount.toFixed(2)} {selectedPayment.currency}</span>}
+                              />
+                            )}
+                            {breakdown.couponDiscount > 0 && (
+                              <DetailRow
+                                label={isRTL ? 'خصم الكوبون' : 'Coupon Discount'}
+                                value={
+                                  <span className="text-green-500">
+                                    -{breakdown.couponDiscount.toFixed(2)} {selectedPayment.currency}
+                                    {breakdown.couponCode && <span className="text-muted-foreground ms-1">({breakdown.couponCode})</span>}
+                                  </span>
+                                }
+                              />
+                            )}
+                            <DetailRow
+                              label={isRTL ? 'المبلغ قبل الضريبة' : 'Amount Before VAT'}
+                              value={`${breakdown.amountBeforeVAT.toFixed(2)} ${selectedPayment.currency}`}
+                            />
+                            <DetailRow
+                              label={isRTL ? 'ضريبة القيمة المضافة (15%)' : 'VAT (15%)'}
+                              value={`${breakdown.vatAmount.toFixed(2)} ${selectedPayment.currency}`}
+                            />
+                          </>
+                        );
+                      })()}
+
+                      <DetailRow
+                        label={isRTL ? 'المبلغ المحصل' : 'Total Charged'}
+                        value={<span className="text-base font-bold">{selectedPayment.amount.toFixed(2)} {selectedPayment.currency}</span>}
+                      />
+                      <DetailRow
+                        label={isRTL ? 'العملة' : 'Currency'}
+                        value={selectedPayment.currency}
+                      />
+                      <DetailRow
+                        label={isRTL ? 'طريقة الدفع' : 'Payment Method'}
+                        value={getPaymentMethodLabel(selectedPayment)}
+                      />
+                      <DetailRow
+                        label={isRTL ? 'النوع' : 'Source'}
+                        value={getSourceBadge(selectedPayment.source)}
+                      />
+
+                      {selectedPayment.source === 'tap' && (
+                        <>
+                          <DetailRow
+                            label={isRTL ? 'رقم العملية (Tap)' : 'Transaction ID (Tap)'}
+                            value={<span className="font-mono text-xs">{selectedPayment.charge_id || '-'}</span>}
+                          />
+                          <DetailRow
+                            label={isRTL ? 'تم التحقق من الويب هوك' : 'Webhook Verified'}
+                            value={
+                              selectedPayment.webhook_verified
+                                ? <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-xs">✓ {isRTL ? 'نعم' : 'Yes'}</Badge>
+                                : <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-xs">{isRTL ? 'لا' : 'No'}</Badge>
+                            }
+                          />
+                        </>
+                      )}
+
+                      {selectedPayment.source === 'manual' && selectedPayment.reference_number && (
+                        <DetailRow
+                          label={isRTL ? 'رقم المرجع' : 'Reference Number'}
+                          value={<span className="font-mono">{selectedPayment.reference_number}</span>}
+                        />
+                      )}
+
+                      <DetailRow
+                        label={isRTL ? 'التاريخ والوقت' : 'Date & Time'}
+                        value={format(new Date(selectedPayment.created_at), 'MMM dd, yyyy — HH:mm:ss')}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Notes (for manual) */}
+                  {selectedPayment.notes && (
                     <>
+                      <Separator />
                       <div>
-                        <p className="text-muted-foreground">{isRTL ? 'رقم العملية' : 'Charge ID'}</p>
-                        <p className="font-mono text-xs">{selectedPayment.charge_id || '-'}</p>
+                        <p className="text-xs text-muted-foreground mb-1">{isRTL ? 'ملاحظات' : 'Notes'}</p>
+                        <p className="text-sm bg-muted p-3 rounded-lg">{selectedPayment.notes}</p>
                       </div>
-                      {selectedPayment.card_brand && (
-                        <div>
-                          <p className="text-muted-foreground">{isRTL ? 'البطاقة' : 'Card'}</p>
-                          <p className="font-medium">{selectedPayment.card_brand} •••• {selectedPayment.card_last_four}</p>
-                        </div>
-                      )}
-                      {selectedPayment.customer_email && (
-                        <div>
-                          <p className="text-muted-foreground">{isRTL ? 'البريد' : 'Email'}</p>
-                          <p className="text-xs">{selectedPayment.customer_email}</p>
-                        </div>
-                      )}
+                    </>
+                  )}
+
+                  {/* Manual payment actions */}
+                  {selectedPayment.source === 'manual' && selectedPayment.status === 'pending' && (
+                    <>
+                      <Separator />
+                      <div>
+                        <label className="text-sm text-muted-foreground">{isRTL ? 'ملاحظات المشرف' : 'Admin Notes'}</label>
+                        <Textarea
+                          value={adminNotes}
+                          onChange={(e) => setAdminNotes(e.target.value)}
+                          placeholder={isRTL ? 'أضف ملاحظات...' : 'Add notes...'}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          className="flex-1"
+                          onClick={() => updatePaymentMutation.mutate({
+                            paymentId: selectedPayment.id, status: 'approved', notes: adminNotes,
+                          })}
+                          disabled={updatePaymentMutation.isPending}
+                        >
+                          <Check className="w-4 h-4 me-2" />{isRTL ? 'اعتماد' : 'Approve'}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          className="flex-1"
+                          onClick={() => updatePaymentMutation.mutate({
+                            paymentId: selectedPayment.id, status: 'rejected', notes: adminNotes,
+                          })}
+                          disabled={updatePaymentMutation.isPending}
+                        >
+                          <X className="w-4 h-4 me-2" />{isRTL ? 'رفض' : 'Reject'}
+                        </Button>
+                      </div>
                     </>
                   )}
                 </div>
-
-                {selectedPayment.error_message && (
-                  <div className="p-2 bg-destructive/10 rounded text-sm text-destructive">
-                    {selectedPayment.error_message}
-                  </div>
-                )}
-
-                {selectedPayment.notes && (
-                  <div>
-                    <p className="text-muted-foreground text-sm mb-1">{isRTL ? 'ملاحظات' : 'Notes'}</p>
-                    <p className="text-sm bg-muted p-2 rounded">{selectedPayment.notes}</p>
-                  </div>
-                )}
-
-                {selectedPayment.source === 'manual' && selectedPayment.status === 'pending' && (
-                  <>
-                    <div>
-                      <label className="text-sm text-muted-foreground">{isRTL ? 'ملاحظات المشرف' : 'Admin Notes'}</label>
-                      <Textarea
-                        value={adminNotes}
-                        onChange={(e) => setAdminNotes(e.target.value)}
-                        placeholder={isRTL ? 'أضف ملاحظات...' : 'Add notes...'}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        className="flex-1"
-                        onClick={() => updatePaymentMutation.mutate({
-                          paymentId: selectedPayment.id, status: 'approved', notes: adminNotes,
-                        })}
-                        disabled={updatePaymentMutation.isPending}
-                      >
-                        <Check className="w-4 h-4 me-2" />{isRTL ? 'اعتماد' : 'Approve'}
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        className="flex-1"
-                        onClick={() => updatePaymentMutation.mutate({
-                          paymentId: selectedPayment.id, status: 'rejected', notes: adminNotes,
-                        })}
-                        disabled={updatePaymentMutation.isPending}
-                      >
-                        <X className="w-4 h-4 me-2" />{isRTL ? 'رفض' : 'Reject'}
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </div>
+              </ScrollArea>
             )}
           </DialogContent>
         </Dialog>
