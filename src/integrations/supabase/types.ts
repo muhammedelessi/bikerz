@@ -531,6 +531,44 @@ export type Database = {
           },
         ]
       }
+      course_country_prices: {
+        Row: {
+          country_code: string
+          course_id: string
+          created_at: string
+          currency: string
+          id: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          country_code: string
+          course_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          country_code?: string
+          course_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_country_prices_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_enrollments: {
         Row: {
           completed_at: string | null
