@@ -129,7 +129,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [postalCode, setPostalCode] = useState('');
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [profileSaving, setProfileSaving] = useState(false);
-  const [bikeInfoComplete, setBikeInfoComplete] = useState<boolean | null>(null);
+  
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
   const BackArrowIcon = isRTL ? ArrowRight : ArrowLeft;
@@ -140,10 +140,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     ? Math.ceil(course.price * (1 - courseDiscountPct / 100))
     : course.price;
 
-  // Apply 10% bike info discount if all 4 bike fields are filled
-  const bikeDiscountApplied = bikeInfoComplete === true;
-  const bikeDiscountAmount = bikeDiscountApplied ? Math.ceil(basePriceBeforeBike * 0.10) : 0;
-  const basePrice = bikeDiscountApplied ? basePriceBeforeBike - bikeDiscountAmount : basePriceBeforeBike;
+  const basePrice = basePriceBeforeBike;
 
   // Then apply coupon discount on top of the already-discounted base price
   const discountedPrice = appliedCoupon ? appliedCoupon.final_amount : basePrice;
@@ -165,24 +162,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       if (!user?.id) return;
       const { data } = await supabase
         .from('profiles')
-        .select('city, country, postal_code, bike_brand, bike_model, engine_size_cc, riding_experience_years')
+        .select('city, country, postal_code')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data) {
         if (data.city) setCity(data.city);
         if (data.country) setCountry(data.country);
         if (data.postal_code) setPostalCode(data.postal_code);
-        // Check bike info completeness
-        const hasBikeInfo = !!(data.bike_brand && data.bike_model && data.engine_size_cc && data.riding_experience_years);
-        setBikeInfoComplete(hasBikeInfo);
-      } else {
-        setBikeInfoComplete(false);
       }
     };
     loadProfileData();
   }, [profile, user, open]);
 
-  // Auto-apply PROFILE10 coupon
+  // Auto-apply saved coupon
   useEffect(() => {
     if (!open) return;
     const savedCoupon = localStorage.getItem('profile_coupon_code');
@@ -197,7 +189,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           if (!error && data?.valid) {
             setPromoApplied(true);
             setAppliedCoupon(data);
-            toast.success(isRTL ? 'تم تطبيق خصم إكمال الملف الشخصي تلقائياً!' : 'Profile completion discount auto-applied!');
+            toast.success(isRTL ? 'تم تطبيق الكوبون تلقائياً!' : 'Coupon auto-applied!');
             localStorage.removeItem('profile_coupon_code');
           }
         } catch {
@@ -232,7 +224,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setAppliedCoupon(null);
       setPromoLoading(false);
       setErrors({});
-      setBikeInfoComplete(null);
       resetPayment();
     }
   }, [open, resetPayment]);
@@ -304,13 +295,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (!user?.id) return false;
     const { data } = await supabase
       .from('profiles')
-      .select('phone, city, country, bike_brand, bike_model, engine_size_cc, riding_experience_years, rider_nickname')
+      .select('phone, city, country, rider_nickname')
       .eq('user_id', user.id)
       .maybeSingle();
     if (!data) return false;
-    // Profile is incomplete if bike info is missing (triggers reminder about 10% discount)
-    const hasBikeInfo = !!(data.bike_brand && data.bike_model && data.engine_size_cc && data.riding_experience_years);
-    return !hasBikeInfo || !data.phone || !data.city || !data.country || !data.rider_nickname;
+    return !data.phone || !data.city || !data.country || !data.rider_nickname;
   }, [user?.id]);
 
   const handleNextStep = async () => {
@@ -548,7 +537,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 {isRTL && course.title_ar ? course.title_ar : course.title}
               </h3>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                {(promoApplied || bikeDiscountApplied) && (
+                {promoApplied && (
                   <span className="text-xs text-muted-foreground line-through">
                     {formatPrice(course.price, isRTL)}
                   </span>
@@ -556,9 +545,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <span className="text-base font-bold text-primary">
                   {formatPrice(discountedPrice, isRTL)}
                 </span>
-                {bikeDiscountApplied && (
-                  <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">-10%</span>
-                )}
                 {promoApplied && discountLabel && (
                   <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">{discountLabel}</span>
                 )}
@@ -758,16 +744,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 >
                   <div className="flex flex-col items-center text-center py-4 space-y-4">
                     <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Sparkles className="w-8 h-8 text-primary" />
+                      <User className="w-8 h-8 text-primary" />
                     </div>
                     <div>
                       <h4 className="text-lg font-bold text-foreground mb-1">
-                        {isRTL ? 'أكمل ملفك الشخصي واحصل على خصم 10%!' : 'Complete your profile and get 10% off!'}
+                        {isRTL ? 'أكمل ملفك الشخصي' : 'Complete Your Rider Profile'}
                       </h4>
                       <p className="text-sm text-muted-foreground">
                         {isRTL
-                          ? 'أضف العلامة التجارية والموديل وسعة المحرك وسنوات الخبرة للحصول على الخصم تلقائياً'
-                          : 'Add your bike brand, model, engine size, and years of experience to unlock the discount automatically'}
+                          ? 'أكمل بياناتك لتحسين تجربة التعلم الخاصة بك'
+                          : 'Complete your details for a better learning experience'}
                       </p>
                     </div>
 
@@ -811,23 +797,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </h4>
                   </div>
 
-                  {/* Bike info discount reminder */}
-                  {bikeInfoComplete === false && (
-                    <div className="flex items-center gap-2 p-3 rounded-lg bg-accent/50 text-sm">
-                      <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span className="flex-1 text-muted-foreground">
-                        {isRTL ? 'أكمل معلومات دراجتك للحصول على خصم 10%' : 'Complete your bike info to get 10% discount'}
-                      </span>
-                      <Button
-                        variant="link"
-                        size="sm"
-                        className="p-0 h-auto text-primary"
-                        onClick={() => { onOpenChange(false); navigate('/profile'); }}
-                      >
-                        {isRTL ? 'إكمال' : 'Complete'}
-                      </Button>
-                    </div>
-                  )}
 
                   {/* Promo Code */}
                   <div className="space-y-2">
@@ -901,14 +870,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         {/* Price breakdown */}
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">{isRTL ? 'المبلغ الأصلي' : 'Original Price'}</span>
-                          <span className="font-medium">{formatPrice(basePriceBeforeBike, isRTL)}</span>
+                          <span className="font-medium">{formatPrice(basePrice, isRTL)}</span>
                         </div>
-                        {bikeDiscountApplied && (
-                          <div className="flex justify-between text-sm text-primary">
-                            <span>{isRTL ? 'خصم اكتمال الملف' : 'Profile Completion Discount'} (-10%)</span>
-                            <span>-{formatPrice(bikeDiscountAmount, isRTL)}</span>
-                          </div>
-                        )}
                         {promoApplied && appliedCoupon && (
                           <div className="flex justify-between text-sm text-primary">
                             <span>{isRTL ? 'الخصم' : 'Discount'} ({discountLabel})</span>

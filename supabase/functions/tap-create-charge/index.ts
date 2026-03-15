@@ -129,13 +129,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check bike info completeness for 10% discount
-    const bikeInfoComplete = !!(
-      profileData.bike_brand && profileData.bike_brand.trim() &&
-      profileData.bike_model && profileData.bike_model.trim() &&
-      profileData.engine_size_cc && profileData.engine_size_cc > 0 &&
-      profileData.riding_experience_years !== null && profileData.riding_experience_years !== undefined
-    );
 
     // ── Idempotency check ──
     const { data: existingCharge } = await adminClient
@@ -191,14 +184,6 @@ Deno.serve(async (req) => {
       : originalPrice;
     const priceAfterCourseDiscount = priceBeforeTax;
 
-    // Apply 10% bike info discount if profile bike info is complete
-    let bikeDiscount = 0;
-    if (bikeInfoComplete) {
-      bikeDiscount = Math.ceil(priceBeforeTax * 0.10);
-      priceBeforeTax = priceBeforeTax - bikeDiscount;
-    }
-    const priceAfterBikeDiscount = priceBeforeTax;
-
     // Apply coupon discount if provided (server-side validation)
     let couponDiscount = 0;
     if (coupon_id) {
@@ -245,9 +230,6 @@ Deno.serve(async (req) => {
       `original=${originalPrice}`,
       `courseDiscount=${courseDiscountPct}%`,
       `afterCourseDiscount=${priceAfterCourseDiscount}`,
-      `bikeInfoComplete=${bikeInfoComplete}`,
-      `bikeDiscount=${bikeDiscount}`,
-      `afterBikeDiscount=${priceAfterBikeDiscount}`,
       `couponDiscount=${couponDiscount}`,
       `priceBeforeTax=${priceBeforeTax}`,
       `vatRate=${vatRate * 100}%`,
@@ -289,9 +271,6 @@ Deno.serve(async (req) => {
           original_price: originalPrice,
           course_discount_pct: courseDiscountPct,
           price_after_course_discount: priceAfterCourseDiscount,
-          bike_info_complete: bikeInfoComplete,
-          bike_discount: bikeDiscount,
-          price_after_bike_discount: priceAfterBikeDiscount,
           coupon_discount: couponDiscount,
           price_before_tax: priceBeforeTax,
           vat_rate: vatRate * 100,
