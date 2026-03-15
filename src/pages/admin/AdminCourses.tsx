@@ -887,6 +887,78 @@ const AdminCourses: React.FC = () => {
               ))}
             </div>
 
+            {/* Country-Specific Pricing */}
+            <div className="space-y-3 border-t border-border pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-semibold">{isRTL ? 'أسعار حسب الدولة' : 'Country Pricing'}</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {isRTL ? 'حدد أسعار مخصصة لكل دولة. إذا لم يتم التحديد، سيتم التحويل تلقائياً من السعر الأساسي.' : 'Set custom prices per country. If not set, base price will be auto-converted.'}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addCountryPrice}
+                >
+                  <Plus className="w-4 h-4 me-1" />
+                  {isRTL ? 'إضافة سعر' : 'Add Country Price'}
+                </Button>
+              </div>
+              {countryPrices.map((cp, idx) => {
+                const usedCodes = countryPrices.filter((_, i) => i !== idx).map(p => p.country_code);
+                const availableCountries = ARAB_COUNTRIES.filter(c => !usedCodes.includes(c.code));
+                return (
+                  <div key={idx} className="flex gap-2 items-center border border-border/50 rounded-lg p-3">
+                    <div className="flex-1 grid grid-cols-3 gap-2">
+                      <Select
+                        value={cp.country_code}
+                        onValueChange={(val) => updateCountryPrice(idx, 'country_code', val)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={isRTL ? 'الدولة' : 'Country'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCountries.map(c => (
+                            <SelectItem key={c.code} value={c.code}>
+                              {isRTL ? c.name_ar : c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        value={cp.price || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                            updateCountryPrice(idx, 'price', val === '' ? 0 : parseFloat(val) || 0);
+                          }
+                        }}
+                        placeholder={isRTL ? 'السعر' : 'Price'}
+                      />
+                      <Input
+                        value={cp.currency}
+                        readOnly
+                        disabled
+                        className="bg-muted"
+                        placeholder={isRTL ? 'العملة' : 'Currency'}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-destructive flex-shrink-0"
+                      onClick={() => removeCountryPrice(idx)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                );
+              })}
             <div className="space-y-2">
               <Label>{isRTL ? 'المدة (ساعات)' : 'Duration (hours)'}</Label>
               <Input
