@@ -140,10 +140,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     ? Math.ceil(course.price * (1 - courseDiscountPct / 100))
     : course.price;
 
-  // Apply 10% bike info discount if all 4 bike fields are filled
-  const bikeDiscountApplied = bikeInfoComplete === true;
-  const bikeDiscountAmount = bikeDiscountApplied ? Math.ceil(basePriceBeforeBike * 0.10) : 0;
-  const basePrice = bikeDiscountApplied ? basePriceBeforeBike - bikeDiscountAmount : basePriceBeforeBike;
+  const basePrice = basePriceBeforeBike;
 
   // Then apply coupon discount on top of the already-discounted base price
   const discountedPrice = appliedCoupon ? appliedCoupon.final_amount : basePrice;
