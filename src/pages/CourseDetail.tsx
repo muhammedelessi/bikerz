@@ -93,7 +93,7 @@ const CourseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { formatPrice, convertPrice, formatCoursePrice, getCoursePrice, getCourseCurrency } = useCurrency();
+  const { formatPrice, convertPrice, formatCoursePrice, getCoursePrice, getCourseCurrency, getCoursePriceInfo } = useCurrency();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -574,34 +574,34 @@ const CourseDetail: React.FC = () => {
                     <div className="space-y-5">
                       {/* Price */}
                       <div className="text-center py-2">
-                        {course.discount_percentage && course.discount_percentage > 0 && course.price > 0 ? (
-                          (() => {
-                            const baseDisplayPrice = getCoursePrice(course.id, course.price);
-                            const discountedDisplayPrice = Math.ceil(baseDisplayPrice * (1 - course.discount_percentage / 100));
-                            const courseCurrency = getCourseCurrency(course.id);
+                        {(() => {
+                          const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                          const courseMeta = priceInfo.currency;
+                          if (priceInfo.discountPct > 0 && course.price > 0) {
                             return (
                               <div className="space-y-1">
                                 <div className="flex items-center justify-center gap-2">
                                   <span className="text-lg text-muted-foreground line-through">
-                                    {formatCoursePrice(course.id, course.price, isRTL)}
+                                    {priceInfo.originalPrice} {courseMeta}
                                   </span>
                                   <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-sm font-bold">
-                                    -{course.discount_percentage}%
+                                    -{priceInfo.discountPct}%
                                   </span>
                                 </div>
                                 <span className="text-4xl font-black text-foreground">
-                                  {discountedDisplayPrice} {courseCurrency}
+                                  {priceInfo.finalPrice} {courseMeta}
                                 </span>
                               </div>
                             );
-                          })()
-                        ) : (
-                          <span className="text-4xl font-black text-foreground">
-                            {course.price === 0
-                              ? t('common.free')
-                              : formatCoursePrice(course.id, course.price, isRTL)}
-                          </span>
-                        )}
+                          }
+                          return (
+                            <span className="text-4xl font-black text-foreground">
+                              {course.price === 0
+                                ? t('common.free')
+                                : `${priceInfo.finalPrice} ${courseMeta}`}
+                            </span>
+                          );
+                        })()}
                         {course.price > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
                             {isRTL ? 'السعر غير شامل الضريبة' : 'Price excludes VAT'}

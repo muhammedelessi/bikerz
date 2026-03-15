@@ -69,8 +69,23 @@ interface CachedRates {
 interface CountryPrice {
   course_id: string;
   country_code: string;
+  original_price: number;
+  discount_percentage: number;
   price: number;
   currency: string;
+}
+
+export interface CoursePriceInfo {
+  /** The base price to display (country original_price or converted SAR) */
+  originalPrice: number;
+  /** Discount percentage (country-level if exists, otherwise course-level) */
+  discountPct: number;
+  /** Final price after discount */
+  finalPrice: number;
+  /** Currency code */
+  currency: CurrencyCode;
+  /** Whether a country-specific price was used */
+  isCountryPrice: boolean;
 }
 
 interface CurrencyContextType {
@@ -82,6 +97,8 @@ interface CurrencyContextType {
   convertPrice: (sarPrice: number) => number;
   /** Get price for a specific course considering country-specific pricing */
   getCoursePrice: (courseId: string, sarPrice: number) => number;
+  /** Get full price info for a course (original, discount, final) considering country pricing */
+  getCoursePriceInfo: (courseId: string, sarPrice: number, courseDiscountPct?: number) => CoursePriceInfo;
   /** Get the currency code for a course price (may differ from user currency if country price exists) */
   getCourseCurrency: (courseId: string) => CurrencyCode;
   /** Format a SAR price as local currency string */
@@ -129,11 +146,13 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const loadCountryPrices = async () => {
       const { data } = await supabase
         .from('course_country_prices')
-        .select('course_id, country_code, price, currency');
+        .select('course_id, country_code, price, currency, original_price, discount_percentage');
       if (data) {
         setCountryPrices(data.map(d => ({
           course_id: d.course_id,
           country_code: d.country_code,
+          original_price: Number(d.original_price) || Number(d.price),
+          discount_percentage: Number(d.discount_percentage) || 0,
           price: Number(d.price),
           currency: d.currency,
         })));
@@ -265,7 +284,36 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [getCountryPriceEntry, currencyCode, rate]
   );
 
-  /** Get the currency code for a course (country-specific or user currency) */
+  /** Get full price info for display — uses country pricing when available */
+  const getCoursePriceInfo = useCallback(
+    (courseId: string, sarPrice: number, courseDiscountPct = 0): CoursePriceInfo => {
+      const entry = getCountryPriceEntry(courseId);
+      if (entry) {
+        // Country-specific pricing: use original_price and country discount
+        const ccy = (entry.currency in CURRENCY_META ? entry.currency : currencyCode) as CurrencyCode;
+        return {
+          originalPrice: Math.ceil(entry.original_price),
+          discountPct: entry.discount_percentage,
+          finalPrice: Math.ceil(entry.price),
+          currency: ccy,
+          isCountryPrice: true,
+        };
+      }
+      // Fallback: convert SAR and apply course-level discount
+      const convertedBase = currencyCode === 'SAR' ? Math.ceil(sarPrice) : Math.ceil(sarPrice * rate);
+      const dPct = courseDiscountPct > 0 ? courseDiscountPct : 0;
+      const final = dPct > 0 ? Math.ceil(convertedBase * (1 - dPct / 100)) : convertedBase;
+      return {
+        originalPrice: convertedBase,
+        discountPct: dPct,
+        finalPrice: final,
+        currency: currencyCode,
+        isCountryPrice: false,
+      };
+    },
+    [getCountryPriceEntry, currencyCode, rate]
+  );
+
   const getCourseCurrency = useCallback(
     (courseId: string): CurrencyCode => {
       const entry = getCountryPriceEntry(courseId);
@@ -352,6 +400,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setCurrency,
       convertPrice,
       getCoursePrice,
+      getCoursePriceInfo,
       getCourseCurrency,
       formatPrice,
       formatCoursePrice,

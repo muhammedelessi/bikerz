@@ -94,7 +94,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { currencyCode, symbol, symbolAr, convertPrice, formatPrice, calculateTax, calculateTotalWithTax, getSarTotalWithVat, vatLabel, vatLabelAr, isSAR, getCoursePrice } = useCurrency();
+  const { currencyCode, symbol, symbolAr, convertPrice, formatPrice, calculateTax, calculateTotalWithTax, getSarTotalWithVat, vatLabel, vatLabelAr, isSAR, getCoursePriceInfo } = useCurrency();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const {
@@ -134,14 +134,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
   const BackArrowIcon = isRTL ? ArrowRight : ArrowLeft;
 
-  // Get the base price — uses country-specific price if available, otherwise SAR
-  const countryBasePrice = getCoursePrice(course.id, course.price);
+  // Get full price info — country-specific price takes priority over SAR conversion
+  const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
 
-  // Apply course-level discount on top of the country/converted base price
-  const courseDiscountPct = course.discount_percentage && course.discount_percentage > 0 ? course.discount_percentage : 0;
-  const basePrice = courseDiscountPct > 0
-    ? Math.ceil(countryBasePrice * (1 - courseDiscountPct / 100))
-    : countryBasePrice;
+  // basePrice = final price after country or course discount (before coupon)
+  const basePrice = priceInfo.finalPrice;
 
   // Then apply coupon discount on top of the already-discounted base price
   const discountedPrice = appliedCoupon ? appliedCoupon.final_amount : basePrice;
