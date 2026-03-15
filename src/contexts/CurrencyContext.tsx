@@ -400,6 +400,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setCurrency,
       convertPrice,
       getCoursePrice,
+      getCoursePriceInfo,
       getCourseCurrency,
       formatPrice,
       formatCoursePrice,
