@@ -69,7 +69,8 @@ const JourneySection: React.FC = () => {
         {/* Journey Steps */}
         <div className="relative max-w-4xl mx-auto">
           {/* Vertical Line */}
-          <div className="absolute left-6 sm:left-8 lg:left-1/2 lg:-translate-x-1/2 top-0 bottom-0 w-0.5 sm:w-px">
+          <div className="absolute top-0 bottom-0 w-0.5 sm:w-px" style={{ insetInlineStart: isRTL ? undefined : '1.5rem', insetInlineEnd: isRTL ? undefined : undefined }} >
+            <div className={`absolute top-0 bottom-0 w-0.5 sm:w-px ${isRTL ? 'right-6 sm:right-8 lg:right-1/2 lg:translate-x-1/2' : 'left-6 sm:left-8 lg:left-1/2 lg:-translate-x-1/2'}`}>
             <motion.div
               initial={{ height: 0 }}
               animate={inView ? { height: '100%' } : {}}
