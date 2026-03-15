@@ -299,16 +299,47 @@ const AdminPayments = () => {
     return { originalAmount, couponDiscount, couponCode, vatAmount: calculatedVAT, amountBeforeVAT, courseDiscount };
   };
 
+  // Human-readable Tap error code translations
+  const tapErrorTranslations: Record<string, { en: string; ar: string }> = {
+    '101': { en: 'Insufficient funds', ar: 'رصيد غير كافٍ' },
+    '102': { en: 'Card expired', ar: 'البطاقة منتهية الصلاحية' },
+    '103': { en: 'Card declined', ar: 'البطاقة مرفوضة' },
+    '104': { en: 'Invalid card details', ar: 'خطأ في بيانات البطاقة' },
+    '105': { en: 'Transaction limit exceeded', ar: 'تجاوز حد المعاملات' },
+    '106': { en: 'Card not supported', ar: 'البطاقة غير مدعومة' },
+    '107': { en: 'Card restricted', ar: 'البطاقة مقيدة' },
+    '108': { en: 'Authentication failed', ar: 'فشل التحقق من الهوية' },
+    '109': { en: '3D Secure authentication failed', ar: 'فشل التحقق الأمني ثلاثي الأبعاد' },
+    '110': { en: 'Transaction not permitted', ar: 'العملية غير مسموح بها' },
+    '200': { en: 'Communication error with bank', ar: 'خطأ في الاتصال بالبنك' },
+    '301': { en: 'Transaction timed out', ar: 'انتهت مهلة العملية' },
+    '302': { en: 'Transaction cancelled by customer', ar: 'تم إلغاء العملية من قبل العميل' },
+    '303': { en: 'Duplicate transaction', ar: 'عملية مكررة' },
+    '401': { en: 'Authentication required', ar: 'مطلوب التحقق من الهوية' },
+    '501': { en: 'Gateway error', ar: 'خطأ في بوابة الدفع' },
+    '502': { en: 'Gateway timeout', ar: 'انتهت مهلة بوابة الدفع' },
+  };
+
+  const getTranslatedErrorReason = (code: string | null): string | null => {
+    if (!code) return null;
+    const translation = tapErrorTranslations[code];
+    if (translation) return isRTL ? translation.ar : translation.en;
+    return null;
+  };
+
   // Extract failure details from tap_response
   const getFailureDetails = (payment: UnifiedPayment) => {
     if (normalizeStatus(payment.status, payment.source) !== 'rejected') return null;
     const resp = payment.tap_response || {};
     const response = resp.response as Record<string, unknown> | undefined;
     const gateway = resp.gateway as Record<string, unknown> | undefined;
+    const code = (response?.code as string) || (gateway?.response?.toString()) || null;
+    const translatedReason = getTranslatedErrorReason(code);
     return {
-      reason: payment.error_message || (response?.message as string) || (isRTL ? 'فشل الدفع' : 'Payment failed'),
-      code: (response?.code as string) || (gateway?.response?.toString()) || null,
+      reason: translatedReason || payment.error_message || (response?.message as string) || (isRTL ? 'فشل الدفع' : 'Payment failed'),
+      code,
       gatewayResponse: (gateway?.response as string) || null,
+      translatedReason,
     };
   };
 
