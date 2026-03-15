@@ -170,7 +170,7 @@ const SocialProofNotification: React.FC = () => {
       role="status"
       aria-live="polite"
     >
-      <div className="flex items-center gap-3 bg-card border border-border rounded-xl shadow-lg px-4 py-3 max-w-[340px] sm:max-w-[380px] relative group">
+      <div dir={isRTL ? 'rtl' : 'ltr'} className="flex items-center gap-3 bg-card border border-border rounded-xl shadow-lg px-4 py-3 max-w-[340px] sm:max-w-[380px] relative group">
         {/* Thumbnail */}
         {current.thumbnail ? (
           <img
