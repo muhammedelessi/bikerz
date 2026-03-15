@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingCart, Sparkles } from 'lucide-react';
+import { X, ShoppingCart } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,6 @@ interface PurchaseEncouragementModalProps {
     price: number;
     discount_percentage?: number | null;
   };
-  profileDiscountApplied?: boolean;
 }
 
 const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
@@ -24,22 +23,17 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
   onClose,
   onBuyNow,
   course,
-  profileDiscountApplied = false,
 }) => {
   const { isRTL } = useLanguage();
   const { formatPrice, getSarTotalWithVat } = useCurrency();
 
-  // Calculate price with discounts
+  // Calculate price with course discount only
   const courseDiscountPct = course.discount_percentage && course.discount_percentage > 0 ? course.discount_percentage : 0;
-  const priceAfterCourseDiscount = courseDiscountPct > 0
+  const finalPrice = courseDiscountPct > 0
     ? Math.ceil(course.price * (1 - courseDiscountPct / 100))
     : course.price;
 
-  const profileDiscount = profileDiscountApplied ? Math.ceil(priceAfterCourseDiscount * 0.10) : 0;
-  const priceAfterAllDiscounts = priceAfterCourseDiscount - profileDiscount;
-  const finalPrice = priceAfterAllDiscounts;
-
-  const hasAnyDiscount = courseDiscountPct > 0 || profileDiscountApplied;
+  const hasAnyDiscount = courseDiscountPct > 0;
 
   return (
     <AnimatePresence>
@@ -68,7 +62,6 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
-                {/* Close button */}
                 <button
                   onClick={onClose}
                   className="absolute top-3 end-3 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
@@ -113,12 +106,6 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
                     {formatPrice(finalPrice, isRTL)}
                   </span>
                 </div>
-                {profileDiscountApplied && (
-                  <div className="flex items-center justify-center gap-1.5 text-xs text-primary">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>{isRTL ? 'خصم اكتمال الملف مطبّق (-10%)' : 'Profile discount applied (-10%)'}</span>
-                  </div>
-                )}
                 <p className="text-xs text-muted-foreground">
                   {isRTL ? 'السعر غير شامل الضريبة' : 'Price excludes VAT'}
                 </p>
@@ -128,19 +115,19 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
               <div className="space-y-2 pt-1">
                 <Button
                   variant="cta"
-                  className="w-full h-12 text-base font-bold rounded-xl gap-2"
+                  size="lg"
+                  className="w-full text-base"
                   onClick={onBuyNow}
                 >
-                  <ShoppingCart className="w-5 h-5" />
+                  <ShoppingCart className="w-5 h-5 me-2" />
                   {isRTL ? 'اشترِ الآن' : 'Buy Now'}
                 </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full text-sm text-muted-foreground"
+                <button
                   onClick={onClose}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {isRTL ? 'لاحقاً' : 'Maybe Later'}
-                </Button>
+                  {isRTL ? 'ليس الآن' : 'Not now'}
+                </button>
               </div>
             </div>
           </motion.div>

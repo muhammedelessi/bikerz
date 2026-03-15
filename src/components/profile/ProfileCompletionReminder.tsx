@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Gift, X, User, ChevronRight, ChevronLeft } from 'lucide-react';
+import { X, User, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import ProfileCompletionWizard from './ProfileCompletionWizard';
@@ -28,14 +27,12 @@ const ProfileCompletionReminder: React.FC<ProfileCompletionReminderProps> = ({
     const checkProfile = async () => {
       if (!user) return;
       
-      // Check if profile was already completed
       const isCompleted = localStorage.getItem('profile_completed') === 'true';
       if (isCompleted) {
         setShowReminder(false);
         return;
       }
       
-      // Check if dismissed recently (within 24 hours for banner, 1 hour for session)
       const dismissedTime = localStorage.getItem('profile_reminder_dismissed');
       if (dismissedTime) {
         const timeSinceDismiss = Date.now() - parseInt(dismissedTime);
@@ -46,10 +43,9 @@ const ProfileCompletionReminder: React.FC<ProfileCompletionReminderProps> = ({
         }
       }
       
-      // Fetch profile and check for missing fields
       const { data: profile } = await supabase
         .from('profiles')
-        .select('rider_nickname, phone, bike_brand, bike_model, engine_size_cc, riding_experience_years, avatar_url')
+        .select('rider_nickname, phone, avatar_url')
         .eq('user_id', user.id)
         .single();
       
@@ -57,9 +53,6 @@ const ProfileCompletionReminder: React.FC<ProfileCompletionReminderProps> = ({
       
       const missing: string[] = [];
       if (!profile.rider_nickname) missing.push(isRTL ? 'لقب الراكب' : 'Rider Nickname');
-      if (!profile.bike_brand) missing.push(isRTL ? 'ماركة الدراجة' : 'Bike Brand');
-      if (!profile.bike_model) missing.push(isRTL ? 'موديل الدراجة' : 'Bike Model');
-      if (!profile.engine_size_cc) missing.push(isRTL ? 'حجم المحرك' : 'Engine Size');
       if (!profile.avatar_url) missing.push(isRTL ? 'صورة الملف' : 'Profile Photo');
       
       if (missing.length > 0) {
@@ -102,13 +95,13 @@ const ProfileCompletionReminder: React.FC<ProfileCompletionReminderProps> = ({
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3 flex-1">
                     <div className="p-2 rounded-full bg-primary/20">
-                      <Gift className="w-5 h-5 text-primary" />
+                      <User className="w-5 h-5 text-primary" />
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-sm sm:text-base">
                         {isRTL 
-                          ? '🎁 أكمل ملفك الشخصي واحصل على خصم 10%!' 
-                          : '🎁 Complete your profile and get 10% off!'}
+                          ? '👤 أكمل ملفك الشخصي لتجربة أفضل!' 
+                          : '👤 Complete your profile for a better experience!'}
                       </p>
                       <p className="text-xs text-muted-foreground hidden sm:block">
                         {isRTL 
@@ -139,7 +132,6 @@ const ProfileCompletionReminder: React.FC<ProfileCompletionReminderProps> = ({
                 </div>
               </div>
               
-              {/* Animated gradient border */}
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-pulse" />
             </motion.div>
           )}
@@ -172,8 +164,8 @@ const ProfileCompletionReminder: React.FC<ProfileCompletionReminderProps> = ({
             </h4>
             <p className="text-sm text-muted-foreground mb-3">
               {isRTL 
-                ? 'أضف بياناتك واحصل على خصم 10% على أول دورة!' 
-                : 'Add your details and get 10% off your first course!'}
+                ? 'أضف بياناتك لتحسين تجربة التعلم الخاصة بك' 
+                : 'Add your details for a personalized learning experience'}
             </p>
             
             <div className="flex flex-wrap gap-2 mb-4">
@@ -188,8 +180,8 @@ const ProfileCompletionReminder: React.FC<ProfileCompletionReminderProps> = ({
             </div>
             
             <Button onClick={() => setShowWizard(true)} className="w-full sm:w-auto">
-              <Gift className="w-4 h-4" />
-              {isRTL ? 'إكمال والحصول على الخصم' : 'Complete & Get Discount'}
+              <User className="w-4 h-4" />
+              {isRTL ? 'إكمال الملف الشخصي' : 'Complete Profile'}
             </Button>
           </div>
         </div>
