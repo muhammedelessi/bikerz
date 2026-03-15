@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export type CurrencyCode =
   | 'SAR' | 'AED' | 'KWD' | 'BHD' | 'QAR' | 'OMR' | 'JOD'
@@ -65,19 +66,34 @@ interface CachedRates {
   fetchedAt: number;
 }
 
+interface CountryPrice {
+  course_id: string;
+  country_code: string;
+  price: number;
+  currency: string;
+}
+
 interface CurrencyContextType {
   currencyCode: CurrencyCode;
   symbol: string;
   symbolAr: string;
   setCurrency: (code: CurrencyCode) => void;
-  /** Convert a SAR price to local currency, Math.round()'d */
+  /** Convert a SAR price to local currency, Math.ceil()'d */
   convertPrice: (sarPrice: number) => number;
+  /** Get price for a specific course considering country-specific pricing */
+  getCoursePrice: (courseId: string, sarPrice: number) => number;
+  /** Get the currency code for a course price (may differ from user currency if country price exists) */
+  getCourseCurrency: (courseId: string) => CurrencyCode;
   /** Format a SAR price as local currency string */
   formatPrice: (sarPrice: number, isRTL?: boolean) => string;
+  /** Format a course price using country-specific pricing if available */
+  formatCoursePrice: (courseId: string, sarPrice: number, isRTL?: boolean) => string;
   /** Get SAR total with 15% VAT, Math.round()'d — this is what Tap charges */
   getSarTotalWithVat: (sarPrice: number) => number;
   /** Tax breakdown in local currency for display */
   calculateTax: (sarPrice: number) => { subtotal: number; tax: number; total: number };
+  /** Calculate tax for a course with country-specific pricing */
+  calculateCourseTax: (courseId: string, sarPrice: number) => { subtotal: number; tax: number; total: number };
   /** Same as getSarTotalWithVat (kept for backward compat) */
   calculateTotalWithTax: (sarPrice: number) => number;
   isDetecting: boolean;
@@ -86,6 +102,8 @@ interface CurrencyContextType {
   vatLabel: string;
   vatLabelAr: string;
   isSAR: boolean;
+  /** Check if a country-specific price exists for a course */
+  hasCountryPrice: (courseId: string) => boolean;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -101,9 +119,28 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [detectedCountry, setDetectedCountry] = useState<string | null>(() =>
     sessionStorage.getItem(COUNTRY_CACHE_KEY)
   );
+  const [countryPrices, setCountryPrices] = useState<CountryPrice[]>([]);
 
   const meta = CURRENCY_META[currencyCode];
   const isSAR = currencyCode === 'SAR';
+
+  // ── Fetch country-specific prices ──
+  useEffect(() => {
+    const loadCountryPrices = async () => {
+      const { data } = await supabase
+        .from('course_country_prices')
+        .select('course_id, country_code, price, currency');
+      if (data) {
+        setCountryPrices(data.map(d => ({
+          course_id: d.course_id,
+          country_code: d.country_code,
+          price: Number(d.price),
+          currency: d.currency,
+        })));
+      }
+    };
+    loadCountryPrices();
+  }, []);
 
   // ── Fetch live exchange rates ──
   useEffect(() => {
@@ -198,6 +235,46 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const rate = rates[currencyCode] ?? FALLBACK_RATES[currencyCode] ?? 1;
 
+  /** Check if country-specific price exists for a course */
+  const hasCountryPrice = useCallback(
+    (courseId: string): boolean => {
+      if (!detectedCountry) return false;
+      return countryPrices.some(cp => cp.course_id === courseId && cp.country_code === detectedCountry);
+    },
+    [detectedCountry, countryPrices]
+  );
+
+  /** Get the country-specific price for a course, or null */
+  const getCountryPriceEntry = useCallback(
+    (courseId: string): CountryPrice | null => {
+      if (!detectedCountry) return null;
+      return countryPrices.find(cp => cp.course_id === courseId && cp.country_code === detectedCountry) || null;
+    },
+    [detectedCountry, countryPrices]
+  );
+
+  /** Get price for a specific course — uses country price if available, otherwise converts */
+  const getCoursePrice = useCallback(
+    (courseId: string, sarPrice: number): number => {
+      const entry = getCountryPriceEntry(courseId);
+      if (entry) return Math.ceil(entry.price);
+      // Fallback to conversion
+      if (currencyCode === 'SAR') return Math.ceil(sarPrice);
+      return Math.ceil(sarPrice * rate);
+    },
+    [getCountryPriceEntry, currencyCode, rate]
+  );
+
+  /** Get the currency code for a course (country-specific or user currency) */
+  const getCourseCurrency = useCallback(
+    (courseId: string): CurrencyCode => {
+      const entry = getCountryPriceEntry(courseId);
+      if (entry && entry.currency in CURRENCY_META) return entry.currency as CurrencyCode;
+      return currencyCode;
+    },
+    [getCountryPriceEntry, currencyCode]
+  );
+
   /** Convert SAR → local, rounded */
   const convertPrice = useCallback(
     (sarPrice: number): number => {
@@ -217,6 +294,18 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [convertPrice, meta]
   );
 
+  /** Format a course price using country-specific pricing if available */
+  const formatCoursePrice = useCallback(
+    (courseId: string, sarPrice: number, isRTL = false): string => {
+      const price = getCoursePrice(courseId, sarPrice);
+      const courseCurrency = getCourseCurrency(courseId);
+      const courseMeta = CURRENCY_META[courseCurrency];
+      const sym = isRTL ? courseMeta.symbolAr : courseMeta.symbol;
+      return `${price} ${sym}`;
+    },
+    [getCoursePrice, getCourseCurrency]
+  );
+
   /** SAR total after 15% VAT — the exact amount Tap will charge */
   const getSarTotalWithVat = useCallback(
     (sarPrice: number): number => Math.ceil(sarPrice * 1.15),
@@ -232,6 +321,17 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return { subtotal, tax, total };
     },
     [convertPrice]
+  );
+
+  /** Tax breakdown for a course with country-specific pricing */
+  const calculateCourseTax = useCallback(
+    (courseId: string, sarPrice: number) => {
+      const subtotal = getCoursePrice(courseId, sarPrice);
+      const tax = Math.ceil(subtotal * (VAT_RATE / 100));
+      const total = subtotal + tax;
+      return { subtotal, tax, total };
+    },
+    [getCoursePrice]
   );
 
   /** Alias for backward compat */
@@ -251,9 +351,13 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       symbolAr: meta.symbolAr,
       setCurrency,
       convertPrice,
+      getCoursePrice,
+      getCourseCurrency,
       formatPrice,
+      formatCoursePrice,
       getSarTotalWithVat,
       calculateTax,
+      calculateCourseTax,
       calculateTotalWithTax,
       isDetecting,
       detectedCountry,
@@ -261,6 +365,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       vatLabel: `VAT (${VAT_RATE}%)`,
       vatLabelAr: `ضريبة القيمة المضافة (${VAT_RATE}%)`,
       isSAR,
+      hasCountryPrice,
     }}>
       {children}
     </CurrencyContext.Provider>
