@@ -870,14 +870,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         {/* Price breakdown */}
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">{isRTL ? 'المبلغ الأصلي' : 'Original Price'}</span>
-                          <span className="font-medium">{formatPrice(basePriceBeforeBike, isRTL)}</span>
+                          <span className="font-medium">{formatPrice(basePrice, isRTL)}</span>
                         </div>
-                        {bikeDiscountApplied && (
-                          <div className="flex justify-between text-sm text-primary">
-                            <span>{isRTL ? 'خصم اكتمال الملف' : 'Profile Completion Discount'} (-10%)</span>
-                            <span>-{formatPrice(bikeDiscountAmount, isRTL)}</span>
-                          </div>
-                        )}
                         {promoApplied && appliedCoupon && (
                           <div className="flex justify-between text-sm text-primary">
                             <span>{isRTL ? 'الخصم' : 'Discount'} ({discountLabel})</span>
