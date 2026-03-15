@@ -49,7 +49,7 @@ function SortableList<T>({
           className="relative bg-card/50 border border-border rounded-lg p-4"
         >
           {/* Controls */}
-          <div className="absolute right-3 top-3 flex items-center gap-1">
+          <div className="absolute end-3 top-3 flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
