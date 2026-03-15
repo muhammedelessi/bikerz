@@ -797,23 +797,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </h4>
                   </div>
 
-                  {/* Bike info discount reminder */}
-                  {bikeInfoComplete === false && (
-                    <div className="flex items-center gap-2 p-3 rounded-lg bg-accent/50 text-sm">
-                      <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span className="flex-1 text-muted-foreground">
-                        {isRTL ? 'أكمل معلومات دراجتك للحصول على خصم 10%' : 'Complete your bike info to get 10% discount'}
-                      </span>
-                      <Button
-                        variant="link"
-                        size="sm"
-                        className="p-0 h-auto text-primary"
-                        onClick={() => { onOpenChange(false); navigate('/profile'); }}
-                      >
-                        {isRTL ? 'إكمال' : 'Complete'}
-                      </Button>
-                    </div>
-                  )}
 
                   {/* Promo Code */}
                   <div className="space-y-2">
