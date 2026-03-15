@@ -162,18 +162,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       if (!user?.id) return;
       const { data } = await supabase
         .from('profiles')
-        .select('city, country, postal_code, bike_brand, bike_model, engine_size_cc, riding_experience_years')
+        .select('city, country, postal_code')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data) {
         if (data.city) setCity(data.city);
         if (data.country) setCountry(data.country);
         if (data.postal_code) setPostalCode(data.postal_code);
-        // Check bike info completeness
-        const hasBikeInfo = !!(data.bike_brand && data.bike_model && data.engine_size_cc && data.riding_experience_years);
-        setBikeInfoComplete(hasBikeInfo);
-      } else {
-        setBikeInfoComplete(false);
       }
     };
     loadProfileData();
