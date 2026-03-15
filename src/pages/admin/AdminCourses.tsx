@@ -100,6 +100,8 @@ const AdminCourses: React.FC = () => {
   interface CountryPrice {
     id?: string;
     country_code: string;
+    original_price: number;
+    discount_percentage: number;
     price: number;
     currency: string;
   }
