@@ -69,8 +69,23 @@ interface CachedRates {
 interface CountryPrice {
   course_id: string;
   country_code: string;
+  original_price: number;
+  discount_percentage: number;
   price: number;
   currency: string;
+}
+
+export interface CoursePriceInfo {
+  /** The base price to display (country original_price or converted SAR) */
+  originalPrice: number;
+  /** Discount percentage (country-level if exists, otherwise course-level) */
+  discountPct: number;
+  /** Final price after discount */
+  finalPrice: number;
+  /** Currency code */
+  currency: CurrencyCode;
+  /** Whether a country-specific price was used */
+  isCountryPrice: boolean;
 }
 
 interface CurrencyContextType {
