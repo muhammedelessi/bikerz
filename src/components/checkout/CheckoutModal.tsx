@@ -947,7 +947,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       {/* Apple Pay - shown only on supported devices */}
                       {supportsApplePay && (
                         <Button
-                          className="w-full h-11 bg-black hover:bg-black/90 text-white border-0"
+                          className="w-full h-11 bg-foreground hover:bg-foreground/90 text-background border-0"
                           onClick={() => handleSubmitPayment('apple_pay')}
                           disabled={paymentStatus === 'processing' || !isPaymentReady}
                         >
