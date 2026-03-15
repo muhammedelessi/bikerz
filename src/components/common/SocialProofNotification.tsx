@@ -1,0 +1,222 @@
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useLocation } from 'react-router-dom';
+
+interface PurchaseData {
+  firstName: string;
+  firstNameAr: string;
+  countryFlag: string;
+  courseName: string;
+  courseNameAr: string;
+  thumbnail: string | null;
+  minutesAgo: number;
+}
+
+const COUNTRY_FLAGS: Record<string, string> = {
+  SA: '🇸🇦', AE: '🇦🇪', KW: '🇰🇼', BH: '🇧🇭', QA: '🇶🇦', OM: '🇴🇲',
+  JO: '🇯🇴', EG: '🇪🇬', IQ: '🇮🇶', SY: '🇸🇾', LB: '🇱🇧', YE: '🇾🇪',
+  LY: '🇱🇾', TN: '🇹🇳', DZ: '🇩🇿', MA: '🇲🇦', SD: '🇸🇩', SO: '🇸🇴',
+  MR: '🇲🇷', KM: '🇰🇲', DJ: '🇩🇯', PS: '🇵🇸',
+};
+
+const DUMMY_PURCHASES: PurchaseData[] = [
+  { firstName: 'Ahmed', firstNameAr: 'أحمد', countryFlag: '🇸🇦', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 12 },
+  { firstName: 'Mohammed', firstNameAr: 'محمد', countryFlag: '🇦🇪', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 23 },
+  { firstName: 'Khalid', firstNameAr: 'خالد', countryFlag: '🇰🇼', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 37 },
+  { firstName: 'Omar', firstNameAr: 'عمر', countryFlag: '🇪🇬', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 45 },
+  { firstName: 'Sultan', firstNameAr: 'سلطان', countryFlag: '🇧🇭', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 58 },
+  { firstName: 'Faisal', firstNameAr: 'فيصل', countryFlag: '🇶🇦', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 72 },
+  { firstName: 'Nasser', firstNameAr: 'ناصر', countryFlag: '🇴🇲', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 90 },
+  { firstName: 'Youssef', firstNameAr: 'يوسف', countryFlag: '🇲🇦', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 110 },
+];
+
+const SHOW_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const DISMISS_AFTER_MS = 6000; // 6 seconds
+
+function formatTimeAgo(minutes: number, isRTL: boolean): string {
+  if (isRTL) {
+    if (minutes < 60) return `منذ ${minutes} دقيقة`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `منذ ${hours} ساعة`;
+    return `منذ يوم`;
+  }
+  if (minutes < 60) return `${minutes} minutes ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  return `1 day ago`;
+}
+
+const SocialProofNotification: React.FC = () => {
+  const { isRTL } = useLanguage();
+  const location = useLocation();
+  const [visible, setVisible] = useState(false);
+  const [current, setCurrent] = useState<PurchaseData | null>(null);
+  const [purchases, setPurchases] = useState<PurchaseData[]>([]);
+  const indexRef = useRef(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval>>();
+  const dismissRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Don't show on admin pages
+  const isAdmin = location.pathname.startsWith('/admin');
+
+  // Fetch real purchases from the last 48 hours
+  useEffect(() => {
+    if (isAdmin) return;
+
+    const fetchPurchases = async () => {
+      const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+
+      const { data } = await supabase
+        .from('tap_charges')
+        .select('customer_name, created_at, course_id, courses(title, title_ar, thumbnail_url)')
+        .eq('status', 'succeeded')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (data && data.length > 0) {
+        const real: PurchaseData[] = data.map((charge: any) => {
+          const fullName = charge.customer_name || '';
+          const firstName = fullName.split(' ')[0] || 'User';
+          const now = Date.now();
+          const created = new Date(charge.created_at).getTime();
+          const minsAgo = Math.max(1, Math.floor((now - created) / 60000));
+
+          // Pick a random flag for variety since we don't store country on charges
+          const flags = Object.values(COUNTRY_FLAGS);
+          const flag = flags[Math.floor(Math.random() * flags.length)];
+
+          const course = charge.courses as any;
+
+          return {
+            firstName,
+            firstNameAr: firstName,
+            countryFlag: flag,
+            courseName: course?.title || 'Bikerz Course',
+            courseNameAr: course?.title_ar || 'دورة بايكرز',
+            thumbnail: course?.thumbnail_url || null,
+            minutesAgo: minsAgo,
+          };
+        });
+        setPurchases(real);
+      } else {
+        // Use dummy data with randomized times
+        const shuffled = [...DUMMY_PURCHASES]
+          .sort(() => Math.random() - 0.5)
+          .map(p => ({
+            ...p,
+            minutesAgo: Math.floor(Math.random() * 120) + 5,
+          }));
+        setPurchases(shuffled);
+      }
+    };
+
+    fetchPurchases();
+  }, [isAdmin]);
+
+  // Show notification cycle
+  const showNext = useCallback(() => {
+    if (purchases.length === 0) return;
+    const idx = indexRef.current % purchases.length;
+    setCurrent(purchases[idx]);
+    setVisible(true);
+    indexRef.current = idx + 1;
+
+    // Auto-dismiss
+    dismissRef.current = setTimeout(() => {
+      setVisible(false);
+    }, DISMISS_AFTER_MS);
+  }, [purchases]);
+
+  useEffect(() => {
+    if (isAdmin || purchases.length === 0) return;
+
+    // Show first one after a short delay
+    const initialTimeout = setTimeout(() => {
+      showNext();
+    }, 15000); // 15 second initial delay
+
+    intervalRef.current = setInterval(() => {
+      showNext();
+    }, SHOW_INTERVAL_MS);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(intervalRef.current);
+      clearTimeout(dismissRef.current);
+    };
+  }, [purchases, showNext, isAdmin]);
+
+  const handleClose = () => {
+    setVisible(false);
+    clearTimeout(dismissRef.current);
+  };
+
+  if (isAdmin || !current) return null;
+
+  return (
+    <div
+      className={`fixed bottom-5 z-50 transition-all duration-500 ease-out ${
+        isRTL ? 'right-5' : 'left-5'
+      } ${
+        visible
+          ? 'translate-x-0 opacity-100'
+          : isRTL
+            ? 'translate-x-[120%] opacity-0'
+            : '-translate-x-[120%] opacity-0'
+      }`}
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-3 bg-card border border-border rounded-xl shadow-lg px-4 py-3 max-w-[340px] sm:max-w-[380px] relative group">
+        {/* Thumbnail */}
+        {current.thumbnail ? (
+          <img
+            src={current.thumbnail}
+            alt=""
+            className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+          />
+        ) : (
+          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <span className="text-2xl">{current.countryFlag}</span>
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground leading-snug">
+            {isRTL ? (
+              <>
+                <span className="font-bold">{current.firstNameAr}</span>{' '}
+                {current.countryFlag} اشترى{' '}
+                <span className="text-primary font-semibold">{current.courseNameAr}</span>
+              </>
+            ) : (
+              <>
+                <span className="font-bold">{current.firstName}</span>{' '}
+                {current.countryFlag} purchased{' '}
+                <span className="text-primary font-semibold">{current.courseName}</span>
+              </>
+            )}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {formatTimeAgo(current.minutesAgo, isRTL)}
+          </p>
+        </div>
+
+        {/* Close button */}
+        <button
+          onClick={handleClose}
+          className="absolute top-1.5 end-1.5 p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors opacity-0 group-hover:opacity-100"
+          aria-label="Close"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default SocialProofNotification;
