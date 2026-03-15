@@ -318,6 +318,7 @@ const AdminPayments = () => {
     '401': { en: 'Authentication required', ar: 'مطلوب التحقق من الهوية' },
     '501': { en: 'Gateway error', ar: 'خطأ في بوابة الدفع' },
     '502': { en: 'Gateway timeout', ar: 'انتهت مهلة بوابة الدفع' },
+    '507': { en: 'Card declined by issuing bank (Card Issuer)', ar: 'تم رفض البطاقة من قبل البنك المُصدر' },
   };
 
   const getTranslatedErrorReason = (code: string | null): string | null => {
@@ -335,11 +336,14 @@ const AdminPayments = () => {
     const gateway = resp.gateway as Record<string, unknown> | undefined;
     const code = (response?.code as string) || (gateway?.response?.toString()) || null;
     const translatedReason = getTranslatedErrorReason(code);
+    // Full decline reason from Tap API response.message
+    const tapDeclineMessage = (response?.message as string) || null;
     return {
-      reason: translatedReason || payment.error_message || (response?.message as string) || (isRTL ? 'فشل الدفع' : 'Payment failed'),
+      reason: translatedReason || payment.error_message || tapDeclineMessage || (isRTL ? 'فشل الدفع' : 'Payment failed'),
       code,
       gatewayResponse: (gateway?.response as string) || null,
       translatedReason,
+      tapDeclineMessage,
     };
   };
 
