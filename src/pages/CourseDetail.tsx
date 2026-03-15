@@ -825,7 +825,7 @@ const CourseDetail: React.FC = () => {
                         transition={{ delay: chapterIndex * 0.08 }}
                         className="relative"
                       >
-                        <div className={`flex gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <div className="flex gap-4">
                           {/* Timeline node */}
                           <div className={`relative z-10 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${
                             isComplete

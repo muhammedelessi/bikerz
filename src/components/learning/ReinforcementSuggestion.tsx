@@ -223,7 +223,6 @@ export const ReinforcementSuggestion = ({
 
         <div className={cn(
           "flex gap-2 mt-4",
-          isRTL && "flex-row-reverse"
         )}>
           <Button
             variant="default"
