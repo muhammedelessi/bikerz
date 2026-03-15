@@ -329,11 +329,13 @@ const AdminCourses: React.FC = () => {
     // Load country prices
     const { data: prices } = await supabase
       .from('course_country_prices')
-      .select('id, country_code, price, currency')
+      .select('id, country_code, price, currency, original_price, discount_percentage')
       .eq('course_id', course.id);
     setCountryPrices((prices || []).map(p => ({
       id: p.id,
       country_code: p.country_code,
+      original_price: Number((p as any).original_price) || Number(p.price),
+      discount_percentage: Number((p as any).discount_percentage) || 0,
       price: Number(p.price),
       currency: p.currency,
     })));
