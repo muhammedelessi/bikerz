@@ -338,17 +338,70 @@ const AdminCourses: React.FC = () => {
     setEditingCourse(course);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.title.trim()) {
       toast.error(isRTL ? 'عنوان الدورة مطلوب' : 'Course title is required');
       return;
     }
 
     if (editingCourse) {
-      updateMutation.mutate({ id: editingCourse.id, data: formData });
+      updateMutation.mutate({ id: editingCourse.id, data: formData }, {
+        onSuccess: async () => {
+          // Save country prices
+          await saveCountryPrices(editingCourse.id);
+        }
+      });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(formData, {
+        onSuccess: async () => {
+          // For new courses, we need the course ID — refetch and save
+          const { data: latest } = await supabase
+            .from('courses')
+            .select('id')
+            .eq('title', formData.title)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (latest && countryPrices.length > 0) {
+            await saveCountryPrices(latest.id);
+          }
+        }
+      });
     }
+  };
+
+  const saveCountryPrices = async (courseId: string) => {
+    // Delete existing prices for this course
+    await supabase.from('course_country_prices').delete().eq('course_id', courseId);
+    // Insert new ones
+    if (countryPrices.length > 0) {
+      const rows = countryPrices.map(cp => ({
+        course_id: courseId,
+        country_code: cp.country_code,
+        price: cp.price,
+        currency: cp.currency,
+      }));
+      await supabase.from('course_country_prices').insert(rows);
+    }
+  };
+
+  const addCountryPrice = () => {
+    setCountryPrices([...countryPrices, { country_code: '', price: 0, currency: '' }]);
+  };
+
+  const removeCountryPrice = (index: number) => {
+    setCountryPrices(countryPrices.filter((_, i) => i !== index));
+  };
+
+  const updateCountryPrice = (index: number, field: keyof CountryPrice, value: any) => {
+    const updated = [...countryPrices];
+    if (field === 'country_code') {
+      const country = ARAB_COUNTRIES.find(c => c.code === value);
+      updated[index] = { ...updated[index], country_code: value, currency: country?.currency || '' };
+    } else {
+      updated[index] = { ...updated[index], [field]: value };
+    }
+    setCountryPrices(updated);
   };
 
   // Filter courses
