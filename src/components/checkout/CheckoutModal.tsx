@@ -134,13 +134,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
   const BackArrowIcon = isRTL ? ArrowRight : ArrowLeft;
 
-  // Apply course-level discount first (discount_percentage from DB)
-  const courseDiscountPct = course.discount_percentage && course.discount_percentage > 0 ? course.discount_percentage : 0;
-  const basePriceBeforeBike = courseDiscountPct > 0
-    ? Math.ceil(course.price * (1 - courseDiscountPct / 100))
-    : course.price;
+  // Get the base price — uses country-specific price if available, otherwise SAR
+  const countryBasePrice = getCoursePrice(course.id, course.price);
 
-  const basePrice = basePriceBeforeBike;
+  // Apply course-level discount on top of the country/converted base price
+  const courseDiscountPct = course.discount_percentage && course.discount_percentage > 0 ? course.discount_percentage : 0;
+  const basePrice = courseDiscountPct > 0
+    ? Math.ceil(countryBasePrice * (1 - courseDiscountPct / 100))
+    : countryBasePrice;
 
   // Then apply coupon discount on top of the already-discounted base price
   const discountedPrice = appliedCoupon ? appliedCoupon.final_amount : basePrice;

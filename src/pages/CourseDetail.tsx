@@ -575,19 +575,26 @@ const CourseDetail: React.FC = () => {
                       {/* Price */}
                       <div className="text-center py-2">
                         {course.discount_percentage && course.discount_percentage > 0 && course.price > 0 ? (
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-center gap-2">
-                              <span className="text-lg text-muted-foreground line-through">
-                                {formatCoursePrice(course.id, course.price, isRTL)}
-                              </span>
-                              <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-sm font-bold">
-                                -{course.discount_percentage}%
-                              </span>
-                            </div>
-                            <span className="text-4xl font-black text-foreground">
-                              {formatCoursePrice(course.id, Math.ceil(course.price * (1 - course.discount_percentage / 100)), isRTL)}
-                            </span>
-                          </div>
+                          (() => {
+                            const baseDisplayPrice = getCoursePrice(course.id, course.price);
+                            const discountedDisplayPrice = Math.ceil(baseDisplayPrice * (1 - course.discount_percentage / 100));
+                            const courseCurrency = getCourseCurrency(course.id);
+                            return (
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-center gap-2">
+                                  <span className="text-lg text-muted-foreground line-through">
+                                    {formatCoursePrice(course.id, course.price, isRTL)}
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-sm font-bold">
+                                    -{course.discount_percentage}%
+                                  </span>
+                                </div>
+                                <span className="text-4xl font-black text-foreground">
+                                  {discountedDisplayPrice} {isRTL ? (CURRENCY_META_MAP[courseCurrency]?.symbolAr || courseCurrency) : courseCurrency}
+                                </span>
+                              </div>
+                            );
+                          })()
                         ) : (
                           <span className="text-4xl font-black text-foreground">
                             {course.price === 0
