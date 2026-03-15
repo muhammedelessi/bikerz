@@ -574,7 +574,7 @@ const AdminPayments = () => {
 
         {/* Detail Dialog — expanded */}
         <Dialog open={!!selectedPayment} onOpenChange={() => setSelectedPayment(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] p-0">
+          <DialogContent dir={isRTL ? 'rtl' : 'ltr'} className="max-w-2xl max-h-[90vh] p-0">
             <DialogHeader className="p-6 pb-0">
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5" />
