@@ -384,7 +384,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   // Submit payment
-  const handleSubmitPayment = async () => {
+  const handleSubmitPayment = async (method: PaymentMethod = 'card') => {
     if (!isPaymentReady) return;
 
    // Compose address from billing fields
@@ -474,6 +474,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       customerEmail: email,
       couponId: appliedCoupon?.coupon_id,
       customerPhone: phone,
+      paymentMethod: method,
     });
   };
 
