@@ -624,7 +624,6 @@ const CourseDetail: React.FC = () => {
                               <ShoppingCart className="w-5 h-5 me-2" />
                               {t('courses.buyNow')}
                             </Button>
-                            <PaymentMethodIcons className="mt-3" />
                           </>
                         )
                       ) : (
