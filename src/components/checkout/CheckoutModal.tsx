@@ -937,12 +937,66 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     );
                   })()}
 
+                  {/* Payment Method Selection */}
+                  {discountedPrice > 0 && (
+                    <div className="space-y-2.5">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {isRTL ? 'اختر طريقة الدفع' : 'Choose Payment Method'}
+                      </p>
+
+                      {/* Apple Pay - shown only on supported devices */}
+                      {supportsApplePay && (
+                        <Button
+                          className="w-full h-11 bg-black hover:bg-black/90 text-white border-0"
+                          onClick={() => handleSubmitPayment('apple_pay')}
+                          disabled={paymentStatus === 'processing' || !isPaymentReady}
+                        >
+                          <ApplePayIcon />
+                        </Button>
+                      )}
+
+                      {/* Google Pay - shown only on supported devices */}
+                      {supportsGooglePay && (
+                        <Button
+                          className="w-full h-11 bg-white hover:bg-gray-50 text-foreground border border-border"
+                          onClick={() => handleSubmitPayment('google_pay')}
+                          disabled={paymentStatus === 'processing' || !isPaymentReady}
+                        >
+                          <GooglePayIcon />
+                        </Button>
+                      )}
+
+                      {(supportsApplePay || supportsGooglePay) && (
+                        <div className="flex items-center gap-3">
+                          <Separator className="flex-1" />
+                          <span className="text-xs text-muted-foreground">{isRTL ? 'أو' : 'or'}</span>
+                          <Separator className="flex-1" />
+                        </div>
+                      )}
+
+                      {/* Card payment */}
+                      <Button
+                        className="w-full h-11"
+                        variant="outline"
+                        onClick={() => handleSubmitPayment('card')}
+                        disabled={paymentStatus === 'processing' || !isPaymentReady}
+                      >
+                        <CreditCard className="w-4 h-4 me-2" />
+                        <span className="me-2">{isRTL ? 'بطاقة ائتمان' : 'Credit / Debit Card'}</span>
+                        <div className="flex items-center gap-1 ms-auto">
+                          <VisaIcon />
+                          <MastercardIcon />
+                        </div>
+                      </Button>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
                     <Shield className="w-4 h-4 text-primary flex-shrink-0" />
                     <span>
                       {isRTL
-                        ? 'سيتم توجيهك إلى صفحة الدفع الآمنة لإدخال بيانات البطاقة'
-                        : 'You will be redirected to a secure payment page to enter your card details'}
+                        ? 'جميع المدفوعات آمنة ومشفرة عبر بوابة الدفع'
+                        : 'All payments are secure and encrypted via the payment gateway'}
                     </span>
                   </div>
                 </motion.div>
