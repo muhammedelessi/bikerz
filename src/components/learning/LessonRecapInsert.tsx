@@ -67,16 +67,14 @@ export const LessonRecapInsert = ({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5, delay: 0.2 }}
       className={cn(
-        "border-l-4 border-amber-400 bg-amber-50/50 dark:bg-amber-950/20 rounded-r-lg overflow-hidden",
-        isRTL && "border-l-0 border-r-4 rounded-r-none rounded-l-lg",
+        "border-s-4 border-amber-400 bg-amber-50/50 dark:bg-amber-950/20 rounded-e-lg overflow-hidden",
         className
       )}
     >
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
-          "w-full p-3 flex items-center gap-3 text-left hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors",
-          isRTL && "flex-row-reverse text-right"
+          "w-full p-3 flex items-center gap-3 text-start hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors",
         )}
       >
         <Lightbulb className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
