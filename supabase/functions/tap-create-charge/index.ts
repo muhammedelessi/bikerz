@@ -77,6 +77,7 @@ Deno.serve(async (req) => {
       customer_phone,
       idempotency_key,
       coupon_id,
+      payment_method = "card",
     } = body as Record<string, any>;
 
     if (!course_id || !idempotency_key) {
