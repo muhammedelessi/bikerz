@@ -907,37 +907,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         {isRTL ? 'اختر طريقة الدفع' : 'Choose Payment Method'}
                       </p>
 
-                      {/* Apple Pay - shown only on supported devices */}
-                      {supportsApplePay && (
-                        <Button
-                          className="w-full h-12 bg-white hover:bg-gray-100 text-black border border-border rounded-lg gap-2"
-                          onClick={() => handleSubmitPayment('apple_pay')}
-                          disabled={paymentStatus === 'processing' || !isPaymentReady}
-                        >
-                          <span className="text-black">
-                            <ApplePayIcon className="h-6 w-auto" />
-                          </span>
-                        </Button>
-                      )}
-
-                      {/* Google Pay - shown only on supported devices */}
-                      {supportsGooglePay && (
-                        <Button
-                          className="w-full h-12 bg-white hover:bg-gray-100 text-gray-800 border border-border rounded-lg gap-2"
-                          onClick={() => handleSubmitPayment('google_pay')}
-                          disabled={paymentStatus === 'processing' || !isPaymentReady}
-                        >
-                          <GooglePayIcon className="h-6 w-auto" />
-                        </Button>
-                      )}
-
-                      {(supportsApplePay || supportsGooglePay) && (
-                        <div className="flex items-center gap-3">
-                          <Separator className="flex-1" />
-                          <span className="text-xs text-muted-foreground">{isRTL ? 'أو' : 'or'}</span>
-                          <Separator className="flex-1" />
-                        </div>
-                      )}
+                      {/* TODO: Re-enable Apple Pay and Google Pay when ready */}
+                      {/* Apple Pay - temporarily hidden */}
+                      {/* Google Pay - temporarily hidden */}
 
                       {/* Card payment */}
                       <Button
