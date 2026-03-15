@@ -229,21 +229,6 @@ const CourseLearn: React.FC = () => {
     enabled: !!id && !!user,
   });
 
-  // Check if user has complete bike info (for profile discount)
-  const { data: bikeInfoComplete = false } = useQuery({
-    queryKey: ['bike-info-complete', user?.id],
-    queryFn: async () => {
-      if (!user) return false;
-      const { data } = await supabase
-        .from('profiles')
-        .select('bike_brand, bike_model, engine_size_cc, riding_experience_years')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (!data) return false;
-      return !!(data.bike_brand && data.bike_model && data.engine_size_cc && data.riding_experience_years);
-    },
-    enabled: !!user,
-  });
 
   // Fetch lesson progress
   const { data: lessonProgress = [] } = useQuery({
