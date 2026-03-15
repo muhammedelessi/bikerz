@@ -78,6 +78,7 @@ Deno.serve(async (req) => {
       idempotency_key,
       coupon_id,
       payment_method = "card",
+      detected_country,
     } = body as Record<string, any>;
 
     if (!course_id || !idempotency_key) {
@@ -177,7 +178,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    const originalPrice = Number(course.price);
+    let originalPrice = Number(course.price);
+    let pricingCurrency = "SAR";
+
+    // Check for country-specific pricing
+    if (detected_country) {
+      const { data: countryPrice } = await adminClient
+        .from("course_country_prices")
+        .select("price, currency")
+        .eq("course_id", course_id)
+        .eq("country_code", detected_country)
+        .maybeSingle();
+      
+      if (countryPrice) {
+        originalPrice = Number(countryPrice.price);
+        pricingCurrency = countryPrice.currency || "SAR";
+        console.log(`Country-specific pricing applied: ${detected_country} → ${originalPrice} ${pricingCurrency}`);
+      }
+    }
+
     const courseDiscountPct = course.discount_percentage && Number(course.discount_percentage) > 0 ? Number(course.discount_percentage) : 0;
     let priceBeforeTax = courseDiscountPct > 0
       ? Math.ceil(originalPrice * (1 - courseDiscountPct / 100))
@@ -228,6 +247,7 @@ Deno.serve(async (req) => {
     console.log(
       "Server-authoritative pricing:",
       `original=${originalPrice}`,
+      `pricingCurrency=${pricingCurrency}`,
       `courseDiscount=${courseDiscountPct}%`,
       `afterCourseDiscount=${priceAfterCourseDiscount}`,
       `couponDiscount=${couponDiscount}`,

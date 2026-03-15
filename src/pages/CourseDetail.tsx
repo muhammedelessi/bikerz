@@ -93,7 +93,7 @@ const CourseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { formatPrice, convertPrice } = useCurrency();
+  const { formatPrice, convertPrice, formatCoursePrice, getCoursePrice, getCourseCurrency } = useCurrency();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -578,21 +578,21 @@ const CourseDetail: React.FC = () => {
                           <div className="space-y-1">
                             <div className="flex items-center justify-center gap-2">
                               <span className="text-lg text-muted-foreground line-through">
-                                {formatPrice(course.price, isRTL)}
+                                {formatCoursePrice(course.id, course.price, isRTL)}
                               </span>
                               <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-sm font-bold">
                                 -{course.discount_percentage}%
                               </span>
                             </div>
                             <span className="text-4xl font-black text-foreground">
-                              {formatPrice(Math.ceil(course.price * (1 - course.discount_percentage / 100)), isRTL)}
+                              {formatCoursePrice(course.id, Math.ceil(course.price * (1 - course.discount_percentage / 100)), isRTL)}
                             </span>
                           </div>
                         ) : (
                           <span className="text-4xl font-black text-foreground">
                             {course.price === 0
                               ? t('common.free')
-                              : formatPrice(course.price, isRTL)}
+                              : formatCoursePrice(course.id, course.price, isRTL)}
                           </span>
                         )}
                         {course.price > 0 && (

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 export type PaymentMethod = 'card' | 'apple_pay' | 'google_pay';
 type PaymentStatus = 'idle' | 'processing' | 'succeeded' | 'failed';
@@ -25,6 +26,7 @@ interface UseTapPaymentReturn {
 
 export function useTapPayment(): UseTapPaymentReturn {
   const { session } = useAuth();
+  const { detectedCountry } = useCurrency();
   const [status, setStatus] = useState<PaymentStatus>('idle');
   const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +56,7 @@ export function useTapPayment(): UseTapPaymentReturn {
             idempotency_key: idempotencyKey,
             coupon_id: config.couponId || null,
             payment_method: config.paymentMethod || 'card',
+            detected_country: detectedCountry || null,
           },
         });
 

@@ -97,6 +97,38 @@ const AdminCourses: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   // Form state
+  interface CountryPrice {
+    id?: string;
+    country_code: string;
+    price: number;
+    currency: string;
+  }
+
+  const ARAB_COUNTRIES = [
+    { code: 'SA', name: 'Saudi Arabia', name_ar: 'السعودية', currency: 'SAR' },
+    { code: 'AE', name: 'UAE', name_ar: 'الإمارات', currency: 'AED' },
+    { code: 'KW', name: 'Kuwait', name_ar: 'الكويت', currency: 'KWD' },
+    { code: 'BH', name: 'Bahrain', name_ar: 'البحرين', currency: 'BHD' },
+    { code: 'QA', name: 'Qatar', name_ar: 'قطر', currency: 'QAR' },
+    { code: 'OM', name: 'Oman', name_ar: 'عُمان', currency: 'OMR' },
+    { code: 'EG', name: 'Egypt', name_ar: 'مصر', currency: 'EGP' },
+    { code: 'JO', name: 'Jordan', name_ar: 'الأردن', currency: 'JOD' },
+    { code: 'IQ', name: 'Iraq', name_ar: 'العراق', currency: 'IQD' },
+    { code: 'SY', name: 'Syria', name_ar: 'سوريا', currency: 'SYP' },
+    { code: 'LB', name: 'Lebanon', name_ar: 'لبنان', currency: 'LBP' },
+    { code: 'YE', name: 'Yemen', name_ar: 'اليمن', currency: 'YER' },
+    { code: 'LY', name: 'Libya', name_ar: 'ليبيا', currency: 'LYD' },
+    { code: 'TN', name: 'Tunisia', name_ar: 'تونس', currency: 'TND' },
+    { code: 'DZ', name: 'Algeria', name_ar: 'الجزائر', currency: 'DZD' },
+    { code: 'MA', name: 'Morocco', name_ar: 'المغرب', currency: 'MAD' },
+    { code: 'SD', name: 'Sudan', name_ar: 'السودان', currency: 'SDG' },
+    { code: 'SO', name: 'Somalia', name_ar: 'الصومال', currency: 'SOS' },
+    { code: 'MR', name: 'Mauritania', name_ar: 'موريتانيا', currency: 'MRU' },
+    { code: 'KM', name: 'Comoros', name_ar: 'جزر القمر', currency: 'KMF' },
+    { code: 'DJ', name: 'Djibouti', name_ar: 'جيبوتي', currency: 'DJF' },
+    { code: 'PS', name: 'Palestine', name_ar: 'فلسطين', currency: 'ILS' },
+  ];
+
   const [formData, setFormData] = useState({
     title: '',
     title_ar: '',
@@ -111,6 +143,8 @@ const AdminCourses: React.FC = () => {
     is_published: false,
     learning_outcomes: [] as { text_en: string; text_ar: string }[],
   });
+
+  const [countryPrices, setCountryPrices] = useState<CountryPrice[]>([]);
 
   // Fetch courses
   const { data: courses = [], isLoading } = useQuery({
@@ -222,6 +256,7 @@ const AdminCourses: React.FC = () => {
       is_published: false,
       learning_outcomes: [],
     });
+    setCountryPrices([]);
   };
 
   const handleThumbnailUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -274,7 +309,7 @@ const AdminCourses: React.FC = () => {
     setFormData({ ...formData, thumbnail_url: '' });
   };
 
-  const openEditDialog = (course: Course) => {
+  const openEditDialog = async (course: Course) => {
     setFormData({
       title: course.title,
       title_ar: course.title_ar || '',
@@ -289,20 +324,84 @@ const AdminCourses: React.FC = () => {
       is_published: Boolean(course.is_published),
       learning_outcomes: Array.isArray((course as any).learning_outcomes) ? (course as any).learning_outcomes : [],
     });
+    // Load country prices
+    const { data: prices } = await supabase
+      .from('course_country_prices')
+      .select('id, country_code, price, currency')
+      .eq('course_id', course.id);
+    setCountryPrices((prices || []).map(p => ({
+      id: p.id,
+      country_code: p.country_code,
+      price: Number(p.price),
+      currency: p.currency,
+    })));
     setEditingCourse(course);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.title.trim()) {
       toast.error(isRTL ? 'عنوان الدورة مطلوب' : 'Course title is required');
       return;
     }
 
     if (editingCourse) {
-      updateMutation.mutate({ id: editingCourse.id, data: formData });
+      updateMutation.mutate({ id: editingCourse.id, data: formData }, {
+        onSuccess: async () => {
+          // Save country prices
+          await saveCountryPrices(editingCourse.id);
+        }
+      });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(formData, {
+        onSuccess: async () => {
+          // For new courses, we need the course ID — refetch and save
+          const { data: latest } = await supabase
+            .from('courses')
+            .select('id')
+            .eq('title', formData.title)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (latest && countryPrices.length > 0) {
+            await saveCountryPrices(latest.id);
+          }
+        }
+      });
     }
+  };
+
+  const saveCountryPrices = async (courseId: string) => {
+    // Delete existing prices for this course
+    await supabase.from('course_country_prices').delete().eq('course_id', courseId);
+    // Insert new ones
+    if (countryPrices.length > 0) {
+      const rows = countryPrices.map(cp => ({
+        course_id: courseId,
+        country_code: cp.country_code,
+        price: cp.price,
+        currency: cp.currency,
+      }));
+      await supabase.from('course_country_prices').insert(rows);
+    }
+  };
+
+  const addCountryPrice = () => {
+    setCountryPrices([...countryPrices, { country_code: '', price: 0, currency: '' }]);
+  };
+
+  const removeCountryPrice = (index: number) => {
+    setCountryPrices(countryPrices.filter((_, i) => i !== index));
+  };
+
+  const updateCountryPrice = (index: number, field: keyof CountryPrice, value: any) => {
+    const updated = [...countryPrices];
+    if (field === 'country_code') {
+      const country = ARAB_COUNTRIES.find(c => c.code === value);
+      updated[index] = { ...updated[index], country_code: value, currency: country?.currency || '' };
+    } else {
+      updated[index] = { ...updated[index], [field]: value };
+    }
+    setCountryPrices(updated);
   };
 
   // Filter courses
@@ -786,6 +885,80 @@ const AdminCourses: React.FC = () => {
                   </Button>
                 </div>
               ))}
+            </div>
+
+            {/* Country-Specific Pricing */}
+            <div className="space-y-3 border-t border-border pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-semibold">{isRTL ? 'أسعار حسب الدولة' : 'Country Pricing'}</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {isRTL ? 'حدد أسعار مخصصة لكل دولة. إذا لم يتم التحديد، سيتم التحويل تلقائياً من السعر الأساسي.' : 'Set custom prices per country. If not set, base price will be auto-converted.'}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addCountryPrice}
+                >
+                  <Plus className="w-4 h-4 me-1" />
+                  {isRTL ? 'إضافة سعر' : 'Add Country Price'}
+                </Button>
+              </div>
+              {countryPrices.map((cp, idx) => {
+                const usedCodes = countryPrices.filter((_, i) => i !== idx).map(p => p.country_code);
+                const availableCountries = ARAB_COUNTRIES.filter(c => !usedCodes.includes(c.code));
+                return (
+                  <div key={idx} className="flex gap-2 items-center border border-border/50 rounded-lg p-3">
+                    <div className="flex-1 grid grid-cols-3 gap-2">
+                      <Select
+                        value={cp.country_code}
+                        onValueChange={(val) => updateCountryPrice(idx, 'country_code', val)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={isRTL ? 'الدولة' : 'Country'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCountries.map(c => (
+                            <SelectItem key={c.code} value={c.code}>
+                              {isRTL ? c.name_ar : c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        value={cp.price || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                            updateCountryPrice(idx, 'price', val === '' ? 0 : parseFloat(val) || 0);
+                          }
+                        }}
+                        placeholder={isRTL ? 'السعر' : 'Price'}
+                      />
+                      <Input
+                        value={cp.currency}
+                        readOnly
+                        disabled
+                        className="bg-muted"
+                        placeholder={isRTL ? 'العملة' : 'Currency'}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-destructive flex-shrink-0"
+                      onClick={() => removeCountryPrice(idx)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="space-y-2">
