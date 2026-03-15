@@ -598,10 +598,15 @@ const AdminPayments = () => {
                             <AlertTriangle className="w-5 h-5" />
                             {isRTL ? 'فشل الدفع' : 'Payment Failed'}
                           </div>
-                          <p className="text-sm text-red-400">{failureDetails.reason}</p>
+                          <p className="text-sm text-red-400 font-medium">{failureDetails.reason}</p>
                           {failureDetails.code && (
                             <p className="text-xs text-red-400/70">
                               {isRTL ? 'رمز الخطأ' : 'Error Code'}: <span className="font-mono">{failureDetails.code}</span>
+                            </p>
+                          )}
+                          {failureDetails.tapDeclineMessage && failureDetails.tapDeclineMessage !== failureDetails.reason && (
+                            <p className="text-xs text-red-400/70">
+                              {isRTL ? 'تفاصيل الرفض' : 'Decline Details'}: {failureDetails.tapDeclineMessage}
                             </p>
                           )}
                           {failureDetails.gatewayResponse && (
