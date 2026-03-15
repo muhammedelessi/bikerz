@@ -1426,7 +1426,7 @@ const CourseLearn: React.FC = () => {
             price: course.price,
             discount_percentage: course.discount_percentage,
           }}
-          profileDiscountApplied={bikeInfoComplete}
+          
         />
       )}
 
