@@ -382,6 +382,8 @@ const AdminCourses: React.FC = () => {
       const rows = countryPrices.map(cp => ({
         course_id: courseId,
         country_code: cp.country_code,
+        original_price: cp.original_price,
+        discount_percentage: cp.discount_percentage,
         price: cp.price,
         currency: cp.currency,
       }));
