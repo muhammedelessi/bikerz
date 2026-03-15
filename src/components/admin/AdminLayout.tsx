@@ -90,7 +90,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen bg-background flex">
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
