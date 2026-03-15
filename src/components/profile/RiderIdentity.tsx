@@ -154,31 +154,6 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Incomplete Profile Banner */}
-      {!profileComplete && (
-        <div className="relative overflow-hidden rounded-xl border border-yellow-500/30 bg-gradient-to-r from-yellow-500/10 via-orange-500/10 to-yellow-500/10 p-4">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjAiIHI9IjEiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iLjEiLz48L2c+PC9zdmc+')] opacity-30" />
-          <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-yellow-500/20 flex-shrink-0">
-              <Trophy className="w-6 h-6 text-yellow-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-yellow-400 text-sm sm:text-base">
-                {isRTL ? '🎁 أكمل ملفك الشخصي واحصل على خصم 10%!' : '🎁 Complete your profile & get 10% OFF!'}
-              </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                {isRTL 
-                  ? `المتبقي: ${missingFields.join('، ')}`
-                  : `Missing: ${missingFields.join(', ')}`
-                }
-              </p>
-            </div>
-            <div className="px-3 py-1.5 rounded-full bg-yellow-500/20 border border-yellow-500/40 text-yellow-400 font-bold text-sm whitespace-nowrap">
-              10% {isRTL ? 'خصم' : 'OFF'}
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="card-premium p-6">
         <div className="flex flex-col sm:flex-row items-center gap-6">
