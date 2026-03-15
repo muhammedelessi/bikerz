@@ -284,7 +284,36 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [getCountryPriceEntry, currencyCode, rate]
   );
 
-  /** Get the currency code for a course (country-specific or user currency) */
+  /** Get full price info for display — uses country pricing when available */
+  const getCoursePriceInfo = useCallback(
+    (courseId: string, sarPrice: number, courseDiscountPct = 0): CoursePriceInfo => {
+      const entry = getCountryPriceEntry(courseId);
+      if (entry) {
+        // Country-specific pricing: use original_price and country discount
+        const ccy = (entry.currency in CURRENCY_META ? entry.currency : currencyCode) as CurrencyCode;
+        return {
+          originalPrice: Math.ceil(entry.original_price),
+          discountPct: entry.discount_percentage,
+          finalPrice: Math.ceil(entry.price),
+          currency: ccy,
+          isCountryPrice: true,
+        };
+      }
+      // Fallback: convert SAR and apply course-level discount
+      const convertedBase = currencyCode === 'SAR' ? Math.ceil(sarPrice) : Math.ceil(sarPrice * rate);
+      const dPct = courseDiscountPct > 0 ? courseDiscountPct : 0;
+      const final = dPct > 0 ? Math.ceil(convertedBase * (1 - dPct / 100)) : convertedBase;
+      return {
+        originalPrice: convertedBase,
+        discountPct: dPct,
+        finalPrice: final,
+        currency: currencyCode,
+        isCountryPrice: false,
+      };
+    },
+    [getCountryPriceEntry, currencyCode, rate]
+  );
+
   const getCourseCurrency = useCallback(
     (courseId: string): CurrencyCode => {
       const entry = getCountryPriceEntry(courseId);
