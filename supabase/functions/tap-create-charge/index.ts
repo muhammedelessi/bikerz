@@ -77,6 +77,7 @@ Deno.serve(async (req) => {
       customer_phone,
       idempotency_key,
       coupon_id,
+      payment_method = "card",
     } = body as Record<string, any>;
 
     if (!course_id || !idempotency_key) {
@@ -345,7 +346,9 @@ Deno.serve(async (req) => {
         internal_id: chargeRecord.id,
       },
       source: {
-        id: "src_all",
+        id: payment_method === "apple_pay" ? "src_apple_pay" :
+            payment_method === "google_pay" ? "src_google_pay" :
+            "src_all",
       },
       redirect: {
         url: redirectBackUrl,

@@ -37,6 +37,7 @@ import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.jpg';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
 import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';
+import PaymentMethodIcons from '@/components/checkout/PaymentMethodIcons';
 import { trackViewContent } from '@/utils/metaPixel';
 
 
@@ -615,20 +616,26 @@ const CourseDetail: React.FC = () => {
                               : t('courses.enrollForFree')}
                           </Button>
                         ) : (
-                          <Button
-                            className="w-full btn-cta h-12 text-base"
-                            onClick={() => setShowCheckout(true)}
-                          >
-                            <ShoppingCart className="w-5 h-5 me-2" />
-                            {t('courses.buyNow')}
-                          </Button>
+                          <>
+                            <Button
+                              className="w-full btn-cta h-12 text-base"
+                              onClick={() => setShowCheckout(true)}
+                            >
+                              <ShoppingCart className="w-5 h-5 me-2" />
+                              {t('courses.buyNow')}
+                            </Button>
+                            <PaymentMethodIcons className="mt-3" />
+                          </>
                         )
                       ) : (
-                        <Button className="w-full btn-cta h-12 text-base" asChild>
-                          <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
-                            {t('courses.loginToPurchase')}
-                          </Link>
-                        </Button>
+                        <>
+                          <Button className="w-full btn-cta h-12 text-base" asChild>
+                            <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
+                              {t('courses.loginToPurchase')}
+                            </Link>
+                          </Button>
+                          <PaymentMethodIcons className="mt-3" />
+                        </>
                       )}
 
                       {/* Course includes */}

@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useTapPayment } from '@/hooks/useTapPayment';
+import { useTapPayment, PaymentMethod } from '@/hooks/useTapPayment';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -44,6 +44,8 @@ import {
 import { toast } from 'sonner';
 import { trackInitiateCheckout, trackAddPaymentInfo } from '@/utils/metaPixel';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
+import { usePaymentMethodDetection } from '@/hooks/usePaymentMethodDetection';
+import { ApplePayIcon, GooglePayIcon, VisaIcon, MastercardIcon } from '@/components/checkout/PaymentMethodIcons';
 
 interface CheckoutModalProps {
   open: boolean;
@@ -103,6 +105,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     reset: resetPayment,
   } = useTapPayment();
   const { sendCourseStatus } = useGHLFormWebhook();
+  const { supportsApplePay, supportsGooglePay } = usePaymentMethodDetection();
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('profile');
   const [profileIncomplete, setProfileIncomplete] = useState(false);
@@ -381,7 +384,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   // Submit payment
-  const handleSubmitPayment = async () => {
+  const handleSubmitPayment = async (method: PaymentMethod = 'card') => {
     if (!isPaymentReady) return;
 
    // Compose address from billing fields
@@ -471,6 +474,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       customerEmail: email,
       couponId: appliedCoupon?.coupon_id,
       customerPhone: phone,
+      paymentMethod: method,
     });
   };
 
@@ -933,12 +937,66 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     );
                   })()}
 
+                  {/* Payment Method Selection */}
+                  {discountedPrice > 0 && (
+                    <div className="space-y-2.5">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {isRTL ? 'اختر طريقة الدفع' : 'Choose Payment Method'}
+                      </p>
+
+                      {/* Apple Pay - shown only on supported devices */}
+                      {supportsApplePay && (
+                        <Button
+                          className="w-full h-11 bg-foreground hover:bg-foreground/90 text-background border-0"
+                          onClick={() => handleSubmitPayment('apple_pay')}
+                          disabled={paymentStatus === 'processing' || !isPaymentReady}
+                        >
+                          <ApplePayIcon />
+                        </Button>
+                      )}
+
+                      {/* Google Pay - shown only on supported devices */}
+                      {supportsGooglePay && (
+                        <Button
+                          className="w-full h-11 bg-background hover:bg-muted text-foreground border border-border"
+                          onClick={() => handleSubmitPayment('google_pay')}
+                          disabled={paymentStatus === 'processing' || !isPaymentReady}
+                        >
+                          <GooglePayIcon />
+                        </Button>
+                      )}
+
+                      {(supportsApplePay || supportsGooglePay) && (
+                        <div className="flex items-center gap-3">
+                          <Separator className="flex-1" />
+                          <span className="text-xs text-muted-foreground">{isRTL ? 'أو' : 'or'}</span>
+                          <Separator className="flex-1" />
+                        </div>
+                      )}
+
+                      {/* Card payment */}
+                      <Button
+                        className="w-full h-11"
+                        variant="outline"
+                        onClick={() => handleSubmitPayment('card')}
+                        disabled={paymentStatus === 'processing' || !isPaymentReady}
+                      >
+                        <CreditCard className="w-4 h-4 me-2" />
+                        <span className="me-2">{isRTL ? 'بطاقة ائتمان' : 'Credit / Debit Card'}</span>
+                        <div className="flex items-center gap-1 ms-auto">
+                          <VisaIcon />
+                          <MastercardIcon />
+                        </div>
+                      </Button>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
                     <Shield className="w-4 h-4 text-primary flex-shrink-0" />
                     <span>
                       {isRTL
-                        ? 'سيتم توجيهك إلى صفحة الدفع الآمنة لإدخال بيانات البطاقة'
-                        : 'You will be redirected to a secure payment page to enter your card details'}
+                        ? 'جميع المدفوعات آمنة ومشفرة عبر بوابة الدفع'
+                        : 'All payments are secure and encrypted via the payment gateway'}
                     </span>
                   </div>
                 </motion.div>
@@ -980,35 +1038,31 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     : (isRTL ? 'التالي' : 'Next')}
                   <ArrowIcon className="w-4 h-4 ms-2" />
                 </Button>
-              ) : (
+              ) : discountedPrice <= 0 && appliedCoupon ? (
                 <Button
                   className="flex-1"
                   variant="cta"
-                  onClick={handleSubmitPayment}
+                  onClick={() => handleSubmitPayment('card')}
                   disabled={paymentStatus === 'processing' || !isPaymentReady}
                 >
                   {paymentStatus === 'processing' ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin me-2" />
-                      {isRTL ? 'جاري التوجيه للدفع...' : 'Redirecting to payment...'}
+                      {isRTL ? 'جاري التسجيل...' : 'Enrolling...'}
                     </>
-                  ) : discountedPrice <= 0 && appliedCoupon ? (
+                  ) : (
                     <>
                       <Check className="w-4 h-4 me-2" />
                       {isRTL ? 'سجّل مجاناً' : 'Enroll for Free'}
                     </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4 me-2" />
-                      {(() => {
-                        const totalWithTax = calculateTotalWithTax(discountedPrice);
-                        const sym = isRTL ? symbolAr : symbol;
-                        return isRTL ? `ادفع ${totalWithTax} ${sym}` : `Pay ${totalWithTax} ${sym}`;
-                      })()}
-                    </>
                   )}
                 </Button>
-              )}
+              ) : paymentStatus === 'processing' ? (
+                <Button className="flex-1" variant="cta" disabled>
+                  <Loader2 className="w-4 h-4 animate-spin me-2" />
+                  {isRTL ? 'جاري التوجيه للدفع...' : 'Redirecting to payment...'}
+                </Button>
+              ) : null}
             </div>
           </div>
         )}
