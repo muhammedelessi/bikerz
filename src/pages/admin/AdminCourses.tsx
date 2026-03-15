@@ -309,7 +309,7 @@ const AdminCourses: React.FC = () => {
     setFormData({ ...formData, thumbnail_url: '' });
   };
 
-  const openEditDialog = (course: Course) => {
+  const openEditDialog = async (course: Course) => {
     setFormData({
       title: course.title,
       title_ar: course.title_ar || '',
@@ -324,6 +324,17 @@ const AdminCourses: React.FC = () => {
       is_published: Boolean(course.is_published),
       learning_outcomes: Array.isArray((course as any).learning_outcomes) ? (course as any).learning_outcomes : [],
     });
+    // Load country prices
+    const { data: prices } = await supabase
+      .from('course_country_prices')
+      .select('id, country_code, price, currency')
+      .eq('course_id', course.id);
+    setCountryPrices((prices || []).map(p => ({
+      id: p.id,
+      country_code: p.country_code,
+      price: Number(p.price),
+      currency: p.currency,
+    })));
     setEditingCourse(course);
   };
 
