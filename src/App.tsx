@@ -8,6 +8,7 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
 import ScrollToTop from "@/components/common/ScrollToTop";
+import SocialProofNotification from "@/components/common/SocialProofNotification";
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
