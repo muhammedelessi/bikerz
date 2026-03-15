@@ -633,7 +633,7 @@ const CourseDetail: React.FC = () => {
                               {t('courses.loginToPurchase')}
                             </Link>
                           </Button>
-                          <PaymentMethodIcons className="mt-3" />
+                          
                         </>
                       )}
 
