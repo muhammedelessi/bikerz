@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+export type PaymentMethod = 'card' | 'apple_pay' | 'google_pay';
 type PaymentStatus = 'idle' | 'processing' | 'succeeded' | 'failed';
 
 interface TapPaymentConfig {
@@ -11,6 +12,7 @@ interface TapPaymentConfig {
   customerEmail: string;
   customerPhone?: string;
   couponId?: string;
+  paymentMethod?: PaymentMethod;
 }
 
 interface UseTapPaymentReturn {
@@ -51,6 +53,7 @@ export function useTapPayment(): UseTapPaymentReturn {
             customer_phone: config.customerPhone,
             idempotency_key: idempotencyKey,
             coupon_id: config.couponId || null,
+            payment_method: config.paymentMethod || 'card',
           },
         });
 
@@ -62,7 +65,7 @@ export function useTapPayment(): UseTapPaymentReturn {
           throw new Error(data.error);
         }
 
-        console.log('[Tap] Charge response:', data?.status, data?.charge_id, 'amount:', data?.amount);
+        console.log('[Tap] Charge response:', data?.status, data?.charge_id, 'amount:', data?.amount, 'method:', config.paymentMethod);
 
         if (data?.redirect_url) {
           window.location.href = data.redirect_url;
