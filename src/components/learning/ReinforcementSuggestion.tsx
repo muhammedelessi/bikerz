@@ -200,7 +200,6 @@ export const ReinforcementSuggestion = ({
       >
         <div className={cn(
           "flex items-start gap-4",
-          isRTL && "flex-row-reverse"
         )}>
           <div className="p-2 rounded-lg bg-primary/10">
             <Icon className="h-6 w-6 text-primary" />
