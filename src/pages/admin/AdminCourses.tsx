@@ -256,6 +256,7 @@ const AdminCourses: React.FC = () => {
       is_published: false,
       learning_outcomes: [],
     });
+    setCountryPrices([]);
   };
 
   const handleThumbnailUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
