@@ -261,7 +261,6 @@ export const ScenarioLearning: React.FC<ScenarioLearningProps> = ({
               >
                 <div className={cn(
                   "flex items-start gap-3",
-                  isRTL && "flex-row-reverse text-right"
                 )}>
                   <div className={cn(
                     "w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",

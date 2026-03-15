@@ -99,7 +99,6 @@ export const LessonRecapInsert = ({
           >
             <p className={cn(
               "px-3 pb-3 text-sm text-amber-800 dark:text-amber-300 leading-relaxed",
-              isRTL && "text-right"
             )}>
               {content}
             </p>

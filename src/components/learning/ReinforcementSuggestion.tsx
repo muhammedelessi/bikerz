@@ -195,7 +195,6 @@ export const ReinforcementSuggestion = ({
         transition={{ duration: 0.3, ease: 'easeOut' }}
         className={cn(
           "p-4 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20",
-          isRTL && "text-right",
           className
         )}
       >

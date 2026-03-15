@@ -98,7 +98,7 @@ function SortableList<T>({
           className="w-full border-dashed"
           onClick={onAdd}
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4 me-2" />
           {addLabel}
         </Button>
       )}
