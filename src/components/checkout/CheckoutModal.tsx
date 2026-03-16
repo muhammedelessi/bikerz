@@ -59,6 +59,7 @@ interface CheckoutModalProps {
     thumbnail_url: string | null;
   };
   onSuccess: () => void;
+  onPaymentStarted?: () => void;
 }
 
 type CheckoutStep = 'profile' | 'billing' | 'profile-reminder' | 'payment';
