@@ -536,7 +536,7 @@ const CourseDetail: React.FC = () => {
               </div>
 
               {/* Right: Enrollment Card (2 cols, sticky) */}
-              <div className="lg:col-span-2 order-last lg:order-last">
+              <div ref={ctaCardRef} className="lg:col-span-2 order-last lg:order-last">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
