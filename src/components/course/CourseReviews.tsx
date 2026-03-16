@@ -183,7 +183,7 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
               {isRTL ? 'التقييمات والمراجعات' : 'Ratings & Reviews'}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {reviews.length} {isRTL ? 'تقييم' : reviews.length === 1 ? 'review' : 'reviews'}
+              {totalCount} {isRTL ? 'تقييم' : totalCount === 1 ? 'review' : 'reviews'}
             </p>
           </div>
           {isEnrolled && !userHasReview && user && (
