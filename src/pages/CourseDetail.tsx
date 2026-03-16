@@ -1061,10 +1061,6 @@ const CourseDetail: React.FC = () => {
       </main>
 
       <Footer />
-      {/* Spacer for sticky bottom bar on mobile */}
-      {!isEnrolled && course && (
-        <div className="h-20 lg:hidden safe-area-bottom" />
-      )}
 
       {/* Checkout Modal */}
       {course && (
