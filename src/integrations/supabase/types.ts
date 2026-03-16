@@ -610,6 +610,50 @@ export type Database = {
           },
         ]
       }
+      course_reviews: {
+        Row: {
+          comment: string | null
+          course_id: string
+          created_at: string
+          fake_name: string | null
+          id: string
+          is_fake: boolean
+          rating: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          comment?: string | null
+          course_id: string
+          created_at?: string
+          fake_name?: string | null
+          id?: string
+          is_fake?: boolean
+          rating?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          comment?: string | null
+          course_id?: string
+          created_at?: string
+          fake_name?: string | null
+          id?: string
+          is_fake?: boolean
+          rating?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_reviews_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           certificate_enabled: boolean | null
