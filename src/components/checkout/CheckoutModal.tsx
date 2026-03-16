@@ -967,14 +967,23 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         className="w-full h-12 rounded-lg"
                         variant="outline"
                         onClick={() => handleSubmitPayment('card')}
-                        disabled={paymentStatus === 'processing' || !isPaymentReady}
+                        disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady}
                       >
-                        <CreditCard className="w-4 h-4 me-2" />
-                        <span className="me-2">{isRTL ? 'بطاقة ائتمان' : 'Credit / Debit Card'}</span>
-                        <div className="flex items-center gap-1.5 ms-auto">
-                          <VisaIcon light />
-                          <MastercardIcon />
-                        </div>
+                        {guestSigningUp ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin me-2" />
+                            <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="w-4 h-4 me-2" />
+                            <span className="me-2">{isRTL ? 'بطاقة ائتمان' : 'Credit / Debit Card'}</span>
+                            <div className="flex items-center gap-1.5 ms-auto">
+                              <VisaIcon light />
+                              <MastercardIcon />
+                            </div>
+                          </>
+                        )}
                       </Button>
                     </div>
                   )}
