@@ -300,6 +300,7 @@ const AdminCourseReviews: React.FC = () => {
               </div>
             </div>
           </CardContent>
+        </Card>
 
         {/* Reviews Table */}
         <Card>
