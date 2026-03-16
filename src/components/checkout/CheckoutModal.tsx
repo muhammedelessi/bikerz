@@ -559,25 +559,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     );
   };
 
-  // Auth guard
-  if (!user) {
-    return (
-      <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-[420px]">
-          <div className="flex flex-col items-center py-8 text-center space-y-4">
-            <Lock className="w-12 h-12 text-muted-foreground" />
-            <h3 className="text-lg font-bold">{isRTL ? 'يجب تسجيل الدخول أولاً' : 'Login Required'}</h3>
-            <p className="text-sm text-muted-foreground">
-              {isRTL ? 'يجب عليك تسجيل الدخول لإكمال عملية الشراء' : 'You must be logged in to complete a purchase'}
-            </p>
-            <Button className="btn-cta" asChild>
-              <a href="/login">{isRTL ? 'تسجيل الدخول' : 'Login'}</a>
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
+  // No auth guard — guest checkout is supported
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
