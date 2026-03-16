@@ -1407,6 +1407,15 @@ const CourseLearn: React.FC = () => {
         </aside>
       </div>
 
+      {/* Review Prompt Modal */}
+      {course && isEnrolled && user && (
+        <ReviewPromptModal
+          courseId={course.id}
+          progressPercentage={progressPercentage}
+          isEnrolled={isEnrolled}
+        />
+      )}
+
       {/* Purchase Encouragement Modal */}
       {course && !isEnrolled && (
         <PurchaseEncouragementModal
