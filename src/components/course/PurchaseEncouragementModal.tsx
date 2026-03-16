@@ -120,7 +120,7 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
                   onClick={onBuyNow}
                 >
                   <ShoppingCart className="w-5 h-5 me-2" />
-                  {isRTL ? 'اشترِ الآن' : 'Buy Now'}
+                  {isRTL ? 'اشترك الآن' : 'Buy Now'}
                 </Button>
                 <button
                   onClick={onClose}
