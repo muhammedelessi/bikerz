@@ -35,7 +35,10 @@ export function useTapPayment(): UseTapPaymentReturn {
 
   const submitPayment = useCallback(
     async (config: TapPaymentConfig) => {
-      if (!session?.access_token) {
+      // Get fresh session - for guest checkout, the session is created just before this call
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (!currentSession?.access_token) {
         setError('Please sign in to make a payment');
         return;
       }
