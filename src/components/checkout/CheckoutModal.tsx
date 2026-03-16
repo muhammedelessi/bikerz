@@ -573,7 +573,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[520px] max-h-[92vh] bg-card border-2 border-border shadow-2xl p-0 overflow-hidden flex flex-col mx-4">
+      <DialogContent className="sm:max-w-[520px] w-full max-w-full max-h-[100dvh] sm:max-h-[92vh] bg-card border-0 sm:border-2 sm:border-border shadow-2xl p-0 overflow-hidden flex flex-col rounded-none sm:rounded-lg fixed inset-0 sm:inset-auto sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%]">
         {/* Header */}
         <div className="bg-muted/30 p-4 sm:p-5 border-b-2 border-border flex-shrink-0">
           <DialogHeader>
@@ -643,7 +643,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-5 overflow-y-auto flex-1 min-h-0">
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0">
           {paymentStatus === 'failed' ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -1044,7 +1044,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         {/* Footer */}
         {paymentStatus !== 'failed' && (
-          <div className="p-4 sm:p-5 border-t-2 border-border flex-shrink-0 space-y-2">
+          <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-5 border-t-2 border-border flex-shrink-0 space-y-2">
             <div className="flex gap-2">
               {currentStep !== 'profile' && (
                 <Button
