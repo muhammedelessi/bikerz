@@ -201,7 +201,7 @@ const AdminCourseReviews: React.FC = () => {
                 <div className="flex justify-center mt-1">
                   <StarRating rating={avgRating} size="sm" />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Average Rating</p>
+                <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'متوسط التقييم' : 'Average Rating'}</p>
               </div>
             </CardContent>
           </Card>
