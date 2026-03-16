@@ -199,7 +199,7 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
         </div>
 
         {/* Rating Summary */}
-        {reviews.length > 0 && (
+        {totalCount > 0 && (
           <div className="card-premium p-4 sm:p-6 mb-6 sm:mb-8">
             <div className="flex flex-col sm:flex-row gap-6 sm:gap-10">
               {/* Average */}
