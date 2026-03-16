@@ -5,7 +5,7 @@ export type CurrencyCode =
   | 'SAR' | 'AED' | 'KWD' | 'BHD' | 'QAR' | 'OMR' | 'JOD'
   | 'EGP' | 'IQD' | 'SYP' | 'LBP' | 'YER' | 'LYD' | 'TND'
   | 'DZD' | 'MAD' | 'SDG' | 'SOS' | 'MRU' | 'KMF' | 'DJF'
-  | 'ILS' | 'USD';
+  | 'ILS' | 'USD' | 'GBP';
 
 interface CurrencyMeta {
   symbol: string;
