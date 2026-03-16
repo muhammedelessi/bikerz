@@ -228,7 +228,7 @@ const AdminCourseReviews: React.FC = () => {
         {/* Rating Breakdown */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Rating Breakdown</CardTitle>
+            <CardTitle className="text-base">{isRTL ? 'توزيع التقييمات' : 'Rating Breakdown'}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
