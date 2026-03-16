@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface PurchaseData {
   firstName: string;
@@ -10,6 +10,7 @@ interface PurchaseData {
   countryFlag: string;
   courseName: string;
   courseNameAr: string;
+  courseId: string | null;
   thumbnail: string | null;
   minutesAgo: number;
 }
@@ -22,18 +23,19 @@ const COUNTRY_FLAGS: Record<string, string> = {
 };
 
 const DUMMY_PURCHASES: PurchaseData[] = [
-  { firstName: 'Ahmed', firstNameAr: 'أحمد', countryFlag: '🇸🇦', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 12 },
-  { firstName: 'Mohammed', firstNameAr: 'محمد', countryFlag: '🇦🇪', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 23 },
-  { firstName: 'Khalid', firstNameAr: 'خالد', countryFlag: '🇰🇼', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 37 },
-  { firstName: 'Omar', firstNameAr: 'عمر', countryFlag: '🇪🇬', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 45 },
-  { firstName: 'Sultan', firstNameAr: 'سلطان', countryFlag: '🇧🇭', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 58 },
-  { firstName: 'Faisal', firstNameAr: 'فيصل', countryFlag: '🇶🇦', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 72 },
-  { firstName: 'Nasser', firstNameAr: 'ناصر', countryFlag: '🇴🇲', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 90 },
-  { firstName: 'Youssef', firstNameAr: 'يوسف', countryFlag: '🇲🇦', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', thumbnail: null, minutesAgo: 110 },
+  { firstName: 'Ahmed', firstNameAr: 'أحمد', countryFlag: '🇸🇦', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', courseId: null, thumbnail: null, minutesAgo: 12 },
+  { firstName: 'Mohammed', firstNameAr: 'محمد', countryFlag: '🇦🇪', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', courseId: null, thumbnail: null, minutesAgo: 23 },
+  { firstName: 'Khalid', firstNameAr: 'خالد', countryFlag: '🇰🇼', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', courseId: null, thumbnail: null, minutesAgo: 37 },
+  { firstName: 'Omar', firstNameAr: 'عمر', countryFlag: '🇪🇬', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', courseId: null, thumbnail: null, minutesAgo: 45 },
+  { firstName: 'Sultan', firstNameAr: 'سلطان', countryFlag: '🇧🇭', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', courseId: null, thumbnail: null, minutesAgo: 58 },
+  { firstName: 'Faisal', firstNameAr: 'فيصل', countryFlag: '🇶🇦', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', courseId: null, thumbnail: null, minutesAgo: 72 },
+  { firstName: 'Nasser', firstNameAr: 'ناصر', countryFlag: '🇴🇲', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', courseId: null, thumbnail: null, minutesAgo: 90 },
+  { firstName: 'Youssef', firstNameAr: 'يوسف', countryFlag: '🇲🇦', courseName: 'Bikerz Behavior Course', courseNameAr: 'دورة سلوك البايكرز', courseId: null, thumbnail: null, minutesAgo: 110 },
 ];
 
 const SHOW_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-const DISMISS_AFTER_MS = 6000; // 6 seconds
+const INITIAL_DELAY_MS = 25000; // 25 seconds
+const DISMISS_AFTER_MS = 10000; // 10 seconds
 
 function formatTimeAgo(minutes: number, isRTL: boolean): string {
   if (isRTL) {
@@ -51,6 +53,7 @@ function formatTimeAgo(minutes: number, isRTL: boolean): string {
 const SocialProofNotification: React.FC = () => {
   const { isRTL } = useLanguage();
   const location = useLocation();
+  const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
   const [current, setCurrent] = useState<PurchaseData | null>(null);
   const [purchases, setPurchases] = useState<PurchaseData[]>([]);
@@ -84,7 +87,6 @@ const SocialProofNotification: React.FC = () => {
           const created = new Date(charge.created_at).getTime();
           const minsAgo = Math.max(1, Math.floor((now - created) / 60000));
 
-          // Pick a random flag for variety since we don't store country on charges
           const flags = Object.values(COUNTRY_FLAGS);
           const flag = flags[Math.floor(Math.random() * flags.length)];
 
@@ -96,6 +98,7 @@ const SocialProofNotification: React.FC = () => {
             countryFlag: flag,
             courseName: course?.title || 'Bikerz Course',
             courseNameAr: course?.title_ar || 'دورة بايكرز',
+            courseId: charge.course_id || null,
             thumbnail: course?.thumbnail_url || null,
             minutesAgo: minsAgo,
           };
@@ -133,10 +136,10 @@ const SocialProofNotification: React.FC = () => {
   useEffect(() => {
     if (isAdmin || purchases.length === 0) return;
 
-    // Show first one after a short delay
+    // Show first one after ~25 seconds
     const initialTimeout = setTimeout(() => {
       showNext();
-    }, 15000); // 15 second initial delay
+    }, INITIAL_DELAY_MS);
 
     intervalRef.current = setInterval(() => {
       showNext();
@@ -149,7 +152,16 @@ const SocialProofNotification: React.FC = () => {
     };
   }, [purchases, showNext, isAdmin]);
 
-  const handleClose = () => {
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setVisible(false);
+    clearTimeout(dismissRef.current);
+  };
+
+  const handleClick = () => {
+    if (current?.courseId) {
+      navigate(`/courses/${current.courseId}`);
+    }
     setVisible(false);
     clearTimeout(dismissRef.current);
   };
@@ -170,7 +182,11 @@ const SocialProofNotification: React.FC = () => {
       role="status"
       aria-live="polite"
     >
-      <div dir={isRTL ? 'rtl' : 'ltr'} className="flex items-center gap-3 bg-card border border-border rounded-xl shadow-lg px-4 py-3 max-w-[340px] sm:max-w-[380px] relative group">
+      <div
+        dir={isRTL ? 'rtl' : 'ltr'}
+        onClick={handleClick}
+        className="flex items-center gap-3 bg-card border border-border rounded-xl shadow-lg px-4 py-3 max-w-[340px] sm:max-w-[380px] relative group cursor-pointer hover:shadow-xl hover:border-primary/30 transition-all"
+      >
         {/* Thumbnail */}
         {current.thumbnail ? (
           <img
