@@ -1147,7 +1147,12 @@ const CourseDetail: React.FC = () => {
                   onClick={() => user ? setShowCheckout(true) : setShowGuestSignup(true)}
                 >
                   <ShoppingCart className="w-4 h-4 me-1.5" />
-                  {user ? (isRTL ? 'اشترِ الآن' : 'Buy Now') : (isRTL ? 'احصل على الوصول' : 'Get Access')}
+                  {(() => {
+                    const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                    return isRTL
+                      ? `احصل على الدورة الآن – ${info.finalPrice} ${info.currency}`
+                      : `Get the course now – ${info.finalPrice} ${info.currency}`;
+                  })()}
                 </Button>
               )}
             </div>
