@@ -448,6 +448,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Submit payment
   const handleSubmitPayment = async (method: PaymentMethod = 'card') => {
     if (!isPaymentReady) return;
+    onPaymentStarted?.();
 
     // Compose address from billing fields
     const composedAddress = [city, country, postalCode].filter(Boolean).join(', ');
