@@ -976,10 +976,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         {isRTL ? 'اختر طريقة الدفع' : 'Choose Payment Method'}
                       </p>
 
-                      {/* TODO: Re-enable Apple Pay and Google Pay when ready */}
-                      {/* Apple Pay - temporarily hidden */}
-                      {/* Google Pay - temporarily hidden */}
-
                       {/* Card payment */}
                       <Button
                         className="w-full h-12 rounded-lg"
@@ -995,7 +991,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         ) : (
                           <>
                             <CreditCard className="w-4 h-4 me-2" />
-                            <span className="me-2">{isRTL ? 'بطاقة ائتمان' : 'Credit / Debit Card'}</span>
+                            <span className="me-2">{isRTL ? 'بطاقة ائتمان / مدى' : 'Credit / Debit Card'}</span>
                             <div className="flex items-center gap-1.5 ms-auto">
                               <VisaIcon light />
                               <MastercardIcon />
@@ -1003,6 +999,32 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           </>
                         )}
                       </Button>
+
+                      {/* Apple Pay */}
+                      {supportsApplePay && (
+                        <Button
+                          className="w-full h-12 rounded-lg bg-black hover:bg-black/90 text-white border-0"
+                          variant="outline"
+                          onClick={() => handleSubmitPayment('apple_pay')}
+                          disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady}
+                        >
+                          <ApplePayIcon className="h-5 w-auto me-2" />
+                          <span>{isRTL ? 'الدفع عبر Apple Pay' : 'Pay with Apple Pay'}</span>
+                        </Button>
+                      )}
+
+                      {/* Google Pay */}
+                      {supportsGooglePay && (
+                        <Button
+                          className="w-full h-12 rounded-lg"
+                          variant="outline"
+                          onClick={() => handleSubmitPayment('google_pay')}
+                          disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady}
+                        >
+                          <GooglePayIcon className="h-5 w-auto me-2" />
+                          <span>{isRTL ? 'الدفع عبر Google Pay' : 'Pay with Google Pay'}</span>
+                        </Button>
+                      )}
                     </div>
                   )}
 
