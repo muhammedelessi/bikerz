@@ -411,7 +411,7 @@ const AdminCourseReviews: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>Date</Label>
+              <Label>{isRTL ? 'التاريخ' : 'Date'}</Label>
               <Input
                 type="date"
                 value={fakeDate}
