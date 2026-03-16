@@ -437,8 +437,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const handleSubmitPayment = async (method: PaymentMethod = 'card') => {
     if (!isPaymentReady) return;
 
-   // Compose address from billing fields
+    // Compose address from billing fields
     const composedAddress = [city, country, postalCode].filter(Boolean).join(', ');
+
+    // For guest users: auto-create account first
+    let currentUserId = user?.id;
+    if (!currentUserId) {
+      const newUserId = await handleGuestSignup();
+      if (!newUserId) return; // signup failed
+      currentUserId = newUserId;
+    }
 
     // If 100% discount, enroll directly
     if (discountedPrice <= 0 && appliedCoupon) {
@@ -446,7 +454,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         resetPayment();
         const { error: enrollError } = await supabase
           .from('course_enrollments')
-          .insert({ user_id: user!.id, course_id: course.id });
+          .insert({ user_id: currentUserId, course_id: course.id });
 
         if (enrollError && !enrollError.message.includes('duplicate')) {
           throw new Error(enrollError.message);
@@ -454,7 +462,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         await supabase.rpc('increment_coupon_usage', {
           p_coupon_id: appliedCoupon.coupon_id,
-          p_user_id: user!.id,
+          p_user_id: currentUserId,
           p_course_id: course.id,
           p_order_id: null,
           p_charge_id: null,
@@ -465,7 +473,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         // Send GHL webhook for free enrollment with per-course tracking
         sendCourseStatus(
-          user!.id,
+          currentUserId,
           course.id,
           course.title,
           'purchased',
@@ -500,7 +508,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     // Send GHL webhook with "pending" status when initiating payment
     sendCourseStatus(
-      user!.id,
+      currentUserId,
       course.id,
       course.title,
       'pending',
