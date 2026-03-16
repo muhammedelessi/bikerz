@@ -207,7 +207,7 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
                 <span className="text-4xl sm:text-5xl font-black text-foreground">{avgRating.toFixed(1)}</span>
                 <StarRating rating={avgRating} size="md" />
                 <span className="text-xs text-muted-foreground mt-1">
-                  {reviews.length} {isRTL ? 'تقييم' : 'reviews'}
+                  {totalCount} {isRTL ? 'تقييم' : 'reviews'}
                 </span>
               </div>
 
