@@ -264,8 +264,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const isPaymentReady = isProfileValid && isBillingValid && (user ? isReady : true);
 
   // Save profile data to DB
-  const saveProfileData = async () => {
-    if (!user?.id) return false;
+  const saveProfileData = async (userId?: string) => {
+    const targetUserId = userId || user?.id;
+    if (!targetUserId) return false;
     setProfileSaving(true);
     try {
       const { error } = await supabase
@@ -278,7 +279,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           postal_code: postalCode.trim() || null,
           profile_complete: true,
         })
-        .eq('user_id', user.id);
+        .eq('user_id', targetUserId);
 
       if (error) throw error;
       return true;
@@ -287,6 +288,59 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return false;
     } finally {
       setProfileSaving(false);
+    }
+  };
+
+  // Generate a random password for guest signup
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    return Array.from(array, b => chars[b % chars.length]).join('');
+  };
+
+  // Auto-create account for guest users
+  const handleGuestSignup = async (): Promise<string | null> => {
+    setGuestSigningUp(true);
+    try {
+      const password = generatePassword();
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { full_name: fullName.trim() },
+        },
+      });
+
+      if (error) {
+        // If user already exists, try signing in or prompt
+        if (error.message?.includes('already registered') || error.message?.includes('already exists')) {
+          toast.error(isRTL 
+            ? 'هذا البريد مسجل بالفعل. يرجى تسجيل الدخول أولاً.' 
+            : 'This email is already registered. Please log in first.');
+          return null;
+        }
+        throw error;
+      }
+
+      if (!data.user) {
+        throw new Error('Account creation failed');
+      }
+
+      // Wait a moment for the profile trigger to create the profile row
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Save profile data using the new user ID
+      await saveProfileData(data.user.id);
+
+      return data.user.id;
+    } catch (err: any) {
+      console.error('Guest signup error:', err);
+      toast.error(err.message || (isRTL ? 'فشل إنشاء الحساب' : 'Failed to create account'));
+      return null;
+    } finally {
+      setGuestSigningUp(false);
     }
   };
 
