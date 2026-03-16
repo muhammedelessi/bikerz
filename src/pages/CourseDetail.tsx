@@ -781,9 +781,10 @@ const CourseDetail: React.FC = () => {
                           <Zap className="w-5 h-5 me-2" />
                           {(() => {
                             const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                            const sym = getCurrencySymbol(info.currency, isRTL);
                             return isRTL
-                              ? `اشترك الآن – ${info.finalPrice} ${info.currency}`
-                              : `Buy now – ${info.finalPrice} ${info.currency}`;
+                              ? `اشترك الآن – ${info.finalPrice} ${sym}`
+                              : `Buy now – ${info.finalPrice} ${sym}`;
                           })()}
                         </Button>
                       )}
