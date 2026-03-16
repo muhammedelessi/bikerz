@@ -399,20 +399,24 @@ const CourseDetail: React.FC = () => {
                       {isRTL ? 'أكمل التعلم' : 'Resume'}
                     </Link>
                   </Button>
-                ) : !isEnrolled && user ? (
+                ) : !isEnrolled ? (
                   course.price === 0 ? (
-                    <Button size="sm" className="btn-cta h-9 text-sm" onClick={() => enrollMutation.mutate()} disabled={enrollMutation.isPending}>
-                      {isRTL ? 'سجّل مجاناً' : 'Enroll Free'}
-                    </Button>
+                    user ? (
+                      <Button size="sm" className="btn-cta h-9 text-sm" onClick={() => enrollMutation.mutate()} disabled={enrollMutation.isPending}>
+                        {isRTL ? 'سجّل مجاناً' : 'Enroll Free'}
+                      </Button>
+                    ) : (
+                      <Button size="sm" className="btn-cta h-9 text-sm" asChild>
+                        <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
+                          {isRTL ? 'سجّل مجاناً' : 'Enroll Free'}
+                        </Link>
+                      </Button>
+                    )
                   ) : (
                     <Button size="sm" className="btn-cta h-9 text-sm" onClick={() => setShowCheckout(true)}>
-                      {isRTL ? 'اشترِ الآن' : 'Buy Now'}
+                      {user ? (isRTL ? 'اشترِ الآن' : 'Buy Now') : (isRTL ? 'احصل على الوصول الفوري' : 'Get Instant Access')}
                     </Button>
                   )
-                ) : !user ? (
-                  <Button size="sm" className="btn-cta h-9 text-sm" asChild>
-                    <Link to="/login">{isRTL ? 'تسجيل الدخول' : 'Login'}</Link>
-                  </Button>
                 ) : null}
               </div>
             </div>
@@ -610,8 +614,8 @@ const CourseDetail: React.FC = () => {
                       </div>
 
                       {/* CTA */}
-                      {user ? (
-                        course.price === 0 ? (
+                      {course.price === 0 ? (
+                        user ? (
                           <Button
                             className="w-full btn-cta h-12 text-base"
                             onClick={() => enrollMutation.mutate()}
@@ -623,25 +627,34 @@ const CourseDetail: React.FC = () => {
                               : t('courses.enrollForFree')}
                           </Button>
                         ) : (
-                          <>
-                            <Button
-                              className="w-full btn-cta h-12 text-base"
-                              onClick={() => setShowCheckout(true)}
-                            >
-                              <ShoppingCart className="w-5 h-5 me-2" />
-                              {t('courses.buyNow')}
-                            </Button>
-                          </>
-                        )
-                      ) : (
-                        <>
                           <Button className="w-full btn-cta h-12 text-base" asChild>
                             <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
-                              {t('courses.loginToPurchase')}
+                              <Zap className="w-5 h-5 me-2" />
+                              {t('courses.enrollForFree')}
                             </Link>
                           </Button>
-                          
-                        </>
+                        )
+                      ) : user ? (
+                        <Button
+                          className="w-full btn-cta h-12 text-base"
+                          onClick={() => setShowCheckout(true)}
+                        >
+                          <ShoppingCart className="w-5 h-5 me-2" />
+                          {t('courses.buyNow')}
+                        </Button>
+                      ) : (
+                        <Button
+                          className="w-full btn-cta h-12 text-base"
+                          onClick={() => setShowCheckout(true)}
+                        >
+                          <Zap className="w-5 h-5 me-2" />
+                          {(() => {
+                            const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                            return isRTL
+                              ? `احصل على الوصول الفوري – ${info.finalPrice} ${info.currency}`
+                              : `Get Instant Access – ${info.finalPrice} ${info.currency}`;
+                          })()}
+                        </Button>
                       )}
 
                       {/* Course includes */}

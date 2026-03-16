@@ -39,7 +39,7 @@ import {
   XCircle,
   User,
   MapPin,
-  Lock,
+  
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trackInitiateCheckout, trackAddPaymentInfo } from '@/utils/metaPixel';
@@ -95,7 +95,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { currencyCode, symbol, symbolAr, convertPrice, formatPrice, calculateTax, calculateTotalWithTax, getSarTotalWithVat, vatLabel, vatLabelAr, isSAR, getCoursePriceInfo } = useCurrency();
-  const { user, profile } = useAuth();
+  const { user, profile, session } = useAuth();
   const navigate = useNavigate();
   const {
     status: paymentStatus,
@@ -106,6 +106,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   } = useTapPayment();
   const { sendCourseStatus } = useGHLFormWebhook();
   const { supportsApplePay, supportsGooglePay } = usePaymentMethodDetection();
+  const [guestSigningUp, setGuestSigningUp] = useState(false);
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('profile');
   const [profileIncomplete, setProfileIncomplete] = useState(false);
@@ -149,9 +150,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       : `-${formatPrice(appliedCoupon.discount_amount, isRTL)}`
     : '';
 
-  // Pre-fill from profile and check bike info
+  // Pre-fill from profile (only for logged-in users)
   useEffect(() => {
     if (!open) return;
+    if (!user) return; // Guest users fill the form themselves
     if (profile?.full_name) setFullName(profile.full_name);
     if (user?.email) setEmail(user.email);
     if (profile?.phone) setPhone(profile.phone || '');
@@ -258,11 +260,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const isProfileValid = fullName.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && /^[0-9+\s()-]{7,15}$/.test(phone);
   const isBillingValid = city.trim().length > 0 && !!country;
-  const isPaymentReady = isProfileValid && isBillingValid && isReady;
+  // For guest users, isReady won't be true yet - we'll handle signup before payment
+  const isPaymentReady = isProfileValid && isBillingValid && (user ? isReady : true);
 
   // Save profile data to DB
-  const saveProfileData = async () => {
-    if (!user?.id) return false;
+  const saveProfileData = async (userId?: string) => {
+    const targetUserId = userId || user?.id;
+    if (!targetUserId) return false;
     setProfileSaving(true);
     try {
       const { error } = await supabase
@@ -275,7 +279,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           postal_code: postalCode.trim() || null,
           profile_complete: true,
         })
-        .eq('user_id', user.id);
+        .eq('user_id', targetUserId);
 
       if (error) throw error;
       return true;
@@ -284,6 +288,64 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return false;
     } finally {
       setProfileSaving(false);
+    }
+  };
+
+  // Generate a random password for guest signup
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    return Array.from(array, b => chars[b % chars.length]).join('');
+  };
+
+  // Auto-create account for guest users
+  const handleGuestSignup = async (): Promise<string | null> => {
+    setGuestSigningUp(true);
+    try {
+      const password = generatePassword();
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { full_name: fullName.trim() },
+        },
+      });
+
+      if (error) {
+        // If user already exists, try signing in or prompt
+        if (error.message?.includes('already registered') || error.message?.includes('already exists')) {
+          toast.error(isRTL 
+            ? 'هذا البريد مسجل بالفعل. يرجى تسجيل الدخول أولاً.' 
+            : 'This email is already registered. Please log in first.');
+          return null;
+        }
+        throw error;
+      }
+
+      if (!data.user) {
+        throw new Error('Account creation failed');
+      }
+
+      // Wait a moment for the profile trigger to create the profile row
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Save profile data using the new user ID
+      await saveProfileData(data.user.id);
+
+      // Send password reset email so user can set their own password
+      supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/forgot-password`,
+      }).catch(() => { /* silent - non-critical */ });
+
+      return data.user.id;
+    } catch (err: any) {
+      console.error('Guest signup error:', err);
+      toast.error(err.message || (isRTL ? 'فشل إنشاء الحساب' : 'Failed to create account'));
+      return null;
+    } finally {
+      setGuestSigningUp(false);
     }
   };
 
@@ -306,14 +368,20 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setCurrentStep('billing');
     } else if (currentStep === 'billing') {
       if (!validateBilling()) return;
-      const saved = await saveProfileData();
-      if (!saved) return;
-      // Check if profile is incomplete for reminder
-      const incomplete = await checkProfileCompleteness();
-      if (incomplete) {
-        setProfileIncomplete(true);
-        setCurrentStep('profile-reminder');
+      // For logged-in users, save profile immediately
+      if (user) {
+        const saved = await saveProfileData();
+        if (!saved) return;
+        // Check if profile is incomplete for reminder
+        const incomplete = await checkProfileCompleteness();
+        if (incomplete) {
+          setProfileIncomplete(true);
+          setCurrentStep('profile-reminder');
+        } else {
+          setCurrentStep('payment');
+        }
       } else {
+        // Guest users: skip profile reminder, go straight to payment
         setCurrentStep('payment');
       }
     } else if (currentStep === 'profile-reminder') {
@@ -374,8 +442,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const handleSubmitPayment = async (method: PaymentMethod = 'card') => {
     if (!isPaymentReady) return;
 
-   // Compose address from billing fields
+    // Compose address from billing fields
     const composedAddress = [city, country, postalCode].filter(Boolean).join(', ');
+
+    // For guest users: auto-create account first
+    let currentUserId = user?.id;
+    if (!currentUserId) {
+      const newUserId = await handleGuestSignup();
+      if (!newUserId) return; // signup failed
+      currentUserId = newUserId;
+    }
 
     // If 100% discount, enroll directly
     if (discountedPrice <= 0 && appliedCoupon) {
@@ -383,7 +459,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         resetPayment();
         const { error: enrollError } = await supabase
           .from('course_enrollments')
-          .insert({ user_id: user!.id, course_id: course.id });
+          .insert({ user_id: currentUserId, course_id: course.id });
 
         if (enrollError && !enrollError.message.includes('duplicate')) {
           throw new Error(enrollError.message);
@@ -391,7 +467,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         await supabase.rpc('increment_coupon_usage', {
           p_coupon_id: appliedCoupon.coupon_id,
-          p_user_id: user!.id,
+          p_user_id: currentUserId,
           p_course_id: course.id,
           p_order_id: null,
           p_charge_id: null,
@@ -402,7 +478,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         // Send GHL webhook for free enrollment with per-course tracking
         sendCourseStatus(
-          user!.id,
+          currentUserId,
           course.id,
           course.title,
           'purchased',
@@ -437,7 +513,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     // Send GHL webhook with "pending" status when initiating payment
     sendCourseStatus(
-      user!.id,
+      currentUserId,
       course.id,
       course.title,
       'pending',
@@ -488,25 +564,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     );
   };
 
-  // Auth guard
-  if (!user) {
-    return (
-      <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-[420px]">
-          <div className="flex flex-col items-center py-8 text-center space-y-4">
-            <Lock className="w-12 h-12 text-muted-foreground" />
-            <h3 className="text-lg font-bold">{isRTL ? 'يجب تسجيل الدخول أولاً' : 'Login Required'}</h3>
-            <p className="text-sm text-muted-foreground">
-              {isRTL ? 'يجب عليك تسجيل الدخول لإكمال عملية الشراء' : 'You must be logged in to complete a purchase'}
-            </p>
-            <Button className="btn-cta" asChild>
-              <a href="/login">{isRTL ? 'تسجيل الدخول' : 'Login'}</a>
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
+  // No auth guard — guest checkout is supported
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -640,7 +698,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
                       placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
                       className={errors.email ? 'border-destructive' : ''}
+                      disabled={!!user} // Locked for logged-in users
                     />
+                    {!user && (
+                      <p className="text-[11px] text-muted-foreground">
+                        {isRTL ? 'سيتم إنشاء حساب لك تلقائياً باستخدام هذا البريد' : 'An account will be created automatically with this email'}
+                      </p>
+                    )}
                     {renderFieldError('email')}
                   </div>
 
@@ -914,14 +978,23 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         className="w-full h-12 rounded-lg"
                         variant="outline"
                         onClick={() => handleSubmitPayment('card')}
-                        disabled={paymentStatus === 'processing' || !isPaymentReady}
+                        disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady}
                       >
-                        <CreditCard className="w-4 h-4 me-2" />
-                        <span className="me-2">{isRTL ? 'بطاقة ائتمان' : 'Credit / Debit Card'}</span>
-                        <div className="flex items-center gap-1.5 ms-auto">
-                          <VisaIcon light />
-                          <MastercardIcon />
-                        </div>
+                        {guestSigningUp ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin me-2" />
+                            <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="w-4 h-4 me-2" />
+                            <span className="me-2">{isRTL ? 'بطاقة ائتمان' : 'Credit / Debit Card'}</span>
+                            <div className="flex items-center gap-1.5 ms-auto">
+                              <VisaIcon light />
+                              <MastercardIcon />
+                            </div>
+                          </>
+                        )}
                       </Button>
                     </div>
                   )}

@@ -30,11 +30,15 @@ export function useTapPayment(): UseTapPaymentReturn {
   const [status, setStatus] = useState<PaymentStatus>('idle');
   const [error, setError] = useState<string | null>(null);
 
-  const isReady = status === 'idle' && !!session?.access_token;
+  // For guest checkout, session may not exist when hook mounts but will be available by payment time
+  const isReady = status === 'idle';
 
   const submitPayment = useCallback(
     async (config: TapPaymentConfig) => {
-      if (!session?.access_token) {
+      // Get fresh session - for guest checkout, the session is created just before this call
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (!currentSession?.access_token) {
         setError('Please sign in to make a payment');
         return;
       }
@@ -43,7 +47,7 @@ export function useTapPayment(): UseTapPaymentReturn {
       setError(null);
 
       try {
-        const idempotencyKey = `${config.courseId}_${session.user.id}_${Date.now()}`;
+        const idempotencyKey = `${config.courseId}_${currentSession.user.id}_${Date.now()}`;
 
         // Server computes the price — client only sends identifiers
         const { data, error: fnError } = await supabase.functions.invoke('tap-create-charge', {
@@ -83,7 +87,7 @@ export function useTapPayment(): UseTapPaymentReturn {
         setStatus('failed');
       }
     },
-    [session]
+    [detectedCountry]
   );
 
   const reset = useCallback(() => {
