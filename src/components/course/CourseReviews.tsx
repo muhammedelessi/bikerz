@@ -82,9 +82,32 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
   // Check if user already reviewed
   const userHasReview = user && reviews.some(r => r.user_id === user.id && !r.is_fake);
 
-  // Calculate stats
-  const avgRating = reviews.length > 0
+  // Fetch base rating from course
+  const { data: courseBase } = useQuery({
+    queryKey: ['course-base-rating', courseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('courses')
+        .select('base_review_count, base_rating')
+        .eq('id', courseId)
+        .single();
+      return {
+        baseCount: (data as any)?.base_review_count || 0,
+        baseRating: Number((data as any)?.base_rating) || 0,
+      };
+    },
+  });
+
+  const baseCount = courseBase?.baseCount || 0;
+  const baseRating = courseBase?.baseRating || 0;
+
+  // Calculate stats (combined with base)
+  const realAvg = reviews.length > 0
     ? reviews.reduce((sum, r) => sum + Number(r.rating), 0) / reviews.length
+    : 0;
+  const totalCount = reviews.length + baseCount;
+  const avgRating = totalCount > 0
+    ? ((realAvg * reviews.length) + (baseRating * baseCount)) / totalCount
     : 0;
 
   const ratingBreakdown = [5, 4, 3, 2, 1].map(star => ({
@@ -160,7 +183,7 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
               {isRTL ? 'التقييمات والمراجعات' : 'Ratings & Reviews'}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {reviews.length} {isRTL ? 'تقييم' : reviews.length === 1 ? 'review' : 'reviews'}
+              {totalCount} {isRTL ? 'تقييم' : totalCount === 1 ? 'review' : 'reviews'}
             </p>
           </div>
           {isEnrolled && !userHasReview && user && (
@@ -176,7 +199,7 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
         </div>
 
         {/* Rating Summary */}
-        {reviews.length > 0 && (
+        {totalCount > 0 && (
           <div className="card-premium p-4 sm:p-6 mb-6 sm:mb-8">
             <div className="flex flex-col sm:flex-row gap-6 sm:gap-10">
               {/* Average */}
@@ -184,7 +207,7 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
                 <span className="text-4xl sm:text-5xl font-black text-foreground">{avgRating.toFixed(1)}</span>
                 <StarRating rating={avgRating} size="md" />
                 <span className="text-xs text-muted-foreground mt-1">
-                  {reviews.length} {isRTL ? 'تقييم' : 'reviews'}
+                  {totalCount} {isRTL ? 'تقييم' : 'reviews'}
                 </span>
               </div>
 
