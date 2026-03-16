@@ -121,6 +121,17 @@ const CourseDetail: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // IntersectionObserver for sticky bottom bar on mobile
+  useEffect(() => {
+    if (!ctaCardRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowStickyBottom(!entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    observer.observe(ctaCardRef.current);
+    return () => observer.disconnect();
+  }, [course]);
+
 
   // Fetch course details
   const { data: course, isLoading: courseLoading } = useQuery({
