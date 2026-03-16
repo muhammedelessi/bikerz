@@ -105,6 +105,7 @@ const CourseDetail: React.FC = () => {
   const [showCheckout, setShowCheckout] = useState(false);
   const [showGuestSignup, setShowGuestSignup] = useState(false);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
+  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   const [paymentVerifying, setPaymentVerifying] = useState(false);
   const [previewVideoPlaying, setPreviewVideoPlaying] = useState(false);
