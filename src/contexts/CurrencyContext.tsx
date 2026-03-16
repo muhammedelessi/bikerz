@@ -36,6 +36,7 @@ const CURRENCY_META: Record<CurrencyCode, CurrencyMeta> = {
   DJF: { symbol: 'DJF', symbolAr: 'ف.ج' },
   ILS: { symbol: 'ILS', symbolAr: '₪' },
   USD: { symbol: 'USD', symbolAr: '$' },
+  GBP: { symbol: 'GBP', symbolAr: '£' },
 };
 
 const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
