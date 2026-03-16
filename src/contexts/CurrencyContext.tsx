@@ -53,7 +53,7 @@ const FALLBACK_RATES: Record<CurrencyCode, number> = {
   JOD: 0.189, EGP: 13.97, IQD: 348.89, SYP: 30.37, LBP: 23867,
   YER: 63.58, LYD: 1.694, TND: 0.782, DZD: 35.08, MAD: 2.511,
   SDG: 135.35, SOS: 152, MRU: 10.651, KMF: 114.55, DJF: 47.39,
-  ILS: 0.837, USD: 0.267,
+  ILS: 0.837, USD: 0.267, GBP: 0.211,
 };
 
 const VAT_RATE = 15; // Saudi VAT — server always charges 15%
