@@ -1084,6 +1084,7 @@ const CourseDetail: React.FC = () => {
               queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
               navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
             }}
+            onPaymentStarted={() => setIsPaymentProcessing(true)}
           />
           <GuestSignupModal
             open={showGuestSignup}
