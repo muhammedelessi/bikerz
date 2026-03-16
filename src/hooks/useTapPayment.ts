@@ -87,7 +87,7 @@ export function useTapPayment(): UseTapPaymentReturn {
         setStatus('failed');
       }
     },
-    [session]
+    [detectedCountry]
   );
 
   const reset = useCallback(() => {
