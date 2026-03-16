@@ -40,6 +40,7 @@ import GuestSignupModal from '@/components/checkout/GuestSignupModal';
 import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';
 import PaymentMethodIcons from '@/components/checkout/PaymentMethodIcons';
 import { trackViewContent } from '@/utils/metaPixel';
+import CourseReviews from '@/components/course/CourseReviews';
 
 
 interface Lesson {
@@ -1010,6 +1011,9 @@ const CourseDetail: React.FC = () => {
             )}
           </motion.div>
         </section>
+
+        {/* Reviews Section */}
+        <CourseReviews courseId={id!} isEnrolled={isEnrolled} />
       </main>
 
       <Footer />

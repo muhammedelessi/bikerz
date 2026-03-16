@@ -61,6 +61,7 @@ import {
   ImageIcon,
   X,
   Loader2,
+  Star,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -631,6 +632,12 @@ const AdminCourses: React.FC = () => {
                             <Link to={`/courses/${course.id}`} target="_blank">
                               <Eye className="w-4 h-4 me-2" />
                               {isRTL ? 'معاينة' : 'Preview'}
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link to={`/admin/courses/${course.id}/reviews`}>
+                              <Star className="w-4 h-4 me-2" />
+                              {isRTL ? 'التقييمات والمراجعات' : 'Reviews & Ratings'}
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem>
