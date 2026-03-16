@@ -41,6 +41,7 @@ import AdminSupport from "./pages/admin/AdminSupport";
 import AdminLessonDiscussions from "./pages/admin/AdminLessonDiscussions";
 import AdminContent from "./pages/admin/AdminContent";
 import AdminCoupons from "./pages/admin/AdminCoupons";
+import AdminCourseReviews from "./pages/admin/AdminCourseReviews";
 
 const queryClient = new QueryClient();
 
