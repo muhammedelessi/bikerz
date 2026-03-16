@@ -459,7 +459,7 @@ const CourseDetail: React.FC = () => {
                       </Button>
                     )
                   ) : (
-                    <Button size="sm" className="btn-cta h-9 text-sm" onClick={() => user ? setShowCheckout(true) : setShowGuestSignup(true)}>
+                    <Button size="sm" className="btn-cta h-9 text-sm hidden lg:inline-flex" onClick={() => user ? setShowCheckout(true) : setShowGuestSignup(true)}>
                       {(() => {
                         const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
                         return isRTL
