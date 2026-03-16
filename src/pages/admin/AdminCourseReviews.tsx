@@ -420,12 +420,12 @@ const AdminCourseReviews: React.FC = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowAddFake(false)}>Cancel</Button>
+            <Button variant="ghost" onClick={() => setShowAddFake(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
             <Button
               onClick={() => addFakeMutation.mutate()}
               disabled={addFakeMutation.isPending || !fakeName.trim()}
             >
-              {addFakeMutation.isPending ? 'Adding...' : 'Add Review'}
+              {addFakeMutation.isPending ? (isRTL ? 'جاري الإضافة...' : 'Adding...') : (isRTL ? 'إضافة التقييم' : 'Add Review')}
             </Button>
           </DialogFooter>
         </DialogContent>
