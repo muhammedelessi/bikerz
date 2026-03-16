@@ -915,8 +915,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   {/* Order Summary with Tax Breakdown */}
                   {(() => {
-                    const taxInfo = calculateTax(discountedPrice);
-                    const currencyLabel = isRTL ? symbolAr : symbol;
+                    // Tax computed directly on the already-converted local price
+                    const subtotal = discountedPrice;
+                    const tax = Math.ceil(subtotal * 0.15);
+                    const total = subtotal + tax;
                     return (
                       <div className="p-4 rounded-xl bg-muted/30 space-y-2">
                         <div className="flex justify-between text-sm">
@@ -937,30 +939,30 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         {/* Price breakdown */}
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">{isRTL ? 'المبلغ الأصلي' : 'Original Price'}</span>
-                          <span className="font-medium">{formatPrice(basePrice, isRTL)}</span>
+                          <span className="font-medium">{formatLocal(basePrice)}</span>
                         </div>
                         {promoApplied && appliedCoupon && (
                           <div className="flex justify-between text-sm text-primary">
                             <span>{isRTL ? 'الخصم' : 'Discount'} ({discountLabel})</span>
-                            <span>-{formatPrice(discountAmount, isRTL)}</span>
+                            <span>-{formatLocal(discountAmount)}</span>
                           </div>
                         )}
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">{isRTL ? 'المبلغ قبل الضريبة' : 'Subtotal (excl. tax)'}</span>
-                          <span className="font-medium">{taxInfo.subtotal} {currencyLabel}</span>
+                          <span className="font-medium">{subtotal} {currencyLabel}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">{isRTL ? vatLabelAr : vatLabel}</span>
-                          <span className="font-medium">{taxInfo.tax} {currencyLabel}</span>
+                          <span className="font-medium">{tax} {currencyLabel}</span>
                         </div>
                         <Separator />
                         <div className="flex justify-between font-bold">
                           <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
-                          <span className="text-primary">{taxInfo.total} {currencyLabel}</span>
+                          <span className="text-primary">{total} {currencyLabel}</span>
                         </div>
                         {!isSAR && (
                           <p className="text-[10px] text-muted-foreground text-center mt-1">
-                            {isRTL ? `* سيتم تحصيل المبلغ بالريال السعودي (${getSarTotalWithVat(discountedPrice)} ر.س)` : `* You will be charged in SAR (${getSarTotalWithVat(discountedPrice)} SAR)`}
+                            {isRTL ? `* سيتم تحصيل المبلغ بالريال السعودي (${getSarTotalWithVat(course.price)} ر.س)` : `* You will be charged in SAR (${getSarTotalWithVat(course.price)} SAR)`}
                           </p>
                         )}
                       </div>
