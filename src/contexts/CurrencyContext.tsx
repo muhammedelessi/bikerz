@@ -123,6 +123,8 @@ interface CurrencyContextType {
   isSAR: boolean;
   /** Check if a country-specific price exists for a course */
   hasCountryPrice: (courseId: string) => boolean;
+  /** Get the display symbol for a given CurrencyCode based on locale */
+  getCurrencySymbol: (code: CurrencyCode, isRTL?: boolean) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
