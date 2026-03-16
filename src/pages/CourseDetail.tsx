@@ -431,7 +431,7 @@ const CourseDetail: React.FC = () => {
         <section className="relative overflow-hidden">
           {/* Mobile: Full-width image block — clean, no overlays */}
           <div className="block lg:hidden">
-            <div className="relative w-full aspect-[16/9] bg-card">
+            <div className="relative w-full bg-card">
               <img
                 src={course.thumbnail_url || heroImage}
                 alt={courseTitle}
