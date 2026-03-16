@@ -429,28 +429,41 @@ const CourseDetail: React.FC = () => {
       <main className="pt-16 sm:pt-20 lg:pt-24">
         {/* Hero Section */}
         <section className="relative overflow-hidden">
-           <div className="absolute inset-0 h-[260px] sm:h-[420px] lg:h-[480px]">
+          {/* Mobile: Full-width image block (no overlay content) */}
+          <div className="block lg:hidden">
+            <div className="relative w-full aspect-[16/9] bg-card">
+              <img
+                src={course.thumbnail_url || heroImage}
+                alt={courseTitle}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/80" />
+            </div>
+          </div>
+
+          {/* Desktop: Background image with overlay */}
+          <div className="hidden lg:block absolute inset-0 h-[480px]">
             <img
               src={course.thumbnail_url || heroImage}
               alt={courseTitle}
-              className="w-full h-full object-contain object-top bg-near-black sm:object-cover sm:object-center"
+              className="w-full h-full object-cover object-center"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-background/60 to-background" />
           </div>
 
-          <div className="page-container relative z-10 pt-4 sm:pt-8 pb-8 sm:pb-12 px-4 sm:px-6">
+          <div className="page-container relative z-10 pt-4 sm:pt-6 pb-6 sm:pb-12 px-4 sm:px-6">
             {/* Back link */}
-            <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-8 text-sm">
+            <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-4 sm:mb-8 text-sm">
               <BackIcon className="w-4 h-4 me-1" />
               {t('courses.backToCourses')}
             </Link>
 
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-12">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-12">
               {/* Left: Course Info (3 cols) */}
               <div className="lg:col-span-3">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                   {/* Badges */}
-                  <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getDifficultyColor(course.difficulty_level)}`}>
                       {t(`courses.difficulty.${course.difficulty_level}`)}
                     </span>
@@ -462,22 +475,15 @@ const CourseDetail: React.FC = () => {
                   </div>
 
                   {/* Title */}
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-foreground mb-3 sm:mb-4 leading-tight">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-5xl font-black text-foreground mb-2 sm:mb-4 leading-tight">
                     {courseTitle}
                   </h1>
 
-                  {/* Description as course story */}
-                  {courseDescription && (
-                    <p className="text-sm sm:text-base lg:text-lg text-muted-foreground mb-6 sm:mb-8 leading-relaxed max-w-2xl">
-                      {courseDescription}
-                    </p>
-                  )}
-
-                  {/* Stats Row */}
-                  <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-3 text-sm">
-                    <div className="flex items-center gap-2 text-foreground">
-                      <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
-                        <BookOpen className="w-4 h-4 text-primary" />
+                  {/* Stats Row — on mobile, show before description */}
+                  <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-2 sm:gap-y-3 text-xs sm:text-sm mb-3 sm:mb-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+                        <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
                       </div>
                       <div>
                         <span className="font-semibold">{totalLessons}</span>
@@ -485,9 +491,9 @@ const CourseDetail: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 text-foreground">
-                      <div className="w-8 h-8 rounded-lg bg-secondary/30 flex items-center justify-center">
-                        <Clock className="w-4 h-4 text-secondary-foreground" />
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-secondary/30 flex items-center justify-center">
+                        <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-secondary-foreground" />
                       </div>
                       <div>
                         <span className="font-semibold">{formatDuration(totalDurationMinutes)}</span>
@@ -495,9 +501,9 @@ const CourseDetail: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 text-foreground">
-                      <div className="w-8 h-8 rounded-lg bg-accent/30 flex items-center justify-center">
-                        <Layers className="w-4 h-4 text-accent-foreground" />
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-accent/30 flex items-center justify-center">
+                        <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent-foreground" />
                       </div>
                       <div>
                         <span className="font-semibold">{chapters.length}</span>
@@ -505,6 +511,13 @@ const CourseDetail: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Description */}
+                  {courseDescription && (
+                    <p className="text-sm sm:text-base lg:text-lg text-muted-foreground mb-4 sm:mb-8 leading-relaxed max-w-2xl">
+                      {courseDescription}
+                    </p>
+                  )}
                 </motion.div>
               </div>
 
