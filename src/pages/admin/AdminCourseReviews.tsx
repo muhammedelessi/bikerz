@@ -384,7 +384,7 @@ const AdminCourseReviews: React.FC = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label>{isRTL ? 'الاسم' : 'Name'}</Label>
               <Input
                 value={fakeName}
                 onChange={(e) => setFakeName(e.target.value)}
