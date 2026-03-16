@@ -693,7 +693,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
                       placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
                       className={errors.email ? 'border-destructive' : ''}
+                      disabled={!!user} // Locked for logged-in users
                     />
+                    {!user && (
+                      <p className="text-[11px] text-muted-foreground">
+                        {isRTL ? 'سيتم إنشاء حساب لك تلقائياً باستخدام هذا البريد' : 'An account will be created automatically with this email'}
+                      </p>
+                    )}
                     {renderFieldError('email')}
                   </div>
 
