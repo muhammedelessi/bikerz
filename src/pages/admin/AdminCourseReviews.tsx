@@ -208,7 +208,7 @@ const AdminCourseReviews: React.FC = () => {
           <Card>
             <CardContent className="pt-6 text-center">
               <span className="text-3xl font-black text-foreground">{reviews.length}</span>
-              <p className="text-xs text-muted-foreground mt-1">Total Reviews</p>
+              <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'إجمالي التقييمات' : 'Total Reviews'}</p>
             </CardContent>
           </Card>
           <Card>
