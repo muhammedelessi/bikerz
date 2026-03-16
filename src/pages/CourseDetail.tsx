@@ -96,7 +96,7 @@ const CourseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { formatPrice, convertPrice, formatCoursePrice, getCoursePrice, getCourseCurrency, getCoursePriceInfo } = useCurrency();
+  const { formatPrice, convertPrice, formatCoursePrice, getCoursePrice, getCourseCurrency, getCoursePriceInfo, getCurrencySymbol } = useCurrency();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -462,9 +462,10 @@ const CourseDetail: React.FC = () => {
                     <Button size="sm" className="btn-cta h-9 text-sm hidden lg:inline-flex" onClick={() => user ? setShowCheckout(true) : setShowGuestSignup(true)}>
                       {(() => {
                         const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                        const sym = getCurrencySymbol(info.currency, isRTL);
                         return isRTL
-                          ? `اشترك الآن – ${info.finalPrice} ${info.currency}`
-                          : `Buy now – ${info.finalPrice} ${info.currency}`;
+                          ? `اشترك الآن – ${info.finalPrice} ${sym}`
+                          : `Buy now – ${info.finalPrice} ${sym}`;
                       })()}
                     </Button>
                   )
@@ -704,20 +705,20 @@ const CourseDetail: React.FC = () => {
                       <div className="text-center py-2">
                         {(() => {
                           const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
-                          const courseMeta = priceInfo.currency;
+                          const sym = getCurrencySymbol(priceInfo.currency, isRTL);
                           if (priceInfo.discountPct > 0 && course.price > 0) {
                             return (
                               <div className="space-y-1">
                                 <div className="flex items-center justify-center gap-2">
                                   <span className="text-lg text-muted-foreground line-through">
-                                    {priceInfo.originalPrice} {courseMeta}
+                                    {priceInfo.originalPrice} {sym}
                                   </span>
                                   <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-sm font-bold">
                                     -{priceInfo.discountPct}%
                                   </span>
                                 </div>
                                 <span className="text-4xl font-black text-foreground">
-                                  {priceInfo.finalPrice} {courseMeta}
+                                  {priceInfo.finalPrice} {sym}
                                 </span>
                               </div>
                             );
@@ -726,7 +727,7 @@ const CourseDetail: React.FC = () => {
                             <span className="text-4xl font-black text-foreground">
                               {course.price === 0
                                 ? t('common.free')
-                                : `${priceInfo.finalPrice} ${courseMeta}`}
+                                : `${priceInfo.finalPrice} ${sym}`}
                             </span>
                           );
                         })()}
@@ -766,9 +767,10 @@ const CourseDetail: React.FC = () => {
                           <ShoppingCart className="w-5 h-5 me-2" />
                           {(() => {
                             const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                            const sym = getCurrencySymbol(info.currency, isRTL);
                             return isRTL
-                              ? `اشترك الآن – ${info.finalPrice} ${info.currency}`
-                              : `Buy now – ${info.finalPrice} ${info.currency}`;
+                              ? `اشترك الآن – ${info.finalPrice} ${sym}`
+                              : `Buy now – ${info.finalPrice} ${sym}`;
                           })()}
                         </Button>
                       ) : (
@@ -779,9 +781,10 @@ const CourseDetail: React.FC = () => {
                           <Zap className="w-5 h-5 me-2" />
                           {(() => {
                             const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                            const sym = getCurrencySymbol(info.currency, isRTL);
                             return isRTL
-                              ? `اشترك الآن – ${info.finalPrice} ${info.currency}`
-                              : `Buy now – ${info.finalPrice} ${info.currency}`;
+                              ? `اشترك الآن – ${info.finalPrice} ${sym}`
+                              : `Buy now – ${info.finalPrice} ${sym}`;
                           })()}
                         </Button>
                       )}
@@ -1111,15 +1114,16 @@ const CourseDetail: React.FC = () => {
               <div className="flex flex-col min-w-0">
                 {(() => {
                   const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                  const sym = getCurrencySymbol(priceInfo.currency, isRTL);
                   if (course.price === 0) {
                     return <span className="text-lg font-black text-foreground">{t('common.free')}</span>;
                   }
                   return (
                     <div className="flex items-center gap-2">
                       {priceInfo.discountPct > 0 && (
-                        <span className="text-xs text-muted-foreground line-through">{priceInfo.originalPrice} {priceInfo.currency}</span>
+                        <span className="text-xs text-muted-foreground line-through">{priceInfo.originalPrice} {sym}</span>
                       )}
-                      <span className="text-lg font-black text-foreground">{priceInfo.finalPrice} {priceInfo.currency}</span>
+                      <span className="text-lg font-black text-foreground">{priceInfo.finalPrice} {sym}</span>
                     </div>
                   );
                 })()}
@@ -1152,9 +1156,10 @@ const CourseDetail: React.FC = () => {
                   <ShoppingCart className="w-4 h-4 me-1.5" />
                   {(() => {
                     const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                    const sym = getCurrencySymbol(info.currency, isRTL);
                     return isRTL
-                      ? `اشترك الآن – ${info.finalPrice} ${info.currency}`
-                      : `Buy now – ${info.finalPrice} ${info.currency}`;
+                      ? `اشترك الآن – ${info.finalPrice} ${sym}`
+                      : `Buy now – ${info.finalPrice} ${sym}`;
                   })()}
                 </Button>
               )}

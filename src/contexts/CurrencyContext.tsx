@@ -123,6 +123,8 @@ interface CurrencyContextType {
   isSAR: boolean;
   /** Check if a country-specific price exists for a course */
   hasCountryPrice: (courseId: string) => boolean;
+  /** Get the display symbol for a given CurrencyCode based on locale */
+  getCurrencySymbol: (code: CurrencyCode, isRTL?: boolean) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -394,6 +396,15 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [currencyCode, convertPrice, getSarTotalWithVat]
   );
 
+  const getCurrencySymbol = useCallback(
+    (code: CurrencyCode, isRTL = false): string => {
+      const m = CURRENCY_META[code];
+      if (!m) return code;
+      return isRTL ? m.symbolAr : m.symbol;
+    },
+    []
+  );
+
   return (
     <CurrencyContext.Provider value={{
       currencyCode,
@@ -417,6 +428,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       vatLabelAr: `ضريبة القيمة المضافة (${VAT_RATE}%)`,
       isSAR,
       hasCountryPrice,
+      getCurrencySymbol,
     }}>
       {children}
     </CurrencyContext.Provider>
