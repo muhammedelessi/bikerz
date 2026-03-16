@@ -305,7 +305,7 @@ const AdminCourseReviews: React.FC = () => {
         {/* Reviews Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">All Reviews</CardTitle>
+            <CardTitle className="text-base">{isRTL ? 'جميع التقييمات' : 'All Reviews'}</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
