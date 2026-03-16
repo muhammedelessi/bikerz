@@ -396,6 +396,15 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [currencyCode, convertPrice, getSarTotalWithVat]
   );
 
+  const getCurrencySymbol = useCallback(
+    (code: CurrencyCode, isRTL = false): string => {
+      const m = CURRENCY_META[code];
+      if (!m) return code;
+      return isRTL ? m.symbolAr : m.symbol;
+    },
+    []
+  );
+
   return (
     <CurrencyContext.Provider value={{
       currencyCode,
@@ -419,6 +428,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       vatLabelAr: `ضريبة القيمة المضافة (${VAT_RATE}%)`,
       isSAR,
       hasCountryPrice,
+      getCurrencySymbol,
     }}>
       {children}
     </CurrencyContext.Provider>
