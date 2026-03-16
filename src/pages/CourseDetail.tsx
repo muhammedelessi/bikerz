@@ -766,8 +766,8 @@ const CourseDetail: React.FC = () => {
                           {(() => {
                             const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
                             return isRTL
-                              ? `احصل على الدورة الآن – ${info.finalPrice} ${info.currency}`
-                              : `Get the course now – ${info.finalPrice} ${info.currency}`;
+                              ? `اشتري الآن – ${info.finalPrice} ${info.currency}`
+                              : `Buy now – ${info.finalPrice} ${info.currency}`;
                           })()}
                         </Button>
                       ) : (
