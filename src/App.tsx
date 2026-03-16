@@ -151,6 +151,7 @@ const AppRoutes = () => (
       <Route path="/admin/discussions" element={<AdminRoute><AdminLessonDiscussions /></AdminRoute>} />
       <Route path="/admin/content" element={<AdminRoute><AdminContent /></AdminRoute>} />
       <Route path="/admin/coupons" element={<AdminRoute><AdminCoupons /></AdminRoute>} />
+      <Route path="/admin/courses/:id/reviews" element={<AdminRoute><AdminCourseReviews /></AdminRoute>} />
       
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
