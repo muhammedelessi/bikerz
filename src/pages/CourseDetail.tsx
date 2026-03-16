@@ -572,6 +572,55 @@ const CourseDetail: React.FC = () => {
                       {courseDescription}
                     </p>
                   )}
+
+                  {/* Preview / Introductory Video — below description */}
+                  {course.preview_video_url && (
+                    <div className="mb-4 sm:mb-8">
+                      <div className="flex items-center gap-3 mb-3 sm:mb-4">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary/15 flex items-center justify-center">
+                          <Play className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                        </div>
+                        <h2 className="text-lg sm:text-2xl font-bold text-foreground">
+                          {isRTL ? 'نظرة على الدورة' : 'Course Preview'}
+                        </h2>
+                      </div>
+
+                      <div className="rounded-xl sm:rounded-2xl overflow-hidden border border-border shadow-lg">
+                        {previewVideoPlaying ? (
+                          <div className="aspect-video">
+                            <BunnyVideoEmbed
+                              videoUrl={course.preview_video_url}
+                              title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
+                              isPreview
+                            />
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setPreviewVideoPlaying(true)}
+                            className="relative w-full aspect-video group cursor-pointer focus:outline-none"
+                            aria-label={isRTL ? 'تشغيل الفيديو التعريفي' : 'Play preview video'}
+                          >
+                            <img
+                              src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
+                              alt={isRTL ? 'صورة مصغرة للفيديو' : 'Video thumbnail'}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl">
+                                <Play className="w-7 h-7 sm:w-9 sm:h-9 text-primary-foreground ms-1" fill="currentColor" />
+                              </div>
+                            </div>
+                            <div className="absolute bottom-4 start-4">
+                              <span className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-sm font-medium backdrop-blur-sm">
+                                {isRTL ? 'شاهد الفيديو التعريفي' : 'Watch Preview'}
+                              </span>
+                            </div>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               </div>
 
