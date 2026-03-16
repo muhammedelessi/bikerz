@@ -109,6 +109,7 @@ const CourseDetail: React.FC = () => {
   const [previewVideoPlaying, setPreviewVideoPlaying] = useState(false);
   const [showStickyBottom, setShowStickyBottom] = useState(false);
   const ctaCardRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Payment callback now handled by /payment-success/:courseId page
 
