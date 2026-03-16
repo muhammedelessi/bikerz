@@ -1085,7 +1085,7 @@ const CourseDetail: React.FC = () => {
 
       {/* Sticky Bottom Bar — mobile only, hidden when enrolled */}
       <AnimatePresence>
-        {showStickyBottom && !isEnrolled && course && (
+        {showStickyBottom && !isEnrolled && !showCheckout && course && (
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
