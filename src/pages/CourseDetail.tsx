@@ -215,16 +215,19 @@ const CourseDetail: React.FC = () => {
   }, [course, id]);
 
   // IntersectionObserver for sticky bottom bar on mobile
-  useEffect(() => {
-    const el = ctaCardRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setShowStickyBottom(!entry.isIntersecting),
-      { threshold: 0.1 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  });
+  const ctaCardCallbackRef = React.useCallback((node: HTMLDivElement | null) => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+    ctaCardRef.current = node;
+    if (node) {
+      observerRef.current = new IntersectionObserver(
+        ([entry]) => setShowStickyBottom(!entry.isIntersecting),
+        { threshold: 0.1 }
+      );
+      observerRef.current.observe(node);
+    }
+  }, []);
 
   // Enroll mutation
   const enrollMutation = useMutation({
