@@ -2,7 +2,7 @@ import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const ApplePayIcon = ({ className = 'h-5 w-auto' }: { className?: string }) => (
-  <svg viewBox="0 0 50 20" className={className}>
+  <svg viewBox="0 0 50 20" className={className} style={{ direction: 'ltr' }}>
     <path d="M9.6 3.8c-.6.7-1.5 1.3-2.4 1.2-.1-1 .4-2 .9-2.6C8.7 1.7 9.7 1.1 10.5 1c.1 1-.3 2-.9 2.8zm.9 1.4c-1.3-.1-2.5.8-3.1.8-.7 0-1.7-.7-2.8-.7-1.4 0-2.8.8-3.5 2.1-1.5 2.6-.4 6.5 1.1 8.6.7 1 1.6 2.2 2.8 2.1 1.1 0 1.5-.7 2.8-.7 1.3 0 1.7.7 2.8.7 1.2 0 2-1 2.7-2.1.9-1.2 1.2-2.4 1.2-2.5 0 0-2.4-1-2.4-3.7 0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8l-.2-.3z" fill="currentColor" />
     <text x="18" y="14.5" fontSize="11" fontWeight="600" fontFamily="system-ui, -apple-system, sans-serif" fill="currentColor">Pay</text>
   </svg>
