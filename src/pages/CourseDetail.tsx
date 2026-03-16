@@ -415,7 +415,7 @@ const CourseDetail: React.FC = () => {
                       </Button>
                     )
                   ) : (
-                    <Button size="sm" className="btn-cta h-9 text-sm" onClick={() => setShowCheckout(true)}>
+                    <Button size="sm" className="btn-cta h-9 text-sm" onClick={() => user ? setShowCheckout(true) : setShowGuestSignup(true)}>
                       {user ? (isRTL ? 'اشترِ الآن' : 'Buy Now') : (isRTL ? 'احصل على الوصول الفوري' : 'Get Instant Access')}
                     </Button>
                   )
