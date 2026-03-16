@@ -388,7 +388,7 @@ const AdminCourseReviews: React.FC = () => {
               <Input
                 value={fakeName}
                 onChange={(e) => setFakeName(e.target.value)}
-                placeholder="Enter display name"
+                placeholder={isRTL ? 'أدخل الاسم' : 'Enter display name'}
               />
             </div>
             <div className="space-y-2">
