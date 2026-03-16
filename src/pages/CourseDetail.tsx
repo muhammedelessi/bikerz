@@ -435,7 +435,7 @@ const CourseDetail: React.FC = () => {
               <img
                 src={course.thumbnail_url || heroImage}
                 alt={courseTitle}
-                className="w-full h-full object-cover"
+                className="w-full h-auto block"
               />
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/80" />
             </div>
