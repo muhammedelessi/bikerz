@@ -429,23 +429,15 @@ const CourseDetail: React.FC = () => {
       <main className="pt-16 sm:pt-20 lg:pt-24">
         {/* Hero Section */}
         <section className="relative overflow-hidden">
-          {/* Mobile: Full-width image block with back button overlay */}
-          <div className="block lg:hidden relative">
+          {/* Mobile: Full-width image block — clean, no overlays */}
+          <div className="block lg:hidden">
             <div className="relative w-full aspect-[16/9] bg-card">
               <img
                 src={course.thumbnail_url || heroImage}
                 alt={courseTitle}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-transparent to-background/80" />
-              {/* Back button floating on image */}
-              <Link
-                to="/courses"
-                className="absolute top-3 start-3 z-10 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background/70 backdrop-blur-sm text-foreground text-xs font-medium hover:bg-background/90 transition-colors"
-              >
-                <BackIcon className="w-3.5 h-3.5" />
-                {t('courses.backToCourses')}
-              </Link>
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/80" />
             </div>
           </div>
 
@@ -459,10 +451,10 @@ const CourseDetail: React.FC = () => {
             <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-background/60 to-background" />
           </div>
 
-          <div className="page-container relative z-10 pt-4 sm:pt-6 pb-6 sm:pb-12 px-4 sm:px-6">
-            {/* Back link — desktop only */}
-            <Link to="/courses" className="hidden lg:inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-8 text-sm">
-              <BackIcon className="w-4 h-4 me-1" />
+          <div className="page-container relative z-10 pt-3 sm:pt-6 pb-6 sm:pb-12 px-4 sm:px-6">
+            {/* Back link — below the image on mobile, inline on desktop */}
+            <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-3 lg:mb-8 text-xs sm:text-sm">
+              <BackIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 me-1" />
               {t('courses.backToCourses')}
             </Link>
 
