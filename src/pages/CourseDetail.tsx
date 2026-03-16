@@ -130,7 +130,7 @@ const CourseDetail: React.FC = () => {
     );
     observer.observe(ctaCardRef.current);
     return () => observer.disconnect();
-  }, [courseLoading]);
+  }, [course]);
 
   // Fetch course details
   const { data: course, isLoading: courseLoading } = useQuery({
