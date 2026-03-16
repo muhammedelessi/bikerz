@@ -446,7 +446,7 @@ const AdminCourseReviews: React.FC = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => deleteReviewId && deleteMutation.mutate(deleteReviewId)}
             >
-              Delete
+              {isRTL ? 'حذف' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
