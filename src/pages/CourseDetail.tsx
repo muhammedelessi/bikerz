@@ -412,7 +412,7 @@ const CourseDetail: React.FC = () => {
 
       {/* Sticky Header — appears on scroll */}
       <AnimatePresence>
-        {showStickyHeader && (
+        {showStickyHeader && !showCheckout && (
           <motion.header
             initial={{ y: -80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
