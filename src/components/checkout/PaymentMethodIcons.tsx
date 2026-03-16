@@ -9,7 +9,7 @@ const ApplePayIcon = ({ className = 'h-5 w-auto' }: { className?: string }) => (
 );
 
 const GooglePayIcon = ({ className = 'h-5 w-auto' }: { className?: string }) => (
-  <svg viewBox="0 0 56 20" className={className}>
+  <svg viewBox="0 0 56 20" className={className} style={{ direction: 'ltr' }}>
     <text x="1" y="15" fontSize="12" fontWeight="500" fontFamily="system-ui, sans-serif">
       <tspan fill="#4285F4">G</tspan>
       <tspan fill="#EA4335">o</tspan>
