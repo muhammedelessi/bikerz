@@ -41,6 +41,7 @@ import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';
 import PaymentMethodIcons from '@/components/checkout/PaymentMethodIcons';
 import { trackViewContent } from '@/utils/metaPixel';
 import CourseReviews from '@/components/course/CourseReviews';
+import StarRating from '@/components/course/StarRating';
 
 
 interface Lesson {
@@ -122,6 +123,22 @@ const CourseDetail: React.FC = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Fetch review stats
+  const { data: reviewStats } = useQuery({
+    queryKey: ['course-review-stats', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('course_reviews')
+        .select('rating')
+        .eq('course_id', id!);
+      if (error) throw error;
+      const count = (data || []).length;
+      const avg = count > 0 ? data!.reduce((s, r) => s + Number(r.rating), 0) / count : 0;
+      return { count, avg };
+    },
+    enabled: !!id,
+  });
 
 
   // Fetch course details
@@ -498,6 +515,17 @@ const CourseDetail: React.FC = () => {
                   <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-5xl font-black text-foreground mb-2 sm:mb-4 leading-tight">
                     {courseTitle}
                   </h1>
+
+                  {/* Rating Summary */}
+                  {reviewStats && reviewStats.count > 0 && (
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                      <StarRating rating={reviewStats.avg} size="sm" />
+                      <span className="text-sm font-semibold text-foreground">{reviewStats.avg.toFixed(1)}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({reviewStats.count} {isRTL ? 'تقييم' : reviewStats.count === 1 ? 'review' : 'reviews'})
+                      </span>
+                    </div>
+                  )}
 
                   {/* Stats Row — on mobile, show before description */}
                   <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-2 sm:gap-y-3 text-xs sm:text-sm mb-3 sm:mb-0">
