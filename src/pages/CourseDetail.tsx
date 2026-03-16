@@ -1011,6 +1011,9 @@ const CourseDetail: React.FC = () => {
             )}
           </motion.div>
         </section>
+
+        {/* Reviews Section */}
+        <CourseReviews courseId={id!} isEnrolled={isEnrolled} />
       </main>
 
       <Footer />
