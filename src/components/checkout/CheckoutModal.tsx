@@ -334,6 +334,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       // Save profile data using the new user ID
       await saveProfileData(data.user.id);
 
+      // Send password reset email so user can set their own password
+      supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/forgot-password`,
+      }).catch(() => { /* silent - non-critical */ });
+
       return data.user.id;
     } catch (err: any) {
       console.error('Guest signup error:', err);
