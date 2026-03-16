@@ -201,26 +201,26 @@ const AdminCourseReviews: React.FC = () => {
                 <div className="flex justify-center mt-1">
                   <StarRating rating={avgRating} size="sm" />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Average Rating</p>
+                <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'متوسط التقييم' : 'Average Rating'}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6 text-center">
               <span className="text-3xl font-black text-foreground">{reviews.length}</span>
-              <p className="text-xs text-muted-foreground mt-1">Total Reviews</p>
+              <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'إجمالي التقييمات' : 'Total Reviews'}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6 text-center">
               <span className="text-3xl font-black text-foreground">{realCount}</span>
-              <p className="text-xs text-muted-foreground mt-1">Real Reviews</p>
+              <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'تقييمات حقيقية' : 'Real Reviews'}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6 text-center">
               <span className="text-3xl font-black text-foreground">{fakeCount}</span>
-              <p className="text-xs text-muted-foreground mt-1">Fake Reviews</p>
+              <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'تقييمات وهمية' : 'Fake Reviews'}</p>
             </CardContent>
           </Card>
         </div>
@@ -228,7 +228,7 @@ const AdminCourseReviews: React.FC = () => {
         {/* Rating Breakdown */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Rating Breakdown</CardTitle>
+            <CardTitle className="text-base">{isRTL ? 'توزيع التقييمات' : 'Rating Breakdown'}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -305,7 +305,7 @@ const AdminCourseReviews: React.FC = () => {
         {/* Reviews Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">All Reviews</CardTitle>
+            <CardTitle className="text-base">{isRTL ? 'جميع التقييمات' : 'All Reviews'}</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -313,17 +313,17 @@ const AdminCourseReviews: React.FC = () => {
                 {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
               </div>
             ) : reviews.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-8">No reviews yet</p>
+              <p className="text-muted-foreground text-sm text-center py-8">{isRTL ? 'لا توجد تقييمات بعد' : 'No reviews yet'}</p>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Rating</TableHead>
-                      <TableHead>Comment</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
+                      <TableHead>{isRTL ? 'الاسم' : 'Name'}</TableHead>
+                      <TableHead>{isRTL ? 'التقييم' : 'Rating'}</TableHead>
+                      <TableHead>{isRTL ? 'التعليق' : 'Comment'}</TableHead>
+                      <TableHead>{isRTL ? 'التاريخ' : 'Date'}</TableHead>
+                      <TableHead>{isRTL ? 'النوع' : 'Type'}</TableHead>
                       <TableHead className="w-12"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -351,9 +351,9 @@ const AdminCourseReviews: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           {review.is_fake ? (
-                            <Badge variant="destructive" className="text-xs">Fake</Badge>
+                            <Badge variant="destructive" className="text-xs">{isRTL ? 'وهمي' : 'Fake'}</Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-xs">Real</Badge>
+                            <Badge variant="secondary" className="text-xs">{isRTL ? 'حقيقي' : 'Real'}</Badge>
                           )}
                         </TableCell>
                         <TableCell>
@@ -384,15 +384,15 @@ const AdminCourseReviews: React.FC = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label>{isRTL ? 'الاسم' : 'Name'}</Label>
               <Input
                 value={fakeName}
                 onChange={(e) => setFakeName(e.target.value)}
-                placeholder="Enter display name"
+                placeholder={isRTL ? 'أدخل الاسم' : 'Enter display name'}
               />
             </div>
             <div className="space-y-2">
-              <Label>Rating</Label>
+              <Label>{isRTL ? 'التقييم' : 'Rating'}</Label>
               <StarRating
                 rating={fakeRating}
                 onRatingChange={setFakeRating}
@@ -402,16 +402,16 @@ const AdminCourseReviews: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>Comment</Label>
+              <Label>{isRTL ? 'التعليق' : 'Comment'}</Label>
               <Textarea
                 value={fakeComment}
                 onChange={(e) => setFakeComment(e.target.value)}
-                placeholder="Enter review comment"
+                placeholder={isRTL ? 'أدخل تعليق التقييم' : 'Enter review comment'}
                 className="min-h-[80px]"
               />
             </div>
             <div className="space-y-2">
-              <Label>Date</Label>
+              <Label>{isRTL ? 'التاريخ' : 'Date'}</Label>
               <Input
                 type="date"
                 value={fakeDate}
@@ -420,12 +420,12 @@ const AdminCourseReviews: React.FC = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowAddFake(false)}>Cancel</Button>
+            <Button variant="ghost" onClick={() => setShowAddFake(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
             <Button
               onClick={() => addFakeMutation.mutate()}
               disabled={addFakeMutation.isPending || !fakeName.trim()}
             >
-              {addFakeMutation.isPending ? 'Adding...' : 'Add Review'}
+              {addFakeMutation.isPending ? (isRTL ? 'جاري الإضافة...' : 'Adding...') : (isRTL ? 'إضافة التقييم' : 'Add Review')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -435,18 +435,18 @@ const AdminCourseReviews: React.FC = () => {
       <AlertDialog open={!!deleteReviewId} onOpenChange={() => setDeleteReviewId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Review?</AlertDialogTitle>
+            <AlertDialogTitle>{isRTL ? 'حذف التقييم؟' : 'Delete Review?'}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. The review will be permanently deleted.
+              {isRTL ? 'لا يمكن التراجع عن هذا الإجراء. سيتم حذف التقييم نهائياً.' : 'This action cannot be undone. The review will be permanently deleted.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => deleteReviewId && deleteMutation.mutate(deleteReviewId)}
             >
-              Delete
+              {isRTL ? 'حذف' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
