@@ -1114,15 +1114,16 @@ const CourseDetail: React.FC = () => {
               <div className="flex flex-col min-w-0">
                 {(() => {
                   const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                  const sym = getCurrencySymbol(priceInfo.currency, isRTL);
                   if (course.price === 0) {
                     return <span className="text-lg font-black text-foreground">{t('common.free')}</span>;
                   }
                   return (
                     <div className="flex items-center gap-2">
                       {priceInfo.discountPct > 0 && (
-                        <span className="text-xs text-muted-foreground line-through">{priceInfo.originalPrice} {priceInfo.currency}</span>
+                        <span className="text-xs text-muted-foreground line-through">{priceInfo.originalPrice} {sym}</span>
                       )}
-                      <span className="text-lg font-black text-foreground">{priceInfo.finalPrice} {priceInfo.currency}</span>
+                      <span className="text-lg font-black text-foreground">{priceInfo.finalPrice} {sym}</span>
                     </div>
                   );
                 })()}
