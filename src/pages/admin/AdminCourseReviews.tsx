@@ -248,6 +248,59 @@ const AdminCourseReviews: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* Base Rating */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              ⭐ {isRTL ? 'التقييم الأساسي' : 'Base Rating'}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {isRTL
+                ? 'هذه الأرقام تُضاف إلى التقييمات الحقيقية عند عرضها في صفحة الدورة'
+                : 'These numbers are added to real reviews when displayed on the course page'}
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label>{isRTL ? 'عدد التقييمات الأساسي' : 'Base Review Count'}</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={(course as any)?.base_review_count || 0}
+                  onChange={async (e) => {
+                    const val = Math.max(0, parseInt(e.target.value) || 0);
+                    await supabase.from('courses').update({ base_review_count: val }).eq('id', courseId);
+                    queryClient.invalidateQueries({ queryKey: ['admin-course', courseId] });
+                  }}
+                  placeholder="e.g. 34"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {isRTL ? 'مثال: 34 تقييم أساسي + 5 حقيقي = يظهر 39' : 'e.g. 34 base + 5 real = shows 39'}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>{isRTL ? 'متوسط التقييم الأساسي' : 'Base Average Rating'}</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={(course as any)?.base_rating || 0}
+                  onChange={async (e) => {
+                    const val = Math.min(5, Math.max(0, parseFloat(e.target.value) || 0));
+                    await supabase.from('courses').update({ base_rating: val }).eq('id', courseId);
+                    queryClient.invalidateQueries({ queryKey: ['admin-course', courseId] });
+                  }}
+                  placeholder="e.g. 4.8"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {isRTL ? 'التقييم من 0 إلى 5 نجوم' : 'Rating from 0 to 5 stars'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+
         {/* Reviews Table */}
         <Card>
           <CardHeader>
