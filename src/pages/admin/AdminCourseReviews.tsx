@@ -435,9 +435,9 @@ const AdminCourseReviews: React.FC = () => {
       <AlertDialog open={!!deleteReviewId} onOpenChange={() => setDeleteReviewId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Review?</AlertDialogTitle>
+            <AlertDialogTitle>{isRTL ? 'حذف التقييم؟' : 'Delete Review?'}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. The review will be permanently deleted.
+              {isRTL ? 'لا يمكن التراجع عن هذا الإجراء. سيتم حذف التقييم نهائياً.' : 'This action cannot be undone. The review will be permanently deleted.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
