@@ -95,7 +95,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { currencyCode, symbol, symbolAr, convertPrice, formatPrice, calculateTax, calculateTotalWithTax, getSarTotalWithVat, vatLabel, vatLabelAr, isSAR, getCoursePriceInfo } = useCurrency();
-  const { user, profile } = useAuth();
+  const { user, profile, session } = useAuth();
   const navigate = useNavigate();
   const {
     status: paymentStatus,
@@ -106,6 +106,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   } = useTapPayment();
   const { sendCourseStatus } = useGHLFormWebhook();
   const { supportsApplePay, supportsGooglePay } = usePaymentMethodDetection();
+  const [guestSigningUp, setGuestSigningUp] = useState(false);
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('profile');
   const [profileIncomplete, setProfileIncomplete] = useState(false);
