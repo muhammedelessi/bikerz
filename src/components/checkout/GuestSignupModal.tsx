@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
+import { useAuthPageContent } from '@/hooks/useAuthPageContent';
 import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
@@ -33,11 +35,13 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   course,
   onAuthenticated,
 }) => {
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { sendCourseStatus } = useGHLFormWebhook();
+  const { data: authContent } = useAuthPageContent();
   const navigate = useNavigate();
 
-  const [fullName, setFullName] = useState('');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -46,23 +50,28 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isValid =
-    fullName.trim().length >= 3 &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
-    password.length >= 6 &&
-    password === confirmPassword;
+  // Use same CMS labels as Signup page
+  const cms = authContent?.signup || {};
+  const nameLabel = (isRTL ? cms.name_label_ar : cms.name_label_en) || t('auth.signup.name');
+  const emailLabel = (isRTL ? cms.email_label_ar : cms.email_label_en) || t('auth.signup.email');
+  const passwordLabel = (isRTL ? cms.password_label_ar : cms.password_label_en) || t('auth.signup.password');
+  const confirmLabel = (isRTL ? cms.confirm_label_ar : cms.confirm_label_en) || t('auth.signup.confirmPassword');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValid || loading) return;
+    setError(null);
 
     if (password !== confirmPassword) {
-      setError(isRTL ? 'كلمات المرور غير متطابقة' : 'Passwords do not match');
+      setError(t('auth.signup.passwordMismatch'));
+      return;
+    }
+
+    if (password.length < 6) {
+      setError(t('auth.signup.passwordTooShort'));
       return;
     }
 
     setLoading(true);
-    setError(null);
 
     try {
       const { data: signupData, error: signupError } = await supabase.auth.signUp({
@@ -70,7 +79,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
         password,
         options: {
           emailRedirectTo: window.location.origin,
-          data: { full_name: fullName.trim() },
+          data: { full_name: name.trim() },
         },
       });
 
@@ -85,7 +94,6 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
               ? 'لديك حساب بالفعل. يرجى تسجيل الدخول للمتابعة.'
               : 'You already have an account. Please log in to continue.'
           );
-          // Redirect to login after a short delay so they can read the message
           setTimeout(() => {
             onOpenChange(false);
             navigate(`/login?returnTo=/courses/${course.id}`);
@@ -99,30 +107,27 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
         throw new Error('Account creation failed');
       }
 
-      // Wait for profile trigger
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // Update profile with full name
       await supabase
         .from('profiles')
-        .update({ full_name: fullName.trim() })
+        .update({ full_name: name.trim() })
         .eq('user_id', signupData.user.id);
 
-      // Send GHL webhook with 'not purchased'
       sendCourseStatus(
         signupData.user.id,
         course.id,
         course.title,
         'not purchased',
         {
-          full_name: fullName.trim(),
+          full_name: name.trim(),
           email: email.trim(),
           isRTL,
           silent: true,
         }
       );
 
-      toast.success(isRTL ? 'تم إنشاء حسابك بنجاح!' : 'Account created successfully!');
+      toast.success(t('auth.signup.success'));
       onOpenChange(false);
       onAuthenticated();
     } catch (err: any) {
@@ -148,72 +153,70 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
             </p>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name */}
-            <div className="space-y-1.5">
-              <Label htmlFor="guest-name" className="text-sm font-medium">
-                {isRTL ? 'الاسم الكامل' : 'Full Name'}
-              </Label>
+          {error && (
+            <div className="p-3 sm:p-4 rounded-lg bg-destructive/10 border border-destructive/30 flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+            {/* Name — same as Signup page */}
+            <div className="space-y-2">
+              <Label htmlFor="guest-name" className="text-sm sm:text-base">{nameLabel}</Label>
               <Input
                 id="guest-name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder={isRTL ? 'أدخل اسمك الكامل' : 'Enter your full name'}
-                className="h-11"
-                autoComplete="name"
-                dir={isRTL ? 'rtl' : 'ltr'}
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t('auth.signup.namePlaceholder')}
+                required
+                className="form-input h-11 sm:h-12 text-base"
               />
             </div>
 
-            {/* Email */}
-            <div className="space-y-1.5">
-              <Label htmlFor="guest-email" className="text-sm font-medium">
-                {isRTL ? 'البريد الإلكتروني' : 'Email'}
-              </Label>
+            {/* Email — same as Signup page */}
+            <div className="space-y-2">
+              <Label htmlFor="guest-email" className="text-sm sm:text-base">{emailLabel}</Label>
               <Input
                 id="guest-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="example@email.com"
-                className="h-11"
-                autoComplete="email"
-                dir="ltr"
+                placeholder="your@email.com"
+                required
+                className="form-input h-11 sm:h-12 text-base"
               />
             </div>
 
-            {/* Password */}
-            <div className="space-y-1.5">
-              <Label htmlFor="guest-password" className="text-sm font-medium">
-                {isRTL ? 'كلمة المرور' : 'Password'}
-              </Label>
+            {/* Password — same as Signup page */}
+            <div className="space-y-2">
+              <Label htmlFor="guest-password" className="text-sm sm:text-base">{passwordLabel}</Label>
               <div className="relative">
                 <Input
                   id="guest-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={isRTL ? '6 أحرف على الأقل' : 'At least 6 characters'}
-                  className="h-11 pe-10"
-                  autoComplete="new-password"
-                  dir="ltr"
+                  placeholder="••••••••"
+                  required
+                  minLength={6}
+                  className="form-input h-11 sm:h-12 text-base pe-12"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 touch-target"
                   tabIndex={-1}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            {/* Confirm Password */}
-            <div className="space-y-1.5">
-              <Label htmlFor="guest-confirm-password" className="text-sm font-medium">
-                {isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}
-              </Label>
+            {/* Confirm Password — same as Signup page */}
+            <div className="space-y-2">
+              <Label htmlFor="guest-confirm-password" className="text-sm sm:text-base">{confirmLabel}</Label>
               <div className="relative">
                 <Input
                   id="guest-confirm-password"
@@ -221,40 +224,28 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="h-11 pe-10"
-                  autoComplete="new-password"
-                  dir="ltr"
+                  required
+                  className="form-input h-11 sm:h-12 text-base pe-12"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 touch-target"
                   tabIndex={-1}
                 >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            {/* Error */}
-            {error && (
-              <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 rounded-lg p-3">
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-
             {/* Submit */}
             <Button
               type="submit"
-              className="w-full btn-cta h-12 text-base"
-              disabled={!isValid || loading}
+              className="w-full btn-cta h-11 sm:h-12 text-base"
+              disabled={loading}
             >
               {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin me-2" />
-                  {isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}
-                </>
+                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
               ) : (
                 <>
                   <Zap className="w-5 h-5 me-2" />
