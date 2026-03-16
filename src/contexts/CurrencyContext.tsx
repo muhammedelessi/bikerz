@@ -44,6 +44,7 @@ const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
   JO: 'JOD', EG: 'EGP', IQ: 'IQD', SY: 'SYP', LB: 'LBP', YE: 'YER',
   LY: 'LYD', TN: 'TND', DZ: 'DZD', MA: 'MAD', SD: 'SDG', SO: 'SOS',
   MR: 'MRU', KM: 'KMF', DJ: 'DJF', PS: 'ILS', IL: 'ILS',
+  GB: 'GBP',
 };
 
 // Fallback rates (SAR → X) used if live fetch fails
