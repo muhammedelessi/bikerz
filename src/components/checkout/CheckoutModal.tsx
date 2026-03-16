@@ -981,59 +981,30 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     );
                   })()}
 
-                  {/* Payment Method Selection */}
+                  {/* Pay Now - redirects to Tap hosted payment page */}
                   {discountedPrice > 0 && (
-                    <div className="space-y-2.5">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        {isRTL ? 'اختر طريقة الدفع' : 'Choose Payment Method'}
-                      </p>
-
-                      {/* Card payment */}
-                      <Button
-                        className="w-full h-12 rounded-lg"
-                        variant="outline"
-                        onClick={() => handleSubmitPayment('card')}
-                        disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady}
-                      >
-                        {guestSigningUp ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin me-2" />
-                            <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard className="w-4 h-4 me-2" />
-                            <span className="me-2">{isRTL ? 'بطاقة ائتمان / مدى' : 'Credit / Debit Card'}</span>
-                            <div className="flex items-center gap-1.5 ms-auto">
-                              <VisaIcon light />
-                              <MastercardIcon />
-                            </div>
-                          </>
-                        )}
-                      </Button>
-
-                      {/* Apple Pay */}
-                      <Button
-                        className="w-full h-12 rounded-lg bg-black hover:bg-black/90 text-white border-0"
-                        variant="outline"
-                        onClick={() => handleSubmitPayment('apple_pay')}
-                        disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady}
-                      >
-                        <ApplePayIcon className="h-5 w-auto me-2" />
-                        <span>{isRTL ? 'الدفع عبر Apple Pay' : 'Pay with Apple Pay'}</span>
-                      </Button>
-
-                      {/* Google Pay */}
-                      <Button
-                        className="w-full h-12 rounded-lg"
-                        variant="outline"
-                        onClick={() => handleSubmitPayment('google_pay')}
-                        disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady}
-                      >
-                        <GooglePayIcon className="h-5 w-auto me-2" />
-                        <span>{isRTL ? 'الدفع عبر Google Pay' : 'Pay with Google Pay'}</span>
-                      </Button>
-                    </div>
+                    <Button
+                      className="w-full h-12 rounded-lg btn-cta"
+                      onClick={() => handleSubmitPayment('card')}
+                      disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady}
+                    >
+                      {guestSigningUp ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin me-2" />
+                          <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
+                        </>
+                      ) : paymentStatus === 'processing' ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin me-2" />
+                          <span>{isRTL ? 'جاري التوجيه للدفع...' : 'Redirecting to payment...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="w-4 h-4 me-2" />
+                          <span>{isRTL ? 'ادفع الآن' : 'Pay Now'}</span>
+                        </>
+                      )}
+                    </Button>
                   )}
 
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
