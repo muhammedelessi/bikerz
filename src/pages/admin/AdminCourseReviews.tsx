@@ -406,7 +406,7 @@ const AdminCourseReviews: React.FC = () => {
               <Textarea
                 value={fakeComment}
                 onChange={(e) => setFakeComment(e.target.value)}
-                placeholder="Enter review comment"
+                placeholder={isRTL ? 'أدخل تعليق التقييم' : 'Enter review comment'}
                 className="min-h-[80px]"
               />
             </div>
