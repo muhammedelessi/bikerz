@@ -313,7 +313,7 @@ const AdminCourseReviews: React.FC = () => {
                 {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
               </div>
             ) : reviews.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-8">No reviews yet</p>
+              <p className="text-muted-foreground text-sm text-center py-8">{isRTL ? 'لا توجد تقييمات بعد' : 'No reviews yet'}</p>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
