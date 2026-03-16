@@ -47,7 +47,7 @@ export function useTapPayment(): UseTapPaymentReturn {
       setError(null);
 
       try {
-        const idempotencyKey = `${config.courseId}_${session.user.id}_${Date.now()}`;
+        const idempotencyKey = `${config.courseId}_${currentSession.user.id}_${Date.now()}`;
 
         // Server computes the price — client only sends identifiers
         const { data, error: fnError } = await supabase.functions.invoke('tap-create-charge', {
