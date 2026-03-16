@@ -643,7 +643,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-5 overflow-y-auto flex-1 min-h-0">
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0">
           {paymentStatus === 'failed' ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
