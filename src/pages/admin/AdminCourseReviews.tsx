@@ -392,7 +392,7 @@ const AdminCourseReviews: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>Rating</Label>
+              <Label>{isRTL ? 'التقييم' : 'Rating'}</Label>
               <StarRating
                 rating={fakeRating}
                 onRatingChange={setFakeRating}
