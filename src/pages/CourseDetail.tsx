@@ -105,6 +105,7 @@ const CourseDetail: React.FC = () => {
   const [showCheckout, setShowCheckout] = useState(false);
   const [showGuestSignup, setShowGuestSignup] = useState(false);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
+  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   const [paymentVerifying, setPaymentVerifying] = useState(false);
   const [previewVideoPlaying, setPreviewVideoPlaying] = useState(false);
@@ -412,7 +413,7 @@ const CourseDetail: React.FC = () => {
 
       {/* Sticky Header — appears on scroll */}
       <AnimatePresence>
-        {showStickyHeader && !showCheckout && (
+        {showStickyHeader && !showCheckout && !isPaymentProcessing && (
           <motion.header
             initial={{ y: -80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -1083,6 +1084,7 @@ const CourseDetail: React.FC = () => {
               queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
               navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
             }}
+            onPaymentStarted={() => setIsPaymentProcessing(true)}
           />
           <GuestSignupModal
             open={showGuestSignup}
@@ -1095,7 +1097,7 @@ const CourseDetail: React.FC = () => {
 
       {/* Sticky Bottom Bar — mobile only, hidden when enrolled */}
       <AnimatePresence>
-        {showStickyBottom && !isEnrolled && !showCheckout && course && (
+        {showStickyBottom && !isEnrolled && !showCheckout && !isPaymentProcessing && course && (
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}

@@ -59,6 +59,7 @@ interface CheckoutModalProps {
     thumbnail_url: string | null;
   };
   onSuccess: () => void;
+  onPaymentStarted?: () => void;
 }
 
 type CheckoutStep = 'profile' | 'billing' | 'profile-reminder' | 'payment';
@@ -91,6 +92,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onOpenChange,
   course,
   onSuccess,
+  onPaymentStarted,
 }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
@@ -446,6 +448,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Submit payment
   const handleSubmitPayment = async (method: PaymentMethod = 'card') => {
     if (!isPaymentReady) return;
+    onPaymentStarted?.();
 
     // Compose address from billing fields
     const composedAddress = [city, country, postalCode].filter(Boolean).join(', ');
