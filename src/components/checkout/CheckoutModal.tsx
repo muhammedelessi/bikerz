@@ -150,9 +150,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       : `-${formatPrice(appliedCoupon.discount_amount, isRTL)}`
     : '';
 
-  // Pre-fill from profile and check bike info
+  // Pre-fill from profile (only for logged-in users)
   useEffect(() => {
     if (!open) return;
+    if (!user) return; // Guest users fill the form themselves
     if (profile?.full_name) setFullName(profile.full_name);
     if (user?.email) setEmail(user.email);
     if (profile?.phone) setPhone(profile.phone || '');
