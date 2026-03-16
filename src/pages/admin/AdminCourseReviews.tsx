@@ -351,9 +351,9 @@ const AdminCourseReviews: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           {review.is_fake ? (
-                            <Badge variant="destructive" className="text-xs">Fake</Badge>
+                            <Badge variant="destructive" className="text-xs">{isRTL ? 'وهمي' : 'Fake'}</Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-xs">Real</Badge>
+                            <Badge variant="secondary" className="text-xs">{isRTL ? 'حقيقي' : 'Real'}</Badge>
                           )}
                         </TableCell>
                         <TableCell>
