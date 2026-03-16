@@ -23,7 +23,7 @@ const GooglePayIcon = ({ className = 'h-5 w-auto' }: { className?: string }) => 
 );
 
 const VisaIcon = ({ light = false, className = 'h-4 w-auto' }: { light?: boolean; className?: string }) => (
-  <svg viewBox="0 0 48 16" className={className}>
+  <svg viewBox="0 0 48 16" className={className} style={{ direction: 'ltr' }}>
     <text x="0" y="13" fontSize="14" fontWeight="700" fontFamily="system-ui, sans-serif" fill={light ? '#FFFFFF' : '#1A1F71'} letterSpacing="-0.5">VISA</text>
   </svg>
 );
