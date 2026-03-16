@@ -1005,6 +1005,12 @@ const CourseDetail: React.FC = () => {
             navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
           }}
         />
+        <GuestSignupModal
+          open={showGuestSignup}
+          onOpenChange={setShowGuestSignup}
+          course={{ id: course.id, title: course.title, title_ar: course.title_ar, price: course.price }}
+          onAuthenticated={() => setShowCheckout(true)}
+        />
       )}
     </div>
   );
