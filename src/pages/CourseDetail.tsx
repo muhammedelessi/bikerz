@@ -705,20 +705,20 @@ const CourseDetail: React.FC = () => {
                       <div className="text-center py-2">
                         {(() => {
                           const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
-                          const courseMeta = priceInfo.currency;
+                          const sym = getCurrencySymbol(priceInfo.currency, isRTL);
                           if (priceInfo.discountPct > 0 && course.price > 0) {
                             return (
                               <div className="space-y-1">
                                 <div className="flex items-center justify-center gap-2">
                                   <span className="text-lg text-muted-foreground line-through">
-                                    {priceInfo.originalPrice} {courseMeta}
+                                    {priceInfo.originalPrice} {sym}
                                   </span>
                                   <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-sm font-bold">
                                     -{priceInfo.discountPct}%
                                   </span>
                                 </div>
                                 <span className="text-4xl font-black text-foreground">
-                                  {priceInfo.finalPrice} {courseMeta}
+                                  {priceInfo.finalPrice} {sym}
                                 </span>
                               </div>
                             );
@@ -727,7 +727,7 @@ const CourseDetail: React.FC = () => {
                             <span className="text-4xl font-black text-foreground">
                               {course.price === 0
                                 ? t('common.free')
-                                : `${priceInfo.finalPrice} ${courseMeta}`}
+                                : `${priceInfo.finalPrice} ${sym}`}
                             </span>
                           );
                         })()}
