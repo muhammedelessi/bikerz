@@ -402,7 +402,7 @@ const AdminCourseReviews: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>Comment</Label>
+              <Label>{isRTL ? 'التعليق' : 'Comment'}</Label>
               <Textarea
                 value={fakeComment}
                 onChange={(e) => setFakeComment(e.target.value)}
