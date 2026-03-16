@@ -58,13 +58,12 @@ const PaymentMethodIcons: React.FC<PaymentMethodIconsProps> = ({ className = '',
         <div className="flex items-center justify-center h-8 px-2 rounded-md bg-white/90 border border-white/20">
           <MastercardIcon />
         </div>
-        {/* TODO: Re-enable Apple Pay and Google Pay icons when ready */}
-        {/* <div className="flex items-center justify-center h-8 px-2 rounded-md bg-black border border-white/20 text-white">
+        <div className="flex items-center justify-center h-8 px-2 rounded-md bg-black border border-white/20 text-white">
           <ApplePayIcon />
         </div>
         <div className="flex items-center justify-center h-8 px-2 rounded-md bg-white/90 border border-white/20 text-gray-800">
           <GooglePayIcon />
-        </div> */}
+        </div>
       </div>
     </div>
   );
