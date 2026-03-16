@@ -319,11 +319,11 @@ const AdminCourseReviews: React.FC = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Rating</TableHead>
-                      <TableHead>Comment</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
+                      <TableHead>{isRTL ? 'الاسم' : 'Name'}</TableHead>
+                      <TableHead>{isRTL ? 'التقييم' : 'Rating'}</TableHead>
+                      <TableHead>{isRTL ? 'التعليق' : 'Comment'}</TableHead>
+                      <TableHead>{isRTL ? 'التاريخ' : 'Date'}</TableHead>
+                      <TableHead>{isRTL ? 'النوع' : 'Type'}</TableHead>
                       <TableHead className="w-12"></TableHead>
                     </TableRow>
                   </TableHeader>
