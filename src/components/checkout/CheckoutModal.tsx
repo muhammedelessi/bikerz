@@ -598,13 +598,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 {isRTL && course.title_ar ? course.title_ar : course.title}
               </h3>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                {promoApplied && (
+                {priceInfo.discountPct > 0 && (
                   <span className="text-xs text-muted-foreground line-through">
-                    {formatPrice(course.price, isRTL)}
+                    {formatLocal(priceInfo.originalPrice)}
                   </span>
                 )}
                 <span className="text-base font-bold text-primary">
-                  {formatPrice(discountedPrice, isRTL)}
+                  {formatLocal(discountedPrice)}
                 </span>
                 {promoApplied && discountLabel && (
                   <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">{discountLabel}</span>
