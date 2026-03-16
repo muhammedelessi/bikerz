@@ -614,8 +614,8 @@ const CourseDetail: React.FC = () => {
                       </div>
 
                       {/* CTA */}
-                      {user ? (
-                        course.price === 0 ? (
+                      {course.price === 0 ? (
+                        user ? (
                           <Button
                             className="w-full btn-cta h-12 text-base"
                             onClick={() => enrollMutation.mutate()}
@@ -627,25 +627,34 @@ const CourseDetail: React.FC = () => {
                               : t('courses.enrollForFree')}
                           </Button>
                         ) : (
-                          <>
-                            <Button
-                              className="w-full btn-cta h-12 text-base"
-                              onClick={() => setShowCheckout(true)}
-                            >
-                              <ShoppingCart className="w-5 h-5 me-2" />
-                              {t('courses.buyNow')}
-                            </Button>
-                          </>
-                        )
-                      ) : (
-                        <>
                           <Button className="w-full btn-cta h-12 text-base" asChild>
                             <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
-                              {t('courses.loginToPurchase')}
+                              <Zap className="w-5 h-5 me-2" />
+                              {t('courses.enrollForFree')}
                             </Link>
                           </Button>
-                          
-                        </>
+                        )
+                      ) : user ? (
+                        <Button
+                          className="w-full btn-cta h-12 text-base"
+                          onClick={() => setShowCheckout(true)}
+                        >
+                          <ShoppingCart className="w-5 h-5 me-2" />
+                          {t('courses.buyNow')}
+                        </Button>
+                      ) : (
+                        <Button
+                          className="w-full btn-cta h-12 text-base"
+                          onClick={() => setShowCheckout(true)}
+                        >
+                          <Zap className="w-5 h-5 me-2" />
+                          {(() => {
+                            const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                            return isRTL
+                              ? `احصل على الوصول الفوري – ${info.finalPrice} ${info.currency}`
+                              : `Get Instant Access – ${info.finalPrice} ${info.currency}`;
+                          })()}
+                        </Button>
                       )}
 
                       {/* Course includes */}
