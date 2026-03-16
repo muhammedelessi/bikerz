@@ -49,6 +49,7 @@ import ReinforcementSuggestion from '@/components/learning/ReinforcementSuggesti
 import LessonRecapInsert from '@/components/learning/LessonRecapInsert';
 import NextLessonCountdown from '@/components/course/NextLessonCountdown';
 import PurchaseEncouragementModal from '@/components/course/PurchaseEncouragementModal';
+import ReviewPromptModal from '@/components/course/ReviewPromptModal';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
 
 interface Lesson {
@@ -1405,6 +1406,15 @@ const CourseLearn: React.FC = () => {
           </ScrollArea>
         </aside>
       </div>
+
+      {/* Review Prompt Modal */}
+      {course && isEnrolled && user && (
+        <ReviewPromptModal
+          courseId={course.id}
+          progressPercentage={progressPercentage}
+          isEnrolled={isEnrolled}
+        />
+      )}
 
       {/* Purchase Encouragement Modal */}
       {course && !isEnrolled && (
