@@ -345,9 +345,7 @@ Deno.serve(async (req) => {
         internal_id: chargeRecord.id,
       },
       source: {
-        id: payment_method === "apple_pay" ? "src_apple_pay" :
-            payment_method === "google_pay" ? "src_google_pay" :
-            "src_all",
+        id: "src_all",
       },
       redirect: {
         url: redirectBackUrl,
