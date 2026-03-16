@@ -82,9 +82,32 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
   // Check if user already reviewed
   const userHasReview = user && reviews.some(r => r.user_id === user.id && !r.is_fake);
 
-  // Calculate stats
-  const avgRating = reviews.length > 0
+  // Fetch base rating from course
+  const { data: courseBase } = useQuery({
+    queryKey: ['course-base-rating', courseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('courses')
+        .select('base_review_count, base_rating')
+        .eq('id', courseId)
+        .single();
+      return {
+        baseCount: (data as any)?.base_review_count || 0,
+        baseRating: Number((data as any)?.base_rating) || 0,
+      };
+    },
+  });
+
+  const baseCount = courseBase?.baseCount || 0;
+  const baseRating = courseBase?.baseRating || 0;
+
+  // Calculate stats (combined with base)
+  const realAvg = reviews.length > 0
     ? reviews.reduce((sum, r) => sum + Number(r.rating), 0) / reviews.length
+    : 0;
+  const totalCount = reviews.length + baseCount;
+  const avgRating = totalCount > 0
+    ? ((realAvg * reviews.length) + (baseRating * baseCount)) / totalCount
     : 0;
 
   const ratingBreakdown = [5, 4, 3, 2, 1].map(star => ({
