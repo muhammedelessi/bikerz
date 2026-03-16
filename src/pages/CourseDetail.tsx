@@ -399,20 +399,24 @@ const CourseDetail: React.FC = () => {
                       {isRTL ? 'أكمل التعلم' : 'Resume'}
                     </Link>
                   </Button>
-                ) : !isEnrolled && user ? (
+                ) : !isEnrolled ? (
                   course.price === 0 ? (
-                    <Button size="sm" className="btn-cta h-9 text-sm" onClick={() => enrollMutation.mutate()} disabled={enrollMutation.isPending}>
-                      {isRTL ? 'سجّل مجاناً' : 'Enroll Free'}
-                    </Button>
+                    user ? (
+                      <Button size="sm" className="btn-cta h-9 text-sm" onClick={() => enrollMutation.mutate()} disabled={enrollMutation.isPending}>
+                        {isRTL ? 'سجّل مجاناً' : 'Enroll Free'}
+                      </Button>
+                    ) : (
+                      <Button size="sm" className="btn-cta h-9 text-sm" asChild>
+                        <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
+                          {isRTL ? 'سجّل مجاناً' : 'Enroll Free'}
+                        </Link>
+                      </Button>
+                    )
                   ) : (
                     <Button size="sm" className="btn-cta h-9 text-sm" onClick={() => setShowCheckout(true)}>
-                      {isRTL ? 'اشترِ الآن' : 'Buy Now'}
+                      {user ? (isRTL ? 'اشترِ الآن' : 'Buy Now') : (isRTL ? 'احصل على الوصول الفوري' : 'Get Instant Access')}
                     </Button>
                   )
-                ) : !user ? (
-                  <Button size="sm" className="btn-cta h-9 text-sm" asChild>
-                    <Link to="/login">{isRTL ? 'تسجيل الدخول' : 'Login'}</Link>
-                  </Button>
                 ) : null}
               </div>
             </div>
