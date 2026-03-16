@@ -30,7 +30,8 @@ export function useTapPayment(): UseTapPaymentReturn {
   const [status, setStatus] = useState<PaymentStatus>('idle');
   const [error, setError] = useState<string | null>(null);
 
-  const isReady = status === 'idle' && !!session?.access_token;
+  // For guest checkout, session may not exist when hook mounts but will be available by payment time
+  const isReady = status === 'idle';
 
   const submitPayment = useCallback(
     async (config: TapPaymentConfig) => {
