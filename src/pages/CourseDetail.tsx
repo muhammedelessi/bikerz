@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import SEOHead from '@/components/common/SEOHead';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -106,6 +106,8 @@ const CourseDetail: React.FC = () => {
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   const [paymentVerifying, setPaymentVerifying] = useState(false);
   const [previewVideoPlaying, setPreviewVideoPlaying] = useState(false);
+  const [showStickyBottom, setShowStickyBottom] = useState(false);
+  const ctaCardRef = useRef<HTMLDivElement>(null);
 
   // Payment callback now handled by /payment-success/:courseId page
 
@@ -118,6 +120,7 @@ const CourseDetail: React.FC = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
 
   // Fetch course details
   const { data: course, isLoading: courseLoading } = useQuery({
@@ -208,6 +211,17 @@ const CourseDetail: React.FC = () => {
       });
     }
   }, [course, id]);
+
+  // IntersectionObserver for sticky bottom bar on mobile
+  useEffect(() => {
+    if (!ctaCardRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowStickyBottom(!entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    observer.observe(ctaCardRef.current);
+    return () => observer.disconnect();
+  }, [course]);
 
   // Enroll mutation
   const enrollMutation = useMutation({
@@ -522,7 +536,7 @@ const CourseDetail: React.FC = () => {
               </div>
 
               {/* Right: Enrollment Card (2 cols, sticky) */}
-              <div className="lg:col-span-2 order-last lg:order-last">
+              <div ref={ctaCardRef} className="lg:col-span-2 order-last lg:order-last">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1027,6 +1041,68 @@ const CourseDetail: React.FC = () => {
           />
         </>
       )}
+
+      {/* Sticky Bottom Bar — mobile only, hidden when enrolled */}
+      <AnimatePresence>
+        {showStickyBottom && !isEnrolled && course && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed bottom-0 inset-x-0 z-[60] lg:hidden bg-card/95 backdrop-blur-xl border-t border-border safe-area-bottom"
+          >
+            <div className="flex items-center justify-between gap-3 px-4 py-3">
+              {/* Price */}
+              <div className="flex flex-col min-w-0">
+                {(() => {
+                  const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                  if (course.price === 0) {
+                    return <span className="text-lg font-black text-foreground">{t('common.free')}</span>;
+                  }
+                  return (
+                    <div className="flex items-center gap-2">
+                      {priceInfo.discountPct > 0 && (
+                        <span className="text-xs text-muted-foreground line-through">{priceInfo.originalPrice} {priceInfo.currency}</span>
+                      )}
+                      <span className="text-lg font-black text-foreground">{priceInfo.finalPrice} {priceInfo.currency}</span>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* CTA Button */}
+              {course.price === 0 ? (
+                user ? (
+                  <Button
+                    className="btn-cta h-11 text-sm px-6 flex-shrink-0"
+                    onClick={() => enrollMutation.mutate()}
+                    disabled={enrollMutation.isPending}
+                  >
+                    <Zap className="w-4 h-4 me-1.5" />
+                    {isRTL ? 'سجّل مجاناً' : 'Enroll Free'}
+                  </Button>
+                ) : (
+                  <Button className="btn-cta h-11 text-sm px-6 flex-shrink-0" asChild>
+                    <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
+                      <Zap className="w-4 h-4 me-1.5" />
+                      {isRTL ? 'سجّل مجاناً' : 'Enroll Free'}
+                    </Link>
+                  </Button>
+                )
+              ) : (
+                <Button
+                  className="btn-cta h-11 text-sm px-6 flex-shrink-0"
+                  onClick={() => user ? setShowCheckout(true) : setShowGuestSignup(true)}
+                >
+                  <ShoppingCart className="w-4 h-4 me-1.5" />
+                  {user ? (isRTL ? 'اشترِ الآن' : 'Buy Now') : (isRTL ? 'احصل على الوصول' : 'Get Access')}
+                </Button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
