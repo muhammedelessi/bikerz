@@ -92,6 +92,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onOpenChange,
   course,
   onSuccess,
+  onPaymentStarted,
 }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
