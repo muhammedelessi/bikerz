@@ -638,6 +638,7 @@ const AdminCourses: React.FC = () => {
                               <Star className="w-4 h-4 me-2" />
                               {isRTL ? 'التقييمات والمراجعات' : 'Reviews & Ratings'}
                             </Link>
+                          </DropdownMenuItem>
                           <DropdownMenuItem>
                             <Copy className="w-4 h-4 me-2" />
                             {isRTL ? 'استنساخ' : 'Duplicate'}
