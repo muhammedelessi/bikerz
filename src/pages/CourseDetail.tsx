@@ -462,7 +462,7 @@ const CourseDetail: React.FC = () => {
                       {(() => {
                         const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
                         return isRTL
-                          ? `اشترِ الآن – ${info.finalPrice} ${info.currency}`
+                          ? `اشترك الآن – ${info.finalPrice} ${info.currency}`
                           : `Buy now – ${info.finalPrice} ${info.currency}`;
                       })()}
                     </Button>
@@ -766,7 +766,7 @@ const CourseDetail: React.FC = () => {
                           {(() => {
                             const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
                             return isRTL
-                              ? `اشترِ الآن – ${info.finalPrice} ${info.currency}`
+                              ? `اشترك الآن – ${info.finalPrice} ${info.currency}`
                               : `Buy now – ${info.finalPrice} ${info.currency}`;
                           })()}
                         </Button>
@@ -779,7 +779,7 @@ const CourseDetail: React.FC = () => {
                           {(() => {
                             const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
                             return isRTL
-                              ? `اشترِ الآن – ${info.finalPrice} ${info.currency}`
+                              ? `اشترك الآن – ${info.finalPrice} ${info.currency}`
                               : `Buy now – ${info.finalPrice} ${info.currency}`;
                           })()}
                         </Button>
@@ -1150,7 +1150,7 @@ const CourseDetail: React.FC = () => {
                   {(() => {
                     const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
                     return isRTL
-                      ? `اشترِ الآن – ${info.finalPrice} ${info.currency}`
+                      ? `اشترك الآن – ${info.finalPrice} ${info.currency}`
                       : `Buy now – ${info.finalPrice} ${info.currency}`;
                   })()}
                 </Button>
