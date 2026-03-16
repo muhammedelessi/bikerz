@@ -330,7 +330,7 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
           <div className="card-premium p-8 sm:p-12 text-center">
             <MessageSquare className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground text-sm">
-              {isRTL ? 'لا توجد تقييمات بعد. كن أول من يقيّم!' : 'No reviews yet. Be the first to review!'}
+              {isRTL ? 'لا يوجد تعليقات بعد' : 'No comments yet'}
             </p>
           </div>
         )}
