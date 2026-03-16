@@ -94,7 +94,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { currencyCode, symbol, symbolAr, convertPrice, formatPrice, calculateTax, calculateTotalWithTax, getSarTotalWithVat, vatLabel, vatLabelAr, isSAR, getCoursePriceInfo } = useCurrency();
+  const { currencyCode, symbol, symbolAr, convertPrice, formatPrice, calculateTax, calculateTotalWithTax, getSarTotalWithVat, vatLabel, vatLabelAr, isSAR, getCoursePriceInfo, getCourseCurrency } = useCurrency();
+  
+  // Helper: format an already-converted local price (no re-conversion)
+  const courseCurrency = getCourseCurrency(course.id);
+  const currencyLabel = isRTL ? symbolAr : symbol;
+  const formatLocal = (amount: number) => `${amount} ${currencyLabel}`;
   const { user, profile, session } = useAuth();
   const navigate = useNavigate();
   const {
