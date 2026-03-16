@@ -109,6 +109,7 @@ const CourseDetail: React.FC = () => {
   const [previewVideoPlaying, setPreviewVideoPlaying] = useState(false);
   const [showStickyBottom, setShowStickyBottom] = useState(false);
   const ctaCardRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Payment callback now handled by /payment-success/:courseId page
 
@@ -214,15 +215,19 @@ const CourseDetail: React.FC = () => {
   }, [course, id]);
 
   // IntersectionObserver for sticky bottom bar on mobile
-  useEffect(() => {
-    if (!ctaCardRef.current) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setShowStickyBottom(!entry.isIntersecting),
-      { threshold: 0.1 }
-    );
-    observer.observe(ctaCardRef.current);
-    return () => observer.disconnect();
-  }, [course]);
+  const ctaCardCallbackRef = React.useCallback((node: HTMLDivElement | null) => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+    ctaCardRef.current = node;
+    if (node) {
+      observerRef.current = new IntersectionObserver(
+        ([entry]) => setShowStickyBottom(!entry.isIntersecting),
+        { threshold: 0.1 }
+      );
+      observerRef.current.observe(node);
+    }
+  }, []);
 
   // Enroll mutation
   const enrollMutation = useMutation({
@@ -537,7 +542,7 @@ const CourseDetail: React.FC = () => {
               </div>
 
               {/* Right: Enrollment Card (2 cols, sticky) */}
-              <div ref={ctaCardRef} className="lg:col-span-2 order-last lg:order-last">
+              <div ref={ctaCardCallbackRef} className="lg:col-span-2 order-last lg:order-last">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
