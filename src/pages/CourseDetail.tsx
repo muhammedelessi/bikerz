@@ -215,14 +215,15 @@ const CourseDetail: React.FC = () => {
 
   // IntersectionObserver for sticky bottom bar on mobile
   useEffect(() => {
-    if (!ctaCardRef.current) return;
+    const el = ctaCardRef.current;
+    if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => setShowStickyBottom(!entry.isIntersecting),
       { threshold: 0.1 }
     );
-    observer.observe(ctaCardRef.current);
+    observer.observe(el);
     return () => observer.disconnect();
-  }, [course]);
+  });
 
   // Enroll mutation
   const enrollMutation = useMutation({
