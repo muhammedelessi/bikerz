@@ -960,11 +960,23 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
                           <span className="text-primary">{total} {currencyLabel}</span>
                         </div>
-                        {!isSAR && (
-                          <p className="text-[10px] text-muted-foreground text-center mt-1">
-                            {isRTL ? `* سيتم تحصيل المبلغ بالريال السعودي (${getSarTotalWithVat(course.price)} ر.س)` : `* You will be charged in SAR (${getSarTotalWithVat(course.price)} SAR)`}
-                          </p>
-                        )}
+                        {!isSAR && (() => {
+                          // Compute SAR equivalent: apply same course discount to SAR base price
+                          let sarBase = Math.ceil(course.price);
+                          const courseDpct = course.discount_percentage || 0;
+                          if (courseDpct > 0) sarBase = Math.ceil(sarBase * (1 - courseDpct / 100));
+                          // Apply coupon discount proportionally if present
+                          if (appliedCoupon && basePrice > 0) {
+                            const couponRatio = discountedPrice / basePrice;
+                            sarBase = Math.ceil(sarBase * couponRatio);
+                          }
+                          const sarTotal = Math.ceil(sarBase * 1.15);
+                          return (
+                            <p className="text-[10px] text-muted-foreground text-center mt-1">
+                              {isRTL ? `* سيتم تحصيل المبلغ بالريال السعودي (${sarTotal} ر.س)` : `* You will be charged in SAR (${sarTotal} SAR)`}
+                            </p>
+                          );
+                        })()}
                       </div>
                     );
                   })()}
