@@ -61,7 +61,7 @@ const AdminCourseReviews: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('courses')
-        .select('id, title, title_ar')
+        .select('id, title, title_ar, base_review_count, base_rating')
         .eq('id', courseId!)
         .single();
       if (error) throw error;
