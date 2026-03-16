@@ -989,28 +989,30 @@ const CourseDetail: React.FC = () => {
 
       {/* Checkout Modal */}
       {course && (
-        <CheckoutModal
-          open={showCheckout}
-          onOpenChange={setShowCheckout}
-          course={{
-            id: course.id,
-            title: course.title,
-            title_ar: course.title_ar,
-            price: course.price,
-            discount_percentage: course.discount_percentage,
-            thumbnail_url: course.thumbnail_url,
-          }}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
-            navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
-          }}
-        />
-        <GuestSignupModal
-          open={showGuestSignup}
-          onOpenChange={setShowGuestSignup}
-          course={{ id: course.id, title: course.title, title_ar: course.title_ar, price: course.price }}
-          onAuthenticated={() => setShowCheckout(true)}
-        />
+        <>
+          <CheckoutModal
+            open={showCheckout}
+            onOpenChange={setShowCheckout}
+            course={{
+              id: course.id,
+              title: course.title,
+              title_ar: course.title_ar,
+              price: course.price,
+              discount_percentage: course.discount_percentage,
+              thumbnail_url: course.thumbnail_url,
+            }}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
+              navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
+            }}
+          />
+          <GuestSignupModal
+            open={showGuestSignup}
+            onOpenChange={setShowGuestSignup}
+            course={{ id: course.id, title: course.title, title_ar: course.title_ar, price: course.price }}
+            onAuthenticated={() => setShowCheckout(true)}
+          />
+        </>
       )}
     </div>
   );
