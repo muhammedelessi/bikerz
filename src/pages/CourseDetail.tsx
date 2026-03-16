@@ -36,6 +36,7 @@ import {
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.jpg';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
+import GuestSignupModal from '@/components/checkout/GuestSignupModal';
 import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';
 import PaymentMethodIcons from '@/components/checkout/PaymentMethodIcons';
 import { trackViewContent } from '@/utils/metaPixel';
@@ -100,6 +101,7 @@ const CourseDetail: React.FC = () => {
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ArrowLeft : ArrowRight;
   const [showCheckout, setShowCheckout] = useState(false);
+  const [showGuestSignup, setShowGuestSignup] = useState(false);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   const [paymentVerifying, setPaymentVerifying] = useState(false);
@@ -413,7 +415,7 @@ const CourseDetail: React.FC = () => {
                       </Button>
                     )
                   ) : (
-                    <Button size="sm" className="btn-cta h-9 text-sm" onClick={() => setShowCheckout(true)}>
+                    <Button size="sm" className="btn-cta h-9 text-sm" onClick={() => user ? setShowCheckout(true) : setShowGuestSignup(true)}>
                       {user ? (isRTL ? 'اشترِ الآن' : 'Buy Now') : (isRTL ? 'احصل على الوصول الفوري' : 'Get Instant Access')}
                     </Button>
                   )
@@ -645,7 +647,7 @@ const CourseDetail: React.FC = () => {
                       ) : (
                         <Button
                           className="w-full btn-cta h-12 text-base"
-                          onClick={() => setShowCheckout(true)}
+                          onClick={() => setShowGuestSignup(true)}
                         >
                           <Zap className="w-5 h-5 me-2" />
                           {(() => {
@@ -987,22 +989,30 @@ const CourseDetail: React.FC = () => {
 
       {/* Checkout Modal */}
       {course && (
-        <CheckoutModal
-          open={showCheckout}
-          onOpenChange={setShowCheckout}
-          course={{
-            id: course.id,
-            title: course.title,
-            title_ar: course.title_ar,
-            price: course.price,
-            discount_percentage: course.discount_percentage,
-            thumbnail_url: course.thumbnail_url,
-          }}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
-            navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
-          }}
-        />
+        <>
+          <CheckoutModal
+            open={showCheckout}
+            onOpenChange={setShowCheckout}
+            course={{
+              id: course.id,
+              title: course.title,
+              title_ar: course.title_ar,
+              price: course.price,
+              discount_percentage: course.discount_percentage,
+              thumbnail_url: course.thumbnail_url,
+            }}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ['enrollment', id, user?.id] });
+              navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
+            }}
+          />
+          <GuestSignupModal
+            open={showGuestSignup}
+            onOpenChange={setShowGuestSignup}
+            course={{ id: course.id, title: course.title, title_ar: course.title_ar, price: course.price }}
+            onAuthenticated={() => setShowCheckout(true)}
+          />
+        </>
       )}
     </div>
   );
