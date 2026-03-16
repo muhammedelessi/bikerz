@@ -124,6 +124,22 @@ const CourseDetail: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Fetch review stats
+  const { data: reviewStats } = useQuery({
+    queryKey: ['course-review-stats', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('course_reviews')
+        .select('rating')
+        .eq('course_id', id!);
+      if (error) throw error;
+      const count = (data || []).length;
+      const avg = count > 0 ? data!.reduce((s, r) => s + Number(r.rating), 0) / count : 0;
+      return { count, avg };
+    },
+    enabled: !!id,
+  });
+
 
   // Fetch course details
   const { data: course, isLoading: courseLoading } = useQuery({
