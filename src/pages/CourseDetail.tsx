@@ -516,6 +516,17 @@ const CourseDetail: React.FC = () => {
                     {courseTitle}
                   </h1>
 
+                  {/* Rating Summary */}
+                  {reviewStats && reviewStats.count > 0 && (
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                      <StarRating rating={reviewStats.avg} size="sm" />
+                      <span className="text-sm font-semibold text-foreground">{reviewStats.avg.toFixed(1)}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({reviewStats.count} {isRTL ? 'تقييم' : reviewStats.count === 1 ? 'review' : 'reviews'})
+                      </span>
+                    </div>
+                  )}
+
                   {/* Stats Row — on mobile, show before description */}
                   <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-2 sm:gap-y-3 text-xs sm:text-sm mb-3 sm:mb-0">
                     <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
