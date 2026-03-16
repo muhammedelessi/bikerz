@@ -124,18 +124,24 @@ const CourseDetail: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Fetch review stats
+  // Fetch review stats (combines real + base)
   const { data: reviewStats } = useQuery({
     queryKey: ['course-review-stats', id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('course_reviews')
-        .select('rating')
-        .eq('course_id', id!);
+      const [{ data: reviews, error }, { data: courseData }] = await Promise.all([
+        supabase.from('course_reviews').select('rating').eq('course_id', id!),
+        supabase.from('courses').select('base_review_count, base_rating').eq('id', id!).single(),
+      ]);
       if (error) throw error;
-      const count = (data || []).length;
-      const avg = count > 0 ? data!.reduce((s, r) => s + Number(r.rating), 0) / count : 0;
-      return { count, avg };
+      const realCount = (reviews || []).length;
+      const realAvg = realCount > 0 ? reviews!.reduce((s, r) => s + Number(r.rating), 0) / realCount : 0;
+      const baseCount = (courseData as any)?.base_review_count || 0;
+      const baseRating = Number((courseData as any)?.base_rating) || 0;
+      const totalCount = realCount + baseCount;
+      const combinedAvg = totalCount > 0
+        ? ((realAvg * realCount) + (baseRating * baseCount)) / totalCount
+        : 0;
+      return { count: totalCount, avg: combinedAvg };
     },
     enabled: !!id,
   });
