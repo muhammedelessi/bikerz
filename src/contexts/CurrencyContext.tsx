@@ -5,7 +5,7 @@ export type CurrencyCode =
   | 'SAR' | 'AED' | 'KWD' | 'BHD' | 'QAR' | 'OMR' | 'JOD'
   | 'EGP' | 'IQD' | 'SYP' | 'LBP' | 'YER' | 'LYD' | 'TND'
   | 'DZD' | 'MAD' | 'SDG' | 'SOS' | 'MRU' | 'KMF' | 'DJF'
-  | 'ILS' | 'USD';
+  | 'ILS' | 'USD' | 'GBP';
 
 interface CurrencyMeta {
   symbol: string;
@@ -36,6 +36,7 @@ const CURRENCY_META: Record<CurrencyCode, CurrencyMeta> = {
   DJF: { symbol: 'DJF', symbolAr: 'ف.ج' },
   ILS: { symbol: 'ILS', symbolAr: '₪' },
   USD: { symbol: 'USD', symbolAr: '$' },
+  GBP: { symbol: 'GBP', symbolAr: '£' },
 };
 
 const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
@@ -43,6 +44,7 @@ const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
   JO: 'JOD', EG: 'EGP', IQ: 'IQD', SY: 'SYP', LB: 'LBP', YE: 'YER',
   LY: 'LYD', TN: 'TND', DZ: 'DZD', MA: 'MAD', SD: 'SDG', SO: 'SOS',
   MR: 'MRU', KM: 'KMF', DJ: 'DJF', PS: 'ILS', IL: 'ILS',
+  GB: 'GBP',
 };
 
 // Fallback rates (SAR → X) used if live fetch fails
@@ -51,7 +53,7 @@ const FALLBACK_RATES: Record<CurrencyCode, number> = {
   JOD: 0.189, EGP: 13.97, IQD: 348.89, SYP: 30.37, LBP: 23867,
   YER: 63.58, LYD: 1.694, TND: 0.782, DZD: 35.08, MAD: 2.511,
   SDG: 135.35, SOS: 152, MRU: 10.651, KMF: 114.55, DJF: 47.39,
-  ILS: 0.837, USD: 0.267,
+  ILS: 0.837, USD: 0.267, GBP: 0.211,
 };
 
 const VAT_RATE = 15; // Saudi VAT — server always charges 15%
