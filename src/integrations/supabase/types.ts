@@ -656,6 +656,8 @@ export type Database = {
       }
       courses: {
         Row: {
+          base_rating: number
+          base_review_count: number
           certificate_enabled: boolean | null
           created_at: string
           currency: string | null
@@ -682,6 +684,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          base_rating?: number
+          base_review_count?: number
           certificate_enabled?: boolean | null
           created_at?: string
           currency?: string | null
@@ -708,6 +712,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          base_rating?: number
+          base_review_count?: number
           certificate_enabled?: boolean | null
           created_at?: string
           currency?: string | null
