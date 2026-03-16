@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +24,6 @@ interface GuestSignupModalProps {
     title_ar: string | null;
     price: number;
   };
-  /** Called after successful signup/login — parent should open checkout */
   onAuthenticated: () => void;
 }
 
@@ -35,28 +35,36 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
 }) => {
   const { isRTL } = useLanguage();
   const { sendCourseStatus } = useGHLFormWebhook();
+  const navigate = useNavigate();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isValid =
     fullName.trim().length >= 3 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
-    password.length >= 6;
+    password.length >= 6 &&
+    password === confirmPassword;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid || loading) return;
 
+    if (password !== confirmPassword) {
+      setError(isRTL ? 'كلمات المرور غير متطابقة' : 'Passwords do not match');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      // Try signup first
       const { data: signupData, error: signupError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -67,30 +75,21 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
       });
 
       if (signupError) {
-        // If already registered, try logging in
         if (
           signupError.message?.includes('already registered') ||
           signupError.message?.includes('already exists') ||
           signupError.message?.includes('User already registered')
         ) {
-          const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-            email: email.trim(),
-            password,
-          });
-
-          if (loginError) {
-            setError(
-              isRTL
-                ? 'البريد مسجل بالفعل. كلمة المرور غير صحيحة.'
-                : 'Email already registered. Incorrect password.'
-            );
-            return;
-          }
-
-          // Logged in existing user — go to checkout
-          toast.success(isRTL ? 'تم تسجيل الدخول بنجاح' : 'Logged in successfully');
-          onOpenChange(false);
-          onAuthenticated();
+          setError(
+            isRTL
+              ? 'لديك حساب بالفعل. يرجى تسجيل الدخول للمتابعة.'
+              : 'You already have an account. Please log in to continue.'
+          );
+          // Redirect to login after a short delay so they can read the message
+          setTimeout(() => {
+            onOpenChange(false);
+            navigate(`/login?returnTo=/courses/${course.id}`);
+          }, 2000);
           return;
         }
         throw signupError;
@@ -176,7 +175,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={isRTL ? 'example@email.com' : 'example@email.com'}
+                placeholder="example@email.com"
                 className="h-11"
                 autoComplete="email"
                 dir="ltr"
@@ -206,6 +205,33 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-1.5">
+              <Label htmlFor="guest-confirm-password" className="text-sm font-medium">
+                {isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}
+              </Label>
+              <div className="relative">
+                <Input
+                  id="guest-confirm-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="h-11 pe-10"
+                  autoComplete="new-password"
+                  dir="ltr"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
