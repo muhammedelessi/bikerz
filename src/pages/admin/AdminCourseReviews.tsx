@@ -220,7 +220,7 @@ const AdminCourseReviews: React.FC = () => {
           <Card>
             <CardContent className="pt-6 text-center">
               <span className="text-3xl font-black text-foreground">{fakeCount}</span>
-              <p className="text-xs text-muted-foreground mt-1">Fake Reviews</p>
+              <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'تقييمات وهمية' : 'Fake Reviews'}</p>
             </CardContent>
           </Card>
         </div>
