@@ -92,10 +92,10 @@ const FeaturedCoursesSection: React.FC = () => {
         </motion.div>
 
         {/* Course Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        <div className="flex flex-col gap-4 sm:gap-5">
           {isLoading
-            ? Array.from({ length: 2 }).map((_, i) => (
-                <Skeleton key={i} className="aspect-[4/3] rounded-xl" />
+            ? Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-28 sm:h-36 rounded-xl" />
               ))
             : courses.map((course: any, index: number) => {
                 const title = isRTL && course.title_ar ? course.title_ar : course.title;
@@ -106,52 +106,52 @@ const FeaturedCoursesSection: React.FC = () => {
                 return (
                   <motion.div
                     key={course.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={inView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.5, delay: index * 0.15 }}
+                    initial={{ opacity: 0, x: isRTL ? 30 : -30 }}
+                    animate={inView ? { opacity: 1, x: 0 } : {}}
+                    transition={{ duration: 0.5, delay: index * 0.12 }}
                   >
                     <Link to={`/courses/${course.id}`}>
-                      <div className="group card-premium overflow-hidden transition-all duration-500 hover:border-primary/40">
-                        {/* Image */}
-                        <div className="relative aspect-[16/10] overflow-hidden">
+                      <div className="group card-premium overflow-hidden transition-all duration-500 hover:border-primary/40 flex flex-row">
+                        {/* Thumbnail */}
+                        <div className="relative w-32 sm:w-48 md:w-56 flex-shrink-0 overflow-hidden">
                           <img
                             src={course.thumbnail_url || heroImage}
                             alt={title}
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                             loading="lazy"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/20 to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-card/40" />
 
                           {/* Play button */}
-                          <div className="absolute bottom-3 start-3">
-                            <div className="w-10 h-10 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform shadow-glow">
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform shadow-glow">
                               <Play className="w-4 h-4 text-primary-foreground ms-0.5" />
                             </div>
                           </div>
 
                           {/* Discount badge */}
                           {priceInfo.discountPct > 0 && (
-                            <div className="absolute top-3 end-3 px-2.5 py-1 rounded-full bg-destructive/90 backdrop-blur-sm text-destructive-foreground text-xs font-bold">
+                            <div className="absolute top-2 start-2 px-2 py-0.5 rounded-full bg-destructive/90 backdrop-blur-sm text-destructive-foreground text-[10px] sm:text-xs font-bold">
                               {isRTL ? `خصم ${priceInfo.discountPct}%` : `${priceInfo.discountPct}% OFF`}
                             </div>
                           )}
                         </div>
 
                         {/* Content */}
-                        <div className="p-4 sm:p-5">
-                          <h3 className="text-lg sm:text-xl font-bold text-foreground mb-1.5 group-hover:text-primary transition-colors line-clamp-1">
+                        <div className="flex-1 p-3 sm:p-5 flex flex-col justify-center min-w-0">
+                          <h3 className="text-base sm:text-lg font-bold text-foreground mb-1 group-hover:text-primary transition-colors line-clamp-1">
                             {title}
                           </h3>
-                          <p className="text-muted-foreground text-sm mb-3 line-clamp-2">{desc}</p>
+                          <p className="text-muted-foreground text-xs sm:text-sm mb-2 sm:mb-3 line-clamp-2 hidden sm:block">{desc}</p>
 
                           {/* Meta row */}
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+                          <div className="flex items-center gap-3 text-[11px] sm:text-xs text-muted-foreground mb-2 sm:mb-3">
                             <span className="flex items-center gap-1">
-                              <BookOpen className="w-3.5 h-3.5" />
+                              <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                               {course.lessonCount} {isRTL ? "درس" : "lessons"}
                             </span>
                             <span className="flex items-center gap-1">
-                              <Clock className="w-3.5 h-3.5" />
+                              <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                               {formatDuration(course.totalMinutes)}
                             </span>
                           </div>
@@ -159,11 +159,11 @@ const FeaturedCoursesSection: React.FC = () => {
                           {/* Price & CTA */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="text-lg font-black text-primary">
+                              <span className="text-base sm:text-lg font-black text-primary">
                                 {priceInfo.finalPrice} {sym}
                               </span>
                               {priceInfo.discountPct > 0 && (
-                                <span className="text-sm text-muted-foreground line-through">
+                                <span className="text-xs sm:text-sm text-muted-foreground line-through">
                                   {priceInfo.originalPrice} {sym}
                                 </span>
                               )}
