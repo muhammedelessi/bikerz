@@ -24,7 +24,7 @@ const Index: React.FC = () => {
         <TrustBar />
         <FeaturedCoursesSection />
         <WhySection />
-        <PromoOfferBanner />
+        
         <JourneySection />
         <CTASection />
       </main>
