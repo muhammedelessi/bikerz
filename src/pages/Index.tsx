@@ -4,8 +4,8 @@ import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/landing/HeroSection";
 import WhySection from "@/components/landing/WhySection";
 import JourneySection from "@/components/landing/JourneySection";
-import LearnSection from "@/components/landing/LearnSection";
-import CommunitySection from "@/components/landing/CommunitySection";
+import FeaturedCoursesSection from "@/components/landing/FeaturedCoursesSection";
+import PromoOfferBanner from "@/components/landing/PromoOfferBanner";
 import CTASection from "@/components/landing/CTASection";
 import TrustBar from "@/components/landing/TrustBar";
 import SEOHead from "@/components/common/SEOHead";
@@ -22,9 +22,10 @@ const Index: React.FC = () => {
       <main>
         <HeroSection />
         <TrustBar />
+        <FeaturedCoursesSection />
         <WhySection />
+        <PromoOfferBanner />
         <JourneySection />
-        <LearnSection />
         <CTASection />
       </main>
       <Footer />
