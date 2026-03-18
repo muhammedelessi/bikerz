@@ -74,7 +74,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     setLoading(true);
 
     try {
-      const { data: signupData, error: signupError } = await supabase.auth.signUp({
+      const { data: signupData, error: signupError } = await (supabase.auth as any).signUp({
         email: email.trim(),
         password,
         options: {

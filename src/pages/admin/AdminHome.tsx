@@ -30,7 +30,7 @@ import {
   PieChart,
   Pie,
   Cell,
-} from 'recharts';
+} from '@/lib/recharts-compat';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
