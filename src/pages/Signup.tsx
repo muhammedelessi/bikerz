@@ -104,6 +104,8 @@ const Signup: React.FC = () => {
           data: {
             full_name: name,
             email,
+            date_of_birth: dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : '',
+            gender: gender || '',
           },
         },
       });
