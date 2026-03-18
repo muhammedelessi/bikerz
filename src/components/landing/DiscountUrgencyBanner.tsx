@@ -168,9 +168,9 @@ const DiscountUrgencyBanner: React.FC = () => {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.3 }}
-        className="overflow-hidden bg-gradient-to-r from-destructive/10 via-destructive/5 to-destructive/10 border-b border-destructive/20"
+        className="overflow-hidden bg-gradient-to-r from-red-700 via-orange-600 to-red-700 border-b border-red-900/50 shadow-[0_2px_12px_rgba(220,38,38,0.4)]"
       >
-        <div className="px-3 sm:px-6 py-2 sm:py-3 relative">
+        <div className="px-3 sm:px-6 py-2.5 sm:py-3 relative">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={currentCourse.id}
@@ -187,15 +187,15 @@ const DiscountUrgencyBanner: React.FC = () => {
 
           {/* Dot indicators */}
           {courses.length > 1 && (
-            <div className="flex items-center justify-center gap-1 mt-1">
+            <div className="flex items-center justify-center gap-1 mt-1.5">
               {courses.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setActiveIndex([i, i > activeIndex ? 1 : -1])}
                   className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full transition-all duration-300 ${
                     i === activeIndex % courses.length
-                      ? 'bg-destructive w-3 sm:w-4'
-                      : 'bg-muted-foreground/30'
+                      ? 'bg-yellow-300 w-3 sm:w-4'
+                      : 'bg-white/30'
                   }`}
                   aria-label={`Slide ${i + 1}`}
                 />
