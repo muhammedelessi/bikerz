@@ -134,7 +134,25 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [profileSaving, setProfileSaving] = useState(false);
 
   // Countries & cities from library
-  const allCountries = useMemo(() => Country.getAllCountries(), []);
+  const countryOptions = useMemo(() => {
+    return Country.getAllCountries().map((c) => ({
+      value: c.isoCode,
+      label: `${c.flag} ${isRTL ? (countries.getName(c.isoCode, 'ar') || c.name) : c.name}`,
+      searchLabel: `${c.name} ${countries.getName(c.isoCode, 'ar') || ''}`,
+    }));
+  }, [isRTL]);
+
+  const cityOptions = useMemo(() => {
+    if (!country) return [];
+    const cities = City.getCitiesOfCountry(country) || [];
+    const opts = cities.map((c, i) => ({
+      value: c.name,
+      label: c.name,
+    }));
+    opts.push({ value: '__other__', label: isRTL ? 'أخرى' : 'Other' });
+    return opts;
+  }, [country, isRTL]);
+
   const citiesForCountry = useMemo(() => {
     if (!country) return [];
     return City.getCitiesOfCountry(country) || [];
