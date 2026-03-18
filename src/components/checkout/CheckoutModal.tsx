@@ -317,11 +317,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return Object.keys(newErrors).length === 0;
   }, [fullName, email, phone, isRTL]);
 
-  const effectiveCity = city.trim();
+  const effectiveCity = isOtherCity ? manualCity.trim() : city.trim();
 
   const validateBilling = useCallback((): boolean => {
     const newErrors: ValidationErrors = {};
-    if (!city.trim()) {
+    const cityValue = isOtherCity ? manualCity.trim() : city.trim();
+    if (!cityValue) {
       newErrors.city = isRTL ? 'المدينة مطلوبة' : 'City is required';
     }
     if (!country) {
@@ -329,7 +330,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [city, country, isRTL]);
+  }, [city, manualCity, isOtherCity, country, isRTL]);
 
   const isProfileValid = fullName.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && /^[0-9+\s()-]{7,15}$/.test(phone);
   const isBillingValid = effectiveCity.length > 0 && !!country;
