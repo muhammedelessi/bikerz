@@ -107,8 +107,8 @@ export function useUserProfile() {
         ghlPayload.address = [mergedProfile?.city, mergedProfile?.country].filter(Boolean).join(', ');
       }
       // Always include dateOfBirth and gender from merged profile
-      ghlPayload.dateOfBirth = (mergedProfile as any)?.date_of_birth || '';
-      ghlPayload.gender = (mergedProfile as any)?.gender || '';
+      ghlPayload.dateOfBirth = mergedProfile?.date_of_birth || '';
+      ghlPayload.gender = mergedProfile?.gender || '';
 
       console.log('[GHL] Profile update webhook payload:', ghlPayload);
       sendFormData({ ...ghlPayload, silent: true }).then(ok => {
