@@ -20,6 +20,8 @@ const Index: React.FC = () => {
       />
       <DiscountUrgencyBanner />
       <Navbar />
+      {/* Spacer for fixed banner + navbar */}
+      <div style={{ height: 'calc(var(--discount-banner-h, 0px) + var(--navbar-h, 64px))' }} />
       <main>
         <HeroSection />
         <TrustBar />

@@ -74,13 +74,13 @@ const Navbar: React.FC = () => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
       setIsScrolled(scrollY > 20);
-      // Hide banner when scrolled past its height
       const bannerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--discount-banner-h') || '0');
-      const shouldHide = scrollY > bannerH / 2;
+      const shouldHide = scrollY > bannerH;
       setBannerVisible(!shouldHide);
       document.documentElement.style.setProperty('--banner-translate', shouldHide ? '-100%' : '0');
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -161,13 +161,28 @@ const Navbar: React.FC = () => {
     );
   };
 
+  // Publish navbar height as CSS variable
+  const navRef = React.useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const update = () => {
+      document.documentElement.style.setProperty('--navbar-h', `${el.offsetHeight}px`);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   return (
     <>
       <motion.nav
+        ref={navRef}
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         style={{ top: bannerVisible ? 'var(--discount-banner-h, 0px)' : '0px' }}
-        className={`fixed left-0 right-0 z-50 transition-all duration-300 safe-area-top ${
+        className={`fixed left-0 right-0 z-50 transition-[top] duration-300 safe-area-top ${
           isScrolled || isMobileMenuOpen
             ? 'bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg'
             : 'bg-transparent'
