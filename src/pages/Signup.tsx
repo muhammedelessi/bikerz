@@ -81,7 +81,21 @@ const Signup: React.FC = () => {
       return;
     }
     
-    // Sync new contact to GHL CRM immediately after signup
+    // Save gender and date_of_birth to profile
+    if (gender || dateOfBirth) {
+      try {
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        if (newUser) {
+          await supabase.from('profiles').update({
+            gender: gender || null,
+            date_of_birth: dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : null,
+          } as any).eq('user_id', newUser.id);
+        }
+      } catch (e) {
+        console.error('Failed to save gender/DOB:', e);
+      }
+    }
+
     try {
       await supabase.functions.invoke('ghl-sync', {
         body: {
