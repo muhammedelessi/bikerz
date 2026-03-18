@@ -173,11 +173,10 @@ const Navbar: React.FC = () => {
         ref={navRef}
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        style={{ top: bannerVisible ? 'var(--discount-banner-h, 0px)' : '0px' }}
-        className={`fixed left-0 right-0 z-50 transition-[top] duration-300 safe-area-top ${
+        className={`sticky top-0 left-0 right-0 z-50 safe-area-top ${
           isScrolled || isMobileMenuOpen
             ? 'bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg'
-            : 'bg-transparent'
+            : 'bg-background/80 backdrop-blur-sm'
         }`}
       >
         <div className="page-container">
