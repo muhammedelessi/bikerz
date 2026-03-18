@@ -99,19 +99,20 @@ const DiscountUrgencyBanner: React.FC = () => {
   const bannerRef = useRef<HTMLDivElement>(null);
   const [[activeIndex, direction], setActiveIndex] = useState([0, 1]);
 
-  // Publish banner height as CSS variable for navbar offset
+  // Publish banner height as CSS variable for navbar offset and page spacer
   useEffect(() => {
     const el = bannerRef.current;
     if (!el) return;
     const update = () => {
-      document.documentElement.style.setProperty('--discount-banner-h', `${el.offsetHeight}px`);
+      const h = el.offsetHeight;
+      document.documentElement.style.setProperty('--discount-banner-h', `${h}px`);
     };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => {
       ro.disconnect();
-      document.documentElement.style.removeProperty('--discount-banner-h');
+      document.documentElement.style.setProperty('--discount-banner-h', '0px');
     };
   }, []);
 

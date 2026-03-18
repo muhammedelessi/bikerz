@@ -74,13 +74,13 @@ const Navbar: React.FC = () => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
       setIsScrolled(scrollY > 20);
-      // Hide banner when scrolled past its height
       const bannerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--discount-banner-h') || '0');
-      const shouldHide = scrollY > bannerH / 2;
+      const shouldHide = scrollY > bannerH;
       setBannerVisible(!shouldHide);
       document.documentElement.style.setProperty('--banner-translate', shouldHide ? '-100%' : '0');
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
