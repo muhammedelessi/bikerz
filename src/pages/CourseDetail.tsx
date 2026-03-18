@@ -42,6 +42,7 @@ import PaymentMethodIcons from '@/components/checkout/PaymentMethodIcons';
 import { trackViewContent } from '@/utils/metaPixel';
 import CourseReviews from '@/components/course/CourseReviews';
 import StarRating from '@/components/course/StarRating';
+import { useDiscountCountdown } from '@/hooks/useDiscountCountdown';
 
 
 interface Lesson {
@@ -274,6 +275,10 @@ const CourseDetail: React.FC = () => {
     },
   });
 
+  // Discount countdown
+  const discountCountdown = useDiscountCountdown((course as any)?.discount_expires_at);
+  const effectiveDiscount = discountCountdown.isExpired ? 0 : (course?.discount_percentage || 0);
+
   // Calculations
   const totalLessons = chapters.reduce((acc, ch) => acc + ch.lessons.length, 0);
   const completedLessons = lessonProgress.filter(lp => lp.is_completed).length;
@@ -461,7 +466,7 @@ const CourseDetail: React.FC = () => {
                   ) : (
                     <Button size="sm" className="btn-cta h-9 text-sm hidden lg:inline-flex" onClick={() => user ? setShowCheckout(true) : setShowGuestSignup(true)}>
                       {(() => {
-                        const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                        const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                         const sym = getCurrencySymbol(info.currency, isRTL);
                         return isRTL
                           ? `اشترك الآن – ${info.finalPrice} ${sym}`
@@ -704,7 +709,7 @@ const CourseDetail: React.FC = () => {
                       {/* Price */}
                       <div className="text-center py-2">
                         {(() => {
-                          const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                          const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                           const sym = getCurrencySymbol(priceInfo.currency, isRTL);
                           if (priceInfo.discountPct > 0 && course.price > 0) {
                             return (
@@ -731,6 +736,13 @@ const CourseDetail: React.FC = () => {
                             </span>
                           );
                         })()}
+                        {discountCountdown.hasExpiry && !discountCountdown.isExpired && effectiveDiscount > 0 && (
+                          <div className="flex items-center justify-center gap-2 mt-2 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20">
+                            <Clock className="w-3.5 h-3.5 text-destructive" />
+                            <span className="text-sm font-mono font-bold text-destructive">{discountCountdown.timeLeft}</span>
+                            <span className="text-xs text-destructive/80">{isRTL ? 'متبقي' : 'left'}</span>
+                          </div>
+                        )}
                         {course.price > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
                             {isRTL ? 'السعر غير شامل الضريبة' : 'Price excludes VAT'}
@@ -766,7 +778,7 @@ const CourseDetail: React.FC = () => {
                         >
                           <ShoppingCart className="w-5 h-5 me-2" />
                           {(() => {
-                            const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                            const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                             const sym = getCurrencySymbol(info.currency, isRTL);
                             return isRTL
                               ? `اشترك الآن – ${info.finalPrice} ${sym}`
@@ -780,7 +792,7 @@ const CourseDetail: React.FC = () => {
                         >
                           <Zap className="w-5 h-5 me-2" />
                           {(() => {
-                            const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                            const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                             const sym = getCurrencySymbol(info.currency, isRTL);
                             return isRTL
                               ? `اشترك الآن – ${info.finalPrice} ${sym}`
@@ -1076,7 +1088,7 @@ const CourseDetail: React.FC = () => {
               title: course.title,
               title_ar: course.title_ar,
               price: course.price,
-              discount_percentage: course.discount_percentage,
+              discount_percentage: effectiveDiscount,
               thumbnail_url: course.thumbnail_url,
             }}
             onSuccess={() => {
@@ -1113,7 +1125,7 @@ const CourseDetail: React.FC = () => {
               {/* Price */}
               <div className="flex flex-col min-w-0">
                 {(() => {
-                  const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                  const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                   const sym = getCurrencySymbol(priceInfo.currency, isRTL);
                   if (course.price === 0) {
                     return <span className="text-lg font-black text-foreground">{t('common.free')}</span>;
@@ -1155,7 +1167,7 @@ const CourseDetail: React.FC = () => {
                 >
                   <ShoppingCart className="w-4 h-4 me-1.5" />
                   {(() => {
-                    const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                    const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                     const sym = getCurrencySymbol(info.currency, isRTL);
                     return isRTL
                       ? `اشترك الآن – ${info.finalPrice} ${sym}`

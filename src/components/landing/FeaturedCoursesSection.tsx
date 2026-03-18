@@ -3,13 +3,25 @@ import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Play, Clock, BookOpen, ArrowRight, ArrowLeft } from "lucide-react";
+import { Play, Clock, BookOpen, ArrowRight, ArrowLeft, Timer } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import heroImage from "@/assets/hero-rider.jpg";
+import { useDiscountCountdown } from "@/hooks/useDiscountCountdown";
+
+const DiscountCountdownBadge: React.FC<{ expiresAt: string | null; isRTL: boolean }> = ({ expiresAt, isRTL }) => {
+  const { timeLeft, isExpired, hasExpiry } = useDiscountCountdown(expiresAt);
+  if (!hasExpiry || isExpired) return null;
+  return (
+    <div className="flex items-center gap-1 text-xs text-destructive font-mono font-bold">
+      <Timer className="w-3 h-3" />
+      <span>{timeLeft}</span>
+    </div>
+  );
+};
 
 const FeaturedCoursesSection: React.FC = () => {
   const { isRTL } = useLanguage();
@@ -25,6 +37,7 @@ const FeaturedCoursesSection: React.FC = () => {
         .select(`
           id, title, title_ar, description, description_ar,
           thumbnail_url, difficulty_level, price, discount_percentage,
+          discount_expires_at,
           chapters (
             id, is_published,
             lessons ( id, duration_minutes, is_published )
@@ -100,7 +113,9 @@ const FeaturedCoursesSection: React.FC = () => {
             : courses.map((course: any, index: number) => {
                 const title = isRTL && course.title_ar ? course.title_ar : course.title;
                 const desc = isRTL && course.description_ar ? course.description_ar : course.description;
-                const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                const isDiscountExpired = course.discount_expires_at && new Date(course.discount_expires_at).getTime() <= Date.now();
+                const effectiveDiscount = isDiscountExpired ? 0 : (course.discount_percentage || 0);
+                const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                 const sym = getCurrencySymbol(priceInfo.currency, isRTL);
 
                 return (
@@ -156,7 +171,7 @@ const FeaturedCoursesSection: React.FC = () => {
                             </span>
                           </div>
 
-                          {/* Price & CTA */}
+                          {/* Price & Countdown */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span className="text-lg font-black text-primary">
@@ -168,10 +183,14 @@ const FeaturedCoursesSection: React.FC = () => {
                                 </span>
                               )}
                             </div>
-                            <span className="text-xs font-medium text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {isRTL ? "عرض الدورة" : "View Course"}
-                              <Arrow className="w-3.5 h-3.5" />
-                            </span>
+                            {priceInfo.discountPct > 0 && course.discount_expires_at ? (
+                              <DiscountCountdownBadge expiresAt={course.discount_expires_at} isRTL={isRTL} />
+                            ) : (
+                              <span className="text-xs font-medium text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {isRTL ? "عرض الدورة" : "View Course"}
+                                <Arrow className="w-3.5 h-3.5" />
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>

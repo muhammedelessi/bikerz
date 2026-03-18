@@ -1,0 +1,1 @@
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS discount_expires_at timestamp with time zone DEFAULT NULL;
