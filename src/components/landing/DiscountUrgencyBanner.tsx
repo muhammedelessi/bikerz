@@ -70,7 +70,7 @@ const DiscountUrgencyBanner: React.FC = () => {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.3 }}
-      className="relative z-[60] overflow-hidden bg-gradient-to-r from-destructive/10 via-destructive/5 to-destructive/10 border-b border-destructive/20"
+      className="relative overflow-hidden bg-gradient-to-r from-destructive/10 via-destructive/5 to-destructive/10 border-b border-destructive/20"
     >
       <div className="section-container !py-3 sm:!py-4">
         <Link to={`/courses/${discountedCourse.id}`} className="block group">

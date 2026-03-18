@@ -50,7 +50,7 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [bannerHeight, setBannerHeight] = useState(0);
+  
 
   // Fetch header content from database
   const { data: headerContent } = useQuery({
@@ -68,28 +68,6 @@ const Navbar: React.FC = () => {
     },
   });
 
-  useEffect(() => {
-    const banner = document.getElementById('discount-urgency-banner');
-    if (!banner) {
-      setBannerHeight(0);
-      return;
-    }
-
-    const updateBannerHeight = () => {
-      setBannerHeight(Math.ceil(banner.getBoundingClientRect().height));
-    };
-
-    updateBannerHeight();
-
-    const resizeObserver = new ResizeObserver(updateBannerHeight);
-    resizeObserver.observe(banner);
-    window.addEventListener('resize', updateBannerHeight);
-
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener('resize', updateBannerHeight);
-    };
-  }, [location.pathname]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -181,7 +159,7 @@ const Navbar: React.FC = () => {
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        style={{ marginTop: `${bannerHeight}px` }}
+        
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 safe-area-top ${
           isScrolled || isMobileMenuOpen
             ? 'bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg'
