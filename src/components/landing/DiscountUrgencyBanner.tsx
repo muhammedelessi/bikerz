@@ -96,23 +96,7 @@ const slideVariants = {
 
 const DiscountUrgencyBanner: React.FC = () => {
   const { isRTL } = useLanguage();
-  const bannerRef = useRef<HTMLDivElement>(null);
   const [[activeIndex, direction], setActiveIndex] = useState([0, 1]);
-
-  useEffect(() => {
-    const el = bannerRef.current;
-    if (!el) return;
-    const update = () => {
-      document.documentElement.style.setProperty('--discount-banner-h', `${el.offsetHeight}px`);
-    };
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => {
-      ro.disconnect();
-      document.documentElement.style.setProperty('--discount-banner-h', '0px');
-    };
-  }, []);
 
   const { data: discountedCourses } = useQuery({
     queryKey: ["homepage-discount-banner-carousel"],
