@@ -44,9 +44,7 @@ const SlideItem = React.forwardRef<HTMLDivElement, {
             <span className="text-[10px] text-sand/40 line-through flex-shrink-0">{priceInfo.originalPrice} {sym}</span>
             <span className="text-xs font-black text-accent-orange flex-shrink-0">{priceInfo.finalPrice} {sym}</span>
           </div>
-          {course.discount_expires_at && (
-            <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
-          )}
+          {/* DiscountCountdown temporarily disabled for iOS debugging */}
         </div>
 
         {/* Desktop layout: single row */}
