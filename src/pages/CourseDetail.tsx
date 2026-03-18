@@ -385,7 +385,7 @@ const CourseDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="section-container min-h-[60vh] flex flex-col items-center justify-center text-center">
+        <div className="pt-[var(--navbar-h)] section-container min-h-[60vh] flex flex-col items-center justify-center text-center">
           <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
           <h2 className="text-2xl font-bold text-foreground mb-2">
             {t('courses.courseNotFound')}
