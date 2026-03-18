@@ -790,40 +790,31 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'الدولة' : 'Country'} <span className="text-destructive">*</span></Label>
-                    <Select value={country} onValueChange={(v) => { setCountry(v); setCity(''); setCityOther(''); setErrors(prev => ({ ...prev, country: undefined })); }}>
-                      <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
-                        <SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[200px]">
-                        {allCountries.map((c) => (
-                          <SelectItem key={c.isoCode} value={c.isoCode}>
-                            {c.flag} {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={countryOptions}
+                      value={country}
+                      onValueChange={(v) => { setCountry(v); setCity(''); setCityOther(''); setErrors(prev => ({ ...prev, country: undefined })); }}
+                      placeholder={isRTL ? 'اختر الدولة' : 'Select country'}
+                      searchPlaceholder={isRTL ? 'ابحث عن دولة...' : 'Search country...'}
+                      emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
+                      hasError={!!errors.country}
+                    />
                     {renderFieldError('country')}
                   </div>
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
-                    {citiesForCountry.length > 0 ? (
+                    {cityOptions.length > 0 ? (
                       <>
-                        <Select value={city} onValueChange={(v) => { setCity(v); if (v !== '__other__') setCityOther(''); setErrors(prev => ({ ...prev, city: undefined })); }}>
-                          <SelectTrigger className={errors.city ? 'border-destructive' : ''}>
-                            <SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-[200px]">
-                            {citiesForCountry.map((c, i) => (
-                              <SelectItem key={`${c.name}-${i}`} value={c.name}>
-                                {c.name}
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="__other__">
-                              {isRTL ? 'أخرى' : 'Other'}
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <SearchableSelect
+                          options={cityOptions}
+                          value={city}
+                          onValueChange={(v) => { setCity(v); if (v !== '__other__') setCityOther(''); setErrors(prev => ({ ...prev, city: undefined })); }}
+                          placeholder={isRTL ? 'اختر المدينة' : 'Select city'}
+                          searchPlaceholder={isRTL ? 'ابحث عن مدينة...' : 'Search city...'}
+                          emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
+                          hasError={!!errors.city}
+                        />
                         {city === '__other__' && (
                           <Input
                             value={cityOther}
