@@ -1118,7 +1118,7 @@ const CourseDetail: React.FC = () => {
               {/* Price */}
               <div className="flex flex-col min-w-0">
                 {(() => {
-                  const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                  const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                   const sym = getCurrencySymbol(priceInfo.currency, isRTL);
                   if (course.price === 0) {
                     return <span className="text-lg font-black text-foreground">{t('common.free')}</span>;
