@@ -17,7 +17,7 @@ import {
   Funnel,
   LabelList,
   Cell,
-} from 'recharts';
+} from '@/lib/recharts-compat';
 import {
   BookOpen,
   AlertTriangle,

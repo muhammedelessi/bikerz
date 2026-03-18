@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { arSA } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -84,7 +85,7 @@ const Signup: React.FC = () => {
     // Save gender and date_of_birth to profile
     if (gender || dateOfBirth) {
       try {
-        const { data: { user: newUser } } = await supabase.auth.getUser();
+        const { data: { user: newUser } } = await (supabase.auth as any).getUser();
         if (newUser) {
           await supabase.from('profiles').update({
             gender: gender || null,
@@ -103,6 +104,8 @@ const Signup: React.FC = () => {
           data: {
             full_name: name,
             email,
+            date_of_birth: dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : '',
+            gender: gender || '',
           },
         },
       });
@@ -114,6 +117,8 @@ const Signup: React.FC = () => {
     sendFormData({
       full_name: name,
       email,
+      dateOfBirth: dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : '',
+      gender: gender || '',
       orderStatus: 'not purchased',
       courses: '[]',
       totalPurchased: 0,
@@ -278,15 +283,15 @@ const Signup: React.FC = () => {
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full h-11 sm:h-12 text-base justify-start font-normal form-input",
+                        "w-full h-11 sm:h-12 text-base justify-start font-normal form-input text-start",
                         !dateOfBirth && "text-muted-foreground"
                       )}
                     >
                       <CalendarIcon className="w-4 h-4 me-2" />
-                      {dateOfBirth ? format(dateOfBirth, 'PPP') : (isRTL ? 'اختر التاريخ' : 'Pick a date')}
+                      {dateOfBirth ? format(dateOfBirth, 'PPP', { locale: isRTL ? arSA : undefined }) : (isRTL ? 'اختر التاريخ' : 'Pick a date')}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto p-0" align="start" dir={isRTL ? 'rtl' : 'ltr'}>
                     <Calendar
                       mode="single"
                       selected={dateOfBirth}
@@ -296,6 +301,8 @@ const Signup: React.FC = () => {
                       captionLayout="dropdown-buttons"
                       fromYear={1940}
                       toYear={new Date().getFullYear()}
+                      locale={isRTL ? arSA : undefined}
+                      dir={isRTL ? 'rtl' : 'ltr'}
                       className={cn("p-3 pointer-events-auto")}
                     />
                   </PopoverContent>

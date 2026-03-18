@@ -19,6 +19,8 @@ export interface ExtendedProfile {
   engine_size_cc: number | null;
   riding_experience_years: number | null;
   experience_level: string;
+  date_of_birth: string | null;
+  gender: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -95,6 +97,7 @@ export function useUserProfile() {
       setProfile(prev => prev ? { ...prev, ...updates } : null);
 
       // Send updated fields to GHL via form webhook (uses email to match contact)
+      const mergedProfile = { ...profile, ...updates };
       const ghlPayload: Record<string, string | undefined> = {
         email: user.email,
       };
@@ -103,9 +106,11 @@ export function useUserProfile() {
       if (updates.city !== undefined) ghlPayload.city = updates.city || '';
       if (updates.country !== undefined) ghlPayload.country = updates.country || '';
       if (updates.city !== undefined || updates.country !== undefined) {
-        const mergedProfile = { ...profile, ...updates };
         ghlPayload.address = [mergedProfile?.city, mergedProfile?.country].filter(Boolean).join(', ');
       }
+      // Always include dateOfBirth and gender from merged profile
+      ghlPayload.dateOfBirth = mergedProfile?.date_of_birth || '';
+      ghlPayload.gender = mergedProfile?.gender || '';
 
       console.log('[GHL] Profile update webhook payload:', ghlPayload);
       sendFormData({ ...ghlPayload, silent: true }).then(ok => {

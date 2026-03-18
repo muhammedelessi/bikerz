@@ -214,7 +214,7 @@ export function useGamification() {
     enabled: !!user && dailyChallenges.length > 0,
   });
 
-  // Add XP mutation
+  // Add XP mutation - uses SECURITY DEFINER RPC
   const addXPMutation = useMutation({
     mutationFn: async ({ 
       amount, 
@@ -229,66 +229,27 @@ export function useGamification() {
       description?: string;
       descriptionAr?: string;
     }) => {
-      if (!user || !gamificationData) throw new Error('Not authenticated');
+      if (!user) throw new Error('Not authenticated');
 
-      const multiplier = gamificationData.combo_multiplier || 1.0;
-      const finalAmount = Math.round(amount * multiplier);
-
-      // Log XP transaction
-      await supabase.from('xp_transactions').insert({
-        user_id: user.id,
-        amount: finalAmount,
-        source_type: sourceType,
-        source_id: sourceId,
-        multiplier,
-        description,
-        description_ar: descriptionAr,
+      const { data, error } = await supabase.rpc('add_xp_secure', {
+        p_amount: amount,
+        p_source_type: sourceType,
+        p_source_id: sourceId || null,
+        p_description: description || null,
+        p_description_ar: descriptionAr || null,
       });
-
-      const newTotalXP = gamificationData.total_xp + finalAmount;
-      const newLevel = calculateLevel(newTotalXP);
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Calculate streak
-      let newStreak = gamificationData.current_streak;
-      const lastDate = gamificationData.last_activity_date;
-      
-      if (lastDate) {
-        const lastDateObj = new Date(lastDate);
-        const todayObj = new Date(today);
-        const diffDays = Math.floor((todayObj.getTime() - lastDateObj.getTime()) / (1000 * 60 * 60 * 24));
-        
-        if (diffDays === 1) {
-          newStreak += 1;
-        } else if (diffDays > 1) {
-          newStreak = 1;
-        }
-      } else {
-        newStreak = 1;
-      }
-
-      // Update gamification data
-      const { error } = await supabase
-        .from('user_gamification')
-        .update({
-          total_xp: newTotalXP,
-          level: newLevel,
-          current_streak: newStreak,
-          longest_streak: Math.max(newStreak, gamificationData.longest_streak),
-          last_activity_date: today,
-          combo_multiplier: Math.min(2.0, 1.0 + (newStreak * 0.05)), // Max 2x multiplier
-        })
-        .eq('user_id', user.id);
 
       if (error) throw error;
 
-      return { 
-        xpGained: finalAmount, 
-        newTotalXP, 
-        newLevel, 
-        leveledUp: newLevel > gamificationData.level,
-        newStreak 
+      const result = data as {
+        xpGained: number;
+        newTotalXP: number;
+        newLevel: number;
+        leveledUp: boolean;
+        newStreak: number;
       };
+
+      return result;
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['user-gamification'] });
@@ -308,40 +269,42 @@ export function useGamification() {
     mutationFn: async (badgeId: string) => {
       if (!user) throw new Error('Not authenticated');
 
-      // Check if already earned
+      // Check if already earned (client-side cache check)
       const existing = userBadges.find(ub => ub.badge_id === badgeId);
       if (existing) return null;
 
-      const { data, error } = await supabase
-        .from('user_badges')
-        .insert({ user_id: user.id, badge_id: badgeId })
-        .select('*, badge:achievement_badges(*)')
-        .single();
+      const { data, error } = await supabase.rpc('award_badge_secure', {
+        p_badge_id: badgeId,
+      });
 
       if (error) throw error;
-      return data as UserBadge & { badge: Badge };
+      
+      const result = data as { awarded?: boolean; already_earned?: boolean; badge_name?: string; badge_name_ar?: string; xp_reward?: number; coin_reward?: number };
+      if (result.already_earned) return null;
+
+      return {
+        badge_name: result.badge_name || '',
+        badge_name_ar: result.badge_name_ar || '',
+        xp_reward: result.xp_reward || 0,
+      };
     },
     onSuccess: (result) => {
       if (result) {
         queryClient.invalidateQueries({ queryKey: ['user-badges'] });
-        const badge = result.badge;
-        if (badge) {
-          toast.success(
-            isRTL 
-              ? `🏆 فتحت شارة: ${badge.name_ar || badge.name}!` 
-              : `🏆 Badge Unlocked: ${badge.name}!`
-          );
-          
-          // Award badge XP/coins
-          if (badge.xp_reward > 0) {
-            addXPMutation.mutate({
-              amount: badge.xp_reward,
-              sourceType: 'badge_reward',
-              sourceId: badge.id,
-              description: `Badge: ${badge.name}`,
-              descriptionAr: `شارة: ${badge.name_ar || badge.name}`,
-            });
-          }
+        toast.success(
+          isRTL 
+            ? `🏆 فتحت شارة: ${result.badge_name_ar || result.badge_name}!` 
+            : `🏆 Badge Unlocked: ${result.badge_name}!`
+        );
+        
+        // Award badge XP via secure RPC
+        if (result.xp_reward > 0) {
+          addXPMutation.mutate({
+            amount: result.xp_reward,
+            sourceType: 'badge_reward',
+            description: `Badge: ${result.badge_name}`,
+            descriptionAr: `شارة: ${result.badge_name_ar || result.badge_name}`,
+          });
         }
       }
     },

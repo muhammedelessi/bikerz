@@ -539,3 +539,10 @@
     @apply bg-muted-foreground/50;
   }
 }
+
+/* iOS WebKit: only disable heavy compositor effects on decorative layers */
+@supports (-webkit-touch-callout: none) {
+  .mix-blend-overlay {
+    mix-blend-mode: normal !important;
+  }
+}
