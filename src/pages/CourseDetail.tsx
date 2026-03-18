@@ -771,7 +771,7 @@ const CourseDetail: React.FC = () => {
                         >
                           <ShoppingCart className="w-5 h-5 me-2" />
                           {(() => {
-                            const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                            const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                             const sym = getCurrencySymbol(info.currency, isRTL);
                             return isRTL
                               ? `اشترك الآن – ${info.finalPrice} ${sym}`
