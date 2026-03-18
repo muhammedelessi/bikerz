@@ -97,7 +97,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                     setOpen(false);
                   }}
                   className={cn(
-                    'relative flex w-full cursor-pointer select-none items-center rounded-sm py-2 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground',
+                    'relative flex w-full cursor-pointer select-none items-center rounded-sm py-2 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground text-start',
                     value === option.value && 'bg-accent text-accent-foreground'
                   )}
                 >
