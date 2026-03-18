@@ -3,30 +3,14 @@ import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Play, Clock, BookOpen, ArrowRight, ArrowLeft, Timer } from "lucide-react";
+import { Play, Clock, BookOpen, ArrowRight, ArrowLeft } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import heroImage from "@/assets/hero-rider.jpg";
-import { useDiscountCountdown } from "@/hooks/useDiscountCountdown";
-
-const DiscountCountdownBadge: React.FC<{ expiresAt: string | null; isRTL: boolean }> = ({ expiresAt, isRTL }) => {
-  const { days, hours, minutes, seconds, isExpired, hasExpiry } = useDiscountCountdown(expiresAt);
-  if (!hasExpiry || isExpired) return null;
-
-  const timeStr = days > 0
-    ? `${days}${isRTL ? 'ي' : 'd'} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-    : `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-  return (
-    <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-accent-orange/10 border border-accent-orange/20">
-      <Timer className="w-3 h-3 text-accent-orange animate-pulse" />
-      <span className="text-xs font-mono font-bold text-accent-orange">{timeStr}</span>
-    </div>
-  );
-};
+import DiscountCountdown from "@/components/common/DiscountCountdown";
 
 const FeaturedCoursesSection: React.FC = () => {
   const { isRTL } = useLanguage();

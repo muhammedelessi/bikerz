@@ -6,41 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useDiscountCountdown } from "@/hooks/useDiscountCountdown";
-
-const CountdownDisplay: React.FC<{ expiresAt: string; isRTL: boolean }> = ({ expiresAt, isRTL }) => {
-  const { days, hours, minutes, seconds, isExpired, hasExpiry } = useDiscountCountdown(expiresAt);
-  if (!hasExpiry || isExpired) return null;
-
-  const label = isRTL ? "متبقي:" : "Ends in:";
-  const parts = isRTL
-    ? [
-        { value: days, unit: "يوم" },
-        { value: hours, unit: "ساعة" },
-        { value: minutes, unit: "دقيقة" },
-        { value: seconds, unit: "ثانية" },
-      ]
-    : [
-        { value: days, unit: "day" },
-        { value: hours, unit: "hour" },
-        { value: minutes, unit: "min" },
-        { value: seconds, unit: "sec" },
-      ];
-
-  return (
-    <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
-      <span className="text-[10px] sm:text-xs font-semibold text-sand/70">{label}</span>
-      {parts.map((p, i) => (
-        <React.Fragment key={i}>
-          {i > 0 && <span className="text-sand/30 text-[10px]">:</span>}
-          <span className="inline-flex flex-col items-center leading-none">
-            <span className="font-mono font-black text-sm sm:text-base text-accent-orange drop-shadow-[0_0_6px_hsl(var(--accent-orange)/0.5)]">{String(p.value).padStart(2, '0')}</span>
-            <span className="text-[8px] sm:text-[9px] font-medium text-sand/60 uppercase tracking-wider">{p.unit}</span>
-          </span>
-        </React.Fragment>
-      ))}
-    </div>
-  );
+import DiscountCountdown from "@/components/common/DiscountCountdown";
 };
 
 interface DiscountedCourse {
