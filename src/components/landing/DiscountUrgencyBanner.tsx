@@ -6,7 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import DiscountCountdown from "@/components/common/DiscountCountdown";
+// import DiscountCountdown from "@/components/common/DiscountCountdown";
 
 interface DiscountedCourse {
   id: string;
@@ -44,9 +44,7 @@ const SlideItem = React.forwardRef<HTMLDivElement, {
             <span className="text-[10px] text-sand/40 line-through flex-shrink-0">{priceInfo.originalPrice} {sym}</span>
             <span className="text-xs font-black text-accent-orange flex-shrink-0">{priceInfo.finalPrice} {sym}</span>
           </div>
-          {course.discount_expires_at && (
-            <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
-          )}
+          {/* DiscountCountdown temporarily disabled for iOS debugging */}
         </div>
 
         {/* Desktop layout: single row */}
@@ -62,9 +60,7 @@ const SlideItem = React.forwardRef<HTMLDivElement, {
             {title}
           </span>
 
-          {course.discount_expires_at && (
-            <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
-          )}
+          {/* DiscountCountdown temporarily disabled for iOS debugging */}
 
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-xs text-sand/40 line-through">{priceInfo.originalPrice} {sym}</span>
