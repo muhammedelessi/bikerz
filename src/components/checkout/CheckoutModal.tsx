@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Country, City, ICountry, ICity } from 'country-state-city';
 import countries from 'i18n-iso-countries';
 import arLocale from 'i18n-iso-countries/langs/ar.json';
+import { getCitiesByCountryCode } from 'countries-cities-ar';
 import SearchableSelect from '@/components/checkout/SearchableSelect';
 
 countries.registerLocale(arLocale);
