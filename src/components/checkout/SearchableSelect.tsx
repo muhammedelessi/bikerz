@@ -103,7 +103,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 >
                   <Check
                     className={cn(
-                      'mr-2 h-4 w-4 flex-shrink-0',
+                      'me-2 h-4 w-4 flex-shrink-0',
                       value === option.value ? 'opacity-100' : 'opacity-0'
                     )}
                   />
