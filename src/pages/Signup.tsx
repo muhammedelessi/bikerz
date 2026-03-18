@@ -104,6 +104,8 @@ const Signup: React.FC = () => {
           data: {
             full_name: name,
             email,
+            date_of_birth: dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : '',
+            gender: gender || '',
           },
         },
       });
@@ -115,6 +117,8 @@ const Signup: React.FC = () => {
     sendFormData({
       full_name: name,
       email,
+      dateOfBirth: dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : '',
+      gender: gender || '',
       orderStatus: 'not purchased',
       courses: '[]',
       totalPurchased: 0,
