@@ -158,13 +158,21 @@ const Navbar: React.FC = () => {
   useEffect(() => {
     const el = navRef.current;
     if (!el) return;
+
     const update = () => {
       document.documentElement.style.setProperty('--navbar-h', `${el.offsetHeight}px`);
     };
+
     update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(update);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }
+
+    window.addEventListener('resize', update, { passive: true });
+    return () => window.removeEventListener('resize', update);
   }, []);
 
   return (

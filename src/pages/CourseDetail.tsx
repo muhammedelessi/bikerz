@@ -248,14 +248,20 @@ const CourseDetail: React.FC = () => {
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
+
     ctaCardRef.current = node;
-    if (node) {
-      observerRef.current = new IntersectionObserver(
-        ([entry]) => setShowStickyBottom(!entry.isIntersecting),
-        { threshold: 0.1 }
-      );
-      observerRef.current.observe(node);
+    if (!node) return;
+
+    if (typeof IntersectionObserver === 'undefined') {
+      setShowStickyBottom(false);
+      return;
     }
+
+    observerRef.current = new IntersectionObserver(
+      ([entry]) => setShowStickyBottom(!entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    observerRef.current.observe(node);
   }, []);
 
   // Enroll mutation
