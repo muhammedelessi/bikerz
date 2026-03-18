@@ -3,6 +3,11 @@ import i18n from 'i18next';
 
 type Language = 'en' | 'ar';
 
+const ARAB_COUNTRIES = new Set([
+  'SA', 'AE', 'KW', 'BH', 'QA', 'OM', 'EG', 'IQ', 'JO', 'LB', 'SY',
+  'PS', 'YE', 'LY', 'TN', 'DZ', 'MA', 'SD', 'SO', 'MR', 'DJ', 'KM',
+]);
+
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
@@ -37,6 +42,23 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Ensure i18n is synced on mount
     if (i18n.language !== language) {
       i18n.changeLanguage(language);
+    }
+
+    // Auto-detect language from country if user hasn't manually chosen
+    const hasManualChoice = localStorage.getItem('i18nextLng');
+    if (!hasManualChoice) {
+      const controller = new AbortController();
+      fetch('https://ipapi.co/country_code/', { signal: controller.signal })
+        .then((res) => res.text())
+        .then((code) => {
+          const countryCode = code.trim().toUpperCase();
+          const detectedLang: Language = ARAB_COUNTRIES.has(countryCode) ? 'ar' : 'en';
+          if (detectedLang !== language) {
+            setLanguage(detectedLang);
+          }
+        })
+        .catch(() => {});
+      return () => controller.abort();
     }
   }, []);
 
