@@ -19,6 +19,8 @@ export interface ExtendedProfile {
   engine_size_cc: number | null;
   riding_experience_years: number | null;
   experience_level: string;
+  date_of_birth: string | null;
+  gender: string | null;
   created_at: string;
   updated_at: string;
 }
