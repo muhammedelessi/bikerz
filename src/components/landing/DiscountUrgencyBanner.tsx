@@ -90,16 +90,16 @@ const DiscountUrgencyBanner: React.FC = () => {
       transition={{ duration: 0.4, delay: 0.3 }}
       className="overflow-hidden bg-gradient-to-r from-destructive/10 via-destructive/5 to-destructive/10 border-b border-destructive/20"
     >
-      <div className="section-container !py-3 sm:!py-4">
+      <div className="px-3 sm:px-6 !py-2 sm:!py-3">
         <Link to={`/courses/${discountedCourse.id}`} className="block group">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6">
+          <div className="flex items-center justify-center gap-2 sm:gap-6 flex-wrap">
             {/* Flame + text */}
-            <div className="flex items-center gap-2 text-center sm:text-start">
-              <Flame className="w-5 h-5 text-destructive animate-pulse flex-shrink-0" />
-              <span className="text-sm sm:text-base font-bold text-foreground">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Flame className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-destructive animate-pulse flex-shrink-0" />
+              <span className="text-[11px] sm:text-sm md:text-base font-bold text-foreground leading-tight">
                 {isRTL
-                  ? `خصم ${priceInfo.discountPct}% على "${title}"`
-                  : `${priceInfo.discountPct}% OFF on "${title}"`}
+                  ? `خصم ${priceInfo.discountPct}%`
+                  : `${priceInfo.discountPct}% OFF`}
               </span>
             </div>
 
@@ -107,12 +107,12 @@ const DiscountUrgencyBanner: React.FC = () => {
             <CountdownDisplay expiresAt={discountedCourse.discount_expires_at!} isRTL={isRTL} />
 
             {/* Price + CTA */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground line-through">{priceInfo.originalPrice} {sym}</span>
-                <span className="text-lg font-black text-primary">{priceInfo.finalPrice} {sym}</span>
+            <div className="flex items-center gap-1.5 sm:gap-3">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <span className="text-[10px] sm:text-sm text-muted-foreground line-through">{priceInfo.originalPrice} {sym}</span>
+                <span className="text-xs sm:text-lg font-black text-primary">{priceInfo.finalPrice} {sym}</span>
               </div>
-              <span className="text-xs font-semibold text-primary flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+              <span className="hidden sm:flex text-xs font-semibold text-primary items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                 {isRTL ? "سجّل الآن" : "Enroll Now"}
                 <Arrow className="w-3.5 h-3.5" />
               </span>
