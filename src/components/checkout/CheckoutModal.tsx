@@ -400,7 +400,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setGuestSigningUp(true);
     try {
       const password = generatePassword();
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await (supabase.auth as any).signUp({
         email: email.trim(),
         password,
         options: {
@@ -431,7 +431,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       await saveProfileData(data.user.id);
 
       // Send password reset email so user can set their own password
-      supabase.auth.resetPasswordForEmail(email.trim(), {
+      (supabase.auth as any).resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/forgot-password`,
       }).catch(() => { /* silent - non-critical */ });
 

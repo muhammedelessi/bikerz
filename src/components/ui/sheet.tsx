@@ -47,7 +47,9 @@ const sheetVariants = cva(
   },
 );
 
-interface SheetContentProps extends React.ComponentPropsWithoutRef<"div">, VariantProps<typeof sheetVariants> {
+interface SheetContentProps extends VariantProps<typeof sheetVariants> {
+  className?: string;
+  children?: React.ReactNode;
   [key: string]: any;
 }
 
