@@ -63,10 +63,10 @@ const SlideItem: React.FC<{
 
   return (
     <Link to={`/courses/${course.id}`} className="block group">
-      <div className="flex items-center justify-center gap-2 sm:gap-6 flex-wrap">
-        <div className="flex items-center gap-1 sm:gap-2">
-          <Flame className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-destructive animate-pulse flex-shrink-0" />
-          <span className="text-[11px] sm:text-sm md:text-base font-bold text-foreground leading-tight truncate max-w-[120px] sm:max-w-[200px] md:max-w-none">
+      <div className="flex items-center justify-center gap-2 sm:gap-5 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300 animate-pulse flex-shrink-0 drop-shadow-[0_0_6px_rgba(250,204,21,0.7)]" />
+          <span className="text-xs sm:text-sm md:text-base font-extrabold text-white leading-tight truncate max-w-[130px] sm:max-w-[220px] md:max-w-none uppercase tracking-wide">
             {isRTL
               ? `خصم ${priceInfo.discountPct}% — ${title}`
               : `${priceInfo.discountPct}% OFF — ${title}`}
@@ -79,10 +79,10 @@ const SlideItem: React.FC<{
 
         <div className="flex items-center gap-1.5 sm:gap-3">
           <div className="flex items-center gap-1 sm:gap-2">
-            <span className="text-[10px] sm:text-sm text-muted-foreground line-through">{priceInfo.originalPrice} {sym}</span>
-            <span className="text-xs sm:text-lg font-black text-primary">{priceInfo.finalPrice} {sym}</span>
+            <span className="text-[10px] sm:text-sm text-white/50 line-through">{priceInfo.originalPrice} {sym}</span>
+            <span className="text-sm sm:text-lg font-black text-yellow-300 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]">{priceInfo.finalPrice} {sym}</span>
           </div>
-          <span className="hidden sm:flex text-xs font-semibold text-primary items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+          <span className="hidden sm:flex text-xs font-bold text-yellow-300 items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity uppercase tracking-wider">
             {isRTL ? "سجّل الآن" : "Enroll Now"}
             <Arrow className="w-3.5 h-3.5" />
           </span>
