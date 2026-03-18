@@ -43,6 +43,7 @@ const PaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
   const { user, isReady } = useAuthReady();
+  const { profile } = useAuth();
   const queryClient = useQueryClient();
   const tapId = searchParams.get('tap_id');
   const { sendCourseStatus } = useGHLFormWebhook();
