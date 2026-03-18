@@ -10,6 +10,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import heroImage from "@/assets/hero-rider.jpg";
+import { useDiscountCountdown } from "@/hooks/useDiscountCountdown";
+
+const DiscountCountdownBadge: React.FC<{ expiresAt: string | null; isRTL: boolean }> = ({ expiresAt, isRTL }) => {
+  const { timeLeft, isExpired, hasExpiry } = useDiscountCountdown(expiresAt);
+  if (!hasExpiry || isExpired) return null;
+  return (
+    <div className="flex items-center gap-1 text-xs text-destructive font-mono font-bold">
+      <Timer className="w-3 h-3" />
+      <span>{timeLeft}</span>
+    </div>
+  );
+};
 
 const FeaturedCoursesSection: React.FC = () => {
   const { isRTL } = useLanguage();
