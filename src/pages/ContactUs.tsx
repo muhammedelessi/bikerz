@@ -143,7 +143,7 @@ const ContactUs: React.FC = () => {
       <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
         <SEOHead title="Contact Us" description="Get in touch with BIKERZ Academy. We're here to help with course inquiries, technical support, and partnership opportunities." canonical="/contact" breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Contact', url: '/contact' }]} />
         <Navbar />
-        <main className="pt-24 pb-16">
+        <main className="pt-[var(--navbar-h)] pb-16">
             <div className="page-container">
             <div className="max-w-lg mx-auto">
               <Card className="text-center">
