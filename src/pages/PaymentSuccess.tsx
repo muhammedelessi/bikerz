@@ -84,6 +84,8 @@ const PaymentSuccess: React.FC = () => {
         {
           email: user!.email || '',
           amount: String(course.price ?? 0),
+          dateOfBirth: profile?.date_of_birth || '',
+          gender: profile?.gender || '',
           silent: true,
         }
       );
