@@ -333,6 +333,22 @@ const AdminCourses: React.FC = () => {
     setFormData({ ...formData, thumbnail_url: '' });
   };
 
+  const renewDiscount = async (courseId: string) => {
+    const duration = formData.discount_duration || '24h';
+    const expiresAt = computeDiscountExpiry(duration, null);
+    const { error } = await supabase
+      .from('courses')
+      .update({ discount_expires_at: expiresAt } as any)
+      .eq('id', courseId);
+    if (error) {
+      toast.error(isRTL ? 'فشل في تجديد الخصم' : 'Failed to renew discount');
+      return;
+    }
+    setFormData({ ...formData, discount_expires_at: expiresAt });
+    queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
+    toast.success(isRTL ? 'تم تجديد مدة الخصم' : 'Discount timer renewed');
+  };
+
   const openEditDialog = async (course: Course) => {
     setFormData({
       title: course.title,
@@ -342,6 +358,8 @@ const AdminCourses: React.FC = () => {
       thumbnail_url: course.thumbnail_url || '',
       price: course.price,
       discount_percentage: (course as any).discount_percentage || 0,
+      discount_duration: (course as any).discount_expires_at ? 'keep' : '',
+      discount_expires_at: (course as any).discount_expires_at || null,
       currency: course.currency || 'SAR',
       difficulty_level: course.difficulty_level,
       duration_hours: course.duration_hours || 0,
