@@ -259,8 +259,8 @@ const Signup: React.FC = () => {
               {/* Gender */}
               <div className="space-y-2">
                 <Label className="text-sm sm:text-base">{isRTL ? 'الجنس' : 'Gender'}</Label>
-                <Select value={gender} onValueChange={setGender}>
-                  <SelectTrigger className="form-input h-11 sm:h-12 text-base">
+                <Select value={gender} onValueChange={setGender} dir={isRTL ? 'rtl' : 'ltr'}>
+                  <SelectTrigger className="form-input h-11 sm:h-12 text-base text-start">
                     <SelectValue placeholder={isRTL ? 'اختر الجنس' : 'Select gender'} />
                   </SelectTrigger>
                   <SelectContent>
