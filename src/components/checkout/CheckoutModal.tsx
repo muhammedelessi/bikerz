@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Country, City, ICountry, ICity } from 'country-state-city';
+import countries from 'i18n-iso-countries';
+import arLocale from 'i18n-iso-countries/langs/ar.json';
+import SearchableSelect from '@/components/checkout/SearchableSelect';
+
+countries.registerLocale(arLocale);
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -129,7 +134,25 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [profileSaving, setProfileSaving] = useState(false);
 
   // Countries & cities from library
-  const allCountries = useMemo(() => Country.getAllCountries(), []);
+  const countryOptions = useMemo(() => {
+    return Country.getAllCountries().map((c) => ({
+      value: c.isoCode,
+      label: `${c.flag} ${isRTL ? (countries.getName(c.isoCode, 'ar') || c.name) : c.name}`,
+      searchLabel: `${c.name} ${countries.getName(c.isoCode, 'ar') || ''}`,
+    }));
+  }, [isRTL]);
+
+  const cityOptions = useMemo(() => {
+    if (!country) return [];
+    const cities = City.getCitiesOfCountry(country) || [];
+    const opts = cities.map((c, i) => ({
+      value: c.name,
+      label: c.name,
+    }));
+    opts.push({ value: '__other__', label: isRTL ? 'أخرى' : 'Other' });
+    return opts;
+  }, [country, isRTL]);
+
   const citiesForCountry = useMemo(() => {
     if (!country) return [];
     return City.getCitiesOfCountry(country) || [];
@@ -767,40 +790,31 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'الدولة' : 'Country'} <span className="text-destructive">*</span></Label>
-                    <Select value={country} onValueChange={(v) => { setCountry(v); setCity(''); setCityOther(''); setErrors(prev => ({ ...prev, country: undefined })); }}>
-                      <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
-                        <SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[200px]">
-                        {allCountries.map((c) => (
-                          <SelectItem key={c.isoCode} value={c.isoCode}>
-                            {c.flag} {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={countryOptions}
+                      value={country}
+                      onValueChange={(v) => { setCountry(v); setCity(''); setCityOther(''); setErrors(prev => ({ ...prev, country: undefined })); }}
+                      placeholder={isRTL ? 'اختر الدولة' : 'Select country'}
+                      searchPlaceholder={isRTL ? 'ابحث عن دولة...' : 'Search country...'}
+                      emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
+                      hasError={!!errors.country}
+                    />
                     {renderFieldError('country')}
                   </div>
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
-                    {citiesForCountry.length > 0 ? (
+                    {cityOptions.length > 0 ? (
                       <>
-                        <Select value={city} onValueChange={(v) => { setCity(v); if (v !== '__other__') setCityOther(''); setErrors(prev => ({ ...prev, city: undefined })); }}>
-                          <SelectTrigger className={errors.city ? 'border-destructive' : ''}>
-                            <SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-[200px]">
-                            {citiesForCountry.map((c, i) => (
-                              <SelectItem key={`${c.name}-${i}`} value={c.name}>
-                                {c.name}
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="__other__">
-                              {isRTL ? 'أخرى' : 'Other'}
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <SearchableSelect
+                          options={cityOptions}
+                          value={city}
+                          onValueChange={(v) => { setCity(v); if (v !== '__other__') setCityOther(''); setErrors(prev => ({ ...prev, city: undefined })); }}
+                          placeholder={isRTL ? 'اختر المدينة' : 'Select city'}
+                          searchPlaceholder={isRTL ? 'ابحث عن مدينة...' : 'Search city...'}
+                          emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
+                          hasError={!!errors.city}
+                        />
                         {city === '__other__' && (
                           <Input
                             value={cityOther}
@@ -976,7 +990,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">{isRTL ? 'الموقع' : 'Location'}</span>
-                          <span className="font-medium">{city === '__other__' ? cityOther : city}{country ? `, ${Country.getCountryByCode(country)?.name || country}` : ''}</span>
+                          <span className="font-medium">{city === '__other__' ? cityOther : city}{country ? `, ${isRTL ? (countries.getName(country, 'ar') || Country.getCountryByCode(country)?.name || country) : (Country.getCountryByCode(country)?.name || country)}` : ''}</span>
                         </div>
                         <Separator />
                         {/* Price breakdown */}
