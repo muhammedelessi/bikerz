@@ -18,9 +18,8 @@ const Index: React.FC = () => {
         description="BIKERZ Academy is your premier online motorcycle riding school. Learn from certified instructors, master riding techniques, and join a thriving biker community."
         canonical="/"
       />
-      <DiscountUrgencyBanner />
       <Navbar />
-      <div style={{ height: 'calc(var(--discount-banner-h, 0px) + var(--navbar-h, 64px))' }} />
+      <DiscountUrgencyBanner />
       <main>
         <HeroSection />
         <TrustBar />
