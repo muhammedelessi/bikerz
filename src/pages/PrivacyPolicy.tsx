@@ -83,7 +83,7 @@ const PrivacyPolicy: React.FC = () => {
       <SEOHead title="Privacy Policy" description="Read BIKERZ Academy's privacy policy. Learn how we collect, use, and protect your personal information." canonical="/privacy" breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Privacy Policy', url: '/privacy' }]} />
       <Navbar />
       
-      <main className="pt-24 pb-16">
+      <main className="pt-[var(--navbar-h)] pb-16">
         {/* Header */}
         <section className="bg-gradient-to-br from-primary/10 via-background to-secondary/10 py-16 sm:py-20">
           <div className="page-container">
