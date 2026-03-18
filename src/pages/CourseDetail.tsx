@@ -1087,6 +1087,7 @@ const CourseDetail: React.FC = () => {
       </main>
 
       <Footer />
+      </div>
 
       {/* Checkout Modal */}
       {course && (
