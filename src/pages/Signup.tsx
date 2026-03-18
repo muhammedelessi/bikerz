@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { arSA } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
