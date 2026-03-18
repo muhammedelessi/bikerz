@@ -50,8 +50,7 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [bannerVisible, setBannerVisible] = useState(true);
-  
+  const [bannerVisible] = useState(false);
 
   // Fetch header content from database
   const { data: headerContent } = useQuery({
@@ -72,12 +71,7 @@ const Navbar: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollY = window.scrollY;
-      setIsScrolled(scrollY > 20);
-      const bannerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--discount-banner-h') || '0');
-      const shouldHide = scrollY > bannerH;
-      setBannerVisible(!shouldHide);
-      document.documentElement.style.setProperty('--banner-translate', shouldHide ? '-100%' : '0');
+      setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
@@ -181,7 +175,7 @@ const Navbar: React.FC = () => {
         ref={navRef}
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        style={{ top: bannerVisible ? 'var(--discount-banner-h, 0px)' : '0px' }}
+        style={{ top: 0 }}
         className={`fixed left-0 right-0 z-50 transition-[top] duration-300 safe-area-top ${
           isScrolled || isMobileMenuOpen
             ? 'bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg'
