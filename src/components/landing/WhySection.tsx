@@ -30,7 +30,7 @@ const imageMap: Record<number, string | undefined> = {
 
 const WhySection: React.FC = () => {
   const { isRTL } = useLanguage();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
 
   const { data: content, isLoading } = useLandingContent<WhyContent>('why');
 

@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const CTASection: React.FC = () => {
   const { isRTL } = useLanguage();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   const { data: content, isLoading } = useLandingContent<CTAContent>('cta');
@@ -25,8 +25,8 @@ const CTASection: React.FC = () => {
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/20 to-primary/10" />
       
-      {/* Animated Glow */}
-      <div className="absolute inset-0 overflow-hidden">
+      {/* Animated Glow - hidden on iOS to prevent compositor black */}
+      <div className="absolute inset-0 overflow-hidden [@supports(-webkit-touch-callout:none)]:hidden">
         <motion.div
           animate={{
             scale: [1, 1.2, 1],
