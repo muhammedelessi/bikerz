@@ -736,6 +736,13 @@ const CourseDetail: React.FC = () => {
                             </span>
                           );
                         })()}
+                        {discountCountdown.hasExpiry && !discountCountdown.isExpired && effectiveDiscount > 0 && (
+                          <div className="flex items-center justify-center gap-2 mt-2 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20">
+                            <Clock className="w-3.5 h-3.5 text-destructive" />
+                            <span className="text-sm font-mono font-bold text-destructive">{discountCountdown.timeLeft}</span>
+                            <span className="text-xs text-destructive/80">{isRTL ? 'متبقي' : 'left'}</span>
+                          </div>
+                        )}
                         {course.price > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
                             {isRTL ? 'السعر غير شامل الضريبة' : 'Price excludes VAT'}
