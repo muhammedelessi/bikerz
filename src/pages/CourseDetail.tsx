@@ -737,10 +737,15 @@ const CourseDetail: React.FC = () => {
                           );
                         })()}
                         {discountCountdown.hasExpiry && !discountCountdown.isExpired && effectiveDiscount > 0 && (
-                          <div className="flex items-center justify-center gap-2 mt-2 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20">
-                            <Clock className="w-3.5 h-3.5 text-destructive" />
-                            <span className="text-sm font-mono font-bold text-destructive">{discountCountdown.timeLeft}</span>
-                            <span className="text-xs text-destructive/80">{isRTL ? 'متبقي' : 'left'}</span>
+                          <div className="flex items-center justify-center gap-2.5 mt-3 px-4 py-2 rounded-lg bg-accent-orange/10 border border-accent-orange/20">
+                            <Clock className="w-4 h-4 text-accent-orange animate-pulse" />
+                            <span className="text-sm font-mono font-black text-accent-orange tracking-wider">
+                              {discountCountdown.days > 0 && (
+                                <span>{discountCountdown.days}{isRTL ? 'ي' : 'd'} </span>
+                              )}
+                              {String(discountCountdown.hours).padStart(2, '0')}:{String(discountCountdown.minutes).padStart(2, '0')}:{String(discountCountdown.seconds).padStart(2, '0')}
+                            </span>
+                            <span className="text-xs font-semibold text-accent-orange/70">{isRTL ? 'متبقي' : 'left'}</span>
                           </div>
                         )}
                         {course.price > 0 && (
