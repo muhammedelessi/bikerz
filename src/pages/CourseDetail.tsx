@@ -373,7 +373,7 @@ const CourseDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="pt-[var(--navbar-h)] min-h-[60vh] flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
         </div>
         <Footer />
