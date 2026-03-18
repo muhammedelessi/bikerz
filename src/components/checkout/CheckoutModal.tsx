@@ -111,7 +111,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [guestSigningUp, setGuestSigningUp] = useState(false);
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('profile');
-  const [profileIncomplete, setProfileIncomplete] = useState(false);
+  
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoLoading, setPromoLoading] = useState(false);
