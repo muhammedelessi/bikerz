@@ -19,12 +19,12 @@ function useAuthReady() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    (supabase.auth as any).getSession().then(({ data: { session } }: any) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setIsReady(true);
     });
 
-    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null);
       }

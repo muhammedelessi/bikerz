@@ -85,7 +85,7 @@ const Signup: React.FC = () => {
     // Save gender and date_of_birth to profile
     if (gender || dateOfBirth) {
       try {
-        const { data: { user: newUser } } = await (supabase.auth as any).getUser();
+        const { data: { user: newUser } } = await supabase.auth.getUser();
         if (newUser) {
           await supabase.from('profiles').update({
             gender: gender || null,

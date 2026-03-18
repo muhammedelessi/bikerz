@@ -158,21 +158,13 @@ const Navbar: React.FC = () => {
   useEffect(() => {
     const el = navRef.current;
     if (!el) return;
-
     const update = () => {
       document.documentElement.style.setProperty('--navbar-h', `${el.offsetHeight}px`);
     };
-
     update();
-
-    if (typeof ResizeObserver !== 'undefined') {
-      const ro = new ResizeObserver(update);
-      ro.observe(el);
-      return () => ro.disconnect();
-    }
-
-    window.addEventListener('resize', update, { passive: true });
-    return () => window.removeEventListener('resize', update);
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   return (
@@ -181,7 +173,7 @@ const Navbar: React.FC = () => {
         ref={navRef}
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        className={`fixed top-0 left-0 right-0 z-50 safe-area-top ${
+        className={`sticky top-0 left-0 right-0 z-50 safe-area-top ${
           isScrolled || isMobileMenuOpen
             ? 'bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg'
             : 'bg-background/80 backdrop-blur-sm'

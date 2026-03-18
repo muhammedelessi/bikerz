@@ -1,8 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient } from "@tanstack/query-core";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
@@ -160,30 +159,26 @@ const AppRoutes = () => (
   </>
 );
 
-const SafeHelmetProvider = HelmetProvider as unknown as React.ComponentType<{
-  children: React.ReactNode;
-}>;
-
 const App = () => (
-  <SafeHelmetProvider>
+  <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <CurrencyProvider>
           <AuthProvider>
             <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <ScrollToTop />
-                <SocialProofNotification />
-                <AppRoutes />
-              </BrowserRouter>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <ScrollToTop />
+              <SocialProofNotification />
+              <AppRoutes />
+            </BrowserRouter>
             </TooltipProvider>
           </AuthProvider>
         </CurrencyProvider>
       </LanguageProvider>
     </QueryClientProvider>
-  </SafeHelmetProvider>
+  </HelmetProvider>
 );
 
 export default App;

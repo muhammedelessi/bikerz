@@ -12,7 +12,7 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
   Cell,
-} from '@/lib/recharts-compat';
+} from 'recharts';
 import {
   GitBranch,
   TrendingDown,
