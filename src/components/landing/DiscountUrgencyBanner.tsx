@@ -96,25 +96,7 @@ const slideVariants = {
 
 const DiscountUrgencyBanner: React.FC = () => {
   const { isRTL } = useLanguage();
-  const bannerRef = useRef<HTMLDivElement>(null);
   const [[activeIndex, direction], setActiveIndex] = useState([0, 1]);
-
-  // Publish banner height as CSS variable for navbar offset and page spacer
-  useEffect(() => {
-    const el = bannerRef.current;
-    if (!el) return;
-    const update = () => {
-      const h = el.offsetHeight;
-      document.documentElement.style.setProperty('--discount-banner-h', `${h}px`);
-    };
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => {
-      ro.disconnect();
-      document.documentElement.style.setProperty('--discount-banner-h', '0px');
-    };
-  }, []);
 
   const { data: discountedCourses } = useQuery({
     queryKey: ["homepage-discount-banner-carousel"],
