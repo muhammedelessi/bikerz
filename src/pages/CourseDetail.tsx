@@ -416,6 +416,7 @@ const CourseDetail: React.FC = () => {
         breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Courses', url: '/courses' }, { name: courseTitle || 'Course', url: `/courses/${id}` }]}
       />
       <Navbar />
+      <DiscountUrgencyBanner courseId={id} />
 
       {/* Sticky Header — appears on scroll */}
       <AnimatePresence>
