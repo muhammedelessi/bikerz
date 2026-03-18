@@ -50,6 +50,7 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [bannerHeight, setBannerHeight] = useState(0);
 
   // Fetch header content from database
   const { data: headerContent } = useQuery({
