@@ -269,40 +269,42 @@ export function useGamification() {
     mutationFn: async (badgeId: string) => {
       if (!user) throw new Error('Not authenticated');
 
-      // Check if already earned
+      // Check if already earned (client-side cache check)
       const existing = userBadges.find(ub => ub.badge_id === badgeId);
       if (existing) return null;
 
-      const { data, error } = await supabase
-        .from('user_badges')
-        .insert({ user_id: user.id, badge_id: badgeId })
-        .select('*, badge:achievement_badges(*)')
-        .single();
+      const { data, error } = await supabase.rpc('award_badge_secure', {
+        p_badge_id: badgeId,
+      });
 
       if (error) throw error;
-      return data as UserBadge & { badge: Badge };
+      
+      const result = data as { awarded?: boolean; already_earned?: boolean; badge_name?: string; badge_name_ar?: string; xp_reward?: number; coin_reward?: number };
+      if (result.already_earned) return null;
+
+      return {
+        badge_name: result.badge_name || '',
+        badge_name_ar: result.badge_name_ar || '',
+        xp_reward: result.xp_reward || 0,
+      };
     },
     onSuccess: (result) => {
       if (result) {
         queryClient.invalidateQueries({ queryKey: ['user-badges'] });
-        const badge = result.badge;
-        if (badge) {
-          toast.success(
-            isRTL 
-              ? `🏆 فتحت شارة: ${badge.name_ar || badge.name}!` 
-              : `🏆 Badge Unlocked: ${badge.name}!`
-          );
-          
-          // Award badge XP/coins
-          if (badge.xp_reward > 0) {
-            addXPMutation.mutate({
-              amount: badge.xp_reward,
-              sourceType: 'badge_reward',
-              sourceId: badge.id,
-              description: `Badge: ${badge.name}`,
-              descriptionAr: `شارة: ${badge.name_ar || badge.name}`,
-            });
-          }
+        toast.success(
+          isRTL 
+            ? `🏆 فتحت شارة: ${result.badge_name_ar || result.badge_name}!` 
+            : `🏆 Badge Unlocked: ${result.badge_name}!`
+        );
+        
+        // Award badge XP via secure RPC
+        if (result.xp_reward > 0) {
+          addXPMutation.mutate({
+            amount: result.xp_reward,
+            sourceType: 'badge_reward',
+            description: `Badge: ${result.badge_name}`,
+            descriptionAr: `شارة: ${result.badge_name_ar || result.badge_name}`,
+          });
         }
       }
     },
