@@ -69,18 +69,19 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
           )}
         >
           <span className="truncate">{selectedLabel || placeholder}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ms-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start" dir={document.documentElement.dir || 'ltr'}>
         <div className="flex items-center border-b px-3 py-2">
-          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+          <Search className="me-2 h-4 w-4 shrink-0 opacity-50" />
           <Input
             ref={inputRef}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={searchPlaceholder}
-            className="h-8 border-0 p-0 shadow-none focus-visible:ring-0"
+            className="h-8 border-0 p-0 shadow-none focus-visible:ring-0 text-start"
+            dir={document.documentElement.dir || 'ltr'}
           />
         </div>
         <ScrollArea className="max-h-[200px]">
@@ -96,13 +97,13 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                     setOpen(false);
                   }}
                   className={cn(
-                    'relative flex w-full cursor-pointer select-none items-center rounded-sm py-2 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground',
+                    'relative flex w-full cursor-pointer select-none items-center rounded-sm py-2 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground text-start',
                     value === option.value && 'bg-accent text-accent-foreground'
                   )}
                 >
                   <Check
                     className={cn(
-                      'mr-2 h-4 w-4 flex-shrink-0',
+                      'me-2 h-4 w-4 flex-shrink-0',
                       value === option.value ? 'opacity-100' : 'opacity-0'
                     )}
                   />
