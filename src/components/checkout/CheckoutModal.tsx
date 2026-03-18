@@ -471,7 +471,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     onPaymentStarted?.();
 
     // Compose address from billing fields
-    const composedAddress = [city, country, postalCode].filter(Boolean).join(', ');
+    const composedAddress = [effectiveCity, country, postalCode].filter(Boolean).join(', ');
 
     // For guest users: auto-create account first
     let currentUserId = user?.id;
