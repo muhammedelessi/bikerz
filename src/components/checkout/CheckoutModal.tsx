@@ -69,7 +69,7 @@ interface CheckoutModalProps {
   onPaymentStarted?: () => void;
 }
 
-type CheckoutStep = 'profile' | 'billing' | 'profile-reminder' | 'payment';
+type CheckoutStep = 'profile' | 'billing' | 'payment';
 
 const CHECKOUT_STEPS_DISPLAY: CheckoutStep[] = ['profile', 'billing', 'payment'];
 
@@ -111,7 +111,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [guestSigningUp, setGuestSigningUp] = useState(false);
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('profile');
-  const [profileIncomplete, setProfileIncomplete] = useState(false);
+  
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoLoading, setPromoLoading] = useState(false);
@@ -400,7 +400,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setGuestSigningUp(true);
     try {
       const password = generatePassword();
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await (supabase.auth as any).signUp({
         email: email.trim(),
         password,
         options: {
@@ -431,7 +431,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       await saveProfileData(data.user.id);
 
       // Send password reset email so user can set their own password
-      supabase.auth.resetPasswordForEmail(email.trim(), {
+      (supabase.auth as any).resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/forgot-password`,
       }).catch(() => { /* silent - non-critical */ });
 
@@ -445,18 +445,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  // Step navigation
-  // Check if rider profile details are incomplete (bike info, etc.)
-  const checkProfileCompleteness = useCallback(async (): Promise<boolean> => {
-    if (!user?.id) return false;
-    const { data } = await supabase
-      .from('profiles')
-      .select('phone, city, country, rider_nickname')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    if (!data) return false;
-    return !data.phone || !data.city || !data.country || !data.rider_nickname;
-  }, [user?.id]);
 
   const handleNextStep = async () => {
     if (currentStep === 'profile') {
@@ -468,38 +456,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       if (user) {
         const saved = await saveProfileData();
         if (!saved) return;
-        // Check if profile is incomplete for reminder
-        const incomplete = await checkProfileCompleteness();
-        if (incomplete) {
-          setProfileIncomplete(true);
-          setCurrentStep('profile-reminder');
-        } else {
-          setCurrentStep('payment');
-        }
-      } else {
-        // Guest users: skip profile reminder, go straight to payment
-        setCurrentStep('payment');
       }
-    } else if (currentStep === 'profile-reminder') {
       setCurrentStep('payment');
     }
   };
 
   const handlePrevStep = () => {
     if (currentStep === 'billing') setCurrentStep('profile');
-    else if (currentStep === 'profile-reminder') setCurrentStep('billing');
-    else if (currentStep === 'payment') {
-      if (profileIncomplete) setCurrentStep('profile-reminder');
-      else setCurrentStep('billing');
-    }
+    else if (currentStep === 'payment') setCurrentStep('billing');
   };
 
-  // For display purposes, map profile-reminder to billing index
-  const displayStep = currentStep === 'profile-reminder' ? 'billing' : currentStep;
-  const currentStepIndex = CHECKOUT_STEPS_DISPLAY.indexOf(displayStep as any);
-  const progressPercent = currentStep === 'profile-reminder'
-    ? 75
-    : ((currentStepIndex + 1) / CHECKOUT_STEPS_DISPLAY.length) * 100;
+  const currentStepIndex = CHECKOUT_STEPS_DISPLAY.indexOf(currentStep as any);
+  const progressPercent = currentStepIndex >= 0 ? ((currentStepIndex + 1) / CHECKOUT_STEPS_DISPLAY.length) * 100 : 0;
 
   // Promo code
   const handleApplyPromo = async () => {
@@ -651,7 +619,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const stepLabels: Record<CheckoutStep, { en: string; ar: string }> = {
     profile: { en: 'Personal Info', ar: 'المعلومات الشخصية' },
     billing: { en: 'Billing Address', ar: 'عنوان الفاتورة' },
-    'profile-reminder': { en: 'Profile', ar: 'الملف الشخصي' },
+    
     payment: { en: 'Payment', ar: 'الدفع' },
   };
 
@@ -906,53 +874,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </motion.div>
               )}
 
-              {/* Profile Completion Reminder */}
-              {currentStep === 'profile-reminder' && (
-                <motion.div
-                  key="profile-reminder"
-                  initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
-                  className="space-y-5"
-                >
-                  <div className="flex flex-col items-center text-center py-4 space-y-4">
-                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="w-8 h-8 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-foreground mb-1">
-                        {isRTL ? 'أكمل ملفك الشخصي' : 'Complete Your Rider Profile'}
-                      </h4>
-                      <p className="text-sm text-muted-foreground">
-                        {isRTL
-                          ? 'أكمل بياناتك لتحسين تجربة التعلم الخاصة بك'
-                          : 'Complete your details for a better learning experience'}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-3 w-full">
-                      <Button
-                        className="flex-1"
-                        onClick={() => {
-                          onOpenChange(false);
-                          navigate('/profile');
-                        }}
-                      >
-                        <User className="w-4 h-4 me-2" />
-                        {isRTL ? 'إكمال الملف الشخصي' : 'Complete Profile'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => setCurrentStep('payment')}
-                      >
-                        {isRTL ? 'المتابعة على أي حال' : 'Continue Anyway'}
-                        <ArrowIcon className="w-4 h-4 ms-2" />
-                      </Button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
 
               {/* Step 3: Payment */}
               {currentStep === 'payment' && (
@@ -1142,7 +1063,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </Button>
               )}
 
-              {currentStep !== 'payment' && currentStep !== 'profile-reminder' ? (
+              {currentStep !== 'payment' ? (
                 <Button
                   className="flex-1 btn-cta"
                   onClick={handleNextStep}

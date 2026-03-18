@@ -18,16 +18,17 @@ const Index: React.FC = () => {
         canonical="/"
       />
       <Navbar />
-      <DiscountUrgencyBanner />
-      <main>
-        <HeroSection />
-        <FeaturedCoursesSection />
-        <WhySection />
-        
-        <JourneySection />
-        <CTASection />
-      </main>
-      <Footer />
+      <div className="pt-[var(--navbar-h)]">
+        <DiscountUrgencyBanner />
+        <main>
+          <HeroSection />
+          <FeaturedCoursesSection />
+          <WhySection />
+          <JourneySection />
+          <CTASection />
+        </main>
+        <Footer />
+      </div>
     </div>
   );
 };

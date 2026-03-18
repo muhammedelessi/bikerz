@@ -144,7 +144,7 @@ const DiscountUrgencyBanner: React.FC<{ courseId?: string }> = ({ courseId }) =>
         transition={{ duration: 0.4, delay: 0.3 }}
         className="overflow-hidden bg-near-black border-b border-accent-orange/20 shadow-[0_2px_16px_hsl(var(--accent-orange)/0.25)]"
       >
-        <div className="px-3 sm:px-6 py-2.5 sm:py-3 relative">
+        <div className="px-3 sm:px-6 py-1.5 sm:py-2 relative">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={currentCourse.id}
