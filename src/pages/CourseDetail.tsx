@@ -44,6 +44,7 @@ import CourseReviews from '@/components/course/CourseReviews';
 import StarRating from '@/components/course/StarRating';
 import { useDiscountCountdown } from '@/hooks/useDiscountCountdown';
 import DiscountCountdown from '@/components/common/DiscountCountdown';
+import DiscountUrgencyBanner from '@/components/landing/DiscountUrgencyBanner';
 
 
 interface Lesson {
