@@ -153,32 +153,37 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const cityOptions = useMemo(() => {
     if (!country) return [];
-    let arCities: string[] = [];
+
+    // Build a map of English name → Arabic name from countries-cities-ar
+    const arMap = new Map<string, string>();
     try {
       const citiesAr = getCitiesByCountryCode(country);
       if (citiesAr && citiesAr.length > 0) {
-        arCities = citiesAr.map((c: any) => typeof c === 'string' ? c : (c.name_ar || c.name || c));
+        citiesAr.forEach((c: any) => {
+          const en = typeof c === 'string' ? c : (c.name || '');
+          const ar = typeof c === 'string' ? '' : (c.nameAr || c.name_ar || '');
+          if (en) arMap.set(en.toLowerCase(), ar);
+        });
       }
     } catch {}
-    
+
     const enCities = City.getCitiesOfCountry(country) || [];
-    
-    const opts = enCities.map((c, i) => {
-      const arName = arCities[i] || '';
+
+    const opts = enCities.map((c) => {
+      const arName = arMap.get(c.name.toLowerCase()) || '';
       return {
         value: c.name,
         label: isRTL && arName ? arName : c.name,
         searchLabel: `${c.name} ${arName}`,
       };
     });
-    
-    // Add "Other" option at the end
+
     opts.push({
       value: '__other__',
       label: isRTL ? 'أخرى (إدخال يدوي)' : 'Other (manual input)',
       searchLabel: 'other أخرى',
     });
-    
+
     return opts;
   }, [country, isRTL]);
 
