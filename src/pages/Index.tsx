@@ -21,14 +21,14 @@ const Index: React.FC = () => {
       <div className="pt-[var(--navbar-h)]">
         <DiscountUrgencyBanner />
         <main>
-        <HeroSection />
-        <FeaturedCoursesSection />
-        <WhySection />
-        
-        <JourneySection />
-        <CTASection />
-      </main>
-      <Footer />
+          <HeroSection />
+          <FeaturedCoursesSection />
+          <WhySection />
+          <JourneySection />
+          <CTASection />
+        </main>
+        <Footer />
+      </div>
     </div>
   );
 };
