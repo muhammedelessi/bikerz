@@ -132,7 +132,7 @@ const DiscountUrgencyBanner: React.FC = () => {
   const currentCourse = courses[activeIndex % courses.length];
 
   return (
-    <div ref={bannerRef} className="fixed top-0 left-0 right-0 z-[60] transition-transform duration-300" style={{ transform: 'translateY(var(--banner-translate, 0))' }}>
+    <div>
       <motion.section
         id="discount-urgency-banner"
         initial={{ opacity: 0, y: -10 }}
