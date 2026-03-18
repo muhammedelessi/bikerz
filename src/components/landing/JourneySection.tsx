@@ -32,7 +32,7 @@ const JourneySection: React.FC = () => {
   const steps = content?.steps || [];
 
   return (
-    <section ref={ref} className="relative py-16 sm:py-20 bg-gradient-to-b from-background via-secondary/10 to-background overflow-hidden">
+    <section ref={ref} className="relative py-10 sm:py-14 bg-gradient-to-b from-background via-secondary/10 to-background overflow-hidden">
       {/* Road Pattern Background */}
       <div className="absolute inset-0 opacity-5 hidden md:block">
         <div className="absolute w-4 h-full bg-gradient-to-b from-transparent via-muted-foreground to-transparent" style={{ insetInlineStart: '50%', transform: isRTL ? 'translateX(50%)' : 'translateX(-50%)' }} />

@@ -39,7 +39,7 @@ const WhySection: React.FC = () => {
   const cards = content?.cards || [];
 
   return (
-    <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden">
+    <section ref={ref} className="relative py-10 sm:py-14 overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5 hidden sm:block">
         <div
