@@ -831,34 +831,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
-                    {cityOptions.length > 0 ? (
-                      <>
-                        <SearchableSelect
-                          options={cityOptions}
-                          value={city}
-                          onValueChange={(v) => { setCity(v); if (v !== '__other__') setCityOther(''); setErrors(prev => ({ ...prev, city: undefined })); }}
-                          placeholder={isRTL ? 'اختر المدينة' : 'Select city'}
-                          searchPlaceholder={isRTL ? 'ابحث عن مدينة...' : 'Search city...'}
-                          emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
-                          hasError={!!errors.city}
-                        />
-                        {city === '__other__' && (
-                          <Input
-                            value={cityOther}
-                            onChange={(e) => { setCityOther(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
-                            placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
-                            className="mt-2"
-                          />
-                        )}
-                      </>
-                    ) : (
-                      <Input
-                        value={city}
-                        onChange={(e) => { setCity(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
-                        placeholder={isRTL ? 'أدخل مدينتك' : 'Enter your city'}
-                        className={errors.city ? 'border-destructive' : ''}
-                      />
-                    )}
+                    <SearchableSelect
+                      options={cityOptions}
+                      value={city}
+                      onValueChange={(v) => { setCity(v); setErrors(prev => ({ ...prev, city: undefined })); }}
+                      placeholder={country ? (isRTL ? 'اختر المدينة' : 'Select city') : (isRTL ? 'اختر الدولة أولاً' : 'Select country first')}
+                      searchPlaceholder={isRTL ? 'ابحث عن مدينة...' : 'Search city...'}
+                      emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
+                      hasError={!!errors.city}
+                    />
                     {renderFieldError('city')}
                   </div>
 
