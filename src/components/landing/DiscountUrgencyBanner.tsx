@@ -9,28 +9,35 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDiscountCountdown } from "@/hooks/useDiscountCountdown";
 
 const CountdownDisplay: React.FC<{ expiresAt: string; isRTL: boolean }> = ({ expiresAt, isRTL }) => {
-  const { timeLeft, isExpired, hasExpiry } = useDiscountCountdown(expiresAt);
+  const { days, hours, minutes, seconds, isExpired, hasExpiry } = useDiscountCountdown(expiresAt);
   if (!hasExpiry || isExpired) return null;
 
-  const [h, m, s] = timeLeft.split(":");
-  const labels = isRTL
-    ? ["ساعة", "دقيقة", "ثانية"]
-    : ["Hours", "Minutes", "Seconds"];
-  const units = [h, m, s];
+  const label = isRTL ? "متبقي:" : "Ends in:";
+  const parts = isRTL
+    ? [
+        { value: days, unit: "يوم" },
+        { value: hours, unit: "ساعة" },
+        { value: minutes, unit: "دقيقة" },
+        { value: seconds, unit: "ثانية" },
+      ]
+    : [
+        { value: days, unit: "day" },
+        { value: hours, unit: "hour" },
+        { value: minutes, unit: "min" },
+        { value: seconds, unit: "sec" },
+      ];
+
   return (
-    <div className="flex items-center gap-1 sm:gap-1.5">
-      {units.map((unit, i) => (
+    <span className="text-[11px] sm:text-sm font-semibold text-destructive whitespace-nowrap">
+      {label}{" "}
+      {parts.map((p, i) => (
         <React.Fragment key={i}>
-          {i > 0 && <span className="text-destructive font-bold text-sm sm:text-lg self-start mt-0.5 sm:mt-1">:</span>}
-          <div className="flex flex-col items-center">
-            <span className="inline-flex items-center justify-center w-7 h-7 sm:w-10 sm:h-10 rounded sm:rounded-lg bg-destructive/20 border border-destructive/30 text-destructive font-mono font-black text-xs sm:text-lg">
-              {unit}
-            </span>
-            <span className="text-[8px] sm:text-[10px] text-muted-foreground mt-0.5">{labels[i]}</span>
-          </div>
+          {i > 0 && <span className="text-destructive/50 mx-0.5">-</span>}
+          <span className="font-mono font-black">{p.value}</span>{" "}
+          <span className="font-medium">{p.unit}</span>
         </React.Fragment>
       ))}
-    </div>
+    </span>
   );
 };
 
