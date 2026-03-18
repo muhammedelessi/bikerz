@@ -857,6 +857,50 @@ const AdminCourses: React.FC = () => {
                   </p>
                 )}
               </div>
+
+            {/* Discount Duration Row */}
+            {formData.discount_percentage > 0 && (
+              <div className="col-span-2 md:col-span-4 grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'مدة الخصم' : 'Discount Duration'}</Label>
+                  <Select
+                    value={formData.discount_duration}
+                    onValueChange={(value) => setFormData({ ...formData, discount_duration: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={isRTL ? 'اختر المدة' : 'Select duration'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{isRTL ? 'بدون انتهاء' : 'No expiry'}</SelectItem>
+                      <SelectItem value="24h">24 {isRTL ? 'ساعة' : 'hours'}</SelectItem>
+                      <SelectItem value="48h">48 {isRTL ? 'ساعة' : 'hours'}</SelectItem>
+                      <SelectItem value="72h">72 {isRTL ? 'ساعة' : 'hours'}</SelectItem>
+                      <SelectItem value="1week">{isRTL ? 'أسبوع' : '1 week'}</SelectItem>
+                      {formData.discount_expires_at && <SelectItem value="keep">{isRTL ? 'إبقاء الحالي' : 'Keep current'}</SelectItem>}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {editingCourse && formData.discount_expires_at && (
+                  <div className="space-y-2">
+                    <Label>{isRTL ? 'ينتهي في' : 'Expires at'}</Label>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted-foreground flex-1">
+                        {new Date(formData.discount_expires_at).toLocaleString()}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => renewDiscount(editingCourse.id)}
+                        className="text-xs"
+                      >
+                        {isRTL ? 'تجديد' : 'Renew'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
               <div className="space-y-2">
                 <Label>{isRTL ? 'العملة' : 'Currency'}</Label>
                 <Select 
