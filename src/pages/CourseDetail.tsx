@@ -43,6 +43,7 @@ import { trackViewContent } from '@/utils/metaPixel';
 import CourseReviews from '@/components/course/CourseReviews';
 import StarRating from '@/components/course/StarRating';
 import { useDiscountCountdown } from '@/hooks/useDiscountCountdown';
+import DiscountCountdown from '@/components/common/DiscountCountdown';
 
 
 interface Lesson {
