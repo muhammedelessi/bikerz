@@ -121,6 +121,7 @@ const DiscountUrgencyBanner: React.FC = () => {
         </Link>
       </div>
     </motion.section>
+    </div>
   );
 };
 
