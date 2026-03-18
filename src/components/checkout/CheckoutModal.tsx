@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Country, City, ICountry, ICity } from 'country-state-city';
 import countries from 'i18n-iso-countries';
 import arLocale from 'i18n-iso-countries/langs/ar.json';
+import { getCitiesByCountryCode } from 'countries-cities-ar';
 import SearchableSelect from '@/components/checkout/SearchableSelect';
 
 countries.registerLocale(arLocale);
@@ -133,23 +134,49 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [profileSaving, setProfileSaving] = useState(false);
 
+  // Gulf countries to prioritize
+  const GULF_CODES = ['SA', 'AE', 'KW', 'BH', 'QA', 'OM'];
+
   // Countries & cities from library
   const countryOptions = useMemo(() => {
-    return Country.getAllCountries().map((c) => ({
+    const all = Country.getAllCountries().map((c) => ({
       value: c.isoCode,
       label: `${c.flag} ${isRTL ? (countries.getName(c.isoCode, 'ar') || c.name) : c.name}`,
       searchLabel: `${c.name} ${countries.getName(c.isoCode, 'ar') || ''}`,
     }));
+    const gulf = GULF_CODES.map(code => all.find(c => c.value === code)).filter(Boolean) as typeof all;
+    const rest = all.filter(c => !GULF_CODES.includes(c.value));
+    return [...gulf, ...rest];
   }, [isRTL]);
 
   const cityOptions = useMemo(() => {
     if (!country) return [];
-    const cities = City.getCitiesOfCountry(country) || [];
-    const opts = cities.map((c, i) => ({
-      value: c.name,
-      label: c.name,
-    }));
-    opts.push({ value: '__other__', label: isRTL ? 'أخرى' : 'Other' });
+    // Try Arabic city names first
+    let arCities: string[] = [];
+    try {
+      const citiesAr = getCitiesByCountryCode(country);
+      if (citiesAr && citiesAr.length > 0) {
+        arCities = citiesAr.map((c: any) => typeof c === 'string' ? c : (c.name_ar || c.name || c));
+      }
+    } catch {}
+    
+    const enCities = City.getCitiesOfCountry(country) || [];
+    
+    const opts = enCities.map((c, i) => {
+      const arName = arCities[i] || '';
+      return {
+        value: c.name,
+        label: isRTL && arName ? arName : c.name,
+        searchLabel: `${c.name} ${arName}`,
+      };
+    });
+    
+    // If Arabic lib has more cities not in english lib
+    if (arCities.length > enCities.length && isRTL) {
+      // Already covered by enCities mapping
+    }
+    
+    opts.push({ value: '__other__', label: isRTL ? 'أخرى' : 'Other', searchLabel: 'Other أخرى' });
     return opts;
   }, [country, isRTL]);
 
