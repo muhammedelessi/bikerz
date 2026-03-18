@@ -468,19 +468,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       if (user) {
         const saved = await saveProfileData();
         if (!saved) return;
-        // Check if profile is incomplete for reminder
-        const incomplete = await checkProfileCompleteness();
-        if (incomplete) {
-          setProfileIncomplete(true);
-          setCurrentStep('profile-reminder');
-        } else {
-          setCurrentStep('payment');
-        }
-      } else {
-        // Guest users: skip profile reminder, go straight to payment
-        setCurrentStep('payment');
       }
-    } else if (currentStep === 'profile-reminder') {
       setCurrentStep('payment');
     }
   };
