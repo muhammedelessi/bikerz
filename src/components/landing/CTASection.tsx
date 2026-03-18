@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const CTASection: React.FC = () => {
   const { isRTL } = useLanguage();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   const { data: content, isLoading } = useLandingContent<CTAContent>('cta');
@@ -24,7 +24,7 @@ const CTASection: React.FC = () => {
     <section ref={ref} className="relative py-10 sm:py-14 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/20 to-primary/10" />
-      
+
       {/* Animated Glow */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
@@ -33,21 +33,21 @@ const CTASection: React.FC = () => {
             opacity: [0.3, 0.5, 0.3],
           }}
           transition={{ duration: 4, repeat: Infinity }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[400px] lg:w-[600px] h-[300px] sm:h-[400px] lg:h-[600px] rounded-full bg-primary/20 blur-3xl"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[400px] lg:w-[600px] h-[300px] sm:h-[400px] lg:h-[600px] rounded-full bg-primary/20 blur-3xl [@supports(-webkit-touch-callout:none)]:hidden"
         />
       </div>
 
       <div className="section-container relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="max-w-3xl mx-auto text-center px-4"
         >
           {/* Icon */}
           <motion.div
             initial={{ scale: 0 }}
-            animate={inView ? { scale: 1 } : {}}
+            animate={inView ? { scale: 1 } : { scale: 1 }}
             transition={{ duration: 0.5, type: 'spring' }}
             className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl sm:rounded-2xl bg-primary/20 border border-primary/30 mb-6 sm:mb-8"
           >
@@ -83,7 +83,7 @@ const CTASection: React.FC = () => {
           {/* Trust Badges */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={inView ? { opacity: 1 } : {}}
+            animate={inView ? { opacity: 1 } : { opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.3 }}
             className="mt-8 sm:mt-10 lg:mt-12 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-6 text-sm text-muted-foreground"
           >
