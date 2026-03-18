@@ -176,7 +176,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       // Already covered by enCities mapping
     }
     
-    opts.push({ value: '__other__', label: isRTL ? 'أخرى' : 'Other', searchLabel: 'Other أخرى' });
+    return opts;
     return opts;
   }, [country, isRTL]);
 
