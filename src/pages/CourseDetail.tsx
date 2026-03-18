@@ -32,6 +32,8 @@ import {
   ArrowLeft,
   Layers,
   ClipboardList,
+  Infinity,
+  MonitorPlay,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.jpg';
