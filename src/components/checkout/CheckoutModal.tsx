@@ -821,7 +821,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <SearchableSelect
                       options={countryOptions}
                       value={country}
-                      onValueChange={(v) => { setCountry(v); setCity(''); setErrors(prev => ({ ...prev, country: undefined })); }}
+                      onValueChange={(v) => { setCountry(v); setCity(''); setManualCity(''); setIsOtherCity(false); setErrors(prev => ({ ...prev, country: undefined })); }}
                       placeholder={isRTL ? 'اختر الدولة' : 'Select country'}
                       searchPlaceholder={isRTL ? 'ابحث عن دولة...' : 'Search country...'}
                       emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
