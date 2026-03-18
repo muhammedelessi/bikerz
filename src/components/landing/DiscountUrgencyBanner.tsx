@@ -82,12 +82,13 @@ const DiscountUrgencyBanner: React.FC = () => {
   const sym = getCurrencySymbol(priceInfo.currency, isRTL);
 
   return (
+    <div ref={bannerRef} className="fixed top-0 left-0 right-0 z-[60] transition-transform duration-300" style={{ transform: 'translateY(var(--banner-translate, 0))' }}>
     <motion.section
       id="discount-urgency-banner"
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.3 }}
-      className="relative overflow-hidden bg-gradient-to-r from-destructive/10 via-destructive/5 to-destructive/10 border-b border-destructive/20"
+      className="overflow-hidden bg-gradient-to-r from-destructive/10 via-destructive/5 to-destructive/10 border-b border-destructive/20"
     >
       <div className="section-container !py-3 sm:!py-4">
         <Link to={`/courses/${discountedCourse.id}`} className="block group">
