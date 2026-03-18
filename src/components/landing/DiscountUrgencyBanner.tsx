@@ -6,7 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import DiscountCountdown from "@/components/common/DiscountCountdown";
+// import DiscountCountdown from "@/components/common/DiscountCountdown";
 
 interface DiscountedCourse {
   id: string;
