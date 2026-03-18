@@ -567,6 +567,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             country,
             address: composedAddress,
             amount: '0',
+            dateOfBirth: profile?.date_of_birth || '',
+            gender: profile?.gender || '',
             isRTL,
             silent: true,
           }
