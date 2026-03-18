@@ -28,12 +28,12 @@ const CountdownDisplay: React.FC<{ expiresAt: string; isRTL: boolean }> = ({ exp
       ];
 
   return (
-    <span className="text-[11px] sm:text-sm font-semibold text-destructive whitespace-nowrap">
+    <span className="text-[11px] sm:text-sm font-bold text-white/90 whitespace-nowrap">
       {label}{" "}
       {parts.map((p, i) => (
         <React.Fragment key={i}>
-          {i > 0 && <span className="text-destructive/50 mx-0.5">-</span>}
-          <span className="font-mono font-black">{p.value}</span>{" "}
+          {i > 0 && <span className="text-white/40 mx-0.5">-</span>}
+          <span className="font-mono font-black text-yellow-300">{p.value}</span>{" "}
           <span className="font-medium">{p.unit}</span>
         </React.Fragment>
       ))}
@@ -63,10 +63,10 @@ const SlideItem: React.FC<{
 
   return (
     <Link to={`/courses/${course.id}`} className="block group">
-      <div className="flex items-center justify-center gap-2 sm:gap-6 flex-wrap">
-        <div className="flex items-center gap-1 sm:gap-2">
-          <Flame className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-destructive animate-pulse flex-shrink-0" />
-          <span className="text-[11px] sm:text-sm md:text-base font-bold text-foreground leading-tight truncate max-w-[120px] sm:max-w-[200px] md:max-w-none">
+      <div className="flex items-center justify-center gap-2 sm:gap-5 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300 animate-pulse flex-shrink-0 drop-shadow-[0_0_6px_rgba(250,204,21,0.7)]" />
+          <span className="text-xs sm:text-sm md:text-base font-extrabold text-white leading-tight truncate max-w-[130px] sm:max-w-[220px] md:max-w-none uppercase tracking-wide">
             {isRTL
               ? `خصم ${priceInfo.discountPct}% — ${title}`
               : `${priceInfo.discountPct}% OFF — ${title}`}
@@ -79,10 +79,10 @@ const SlideItem: React.FC<{
 
         <div className="flex items-center gap-1.5 sm:gap-3">
           <div className="flex items-center gap-1 sm:gap-2">
-            <span className="text-[10px] sm:text-sm text-muted-foreground line-through">{priceInfo.originalPrice} {sym}</span>
-            <span className="text-xs sm:text-lg font-black text-primary">{priceInfo.finalPrice} {sym}</span>
+            <span className="text-[10px] sm:text-sm text-white/50 line-through">{priceInfo.originalPrice} {sym}</span>
+            <span className="text-sm sm:text-lg font-black text-yellow-300 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]">{priceInfo.finalPrice} {sym}</span>
           </div>
-          <span className="hidden sm:flex text-xs font-semibold text-primary items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+          <span className="hidden sm:flex text-xs font-bold text-yellow-300 items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity uppercase tracking-wider">
             {isRTL ? "سجّل الآن" : "Enroll Now"}
             <Arrow className="w-3.5 h-3.5" />
           </span>
@@ -168,9 +168,9 @@ const DiscountUrgencyBanner: React.FC = () => {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.3 }}
-        className="overflow-hidden bg-gradient-to-r from-destructive/10 via-destructive/5 to-destructive/10 border-b border-destructive/20"
+        className="overflow-hidden bg-gradient-to-r from-red-700 via-orange-600 to-red-700 border-b border-red-900/50 shadow-[0_2px_12px_rgba(220,38,38,0.4)]"
       >
-        <div className="px-3 sm:px-6 py-2 sm:py-3 relative">
+        <div className="px-3 sm:px-6 py-2.5 sm:py-3 relative">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={currentCourse.id}
@@ -187,15 +187,15 @@ const DiscountUrgencyBanner: React.FC = () => {
 
           {/* Dot indicators */}
           {courses.length > 1 && (
-            <div className="flex items-center justify-center gap-1 mt-1">
+            <div className="flex items-center justify-center gap-1 mt-1.5">
               {courses.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setActiveIndex([i, i > activeIndex ? 1 : -1])}
                   className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full transition-all duration-300 ${
                     i === activeIndex % courses.length
-                      ? 'bg-destructive w-3 sm:w-4'
-                      : 'bg-muted-foreground/30'
+                      ? 'bg-yellow-300 w-3 sm:w-4'
+                      : 'bg-white/30'
                   }`}
                   aria-label={`Slide ${i + 1}`}
                 />
