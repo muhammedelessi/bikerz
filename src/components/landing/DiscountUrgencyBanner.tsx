@@ -13,22 +13,14 @@ const CountdownDisplay: React.FC<{ expiresAt: string; isRTL: boolean }> = ({ exp
   if (!hasExpiry || isExpired) return null;
 
   const [h, m, s] = timeLeft.split(":");
-  const labels = isRTL
-    ? ["ثانية", "دقيقة", "ساعة"]
-    : ["Seconds", "Minutes", "Hours"];
-  const units = [h, m, s];
-  const unitLabels = [labels[2], labels[1], labels[0]];
   return (
     <div className="flex items-center gap-1.5">
-      {units.map((unit, i) => (
+      {[h, m, s].map((unit, i) => (
         <React.Fragment key={i}>
-          {i > 0 && <span className="text-destructive font-bold text-lg self-start mt-2">:</span>}
-          <div className="flex flex-col items-center">
-            <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-destructive/20 border border-destructive/30 text-destructive font-mono font-black text-lg">
-              {unit}
-            </span>
-            <span className="text-[10px] text-muted-foreground mt-0.5">{unitLabels[i]}</span>
-          </div>
+          {i > 0 && <span className="text-destructive font-bold text-lg">:</span>}
+          <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-destructive/20 border border-destructive/30 text-destructive font-mono font-black text-lg">
+            {unit}
+          </span>
         </React.Fragment>
       ))}
     </div>
