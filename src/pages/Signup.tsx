@@ -256,7 +256,53 @@ const Signup: React.FC = () => {
                 </div>
               </div>
 
-              <Button
+              {/* Gender */}
+              <div className="space-y-2">
+                <Label className="text-sm sm:text-base">{isRTL ? 'الجنس' : 'Gender'}</Label>
+                <Select value={gender} onValueChange={setGender}>
+                  <SelectTrigger className="form-input h-11 sm:h-12 text-base">
+                    <SelectValue placeholder={isRTL ? 'اختر الجنس' : 'Select gender'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">{isRTL ? 'ذكر' : 'Male'}</SelectItem>
+                    <SelectItem value="female">{isRTL ? 'أنثى' : 'Female'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Date of Birth */}
+              <div className="space-y-2">
+                <Label className="text-sm sm:text-base">{isRTL ? 'تاريخ الميلاد' : 'Date of Birth'}</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full h-11 sm:h-12 text-base justify-start font-normal form-input",
+                        !dateOfBirth && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="w-4 h-4 me-2" />
+                      {dateOfBirth ? format(dateOfBirth, 'PPP') : (isRTL ? 'اختر التاريخ' : 'Pick a date')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateOfBirth}
+                      onSelect={setDateOfBirth}
+                      disabled={(date) => date > new Date() || date < new Date('1940-01-01')}
+                      initialFocus
+                      captionLayout="dropdown-buttons"
+                      fromYear={1940}
+                      toYear={new Date().getFullYear()}
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+
                 type="submit"
                 variant="cta"
                 className="w-full h-11 sm:h-12 text-base"
