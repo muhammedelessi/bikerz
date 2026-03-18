@@ -176,7 +176,7 @@ const DiscountUrgencyBanner: React.FC = () => {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.3 }}
-        className="overflow-hidden bg-gradient-to-r from-red-700 via-orange-600 to-red-700 border-b border-red-900/50 shadow-[0_2px_12px_rgba(220,38,38,0.4)]"
+        className="overflow-hidden bg-near-black border-b border-accent-orange/20 shadow-[0_2px_16px_hsl(var(--accent-orange)/0.25)]"
       >
         <div className="px-3 sm:px-6 py-2.5 sm:py-3 relative">
           <AnimatePresence mode="wait" custom={direction}>
