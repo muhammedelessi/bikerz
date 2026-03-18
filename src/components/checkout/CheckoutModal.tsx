@@ -122,10 +122,38 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
+  const [cityOther, setCityOther] = useState('');
   const [country, setCountry] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [profileSaving, setProfileSaving] = useState(false);
+
+  // Countries & cities from library
+  const allCountries = useMemo(() => Country.getAllCountries(), []);
+  const citiesForCountry = useMemo(() => {
+    if (!country) return [];
+    return City.getCitiesOfCountry(country) || [];
+  }, [country]);
+
+  // Auto-detect country by IP
+  useEffect(() => {
+    if (!open || country) return;
+    const detectCountry = async () => {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.country_code && !country) {
+            setCountry(data.country_code);
+          }
+        }
+      } catch {}
+    };
+    detectCountry();
+  }, [open]);
   
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
