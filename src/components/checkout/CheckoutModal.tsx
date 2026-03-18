@@ -478,10 +478,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     else if (currentStep === 'payment') setCurrentStep('billing');
   };
 
-  // For display purposes, map profile-reminder to billing index
-  const displayStep = currentStep === 'profile-reminder' ? 'billing' : currentStep;
-  const currentStepIndex = CHECKOUT_STEPS_DISPLAY.indexOf(displayStep as any);
-  const progressPercent = currentStep === 'profile-reminder'
+  const currentStepIndex = CHECKOUT_STEPS_DISPLAY.indexOf(currentStep as any);
+  const progressPercent = currentStepIndex >= 0 ? ((currentStepIndex + 1) / CHECKOUT_STEPS_DISPLAY.length) * 100 : 0;
     ? 75
     : ((currentStepIndex + 1) / CHECKOUT_STEPS_DISPLAY.length) * 100;
 
