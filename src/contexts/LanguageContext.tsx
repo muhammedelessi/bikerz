@@ -19,9 +19,13 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    const savedLang = localStorage.getItem('i18nextLng') as Language;
-    if (savedLang && (savedLang === 'en' || savedLang === 'ar')) {
-      return savedLang;
+    try {
+      const savedLang = localStorage.getItem('i18nextLng') as Language;
+      if (savedLang && (savedLang === 'en' || savedLang === 'ar')) {
+        return savedLang;
+      }
+    } catch {
+      // Ignore storage failures on restricted iOS browsers
     }
     return (i18n.language as Language) || 'ar';
   });
@@ -31,7 +35,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const setLanguage = (lang: Language) => {
     i18n.changeLanguage(lang);
     setLanguageState(lang);
-    localStorage.setItem('i18nextLng', lang);
+    try {
+      localStorage.setItem('i18nextLng', lang);
+    } catch {
+      // Ignore storage failures on restricted iOS browsers
+    }
   };
 
   const toggleLanguage = () => {
@@ -45,10 +53,18 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     // Auto-detect language from country if user hasn't manually chosen
-    const hasManualChoice = localStorage.getItem('i18nextLng');
+    let hasManualChoice: string | null = null;
+    try {
+      hasManualChoice = localStorage.getItem('i18nextLng');
+    } catch {
+      hasManualChoice = null;
+    }
+
     if (!hasManualChoice) {
-      const controller = new AbortController();
-      fetch('https://ipapi.co/country_code/', { signal: controller.signal })
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const options = controller ? { signal: controller.signal } : undefined;
+
+      fetch('https://ipapi.co/country_code/', options)
         .then((res) => res.text())
         .then((code) => {
           const countryCode = code.trim().toUpperCase();
@@ -58,7 +74,10 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
         })
         .catch(() => {});
-      return () => controller.abort();
+
+      return () => {
+        controller?.abort();
+      };
     }
   }, []);
 
