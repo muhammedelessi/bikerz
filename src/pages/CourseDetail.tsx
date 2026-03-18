@@ -739,11 +739,6 @@ const CourseDetail: React.FC = () => {
                             </span>
                           );
                         })()}
-                        {discountCountdown.hasExpiry && !discountCountdown.isExpired && effectiveDiscount > 0 && (
-                          <div className="mt-3">
-                            <DiscountCountdown expiresAt={(course as any)?.discount_expires_at} isRTL={isRTL} />
-                          </div>
-                        )}
                         {course.price > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
                             {isRTL ? 'السعر غير شامل الضريبة' : 'Price excludes VAT'}
