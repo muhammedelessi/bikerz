@@ -66,6 +66,7 @@ const DiscountUrgencyBanner: React.FC = () => {
 
   return (
     <motion.section
+      id="discount-urgency-banner"
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.3 }}
