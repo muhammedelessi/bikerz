@@ -94,7 +94,7 @@ const HeroSection: React.FC = () => {
   const heroImage = (content as any)?.background_image || defaultHeroImage;
 
   return (
-    <section className="relative min-h-[85svh] flex items-center justify-center overflow-hidden pt-8 sm:pt-10 lg:pt-12">
+    <section className="relative min-h-[85vh] min-h-[85svh] flex items-center justify-center overflow-hidden pt-8 sm:pt-10 lg:pt-12">
       {/* Background Image with cinematic overlay */}
       <div className="absolute inset-0">
         <img
@@ -111,7 +111,8 @@ const HeroSection: React.FC = () => {
       </div>
 
       {/* Animated grain texture */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay"
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay [@supports(-webkit-touch-callout:none)]:hidden"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
         }}
@@ -122,7 +123,7 @@ const HeroSection: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 0.15 }}
         transition={{ duration: 2, delay: 0.5 }}
-        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full blur-[120px] pointer-events-none"
+        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full blur-[120px] pointer-events-none [@supports(-webkit-touch-callout:none)]:hidden"
         style={{ background: 'hsl(var(--primary) / 0.4)' }}
       />
 
