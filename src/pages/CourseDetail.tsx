@@ -484,7 +484,7 @@ const CourseDetail: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <main className="pt-16 sm:pt-20 lg:pt-24">
+      <main>
         {/* Hero Section */}
         <section className="relative overflow-hidden">
           {/* Mobile: Full-width image block — clean, no overlays */}
