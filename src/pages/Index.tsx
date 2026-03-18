@@ -21,6 +21,7 @@ const Index: React.FC = () => {
       <Navbar />
       <main>
         <HeroSection />
+        <DiscountUrgencyBanner />
         <TrustBar />
         <FeaturedCoursesSection />
         <WhySection />
