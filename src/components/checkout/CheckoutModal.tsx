@@ -1063,7 +1063,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </Button>
               )}
 
-              {currentStep !== 'payment' && currentStep !== 'profile-reminder' ? (
+              {currentStep !== 'payment' ? (
                 <Button
                   className="flex-1 btn-cta"
                   onClick={handleNextStep}
