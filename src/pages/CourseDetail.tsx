@@ -42,6 +42,7 @@ import PaymentMethodIcons from '@/components/checkout/PaymentMethodIcons';
 import { trackViewContent } from '@/utils/metaPixel';
 import CourseReviews from '@/components/course/CourseReviews';
 import StarRating from '@/components/course/StarRating';
+import { useDiscountCountdown } from '@/hooks/useDiscountCountdown';
 
 
 interface Lesson {
