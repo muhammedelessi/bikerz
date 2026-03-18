@@ -445,18 +445,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  // Step navigation
-  // Check if rider profile details are incomplete (bike info, etc.)
-  const checkProfileCompleteness = useCallback(async (): Promise<boolean> => {
-    if (!user?.id) return false;
-    const { data } = await supabase
-      .from('profiles')
-      .select('phone, city, country, rider_nickname')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    if (!data) return false;
-    return !data.phone || !data.city || !data.country || !data.rider_nickname;
-  }, [user?.id]);
 
   const handleNextStep = async () => {
     if (currentStep === 'profile') {
