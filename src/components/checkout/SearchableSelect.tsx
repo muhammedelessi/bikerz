@@ -72,15 +72,16 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
           <ChevronsUpDown className="ms-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start" dir={document.documentElement.dir || 'ltr'}>
         <div className="flex items-center border-b px-3 py-2">
-          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+          <Search className="me-2 h-4 w-4 shrink-0 opacity-50" />
           <Input
             ref={inputRef}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={searchPlaceholder}
-            className="h-8 border-0 p-0 shadow-none focus-visible:ring-0"
+            className="h-8 border-0 p-0 shadow-none focus-visible:ring-0 text-start"
+            dir={document.documentElement.dir || 'ltr'}
           />
         </div>
         <ScrollArea className="max-h-[200px]">
