@@ -128,6 +128,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
+  const [manualCity, setManualCity] = useState('');
+  const [isOtherCity, setIsOtherCity] = useState(false);
   
   const [country, setCountry] = useState('');
   const [postalCode, setPostalCode] = useState('');
@@ -151,7 +153,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const cityOptions = useMemo(() => {
     if (!country) return [];
-    // Try Arabic city names first
     let arCities: string[] = [];
     try {
       const citiesAr = getCitiesByCountryCode(country);
@@ -171,19 +172,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       };
     });
     
-    // If Arabic lib has more cities not in english lib
-    if (arCities.length > enCities.length && isRTL) {
-      // Already covered by enCities mapping
-    }
+    // Add "Other" option at the end
+    opts.push({
+      value: '__other__',
+      label: isRTL ? 'أخرى (إدخال يدوي)' : 'Other (manual input)',
+      searchLabel: 'other أخرى',
+    });
     
     return opts;
-    return opts;
   }, [country, isRTL]);
-
-  const citiesForCountry = useMemo(() => {
-    if (!country) return [];
-    return City.getCitiesOfCountry(country) || [];
-  }, [country]);
 
   // Auto-detect country by IP
   useEffect(() => {
@@ -298,6 +295,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setAppliedCoupon(null);
       setPromoLoading(false);
       setErrors({});
+      setIsOtherCity(false);
+      setManualCity('');
       resetPayment();
     }
   }, [open, resetPayment]);
@@ -320,11 +319,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return Object.keys(newErrors).length === 0;
   }, [fullName, email, phone, isRTL]);
 
-  const effectiveCity = city.trim();
+  const effectiveCity = isOtherCity ? manualCity.trim() : city.trim();
 
   const validateBilling = useCallback((): boolean => {
     const newErrors: ValidationErrors = {};
-    if (!city.trim()) {
+    const cityValue = isOtherCity ? manualCity.trim() : city.trim();
+    if (!cityValue) {
       newErrors.city = isRTL ? 'المدينة مطلوبة' : 'City is required';
     }
     if (!country) {
@@ -332,7 +332,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [city, country, isRTL]);
+  }, [city, manualCity, isOtherCity, country, isRTL]);
 
   const isProfileValid = fullName.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && /^[0-9+\s()-]{7,15}$/.test(phone);
   const isBillingValid = effectiveCity.length > 0 && !!country;
@@ -823,7 +823,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <SearchableSelect
                       options={countryOptions}
                       value={country}
-                      onValueChange={(v) => { setCountry(v); setCity(''); setErrors(prev => ({ ...prev, country: undefined })); }}
+                      onValueChange={(v) => { setCountry(v); setCity(''); setManualCity(''); setIsOtherCity(false); setErrors(prev => ({ ...prev, country: undefined })); }}
                       placeholder={isRTL ? 'اختر الدولة' : 'Select country'}
                       searchPlaceholder={isRTL ? 'ابحث عن دولة...' : 'Search country...'}
                       emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
@@ -836,13 +836,31 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <Label>{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
                     <SearchableSelect
                       options={cityOptions}
-                      value={city}
-                      onValueChange={(v) => { setCity(v); setErrors(prev => ({ ...prev, city: undefined })); }}
+                      value={isOtherCity ? '__other__' : city}
+                      onValueChange={(v) => {
+                        if (v === '__other__') {
+                          setIsOtherCity(true);
+                          setCity('');
+                        } else {
+                          setIsOtherCity(false);
+                          setCity(v);
+                          setManualCity('');
+                        }
+                        setErrors(prev => ({ ...prev, city: undefined }));
+                      }}
                       placeholder={country ? (isRTL ? 'اختر المدينة' : 'Select city') : (isRTL ? 'اختر الدولة أولاً' : 'Select country first')}
                       searchPlaceholder={isRTL ? 'ابحث عن مدينة...' : 'Search city...'}
                       emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
                       hasError={!!errors.city}
                     />
+                    {isOtherCity && (
+                      <Input
+                        value={manualCity}
+                        onChange={(e) => { setManualCity(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
+                        placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
+                        className={errors.city ? 'border-destructive' : ''}
+                      />
+                    )}
                     {renderFieldError('city')}
                   </div>
 
