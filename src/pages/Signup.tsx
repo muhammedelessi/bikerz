@@ -302,8 +302,7 @@ const Signup: React.FC = () => {
                 </Popover>
               </div>
 
-
-                type="submit"
+              <Button
                 variant="cta"
                 className="w-full h-11 sm:h-12 text-base"
                 disabled={isLoading}
