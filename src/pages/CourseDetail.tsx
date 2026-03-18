@@ -709,7 +709,7 @@ const CourseDetail: React.FC = () => {
                       {/* Price */}
                       <div className="text-center py-2">
                         {(() => {
-                          const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                          const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                           const sym = getCurrencySymbol(priceInfo.currency, isRTL);
                           if (priceInfo.discountPct > 0 && course.price > 0) {
                             return (
