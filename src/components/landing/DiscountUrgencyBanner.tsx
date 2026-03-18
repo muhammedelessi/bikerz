@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Flame, ArrowRight, ArrowLeft } from "lucide-react";
@@ -96,7 +96,23 @@ const slideVariants = {
 
 const DiscountUrgencyBanner: React.FC = () => {
   const { isRTL } = useLanguage();
+  const bannerRef = useRef<HTMLDivElement>(null);
   const [[activeIndex, direction], setActiveIndex] = useState([0, 1]);
+
+  useEffect(() => {
+    const el = bannerRef.current;
+    if (!el) return;
+    const update = () => {
+      document.documentElement.style.setProperty('--discount-banner-h', `${el.offsetHeight}px`);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.setProperty('--discount-banner-h', '0px');
+    };
+  }, []);
 
   const { data: discountedCourses } = useQuery({
     queryKey: ["homepage-discount-banner-carousel"],
@@ -132,7 +148,7 @@ const DiscountUrgencyBanner: React.FC = () => {
   const currentCourse = courses[activeIndex % courses.length];
 
   return (
-    <div>
+    <div ref={bannerRef} className="fixed top-0 left-0 right-0 z-[60] transition-transform duration-300" style={{ transform: 'translateY(var(--banner-translate, 0))' }}>
       <motion.section
         id="discount-urgency-banner"
         initial={{ opacity: 0, y: -10 }}
