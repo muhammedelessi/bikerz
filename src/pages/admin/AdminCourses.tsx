@@ -170,6 +170,7 @@ const AdminCourses: React.FC = () => {
   // Create course mutation
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      const expiresAt = computeDiscountExpiry(data.discount_duration, data.discount_expires_at);
       const { error } = await supabase.from('courses').insert({
         title: data.title,
         title_ar: data.title_ar || null,
@@ -178,13 +179,14 @@ const AdminCourses: React.FC = () => {
         thumbnail_url: data.thumbnail_url || null,
         price: data.price,
         discount_percentage: data.discount_percentage || 0,
+        discount_expires_at: data.discount_percentage > 0 ? expiresAt : null,
         currency: data.currency,
         difficulty_level: data.difficulty_level,
         duration_hours: data.duration_hours || null,
         is_published: data.is_published,
         status: data.is_published ? 'published' : 'draft',
         learning_outcomes: data.learning_outcomes.length > 0 ? data.learning_outcomes : [],
-      });
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
