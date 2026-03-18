@@ -173,7 +173,7 @@ const FeaturedCoursesSection: React.FC = () => {
                               )}
                             </div>
                             {priceInfo.discountPct > 0 && course.discount_expires_at ? (
-                              <DiscountCountdownBadge expiresAt={course.discount_expires_at} isRTL={isRTL} />
+                              <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
                             ) : (
                               <span className="text-xs font-medium text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 {isRTL ? "عرض الدورة" : "View Course"}

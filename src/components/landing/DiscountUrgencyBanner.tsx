@@ -62,7 +62,7 @@ const SlideItem: React.FC<{
         </span>
 
         {course.discount_expires_at && (
-          <CountdownDisplay expiresAt={course.discount_expires_at} isRTL={isRTL} />
+          <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
         )}
 
         <div className="flex items-center gap-1.5 flex-shrink-0">
