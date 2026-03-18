@@ -252,6 +252,17 @@ const AdminCourses: React.FC = () => {
     },
   });
 
+  const computeDiscountExpiry = (duration: string, existingExpiry: string | null): string | null => {
+    if (!duration || duration === 'none') return null;
+    if (duration === 'keep' && existingExpiry) return existingExpiry;
+    const durMap: Record<string, number> = {
+      '24h': 24, '48h': 48, '72h': 72, '1week': 168,
+    };
+    const hours = durMap[duration];
+    if (!hours) return existingExpiry;
+    return new Date(Date.now() + hours * 3600000).toISOString();
+  };
+
   const resetForm = () => {
     setFormData({
       title: '',
@@ -261,6 +272,8 @@ const AdminCourses: React.FC = () => {
       thumbnail_url: '',
       price: 0,
       discount_percentage: 0,
+      discount_duration: '',
+      discount_expires_at: null,
       currency: 'SAR',
       difficulty_level: 'beginner',
       duration_hours: 0,
