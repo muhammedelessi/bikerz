@@ -834,13 +834,31 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <Label>{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
                     <SearchableSelect
                       options={cityOptions}
-                      value={city}
-                      onValueChange={(v) => { setCity(v); setErrors(prev => ({ ...prev, city: undefined })); }}
+                      value={isOtherCity ? '__other__' : city}
+                      onValueChange={(v) => {
+                        if (v === '__other__') {
+                          setIsOtherCity(true);
+                          setCity('');
+                        } else {
+                          setIsOtherCity(false);
+                          setCity(v);
+                          setManualCity('');
+                        }
+                        setErrors(prev => ({ ...prev, city: undefined }));
+                      }}
                       placeholder={country ? (isRTL ? 'اختر المدينة' : 'Select city') : (isRTL ? 'اختر الدولة أولاً' : 'Select country first')}
                       searchPlaceholder={isRTL ? 'ابحث عن مدينة...' : 'Search city...'}
                       emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
                       hasError={!!errors.city}
                     />
+                    {isOtherCity && (
+                      <Input
+                        value={manualCity}
+                        onChange={(e) => { setManualCity(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
+                        placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
+                        className={errors.city ? 'border-destructive' : ''}
+                      />
+                    )}
                     {renderFieldError('city')}
                   </div>
 
