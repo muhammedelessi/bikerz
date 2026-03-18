@@ -162,14 +162,9 @@ const Navbar: React.FC = () => {
       document.documentElement.style.setProperty('--navbar-h', `${el.offsetHeight}px`);
     };
     update();
-    if (typeof ResizeObserver !== 'undefined') {
-      const ro = new ResizeObserver(update);
-      ro.observe(el);
-      return () => ro.disconnect();
-    } else {
-      window.addEventListener('resize', update);
-      return () => window.removeEventListener('resize', update);
-    }
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   return (

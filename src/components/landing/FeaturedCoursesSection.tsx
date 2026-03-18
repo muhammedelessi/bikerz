@@ -15,7 +15,7 @@ import DiscountCountdown from "@/components/common/DiscountCountdown";
 const FeaturedCoursesSection: React.FC = () => {
   const { isRTL } = useLanguage();
   const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   const { data: courses = [], isLoading } = useQuery({
