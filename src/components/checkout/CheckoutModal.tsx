@@ -67,18 +67,6 @@ type CheckoutStep = 'profile' | 'billing' | 'profile-reminder' | 'payment';
 
 const CHECKOUT_STEPS_DISPLAY: CheckoutStep[] = ['profile', 'billing', 'payment'];
 
-const GCC_COUNTRIES = [
-  { code: 'SA', name: 'Saudi Arabia', name_ar: 'المملكة العربية السعودية' },
-  { code: 'AE', name: 'United Arab Emirates', name_ar: 'الإمارات العربية المتحدة' },
-  { code: 'KW', name: 'Kuwait', name_ar: 'الكويت' },
-  { code: 'BH', name: 'Bahrain', name_ar: 'البحرين' },
-  { code: 'QA', name: 'Qatar', name_ar: 'قطر' },
-  { code: 'OM', name: 'Oman', name_ar: 'عُمان' },
-  { code: 'EG', name: 'Egypt', name_ar: 'مصر' },
-  { code: 'JO', name: 'Jordan', name_ar: 'الأردن' },
-  { code: 'IQ', name: 'Iraq', name_ar: 'العراق' },
-  { code: 'OTHER', name: 'Other', name_ar: 'أخرى' },
-];
 
 interface ValidationErrors {
   fullName?: string;
