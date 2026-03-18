@@ -174,7 +174,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const enCities = City.getCitiesOfCountry(country) || [];
 
     const opts = enCities.map((c) => {
-      const arName = arMap.get(c.name.toLowerCase()) || '';
+      const arName = arMap.get(c.name.toLowerCase()) || arMap.get(c.name.toLowerCase().replace(/[\s'-]/g, '')) || '';
       return {
         value: c.name,
         label: isRTL && arName ? arName : c.name,
