@@ -50,6 +50,7 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [bannerVisible, setBannerVisible] = useState(true);
   
 
   // Fetch header content from database
@@ -71,9 +72,15 @@ const Navbar: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      const scrollY = window.scrollY;
+      setIsScrolled(scrollY > 20);
+      // Hide banner when scrolled past its height
+      const bannerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--discount-banner-h') || '0');
+      const shouldHide = scrollY > bannerH / 2;
+      setBannerVisible(!shouldHide);
+      document.documentElement.style.setProperty('--banner-translate', shouldHide ? '-100%' : '0');
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -159,8 +166,8 @@ const Navbar: React.FC = () => {
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 safe-area-top ${
+        style={{ top: bannerVisible ? 'var(--discount-banner-h, 0px)' : '0px' }}
+        className={`fixed left-0 right-0 z-50 transition-all duration-300 safe-area-top ${
           isScrolled || isMobileMenuOpen
             ? 'bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg'
             : 'bg-transparent'
