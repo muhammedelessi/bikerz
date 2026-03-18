@@ -581,6 +581,18 @@ const CourseDetail: React.FC = () => {
                         <span className="text-muted-foreground ms-1">{isRTL ? 'فصول' : 'chapters'}</span>
                       </div>
                     </div>
+
+                    <span className="hidden sm:inline text-border">|</span>
+
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
+                      <Infinity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
+                      <span className="text-muted-foreground">{isRTL ? 'وصول مدى الحياة' : 'Life-time Access'}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
+                      <MonitorPlay className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
+                      <span className="text-muted-foreground">{isRTL ? 'دورة أونلاين' : 'Online Course'}</span>
+                    </div>
                   </div>
 
                   {/* Description */}
