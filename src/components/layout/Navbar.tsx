@@ -166,8 +166,8 @@ const Navbar: React.FC = () => {
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 safe-area-top ${
+        style={{ top: bannerVisible ? 'var(--discount-banner-h, 0px)' : '0px' }}
+        className={`fixed left-0 right-0 z-50 transition-all duration-300 safe-area-top ${
           isScrolled || isMobileMenuOpen
             ? 'bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg'
             : 'bg-transparent'
