@@ -19,8 +19,12 @@ const setDocumentDirection = (lng: string) => {
 
 // Get initial language from localStorage
 const getInitialLanguage = () => {
-  const saved = localStorage.getItem('i18nextLng');
-  if (saved === 'en' || saved === 'ar') return saved;
+  try {
+    const saved = localStorage.getItem('i18nextLng');
+    if (saved === 'en' || saved === 'ar') return saved;
+  } catch {
+    // localStorage blocked on some iOS environments
+  }
   return 'ar';
 };
 
