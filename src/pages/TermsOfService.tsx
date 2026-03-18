@@ -90,7 +90,7 @@ const TermsOfService: React.FC = () => {
       <SEOHead title="Terms of Service" description="Read BIKERZ Academy's terms of service. Understand the rules and guidelines governing your use of our motorcycle riding platform." canonical="/terms" breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Terms of Service', url: '/terms' }]} />
       <Navbar />
       
-      <main className="pt-[var(--navbar-h)] pb-16">
+      <main className="pt-24 pb-16">
         {/* Header */}
         <section className="bg-gradient-to-br from-secondary/10 via-background to-primary/10 py-16 sm:py-20">
           <div className="page-container">

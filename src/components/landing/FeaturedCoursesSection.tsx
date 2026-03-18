@@ -15,7 +15,7 @@ import DiscountCountdown from "@/components/common/DiscountCountdown";
 const FeaturedCoursesSection: React.FC = () => {
   const { isRTL } = useLanguage();
   const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   const { data: courses = [], isLoading } = useQuery({
@@ -79,7 +79,7 @@ const FeaturedCoursesSection: React.FC = () => {
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
           className="text-center mb-10 sm:mb-12"
         >
@@ -111,7 +111,7 @@ const FeaturedCoursesSection: React.FC = () => {
                   <motion.div
                     key={course.id}
                     initial={{ opacity: 0, y: 30 }}
-                    animate={inView ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
+                    animate={inView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.5, delay: index * 0.15 }}
                   >
                     <Link to={`/courses/${course.id}`}>
@@ -192,7 +192,7 @@ const FeaturedCoursesSection: React.FC = () => {
         {/* View all button */}
         <motion.div
           initial={{ opacity: 0 }}
-          animate={inView ? { opacity: 1 } : { opacity: 1 }}
+          animate={inView ? { opacity: 1 } : {}}
           transition={{ duration: 0.5, delay: 0.4 }}
           className="text-center mt-8 sm:mt-10"
         >

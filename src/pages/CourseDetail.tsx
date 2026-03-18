@@ -32,8 +32,6 @@ import {
   ArrowLeft,
   Layers,
   ClipboardList,
-  Infinity,
-  MonitorPlay,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.jpg';
@@ -248,20 +246,14 @@ const CourseDetail: React.FC = () => {
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
-
     ctaCardRef.current = node;
-    if (!node) return;
-
-    if (typeof IntersectionObserver === 'undefined') {
-      setShowStickyBottom(false);
-      return;
+    if (node) {
+      observerRef.current = new IntersectionObserver(
+        ([entry]) => setShowStickyBottom(!entry.isIntersecting),
+        { threshold: 0.1 }
+      );
+      observerRef.current.observe(node);
     }
-
-    observerRef.current = new IntersectionObserver(
-      ([entry]) => setShowStickyBottom(!entry.isIntersecting),
-      { threshold: 0.1 }
-    );
-    observerRef.current.observe(node);
   }, []);
 
   // Enroll mutation
@@ -379,7 +371,7 @@ const CourseDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-[var(--navbar-h)] min-h-[60vh] flex items-center justify-center">
+        <div className="min-h-[60vh] flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
         </div>
         <Footer />
@@ -391,7 +383,7 @@ const CourseDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-[var(--navbar-h)] section-container min-h-[60vh] flex flex-col items-center justify-center text-center">
+        <div className="section-container min-h-[60vh] flex flex-col items-center justify-center text-center">
           <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
           <h2 className="text-2xl font-bold text-foreground mb-2">
             {t('courses.courseNotFound')}
@@ -425,7 +417,6 @@ const CourseDetail: React.FC = () => {
         breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Courses', url: '/courses' }, { name: courseTitle || 'Course', url: `/courses/${id}` }]}
       />
       <Navbar />
-      <div className="pt-[var(--navbar-h)]">
       <DiscountUrgencyBanner courseId={id} />
 
       {/* Sticky Header — appears on scroll */}
@@ -587,18 +578,6 @@ const CourseDetail: React.FC = () => {
                         <span className="font-semibold">{chapters.length}</span>
                         <span className="text-muted-foreground ms-1">{isRTL ? 'فصول' : 'chapters'}</span>
                       </div>
-                    </div>
-
-                    <span className="hidden sm:inline text-border">|</span>
-
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
-                      <Infinity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
-                      <span className="text-muted-foreground">{isRTL ? 'وصول مدى الحياة' : 'Life-time Access'}</span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
-                      <MonitorPlay className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
-                      <span className="text-muted-foreground">{isRTL ? 'دورة أونلاين' : 'Online Course'}</span>
                     </div>
                   </div>
 
@@ -1093,7 +1072,6 @@ const CourseDetail: React.FC = () => {
       </main>
 
       <Footer />
-      </div>
 
       {/* Checkout Modal */}
       {course && (
@@ -1131,7 +1109,7 @@ const CourseDetail: React.FC = () => {
 
       {/* Sticky Bottom Bar — mobile only, hidden when enrolled */}
       <AnimatePresence>
-        {showStickyBottom && !isEnrolled && !showCheckout && !showGuestSignup && !isPaymentProcessing && course && (
+        {showStickyBottom && !isEnrolled && !showCheckout && !isPaymentProcessing && course && (
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}

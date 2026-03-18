@@ -84,7 +84,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
             dir={document.documentElement.dir || 'ltr'}
           />
         </div>
-        <ScrollArea className="h-[200px]">
+        <ScrollArea className="max-h-[200px]">
           {filtered.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">{emptyText}</p>
           ) : (

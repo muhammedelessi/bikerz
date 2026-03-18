@@ -15,7 +15,7 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
-} from '@/lib/recharts-compat';
+} from 'recharts';
 import {
   Video,
   TrendingUp,

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Helmet } from 'react-helmet-async';
 
 interface SEOHeadProps {
@@ -41,10 +40,8 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       }
     : null;
 
-  const SafeHelmet = Helmet as unknown as React.ComponentType<{ children?: React.ReactNode }>;
-
   return (
-    <SafeHelmet>
+    <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
       <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow'} />
@@ -74,7 +71,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
           {JSON.stringify(breadcrumbSchema)}
         </script>
       )}
-    </SafeHelmet>
+    </Helmet>
   );
 };
 

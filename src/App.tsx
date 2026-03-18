@@ -159,30 +159,26 @@ const AppRoutes = () => (
   </>
 );
 
-const SafeHelmetProvider = HelmetProvider as unknown as React.ComponentType<{
-  children: React.ReactNode;
-}>;
-
 const App = () => (
-  <SafeHelmetProvider>
+  <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <CurrencyProvider>
           <AuthProvider>
             <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <ScrollToTop />
-                <SocialProofNotification />
-                <AppRoutes />
-              </BrowserRouter>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <ScrollToTop />
+              <SocialProofNotification />
+              <AppRoutes />
+            </BrowserRouter>
             </TooltipProvider>
           </AuthProvider>
         </CurrencyProvider>
       </LanguageProvider>
     </QueryClientProvider>
-  </SafeHelmetProvider>
+  </HelmetProvider>
 );
 
 export default App;

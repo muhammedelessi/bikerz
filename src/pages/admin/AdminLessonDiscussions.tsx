@@ -182,7 +182,7 @@ const AdminLessonDiscussions: React.FC = () => {
   });
 
   // Get unique courses for filter
-  const courses = [...new Map(lessons.map(l => [l.chapter.course.id, l.chapter.course])).values()] as Array<{ id: string; title: string; title_ar: string | null }>;
+  const courses = [...new Map(lessons.map(l => [l.chapter.course.id, l.chapter.course])).values()];
 
   const getLesson = (lessonId: string) => lessons.find(l => l.id === lessonId);
   const getProfile = (userId: string) => profiles.find(p => p.user_id === userId);

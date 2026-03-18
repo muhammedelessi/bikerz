@@ -69,7 +69,7 @@ interface CheckoutModalProps {
   onPaymentStarted?: () => void;
 }
 
-type CheckoutStep = 'profile' | 'billing' | 'payment';
+type CheckoutStep = 'profile' | 'billing' | 'profile-reminder' | 'payment';
 
 const CHECKOUT_STEPS_DISPLAY: CheckoutStep[] = ['profile', 'billing', 'payment'];
 
@@ -111,7 +111,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [guestSigningUp, setGuestSigningUp] = useState(false);
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('profile');
-  
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoLoading, setPromoLoading] = useState(false);
@@ -128,8 +128,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
-  const [manualCity, setManualCity] = useState('');
-  const [isOtherCity, setIsOtherCity] = useState(false);
   
   const [country, setCountry] = useState('');
   const [postalCode, setPostalCode] = useState('');
@@ -153,54 +151,39 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const cityOptions = useMemo(() => {
     if (!country) return [];
-
-    // Primary: use countries-cities-ar for Arabic names
-    const arCities: { name: string; nameAr: string }[] = [];
+    // Try Arabic city names first
+    let arCities: string[] = [];
     try {
       const citiesAr = getCitiesByCountryCode(country);
       if (citiesAr && citiesAr.length > 0) {
-        citiesAr.forEach((c: any) => {
-          const en = typeof c === 'string' ? c : (c.name || '');
-          const ar = typeof c === 'string' ? '' : (c.nameAr || c.name_ar || '');
-          if (en) arCities.push({ name: en, nameAr: ar });
-        });
+        arCities = citiesAr.map((c: any) => typeof c === 'string' ? c : (c.name_ar || c.name || c));
       }
     } catch {}
-
-    let opts: { value: string; label: string; searchLabel: string }[];
-
-    if (isRTL && arCities.length > 0) {
-      // In Arabic mode, use countries-cities-ar as primary source
-      opts = arCities.map((c) => ({
+    
+    const enCities = City.getCitiesOfCountry(country) || [];
+    
+    const opts = enCities.map((c, i) => {
+      const arName = arCities[i] || '';
+      return {
         value: c.name,
-        label: c.nameAr || c.name,
-        searchLabel: `${c.name} ${c.nameAr}`,
-      }));
-    } else {
-      // In English mode, use country-state-city
-      const enCities = City.getCitiesOfCountry(country) || [];
-      const arMap = new Map<string, string>();
-      arCities.forEach((c) => {
-        if (c.nameAr) arMap.set(c.name.toLowerCase(), c.nameAr);
-      });
-      opts = enCities.map((c) => {
-        const arName = arMap.get(c.name.toLowerCase()) || '';
-        return {
-          value: c.name,
-          label: c.name,
-          searchLabel: `${c.name} ${arName}`,
-        };
-      });
-    }
-
-    opts.push({
-      value: '__other__',
-      label: isRTL ? 'أخرى (إدخال يدوي)' : 'Other (manual input)',
-      searchLabel: 'other أخرى',
+        label: isRTL && arName ? arName : c.name,
+        searchLabel: `${c.name} ${arName}`,
+      };
     });
-
+    
+    // If Arabic lib has more cities not in english lib
+    if (arCities.length > enCities.length && isRTL) {
+      // Already covered by enCities mapping
+    }
+    
+    return opts;
     return opts;
   }, [country, isRTL]);
+
+  const citiesForCountry = useMemo(() => {
+    if (!country) return [];
+    return City.getCitiesOfCountry(country) || [];
+  }, [country]);
 
   // Auto-detect country by IP
   useEffect(() => {
@@ -315,8 +298,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setAppliedCoupon(null);
       setPromoLoading(false);
       setErrors({});
-      setIsOtherCity(false);
-      setManualCity('');
       resetPayment();
     }
   }, [open, resetPayment]);
@@ -339,12 +320,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return Object.keys(newErrors).length === 0;
   }, [fullName, email, phone, isRTL]);
 
-  const effectiveCity = isOtherCity ? manualCity.trim() : city.trim();
+  const effectiveCity = city.trim();
 
   const validateBilling = useCallback((): boolean => {
     const newErrors: ValidationErrors = {};
-    const cityValue = isOtherCity ? manualCity.trim() : city.trim();
-    if (!cityValue) {
+    if (!city.trim()) {
       newErrors.city = isRTL ? 'المدينة مطلوبة' : 'City is required';
     }
     if (!country) {
@@ -352,7 +332,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [city, manualCity, isOtherCity, country, isRTL]);
+  }, [city, country, isRTL]);
 
   const isProfileValid = fullName.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && /^[0-9+\s()-]{7,15}$/.test(phone);
   const isBillingValid = effectiveCity.length > 0 && !!country;
@@ -400,7 +380,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setGuestSigningUp(true);
     try {
       const password = generatePassword();
-      const { data, error } = await (supabase.auth as any).signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
@@ -431,7 +411,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       await saveProfileData(data.user.id);
 
       // Send password reset email so user can set their own password
-      (supabase.auth as any).resetPasswordForEmail(email.trim(), {
+      supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/forgot-password`,
       }).catch(() => { /* silent - non-critical */ });
 
@@ -445,6 +425,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
+  // Step navigation
+  // Check if rider profile details are incomplete (bike info, etc.)
+  const checkProfileCompleteness = useCallback(async (): Promise<boolean> => {
+    if (!user?.id) return false;
+    const { data } = await supabase
+      .from('profiles')
+      .select('phone, city, country, rider_nickname')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!data) return false;
+    return !data.phone || !data.city || !data.country || !data.rider_nickname;
+  }, [user?.id]);
 
   const handleNextStep = async () => {
     if (currentStep === 'profile') {
@@ -456,18 +448,38 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       if (user) {
         const saved = await saveProfileData();
         if (!saved) return;
+        // Check if profile is incomplete for reminder
+        const incomplete = await checkProfileCompleteness();
+        if (incomplete) {
+          setProfileIncomplete(true);
+          setCurrentStep('profile-reminder');
+        } else {
+          setCurrentStep('payment');
+        }
+      } else {
+        // Guest users: skip profile reminder, go straight to payment
+        setCurrentStep('payment');
       }
+    } else if (currentStep === 'profile-reminder') {
       setCurrentStep('payment');
     }
   };
 
   const handlePrevStep = () => {
     if (currentStep === 'billing') setCurrentStep('profile');
-    else if (currentStep === 'payment') setCurrentStep('billing');
+    else if (currentStep === 'profile-reminder') setCurrentStep('billing');
+    else if (currentStep === 'payment') {
+      if (profileIncomplete) setCurrentStep('profile-reminder');
+      else setCurrentStep('billing');
+    }
   };
 
-  const currentStepIndex = CHECKOUT_STEPS_DISPLAY.indexOf(currentStep as any);
-  const progressPercent = currentStepIndex >= 0 ? ((currentStepIndex + 1) / CHECKOUT_STEPS_DISPLAY.length) * 100 : 0;
+  // For display purposes, map profile-reminder to billing index
+  const displayStep = currentStep === 'profile-reminder' ? 'billing' : currentStep;
+  const currentStepIndex = CHECKOUT_STEPS_DISPLAY.indexOf(displayStep as any);
+  const progressPercent = currentStep === 'profile-reminder'
+    ? 75
+    : ((currentStepIndex + 1) / CHECKOUT_STEPS_DISPLAY.length) * 100;
 
   // Promo code
   const handleApplyPromo = async () => {
@@ -555,8 +567,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             country,
             address: composedAddress,
             amount: '0',
-            dateOfBirth: profile?.date_of_birth || '',
-            gender: profile?.gender || '',
             isRTL,
             silent: true,
           }
@@ -592,8 +602,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         country,
         address: composedAddress,
         amount: String(discountedPrice),
-        dateOfBirth: profile?.date_of_birth || '',
-        gender: profile?.gender || '',
         isRTL,
         silent: true,
       }
@@ -619,7 +627,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const stepLabels: Record<CheckoutStep, { en: string; ar: string }> = {
     profile: { en: 'Personal Info', ar: 'المعلومات الشخصية' },
     billing: { en: 'Billing Address', ar: 'عنوان الفاتورة' },
-    
+    'profile-reminder': { en: 'Profile', ar: 'الملف الشخصي' },
     payment: { en: 'Payment', ar: 'الدفع' },
   };
 
@@ -811,7 +819,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <SearchableSelect
                       options={countryOptions}
                       value={country}
-                      onValueChange={(v) => { setCountry(v); setCity(''); setManualCity(''); setIsOtherCity(false); setErrors(prev => ({ ...prev, country: undefined })); }}
+                      onValueChange={(v) => { setCountry(v); setCity(''); setErrors(prev => ({ ...prev, country: undefined })); }}
                       placeholder={isRTL ? 'اختر الدولة' : 'Select country'}
                       searchPlaceholder={isRTL ? 'ابحث عن دولة...' : 'Search country...'}
                       emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
@@ -824,31 +832,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <Label>{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
                     <SearchableSelect
                       options={cityOptions}
-                      value={isOtherCity ? '__other__' : city}
-                      onValueChange={(v) => {
-                        if (v === '__other__') {
-                          setIsOtherCity(true);
-                          setCity('');
-                        } else {
-                          setIsOtherCity(false);
-                          setCity(v);
-                          setManualCity('');
-                        }
-                        setErrors(prev => ({ ...prev, city: undefined }));
-                      }}
+                      value={city}
+                      onValueChange={(v) => { setCity(v); setErrors(prev => ({ ...prev, city: undefined })); }}
                       placeholder={country ? (isRTL ? 'اختر المدينة' : 'Select city') : (isRTL ? 'اختر الدولة أولاً' : 'Select country first')}
                       searchPlaceholder={isRTL ? 'ابحث عن مدينة...' : 'Search city...'}
                       emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
                       hasError={!!errors.city}
                     />
-                    {isOtherCity && (
-                      <Input
-                        value={manualCity}
-                        onChange={(e) => { setManualCity(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
-                        placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
-                        className={errors.city ? 'border-destructive' : ''}
-                      />
-                    )}
                     {renderFieldError('city')}
                   </div>
 
@@ -874,6 +864,53 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </motion.div>
               )}
 
+              {/* Profile Completion Reminder */}
+              {currentStep === 'profile-reminder' && (
+                <motion.div
+                  key="profile-reminder"
+                  initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
+                  className="space-y-5"
+                >
+                  <div className="flex flex-col items-center text-center py-4 space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="w-8 h-8 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-foreground mb-1">
+                        {isRTL ? 'أكمل ملفك الشخصي' : 'Complete Your Rider Profile'}
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        {isRTL
+                          ? 'أكمل بياناتك لتحسين تجربة التعلم الخاصة بك'
+                          : 'Complete your details for a better learning experience'}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 w-full">
+                      <Button
+                        className="flex-1"
+                        onClick={() => {
+                          onOpenChange(false);
+                          navigate('/profile');
+                        }}
+                      >
+                        <User className="w-4 h-4 me-2" />
+                        {isRTL ? 'إكمال الملف الشخصي' : 'Complete Profile'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => setCurrentStep('payment')}
+                      >
+                        {isRTL ? 'المتابعة على أي حال' : 'Continue Anyway'}
+                        <ArrowIcon className="w-4 h-4 ms-2" />
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
 
               {/* Step 3: Payment */}
               {currentStep === 'payment' && (
@@ -1063,7 +1100,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </Button>
               )}
 
-              {currentStep !== 'payment' ? (
+              {currentStep !== 'payment' && currentStep !== 'profile-reminder' ? (
                 <Button
                   className="flex-1 btn-cta"
                   onClick={handleNextStep}
