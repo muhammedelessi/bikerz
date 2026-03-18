@@ -69,6 +69,29 @@ const Navbar: React.FC = () => {
   });
 
   useEffect(() => {
+    const banner = document.getElementById('discount-urgency-banner');
+    if (!banner) {
+      setBannerHeight(0);
+      return;
+    }
+
+    const updateBannerHeight = () => {
+      setBannerHeight(Math.ceil(banner.getBoundingClientRect().height));
+    };
+
+    updateBannerHeight();
+
+    const resizeObserver = new ResizeObserver(updateBannerHeight);
+    resizeObserver.observe(banner);
+    window.addEventListener('resize', updateBannerHeight);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateBannerHeight);
+    };
+  }, [location.pathname]);
+
+  useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
