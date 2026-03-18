@@ -28,16 +28,18 @@ const CountdownDisplay: React.FC<{ expiresAt: string; isRTL: boolean }> = ({ exp
       ];
 
   return (
-    <span className="text-[11px] sm:text-sm font-bold text-white/90 whitespace-nowrap">
-      {label}{" "}
+    <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
+      <span className="text-[10px] sm:text-xs font-semibold text-sand/70">{label}</span>
       {parts.map((p, i) => (
         <React.Fragment key={i}>
-          {i > 0 && <span className="text-white/40 mx-0.5">-</span>}
-          <span className="font-mono font-black text-yellow-300">{p.value}</span>{" "}
-          <span className="font-medium">{p.unit}</span>
+          {i > 0 && <span className="text-sand/30 text-[10px]">:</span>}
+          <span className="inline-flex flex-col items-center leading-none">
+            <span className="font-mono font-black text-sm sm:text-base text-accent-orange drop-shadow-[0_0_6px_hsl(var(--accent-orange)/0.5)]">{String(p.value).padStart(2, '0')}</span>
+            <span className="text-[8px] sm:text-[9px] font-medium text-sand/60 uppercase tracking-wider">{p.unit}</span>
+          </span>
         </React.Fragment>
       ))}
-    </span>
+    </div>
   );
 };
 
