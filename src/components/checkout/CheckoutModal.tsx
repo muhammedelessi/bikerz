@@ -153,7 +153,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const cityOptions = useMemo(() => {
     if (!country) return [];
-    // Try Arabic city names first
     let arCities: string[] = [];
     try {
       const citiesAr = getCitiesByCountryCode(country);
@@ -173,19 +172,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       };
     });
     
-    // If Arabic lib has more cities not in english lib
-    if (arCities.length > enCities.length && isRTL) {
-      // Already covered by enCities mapping
-    }
+    // Add "Other" option at the end
+    opts.push({
+      value: '__other__',
+      label: isRTL ? 'أخرى (إدخال يدوي)' : 'Other (manual input)',
+      searchLabel: 'other أخرى',
+    });
     
     return opts;
-    return opts;
   }, [country, isRTL]);
-
-  const citiesForCountry = useMemo(() => {
-    if (!country) return [];
-    return City.getCitiesOfCountry(country) || [];
-  }, [country]);
 
   // Auto-detect country by IP
   useEffect(() => {
