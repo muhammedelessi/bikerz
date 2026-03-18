@@ -69,7 +69,7 @@ interface CheckoutModalProps {
   onPaymentStarted?: () => void;
 }
 
-type CheckoutStep = 'profile' | 'billing' | 'profile-reminder' | 'payment';
+type CheckoutStep = 'profile' | 'billing' | 'payment';
 
 const CHECKOUT_STEPS_DISPLAY: CheckoutStep[] = ['profile', 'billing', 'payment'];
 
