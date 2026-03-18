@@ -142,6 +142,8 @@ const AdminCourses: React.FC = () => {
     thumbnail_url: '',
     price: 0,
     discount_percentage: 0,
+    discount_duration: '' as string,
+    discount_expires_at: null as string | null,
     currency: 'SAR',
     difficulty_level: 'beginner',
     duration_hours: 0,
