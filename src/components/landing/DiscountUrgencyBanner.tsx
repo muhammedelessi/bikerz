@@ -44,7 +44,7 @@ const SlideItem: React.FC<{
           <span className="text-xs font-black text-accent-orange flex-shrink-0">{priceInfo.finalPrice} {sym}</span>
         </div>
         {course.discount_expires_at && (
-          <CountdownDisplay expiresAt={course.discount_expires_at} isRTL={isRTL} />
+          <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
         )}
       </div>
 
