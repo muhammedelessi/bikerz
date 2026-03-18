@@ -38,6 +38,23 @@ const DiscountUrgencyBanner: React.FC = () => {
   const { isRTL } = useLanguage();
   const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+  const bannerRef = useRef<HTMLDivElement>(null);
+
+  // Publish banner height as CSS variable for navbar offset
+  useEffect(() => {
+    const el = bannerRef.current;
+    if (!el) return;
+    const update = () => {
+      document.documentElement.style.setProperty('--discount-banner-h', `${el.offsetHeight}px`);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.removeProperty('--discount-banner-h');
+    };
+  }, []);
 
   const { data: discountedCourse } = useQuery({
     queryKey: ["homepage-discount-banner"],
