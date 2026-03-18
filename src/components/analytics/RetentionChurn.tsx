@@ -16,7 +16,7 @@ import {
   PieChart,
   Pie,
   Cell,
-} from 'recharts';
+} from '@/lib/recharts-compat';
 import {
   AlertTriangle,
   UserMinus,
