@@ -540,21 +540,9 @@
   }
 }
 
+/* iOS WebKit: only disable heavy compositor effects on decorative layers */
 @supports (-webkit-touch-callout: none) {
-  /* iOS WebKit compositor safety: avoid full-screen black render */
   .mix-blend-overlay {
     mix-blend-mode: normal !important;
-    opacity: 0 !important;
-  }
-
-  [class*="backdrop-blur"] {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-    background-color: hsl(var(--background) / 0.98) !important;
-  }
-
-  nav.safe-area-top {
-    position: sticky !important;
-    top: 0;
   }
 }

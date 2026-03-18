@@ -17,10 +17,10 @@ interface DiscountedCourse {
   discount_expires_at: string | null;
 }
 
-const SlideItem: React.FC<{
+const SlideItem = React.forwardRef<HTMLDivElement, {
   course: DiscountedCourse;
   isRTL: boolean;
-}> = ({ course, isRTL }) => {
+}>(({ course, isRTL }, ref) => {
   const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
@@ -30,54 +30,58 @@ const SlideItem: React.FC<{
 
   return (
     <Link to={`/courses/${course.id}`} className="block group">
-      {/* Mobile layout: stacked two rows */}
-      <div className="flex sm:hidden flex-col items-center gap-1">
-        <div className="flex items-center gap-1.5 w-full justify-center">
-          <Flame className="w-3.5 h-3.5 text-accent-orange animate-pulse flex-shrink-0 drop-shadow-[0_0_6px_hsl(var(--accent-orange)/0.6)]" />
-          <span className="bg-accent-orange text-near-black text-[10px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider flex-shrink-0">
-            {priceInfo.discountPct}% {isRTL ? "خصم" : "OFF"}
-          </span>
-          <span className="text-[11px] font-bold text-sand truncate max-w-[120px]">
+      <div ref={ref}>
+        {/* Mobile layout: stacked two rows */}
+        <div className="flex sm:hidden flex-col items-center gap-1">
+          <div className="flex items-center gap-1.5 w-full justify-center">
+            <Flame className="w-3.5 h-3.5 text-accent-orange animate-pulse flex-shrink-0 drop-shadow-[0_0_6px_hsl(var(--accent-orange)/0.6)]" />
+            <span className="bg-accent-orange text-near-black text-[10px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider flex-shrink-0">
+              {priceInfo.discountPct}% {isRTL ? "خصم" : "OFF"}
+            </span>
+            <span className="text-[11px] font-bold text-sand truncate max-w-[120px]">
+              {title}
+            </span>
+            <span className="text-[10px] text-sand/40 line-through flex-shrink-0">{priceInfo.originalPrice} {sym}</span>
+            <span className="text-xs font-black text-accent-orange flex-shrink-0">{priceInfo.finalPrice} {sym}</span>
+          </div>
+          {course.discount_expires_at && (
+            <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
+          )}
+        </div>
+
+        {/* Desktop layout: single row */}
+        <div className="hidden sm:flex items-center justify-center gap-4">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <Flame className="w-5 h-5 text-accent-orange animate-pulse flex-shrink-0 drop-shadow-[0_0_8px_hsl(var(--accent-orange)/0.6)]" />
+            <span className="bg-accent-orange text-near-black text-xs font-black px-2 py-0.5 rounded-sm uppercase tracking-wider">
+              {priceInfo.discountPct}% {isRTL ? "خصم" : "OFF"}
+            </span>
+          </div>
+
+          <span className="text-xs md:text-sm font-bold text-sand truncate max-w-[180px] md:max-w-[280px]">
             {title}
           </span>
-          <span className="text-[10px] text-sand/40 line-through flex-shrink-0">{priceInfo.originalPrice} {sym}</span>
-          <span className="text-xs font-black text-accent-orange flex-shrink-0">{priceInfo.finalPrice} {sym}</span>
-        </div>
-        {course.discount_expires_at && (
-          <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
-        )}
-      </div>
 
-      {/* Desktop layout: single row */}
-      <div className="hidden sm:flex items-center justify-center gap-4">
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <Flame className="w-5 h-5 text-accent-orange animate-pulse flex-shrink-0 drop-shadow-[0_0_8px_hsl(var(--accent-orange)/0.6)]" />
-          <span className="bg-accent-orange text-near-black text-xs font-black px-2 py-0.5 rounded-sm uppercase tracking-wider">
-            {priceInfo.discountPct}% {isRTL ? "خصم" : "OFF"}
+          {course.discount_expires_at && (
+            <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
+          )}
+
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-xs text-sand/40 line-through">{priceInfo.originalPrice} {sym}</span>
+            <span className="text-base font-black text-accent-orange drop-shadow-[0_0_6px_hsl(var(--accent-orange)/0.4)]">{priceInfo.finalPrice} {sym}</span>
+          </div>
+
+          <span className="hidden md:flex text-[11px] font-bold text-accent-orange items-center gap-1 group-hover:gap-2 transition-all uppercase tracking-wider">
+            {isRTL ? "سجّل" : "Enroll"}
+            <Arrow className="w-3 h-3" />
           </span>
         </div>
-
-        <span className="text-xs md:text-sm font-bold text-sand truncate max-w-[180px] md:max-w-[280px]">
-          {title}
-        </span>
-
-        {course.discount_expires_at && (
-          <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
-        )}
-
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-xs text-sand/40 line-through">{priceInfo.originalPrice} {sym}</span>
-          <span className="text-base font-black text-accent-orange drop-shadow-[0_0_6px_hsl(var(--accent-orange)/0.4)]">{priceInfo.finalPrice} {sym}</span>
-        </div>
-
-        <span className="hidden md:flex text-[11px] font-bold text-accent-orange items-center gap-1 group-hover:gap-2 transition-all uppercase tracking-wider">
-          {isRTL ? "سجّل" : "Enroll"}
-          <Arrow className="w-3 h-3" />
-        </span>
       </div>
     </Link>
   );
-};
+});
+
+SlideItem.displayName = "SlideItem";
 
 const slideVariants = {
   enter: (direction: number) => ({
