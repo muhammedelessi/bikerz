@@ -301,7 +301,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         .update({
           full_name: fullName.trim(),
           phone: phone.trim(),
-          city: city.trim(),
+          city: effectiveCity,
           country,
           postal_code: postalCode.trim() || null,
           profile_complete: true,
