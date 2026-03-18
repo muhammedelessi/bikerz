@@ -30,66 +30,19 @@ const imageMap: Record<number, string | undefined> = {
 
 const WhySection: React.FC = () => {
   const { isRTL } = useLanguage();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
-
-  const { data: content, isLoading } = useLandingContent<WhyContent>('why');
-
-  const title = isRTL ? (content?.title_ar || 'لماذا تتعلم معنا؟') : (content?.title_en || 'Why Learn With Us?');
-  const subtitle = isRTL ? (content?.subtitle_ar || '') : (content?.subtitle_en || '');
-  const cards = content?.cards || [];
-
-  return (
-    <section ref={ref} className="relative py-10 sm:py-14 overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5 hidden sm:block">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `radial-gradient(circle at 20% 50%, hsl(var(--primary)) 0%, transparent 50%),
-                             radial-gradient(circle at 80% 50%, hsl(var(--secondary)) 0%, transparent 50%)`,
-          }}
-        />
-      </div>
-
-      <div className="section-container relative z-10">
-        {/* Header */}
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
+...
         <motion.div
           initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          {isLoading ? (
-            <>
-              <Skeleton className="h-10 w-64 mx-auto mb-4" />
-              <Skeleton className="h-6 w-96 mx-auto" />
-            </>
-          ) : (
-            <>
-              <h2 className="section-title text-foreground mb-3 sm:mb-4">{title}</h2>
-              <p className="section-subtitle">{subtitle}</p>
-            </>
-          )}
-        </motion.div>
-
-        {/* Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {isLoading ? (
-            Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="h-32 rounded-xl" />
-            ))
-          ) : (
-            cards.map((card, index) => {
-              const IconComponent = iconMap[card.icon] || Shield;
-              const cardTitle = isRTL ? card.title_ar : card.title_en;
-              const cardDesc = isRTL ? card.description_ar : card.description_en;
-              const image = imageMap[index];
-
-              return (
+...
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 40 }}
-                  animate={inView ? { opacity: 1, y: 0 } : {}}
+                  animate={inView ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                   className="group interactive-card"
                 >
