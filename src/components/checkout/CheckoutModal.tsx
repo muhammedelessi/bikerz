@@ -154,33 +154,44 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const cityOptions = useMemo(() => {
     if (!country) return [];
 
-    // Build a map of English name → Arabic name from countries-cities-ar
-    const arMap = new Map<string, string>();
+    // Primary: use countries-cities-ar for Arabic names
+    const arCities: { name: string; nameAr: string }[] = [];
     try {
       const citiesAr = getCitiesByCountryCode(country);
       if (citiesAr && citiesAr.length > 0) {
         citiesAr.forEach((c: any) => {
           const en = typeof c === 'string' ? c : (c.name || '');
           const ar = typeof c === 'string' ? '' : (c.nameAr || c.name_ar || '');
-          if (en && ar) {
-            arMap.set(en.toLowerCase(), ar);
-            // Also store without diacritics/spaces variations for fuzzy matching
-            arMap.set(en.toLowerCase().replace(/[\s'-]/g, ''), ar);
-          }
+          if (en) arCities.push({ name: en, nameAr: ar });
         });
       }
     } catch {}
 
-    const enCities = City.getCitiesOfCountry(country) || [];
+    let opts: { value: string; label: string; searchLabel: string }[];
 
-    const opts = enCities.map((c) => {
-      const arName = arMap.get(c.name.toLowerCase()) || arMap.get(c.name.toLowerCase().replace(/[\s'-]/g, '')) || '';
-      return {
+    if (isRTL && arCities.length > 0) {
+      // In Arabic mode, use countries-cities-ar as primary source
+      opts = arCities.map((c) => ({
         value: c.name,
-        label: isRTL && arName ? arName : c.name,
-        searchLabel: `${c.name} ${arName}`,
-      };
-    });
+        label: c.nameAr || c.name,
+        searchLabel: `${c.name} ${c.nameAr}`,
+      }));
+    } else {
+      // In English mode, use country-state-city
+      const enCities = City.getCitiesOfCountry(country) || [];
+      const arMap = new Map<string, string>();
+      arCities.forEach((c) => {
+        if (c.nameAr) arMap.set(c.name.toLowerCase(), c.nameAr);
+      });
+      opts = enCities.map((c) => {
+        const arName = arMap.get(c.name.toLowerCase()) || '';
+        return {
+          value: c.name,
+          label: c.name,
+          searchLabel: `${c.name} ${arName}`,
+        };
+      });
+    }
 
     opts.push({
       value: '__other__',
