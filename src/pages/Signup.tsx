@@ -37,6 +37,8 @@ const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [gender, setGender] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState<Date>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showProfileWizard, setShowProfileWizard] = useState(false);
