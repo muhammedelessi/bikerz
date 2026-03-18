@@ -56,12 +56,17 @@ function generateUUID(): string {
 }
 
 function getSessionToken(): string {
-  let token = sessionStorage.getItem('analytics_session_token');
-  if (!token) {
-    token = generateUUID();
-    sessionStorage.setItem('analytics_session_token', token);
+  try {
+    let token = sessionStorage.getItem('analytics_session_token');
+    if (!token) {
+      token = generateUUID();
+      sessionStorage.setItem('analytics_session_token', token);
+    }
+    return token;
+  } catch {
+    // Storage can be blocked in some iOS in-app browsers
+    return generateUUID();
   }
-  return token;
 }
 
 export function useAnalyticsTracking() {
