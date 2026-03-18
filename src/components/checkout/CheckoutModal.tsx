@@ -128,6 +128,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
+  const [manualCity, setManualCity] = useState('');
+  const [isOtherCity, setIsOtherCity] = useState(false);
   
   const [country, setCountry] = useState('');
   const [postalCode, setPostalCode] = useState('');
