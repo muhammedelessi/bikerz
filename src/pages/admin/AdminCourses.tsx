@@ -82,6 +82,8 @@ interface Course {
   is_published: boolean;
   created_at: string;
   instructor_id: string | null;
+  discount_percentage?: number;
+  discount_expires_at?: string | null;
 }
 
 const AdminCourses: React.FC = () => {
