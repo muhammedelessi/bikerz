@@ -202,8 +202,8 @@ const DiscountUrgencyBanner: React.FC = () => {
                   onClick={() => setActiveIndex([i, i > activeIndex ? 1 : -1])}
                   className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full transition-all duration-300 ${
                     i === activeIndex % courses.length
-                      ? 'bg-yellow-300 w-3 sm:w-4'
-                      : 'bg-white/30'
+                      ? 'bg-accent-orange w-3 sm:w-4'
+                      : 'bg-sand/20'
                   }`}
                   aria-label={`Slide ${i + 1}`}
                 />
