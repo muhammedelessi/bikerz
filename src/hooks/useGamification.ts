@@ -214,7 +214,7 @@ export function useGamification() {
     enabled: !!user && dailyChallenges.length > 0,
   });
 
-  // Add XP mutation
+  // Add XP mutation - uses SECURITY DEFINER RPC
   const addXPMutation = useMutation({
     mutationFn: async ({ 
       amount, 
@@ -229,66 +229,27 @@ export function useGamification() {
       description?: string;
       descriptionAr?: string;
     }) => {
-      if (!user || !gamificationData) throw new Error('Not authenticated');
+      if (!user) throw new Error('Not authenticated');
 
-      const multiplier = gamificationData.combo_multiplier || 1.0;
-      const finalAmount = Math.round(amount * multiplier);
-
-      // Log XP transaction
-      await supabase.from('xp_transactions').insert({
-        user_id: user.id,
-        amount: finalAmount,
-        source_type: sourceType,
-        source_id: sourceId,
-        multiplier,
-        description,
-        description_ar: descriptionAr,
+      const { data, error } = await supabase.rpc('add_xp_secure', {
+        p_amount: amount,
+        p_source_type: sourceType,
+        p_source_id: sourceId || null,
+        p_description: description || null,
+        p_description_ar: descriptionAr || null,
       });
-
-      const newTotalXP = gamificationData.total_xp + finalAmount;
-      const newLevel = calculateLevel(newTotalXP);
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Calculate streak
-      let newStreak = gamificationData.current_streak;
-      const lastDate = gamificationData.last_activity_date;
-      
-      if (lastDate) {
-        const lastDateObj = new Date(lastDate);
-        const todayObj = new Date(today);
-        const diffDays = Math.floor((todayObj.getTime() - lastDateObj.getTime()) / (1000 * 60 * 60 * 24));
-        
-        if (diffDays === 1) {
-          newStreak += 1;
-        } else if (diffDays > 1) {
-          newStreak = 1;
-        }
-      } else {
-        newStreak = 1;
-      }
-
-      // Update gamification data
-      const { error } = await supabase
-        .from('user_gamification')
-        .update({
-          total_xp: newTotalXP,
-          level: newLevel,
-          current_streak: newStreak,
-          longest_streak: Math.max(newStreak, gamificationData.longest_streak),
-          last_activity_date: today,
-          combo_multiplier: Math.min(2.0, 1.0 + (newStreak * 0.05)), // Max 2x multiplier
-        })
-        .eq('user_id', user.id);
 
       if (error) throw error;
 
-      return { 
-        xpGained: finalAmount, 
-        newTotalXP, 
-        newLevel, 
-        leveledUp: newLevel > gamificationData.level,
-        newStreak 
+      const result = data as {
+        xpGained: number;
+        newTotalXP: number;
+        newLevel: number;
+        leveledUp: boolean;
+        newStreak: number;
       };
+
+      return result;
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['user-gamification'] });
