@@ -23,7 +23,7 @@ const iconMap: Record<string, LucideIcon> = {
 
 const LearnSection: React.FC = () => {
   const { isRTL } = useLanguage();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
 
   const { data: content, isLoading } = useLandingContent<LearnContent>('learn');
 
