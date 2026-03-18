@@ -764,14 +764,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'الدولة' : 'Country'} <span className="text-destructive">*</span></Label>
-                    <Select value={country} onValueChange={(v) => { setCountry(v); setErrors(prev => ({ ...prev, country: undefined })); }}>
+                    <Select value={country} onValueChange={(v) => { setCountry(v); setCity(''); setCityOther(''); setErrors(prev => ({ ...prev, country: undefined })); }}>
                       <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
                         <SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} />
                       </SelectTrigger>
-                      <SelectContent>
-                        {GCC_COUNTRIES.map((c) => (
-                          <SelectItem key={c.code} value={c.code}>
-                            {isRTL ? c.name_ar : c.name}
+                      <SelectContent className="max-h-[200px]">
+                        {allCountries.map((c) => (
+                          <SelectItem key={c.isoCode} value={c.isoCode}>
+                            {c.flag} {c.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -781,12 +781,40 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
-                    <Input
-                      value={city}
-                      onChange={(e) => { setCity(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
-                      placeholder={isRTL ? 'أدخل مدينتك' : 'Enter your city'}
-                      className={errors.city ? 'border-destructive' : ''}
-                    />
+                    {citiesForCountry.length > 0 ? (
+                      <>
+                        <Select value={city} onValueChange={(v) => { setCity(v); if (v !== '__other__') setCityOther(''); setErrors(prev => ({ ...prev, city: undefined })); }}>
+                          <SelectTrigger className={errors.city ? 'border-destructive' : ''}>
+                            <SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[200px]">
+                            {citiesForCountry.map((c, i) => (
+                              <SelectItem key={`${c.name}-${i}`} value={c.name}>
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="__other__">
+                              {isRTL ? 'أخرى' : 'Other'}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {city === '__other__' && (
+                          <Input
+                            value={cityOther}
+                            onChange={(e) => { setCityOther(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
+                            placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
+                            className="mt-2"
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <Input
+                        value={city}
+                        onChange={(e) => { setCity(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
+                        placeholder={isRTL ? 'أدخل مدينتك' : 'Enter your city'}
+                        className={errors.city ? 'border-destructive' : ''}
+                      />
+                    )}
                     {renderFieldError('city')}
                   </div>
 
