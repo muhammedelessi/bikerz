@@ -480,8 +480,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const currentStepIndex = CHECKOUT_STEPS_DISPLAY.indexOf(currentStep as any);
   const progressPercent = currentStepIndex >= 0 ? ((currentStepIndex + 1) / CHECKOUT_STEPS_DISPLAY.length) * 100 : 0;
-    ? 75
-    : ((currentStepIndex + 1) / CHECKOUT_STEPS_DISPLAY.length) * 100;
 
   // Promo code
   const handleApplyPromo = async () => {
