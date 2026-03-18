@@ -153,7 +153,7 @@ const DiscountUrgencyBanner: React.FC = () => {
     if (courses.length <= 1) return;
     const interval = setInterval(() => {
       setActiveIndex(([prev]) => [(prev + 1) % courses.length, 1]);
-    }, 3000);
+    }, 6000);
     return () => clearInterval(interval);
   }, [courses.length]);
 
