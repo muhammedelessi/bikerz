@@ -71,12 +71,7 @@ const Navbar: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollY = window.scrollY;
-      setIsScrolled(scrollY > 20);
-      const bannerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--discount-banner-h') || '0');
-      const shouldHide = scrollY > bannerH;
-      setBannerVisible(!shouldHide);
-      document.documentElement.style.setProperty('--banner-translate', shouldHide ? '-100%' : '0');
+      setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
