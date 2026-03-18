@@ -65,32 +65,46 @@ const SlideItem: React.FC<{
 
   return (
     <Link to={`/courses/${course.id}`} className="block group">
-      <div className="flex items-center justify-center gap-2 sm:gap-4">
-        {/* Discount badge */}
+      {/* Mobile layout: stacked two rows */}
+      <div className="flex sm:hidden flex-col items-center gap-1">
+        <div className="flex items-center gap-1.5 w-full justify-center">
+          <Flame className="w-3.5 h-3.5 text-accent-orange animate-pulse flex-shrink-0 drop-shadow-[0_0_6px_hsl(var(--accent-orange)/0.6)]" />
+          <span className="bg-accent-orange text-near-black text-[10px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider flex-shrink-0">
+            {priceInfo.discountPct}% {isRTL ? "خصم" : "OFF"}
+          </span>
+          <span className="text-[11px] font-bold text-sand truncate max-w-[120px]">
+            {title}
+          </span>
+          <span className="text-[10px] text-sand/40 line-through flex-shrink-0">{priceInfo.originalPrice} {sym}</span>
+          <span className="text-xs font-black text-accent-orange flex-shrink-0">{priceInfo.finalPrice} {sym}</span>
+        </div>
+        {course.discount_expires_at && (
+          <CountdownDisplay expiresAt={course.discount_expires_at} isRTL={isRTL} />
+        )}
+      </div>
+
+      {/* Desktop layout: single row */}
+      <div className="hidden sm:flex items-center justify-center gap-4">
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-accent-orange animate-pulse flex-shrink-0 drop-shadow-[0_0_8px_hsl(var(--accent-orange)/0.6)]" />
-          <span className="bg-accent-orange text-near-black text-[10px] sm:text-xs font-black px-1.5 sm:px-2 py-0.5 rounded-sm uppercase tracking-wider">
+          <Flame className="w-5 h-5 text-accent-orange animate-pulse flex-shrink-0 drop-shadow-[0_0_8px_hsl(var(--accent-orange)/0.6)]" />
+          <span className="bg-accent-orange text-near-black text-xs font-black px-2 py-0.5 rounded-sm uppercase tracking-wider">
             {priceInfo.discountPct}% {isRTL ? "خصم" : "OFF"}
           </span>
         </div>
 
-        {/* Title - hidden on very small screens */}
-        <span className="hidden sm:block text-xs md:text-sm font-bold text-sand truncate max-w-[180px] md:max-w-none">
+        <span className="text-xs md:text-sm font-bold text-sand truncate max-w-[180px] md:max-w-[280px]">
           {title}
         </span>
 
-        {/* Countdown */}
         {course.discount_expires_at && (
           <CountdownDisplay expiresAt={course.discount_expires_at} isRTL={isRTL} />
         )}
 
-        {/* Price */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-[10px] sm:text-xs text-sand/40 line-through">{priceInfo.originalPrice} {sym}</span>
-          <span className="text-sm sm:text-base font-black text-accent-orange drop-shadow-[0_0_6px_hsl(var(--accent-orange)/0.4)]">{priceInfo.finalPrice} {sym}</span>
+          <span className="text-xs text-sand/40 line-through">{priceInfo.originalPrice} {sym}</span>
+          <span className="text-base font-black text-accent-orange drop-shadow-[0_0_6px_hsl(var(--accent-orange)/0.4)]">{priceInfo.finalPrice} {sym}</span>
         </div>
 
-        {/* CTA */}
         <span className="hidden md:flex text-[11px] font-bold text-accent-orange items-center gap-1 group-hover:gap-2 transition-all uppercase tracking-wider">
           {isRTL ? "سجّل" : "Enroll"}
           <Arrow className="w-3 h-3" />
