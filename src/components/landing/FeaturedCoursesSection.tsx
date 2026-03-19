@@ -3,25 +3,14 @@ import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Play, Clock, BookOpen, ArrowRight, ArrowLeft, Timer } from "lucide-react";
+import { Play, Clock, BookOpen, ArrowRight, ArrowLeft } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import heroImage from "@/assets/hero-rider.jpg";
-import { useDiscountCountdown } from "@/hooks/useDiscountCountdown";
-
-const DiscountCountdownBadge: React.FC<{ expiresAt: string | null; isRTL: boolean }> = ({ expiresAt, isRTL }) => {
-  const { timeLeft, isExpired, hasExpiry } = useDiscountCountdown(expiresAt);
-  if (!hasExpiry || isExpired) return null;
-  return (
-    <div className="flex items-center gap-1 text-xs text-destructive font-mono font-bold">
-      <Timer className="w-3 h-3" />
-      <span>{timeLeft}</span>
-    </div>
-  );
-};
+import DiscountCountdown from "@/components/common/DiscountCountdown";
 
 const FeaturedCoursesSection: React.FC = () => {
   const { isRTL } = useLanguage();
@@ -83,7 +72,7 @@ const FeaturedCoursesSection: React.FC = () => {
   if (!isLoading && courses.length === 0) return null;
 
   return (
-    <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden">
+    <section ref={ref} className="relative py-10 sm:py-14 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-card/30 to-background" />
 
       <div className="section-container relative z-10">
@@ -184,7 +173,7 @@ const FeaturedCoursesSection: React.FC = () => {
                               )}
                             </div>
                             {priceInfo.discountPct > 0 && course.discount_expires_at ? (
-                              <DiscountCountdownBadge expiresAt={course.discount_expires_at} isRTL={isRTL} />
+                              <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
                             ) : (
                               <span className="text-xs font-medium text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 {isRTL ? "عرض الدورة" : "View Course"}

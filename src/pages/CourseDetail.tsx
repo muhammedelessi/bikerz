@@ -43,6 +43,8 @@ import { trackViewContent } from '@/utils/metaPixel';
 import CourseReviews from '@/components/course/CourseReviews';
 import StarRating from '@/components/course/StarRating';
 import { useDiscountCountdown } from '@/hooks/useDiscountCountdown';
+import DiscountCountdown from '@/components/common/DiscountCountdown';
+import DiscountUrgencyBanner from '@/components/landing/DiscountUrgencyBanner';
 
 
 interface Lesson {
@@ -415,6 +417,7 @@ const CourseDetail: React.FC = () => {
         breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Courses', url: '/courses' }, { name: courseTitle || 'Course', url: `/courses/${id}` }]}
       />
       <Navbar />
+      <DiscountUrgencyBanner courseId={id} />
 
       {/* Sticky Header — appears on scroll */}
       <AnimatePresence>
@@ -737,10 +740,8 @@ const CourseDetail: React.FC = () => {
                           );
                         })()}
                         {discountCountdown.hasExpiry && !discountCountdown.isExpired && effectiveDiscount > 0 && (
-                          <div className="flex items-center justify-center gap-2 mt-2 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20">
-                            <Clock className="w-3.5 h-3.5 text-destructive" />
-                            <span className="text-sm font-mono font-bold text-destructive">{discountCountdown.timeLeft}</span>
-                            <span className="text-xs text-destructive/80">{isRTL ? 'متبقي' : 'left'}</span>
+                          <div className="mt-3">
+                            <DiscountCountdown expiresAt={(course as any)?.discount_expires_at} isRTL={isRTL} />
                           </div>
                         )}
                         {course.price > 0 && (
