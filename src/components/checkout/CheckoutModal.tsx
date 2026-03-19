@@ -928,7 +928,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">{isRTL ? 'الموقع' : 'Location'}</span>
-                          <span className="font-medium">{city}{country ? (function() { var found = GCC_COUNTRIES.find(function(c) { return c.code === country; }); var label = found ? (isRTL ? found.name_ar : found.name) : country; return ', ' + label; })() : ''}</span>
+                          <span className="font-medium">{city}{country ? ', ' + (function() { var found = GCC_COUNTRIES.find(function(c) { return c.code === country; }); return found ? (isRTL ? found.name_ar : found.name) : country; })() : ''}</span>
                         </div>
                         <Separator />
                         {/* Price breakdown */}
