@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,6 +48,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   const { data: authContent } = useAuthPageContent();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const isIOS = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -57,12 +58,37 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   const cms = authContent?.signup || {};
   const nameLabel = (isRTL ? cms.name_label_ar : cms.name_label_en) || t('auth.signup.name');
   const emailLabel = (isRTL ? cms.email_label_ar : cms.email_label_en) || t('auth.signup.email');
   const passwordLabel = (isRTL ? cms.password_label_ar : cms.password_label_en) || t('auth.signup.password');
   const confirmLabel = (isRTL ? cms.confirm_label_ar : cms.confirm_label_en) || t('auth.signup.confirmPassword');
+
+  useEffect(() => {
+    if (!open || !isIOS || typeof window === 'undefined' || !window.visualViewport) {
+      setKeyboardOffset(0);
+      return;
+    }
+
+    const viewport = window.visualViewport;
+
+    const updateKeyboardOffset = () => {
+      const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      setKeyboardOffset(offset);
+    };
+
+    updateKeyboardOffset();
+    viewport.addEventListener('resize', updateKeyboardOffset);
+    viewport.addEventListener('scroll', updateKeyboardOffset);
+
+    return () => {
+      viewport.removeEventListener('resize', updateKeyboardOffset);
+      viewport.removeEventListener('scroll', updateKeyboardOffset);
+      setKeyboardOffset(0);
+    };
+  }, [open, isIOS]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,11 +172,16 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   };
 
   const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+    if (!isIOS) return;
+
+    const input = e.target;
+
+    requestAnimationFrame(() => {
+      input.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
       setTimeout(() => {
-        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 300);
-    }
+        input.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      }, 250);
+    });
   };
 
   const formContent = (
@@ -279,7 +310,10 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="bg-card border-border max-h-[95dvh]" style={{ maxHeight: '95dvh' }}>
+        <DrawerContent
+          className="bg-card border-border h-[100dvh] max-h-[100dvh] overflow-hidden"
+          style={{ height: '100dvh', maxHeight: '100dvh' }}
+        >
           <DrawerHeader className="pb-1 pt-2 flex-shrink-0">
             <DrawerTitle className="text-base font-bold text-center">
               {titleText}
@@ -288,7 +322,12 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
           </DrawerHeader>
           <div
             className="overflow-y-auto pb-safe overscroll-contain flex-1"
-            style={{ WebkitOverflowScrolling: 'touch' }}
+            style={{
+              overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              scrollPaddingBottom: `${keyboardOffset + 24}px`,
+              paddingBottom: `calc(env(safe-area-inset-bottom) + ${keyboardOffset + 24}px)`,
+            }}
           >
             {formContent}
           </div>
