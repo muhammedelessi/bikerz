@@ -143,7 +143,7 @@ const HeroSection: React.FC = () => {
               className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-xl shadow-[0_0_30px_hsl(var(--primary)/0.15)]"
             >
               <Sparkles className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs sm:text-sm text-primary/90 font-semibold tracking-wide">
+              <span className="text-xs sm:text-sm text-primary font-bold tracking-wider uppercase">
                 {membersValue} {badgeText}
               </span>
             </motion.div>
