@@ -10,11 +10,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import heroImage from "@/assets/hero-rider.jpg";
+import DiscountCountdown from "@/components/common/DiscountCountdown";
 
 const FeaturedCoursesSection: React.FC = () => {
   const { isRTL } = useLanguage();
   const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   const { data: courses = [], isLoading } = useQuery({
@@ -25,6 +26,7 @@ const FeaturedCoursesSection: React.FC = () => {
         .select(`
           id, title, title_ar, description, description_ar,
           thumbnail_url, difficulty_level, price, discount_percentage,
+          discount_expires_at,
           chapters (
             id, is_published,
             lessons ( id, duration_minutes, is_published )
@@ -70,14 +72,14 @@ const FeaturedCoursesSection: React.FC = () => {
   if (!isLoading && courses.length === 0) return null;
 
   return (
-    <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden">
+    <section ref={ref} className="relative py-10 sm:py-14 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-card/30 to-background" />
 
       <div className="section-container relative z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="text-center mb-10 sm:mb-12"
         >
@@ -100,14 +102,16 @@ const FeaturedCoursesSection: React.FC = () => {
             : courses.map((course: any, index: number) => {
                 const title = isRTL && course.title_ar ? course.title_ar : course.title;
                 const desc = isRTL && course.description_ar ? course.description_ar : course.description;
-                const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+                const isDiscountExpired = course.discount_expires_at && new Date(course.discount_expires_at).getTime() <= Date.now();
+                const effectiveDiscount = isDiscountExpired ? 0 : (course.discount_percentage || 0);
+                const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                 const sym = getCurrencySymbol(priceInfo.currency, isRTL);
 
                 return (
                   <motion.div
                     key={course.id}
                     initial={{ opacity: 0, y: 30 }}
-                    animate={inView ? { opacity: 1, y: 0 } : {}}
+                    animate={inView ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: index * 0.15 }}
                   >
                     <Link to={`/courses/${course.id}`}>
@@ -156,7 +160,7 @@ const FeaturedCoursesSection: React.FC = () => {
                             </span>
                           </div>
 
-                          {/* Price & CTA */}
+                          {/* Price & Countdown */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span className="text-lg font-black text-primary">
@@ -168,10 +172,14 @@ const FeaturedCoursesSection: React.FC = () => {
                                 </span>
                               )}
                             </div>
-                            <span className="text-xs font-medium text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {isRTL ? "عرض الدورة" : "View Course"}
-                              <Arrow className="w-3.5 h-3.5" />
-                            </span>
+                            {priceInfo.discountPct > 0 && course.discount_expires_at ? (
+                              <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
+                            ) : (
+                              <span className="text-xs font-medium text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {isRTL ? "عرض الدورة" : "View Course"}
+                                <Arrow className="w-3.5 h-3.5" />
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -184,7 +192,7 @@ const FeaturedCoursesSection: React.FC = () => {
         {/* View all button */}
         <motion.div
           initial={{ opacity: 0 }}
-          animate={inView ? { opacity: 1 } : {}}
+          animate={inView ? { opacity: 1 } : { opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.4 }}
           className="text-center mt-8 sm:mt-10"
         >

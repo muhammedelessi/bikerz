@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { arSA } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -7,13 +8,18 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import LanguageToggle from '@/components/common/LanguageToggle';
 import ProfileCompletionWizard from '@/components/profile/ProfileCompletionWizard';
 import { useAuthPageContent } from '@/hooks/useAuthPageContent';
-import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import defaultHeroImage from '@/assets/community-ride.jpg';
 import SEOHead from '@/components/common/SEOHead';
 import bikerzLogo from '@/assets/bikerz-logo.png';
@@ -32,6 +38,8 @@ const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [gender, setGender] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState<Date>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showProfileWizard, setShowProfileWizard] = useState(false);
@@ -74,7 +82,21 @@ const Signup: React.FC = () => {
       return;
     }
     
-    // Sync new contact to GHL CRM immediately after signup
+    // Save gender and date_of_birth to profile
+    if (gender || dateOfBirth) {
+      try {
+        const { data: { user: newUser } } = await (supabase.auth as any).getUser();
+        if (newUser) {
+          await supabase.from('profiles').update({
+            gender: gender || null,
+            date_of_birth: dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : null,
+          } as any).eq('user_id', newUser.id);
+        }
+      } catch (e) {
+        console.error('Failed to save gender/DOB:', e);
+      }
+    }
+
     try {
       await supabase.functions.invoke('ghl-sync', {
         body: {
@@ -82,6 +104,8 @@ const Signup: React.FC = () => {
           data: {
             full_name: name,
             email,
+            date_of_birth: dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : '',
+            gender: gender || '',
           },
         },
       });
@@ -93,6 +117,8 @@ const Signup: React.FC = () => {
     sendFormData({
       full_name: name,
       email,
+      dateOfBirth: dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : '',
+      gender: gender || '',
       orderStatus: 'not purchased',
       courses: '[]',
       totalPurchased: 0,
@@ -235,8 +261,55 @@ const Signup: React.FC = () => {
                 </div>
               </div>
 
+              {/* Gender */}
+              <div className="space-y-2">
+                <Label className="text-sm sm:text-base">{isRTL ? 'الجنس' : 'Gender'}</Label>
+                <Select value={gender} onValueChange={setGender} dir={isRTL ? 'rtl' : 'ltr'}>
+                  <SelectTrigger className="form-input h-11 sm:h-12 text-base text-start">
+                    <SelectValue placeholder={isRTL ? 'اختر الجنس' : 'Select gender'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">{isRTL ? 'ذكر' : 'Male'}</SelectItem>
+                    <SelectItem value="female">{isRTL ? 'أنثى' : 'Female'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Date of Birth */}
+              <div className="space-y-2">
+                <Label className="text-sm sm:text-base">{isRTL ? 'تاريخ الميلاد' : 'Date of Birth'}</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full h-11 sm:h-12 text-base justify-start font-normal form-input text-start",
+                        !dateOfBirth && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="w-4 h-4 me-2" />
+                      {dateOfBirth ? format(dateOfBirth, 'PPP', { locale: isRTL ? arSA : undefined }) : (isRTL ? 'اختر التاريخ' : 'Pick a date')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start" dir={isRTL ? 'rtl' : 'ltr'}>
+                    <Calendar
+                      mode="single"
+                      selected={dateOfBirth}
+                      onSelect={setDateOfBirth}
+                      disabled={(date) => date > new Date() || date < new Date('1940-01-01')}
+                      initialFocus
+                      captionLayout="dropdown-buttons"
+                      fromYear={1940}
+                      toYear={new Date().getFullYear()}
+                      locale={isRTL ? arSA : undefined}
+                      dir={isRTL ? 'rtl' : 'ltr'}
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
               <Button
-                type="submit"
                 variant="cta"
                 className="w-full h-11 sm:h-12 text-base"
                 disabled={isLoading}

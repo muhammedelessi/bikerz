@@ -12,8 +12,12 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
-    const saved = localStorage.getItem('bikerz-theme') as Theme;
-    return saved === 'light' ? 'light' : 'dark';
+    try {
+      const saved = localStorage.getItem('bikerz-theme') as Theme;
+      return saved === 'light' ? 'light' : 'dark';
+    } catch {
+      return 'dark';
+    }
   });
 
   useEffect(() => {
@@ -25,7 +29,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.classList.add('dark');
       root.classList.remove('light');
     }
-    localStorage.setItem('bikerz-theme', theme);
+
+    try {
+      localStorage.setItem('bikerz-theme', theme);
+    } catch {
+      // Ignore storage failures on restricted iOS browsers
+    }
   }, [theme]);
 
   const setTheme = (t: Theme) => setThemeState(t);

@@ -118,6 +118,8 @@ const AppRoutes = () => (
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<Index />} />
+      <Route path="/index" element={<Navigate to="/" replace />} />
+      <Route path="/index.html" element={<Navigate to="/" replace />} />
       <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
       <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
       <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
@@ -159,26 +161,30 @@ const AppRoutes = () => (
   </>
 );
 
+const SafeHelmetProvider = HelmetProvider as unknown as React.ComponentType<{
+  children: React.ReactNode;
+}>;
+
 const App = () => (
-  <HelmetProvider>
+  <SafeHelmetProvider>
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <CurrencyProvider>
           <AuthProvider>
             <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <ScrollToTop />
-              <SocialProofNotification />
-              <AppRoutes />
-            </BrowserRouter>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <ScrollToTop />
+                <SocialProofNotification />
+                <AppRoutes />
+              </BrowserRouter>
             </TooltipProvider>
           </AuthProvider>
         </CurrencyProvider>
       </LanguageProvider>
     </QueryClientProvider>
-  </HelmetProvider>
+  </SafeHelmetProvider>
 );
 
 export default App;

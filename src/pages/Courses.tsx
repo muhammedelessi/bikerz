@@ -137,7 +137,7 @@ const Courses: React.FC = () => {
       />
       <Navbar />
 
-      <main className="pt-20 sm:pt-24 lg:pt-28">
+      <main className="pt-[var(--navbar-h)]">
         <section className="section-container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

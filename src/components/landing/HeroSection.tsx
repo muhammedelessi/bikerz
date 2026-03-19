@@ -3,7 +3,7 @@ import AnimatedCounter from "@/components/common/AnimatedCounter";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ArrowLeft, Play } from "lucide-react";
+import { ArrowRight, ArrowLeft, Play, Sparkles } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,10 +15,8 @@ const HeroSection: React.FC = () => {
   const { isRTL } = useLanguage();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
-  // Fetch dynamic content from database
   const { data: content, isLoading: contentLoading } = useLandingContent<HeroContent>("hero");
 
-  // Fetch real stats from database
   const { data: stats } = useQuery({
     queryKey: ["hero-stats"],
     queryFn: async () => {
@@ -28,16 +26,9 @@ const HeroSection: React.FC = () => {
         supabase.from("course_enrollments").select("progress_percentage"),
       ]);
 
-      if (profilesRes.error) console.error("[hero-stats] profiles error:", profilesRes.error.message);
-      if (lessonsRes.error) console.error("[hero-stats] lessons error:", lessonsRes.error.message);
-      if (enrollmentsRes.error) console.error("[hero-stats] enrollments error:", enrollmentsRes.error.message);
-
       const usersCount = profilesRes.count ?? 0;
       const lessonsCount = lessonsRes.count ?? 0;
       const enrollmentStats = enrollmentsRes.data ?? [];
-
-      console.log("[hero-stats]", { usersCount, lessonsCount, enrollments: enrollmentStats.length });
-
       const successfulEnrollments = enrollmentStats.filter((e) => (e.progress_percentage ?? 0) >= 70).length;
       const successRate =
         enrollmentStats.length > 0 ? Math.round((successfulEnrollments / enrollmentStats.length) * 100) : 0;
@@ -48,15 +39,12 @@ const HeroSection: React.FC = () => {
   });
 
   const formatCount = (count: number) => {
-    if (count >= 1000) {
-      return `${Math.floor(count / 1000)}K+`;
-    }
+    if (count >= 1000) return `${Math.floor(count / 1000)}K+`;
     return count > 0 ? `${count}+` : "0";
   };
 
   const heroContent = content as any;
 
-  // CMS override values always take priority over DB-computed stats
   const membersValue = heroContent?.stats_members_value
     ? String(heroContent.stats_members_value)
     : formatCount(stats?.members || 0);
@@ -87,7 +75,6 @@ const HeroSection: React.FC = () => {
     },
   ];
 
-  // Get text based on language
   const getText = (enKey: keyof HeroContent, arKey: keyof HeroContent, fallbackEn: string, fallbackAr: string) => {
     if (!content) return isRTL ? fallbackAr : fallbackEn;
     return isRTL ? content[arKey] || fallbackAr : content[enKey] || fallbackEn;
@@ -107,131 +94,160 @@ const HeroSection: React.FC = () => {
   const heroImage = (content as any)?.background_image || defaultHeroImage;
 
   return (
-    <section className="relative min-h-[100svh] flex items-center justify-center overflow-hidden pt-16 sm:pt-20 lg:pt-24">
-      {/* Background Image */}
+    <section className="relative min-h-[85vh] min-h-[85svh] flex items-center justify-center overflow-hidden pt-8 sm:pt-10 lg:pt-12">
+      {/* Background Image with cinematic overlay */}
       <div className="absolute inset-0">
         <img
           src={heroImage}
           alt="Motorcycle rider on desert highway"
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-cover object-center scale-105"
           loading="eager"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/50 to-background" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50 hidden sm:block" />{" "}
+        {/* Multi-layer cinematic gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-background/80" />
+        {/* Primary color vignette for brand warmth */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,hsl(var(--background))_100%)]" />
       </div>
 
-      {/* Animated Lines */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.1 }}
-          transition={{ duration: 2 }}
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `repeating-linear-gradient(
-              90deg,
-              transparent,
-              transparent 100px,
-              hsl(var(--primary) / 0.1) 100px,
-              hsl(var(--primary) / 0.1) 101px
-            )`,
-          }}
-        />
-      </div>
+      {/* Animated grain texture */}
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay [@supports(-webkit-touch-callout:none)]:hidden"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* Glowing accent orb */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.15 }}
+        transition={{ duration: 2, delay: 0.5 }}
+        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full blur-[120px] pointer-events-none [@supports(-webkit-touch-callout:none)]:hidden"
+        style={{ background: 'hsl(var(--primary) / 0.4)' }}
+      />
 
       {/* Content */}
       <div className="relative z-10 section-container text-center px-4">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="space-y-6 sm:space-y-8"
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="space-y-5 sm:space-y-7"
         >
           {/* Badge */}
           {showBadge && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-sm"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 backdrop-blur-md shadow-[0_0_20px_hsl(var(--primary)/0.1)]"
             >
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span className="text-xs sm:text-sm text-primary font-medium">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs sm:text-sm text-primary/90 font-semibold tracking-wide">
                 {membersValue} {badgeText}
               </span>
             </motion.div>
           )}
 
-          {/* Title */}
+          {/* Title with gradient text accent */}
           {contentLoading ? (
             <Skeleton className="h-16 w-3/4 mx-auto" />
           ) : (
-            <h1 className="hero-text max-w-5xl mx-auto leading-[1.15]">{title}</h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="hero-text max-w-4xl mx-auto leading-[1.1] drop-shadow-[0_2px_20px_hsl(var(--primary)/0.15)]"
+            >
+              {title}
+            </motion.h1>
           )}
 
           {/* Subtitle */}
           {contentLoading ? (
             <Skeleton className="h-8 w-2/3 mx-auto" />
           ) : (
-            <p className="hero-subtitle mx-auto">{subtitle}</p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="hero-subtitle mx-auto max-w-xl text-foreground/70"
+            >
+              {subtitle}
+            </motion.p>
           )}
 
           {/* CTAs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-4 px-4 sm:px-0"
+            transition={{ duration: 0.7, delay: 0.7 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-3 px-4 sm:px-0"
           >
             <Link to="/signup" className="w-full sm:w-auto">
-              <Button variant="hero" size="xl" className="group w-full sm:w-auto min-h-[52px]">
+              <Button variant="hero" size="xl" className="group w-full sm:w-auto min-h-[52px] shadow-[0_4px_24px_hsl(var(--primary)/0.4)]">
                 {ctaText}
                 <Arrow className="w-5 h-5 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
               </Button>
             </Link>
             <Link to="/courses" className="w-full sm:w-auto">
-              <Button variant="heroOutline" size="xl" className="group w-full sm:w-auto min-h-[52px]">
+              <Button variant="heroOutline" size="xl" className="group w-full sm:w-auto min-h-[52px] backdrop-blur-sm">
                 <Play className="w-5 h-5" />
                 {secondaryCta}
               </Button>
             </Link>
           </motion.div>
 
-          {/* Stats Row */}
+          {/* Stats Row with glass cards */}
           {showStats && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.8 }}
-              className="grid grid-cols-3 gap-4 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-8 pt-8 sm:pt-12"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 1 }}
+              className="flex items-center justify-center gap-3 sm:gap-6 pt-6 sm:pt-10"
             >
               {displayStats.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <AnimatedCounter
-                    value={stat.value}
-                    className="text-xl sm:text-2xl md:text-3xl font-black text-primary"
-                  />
-                  <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>
-                </div>
+                <React.Fragment key={index}>
+                  {index > 0 && (
+                    <div className="w-px h-10 bg-gradient-to-b from-transparent via-border to-transparent" />
+                  )}
+                  <div className="text-center px-2 sm:px-4">
+                    <AnimatedCounter
+                      value={stat.value}
+                      className="text-xl sm:text-2xl md:text-3xl font-black text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.3)]"
+                    />
+                    <div className="text-[10px] sm:text-xs text-muted-foreground mt-1 uppercase tracking-wider font-medium">
+                      {stat.label}
+                    </div>
+                  </div>
+                </React.Fragment>
               ))}
             </motion.div>
           )}
         </motion.div>
       </div>
 
+      {/* Bottom fade for seamless transition */}
+      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+
       {/* Scroll Indicator */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.5 }}
-        className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 hidden sm:block"
+        transition={{ delay: 1.8 }}
+        className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 hidden sm:block"
       >
         <motion.div
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="w-6 h-10 rounded-full border-2 border-muted-foreground/30 flex items-start justify-center p-2"
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="w-5 h-9 rounded-full border border-muted-foreground/20 flex items-start justify-center p-1.5"
         >
-          <div className="w-1.5 h-3 rounded-full bg-primary" />
+          <motion.div
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="w-1 h-2.5 rounded-full bg-primary/60"
+          />
         </motion.div>
       </motion.div>
     </section>

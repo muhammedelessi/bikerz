@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -18,12 +19,12 @@ function useAuthReady() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    (supabase.auth as any).getSession().then(({ data: { session } }: any) => {
       setUser(session?.user ?? null);
       setIsReady(true);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null);
       }
@@ -43,6 +44,7 @@ const PaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
   const { user, isReady } = useAuthReady();
+  const { profile } = useAuth();
   const queryClient = useQueryClient();
   const tapId = searchParams.get('tap_id');
   const { sendCourseStatus } = useGHLFormWebhook();
@@ -84,6 +86,8 @@ const PaymentSuccess: React.FC = () => {
         {
           email: user!.email || '',
           amount: String(course.price ?? 0),
+          dateOfBirth: profile?.date_of_birth || '',
+          gender: profile?.gender || '',
           silent: true,
         }
       );
