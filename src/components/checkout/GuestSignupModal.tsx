@@ -146,7 +146,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   };
 
   const formContent = (
-    <div className="px-5 pb-6 pt-2 sm:p-6 space-y-5">
+    <div className="p-5 sm:p-6 space-y-4">
       {error && (
         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
@@ -154,9 +154,9 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="guest-name" className="text-sm font-medium">{nameLabel}</Label>
+      <form onSubmit={handleSubmit} className="space-y-3.5">
+        <div className="space-y-1.5">
+          <Label htmlFor="guest-name" className="text-sm">{nameLabel}</Label>
           <Input
             id="guest-name"
             type="text"
@@ -164,14 +164,12 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
             onChange={(e) => setName(e.target.value)}
             placeholder={t('auth.signup.namePlaceholder')}
             required
-            autoComplete="name"
-            className="form-input w-full h-12 text-base rounded-lg"
-            style={{ fontSize: '16px' }}
+            className="form-input h-10 sm:h-11 text-sm sm:text-base"
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="guest-email" className="text-sm font-medium">{emailLabel}</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="guest-email" className="text-sm">{emailLabel}</Label>
           <Input
             id="guest-email"
             type="email"
@@ -179,15 +177,12 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your@email.com"
             required
-            autoComplete="email"
-            inputMode="email"
-            className="form-input w-full h-12 text-base rounded-lg"
-            style={{ fontSize: '16px' }}
+            className="form-input h-10 sm:h-11 text-sm sm:text-base"
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="guest-password" className="text-sm font-medium">{passwordLabel}</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="guest-password" className="text-sm">{passwordLabel}</Label>
           <div className="relative">
             <Input
               id="guest-password"
@@ -197,23 +192,21 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
               placeholder="••••••••"
               required
               minLength={6}
-              autoComplete="new-password"
-              className="form-input w-full h-12 text-base rounded-lg pe-12"
-              style={{ fontSize: '16px' }}
+              className="form-input h-10 sm:h-11 text-sm sm:text-base pe-12"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-2"
+              className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
               tabIndex={-1}
             >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="guest-confirm-password" className="text-sm font-medium">{confirmLabel}</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="guest-confirm-password" className="text-sm">{confirmLabel}</Label>
           <div className="relative">
             <Input
               id="guest-confirm-password"
@@ -222,24 +215,22 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
               required
-              autoComplete="new-password"
-              className="form-input w-full h-12 text-base rounded-lg pe-12"
-              style={{ fontSize: '16px' }}
+              className="form-input h-10 sm:h-11 text-sm sm:text-base pe-12"
             />
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-2"
+              className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
               tabIndex={-1}
             >
-              {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
         </div>
 
         <Button
           type="submit"
-          className="w-full btn-cta h-12 text-base mt-2"
+          className="w-full btn-cta h-11 text-base mt-1"
           disabled={loading}
         >
           {loading ? (
@@ -252,7 +243,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
           )}
         </Button>
 
-        <p className="text-xs text-muted-foreground text-center">
+        <p className="text-[11px] text-muted-foreground text-center">
           {isRTL
             ? 'بالتسجيل، أنت توافق على شروط الخدمة وسياسة الخصوصية'
             : 'By signing up, you agree to our Terms of Service and Privacy Policy'}
@@ -276,14 +267,14 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="bg-card border-border max-h-[92dvh]">
-          <DrawerHeader className="pb-2 pt-3 px-5">
-            <DrawerTitle className="text-lg font-bold text-center">
+        <DrawerContent className="bg-card border-border max-h-[95dvh]">
+          <DrawerHeader className="pb-1 pt-2">
+            <DrawerTitle className="text-base font-bold text-center">
               {titleText}
             </DrawerTitle>
             {headerContent}
           </DrawerHeader>
-          <div className="overflow-y-auto pb-safe overscroll-contain flex-1 -webkit-overflow-scrolling-touch">
+          <div className="overflow-y-auto pb-safe overscroll-contain">
             {formContent}
           </div>
         </DrawerContent>
