@@ -255,7 +255,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         if (res.ok) {
           const data = await res.json();
-          const country = data?.country_code?.toUpperCase() || null;
+          const country = (data && data.country_code) ? data.country_code.toUpperCase() : null;
           setDetectedCountry(country);
 
           if (country) {
