@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import {
+import { 
   Shield, Award, Navigation, Users, Bike, Route, Trophy,
   CheckCircle2, Gauge, CornerDownRight, AlertTriangle, CloudRain, Map, Users2,
   Home, Target, BookOpen, Megaphone, Heart, Star, Zap, Crown,
@@ -30,7 +30,7 @@ const imageMap: Record<number, string | undefined> = {
 
 const WhySection: React.FC = () => {
   const { isRTL } = useLanguage();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
   const { data: content, isLoading } = useLandingContent<WhyContent>('why');
 
@@ -39,7 +39,7 @@ const WhySection: React.FC = () => {
   const cards = content?.cards || [];
 
   return (
-    <section ref={ref} className="relative py-10 sm:py-14 overflow-hidden">
+    <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5 hidden sm:block">
         <div
@@ -55,7 +55,7 @@ const WhySection: React.FC = () => {
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
@@ -89,11 +89,11 @@ const WhySection: React.FC = () => {
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 40 }}
-                  animate={inView ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
+                  animate={inView ? { opacity: 1, y: 0 } : {}}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                   className="group interactive-card"
                 >
-
+                  
                   <div className="relative z-10 flex items-start gap-4 sm:gap-5">
                     <div className="flex-shrink-0">
                       <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-glow">

@@ -71,8 +71,7 @@ const Navbar: React.FC = () => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
+    window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -153,36 +152,15 @@ const Navbar: React.FC = () => {
     );
   };
 
-  // Publish navbar height as CSS variable
-  const navRef = React.useRef<HTMLElement>(null);
-  useEffect(() => {
-    const el = navRef.current;
-    if (!el) return;
-
-    const update = () => {
-      document.documentElement.style.setProperty('--navbar-h', `${el.offsetHeight}px`);
-    };
-
-    update();
-
-    if (typeof ResizeObserver !== 'undefined') {
-      const ro = new ResizeObserver(update);
-      ro.observe(el);
-      return () => ro.disconnect();
-    }
-
-    window.addEventListener('resize', update, { passive: true });
-    return () => window.removeEventListener('resize', update);
-  }, []);
-
   return (
     <>
-      <nav
-        ref={navRef}
-        className={`fixed top-0 left-0 right-0 z-50 safe-area-top transition-colors duration-300 ${
+      <motion.nav
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 safe-area-top ${
           isScrolled || isMobileMenuOpen
             ? 'bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg'
-            : 'bg-background/80 backdrop-blur-sm'
+            : 'bg-transparent'
         }`}
       >
         <div className="page-container">
@@ -264,7 +242,7 @@ const Navbar: React.FC = () => {
             </div>
           </div>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* Mobile Menu - Full Screen Slide-in */}
       <AnimatePresence>

@@ -79,7 +79,7 @@ const Mentors: React.FC = () => {
       />
       <Navbar />
       
-      <main className="pt-[var(--navbar-h)]">
+      <main className="pt-24">
         {/* Header */}
         <section className="section-container">
           <motion.div

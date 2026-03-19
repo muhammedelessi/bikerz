@@ -170,10 +170,14 @@ const SocialProofNotification: React.FC = () => {
 
   return (
     <div
-      className={`fixed z-[9999] transition-all duration-500 ease-out top-3 left-3 sm:top-auto sm:bottom-5 sm:left-5 ${
+      className={`fixed bottom-5 z-50 transition-all duration-500 ease-out ${
+        isRTL ? 'right-5' : 'left-5'
+      } ${
         visible
           ? 'translate-x-0 opacity-100'
-          : '-translate-x-[120%] opacity-0'
+          : isRTL
+            ? 'translate-x-[120%] opacity-0'
+            : '-translate-x-[120%] opacity-0'
       }`}
       role="status"
       aria-live="polite"
@@ -181,7 +185,7 @@ const SocialProofNotification: React.FC = () => {
       <div
         dir={isRTL ? 'rtl' : 'ltr'}
         onClick={handleClick}
-        className="flex items-center gap-2 sm:gap-3 bg-card border border-border rounded-xl shadow-lg px-3 py-2 sm:px-4 sm:py-3 max-w-[280px] sm:max-w-[380px] relative group cursor-pointer hover:shadow-xl hover:border-primary/30 transition-all"
+        className="flex items-center gap-3 bg-card border border-border rounded-xl shadow-lg px-4 py-3 max-w-[340px] sm:max-w-[380px] relative group cursor-pointer hover:shadow-xl hover:border-primary/30 transition-all"
       >
         {/* Thumbnail */}
         {current.thumbnail ? (

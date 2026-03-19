@@ -82,8 +82,6 @@ interface Course {
   is_published: boolean;
   created_at: string;
   instructor_id: string | null;
-  discount_percentage?: number;
-  discount_expires_at?: string | null;
 }
 
 const AdminCourses: React.FC = () => {
@@ -142,8 +140,6 @@ const AdminCourses: React.FC = () => {
     thumbnail_url: '',
     price: 0,
     discount_percentage: 0,
-    discount_duration: '' as string,
-    discount_expires_at: null as string | null,
     currency: 'SAR',
     difficulty_level: 'beginner',
     duration_hours: 0,
@@ -170,7 +166,6 @@ const AdminCourses: React.FC = () => {
   // Create course mutation
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const expiresAt = computeDiscountExpiry(data.discount_duration, data.discount_expires_at);
       const { error } = await supabase.from('courses').insert({
         title: data.title,
         title_ar: data.title_ar || null,
@@ -179,14 +174,13 @@ const AdminCourses: React.FC = () => {
         thumbnail_url: data.thumbnail_url || null,
         price: data.price,
         discount_percentage: data.discount_percentage || 0,
-        discount_expires_at: data.discount_percentage > 0 ? expiresAt : null,
         currency: data.currency,
         difficulty_level: data.difficulty_level,
         duration_hours: data.duration_hours || null,
         is_published: data.is_published,
         status: data.is_published ? 'published' : 'draft',
         learning_outcomes: data.learning_outcomes.length > 0 ? data.learning_outcomes : [],
-      } as any);
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -203,7 +197,6 @@ const AdminCourses: React.FC = () => {
   // Update course mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
-      const expiresAt = computeDiscountExpiry(data.discount_duration, data.discount_expires_at);
       const { error } = await supabase
         .from('courses')
         .update({
@@ -214,14 +207,13 @@ const AdminCourses: React.FC = () => {
           thumbnail_url: data.thumbnail_url || null,
           price: data.price,
           discount_percentage: data.discount_percentage || 0,
-          discount_expires_at: data.discount_percentage > 0 ? expiresAt : null,
           currency: data.currency,
           difficulty_level: data.difficulty_level,
           duration_hours: data.duration_hours || null,
           is_published: data.is_published,
           status: data.is_published ? 'published' : 'draft',
           learning_outcomes: data.learning_outcomes.length > 0 ? data.learning_outcomes : [],
-        } as any)
+        })
         .eq('id', id);
       if (error) throw error;
     },
@@ -252,17 +244,6 @@ const AdminCourses: React.FC = () => {
     },
   });
 
-  const computeDiscountExpiry = (duration: string, existingExpiry: string | null): string | null => {
-    if (!duration || duration === 'none') return null;
-    if (duration === 'keep' && existingExpiry) return existingExpiry;
-    const durMap: Record<string, number> = {
-      '24h': 24, '48h': 48, '72h': 72, '1week': 168,
-    };
-    const hours = durMap[duration];
-    if (!hours) return existingExpiry;
-    return new Date(Date.now() + hours * 3600000).toISOString();
-  };
-
   const resetForm = () => {
     setFormData({
       title: '',
@@ -272,8 +253,6 @@ const AdminCourses: React.FC = () => {
       thumbnail_url: '',
       price: 0,
       discount_percentage: 0,
-      discount_duration: '',
-      discount_expires_at: null,
       currency: 'SAR',
       difficulty_level: 'beginner',
       duration_hours: 0,
@@ -333,22 +312,6 @@ const AdminCourses: React.FC = () => {
     setFormData({ ...formData, thumbnail_url: '' });
   };
 
-  const renewDiscount = async (courseId: string) => {
-    const duration = formData.discount_duration || '24h';
-    const expiresAt = computeDiscountExpiry(duration, null);
-    const { error } = await supabase
-      .from('courses')
-      .update({ discount_expires_at: expiresAt } as any)
-      .eq('id', courseId);
-    if (error) {
-      toast.error(isRTL ? 'فشل في تجديد الخصم' : 'Failed to renew discount');
-      return;
-    }
-    setFormData({ ...formData, discount_expires_at: expiresAt });
-    queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
-    toast.success(isRTL ? 'تم تجديد مدة الخصم' : 'Discount timer renewed');
-  };
-
   const openEditDialog = async (course: Course) => {
     setFormData({
       title: course.title,
@@ -358,8 +321,6 @@ const AdminCourses: React.FC = () => {
       thumbnail_url: course.thumbnail_url || '',
       price: course.price,
       discount_percentage: (course as any).discount_percentage || 0,
-      discount_duration: (course as any).discount_expires_at ? 'keep' : '',
-      discount_expires_at: (course as any).discount_expires_at || null,
       currency: course.currency || 'SAR',
       difficulty_level: course.difficulty_level,
       duration_hours: course.duration_hours || 0,
@@ -857,50 +818,6 @@ const AdminCourses: React.FC = () => {
                   </p>
                 )}
               </div>
-
-            {/* Discount Duration Row */}
-            {formData.discount_percentage > 0 && (
-              <div className="col-span-2 md:col-span-4 grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{isRTL ? 'مدة الخصم' : 'Discount Duration'}</Label>
-                  <Select
-                    value={formData.discount_duration}
-                    onValueChange={(value) => setFormData({ ...formData, discount_duration: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={isRTL ? 'اختر المدة' : 'Select duration'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">{isRTL ? 'بدون انتهاء' : 'No expiry'}</SelectItem>
-                      <SelectItem value="24h">24 {isRTL ? 'ساعة' : 'hours'}</SelectItem>
-                      <SelectItem value="48h">48 {isRTL ? 'ساعة' : 'hours'}</SelectItem>
-                      <SelectItem value="72h">72 {isRTL ? 'ساعة' : 'hours'}</SelectItem>
-                      <SelectItem value="1week">{isRTL ? 'أسبوع' : '1 week'}</SelectItem>
-                      {formData.discount_expires_at && <SelectItem value="keep">{isRTL ? 'إبقاء الحالي' : 'Keep current'}</SelectItem>}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {editingCourse && formData.discount_expires_at && (
-                  <div className="space-y-2">
-                    <Label>{isRTL ? 'ينتهي في' : 'Expires at'}</Label>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs text-muted-foreground flex-1">
-                        {new Date(formData.discount_expires_at).toLocaleString()}
-                      </p>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => renewDiscount(editingCourse.id)}
-                        className="text-xs"
-                      >
-                        {isRTL ? 'تجديد' : 'Renew'}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
               <div className="space-y-2">
                 <Label>{isRTL ? 'العملة' : 'Currency'}</Label>
                 <Select 

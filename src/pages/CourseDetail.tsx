@@ -32,8 +32,6 @@ import {
   ArrowLeft,
   Layers,
   ClipboardList,
-  Infinity,
-  MonitorPlay,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.jpg';
@@ -245,20 +243,14 @@ const CourseDetail: React.FC = () => {
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
-
     ctaCardRef.current = node;
-    if (!node) return;
-
-    if (typeof IntersectionObserver === 'undefined') {
-      setShowStickyBottom(false);
-      return;
+    if (node) {
+      observerRef.current = new IntersectionObserver(
+        ([entry]) => setShowStickyBottom(!entry.isIntersecting),
+        { threshold: 0.1 }
+      );
+      observerRef.current.observe(node);
     }
-
-    observerRef.current = new IntersectionObserver(
-      ([entry]) => setShowStickyBottom(!entry.isIntersecting),
-      { threshold: 0.1 }
-    );
-    observerRef.current.observe(node);
   }, []);
 
   // Enroll mutation
@@ -281,9 +273,6 @@ const CourseDetail: React.FC = () => {
       toast.error(error.message || (isRTL ? 'فشل التسجيل' : 'Failed to enroll'));
     },
   });
-
-  // Discount
-  const effectiveDiscount = course?.discount_percentage || 0;
 
   // Calculations
   const totalLessons = chapters.reduce((acc, ch) => acc + ch.lessons.length, 0);
@@ -375,7 +364,7 @@ const CourseDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-[var(--navbar-h)] min-h-[60vh] flex items-center justify-center">
+        <div className="min-h-[60vh] flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
         </div>
         <Footer />
@@ -387,7 +376,7 @@ const CourseDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-[var(--navbar-h)] section-container min-h-[60vh] flex flex-col items-center justify-center text-center">
+        <div className="section-container min-h-[60vh] flex flex-col items-center justify-center text-center">
           <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
           <h2 className="text-2xl font-bold text-foreground mb-2">
             {t('courses.courseNotFound')}
@@ -421,8 +410,6 @@ const CourseDetail: React.FC = () => {
         breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Courses', url: '/courses' }, { name: courseTitle || 'Course', url: `/courses/${id}` }]}
       />
       <Navbar />
-      <div className="pt-[var(--navbar-h)]">
-      
 
       {/* Sticky Header — appears on scroll */}
       <AnimatePresence>
@@ -474,7 +461,7 @@ const CourseDetail: React.FC = () => {
                   ) : (
                     <Button size="sm" className="btn-cta h-9 text-sm hidden lg:inline-flex" onClick={() => user ? setShowCheckout(true) : setShowGuestSignup(true)}>
                       {(() => {
-                        const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                        const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
                         const sym = getCurrencySymbol(info.currency, isRTL);
                         return isRTL
                           ? `اشترك الآن – ${info.finalPrice} ${sym}`
@@ -489,7 +476,7 @@ const CourseDetail: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <main>
+      <main className="pt-16 sm:pt-20 lg:pt-24">
         {/* Hero Section */}
         <section className="relative overflow-hidden">
           {/* Mobile: Full-width image block — clean, no overlays */}
@@ -583,18 +570,6 @@ const CourseDetail: React.FC = () => {
                         <span className="font-semibold">{chapters.length}</span>
                         <span className="text-muted-foreground ms-1">{isRTL ? 'فصول' : 'chapters'}</span>
                       </div>
-                    </div>
-
-                    <span className="hidden sm:inline text-border">|</span>
-
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
-                      <Infinity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
-                      <span className="text-muted-foreground">{isRTL ? 'وصول مدى الحياة' : 'Life-time Access'}</span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
-                      <MonitorPlay className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
-                      <span className="text-muted-foreground">{isRTL ? 'دورة أونلاين' : 'Online Course'}</span>
                     </div>
                   </div>
 
@@ -729,7 +704,7 @@ const CourseDetail: React.FC = () => {
                       {/* Price */}
                       <div className="text-center py-2">
                         {(() => {
-                          const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                          const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
                           const sym = getCurrencySymbol(priceInfo.currency, isRTL);
                           if (priceInfo.discountPct > 0 && course.price > 0) {
                             return (
@@ -791,7 +766,7 @@ const CourseDetail: React.FC = () => {
                         >
                           <ShoppingCart className="w-5 h-5 me-2" />
                           {(() => {
-                            const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                            const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
                             const sym = getCurrencySymbol(info.currency, isRTL);
                             return isRTL
                               ? `اشترك الآن – ${info.finalPrice} ${sym}`
@@ -805,7 +780,7 @@ const CourseDetail: React.FC = () => {
                         >
                           <Zap className="w-5 h-5 me-2" />
                           {(() => {
-                            const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                            const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
                             const sym = getCurrencySymbol(info.currency, isRTL);
                             return isRTL
                               ? `اشترك الآن – ${info.finalPrice} ${sym}`
@@ -1089,7 +1064,6 @@ const CourseDetail: React.FC = () => {
       </main>
 
       <Footer />
-      </div>
 
       {/* Checkout Modal */}
       {course && (
@@ -1102,7 +1076,7 @@ const CourseDetail: React.FC = () => {
               title: course.title,
               title_ar: course.title_ar,
               price: course.price,
-              discount_percentage: effectiveDiscount,
+              discount_percentage: course.discount_percentage,
               thumbnail_url: course.thumbnail_url,
             }}
             onSuccess={() => {
@@ -1127,7 +1101,7 @@ const CourseDetail: React.FC = () => {
 
       {/* Sticky Bottom Bar — mobile only, hidden when enrolled */}
       <AnimatePresence>
-        {showStickyBottom && !isEnrolled && !showCheckout && !showGuestSignup && !isPaymentProcessing && course && (
+        {showStickyBottom && !isEnrolled && !showCheckout && !isPaymentProcessing && course && (
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -1139,7 +1113,7 @@ const CourseDetail: React.FC = () => {
               {/* Price */}
               <div className="flex flex-col min-w-0">
                 {(() => {
-                  const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                  const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
                   const sym = getCurrencySymbol(priceInfo.currency, isRTL);
                   if (course.price === 0) {
                     return <span className="text-lg font-black text-foreground">{t('common.free')}</span>;
@@ -1181,7 +1155,7 @@ const CourseDetail: React.FC = () => {
                 >
                   <ShoppingCart className="w-4 h-4 me-1.5" />
                   {(() => {
-                    const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                    const info = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
                     const sym = getCurrencySymbol(info.currency, isRTL);
                     return isRTL
                       ? `اشترك الآن – ${info.finalPrice} ${sym}`

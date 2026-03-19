@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { useLanguage } from '@/contexts/LanguageContext';
-import {
+import { 
   Shield, Award, Navigation, Users, Bike, Route, Trophy,
   CheckCircle2, Gauge, CornerDownRight, AlertTriangle, CloudRain, Map, Users2,
   Home, Target, BookOpen, Megaphone, Heart, Star, Zap, Crown,
@@ -23,7 +23,7 @@ const iconMap: Record<string, LucideIcon> = {
 
 const JourneySection: React.FC = () => {
   const { isRTL } = useLanguage();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
   const { data: content, isLoading } = useLandingContent<JourneyContent>('journey');
 
@@ -32,7 +32,7 @@ const JourneySection: React.FC = () => {
   const steps = content?.steps || [];
 
   return (
-    <section ref={ref} className="relative py-10 sm:py-14 bg-gradient-to-b from-background via-secondary/10 to-background overflow-hidden">
+    <section ref={ref} className="relative py-16 sm:py-20 bg-gradient-to-b from-background via-secondary/10 to-background overflow-hidden">
       {/* Road Pattern Background */}
       <div className="absolute inset-0 opacity-5 hidden md:block">
         <div className="absolute w-4 h-full bg-gradient-to-b from-transparent via-muted-foreground to-transparent" style={{ insetInlineStart: '50%', transform: isRTL ? 'translateX(50%)' : 'translateX(-50%)' }} />
@@ -49,7 +49,7 @@ const JourneySection: React.FC = () => {
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
@@ -72,7 +72,7 @@ const JourneySection: React.FC = () => {
           <div className={`absolute top-0 bottom-0 w-0.5 sm:w-px ${isRTL ? 'right-6 sm:right-8 lg:right-1/2 lg:translate-x-1/2' : 'left-6 sm:left-8 lg:left-1/2 lg:-translate-x-1/2'}`}>
             <motion.div
               initial={{ height: 0 }}
-              animate={inView ? { height: '100%' } : { height: '100%' }}
+              animate={inView ? { height: '100%' } : {}}
               transition={{ duration: 1.5, ease: 'easeOut' }}
               className="w-full bg-gradient-to-b from-primary via-secondary to-primary/30"
             />
@@ -99,7 +99,7 @@ const JourneySection: React.FC = () => {
                   <motion.div
                     key={index}
                     initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
-                    animate={inView ? { opacity: 1, x: 0 } : { opacity: 1, x: 0 }}
+                    animate={inView ? { opacity: 1, x: 0 } : {}}
                     transition={{ duration: 0.6, delay: 0.3 + index * 0.15 }}
                     className="relative"
                   >
