@@ -5,8 +5,9 @@ import HeroSection from "@/components/landing/HeroSection";
 import WhySection from "@/components/landing/WhySection";
 import JourneySection from "@/components/landing/JourneySection";
 import FeaturedCoursesSection from "@/components/landing/FeaturedCoursesSection";
-import DiscountUrgencyBanner from "@/components/landing/DiscountUrgencyBanner";
+
 import CTASection from "@/components/landing/CTASection";
+import TrustBar from "@/components/landing/TrustBar";
 import SEOHead from "@/components/common/SEOHead";
 
 const Index: React.FC = () => {
@@ -18,17 +19,16 @@ const Index: React.FC = () => {
         canonical="/"
       />
       <Navbar />
-      <div className="pt-[var(--navbar-h)]">
-        <DiscountUrgencyBanner />
-        <main>
-          <HeroSection />
-          <FeaturedCoursesSection />
-          <WhySection />
-          <JourneySection />
-          <CTASection />
-        </main>
-        <Footer />
-      </div>
+      <main>
+        <HeroSection />
+        <TrustBar />
+        <FeaturedCoursesSection />
+        <WhySection />
+        
+        <JourneySection />
+        <CTASection />
+      </main>
+      <Footer />
     </div>
   );
 };

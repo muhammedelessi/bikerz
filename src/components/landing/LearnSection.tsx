@@ -75,7 +75,7 @@ const LearnSection: React.FC = () => {
                   animate={inView ? { opacity: 1, scale: 1 } : {}}
                   transition={{ duration: 0.4, delay: 0.1 * index }}
                   whileHover={{ y: -4, scale: 1.02 }}
-                  className="group p-4 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl bg-card/60 border border-border/30 hover:border-primary/40 hover:bg-card/80 transition-all duration-300 cursor-pointer"
+                  className="group p-4 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl bg-card/60 border border-border/30 backdrop-blur-sm hover:border-primary/40 hover:bg-card/80 transition-all duration-300 cursor-pointer"
                 >
                   <div className="flex flex-col sm:flex-row items-center sm:items-center gap-3 sm:gap-4">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-secondary to-secondary/60 flex items-center justify-center flex-shrink-0 group-hover:from-primary group-hover:to-primary/60 transition-all duration-300">

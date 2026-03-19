@@ -10,7 +10,7 @@ interface AnimatedCounterProps {
 const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ value, className, duration = 1500 }) => {
   const [displayValue, setDisplayValue] = useState('0');
   const [lastAnimatedValue, setLastAnimatedValue] = useState<string | null>(null);
-  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.3, fallbackInView: true });
+  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.3 });
 
   useEffect(() => {
     if (!inView || value === lastAnimatedValue) return;

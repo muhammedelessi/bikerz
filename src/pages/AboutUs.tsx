@@ -94,7 +94,7 @@ const AboutUs: React.FC = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative pt-[var(--navbar-h)] pb-16 sm:pb-20 overflow-hidden">
+      <section className="relative pt-24 pb-16 sm:pt-32 sm:pb-20 overflow-hidden">
         <div className="absolute inset-0">
           <img
             src={bgImage}

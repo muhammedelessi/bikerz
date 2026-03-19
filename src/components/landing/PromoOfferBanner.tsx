@@ -71,7 +71,7 @@ const PromoOfferBanner: React.FC = () => {
         transition={{ duration: 0.6 }}
         className="section-container relative z-10 !py-0"
       >
-        <div className="relative rounded-2xl border border-primary/30 bg-card/80 p-6 sm:p-8 overflow-hidden">
+        <div className="relative rounded-2xl border border-primary/30 bg-card/80 backdrop-blur-sm p-6 sm:p-8 overflow-hidden">
           {/* Glow effect */}
           <div className="absolute -top-20 -end-20 w-40 h-40 rounded-full bg-primary/20 blur-3xl" />
           <div className="absolute -bottom-20 -start-20 w-40 h-40 rounded-full bg-primary/10 blur-3xl" />

@@ -3,19 +3,30 @@ import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Play, Clock, BookOpen, ArrowRight, ArrowLeft } from "lucide-react";
+import { Play, Clock, BookOpen, ArrowRight, ArrowLeft, Timer } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import heroImage from "@/assets/hero-rider.jpg";
-import DiscountCountdown from "@/components/common/DiscountCountdown";
+import { useDiscountCountdown } from "@/hooks/useDiscountCountdown";
+
+const DiscountCountdownBadge: React.FC<{ expiresAt: string | null; isRTL: boolean }> = ({ expiresAt, isRTL }) => {
+  const { timeLeft, isExpired, hasExpiry } = useDiscountCountdown(expiresAt);
+  if (!hasExpiry || isExpired) return null;
+  return (
+    <div className="flex items-center gap-1 text-xs text-destructive font-mono font-bold">
+      <Timer className="w-3 h-3" />
+      <span>{timeLeft}</span>
+    </div>
+  );
+};
 
 const FeaturedCoursesSection: React.FC = () => {
   const { isRTL } = useLanguage();
   const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   const { data: courses = [], isLoading } = useQuery({
@@ -72,14 +83,14 @@ const FeaturedCoursesSection: React.FC = () => {
   if (!isLoading && courses.length === 0) return null;
 
   return (
-    <section ref={ref} className="relative py-10 sm:py-14 overflow-hidden">
+    <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-card/30 to-background" />
 
       <div className="section-container relative z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
           className="text-center mb-10 sm:mb-12"
         >
@@ -111,7 +122,7 @@ const FeaturedCoursesSection: React.FC = () => {
                   <motion.div
                     key={course.id}
                     initial={{ opacity: 0, y: 30 }}
-                    animate={inView ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
+                    animate={inView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.5, delay: index * 0.15 }}
                   >
                     <Link to={`/courses/${course.id}`}>
@@ -128,14 +139,14 @@ const FeaturedCoursesSection: React.FC = () => {
 
                           {/* Play button */}
                           <div className="absolute bottom-3 start-3">
-                            <div className="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center group-hover:scale-110 transition-transform shadow-glow">
+                            <div className="w-10 h-10 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform shadow-glow">
                               <Play className="w-4 h-4 text-primary-foreground ms-0.5" />
                             </div>
                           </div>
 
                           {/* Discount badge */}
                           {priceInfo.discountPct > 0 && (
-                            <div className="absolute top-3 end-3 px-2.5 py-1 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-bold">
+                            <div className="absolute top-3 end-3 px-2.5 py-1 rounded-full bg-destructive/90 backdrop-blur-sm text-destructive-foreground text-xs font-bold">
                               {isRTL ? `خصم ${priceInfo.discountPct}%` : `${priceInfo.discountPct}% OFF`}
                             </div>
                           )}
@@ -173,7 +184,7 @@ const FeaturedCoursesSection: React.FC = () => {
                               )}
                             </div>
                             {priceInfo.discountPct > 0 && course.discount_expires_at ? (
-                              <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
+                              <DiscountCountdownBadge expiresAt={course.discount_expires_at} isRTL={isRTL} />
                             ) : (
                               <span className="text-xs font-medium text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 {isRTL ? "عرض الدورة" : "View Course"}
@@ -192,7 +203,7 @@ const FeaturedCoursesSection: React.FC = () => {
         {/* View all button */}
         <motion.div
           initial={{ opacity: 0 }}
-          animate={inView ? { opacity: 1 } : { opacity: 1 }}
+          animate={inView ? { opacity: 1 } : {}}
           transition={{ duration: 0.5, delay: 0.4 }}
           className="text-center mt-8 sm:mt-10"
         >

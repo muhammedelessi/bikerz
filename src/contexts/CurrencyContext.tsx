@@ -131,23 +131,15 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined
 
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currencyCode, setCurrencyCodeState] = useState<CurrencyCode>(() => {
-    try {
-      const saved = sessionStorage.getItem(CURRENCY_CACHE_KEY);
-      if (saved && saved in CURRENCY_META) return saved as CurrencyCode;
-    } catch {
-      // Ignore restricted-storage environments on iOS
-    }
+    const saved = sessionStorage.getItem(CURRENCY_CACHE_KEY);
+    if (saved && saved in CURRENCY_META) return saved as CurrencyCode;
     return 'SAR';
   });
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [isDetecting, setIsDetecting] = useState(true);
-  const [detectedCountry, setDetectedCountry] = useState<string | null>(() => {
-    try {
-      return sessionStorage.getItem(COUNTRY_CACHE_KEY);
-    } catch {
-      return null;
-    }
-  });
+  const [detectedCountry, setDetectedCountry] = useState<string | null>(() =>
+    sessionStorage.getItem(COUNTRY_CACHE_KEY)
+  );
   const [countryPrices, setCountryPrices] = useState<CountryPrice[]>([]);
 
   const meta = CURRENCY_META[currencyCode];
@@ -177,13 +169,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     const loadRates = async () => {
       // Check sessionStorage cache
-      let cached: string | null = null;
-      try {
-        cached = sessionStorage.getItem(RATES_CACHE_KEY);
-      } catch {
-        cached = null;
-      }
-
+      const cached = sessionStorage.getItem(RATES_CACHE_KEY);
       if (cached) {
         try {
           const parsed: CachedRates = JSON.parse(cached);
@@ -195,17 +181,15 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       try {
-        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const timeout = setTimeout(function () { if (controller) controller.abort(); }, 8000);
-        const res = await fetch(
-          'https://open.er-api.com/v6/latest/SAR',
-          controller ? { signal: controller.signal } : undefined
-        );
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch('https://open.er-api.com/v6/latest/SAR', {
+          signal: controller.signal,
+        });
         clearTimeout(timeout);
-
         if (res.ok) {
           const data = await res.json();
-          if (data && data.rates) {
+          if (data?.rates) {
             const newRates: Record<string, number> = { SAR: 1 };
             for (const code of Object.keys(CURRENCY_META)) {
               if (data.rates[code] != null) {
@@ -213,15 +197,10 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               }
             }
             setRates(prev => ({ ...prev, ...newRates }));
-
-            try {
-              sessionStorage.setItem(
-                RATES_CACHE_KEY,
-                JSON.stringify({ rates: newRates, fetchedAt: Date.now() } as CachedRates)
-              );
-            } catch {
-              // Ignore restricted-storage environments on iOS
-            }
+            sessionStorage.setItem(
+              RATES_CACHE_KEY,
+              JSON.stringify({ rates: newRates, fetchedAt: Date.now() } as CachedRates)
+            );
           }
         }
       } catch {
@@ -234,13 +213,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // ── Auto-detect country on mount ──
   useEffect(() => {
-    let savedCurrency: string | null = null;
-    try {
-      savedCurrency = sessionStorage.getItem(CURRENCY_CACHE_KEY);
-    } catch {
-      savedCurrency = null;
-    }
-
+    const savedCurrency = sessionStorage.getItem(CURRENCY_CACHE_KEY);
     if (savedCurrency && savedCurrency in CURRENCY_META) {
       setIsDetecting(false);
       return;
@@ -248,40 +221,24 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const detectLocation = async () => {
       try {
-        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const timeout = setTimeout(function () { if (controller) controller.abort(); }, 5000);
-        const res = await fetch('https://ipapi.co/json/', controller ? { signal: controller.signal } : undefined);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
         clearTimeout(timeout);
-
         if (res.ok) {
           const data = await res.json();
-          const country = (data && data.country_code) ? data.country_code.toUpperCase() : null;
+          const country = data?.country_code?.toUpperCase() || null;
           setDetectedCountry(country);
-
-          if (country) {
-            try {
-              sessionStorage.setItem(COUNTRY_CACHE_KEY, country);
-            } catch {
-              // Ignore restricted-storage environments on iOS
-            }
-          }
+          if (country) sessionStorage.setItem(COUNTRY_CACHE_KEY, country);
 
           const detected = country ? COUNTRY_TO_CURRENCY[country] : undefined;
           if (detected) {
             setCurrencyCodeState(detected);
-            try {
-              sessionStorage.setItem(CURRENCY_CACHE_KEY, detected);
-            } catch {
-              // Ignore restricted-storage environments on iOS
-            }
+            sessionStorage.setItem(CURRENCY_CACHE_KEY, detected);
           } else {
             // Non-Arab country → USD
             setCurrencyCodeState('USD');
-            try {
-              sessionStorage.setItem(CURRENCY_CACHE_KEY, 'USD');
-            } catch {
-              // Ignore restricted-storage environments on iOS
-            }
+            sessionStorage.setItem(CURRENCY_CACHE_KEY, 'USD');
           }
         }
       } catch {
@@ -296,14 +253,10 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const setCurrency = useCallback((code: CurrencyCode) => {
     setCurrencyCodeState(code);
-    try {
-      sessionStorage.setItem(CURRENCY_CACHE_KEY, code);
-    } catch {
-      // Ignore restricted-storage environments on iOS
-    }
+    sessionStorage.setItem(CURRENCY_CACHE_KEY, code);
   }, []);
 
-  const rate = rates[currencyCode] != null ? rates[currencyCode] : (FALLBACK_RATES[currencyCode] != null ? FALLBACK_RATES[currencyCode] : 1);
+  const rate = rates[currencyCode] ?? FALLBACK_RATES[currencyCode] ?? 1;
 
   /** Check if country-specific price exists for a course */
   const hasCountryPrice = useCallback(

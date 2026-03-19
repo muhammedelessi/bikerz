@@ -23,8 +23,6 @@ interface UserProfile {
   postal_code: string | null;
   phone_verified: boolean;
   profile_complete: boolean;
-  date_of_birth: string | null;
-  gender: string | null;
 }
 
 interface AuthContextType {
@@ -80,8 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ]);
 
       const fetchedProfile = profileResult.data || null;
-      const rolesData = rolesResult.data;
-      const fetchedRoles = rolesData ? rolesData.map(function (r) { return r.role as AppRole; }) : [];
+      const fetchedRoles = rolesResult.data?.map((r) => r.role as AppRole) || [];
 
       return { profile: fetchedProfile, roles: fetchedRoles };
     } catch (error) {
@@ -96,24 +93,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initializeAuth = async () => {
       try {
         // Get existing session first
-        const {
-          data: { session: existingSession },
-        } = await (supabase.auth as any).getSession();
-
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        
         if (!mounted) return;
-
-        if (existingSession && existingSession.user) {
+        
+        if (existingSession?.user) {
           setSession(existingSession);
           setUser(existingSession.user);
-
+          
           const { profile: fetchedProfile, roles: fetchedRoles } = await fetchUserData(existingSession.user.id);
-
+          
           if (!mounted) return;
-
+          
           setProfile(fetchedProfile);
           setRoles(fetchedRoles);
         }
-
+        
         setIsLoading(false);
         setInitialized(true);
       } catch (error) {
@@ -128,15 +123,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
 
     // Set up auth state listener for subsequent changes
-    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(
-      async (_event: any, newSession: any) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
         if (!mounted || !initialized) return;
-
+        
         // Handle auth state changes after initialization
         setSession(newSession);
-        setUser(newSession && newSession.user ? newSession.user : null);
+        setUser(newSession?.user ?? null);
 
-        if (newSession && newSession.user) {
+        if (newSession?.user) {
           // Use setTimeout to avoid race conditions with Supabase's internal state
           setTimeout(async () => {
             if (!mounted) return;
@@ -160,7 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [fetchUserData, initialized]);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await (supabase.auth as any).signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -174,11 +169,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error, data } = await (supabase.auth as any).signInWithPassword({
+    const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-
+    
     // After successful sign in, fetch user data immediately
     if (!error && data.user) {
       const { profile: fetchedProfile, roles: fetchedRoles } = await fetchUserData(data.user.id);
@@ -187,12 +182,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(data.user);
       setSession(data.session);
     }
-
+    
     return { error: error as Error | null };
   };
 
   const signOut = async () => {
-    await (supabase.auth as any).signOut();
+    await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setProfile(null);

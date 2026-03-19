@@ -122,7 +122,7 @@ const CommunitySection: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={inView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-                className="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-card/60 border border-border/30 text-center"
+                className="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-card/60 border border-border/30 backdrop-blur-sm text-center"
               >
                 {isLoading ? (
                   <>
