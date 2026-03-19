@@ -243,20 +243,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return Object.keys(newErrors).length === 0;
   }, [fullName, email, phone, isRTL]);
 
-  const effectiveCity = isOtherCity ? manualCity.trim() : city.trim();
+  const effectiveCity = city.trim();
 
   const validateBilling = useCallback((): boolean => {
     const newErrors: ValidationErrors = {};
-    const cityValue = isOtherCity ? manualCity.trim() : city.trim();
-    if (!cityValue) {
+    if (!city.trim()) {
       newErrors.city = isRTL ? 'المدينة مطلوبة' : 'City is required';
     }
-    if (!country) {
+    if (!country.trim()) {
       newErrors.country = isRTL ? 'الدولة مطلوبة' : 'Country is required';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [city, manualCity, isOtherCity, country, isRTL]);
+  }, [city, country, isRTL]);
 
   const isProfileValid = fullName.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && /^[0-9+\s()-]{7,15}$/.test(phone);
   const isBillingValid = effectiveCity.length > 0 && !!country;
