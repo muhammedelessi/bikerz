@@ -94,7 +94,7 @@ const HeroSection: React.FC = () => {
   const heroImage = (content as any)?.background_image || defaultHeroImage;
 
   return (
-    <section className="relative min-h-[85svh] flex items-center justify-center overflow-hidden pt-8 sm:pt-10 lg:pt-12">
+    <section className="relative min-h-[80svh] flex items-center justify-center overflow-hidden pt-6 sm:pt-8 lg:pt-10">
       {/* Background Image with cinematic overlay */}
       <div className="absolute inset-0">
         <img
