@@ -1346,9 +1346,11 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
+          date_of_birth: string | null
           engine_size_cc: number | null
           experience_level: string | null
           full_name: string | null
+          gender: string | null
           id: string
           phone: string | null
           phone_verified: boolean
@@ -1366,9 +1368,11 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           engine_size_cc?: number | null
           experience_level?: string | null
           full_name?: string | null
+          gender?: string | null
           id?: string
           phone?: string | null
           phone_verified?: boolean
@@ -1386,9 +1390,11 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           engine_size_cc?: number | null
           experience_level?: string | null
           full_name?: string | null
+          gender?: string | null
           id?: string
           phone?: string | null
           phone_verified?: boolean
@@ -2683,6 +2689,17 @@ export type Database = {
       }
     }
     Functions: {
+      add_xp_secure: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_description_ar?: string
+          p_source_id?: string
+          p_source_type: string
+        }
+        Returns: Json
+      }
+      award_badge_secure: { Args: { p_badge_id: string }; Returns: Json }
       get_user_course_statuses: {
         Args: { p_user_id: string }
         Returns: {
