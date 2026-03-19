@@ -267,14 +267,17 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="bg-card border-border max-h-[95dvh]">
-          <DrawerHeader className="pb-1 pt-2">
+        <DrawerContent className="bg-card border-border max-h-[95dvh]" style={{ maxHeight: '95dvh' }}>
+          <DrawerHeader className="pb-1 pt-2 flex-shrink-0">
             <DrawerTitle className="text-base font-bold text-center">
               {titleText}
             </DrawerTitle>
             {headerContent}
           </DrawerHeader>
-          <div className="overflow-y-auto pb-safe overscroll-contain">
+          <div
+            className="overflow-y-auto pb-safe overscroll-contain flex-1"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             {formContent}
           </div>
         </DrawerContent>
