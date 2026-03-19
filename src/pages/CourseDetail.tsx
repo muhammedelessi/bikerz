@@ -44,9 +44,6 @@ import PaymentMethodIcons from '@/components/checkout/PaymentMethodIcons';
 import { trackViewContent } from '@/utils/metaPixel';
 import CourseReviews from '@/components/course/CourseReviews';
 import StarRating from '@/components/course/StarRating';
-import { useDiscountCountdown } from '@/hooks/useDiscountCountdown';
-import DiscountCountdown from '@/components/common/DiscountCountdown';
-import DiscountUrgencyBanner from '@/components/landing/DiscountUrgencyBanner';
 
 
 interface Lesson {
@@ -285,9 +282,8 @@ const CourseDetail: React.FC = () => {
     },
   });
 
-  // Discount countdown
-  const discountCountdown = useDiscountCountdown((course as any)?.discount_expires_at);
-  const effectiveDiscount = discountCountdown.isExpired ? 0 : (course?.discount_percentage || 0);
+  // Discount
+  const effectiveDiscount = course?.discount_percentage || 0;
 
   // Calculations
   const totalLessons = chapters.reduce((acc, ch) => acc + ch.lessons.length, 0);
@@ -426,7 +422,7 @@ const CourseDetail: React.FC = () => {
       />
       <Navbar />
       <div className="pt-[var(--navbar-h)]">
-      <DiscountUrgencyBanner courseId={id} />
+      
 
       {/* Sticky Header — appears on scroll */}
       <AnimatePresence>
