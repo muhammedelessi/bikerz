@@ -133,7 +133,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
-  const [country, setCountry] = useState('');
+  const [country, setCountry] = useState<string | undefined>(undefined);
   const [postalCode, setPostalCode] = useState('');
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [profileSaving, setProfileSaving] = useState(false);
@@ -747,7 +747,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'الدولة' : 'Country'} <span className="text-destructive">*</span></Label>
-                    <Select value={country} onValueChange={(v) => { setCountry(v); setErrors(prev => ({ ...prev, country: undefined })); }}>
+                    <Select value={country || undefined} onValueChange={(v) => { setCountry(v); setErrors(prev => ({ ...prev, country: undefined })); }}>
                       <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
                         <SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} />
                       </SelectTrigger>
@@ -928,7 +928,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">{isRTL ? 'الموقع' : 'Location'}</span>
-                          <span className="font-medium">{city}{country ? `, ${GCC_COUNTRIES.find(c => c.code === country)?.[isRTL ? 'name_ar' : 'name'] || country}` : ''}</span>
+                          <span className="font-medium">{city}{country ? ', ' + (function() { var found = GCC_COUNTRIES.find(function(c) { return c.code === country; }); return found ? (isRTL ? found.name_ar : found.name) : country; })() : ''}</span>
                         </div>
                         <Separator />
                         {/* Price breakdown */}
