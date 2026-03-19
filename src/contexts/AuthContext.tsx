@@ -80,7 +80,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ]);
 
       const fetchedProfile = profileResult.data || null;
-      const fetchedRoles = rolesResult.data?.map((r) => r.role as AppRole) || [];
+      const rolesData = rolesResult.data;
+      const fetchedRoles = rolesData ? rolesData.map(function (r) { return r.role as AppRole; }) : [];
 
       return { profile: fetchedProfile, roles: fetchedRoles };
     } catch (error) {
