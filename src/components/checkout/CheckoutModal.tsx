@@ -122,10 +122,43 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
-  
+  const [cityManual, setCityManual] = useState('');
+  const [isOtherCity, setIsOtherCity] = useState(false);
   const [country, setCountry] = useState('');
+  const [selectedCountryCode, setSelectedCountryCode] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [errors, setErrors] = useState<ValidationErrors>({});
+  const [profileSaving, setProfileSaving] = useState(false);
+
+  const selectedCountry = useMemo(
+    () => COUNTRIES.find(function (c) { return c.code === selectedCountryCode; }) || null,
+    [selectedCountryCode]
+  );
+
+  const handleCountryChange = function (code: string) {
+    setSelectedCountryCode(code);
+    var found = COUNTRIES.find(function (c) { return c.code === code; });
+    if (found) {
+      setCountry(isRTL ? found.ar : found.en);
+    }
+    setCity('');
+    setCityManual('');
+    setIsOtherCity(false);
+    setErrors(function (prev) { return Object.assign({}, prev, { country: undefined, city: undefined }); });
+  };
+
+  var handleCityChange = function (val: string) {
+    if (val === '__other__') {
+      setIsOtherCity(true);
+      setCity('');
+      setCityManual('');
+    } else {
+      setIsOtherCity(false);
+      setCity(val);
+      setCityManual('');
+    }
+    setErrors(function (prev) { return Object.assign({}, prev, { city: undefined }); });
+  };
   const [profileSaving, setProfileSaving] = useState(false);
 
   
