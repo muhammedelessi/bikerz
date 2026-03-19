@@ -771,36 +771,56 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <Label>{isRTL ? 'الدولة' : 'Country'} <span className="text-destructive">*</span></Label>
                     <SearchableDropdown
                       options={countryOptions}
-                      value={selectedCountryCode}
+                      value={isOtherCountry ? '__other__' : selectedCountryCode}
                       onChange={handleCountryChange}
                       placeholder={isRTL ? 'اختر الدولة' : 'Select country'}
                       searchPlaceholder={isRTL ? 'ابحث عن دولة...' : 'Search country...'}
                       hasError={!!errors.country}
                       dir={isRTL ? 'rtl' : 'ltr'}
                     />
+                    {isOtherCountry && (
+                      <Input
+                        value={countryManual}
+                        onChange={function (e) { setCountryManual(e.target.value); setCountry(e.target.value); setErrors(function (prev) { return Object.assign({}, prev, { country: undefined }); }); }}
+                        placeholder={isRTL ? 'أدخل اسم الدولة' : 'Enter country name'}
+                        className={errors.country ? 'border-destructive' : ''}
+                        autoFocus
+                      />
+                    )}
                     {renderFieldError('country')}
                   </div>
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
-                    <SearchableDropdown
-                      options={cityOptions}
-                      value={isOtherCity ? '__other__' : city}
-                      onChange={handleCityChange}
-                      placeholder={isRTL ? (selectedCountry ? 'اختر المدينة' : 'اختر الدولة أولاً') : (selectedCountry ? 'Select city' : 'Select a country first')}
-                      searchPlaceholder={isRTL ? 'ابحث عن مدينة...' : 'Search city...'}
-                      hasError={!!errors.city}
-                      disabled={!selectedCountry}
-                      dir={isRTL ? 'rtl' : 'ltr'}
-                    />
-                    {isOtherCity && (
+                    {isOtherCountry ? (
                       <Input
                         value={cityManual}
                         onChange={function (e) { setCityManual(e.target.value); setErrors(function (prev) { return Object.assign({}, prev, { city: undefined }); }); }}
                         placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
                         className={errors.city ? 'border-destructive' : ''}
-                        autoFocus
                       />
+                    ) : (
+                      <>
+                        <SearchableDropdown
+                          options={cityOptions}
+                          value={isOtherCity ? '__other__' : city}
+                          onChange={handleCityChange}
+                          placeholder={isRTL ? (selectedCountry ? 'اختر المدينة' : 'اختر الدولة أولاً') : (selectedCountry ? 'Select city' : 'Select a country first')}
+                          searchPlaceholder={isRTL ? 'ابحث عن مدينة...' : 'Search city...'}
+                          hasError={!!errors.city}
+                          disabled={!selectedCountry}
+                          dir={isRTL ? 'rtl' : 'ltr'}
+                        />
+                        {isOtherCity && (
+                          <Input
+                            value={cityManual}
+                            onChange={function (e) { setCityManual(e.target.value); setErrors(function (prev) { return Object.assign({}, prev, { city: undefined }); }); }}
+                            placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
+                            className={errors.city ? 'border-destructive' : ''}
+                            autoFocus
+                          />
+                        )}
+                      </>
                     )}
                     {renderFieldError('city')}
                   </div>
