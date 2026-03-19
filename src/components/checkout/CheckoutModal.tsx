@@ -773,6 +773,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     {renderFieldError('city')}
                   </div>
 
+                  <div className="space-y-2">
+                    <Label>{isRTL ? 'الرمز البريدي' : 'Postal Code'} <span className="text-muted-foreground text-xs">({isRTL ? 'اختياري' : 'optional'})</span></Label>
+                    <Input
+                      value={postalCode}
+                      onChange={(e) => setPostalCode(e.target.value)}
+                      placeholder={isRTL ? 'الرمز البريدي' : 'Postal code'}
+                    />
+                  </div>
 
                   {/* Summary preview */}
                   <div className="p-3 rounded-lg bg-muted/30 mt-2">

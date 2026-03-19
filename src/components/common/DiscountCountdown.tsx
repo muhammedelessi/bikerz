@@ -28,17 +28,14 @@ const DiscountCountdown: React.FC<DiscountCountdownProps> = ({ expiresAt, isRTL,
       ];
 
   return (
-    <div className={`flex items-center gap-1 flex-wrap justify-end ${className}`}>
-      <Timer className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-accent-orange animate-pulse flex-shrink-0" />
-      <span className="text-[10px] sm:text-[11px] font-semibold text-accent-orange/80 whitespace-nowrap">{label}</span>
-      <span className="text-[10px] sm:text-xs font-mono font-bold text-accent-orange whitespace-nowrap">
-        {parts.map((p, i) => (
-          <React.Fragment key={i}>
-            {i > 0 && <span className="mx-px">-</span>}
-            {p.value}{p.unit}
-          </React.Fragment>
-        ))}
-      </span>
+    <div className={`flex items-center gap-1.5 whitespace-nowrap ${className}`}>
+      <Timer className="w-3.5 h-3.5 text-accent-orange animate-pulse flex-shrink-0" />
+      <span className="text-[11px] font-semibold text-accent-orange/80">{label}</span>
+      {parts.map((p, i) => (
+        <span key={i} className="text-xs font-mono font-bold text-accent-orange">
+          {p.value}{p.unit}
+        </span>
+      ))}
     </div>
   );
 };

@@ -94,24 +94,20 @@ const slideVariants = {
   }),
 };
 
-const DiscountUrgencyBanner: React.FC<{ courseId?: string }> = ({ courseId }) => {
+const DiscountUrgencyBanner: React.FC = () => {
   const { isRTL } = useLanguage();
   const [[activeIndex, direction], setActiveIndex] = useState([0, 1]);
 
   const { data: discountedCourses } = useQuery({
-    queryKey: ["homepage-discount-banner-carousel", courseId],
+    queryKey: ["homepage-discount-banner-carousel"],
     queryFn: async () => {
       const now = new Date().toISOString();
-      let query = supabase
+      const { data, error } = await supabase
         .from("courses")
         .select("id, title, title_ar, price, discount_percentage, discount_expires_at")
         .eq("is_published", true)
         .gt("discount_percentage", 0)
-        .gt("discount_expires_at", now);
-      if (courseId) {
-        query = query.eq("id", courseId);
-      }
-      const { data, error } = await query
+        .gt("discount_expires_at", now)
         .order("discount_percentage", { ascending: false })
         .limit(10);
       if (error) throw error;
