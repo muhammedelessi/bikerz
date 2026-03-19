@@ -133,10 +133,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   );
 
   const handleCountryChange = function (code: string) {
-    setSelectedCountryCode(code);
-    var found = COUNTRIES.find(function (c) { return c.code === code; });
-    if (found) {
-      setCountry(isRTL ? found.ar : found.en);
+    if (code === '__other__') {
+      setIsOtherCountry(true);
+      setSelectedCountryCode('');
+      setCountry('');
+      setCountryManual('');
+    } else {
+      setIsOtherCountry(false);
+      setSelectedCountryCode(code);
+      setCountryManual('');
+      var found = COUNTRIES.find(function (c) { return c.code === code; });
+      if (found) {
+        setCountry(isRTL ? found.ar : found.en);
+      }
     }
     setCity('');
     setCityManual('');
@@ -158,9 +167,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   var countryOptions = useMemo(function (): DropdownOption[] {
-    return COUNTRIES.map(function (c) {
+    var items = COUNTRIES.map(function (c) {
       return { value: c.code, label: isRTL ? c.ar : c.en };
     });
+    items.push({ value: '__other__', label: isRTL ? OTHER_OPTION.ar : OTHER_OPTION.en });
+    return items;
   }, [isRTL]);
 
   var cityOptions = useMemo(function (): DropdownOption[] {
