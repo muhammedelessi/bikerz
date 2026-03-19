@@ -5,7 +5,7 @@ import HeroSection from "@/components/landing/HeroSection";
 import WhySection from "@/components/landing/WhySection";
 import JourneySection from "@/components/landing/JourneySection";
 import FeaturedCoursesSection from "@/components/landing/FeaturedCoursesSection";
-import DiscountUrgencyBanner from "@/components/landing/DiscountUrgencyBanner";
+
 import CTASection from "@/components/landing/CTASection";
 import SEOHead from "@/components/common/SEOHead";
 
