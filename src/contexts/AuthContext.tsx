@@ -102,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (!mounted) return;
 
-        if (existingSession?.user) {
+        if (existingSession && existingSession.user) {
           setSession(existingSession);
           setUser(existingSession.user);
 
