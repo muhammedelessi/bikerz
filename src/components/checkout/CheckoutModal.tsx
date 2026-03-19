@@ -276,11 +276,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return Object.keys(newErrors).length === 0;
   }, [fullName, email, phone, isRTL]);
 
-  const effectiveCity = city.trim();
+  const effectiveCity = isOtherCity ? cityManual.trim() : city.trim();
 
-  const validateBilling = useCallback((): boolean => {
-    const newErrors: ValidationErrors = {};
-    if (!city.trim()) {
+  const validateBilling = useCallback(function (): boolean {
+    var newErrors: ValidationErrors = {};
+    var c = isOtherCity ? cityManual.trim() : city.trim();
+    if (!c) {
       newErrors.city = isRTL ? 'المدينة مطلوبة' : 'City is required';
     }
     if (!country.trim()) {
@@ -288,10 +289,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [city, country, isRTL]);
+  }, [city, cityManual, isOtherCity, country, isRTL]);
 
   const isProfileValid = fullName.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && /^[0-9+\s()-]{7,15}$/.test(phone);
-  const isBillingValid = city.trim().length > 0 && country.trim().length > 0;
+  const isBillingValid = (isOtherCity ? cityManual.trim().length > 0 : city.trim().length > 0) && country.trim().length > 0;
   // For guest users, isReady won't be true yet - we'll handle signup before payment
   const isPaymentReady = isProfileValid && isBillingValid && (user ? isReady : true);
 
