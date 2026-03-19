@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Country, City, ICountry, ICity } from 'country-state-city';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -67,6 +66,18 @@ type CheckoutStep = 'profile' | 'billing' | 'profile-reminder' | 'payment';
 
 const CHECKOUT_STEPS_DISPLAY: CheckoutStep[] = ['profile', 'billing', 'payment'];
 
+const GCC_COUNTRIES = [
+  { code: 'SA', name: 'Saudi Arabia', name_ar: 'المملكة العربية السعودية' },
+  { code: 'AE', name: 'United Arab Emirates', name_ar: 'الإمارات العربية المتحدة' },
+  { code: 'KW', name: 'Kuwait', name_ar: 'الكويت' },
+  { code: 'BH', name: 'Bahrain', name_ar: 'البحرين' },
+  { code: 'QA', name: 'Qatar', name_ar: 'قطر' },
+  { code: 'OM', name: 'Oman', name_ar: 'عُمان' },
+  { code: 'EG', name: 'Egypt', name_ar: 'مصر' },
+  { code: 'JO', name: 'Jordan', name_ar: 'الأردن' },
+  { code: 'IQ', name: 'Iraq', name_ar: 'العراق' },
+  { code: 'OTHER', name: 'Other', name_ar: 'أخرى' },
+];
 
 interface ValidationErrors {
   fullName?: string;
@@ -122,38 +133,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
-  const [cityOther, setCityOther] = useState('');
   const [country, setCountry] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [profileSaving, setProfileSaving] = useState(false);
-
-  // Countries & cities from library
-  const allCountries = useMemo(() => Country.getAllCountries(), []);
-  const citiesForCountry = useMemo(() => {
-    if (!country) return [];
-    return City.getCitiesOfCountry(country) || [];
-  }, [country]);
-
-  // Auto-detect country by IP
-  useEffect(() => {
-    if (!open || country) return;
-    const detectCountry = async () => {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
-        const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
-        clearTimeout(timeout);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.country_code && !country) {
-            setCountry(data.country_code);
-          }
-        }
-      } catch {}
-    };
-    detectCountry();
-  }, [open]);
   
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
@@ -270,12 +253,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return Object.keys(newErrors).length === 0;
   }, [fullName, email, phone, isRTL]);
 
-  const effectiveCity = city === '__other__' ? cityOther.trim() : city.trim();
-
   const validateBilling = useCallback((): boolean => {
     const newErrors: ValidationErrors = {};
-    const ec = city === '__other__' ? cityOther.trim() : city.trim();
-    if (!ec) {
+    if (!city.trim()) {
       newErrors.city = isRTL ? 'المدينة مطلوبة' : 'City is required';
     }
     if (!country) {
@@ -283,10 +263,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [city, cityOther, country, isRTL]);
+  }, [city, country, isRTL]);
 
   const isProfileValid = fullName.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && /^[0-9+\s()-]{7,15}$/.test(phone);
-  const isBillingValid = effectiveCity.length > 0 && !!country;
+  const isBillingValid = city.trim().length > 0 && !!country;
   // For guest users, isReady won't be true yet - we'll handle signup before payment
   const isPaymentReady = isProfileValid && isBillingValid && (user ? isReady : true);
 
@@ -301,7 +281,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         .update({
           full_name: fullName.trim(),
           phone: phone.trim(),
-          city: effectiveCity,
+          city: city.trim(),
           country,
           postal_code: postalCode.trim() || null,
           profile_complete: true,
@@ -471,7 +451,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     onPaymentStarted?.();
 
     // Compose address from billing fields
-    const composedAddress = [effectiveCity, country, postalCode].filter(Boolean).join(', ');
+    const composedAddress = [city, country, postalCode].filter(Boolean).join(', ');
 
     // For guest users: auto-create account first
     let currentUserId = user?.id;
@@ -767,14 +747,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'الدولة' : 'Country'} <span className="text-destructive">*</span></Label>
-                    <Select value={country} onValueChange={(v) => { setCountry(v); setCity(''); setCityOther(''); setErrors(prev => ({ ...prev, country: undefined })); }}>
+                    <Select value={country} onValueChange={(v) => { setCountry(v); setErrors(prev => ({ ...prev, country: undefined })); }}>
                       <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
                         <SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} />
                       </SelectTrigger>
-                      <SelectContent className="max-h-[200px]">
-                        {allCountries.map((c) => (
-                          <SelectItem key={c.isoCode} value={c.isoCode}>
-                            {c.flag} {c.name}
+                      <SelectContent>
+                        {GCC_COUNTRIES.map((c) => (
+                          <SelectItem key={c.code} value={c.code}>
+                            {isRTL ? c.name_ar : c.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -784,40 +764,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
-                    {citiesForCountry.length > 0 ? (
-                      <>
-                        <Select value={city} onValueChange={(v) => { setCity(v); if (v !== '__other__') setCityOther(''); setErrors(prev => ({ ...prev, city: undefined })); }}>
-                          <SelectTrigger className={errors.city ? 'border-destructive' : ''}>
-                            <SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-[200px]">
-                            {citiesForCountry.map((c, i) => (
-                              <SelectItem key={`${c.name}-${i}`} value={c.name}>
-                                {c.name}
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="__other__">
-                              {isRTL ? 'أخرى' : 'Other'}
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {city === '__other__' && (
-                          <Input
-                            value={cityOther}
-                            onChange={(e) => { setCityOther(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
-                            placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
-                            className="mt-2"
-                          />
-                        )}
-                      </>
-                    ) : (
-                      <Input
-                        value={city}
-                        onChange={(e) => { setCity(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
-                        placeholder={isRTL ? 'أدخل مدينتك' : 'Enter your city'}
-                        className={errors.city ? 'border-destructive' : ''}
-                      />
-                    )}
+                    <Input
+                      value={city}
+                      onChange={(e) => { setCity(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
+                      placeholder={isRTL ? 'أدخل مدينتك' : 'Enter your city'}
+                      className={errors.city ? 'border-destructive' : ''}
+                    />
                     {renderFieldError('city')}
                   </div>
 
@@ -976,7 +928,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">{isRTL ? 'الموقع' : 'Location'}</span>
-                          <span className="font-medium">{city === '__other__' ? cityOther : city}{country ? `, ${Country.getCountryByCode(country)?.name || country}` : ''}</span>
+                          <span className="font-medium">{city}{country ? `, ${GCC_COUNTRIES.find(c => c.code === country)?.[isRTL ? 'name_ar' : 'name'] || country}` : ''}</span>
                         </div>
                         <Separator />
                         {/* Price breakdown */}
