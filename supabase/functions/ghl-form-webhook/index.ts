@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
     console.log(`GHL form webhook response [${webhookRes.status}]: ${responseText}`)
 
     if (!webhookRes.ok) {
-      throw new Error(`Webhook failed with status ${webhookRes.status}`)
+      console.warn(`GHL webhook returned non-OK status ${webhookRes.status}, continuing gracefully`)
     }
 
     return new Response(JSON.stringify({ success: true }), {
