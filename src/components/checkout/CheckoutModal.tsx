@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { COUNTRIES, OTHER_OPTION, type CountryEntry } from '@/data/countryCityData';
+import SearchableDropdown from '@/components/checkout/SearchableDropdown';
+import type { DropdownOption } from '@/components/checkout/SearchableDropdown';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
