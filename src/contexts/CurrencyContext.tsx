@@ -249,7 +249,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const detectLocation = async () => {
       try {
         const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const timeout = setTimeout(() => controller?.abort(), 5000);
+        const timeout = setTimeout(function () { if (controller) controller.abort(); }, 5000);
         const res = await fetch('https://ipapi.co/json/', controller ? { signal: controller.signal } : undefined);
         clearTimeout(timeout);
 
