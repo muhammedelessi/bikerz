@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import heroImage from "@/assets/hero-rider.jpg";
-import DiscountCountdown from "@/components/common/DiscountCountdown";
+
 
 const FeaturedCoursesSection: React.FC = () => {
   const { isRTL } = useLanguage();
