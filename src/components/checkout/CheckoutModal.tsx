@@ -747,7 +747,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'الدولة' : 'Country'} <span className="text-destructive">*</span></Label>
-                    <Select value={country} onValueChange={(v) => { setCountry(v); setErrors(prev => ({ ...prev, country: undefined })); }}>
+                    <Select value={country || ""} onValueChange={function(v) { setCountry(v); setErrors(function(prev) { return Object.assign({}, prev, { country: undefined }); }); }}>
                       <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
                         <SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} />
                       </SelectTrigger>
