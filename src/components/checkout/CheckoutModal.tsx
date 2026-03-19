@@ -221,8 +221,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setAppliedCoupon(null);
       setPromoLoading(false);
       setErrors({});
-      setIsOtherCity(false);
-      setManualCity('');
       resetPayment();
     }
   }, [open, resetPayment]);
