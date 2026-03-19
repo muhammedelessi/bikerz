@@ -1,11 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Country, City, ICountry, ICity } from 'country-state-city';
-import countries from 'i18n-iso-countries';
-import arLocale from 'i18n-iso-countries/langs/ar.json';
-import { getCitiesByCountryCode } from 'countries-cities-ar';
-import SearchableSelect from '@/components/checkout/SearchableSelect';
-
-countries.registerLocale(arLocale);
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -128,58 +122,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
-  
+  const [cityOther, setCityOther] = useState('');
   const [country, setCountry] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [profileSaving, setProfileSaving] = useState(false);
 
-  // Gulf countries to prioritize
-  const GULF_CODES = ['SA', 'AE', 'KW', 'BH', 'QA', 'OM'];
-
   // Countries & cities from library
-  const countryOptions = useMemo(() => {
-    const all = Country.getAllCountries().map((c) => ({
-      value: c.isoCode,
-      label: `${c.flag} ${isRTL ? (countries.getName(c.isoCode, 'ar') || c.name) : c.name}`,
-      searchLabel: `${c.name} ${countries.getName(c.isoCode, 'ar') || ''}`,
-    }));
-    const gulf = GULF_CODES.map(code => all.find(c => c.value === code)).filter(Boolean) as typeof all;
-    const rest = all.filter(c => !GULF_CODES.includes(c.value));
-    return [...gulf, ...rest];
-  }, [isRTL]);
-
-  const cityOptions = useMemo(() => {
-    if (!country) return [];
-    // Try Arabic city names first
-    let arCities: string[] = [];
-    try {
-      const citiesAr = getCitiesByCountryCode(country);
-      if (citiesAr && citiesAr.length > 0) {
-        arCities = citiesAr.map((c: any) => typeof c === 'string' ? c : (c.name_ar || c.name || c));
-      }
-    } catch {}
-    
-    const enCities = City.getCitiesOfCountry(country) || [];
-    
-    const opts = enCities.map((c, i) => {
-      const arName = arCities[i] || '';
-      return {
-        value: c.name,
-        label: isRTL && arName ? arName : c.name,
-        searchLabel: `${c.name} ${arName}`,
-      };
-    });
-    
-    // If Arabic lib has more cities not in english lib
-    if (arCities.length > enCities.length && isRTL) {
-      // Already covered by enCities mapping
-    }
-    
-    return opts;
-    return opts;
-  }, [country, isRTL]);
-
+  const allCountries = useMemo(() => Country.getAllCountries(), []);
   const citiesForCountry = useMemo(() => {
     if (!country) return [];
     return City.getCitiesOfCountry(country) || [];
@@ -320,11 +270,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return Object.keys(newErrors).length === 0;
   }, [fullName, email, phone, isRTL]);
 
-  const effectiveCity = city.trim();
+  const effectiveCity = city === '__other__' ? cityOther.trim() : city.trim();
 
   const validateBilling = useCallback((): boolean => {
     const newErrors: ValidationErrors = {};
-    if (!city.trim()) {
+    const ec = city === '__other__' ? cityOther.trim() : city.trim();
+    if (!ec) {
       newErrors.city = isRTL ? 'المدينة مطلوبة' : 'City is required';
     }
     if (!country) {
@@ -332,7 +283,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [city, country, isRTL]);
+  }, [city, cityOther, country, isRTL]);
 
   const isProfileValid = fullName.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && /^[0-9+\s()-]{7,15}$/.test(phone);
   const isBillingValid = effectiveCity.length > 0 && !!country;
@@ -816,29 +767,57 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'الدولة' : 'Country'} <span className="text-destructive">*</span></Label>
-                    <SearchableSelect
-                      options={countryOptions}
-                      value={country}
-                      onValueChange={(v) => { setCountry(v); setCity(''); setErrors(prev => ({ ...prev, country: undefined })); }}
-                      placeholder={isRTL ? 'اختر الدولة' : 'Select country'}
-                      searchPlaceholder={isRTL ? 'ابحث عن دولة...' : 'Search country...'}
-                      emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
-                      hasError={!!errors.country}
-                    />
+                    <Select value={country} onValueChange={(v) => { setCountry(v); setCity(''); setCityOther(''); setErrors(prev => ({ ...prev, country: undefined })); }}>
+                      <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
+                        <SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[200px]">
+                        {allCountries.map((c) => (
+                          <SelectItem key={c.isoCode} value={c.isoCode}>
+                            {c.flag} {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {renderFieldError('country')}
                   </div>
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
-                    <SearchableSelect
-                      options={cityOptions}
-                      value={city}
-                      onValueChange={(v) => { setCity(v); setErrors(prev => ({ ...prev, city: undefined })); }}
-                      placeholder={country ? (isRTL ? 'اختر المدينة' : 'Select city') : (isRTL ? 'اختر الدولة أولاً' : 'Select country first')}
-                      searchPlaceholder={isRTL ? 'ابحث عن مدينة...' : 'Search city...'}
-                      emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
-                      hasError={!!errors.city}
-                    />
+                    {citiesForCountry.length > 0 ? (
+                      <>
+                        <Select value={city} onValueChange={(v) => { setCity(v); if (v !== '__other__') setCityOther(''); setErrors(prev => ({ ...prev, city: undefined })); }}>
+                          <SelectTrigger className={errors.city ? 'border-destructive' : ''}>
+                            <SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[200px]">
+                            {citiesForCountry.map((c, i) => (
+                              <SelectItem key={`${c.name}-${i}`} value={c.name}>
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="__other__">
+                              {isRTL ? 'أخرى' : 'Other'}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {city === '__other__' && (
+                          <Input
+                            value={cityOther}
+                            onChange={(e) => { setCityOther(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
+                            placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
+                            className="mt-2"
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <Input
+                        value={city}
+                        onChange={(e) => { setCity(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
+                        placeholder={isRTL ? 'أدخل مدينتك' : 'Enter your city'}
+                        className={errors.city ? 'border-destructive' : ''}
+                      />
+                    )}
                     {renderFieldError('city')}
                   </div>
 
@@ -997,7 +976,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">{isRTL ? 'الموقع' : 'Location'}</span>
-                          <span className="font-medium">{city}{country ? `, ${isRTL ? (countries.getName(country, 'ar') || Country.getCountryByCode(country)?.name || country) : (Country.getCountryByCode(country)?.name || country)}` : ''}</span>
+                          <span className="font-medium">{city === '__other__' ? cityOther : city}{country ? `, ${Country.getCountryByCode(country)?.name || country}` : ''}</span>
                         </div>
                         <Separator />
                         {/* Price breakdown */}
