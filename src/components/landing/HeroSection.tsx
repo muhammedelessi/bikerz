@@ -140,7 +140,7 @@ const HeroSection: React.FC = () => {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 backdrop-blur-md shadow-[0_0_20px_hsl(var(--primary)/0.1)]"
+              className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-xl shadow-[0_0_30px_hsl(var(--primary)/0.15)]"
             >
               <Sparkles className="w-3.5 h-3.5 text-primary" />
               <span className="text-xs sm:text-sm text-primary/90 font-semibold tracking-wide">
