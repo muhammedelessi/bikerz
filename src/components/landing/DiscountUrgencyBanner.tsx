@@ -106,9 +106,9 @@ var DiscountUrgencyBanner: React.FC<{ courseId?: string }> = function (props) {
   var activeIndex = activeState[0];
   var direction = activeState[1];
 
-  var queryResult = useQuery({
+  var queryResult = useQuery<DiscountedCourse[]>({
     queryKey: ["homepage-discount-banner-carousel", courseId],
-    queryFn: function () {
+    queryFn: async function () {
       var now = new Date().toISOString();
       var query = supabase
         .from("courses")
@@ -119,13 +119,11 @@ var DiscountUrgencyBanner: React.FC<{ courseId?: string }> = function (props) {
       if (courseId) {
         query = query.eq("id", courseId);
       }
-      return query
+      var res = await query
         .order("discount_percentage", { ascending: false })
-        .limit(10)
-        .then(function (res) {
-          if (res.error) throw res.error;
-          return (res.data || []) as DiscountedCourse[];
-        });
+        .limit(10);
+      if (res.error) throw res.error;
+      return (res.data || []) as DiscountedCourse[];
     },
     staleTime: 60 * 1000,
   });
