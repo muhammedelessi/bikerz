@@ -94,7 +94,7 @@ const HeroSection: React.FC = () => {
   const heroImage = (content as any)?.background_image || defaultHeroImage;
 
   return (
-    <section className="relative min-h-[85svh] flex items-center justify-center overflow-hidden pt-8 sm:pt-10 lg:pt-12">
+    <section className="relative min-h-[80svh] flex items-center justify-center overflow-hidden pt-6 sm:pt-8 lg:pt-10">
       {/* Background Image with cinematic overlay */}
       <div className="absolute inset-0">
         <img
@@ -132,7 +132,7 @@ const HeroSection: React.FC = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          className="space-y-5 sm:space-y-7"
+          className="space-y-4 sm:space-y-6"
         >
           {/* Badge */}
           {showBadge && (
@@ -140,10 +140,10 @@ const HeroSection: React.FC = () => {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 backdrop-blur-md shadow-[0_0_20px_hsl(var(--primary)/0.1)]"
+              className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-xl shadow-[0_0_30px_hsl(var(--primary)/0.15)]"
             >
               <Sparkles className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs sm:text-sm text-primary/90 font-semibold tracking-wide">
+              <span className="text-xs sm:text-sm text-primary font-bold tracking-wider uppercase">
                 {membersValue} {badgeText}
               </span>
             </motion.div>
@@ -157,7 +157,7 @@ const HeroSection: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="hero-text max-w-4xl mx-auto leading-[1.1] drop-shadow-[0_2px_20px_hsl(var(--primary)/0.15)]"
+              className="hero-text max-w-5xl mx-auto"
             >
               {title}
             </motion.h1>
@@ -204,19 +204,19 @@ const HeroSection: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 1 }}
-              className="flex items-center justify-center gap-3 sm:gap-6 pt-6 sm:pt-10"
+              className="flex items-center justify-center gap-4 sm:gap-8 pt-5 sm:pt-8"
             >
               {displayStats.map((stat, index) => (
                 <React.Fragment key={index}>
                   {index > 0 && (
                     <div className="w-px h-10 bg-gradient-to-b from-transparent via-border to-transparent" />
                   )}
-                  <div className="text-center px-2 sm:px-4">
+                  <div className="text-center px-3 sm:px-5">
                     <AnimatedCounter
                       value={stat.value}
-                      className="text-xl sm:text-2xl md:text-3xl font-black text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.3)]"
+                      className="text-2xl sm:text-3xl md:text-4xl font-black text-primary drop-shadow-[0_0_12px_hsl(var(--primary)/0.4)]"
                     />
-                    <div className="text-[10px] sm:text-xs text-muted-foreground mt-1 uppercase tracking-wider font-medium">
+                    <div className="text-[10px] sm:text-xs text-foreground/50 mt-1.5 uppercase tracking-[0.15em] font-semibold">
                       {stat.label}
                     </div>
                   </div>
