@@ -711,47 +711,23 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'الدولة' : 'Country'} <span className="text-destructive">*</span></Label>
-                    <SearchableSelect
-                      options={countryOptions}
+                    <Input
                       value={country}
-                      onValueChange={(v) => { setCountry(v); setCity(''); setManualCity(''); setIsOtherCity(false); setErrors(prev => ({ ...prev, country: undefined })); }}
-                      placeholder={isRTL ? 'اختر الدولة' : 'Select country'}
-                      searchPlaceholder={isRTL ? 'ابحث عن دولة...' : 'Search country...'}
-                      emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
-                      hasError={!!errors.country}
+                      onChange={(e) => { setCountry(e.target.value); setErrors(prev => ({ ...prev, country: undefined })); }}
+                      placeholder={isRTL ? 'أدخل الدولة' : 'Enter your country'}
+                      className={errors.country ? 'border-destructive' : ''}
                     />
                     {renderFieldError('country')}
                   </div>
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
-                    <SearchableSelect
-                      options={cityOptions}
-                      value={isOtherCity ? '__other__' : city}
-                      onValueChange={(v) => {
-                        if (v === '__other__') {
-                          setIsOtherCity(true);
-                          setCity('');
-                        } else {
-                          setIsOtherCity(false);
-                          setCity(v);
-                          setManualCity('');
-                        }
-                        setErrors(prev => ({ ...prev, city: undefined }));
-                      }}
-                      placeholder={country ? (isRTL ? 'اختر المدينة' : 'Select city') : (isRTL ? 'اختر الدولة أولاً' : 'Select country first')}
-                      searchPlaceholder={isRTL ? 'ابحث عن مدينة...' : 'Search city...'}
-                      emptyText={isRTL ? 'لا توجد نتائج' : 'No results found'}
-                      hasError={!!errors.city}
+                    <Input
+                      value={city}
+                      onChange={(e) => { setCity(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
+                      placeholder={isRTL ? 'أدخل المدينة' : 'Enter your city'}
+                      className={errors.city ? 'border-destructive' : ''}
                     />
-                    {isOtherCity && (
-                      <Input
-                        value={manualCity}
-                        onChange={(e) => { setManualCity(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
-                        placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
-                        className={errors.city ? 'border-destructive' : ''}
-                      />
-                    )}
                     {renderFieldError('city')}
                   </div>
 
