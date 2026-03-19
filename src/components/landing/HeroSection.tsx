@@ -132,7 +132,7 @@ const HeroSection: React.FC = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          className="space-y-5 sm:space-y-7"
+          className="space-y-4 sm:space-y-6"
         >
           {/* Badge */}
           {showBadge && (
