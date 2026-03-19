@@ -185,14 +185,14 @@ const HeroSection: React.FC = () => {
             className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-3 px-4 sm:px-0"
           >
             <Link to="/signup" className="w-full sm:w-auto">
-              <Button variant="hero" size="xl" className="group w-full sm:w-auto min-h-[52px] shadow-[0_4px_24px_hsl(var(--primary)/0.4)]">
+              <Button variant="hero" size="lg" className="group w-full sm:w-auto min-h-[44px] sm:min-h-[52px] text-sm sm:text-base shadow-[0_4px_24px_hsl(var(--primary)/0.4)]">
                 {ctaText}
-                <Arrow className="w-5 h-5 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
+                <Arrow className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
               </Button>
             </Link>
             <Link to="/courses" className="w-full sm:w-auto">
-              <Button variant="heroOutline" size="xl" className="group w-full sm:w-auto min-h-[52px] backdrop-blur-sm">
-                <Play className="w-5 h-5" />
+              <Button variant="heroOutline" size="lg" className="group w-full sm:w-auto min-h-[44px] sm:min-h-[52px] text-sm sm:text-base backdrop-blur-sm">
+                <Play className="w-4 h-4 sm:w-5 sm:h-5" />
                 {secondaryCta}
               </Button>
             </Link>
