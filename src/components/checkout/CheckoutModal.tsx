@@ -913,7 +913,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">{isRTL ? 'الموقع' : 'Location'}</span>
-                          <span className="font-medium">{city}{country ? `, ${country}` : ''}</span>
+                          <span className="font-medium">{effectiveCity}{effectiveCountry ? `, ${effectiveCountry}` : ''}</span>
                         </div>
                         <Separator />
                         {/* Price breakdown */}
