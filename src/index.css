@@ -540,9 +540,49 @@
   }
 }
 
-/* iOS WebKit: only disable heavy compositor effects on decorative layers */
-@supports (-webkit-touch-callout: none) {
-  .mix-blend-overlay {
-    mix-blend-mode: normal !important;
-  }
+/* ========================================
+   iOS WebKit targeted fallbacks
+   Uses .ios-webkit class set in main.tsx
+   ======================================== */
+html.ios-webkit .mix-blend-overlay {
+  mix-blend-mode: normal !important;
 }
+
+/* Disable heavy backdrop-filter on fixed/sticky elements (compositing crash risk) */
+html.ios-webkit .fixed,
+html.ios-webkit .sticky {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Give nav a solid background since we removed blur */
+html.ios-webkit nav.fixed,
+html.ios-webkit nav.sticky {
+  background-color: hsl(var(--background)) !important;
+}
+
+/* Disable large decorative blur orbs that crash WebKit compositor */
+html.ios-webkit [class*="blur-[120px]"],
+html.ios-webkit [class*="blur-[100px]"],
+html.ios-webkit [class*="blur-[80px]"] {
+  filter: none !important;
+  -webkit-filter: none !important;
+  opacity: 0 !important;
+  display: none !important;
+}
+
+/* Reduce backdrop-blur to simple opacity on glass overlays */
+html.ios-webkit .glass {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: hsl(var(--background) / 0.92) !important;
+}
+
+/* Ensure mobile menu backdrop doesn't crash */
+html.ios-webkit .backdrop-blur-sm,
+html.ios-webkit .backdrop-blur-md,
+html.ios-webkit .backdrop-blur-xl {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
