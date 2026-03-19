@@ -298,7 +298,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return Object.keys(newErrors).length === 0;
   }, [fullName, email, phone, isRTL]);
 
-  const effectiveCity = isOtherCity ? cityManual.trim() : city.trim();
+  const effectiveCity = (isOtherCity || isOtherCountry) ? cityManual.trim() : city.trim();
   const effectiveCountry = isOtherCountry ? countryManual.trim() : country.trim();
 
   const validateBilling = useCallback(function (): boolean {
