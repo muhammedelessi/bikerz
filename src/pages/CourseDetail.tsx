@@ -422,7 +422,7 @@ const CourseDetail: React.FC = () => {
       />
       <Navbar />
       <div className="pt-[var(--navbar-h)]">
-      <DiscountUrgencyBanner courseId={id} />
+      
 
       {/* Sticky Header — appears on scroll */}
       <AnimatePresence>
