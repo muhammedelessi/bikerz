@@ -303,7 +303,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const validateBilling = useCallback(function (): boolean {
     var newErrors: ValidationErrors = {};
-    var c = isOtherCity ? cityManual.trim() : city.trim();
+    var c = (isOtherCity || isOtherCountry) ? cityManual.trim() : city.trim();
     if (!c) {
       newErrors.city = isRTL ? 'المدينة مطلوبة' : 'City is required';
     }
