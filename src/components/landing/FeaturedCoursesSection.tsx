@@ -128,14 +128,14 @@ const FeaturedCoursesSection: React.FC = () => {
 
                           {/* Play button */}
                           <div className="absolute bottom-3 start-3">
-                            <div className="w-10 h-10 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform shadow-glow">
+                            <div className="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center group-hover:scale-110 transition-transform shadow-glow">
                               <Play className="w-4 h-4 text-primary-foreground ms-0.5" />
                             </div>
                           </div>
 
                           {/* Discount badge */}
                           {priceInfo.discountPct > 0 && (
-                            <div className="absolute top-3 end-3 px-2.5 py-1 rounded-full bg-destructive/90 backdrop-blur-sm text-destructive-foreground text-xs font-bold">
+                            <div className="absolute top-3 end-3 px-2.5 py-1 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-bold">
                               {isRTL ? `خصم ${priceInfo.discountPct}%` : `${priceInfo.discountPct}% OFF`}
                             </div>
                           )}

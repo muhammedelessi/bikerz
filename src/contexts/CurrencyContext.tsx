@@ -196,7 +196,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       try {
         const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const timeout = setTimeout(() => controller?.abort(), 8000);
+        const timeout = setTimeout(function () { if (controller) controller.abort(); }, 8000);
         const res = await fetch(
           'https://open.er-api.com/v6/latest/SAR',
           controller ? { signal: controller.signal } : undefined
@@ -205,7 +205,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         if (res.ok) {
           const data = await res.json();
-          if (data?.rates) {
+          if (data && data.rates) {
             const newRates: Record<string, number> = { SAR: 1 };
             for (const code of Object.keys(CURRENCY_META)) {
               if (data.rates[code] != null) {
@@ -249,13 +249,13 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const detectLocation = async () => {
       try {
         const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const timeout = setTimeout(() => controller?.abort(), 5000);
+        const timeout = setTimeout(function () { if (controller) controller.abort(); }, 5000);
         const res = await fetch('https://ipapi.co/json/', controller ? { signal: controller.signal } : undefined);
         clearTimeout(timeout);
 
         if (res.ok) {
           const data = await res.json();
-          const country = data?.country_code?.toUpperCase() || null;
+          const country = (data && data.country_code) ? data.country_code.toUpperCase() : null;
           setDetectedCountry(country);
 
           if (country) {
@@ -303,7 +303,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const rate = rates[currencyCode] ?? FALLBACK_RATES[currencyCode] ?? 1;
+  const rate = rates[currencyCode] != null ? rates[currencyCode] : (FALLBACK_RATES[currencyCode] != null ? FALLBACK_RATES[currencyCode] : 1);
 
   /** Check if country-specific price exists for a course */
   const hasCountryPrice = useCallback(

@@ -80,7 +80,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ]);
 
       const fetchedProfile = profileResult.data || null;
-      const fetchedRoles = rolesResult.data?.map((r) => r.role as AppRole) || [];
+      const rolesData = rolesResult.data;
+      const fetchedRoles = rolesData ? rolesData.map(function (r) { return r.role as AppRole; }) : [];
 
       return { profile: fetchedProfile, roles: fetchedRoles };
     } catch (error) {
@@ -101,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (!mounted) return;
 
-        if (existingSession?.user) {
+        if (existingSession && existingSession.user) {
           setSession(existingSession);
           setUser(existingSession.user);
 
@@ -133,9 +134,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Handle auth state changes after initialization
         setSession(newSession);
-        setUser(newSession?.user ?? null);
+        setUser(newSession && newSession.user ? newSession.user : null);
 
-        if (newSession?.user) {
+        if (newSession && newSession.user) {
           // Use setTimeout to avoid race conditions with Supabase's internal state
           setTimeout(async () => {
             if (!mounted) return;
