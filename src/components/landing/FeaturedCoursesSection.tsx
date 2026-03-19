@@ -72,7 +72,7 @@ const FeaturedCoursesSection: React.FC = () => {
   if (!isLoading && courses.length === 0) return null;
 
   return (
-    <section ref={ref} className="relative py-10 sm:py-14 overflow-hidden">
+    <section ref={ref} className="relative py-6 sm:py-10 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-card/30 to-background" />
 
       <div className="section-container relative z-10">

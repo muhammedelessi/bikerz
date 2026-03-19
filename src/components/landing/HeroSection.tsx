@@ -211,12 +211,12 @@ const HeroSection: React.FC = () => {
                   {index > 0 && (
                     <div className="w-px h-10 bg-gradient-to-b from-transparent via-border to-transparent" />
                   )}
-                  <div className="text-center px-2 sm:px-4">
+                  <div className="text-center px-3 sm:px-5">
                     <AnimatedCounter
                       value={stat.value}
-                      className="text-xl sm:text-2xl md:text-3xl font-black text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.3)]"
+                      className="text-2xl sm:text-3xl md:text-4xl font-black text-primary drop-shadow-[0_0_12px_hsl(var(--primary)/0.4)]"
                     />
-                    <div className="text-[10px] sm:text-xs text-muted-foreground mt-1 uppercase tracking-wider font-medium">
+                    <div className="text-[10px] sm:text-xs text-foreground/50 mt-1.5 uppercase tracking-[0.15em] font-semibold">
                       {stat.label}
                     </div>
                   </div>
