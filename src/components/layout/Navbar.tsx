@@ -177,11 +177,9 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      <motion.nav
+      <nav
         ref={navRef}
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        className={`fixed top-0 left-0 right-0 z-50 safe-area-top [@supports(-webkit-touch-callout:none)]:sticky [@supports(-webkit-touch-callout:none)]:top-0 ${
+        className={`fixed top-0 left-0 right-0 z-50 safe-area-top transition-colors duration-300 ${
           isScrolled || isMobileMenuOpen
             ? 'bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg'
             : 'bg-background/80 backdrop-blur-sm'
