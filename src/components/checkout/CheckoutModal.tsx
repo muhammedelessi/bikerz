@@ -754,53 +754,30 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'الدولة' : 'Country'} <span className="text-destructive">*</span></Label>
-                    <select
+                    <SearchableDropdown
+                      options={countryOptions}
                       value={selectedCountryCode}
-                      onChange={function (e) { handleCountryChange(e.target.value); }}
-                      className={"flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none " + (errors.country ? 'border-destructive' : 'border-input')}
+                      onChange={handleCountryChange}
+                      placeholder={isRTL ? 'اختر الدولة' : 'Select country'}
+                      searchPlaceholder={isRTL ? 'ابحث عن دولة...' : 'Search country...'}
+                      hasError={!!errors.country}
                       dir={isRTL ? 'rtl' : 'ltr'}
-                    >
-                      <option value="">{isRTL ? 'اختر الدولة' : 'Select country'}</option>
-                      {COUNTRIES.map(function (c) {
-                        return (
-                          <option key={c.code} value={c.code}>
-                            {isRTL ? c.ar : c.en}
-                          </option>
-                        );
-                      })}
-                    </select>
+                    />
                     {renderFieldError('country')}
                   </div>
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
-                    {selectedCountry ? (
-                      <select
-                        value={isOtherCity ? '__other__' : city}
-                        onChange={function (e) { handleCityChange(e.target.value); }}
-                        className={"flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none " + (errors.city ? 'border-destructive' : 'border-input')}
-                        dir={isRTL ? 'rtl' : 'ltr'}
-                      >
-                        <option value="">{isRTL ? 'اختر المدينة' : 'Select city'}</option>
-                        {selectedCountry.cities.map(function (ct) {
-                          var val = isRTL ? ct.ar : ct.en;
-                          return (
-                            <option key={ct.en} value={val}>
-                              {val}
-                            </option>
-                          );
-                        })}
-                        <option value="__other__">{isRTL ? OTHER_OPTION.ar : OTHER_OPTION.en}</option>
-                      </select>
-                    ) : (
-                      <Input
-                        value={city}
-                        onChange={function (e) { setCity(e.target.value); setErrors(function (prev) { return Object.assign({}, prev, { city: undefined }); }); }}
-                        placeholder={isRTL ? 'اختر الدولة أولاً' : 'Select a country first'}
-                        disabled={true}
-                        className={errors.city ? 'border-destructive' : ''}
-                      />
-                    )}
+                    <SearchableDropdown
+                      options={cityOptions}
+                      value={isOtherCity ? '__other__' : city}
+                      onChange={handleCityChange}
+                      placeholder={isRTL ? (selectedCountry ? 'اختر المدينة' : 'اختر الدولة أولاً') : (selectedCountry ? 'Select city' : 'Select a country first')}
+                      searchPlaceholder={isRTL ? 'ابحث عن مدينة...' : 'Search city...'}
+                      hasError={!!errors.city}
+                      disabled={!selectedCountry}
+                      dir={isRTL ? 'rtl' : 'ltr'}
+                    />
                     {isOtherCity && (
                       <Input
                         value={cityManual}
