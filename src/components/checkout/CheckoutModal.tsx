@@ -332,7 +332,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           full_name: fullName.trim(),
           phone: phone.trim(),
           city: effectiveCity,
-          country,
+          country: effectiveCountry,
           postal_code: postalCode.trim() || null,
           profile_complete: true,
         })
