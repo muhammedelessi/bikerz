@@ -204,7 +204,7 @@ const HeroSection: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 1 }}
-              className="flex items-center justify-center gap-3 sm:gap-6 pt-6 sm:pt-10"
+              className="flex items-center justify-center gap-4 sm:gap-8 pt-5 sm:pt-8"
             >
               {displayStats.map((stat, index) => (
                 <React.Fragment key={index}>
