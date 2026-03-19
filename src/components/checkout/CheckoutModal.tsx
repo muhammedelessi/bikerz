@@ -159,9 +159,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
     setErrors(function (prev) { return Object.assign({}, prev, { city: undefined }); });
   };
-  const [profileSaving, setProfileSaving] = useState(false);
 
-  
+
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
   const BackArrowIcon = isRTL ? ArrowRight : ArrowLeft;
