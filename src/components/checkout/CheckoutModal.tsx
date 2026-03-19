@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { COUNTRIES, OTHER_OPTION, type CountryEntry } from '@/data/countryCityData';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,13 +19,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   CreditCard,
   Gift,
@@ -121,13 +115,45 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
-  
+  const [cityManual, setCityManual] = useState('');
+  const [isOtherCity, setIsOtherCity] = useState(false);
   const [country, setCountry] = useState('');
+  const [selectedCountryCode, setSelectedCountryCode] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [profileSaving, setProfileSaving] = useState(false);
 
-  
+  const selectedCountry = useMemo(
+    () => COUNTRIES.find(function (c) { return c.code === selectedCountryCode; }) || null,
+    [selectedCountryCode]
+  );
+
+  const handleCountryChange = function (code: string) {
+    setSelectedCountryCode(code);
+    var found = COUNTRIES.find(function (c) { return c.code === code; });
+    if (found) {
+      setCountry(isRTL ? found.ar : found.en);
+    }
+    setCity('');
+    setCityManual('');
+    setIsOtherCity(false);
+    setErrors(function (prev) { return Object.assign({}, prev, { country: undefined, city: undefined }); });
+  };
+
+  var handleCityChange = function (val: string) {
+    if (val === '__other__') {
+      setIsOtherCity(true);
+      setCity('');
+      setCityManual('');
+    } else {
+      setIsOtherCity(false);
+      setCity(val);
+      setCityManual('');
+    }
+    setErrors(function (prev) { return Object.assign({}, prev, { city: undefined }); });
+  };
+
+
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
   const BackArrowIcon = isRTL ? ArrowRight : ArrowLeft;
@@ -243,11 +269,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return Object.keys(newErrors).length === 0;
   }, [fullName, email, phone, isRTL]);
 
-  const effectiveCity = city.trim();
+  const effectiveCity = isOtherCity ? cityManual.trim() : city.trim();
 
-  const validateBilling = useCallback((): boolean => {
-    const newErrors: ValidationErrors = {};
-    if (!city.trim()) {
+  const validateBilling = useCallback(function (): boolean {
+    var newErrors: ValidationErrors = {};
+    var c = isOtherCity ? cityManual.trim() : city.trim();
+    if (!c) {
       newErrors.city = isRTL ? 'المدينة مطلوبة' : 'City is required';
     }
     if (!country.trim()) {
@@ -255,10 +282,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [city, country, isRTL]);
+  }, [city, cityManual, isOtherCity, country, isRTL]);
 
   const isProfileValid = fullName.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && /^[0-9+\s()-]{7,15}$/.test(phone);
-  const isBillingValid = city.trim().length > 0 && country.trim().length > 0;
+  const isBillingValid = (isOtherCity ? cityManual.trim().length > 0 : city.trim().length > 0) && country.trim().length > 0;
   // For guest users, isReady won't be true yet - we'll handle signup before payment
   const isPaymentReady = isProfileValid && isBillingValid && (user ? isReady : true);
 
@@ -711,23 +738,62 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'الدولة' : 'Country'} <span className="text-destructive">*</span></Label>
-                    <Input
-                      value={country}
-                      onChange={(e) => { setCountry(e.target.value); setErrors(prev => ({ ...prev, country: undefined })); }}
-                      placeholder={isRTL ? 'أدخل الدولة' : 'Enter your country'}
-                      className={errors.country ? 'border-destructive' : ''}
-                    />
+                    <select
+                      value={selectedCountryCode}
+                      onChange={function (e) { handleCountryChange(e.target.value); }}
+                      className={"flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none " + (errors.country ? 'border-destructive' : 'border-input')}
+                      dir={isRTL ? 'rtl' : 'ltr'}
+                    >
+                      <option value="">{isRTL ? 'اختر الدولة' : 'Select country'}</option>
+                      {COUNTRIES.map(function (c) {
+                        return (
+                          <option key={c.code} value={c.code}>
+                            {isRTL ? c.ar : c.en}
+                          </option>
+                        );
+                      })}
+                    </select>
                     {renderFieldError('country')}
                   </div>
 
                   <div className="space-y-2">
                     <Label>{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
-                    <Input
-                      value={city}
-                      onChange={(e) => { setCity(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
-                      placeholder={isRTL ? 'أدخل المدينة' : 'Enter your city'}
-                      className={errors.city ? 'border-destructive' : ''}
-                    />
+                    {selectedCountry ? (
+                      <select
+                        value={isOtherCity ? '__other__' : city}
+                        onChange={function (e) { handleCityChange(e.target.value); }}
+                        className={"flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none " + (errors.city ? 'border-destructive' : 'border-input')}
+                        dir={isRTL ? 'rtl' : 'ltr'}
+                      >
+                        <option value="">{isRTL ? 'اختر المدينة' : 'Select city'}</option>
+                        {selectedCountry.cities.map(function (ct) {
+                          var val = isRTL ? ct.ar : ct.en;
+                          return (
+                            <option key={ct.en} value={val}>
+                              {val}
+                            </option>
+                          );
+                        })}
+                        <option value="__other__">{isRTL ? OTHER_OPTION.ar : OTHER_OPTION.en}</option>
+                      </select>
+                    ) : (
+                      <Input
+                        value={city}
+                        onChange={function (e) { setCity(e.target.value); setErrors(function (prev) { return Object.assign({}, prev, { city: undefined }); }); }}
+                        placeholder={isRTL ? 'اختر الدولة أولاً' : 'Select a country first'}
+                        disabled={true}
+                        className={errors.city ? 'border-destructive' : ''}
+                      />
+                    )}
+                    {isOtherCity && (
+                      <Input
+                        value={cityManual}
+                        onChange={function (e) { setCityManual(e.target.value); setErrors(function (prev) { return Object.assign({}, prev, { city: undefined }); }); }}
+                        placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
+                        className={errors.city ? 'border-destructive' : ''}
+                        autoFocus
+                      />
+                    )}
                     {renderFieldError('city')}
                   </div>
 
