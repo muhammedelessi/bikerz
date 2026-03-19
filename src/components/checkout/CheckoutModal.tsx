@@ -299,6 +299,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   }, [fullName, email, phone, isRTL]);
 
   const effectiveCity = isOtherCity ? cityManual.trim() : city.trim();
+  const effectiveCountry = isOtherCountry ? countryManual.trim() : country.trim();
 
   const validateBilling = useCallback(function (): boolean {
     var newErrors: ValidationErrors = {};
@@ -306,15 +307,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (!c) {
       newErrors.city = isRTL ? 'المدينة مطلوبة' : 'City is required';
     }
-    if (!country.trim()) {
+    var cn = isOtherCountry ? countryManual.trim() : country.trim();
+    if (!cn) {
       newErrors.country = isRTL ? 'الدولة مطلوبة' : 'Country is required';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [city, cityManual, isOtherCity, country, isRTL]);
+  }, [city, cityManual, isOtherCity, country, countryManual, isOtherCountry, isRTL]);
 
   const isProfileValid = fullName.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && /^[0-9+\s()-]{7,15}$/.test(phone);
-  const isBillingValid = (isOtherCity ? cityManual.trim().length > 0 : city.trim().length > 0) && country.trim().length > 0;
+  const isBillingValid = (isOtherCity ? cityManual.trim().length > 0 : city.trim().length > 0) && (isOtherCountry ? countryManual.trim().length > 0 : country.trim().length > 0);
   // For guest users, isReady won't be true yet - we'll handle signup before payment
   const isPaymentReady = isProfileValid && isBillingValid && (user ? isReady : true);
 
