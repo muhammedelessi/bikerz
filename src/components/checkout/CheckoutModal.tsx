@@ -155,7 +155,21 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setErrors(function (prev) { return Object.assign({}, prev, { city: undefined }); });
   };
 
+  var countryOptions = useMemo(function (): DropdownOption[] {
+    return COUNTRIES.map(function (c) {
+      return { value: c.code, label: isRTL ? c.ar : c.en };
+    });
+  }, [isRTL]);
 
+  var cityOptions = useMemo(function (): DropdownOption[] {
+    if (!selectedCountry) return [];
+    var items = selectedCountry.cities.map(function (ct) {
+      var label = isRTL ? ct.ar : ct.en;
+      return { value: label, label: label };
+    });
+    items.push({ value: '__other__', label: isRTL ? OTHER_OPTION.ar : OTHER_OPTION.en });
+    return items;
+  }, [selectedCountry, isRTL]);
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
   const BackArrowIcon = isRTL ? ArrowRight : ArrowLeft;
