@@ -145,6 +145,14 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     }
   };
 
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      setTimeout(() => {
+        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+  };
+
   const formContent = (
     <div className="p-5 sm:p-6 space-y-4">
       {error && (
@@ -162,6 +170,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onFocus={handleInputFocus}
             placeholder={t('auth.signup.namePlaceholder')}
             required
             className="form-input h-10 sm:h-11 text-sm sm:text-base"
@@ -175,6 +184,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onFocus={handleInputFocus}
             placeholder="your@email.com"
             required
             className="form-input h-10 sm:h-11 text-sm sm:text-base"
@@ -189,6 +199,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onFocus={handleInputFocus}
               placeholder="••••••••"
               required
               minLength={6}
@@ -213,6 +224,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
               type={showConfirmPassword ? 'text' : 'password'}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              onFocus={handleInputFocus}
               placeholder="••••••••"
               required
               className="form-input h-10 sm:h-11 text-sm sm:text-base pe-12"
@@ -267,14 +279,17 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="bg-card border-border max-h-[95dvh]">
-          <DrawerHeader className="pb-1 pt-2">
+        <DrawerContent className="bg-card border-border max-h-[95dvh]" style={{ maxHeight: '95dvh' }}>
+          <DrawerHeader className="pb-1 pt-2 flex-shrink-0">
             <DrawerTitle className="text-base font-bold text-center">
               {titleText}
             </DrawerTitle>
             {headerContent}
           </DrawerHeader>
-          <div className="overflow-y-auto pb-safe overscroll-contain">
+          <div
+            className="overflow-y-auto pb-safe overscroll-contain flex-1"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             {formContent}
           </div>
         </DrawerContent>
