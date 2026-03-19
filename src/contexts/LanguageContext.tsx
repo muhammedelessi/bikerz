@@ -75,8 +75,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         })
         .catch(() => {});
 
-      return () => {
-        controller?.abort();
+      return function () {
+        if (controller) controller.abort();
       };
     }
   }, []);

@@ -134,9 +134,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Handle auth state changes after initialization
         setSession(newSession);
-        setUser(newSession?.user ?? null);
+        setUser(newSession && newSession.user ? newSession.user : null);
 
-        if (newSession?.user) {
+        if (newSession && newSession.user) {
           // Use setTimeout to avoid race conditions with Supabase's internal state
           setTimeout(async () => {
             if (!mounted) return;

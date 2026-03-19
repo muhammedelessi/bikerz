@@ -192,7 +192,7 @@ const HeroSection: React.FC = () => {
               </Button>
             </Link>
             <Link to="/courses" className="w-full sm:w-auto">
-              <Button variant="heroOutline" size="xl" className="group w-full sm:w-auto min-h-[52px] backdrop-blur-sm">
+              <Button variant="heroOutline" size="xl" className="group w-full sm:w-auto min-h-[52px]">
                 <Play className="w-5 h-5" />
                 {secondaryCta}
               </Button>

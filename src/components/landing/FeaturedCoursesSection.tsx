@@ -135,7 +135,7 @@ const FeaturedCoursesSection: React.FC = () => {
 
                           {/* Discount badge */}
                           {priceInfo.discountPct > 0 && (
-                            <div className="absolute top-3 end-3 px-2.5 py-1 rounded-full bg-destructive/90 backdrop-blur-sm text-destructive-foreground text-xs font-bold">
+                            <div className="absolute top-3 end-3 px-2.5 py-1 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-bold">
                               {isRTL ? `خصم ${priceInfo.discountPct}%` : `${priceInfo.discountPct}% OFF`}
                             </div>
                           )}

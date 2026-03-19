@@ -121,7 +121,7 @@ const JourneySection: React.FC = () => {
                       <div className={`flex-1 ${index % 2 === 0 ? 'text-end' : 'text-start'}`}>
                         <motion.div
                           whileHover={{ scale: 1.02 }}
-                          className="inline-block p-6 rounded-2xl bg-card/50 border border-border/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300"
+                          className="inline-block p-6 rounded-2xl bg-card/50 border border-border/50 hover:border-primary/30 transition-all duration-300"
                         >
                           <h3 className="text-xl font-bold text-foreground mb-2">{stepTitle}</h3>
                           <p className="text-muted-foreground max-w-xs">{stepDesc}</p>

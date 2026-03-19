@@ -12,7 +12,7 @@ const TrustBar: React.FC = () => {
   const { isRTL } = useLanguage();
 
   return (
-    <section className="relative z-10 bg-primary/5 border-y border-primary/10 backdrop-blur-sm">
+    <section className="relative z-10 bg-primary/5 border-y border-primary/10">
       <div className="section-container py-3 sm:py-4">
         <div className="flex items-center justify-center gap-6 sm:gap-12">
           {items.map((item, i) => (

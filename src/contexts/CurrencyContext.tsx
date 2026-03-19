@@ -303,7 +303,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const rate = rates[currencyCode] ?? FALLBACK_RATES[currencyCode] ?? 1;
+  const rate = rates[currencyCode] != null ? rates[currencyCode] : (FALLBACK_RATES[currencyCode] != null ? FALLBACK_RATES[currencyCode] : 1);
 
   /** Check if country-specific price exists for a course */
   const hasCountryPrice = useCallback(
