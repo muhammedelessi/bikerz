@@ -205,7 +205,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         if (res.ok) {
           const data = await res.json();
-          if (data?.rates) {
+          if (data && data.rates) {
             const newRates: Record<string, number> = { SAR: 1 };
             for (const code of Object.keys(CURRENCY_META)) {
               if (data.rates[code] != null) {
