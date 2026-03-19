@@ -157,7 +157,7 @@ const HeroSection: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="hero-text max-w-4xl mx-auto leading-[1.1] drop-shadow-[0_2px_20px_hsl(var(--primary)/0.15)]"
+              className="hero-text max-w-5xl mx-auto"
             >
               {title}
             </motion.h1>
