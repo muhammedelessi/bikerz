@@ -196,7 +196,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       try {
         const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const timeout = setTimeout(() => controller?.abort(), 8000);
+        const timeout = setTimeout(function () { if (controller) controller.abort(); }, 8000);
         const res = await fetch(
           'https://open.er-api.com/v6/latest/SAR',
           controller ? { signal: controller.signal } : undefined
