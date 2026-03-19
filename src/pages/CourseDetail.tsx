@@ -282,9 +282,8 @@ const CourseDetail: React.FC = () => {
     },
   });
 
-  // Discount countdown
-  const discountCountdown = useDiscountCountdown((course as any)?.discount_expires_at);
-  const effectiveDiscount = discountCountdown.isExpired ? 0 : (course?.discount_percentage || 0);
+  // Discount
+  const effectiveDiscount = course?.discount_percentage || 0;
 
   // Calculations
   const totalLessons = chapters.reduce((acc, ch) => acc + ch.lessons.length, 0);
