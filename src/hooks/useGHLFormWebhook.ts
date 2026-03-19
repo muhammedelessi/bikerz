@@ -39,6 +39,8 @@ interface FormWebhookData {
   orderStatus?: string;
   courses?: string;
   totalPurchased?: number;
+  dateOfBirth?: string;
+  gender?: string;
   isRTL?: boolean;
   silent?: boolean;
 }

@@ -203,6 +203,9 @@ const Footer: React.FC = () => {
           <p className="text-muted-foreground text-sm">
             © {new Date().getFullYear()} BIKERZ. {t('footer.rights')}
           </p>
+          <p className="text-muted-foreground text-xs">
+            {isRTL ? 'الرقم الضريبي: 311508395300003' : 'VAT Number: 311508395300003'}
+          </p>
         </div>
       </div>
     </footer>

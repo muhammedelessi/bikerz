@@ -1,6 +1,5 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
 
 import en from './locales/en.json';
 import ar from './locales/ar.json';
@@ -19,15 +18,18 @@ const setDocumentDirection = (lng: string) => {
 
 // Get initial language from localStorage
 const getInitialLanguage = () => {
-  const saved = localStorage.getItem('i18nextLng');
-  if (saved === 'en' || saved === 'ar') return saved;
+  try {
+    const saved = localStorage.getItem('i18nextLng');
+    if (saved === 'en' || saved === 'ar') return saved;
+  } catch {
+    // localStorage unavailable (iOS Private Mode)
+  }
   return 'ar';
 };
 
 const initialLang = getInitialLanguage();
 
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
@@ -35,10 +37,6 @@ i18n
     lng: initialLang,
     interpolation: {
       escapeValue: false,
-    },
-    detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
     },
     react: {
       useSuspense: false,

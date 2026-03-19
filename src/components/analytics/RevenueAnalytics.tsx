@@ -16,7 +16,7 @@ import {
   Bar,
   LineChart,
   Line,
-} from 'recharts';
+} from '@/lib/recharts-compat';
 import {
   DollarSign,
   TrendingUp,

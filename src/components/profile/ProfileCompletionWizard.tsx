@@ -215,6 +215,8 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
         full_name: profile?.full_name || riderNickname || '',
         email: user.email || '',
         phone: phone || '',
+        dateOfBirth: profile?.date_of_birth || '',
+        gender: profile?.gender || '',
         orderStatus: 'not purchased',
         isRTL,
       });

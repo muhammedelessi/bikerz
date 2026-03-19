@@ -152,7 +152,7 @@ const GamificationPanel: React.FC<GamificationPanelProps> = ({ compact = false }
                   }
                 </h4>
                 <div className="flex flex-wrap gap-2">
-                  {badges.map((badge) => {
+                  {(badges as Badge[]).map((badge) => {
                     const userBadge = userBadges.find(ub => ub.badge_id === badge.id);
                     return (
                       <BadgeDisplay
