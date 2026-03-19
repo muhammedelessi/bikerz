@@ -1346,11 +1346,9 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
-          date_of_birth: string | null
           engine_size_cc: number | null
           experience_level: string | null
           full_name: string | null
-          gender: string | null
           id: string
           phone: string | null
           phone_verified: boolean
@@ -1368,11 +1366,9 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
-          date_of_birth?: string | null
           engine_size_cc?: number | null
           experience_level?: string | null
           full_name?: string | null
-          gender?: string | null
           id?: string
           phone?: string | null
           phone_verified?: boolean
@@ -1390,11 +1386,9 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
-          date_of_birth?: string | null
           engine_size_cc?: number | null
           experience_level?: string | null
           full_name?: string | null
-          gender?: string | null
           id?: string
           phone?: string | null
           phone_verified?: boolean

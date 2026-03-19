@@ -23,8 +23,6 @@ interface UserProfile {
   postal_code: string | null;
   phone_verified: boolean;
   profile_complete: boolean;
-  date_of_birth: string | null;
-  gender: string | null;
 }
 
 interface AuthContextType {

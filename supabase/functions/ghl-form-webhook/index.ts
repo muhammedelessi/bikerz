@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { full_name, email, phone, city, country, address, courseName, amount, orderStatus, source, courses, totalPurchased, dateOfBirth, gender } = body
+    const { full_name, email, phone, city, country, address, courseName, amount, orderStatus, source, courses, totalPurchased } = body
 
     const payload: Record<string, unknown> = {
       email: email || '',
@@ -27,8 +27,6 @@ Deno.serve(async (req) => {
       orderStatus: orderStatus || 'not purchased',
       courses: courses || '[]',
       totalPurchased: totalPurchased ?? 0,
-      dateOfBirth: dateOfBirth || '',
-      gender: gender || '',
     }
 
     console.log('GHL form webhook payload:', JSON.stringify(payload))
