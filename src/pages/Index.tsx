@@ -19,7 +19,7 @@ const Index: React.FC = () => {
       />
       <Navbar />
       <div className="pt-[var(--navbar-h)]">
-        <DiscountUrgencyBanner />
+        
         <main>
           <HeroSection />
           <FeaturedCoursesSection />
