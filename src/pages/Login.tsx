@@ -90,12 +90,27 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // If we checked and user is Google-only, block password login
+    if (emailChecked && isGoogleUser) {
+      setError(isRTL ? 'هذا الحساب مسجل عبر جوجل. استخدم زر جوجل لتسجيل الدخول.' : 'This account was created with Google. Please use the Google button to sign in.');
+      return;
+    }
+
     setIsLoading(true);
     
     const { error } = await signIn(email, password);
     
     if (error) {
-      setError(t('auth.login.invalidCredentials'));
+      // Check providers on failed login to give better error message
+      if (!emailChecked) {
+        await checkProviders(email);
+      }
+      if (isGoogleUser) {
+        setError(isRTL ? 'هذا الحساب مسجل عبر جوجل. استخدم زر جوجل لتسجيل الدخول.' : 'This account was created with Google. Please use the Google button to sign in.');
+      } else {
+        setError(t('auth.login.invalidCredentials'));
+      }
       setIsLoading(false);
       return;
     }
