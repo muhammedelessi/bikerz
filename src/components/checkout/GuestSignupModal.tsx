@@ -484,7 +484,6 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
             <DrawerTitle className="text-base font-bold text-center">
               {titleText}
             </DrawerTitle>
-            {headerContent}
           </DrawerHeader>
           <div
             className="overflow-y-auto pb-safe overscroll-contain flex-1"
