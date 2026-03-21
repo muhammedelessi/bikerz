@@ -92,25 +92,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let mounted = true;
 
-    const resetViewportAfterOAuthRedirect = () => {
+    const reloadAfterOAuthRedirect = () => {
       const hash = window.location.hash || '';
       const search = window.location.search || '';
       const isOAuthRedirect = hash.includes('access_token') || search.includes('code=');
 
       if (!isOAuthRedirect) return;
 
-      window.scrollTo(0, 0);
-      const viewport = document.querySelector('meta[name="viewport"]');
-      if (!viewport) return;
-
-      viewport.setAttribute(
-        'content',
-        'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'
-      );
-
-      requestAnimationFrame(() => {
-        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
-      });
+      // Flag to prevent infinite reload loop
+      const reloadKey = 'oauth_reload_done';
+      if (sessionStorage.getItem(reloadKey)) {
+        sessionStorage.removeItem(reloadKey);
+        return;
+      }
+      sessionStorage.setItem(reloadKey, '1');
+      window.location.reload();
     };
 
     const initializeAuth = async () => {
