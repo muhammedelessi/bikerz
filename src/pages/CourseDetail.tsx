@@ -535,8 +535,8 @@ const CourseDetail: React.FC = () => {
             ) : null}
           </div>
 
-          <div className="page-container relative z-10 pt-3 sm:pt-6 pb-6 lg:pb-16 px-4 sm:px-6">
-            <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-3 lg:mb-6 text-xs sm:text-sm">
+          <div className="page-container relative z-10 pt-1 sm:pt-3 pb-6 lg:pb-16 px-4 sm:px-6">
+            <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-1.5 lg:mb-4 text-xs sm:text-sm">
               <BackIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 me-1" />
               {t('courses.backToCourses')}
             </Link>
