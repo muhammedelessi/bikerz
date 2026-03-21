@@ -56,6 +56,7 @@ interface UnifiedPayment {
   webhook_verified?: boolean | null;
   metadata?: Record<string, unknown> | null;
   tap_response?: Record<string, unknown> | null;
+  device_info?: string | null;
   // joined
   profile?: {
     full_name: string | null;
@@ -132,6 +133,7 @@ const AdminPayments = () => {
         metadata: p.metadata as Record<string, unknown> | null,
         tap_response: p.tap_response as Record<string, unknown> | null,
         payment_method: p.payment_method || 'card',
+        device_info: (p as any).device_info || null,
       }));
 
       const all = [...manualData, ...tapData].sort(
@@ -353,7 +355,7 @@ const AdminPayments = () => {
     const headers = [
       'Date', 'Customer Name', 'Email', 'Phone', 'City', 'Country',
       'Course', 'Amount', 'Currency', 'Status', 'Payment Method',
-      'Transaction ID', 'Source', 'Error Message', 'Profile Complete',
+      'Transaction ID', 'Source', 'Device Info', 'Error Message', 'Profile Complete',
     ];
     const rows = filteredPayments.map((p) => {
       const displayName = p.source === 'tap' ? p.customer_name || p.profile?.full_name : p.profile?.full_name;
@@ -371,6 +373,7 @@ const AdminPayments = () => {
         getPaymentMethodLabel(p),
         p.charge_id || p.reference_number || '',
         p.source,
+        p.device_info || '',
         p.error_message || '',
         p.profile?.profile_complete ? 'Yes' : 'No',
       ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',');
@@ -756,6 +759,12 @@ const AdminPayments = () => {
                                 : <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-xs">{isRTL ? 'لا' : 'No'}</Badge>
                             }
                           />
+                          {selectedPayment.device_info && (
+                            <DetailRow
+                              label={isRTL ? 'جهاز المستخدم' : 'User Device'}
+                              value={<span className="text-xs font-mono">{selectedPayment.device_info}</span>}
+                            />
+                          )}
                         </>
                       )}
 

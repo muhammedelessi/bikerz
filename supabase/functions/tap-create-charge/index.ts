@@ -79,6 +79,7 @@ Deno.serve(async (req) => {
       coupon_id,
       payment_method = "card",
       detected_country,
+      device_info,
     } = body as Record<string, any>;
 
     if (!course_id || !idempotency_key) {
@@ -272,6 +273,9 @@ Deno.serve(async (req) => {
     }
 
     // ── Insert pending charge record ──
+    // Sanitize device_info: plain string, max 200 chars
+    const safeDeviceInfo = typeof device_info === "string" ? device_info.substring(0, 200) : null;
+
     const { data: chargeRecord, error: insertError } = await adminClient
       .from("tap_charges")
       .insert({
@@ -284,6 +288,7 @@ Deno.serve(async (req) => {
         customer_email: customer_email || userEmail,
         customer_phone: customer_phone || profileData.phone || "",
         idempotency_key,
+        device_info: safeDeviceInfo,
         metadata: {
           internal_order_id: idempotency_key,
           user_id: userId,

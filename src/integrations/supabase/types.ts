@@ -1582,6 +1582,7 @@ export type Database = {
           customer_email: string | null
           customer_name: string | null
           customer_phone: string | null
+          device_info: string | null
           error_message: string | null
           id: string
           idempotency_key: string
@@ -1604,6 +1605,7 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          device_info?: string | null
           error_message?: string | null
           id?: string
           idempotency_key: string
@@ -1626,6 +1628,7 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          device_info?: string | null
           error_message?: string | null
           id?: string
           idempotency_key?: string
