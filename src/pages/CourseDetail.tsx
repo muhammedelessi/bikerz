@@ -568,7 +568,7 @@ const CourseDetail: React.FC = () => {
                               alt={isRTL ? 'صورة مصغرة للفيديو' : 'Video thumbnail'}
                               className="w-full h-full object-cover"
                             />
-                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors duration-300" />
+                            <div className="absolute inset-0" />
                             <div className="absolute inset-0 flex items-center justify-center">
                               <div className="w-20 h-20 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl ring-4 ring-primary/20">
                                 <Play className="w-9 h-9 text-primary-foreground ms-1" fill="currentColor" />
