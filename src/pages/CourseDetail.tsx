@@ -590,7 +590,7 @@ const CourseDetail: React.FC = () => {
                   </div>
 
                   {/* Course Info — directly below video */}
-                  <div className="lg:mt-6">
+                  <div className="md:mt-6">
                     {/* Badges */}
                     <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
                       {course.price === 0 && (
