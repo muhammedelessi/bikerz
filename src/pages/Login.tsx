@@ -29,8 +29,46 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isGoogleUser, setIsGoogleUser] = useState(false);
+  const [emailChecked, setEmailChecked] = useState(false);
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+
+  const checkIfGoogleUser = useCallback(async (emailValue: string) => {
+    if (!emailValue || !emailValue.includes('@')) {
+      setIsGoogleUser(false);
+      setEmailChecked(false);
+      return;
+    }
+    try {
+      const { data } = await supabase.rpc('check_google_provider' as any, { p_email: emailValue });
+      const result = data as boolean;
+      setIsGoogleUser(!!result);
+      setEmailChecked(true);
+    } catch {
+      setIsGoogleUser(false);
+      setEmailChecked(true);
+    }
+  }, []);
+
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    setError(null);
+    try {
+      const result = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: window.location.origin,
+        extraParams: email ? { login_hint: email } : undefined,
+      });
+      if (result.error) {
+        setError(isRTL ? 'فشل تسجيل الدخول بجوجل' : 'Google sign-in failed');
+      }
+    } catch {
+      setError(isRTL ? 'فشل تسجيل الدخول بجوجل' : 'Google sign-in failed');
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
 
   const cms = authContent?.login || {};
   const heroImage = cms.image || defaultHeroImage;
