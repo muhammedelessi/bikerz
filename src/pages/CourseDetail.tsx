@@ -589,6 +589,81 @@ const CourseDetail: React.FC = () => {
                       </div>
                     ) : null}
                   </div>
+
+                  {/* Course Info — directly below video */}
+                  <div className="mt-6">
+                    {/* Badges */}
+                    <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
+                      {course.price === 0 && (
+                        <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold border border-primary/30">
+                          {t('common.free')}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Title */}
+                    <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-foreground mb-2 sm:mb-4 leading-tight">
+                      {courseTitle}
+                    </h1>
+
+                    {/* Rating Summary */}
+                    {reviewStats && reviewStats.count > 0 && (
+                      <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                        <StarRating rating={reviewStats.avg} size="sm" />
+                        <span className="text-sm font-semibold text-foreground">{reviewStats.avg.toFixed(1)}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({reviewStats.count} {isRTL ? 'تقييم' : reviewStats.count === 1 ? 'review' : 'reviews'})
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Stats Row */}
+                    <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-2 sm:gap-y-3 text-xs sm:text-sm mb-3 sm:mb-0">
+                      <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+                          <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+                        </div>
+                        <div>
+                          <span className="font-semibold">{totalLessons}</span>
+                          <span className="text-muted-foreground ms-1">{isRTL ? 'درس' : 'lessons'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-secondary/30 flex items-center justify-center">
+                          <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-secondary-foreground" />
+                        </div>
+                        <div>
+                          <span className="font-semibold">{formatDuration(totalDurationMinutes)}</span>
+                          <span className="text-muted-foreground ms-1">{isRTL ? 'إجمالي' : 'total'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-accent/30 flex items-center justify-center">
+                          <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent-foreground" />
+                        </div>
+                        <div>
+                          <span className="font-semibold">{chapters.length}</span>
+                          <span className="text-muted-foreground ms-1">{isRTL ? 'فصول' : 'chapters'}</span>
+                        </div>
+                      </div>
+                      <span className="hidden sm:inline text-border">|</span>
+                      <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
+                        <Infinity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
+                        <span className="text-muted-foreground">{isRTL ? 'وصول مدى الحياة' : 'Life-time Access'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
+                        <MonitorPlay className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
+                        <span className="text-muted-foreground">{isRTL ? 'دورة أونلاين' : 'Online Course'}</span>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    {courseDescription && (
+                      <p className="text-sm sm:text-base lg:text-base text-muted-foreground mb-4 sm:mb-8 leading-relaxed max-w-2xl">
+                        {courseDescription}
+                      </p>
+                    )}
+                  </div>
                 </motion.div>
               </div>
 
@@ -772,87 +847,6 @@ const CourseDetail: React.FC = () => {
                 </motion.div>
               </div>
 
-              {/* Course Info — below video+card row */}
-              <div className="lg:col-span-7">
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
-                  {/* Badges */}
-                  <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
-                    {course.price === 0 && (
-                      <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold border border-primary/30">
-                        {t('common.free')}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Title */}
-                  <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-foreground mb-2 sm:mb-4 leading-tight">
-                    {courseTitle}
-                  </h1>
-
-                  {/* Rating Summary */}
-                  {reviewStats && reviewStats.count > 0 && (
-                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                      <StarRating rating={reviewStats.avg} size="sm" />
-                      <span className="text-sm font-semibold text-foreground">{reviewStats.avg.toFixed(1)}</span>
-                      <span className="text-xs text-muted-foreground">
-                        ({reviewStats.count} {isRTL ? 'تقييم' : reviewStats.count === 1 ? 'review' : 'reviews'})
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Stats Row — on mobile, show before description */}
-                  <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-2 sm:gap-y-3 text-xs sm:text-sm mb-3 sm:mb-0">
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/15 flex items-center justify-center">
-                        <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
-                      </div>
-                      <div>
-                        <span className="font-semibold">{totalLessons}</span>
-                        <span className="text-muted-foreground ms-1">{isRTL ? 'درس' : 'lessons'}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-secondary/30 flex items-center justify-center">
-                        <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-secondary-foreground" />
-                      </div>
-                      <div>
-                        <span className="font-semibold">{formatDuration(totalDurationMinutes)}</span>
-                        <span className="text-muted-foreground ms-1">{isRTL ? 'إجمالي' : 'total'}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-accent/30 flex items-center justify-center">
-                        <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent-foreground" />
-                      </div>
-                      <div>
-                        <span className="font-semibold">{chapters.length}</span>
-                        <span className="text-muted-foreground ms-1">{isRTL ? 'فصول' : 'chapters'}</span>
-                      </div>
-                    </div>
-
-                    <span className="hidden sm:inline text-border">|</span>
-
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
-                      <Infinity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
-                      <span className="text-muted-foreground">{isRTL ? 'وصول مدى الحياة' : 'Life-time Access'}</span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
-                      <MonitorPlay className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
-                      <span className="text-muted-foreground">{isRTL ? 'دورة أونلاين' : 'Online Course'}</span>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  {courseDescription && (
-                    <p className="text-sm sm:text-base lg:text-base text-muted-foreground mb-4 sm:mb-8 leading-relaxed max-w-2xl">
-                      {courseDescription}
-                    </p>
-                  )}
-                </motion.div>
-              </div>
             </div>
           </div>
         </section>
