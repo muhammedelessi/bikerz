@@ -61,6 +61,21 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
     setIsEditingPhone(false);
   };
 
+  const handleSaveGender = async (value: string) => {
+    setGender(value);
+    await onUpdate({ gender: value || null });
+    setIsEditingGender(false);
+  };
+
+  const handleSaveDob = async (date: Date | undefined) => {
+    setDob(date);
+    if (date) {
+      const formatted = format(date, 'yyyy-MM-dd');
+      await onUpdate({ date_of_birth: formatted });
+    }
+    setIsEditingDob(false);
+  };
+
   const handleChangePassword = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast.error(isRTL ? 'كلمات المرور غير متطابقة' : 'Passwords do not match');
