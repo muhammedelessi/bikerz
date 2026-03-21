@@ -667,7 +667,7 @@ const CourseDetail: React.FC = () => {
               </div>
 
               {/* Right: Enrollment Card — aligned with video top on desktop */}
-              <div ref={ctaCardCallbackRef} className="lg:col-span-5">
+              <div ref={ctaCardCallbackRef} className="md:col-span-5">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
