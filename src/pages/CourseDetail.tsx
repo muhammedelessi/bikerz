@@ -493,7 +493,7 @@ const CourseDetail: React.FC = () => {
           {/* Mobile: stacked video on top */}
           <div className="lg:hidden">
             {course.preview_video_url ? (
-              <div className="w-full bg-card">
+              <div className="w-full">
                 {previewVideoPlaying ? (
                   <div className="aspect-video w-full">
                     <BunnyVideoEmbed
@@ -528,7 +528,7 @@ const CourseDetail: React.FC = () => {
                 )}
               </div>
             ) : course.thumbnail_url ? (
-              <div className="relative w-full bg-card">
+              <div className="relative w-full">
                 <img src={course.thumbnail_url} alt={courseTitle} className="w-full aspect-video object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60" />
               </div>
