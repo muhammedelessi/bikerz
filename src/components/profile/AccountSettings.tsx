@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { format } from 'date-fns';
+import { arSA } from 'date-fns/locale';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,7 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import {
   Settings,
   Mail,
@@ -21,6 +27,8 @@ import {
   Loader2,
   Eye,
   EyeOff,
+  CalendarIcon,
+  User,
 } from 'lucide-react';
 import { ExtendedProfile } from '@/hooks/useUserProfile';
 
