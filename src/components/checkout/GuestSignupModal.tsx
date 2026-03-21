@@ -85,6 +85,18 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   const passwordLabel = (isRTL ? cms.password_label_ar : cms.password_label_en) || t('auth.signup.password');
   const confirmLabel = (isRTL ? cms.confirm_label_ar : cms.confirm_label_en) || t('auth.signup.confirmPassword');
 
+  // Hide navbar on mobile when modal is open
+  useEffect(() => {
+    if (open && isMobile) {
+      document.body.classList.add('guest-modal-open');
+    } else {
+      document.body.classList.remove('guest-modal-open');
+    }
+    return () => {
+      document.body.classList.remove('guest-modal-open');
+    };
+  }, [open, isMobile]);
+
   useEffect(() => {
     if (!open || !isIOS || typeof window === 'undefined' || !window.visualViewport) {
       setKeyboardOffset(0);
