@@ -653,7 +653,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     </div>
   );
 
-  const headerContent = (
+  const headerContent = mode === 'login' ? null : (
     <p className="text-sm text-muted-foreground text-center mt-1">
       {isRTL
         ? 'سيتم توجيهك للدفع مباشرة بعد التسجيل'
@@ -661,7 +661,9 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     </p>
   );
 
-  const titleText = isRTL ? 'أنشئ حسابك للمتابعة' : 'Create your account to continue';
+  const titleText = mode === 'login'
+    ? (isRTL ? 'تسجيل الدخول للمتابعة' : 'Login to continue')
+    : (isRTL ? 'أنشئ حسابك للمتابعة' : 'Create your account to continue');
 
   if (isMobile) {
     return (
