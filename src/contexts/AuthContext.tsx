@@ -131,12 +131,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (_event: any, newSession: any) => {
         if (!mounted || !initialized) return;
 
+        // Fix mobile viewport scaling after OAuth redirect
+        if (_event === 'SIGNED_IN') {
+          window.scrollTo(0, 0);
+          const viewport = document.querySelector('meta[name="viewport"]');
+          if (viewport) {
+            viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+            requestAnimationFrame(() => {
+              viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+            });
+          }
+        }
+
         // Handle auth state changes after initialization
         setSession(newSession);
         setUser(newSession?.user ?? null);
 
         if (newSession?.user) {
-          // Use setTimeout to avoid race conditions with Supabase's internal state
           setTimeout(async () => {
             if (!mounted) return;
             const { profile: fetchedProfile, roles: fetchedRoles } = await fetchUserData(newSession.user.id);
