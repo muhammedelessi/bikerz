@@ -116,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(existingSession);
           setUser(existingSession.user);
 
-          reloadAfterOAuthRedirect();
+          redirectAfterOAuth();
 
           const { profile: fetchedProfile, roles: fetchedRoles } = await fetchUserData(existingSession.user.id);
 
