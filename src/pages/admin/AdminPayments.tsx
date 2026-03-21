@@ -373,6 +373,7 @@ const AdminPayments = () => {
         getPaymentMethodLabel(p),
         p.charge_id || p.reference_number || '',
         p.source,
+        p.device_info || '',
         p.error_message || '',
         p.profile?.profile_complete ? 'Yes' : 'No',
       ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',');
