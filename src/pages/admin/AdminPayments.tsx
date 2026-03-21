@@ -56,6 +56,7 @@ interface UnifiedPayment {
   webhook_verified?: boolean | null;
   metadata?: Record<string, unknown> | null;
   tap_response?: Record<string, unknown> | null;
+  device_info?: string | null;
   // joined
   profile?: {
     full_name: string | null;
