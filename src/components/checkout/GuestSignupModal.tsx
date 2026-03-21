@@ -280,8 +280,18 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
       setIsGoogleLoading(false);
     }
   };
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (!isIOS) return;
+    const input = e.target;
+    requestAnimationFrame(() => {
+      input.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      setTimeout(() => {
+        input.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      }, 250);
+    });
+  };
 
-  const checkProviders = async (emailValue: string) => {
+
     if (!emailValue || !emailValue.includes('@')) {
       setIsGoogleUser(false);
       setEmailChecked(false);
