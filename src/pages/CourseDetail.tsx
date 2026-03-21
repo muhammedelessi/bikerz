@@ -548,7 +548,7 @@ const CourseDetail: React.FC = () => {
                   {/* Desktop Video — inline in left column */}
                   <div className="hidden lg:block">
                     {course.preview_video_url ? (
-                      <div className="rounded-2xl overflow-hidden border border-border/50 shadow-lg">
+                      <div className="rounded-2xl overflow-hidden">
                         {previewVideoPlaying ? (
                           <div className="aspect-video w-full">
                             <BunnyVideoEmbed
@@ -568,7 +568,7 @@ const CourseDetail: React.FC = () => {
                               alt={isRTL ? 'صورة مصغرة للفيديو' : 'Video thumbnail'}
                               className="w-full h-full object-cover"
                             />
-                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors duration-300" />
+                            <div className="absolute inset-0" />
                             <div className="absolute inset-0 flex items-center justify-center">
                               <div className="w-20 h-20 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl ring-4 ring-primary/20">
                                 <Play className="w-9 h-9 text-primary-foreground ms-1" fill="currentColor" />
@@ -583,9 +583,8 @@ const CourseDetail: React.FC = () => {
                         )}
                       </div>
                     ) : course.thumbnail_url ? (
-                      <div className="relative rounded-2xl overflow-hidden border border-border/50 shadow-lg">
+                      <div className="relative rounded-2xl overflow-hidden">
                         <img src={course.thumbnail_url} alt={courseTitle} className="w-full aspect-video object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60" />
                       </div>
                     ) : null}
                   </div>
