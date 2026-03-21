@@ -66,6 +66,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   const isMobile = useIsMobile();
   const isIOS = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent);
 
+  const [mode, setMode] = useState<'signup' | 'login'>('signup');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -78,6 +79,8 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const [isGoogleUser, setIsGoogleUser] = useState(false);
+  const [emailChecked, setEmailChecked] = useState(false);
 
   const cms = authContent?.signup || {};
   const nameLabel = (isRTL ? cms.name_label_ar : cms.name_label_en) || t('auth.signup.name');
