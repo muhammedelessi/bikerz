@@ -47,6 +47,17 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   useEffect(() => {
+    // Guard: wait until i18n is fully initialized before calling changeLanguage
+    if (!i18n.isInitialized) {
+      const onInit = () => {
+        if (i18n.language !== language) {
+          i18n.changeLanguage(language);
+        }
+      };
+      i18n.on('initialized', onInit);
+      return () => { i18n.off('initialized', onInit); };
+    }
+
     // Ensure i18n is synced on mount
     if (i18n.language !== language) {
       i18n.changeLanguage(language);
