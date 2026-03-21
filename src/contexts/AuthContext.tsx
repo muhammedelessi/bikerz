@@ -91,7 +91,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
-    
+
+    const resetViewportAfterOAuthRedirect = () => {
+      const hash = window.location.hash || '';
+      const search = window.location.search || '';
+      const isOAuthRedirect = hash.includes('access_token') || search.includes('code=');
+
+      if (!isOAuthRedirect) return;
+
+      window.scrollTo(0, 0);
+      const viewport = document.querySelector('meta[name="viewport"]');
+      if (!viewport) return;
+
+      viewport.setAttribute(
+        'content',
+        'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'
+      );
+
+      requestAnimationFrame(() => {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+      });
+    };
+
     const initializeAuth = async () => {
       try {
         // Get existing session first
@@ -104,6 +125,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (existingSession?.user) {
           setSession(existingSession);
           setUser(existingSession.user);
+
+          resetViewportAfterOAuthRedirect();
 
           const { profile: fetchedProfile, roles: fetchedRoles } = await fetchUserData(existingSession.user.id);
 
@@ -129,19 +152,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener for subsequent changes
     const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(
       async (_event: any, newSession: any) => {
-        if (!mounted || !initialized) return;
-
-        // Fix mobile viewport scaling after OAuth redirect
         if (_event === 'SIGNED_IN') {
-          window.scrollTo(0, 0);
-          const viewport = document.querySelector('meta[name="viewport"]');
-          if (viewport) {
-            viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
-            requestAnimationFrame(() => {
-              viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
-            });
-          }
+          resetViewportAfterOAuthRedirect();
         }
+
+        if (!mounted || !initialized) return;
 
         // Handle auth state changes after initialization
         setSession(newSession);
