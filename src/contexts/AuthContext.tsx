@@ -149,7 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(
       async (_event: any, newSession: any) => {
         if (_event === 'SIGNED_IN') {
-          resetViewportAfterOAuthRedirect();
+          reloadAfterOAuthRedirect();
         }
 
         if (!mounted || !initialized) return;
