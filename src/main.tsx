@@ -33,14 +33,26 @@ const resetLayoutAfterOAuthRedirect = () => {
 
   if (!shouldReset) return;
 
+  // Force viewport meta reset
+  ensureViewportMeta();
+
+  // Reset any inline dimension overrides
   document.documentElement.style.width = "100%";
   document.body.style.width = "100%";
   document.documentElement.style.minWidth = "0";
   document.body.style.minWidth = "0";
+  document.documentElement.style.maxWidth = "100vw";
+  document.body.style.maxWidth = "100vw";
+  document.documentElement.style.overflowX = "hidden";
+  document.body.style.overflowX = "hidden";
 
+  // Double-frame layout recalculation for WebKit
   requestAnimationFrame(() => {
     window.dispatchEvent(new Event("resize"));
     window.scrollTo(0, 0);
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new Event("resize"));
+    });
   });
 };
 
