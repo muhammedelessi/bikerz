@@ -491,7 +491,7 @@ const CourseDetail: React.FC = () => {
         {/* Hero Section */}
         <section className="relative overflow-hidden">
           {/* Mobile: stacked video on top */}
-          <div className="lg:hidden">
+          <div className="md:hidden">
             {course.preview_video_url ? (
               <div className="w-full">
                 {previewVideoPlaying ? (
@@ -541,12 +541,12 @@ const CourseDetail: React.FC = () => {
               {t('courses.backToCourses')}
             </Link>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-10">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-8 lg:gap-10">
               {/* Left: Video (desktop) + Course Info */}
-              <div className="lg:col-span-7">
+              <div className="md:col-span-7">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                   {/* Desktop Video — inline in left column */}
-                  <div className="hidden lg:block">
+                  <div className="hidden md:block">
                     {course.preview_video_url ? (
                       <div className="rounded-2xl overflow-hidden">
                         {previewVideoPlaying ? (
@@ -590,7 +590,7 @@ const CourseDetail: React.FC = () => {
                   </div>
 
                   {/* Course Info — directly below video */}
-                  <div className="lg:mt-6">
+                  <div className="md:mt-6">
                     {/* Badges */}
                     <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
                       {course.price === 0 && (
@@ -667,12 +667,12 @@ const CourseDetail: React.FC = () => {
               </div>
 
               {/* Right: Enrollment Card — aligned with video top on desktop */}
-              <div ref={ctaCardCallbackRef} className="lg:col-span-5">
+              <div ref={ctaCardCallbackRef} className="md:col-span-5">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
-                  className="card-premium p-5 sm:p-6 lg:p-8 lg:sticky lg:top-28 mx-0 lg:rounded-2xl"
+                  className="card-premium p-5 sm:p-6 lg:p-8 md:sticky md:top-28 mx-0 md:rounded-2xl"
                 >
                   {isEnrolled ? (
                     <div className="space-y-5">
