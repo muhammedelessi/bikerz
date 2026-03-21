@@ -92,21 +92,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let mounted = true;
 
-    const reloadAfterOAuthRedirect = () => {
+    const redirectAfterOAuth = () => {
       const hash = window.location.hash || '';
       const search = window.location.search || '';
       const isOAuthRedirect = hash.includes('access_token') || search.includes('code=');
 
       if (!isOAuthRedirect) return;
 
-      // Flag to prevent infinite reload loop
-      const reloadKey = 'oauth_reload_done';
-      if (sessionStorage.getItem(reloadKey)) {
-        sessionStorage.removeItem(reloadKey);
-        return;
-      }
-      sessionStorage.setItem(reloadKey, '1');
-      window.location.reload();
+      // Clean redirect to root — forces full page load, fixes mobile scaling
+      window.location.href = '/';
     };
 
     const initializeAuth = async () => {
