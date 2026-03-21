@@ -293,6 +293,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
 
 
   const checkProviders = async (emailValue: string) => {
+    if (!emailValue || !emailValue.includes('@')) {
       setIsGoogleUser(false);
       setEmailChecked(false);
       return;
