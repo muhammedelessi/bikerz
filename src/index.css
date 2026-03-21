@@ -556,3 +556,11 @@
     @apply bg-muted-foreground/50;
   }
 }
+
+/* Hide navbar when guest signup modal is open on mobile */
+@media (max-width: 767px) {
+  body.guest-modal-open nav,
+  body.guest-modal-open header {
+    display: none !important;
+  }
+}
