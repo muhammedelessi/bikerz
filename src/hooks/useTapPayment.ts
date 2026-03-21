@@ -117,6 +117,7 @@ export function useTapPayment(): UseTapPaymentReturn {
             coupon_id: config.couponId || null,
             payment_method: config.paymentMethod || 'card',
             detected_country: detectedCountry || null,
+            device_info: parseDeviceInfo(),
           },
         });
 
