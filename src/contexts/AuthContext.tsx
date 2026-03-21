@@ -55,6 +55,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Admin roles that can access the admin panel
 const ADMIN_ROLES: AppRole[] = ['super_admin', 'academy_admin', 'instructor', 'moderator', 'finance', 'support'];
+const OAUTH_VIEWPORT_RESET_KEY = 'oauth_viewport_reset_pending';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -98,6 +99,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const isOAuthRedirect = hash.includes('access_token') || search.includes('code=');
 
       if (!isOAuthRedirect) return;
+
+      try {
+        sessionStorage.setItem(OAUTH_VIEWPORT_RESET_KEY, '1');
+      } catch {
+        // sessionStorage may be unavailable in some WebKit contexts
+      }
+
+      window.scrollTo(0, 0);
 
       // Clean redirect to root — forces full page load, fixes mobile scaling
       window.location.href = '/';
