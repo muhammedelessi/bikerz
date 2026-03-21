@@ -707,9 +707,9 @@ const CourseDetail: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-12">
-              {/* Left: Course Info (3 cols) */}
-              <div className="lg:col-span-3">
+            <div className="grid grid-cols-1 gap-5 lg:gap-12">
+              {/* Course Info */}
+              <div>
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                   {/* Badges */}
                   <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
