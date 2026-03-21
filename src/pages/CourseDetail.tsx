@@ -546,7 +546,7 @@ const CourseDetail: React.FC = () => {
               <div className="lg:col-span-7">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                   {/* Desktop Video — inline in left column */}
-                  <div className="hidden lg:block mb-6">
+                  <div className="hidden lg:block">
                     {course.preview_video_url ? (
                       <div className="rounded-2xl overflow-hidden border border-border/50 shadow-lg">
                         {previewVideoPlaying ? (
@@ -589,7 +589,192 @@ const CourseDetail: React.FC = () => {
                       </div>
                     ) : null}
                   </div>
+                </motion.div>
+              </div>
 
+              {/* Right: Enrollment Card — aligned with video top on desktop */}
+              <div ref={ctaCardCallbackRef} className="lg:col-span-5">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                  className="card-premium p-5 sm:p-6 lg:p-8 lg:sticky lg:top-28 mx-0 lg:rounded-2xl"
+                >
+                  {isEnrolled ? (
+                    <div className="space-y-5">
+                      {/* Progress ring */}
+                      <div className="flex items-center gap-4">
+                        <div className="relative w-16 h-16 flex-shrink-0">
+                          <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+                            <circle cx="32" cy="32" r="28" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
+                            <circle
+                              cx="32" cy="32" r="28" fill="none"
+                              stroke="hsl(var(--primary))" strokeWidth="4"
+                              strokeLinecap="round"
+                              strokeDasharray={`${2 * Math.PI * 28}`}
+                              strokeDashoffset={`${2 * Math.PI * 28 * (1 - progressPercentage / 100)}`}
+                              className="transition-all duration-700"
+                            />
+                          </svg>
+                          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-foreground">
+                            {progressPercentage}%
+                          </span>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 text-primary mb-1">
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span className="font-semibold text-sm">{isRTL ? 'مسجّل' : 'Enrolled'}</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {completedLessons} / {totalLessons} {isRTL ? 'مكتمل' : 'completed'}
+                          </p>
+                        </div>
+                      </div>
+                      {remainingMinutes > 0 && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 text-sm">
+                          <Clock className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">
+                            {isRTL ? `${formatDuration(remainingMinutes)} متبقية` : `${formatDuration(remainingMinutes)} remaining`}
+                          </span>
+                        </div>
+                      )}
+                      {resumeLesson && (
+                        <Button className="w-full btn-cta h-12 text-base" asChild>
+                          <Link to={`/courses/${id}/lessons/${resumeLesson.id}`}>
+                            <Play className="w-5 h-5 me-2" />
+                            {isRTL ? 'أكمل التعلم' : 'Resume Learning'}
+                          </Link>
+                        </Button>
+                      )}
+                      {progressPercentage === 100 && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20">
+                          <Trophy className="w-5 h-5 text-primary" />
+                          <span className="text-sm font-medium text-primary">
+                            {isRTL ? '🎉 أكملت الدورة!' : '🎉 Course completed!'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-5">
+                      <div className="text-center py-2">
+                        {(() => {
+                          const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                          const sym = getCurrencySymbol(priceInfo.currency, isRTL);
+                          if (priceInfo.discountPct > 0 && course.price > 0) {
+                            return (
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-center gap-2">
+                                  <span className="text-lg text-muted-foreground line-through">
+                                    {priceInfo.originalPrice} {sym}
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-sm font-bold">
+                                    -{priceInfo.discountPct}%
+                                  </span>
+                                </div>
+                                <span className="text-4xl font-black text-foreground">
+                                  {priceInfo.finalPrice} {sym}
+                                </span>
+                              </div>
+                            );
+                          }
+                          return (
+                            <span className="text-4xl font-black text-foreground">
+                              {course.price === 0
+                                ? t('common.free')
+                                : `${priceInfo.finalPrice} ${sym}`}
+                            </span>
+                          );
+                        })()}
+                        {course.price > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {isRTL ? 'السعر غير شامل الضريبة' : 'Price excludes VAT'}
+                          </p>
+                        )}
+                      </div>
+                      {course.price === 0 ? (
+                        user ? (
+                          <Button
+                            className="w-full btn-cta h-12 text-base"
+                            onClick={() => enrollMutation.mutate()}
+                            disabled={enrollMutation.isPending}
+                          >
+                            <Zap className="w-5 h-5 me-2" />
+                            {enrollMutation.isPending
+                              ? t('courses.enrolling')
+                              : t('courses.enrollForFree')}
+                          </Button>
+                        ) : (
+                          <Button className="w-full btn-cta h-12 text-base" asChild>
+                            <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
+                              <Zap className="w-5 h-5 me-2" />
+                              {t('courses.enrollForFree')}
+                            </Link>
+                          </Button>
+                        )
+                      ) : user ? (
+                        <Button
+                          className="w-full btn-cta h-12 text-base"
+                          onClick={() => setShowCheckout(true)}
+                        >
+                          <ShoppingCart className="w-5 h-5 me-2" />
+                          {(() => {
+                            const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                            const sym = getCurrencySymbol(info.currency, isRTL);
+                            return isRTL
+                              ? `اشترك الآن – ${info.finalPrice} ${sym}`
+                              : `Buy now – ${info.finalPrice} ${sym}`;
+                          })()}
+                        </Button>
+                      ) : (
+                        <Button
+                          className="w-full btn-cta h-12 text-base"
+                          onClick={() => setShowGuestSignup(true)}
+                        >
+                          <Zap className="w-5 h-5 me-2" />
+                          {(() => {
+                            const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                            const sym = getCurrencySymbol(info.currency, isRTL);
+                            return isRTL
+                              ? `اشترك الآن – ${info.finalPrice} ${sym}`
+                              : `Buy now – ${info.finalPrice} ${sym}`;
+                          })()}
+                        </Button>
+                      )}
+                      <div className="space-y-3 pt-3 border-t border-border/50">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-1">
+                          {isRTL ? 'يشمل الاشتراك' : 'This course includes'}
+                        </p>
+                        <div className="space-y-3">
+                          {[
+                            { icon: Video, text: isRTL ? `${totalLessons} درس فيديو` : `${totalLessons} video lessons` },
+                            { icon: Clock, text: isRTL ? `${formatDuration(totalDurationMinutes)} محتوى` : `${formatDuration(totalDurationMinutes)} of content` },
+                            { icon: ClipboardList, text: isRTL ? 'اختبارات تفاعلية' : 'Interactive quizzes' },
+                            { icon: Infinity, text: isRTL ? 'وصول مدى الحياة' : 'Lifetime access' },
+                            { icon: MonitorPlay, text: isRTL ? 'مشاهدة من أي جهاز' : 'Watch on any device' },
+                          ].map(({ icon: Icon, text }, i) => (
+                            <div key={i} className="flex items-center gap-3 text-sm text-foreground/80">
+                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <Icon className="w-4 h-4 text-primary" />
+                              </div>
+                              <span className="font-medium">{text}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {course.price > 0 && (
+                          <div className="pt-3 border-t border-border/50">
+                            <PaymentMethodIcons />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              </div>
+
+              {/* Course Info — below video+card row */}
+              <div className="lg:col-span-7">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
                   {/* Badges */}
                   <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
                     {course.price === 0 && (
@@ -665,197 +850,6 @@ const CourseDetail: React.FC = () => {
                     <p className="text-sm sm:text-base lg:text-base text-muted-foreground mb-4 sm:mb-8 leading-relaxed max-w-2xl">
                       {courseDescription}
                     </p>
-                  )}
-                </motion.div>
-              </div>
-
-              {/* Right: Enrollment Card (2 cols, sticky) */}
-              <div ref={ctaCardCallbackRef} className="lg:col-span-5 order-last lg:order-last">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="card-premium p-5 sm:p-6 lg:p-8 lg:sticky lg:top-28 mx-0 lg:rounded-2xl"
-                >
-                  {isEnrolled ? (
-                    <div className="space-y-5">
-                      {/* Progress ring */}
-                      <div className="flex items-center gap-4">
-                        <div className="relative w-16 h-16 flex-shrink-0">
-                          <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
-                            <circle cx="32" cy="32" r="28" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
-                            <circle
-                              cx="32" cy="32" r="28" fill="none"
-                              stroke="hsl(var(--primary))" strokeWidth="4"
-                              strokeLinecap="round"
-                              strokeDasharray={`${2 * Math.PI * 28}`}
-                              strokeDashoffset={`${2 * Math.PI * 28 * (1 - progressPercentage / 100)}`}
-                              className="transition-all duration-700"
-                            />
-                          </svg>
-                          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-foreground">
-                            {progressPercentage}%
-                          </span>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 text-primary mb-1">
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span className="font-semibold text-sm">{isRTL ? 'مسجّل' : 'Enrolled'}</span>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {completedLessons} / {totalLessons} {isRTL ? 'مكتمل' : 'completed'}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Remaining time */}
-                      {remainingMinutes > 0 && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 text-sm">
-                          <Clock className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-muted-foreground">
-                            {isRTL ? `${formatDuration(remainingMinutes)} متبقية` : `${formatDuration(remainingMinutes)} remaining`}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Smart Resume Button */}
-                      {resumeLesson && (
-                        <Button className="w-full btn-cta h-12 text-base" asChild>
-                          <Link to={`/courses/${id}/lessons/${resumeLesson.id}`}>
-                            <Play className="w-5 h-5 me-2" />
-                            {isRTL ? 'أكمل التعلم' : 'Resume Learning'}
-                          </Link>
-                        </Button>
-                      )}
-
-                      {progressPercentage === 100 && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20">
-                          <Trophy className="w-5 h-5 text-primary" />
-                          <span className="text-sm font-medium text-primary">
-                            {isRTL ? '🎉 أكملت الدورة!' : '🎉 Course completed!'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="space-y-5">
-                      {/* Price */}
-                      <div className="text-center py-2">
-                        {(() => {
-                          const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
-                          const sym = getCurrencySymbol(priceInfo.currency, isRTL);
-                          if (priceInfo.discountPct > 0 && course.price > 0) {
-                            return (
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-center gap-2">
-                                  <span className="text-lg text-muted-foreground line-through">
-                                    {priceInfo.originalPrice} {sym}
-                                  </span>
-                                  <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-sm font-bold">
-                                    -{priceInfo.discountPct}%
-                                  </span>
-                                </div>
-                                <span className="text-4xl font-black text-foreground">
-                                  {priceInfo.finalPrice} {sym}
-                                </span>
-                              </div>
-                            );
-                          }
-                          return (
-                            <span className="text-4xl font-black text-foreground">
-                              {course.price === 0
-                                ? t('common.free')
-                                : `${priceInfo.finalPrice} ${sym}`}
-                            </span>
-                          );
-                        })()}
-                        {course.price > 0 && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {isRTL ? 'السعر غير شامل الضريبة' : 'Price excludes VAT'}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* CTA */}
-                      {course.price === 0 ? (
-                        user ? (
-                          <Button
-                            className="w-full btn-cta h-12 text-base"
-                            onClick={() => enrollMutation.mutate()}
-                            disabled={enrollMutation.isPending}
-                          >
-                            <Zap className="w-5 h-5 me-2" />
-                            {enrollMutation.isPending
-                              ? t('courses.enrolling')
-                              : t('courses.enrollForFree')}
-                          </Button>
-                        ) : (
-                          <Button className="w-full btn-cta h-12 text-base" asChild>
-                            <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
-                              <Zap className="w-5 h-5 me-2" />
-                              {t('courses.enrollForFree')}
-                            </Link>
-                          </Button>
-                        )
-                      ) : user ? (
-                        <Button
-                          className="w-full btn-cta h-12 text-base"
-                          onClick={() => setShowCheckout(true)}
-                        >
-                          <ShoppingCart className="w-5 h-5 me-2" />
-                          {(() => {
-                            const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
-                            const sym = getCurrencySymbol(info.currency, isRTL);
-                            return isRTL
-                              ? `اشترك الآن – ${info.finalPrice} ${sym}`
-                              : `Buy now – ${info.finalPrice} ${sym}`;
-                          })()}
-                        </Button>
-                      ) : (
-                        <Button
-                          className="w-full btn-cta h-12 text-base"
-                          onClick={() => setShowGuestSignup(true)}
-                        >
-                          <Zap className="w-5 h-5 me-2" />
-                          {(() => {
-                            const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
-                            const sym = getCurrencySymbol(info.currency, isRTL);
-                            return isRTL
-                              ? `اشترك الآن – ${info.finalPrice} ${sym}`
-                              : `Buy now – ${info.finalPrice} ${sym}`;
-                          })()}
-                        </Button>
-                      )}
-
-                      {/* Course includes */}
-                      <div className="space-y-3 pt-3 border-t border-border/50">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-1">
-                          {isRTL ? 'يشمل الاشتراك' : 'This course includes'}
-                        </p>
-                        <div className="space-y-3">
-                          {[
-                            { icon: Video, text: isRTL ? `${totalLessons} درس فيديو` : `${totalLessons} video lessons` },
-                            { icon: Clock, text: isRTL ? `${formatDuration(totalDurationMinutes)} محتوى` : `${formatDuration(totalDurationMinutes)} of content` },
-                            { icon: ClipboardList, text: isRTL ? 'اختبارات تفاعلية' : 'Interactive quizzes' },
-                            { icon: Infinity, text: isRTL ? 'وصول مدى الحياة' : 'Lifetime access' },
-                            { icon: MonitorPlay, text: isRTL ? 'مشاهدة من أي جهاز' : 'Watch on any device' },
-                          ].map(({ icon: Icon, text }, i) => (
-                            <div key={i} className="flex items-center gap-3 text-sm text-foreground/80">
-                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                <Icon className="w-4 h-4 text-primary" />
-                              </div>
-                              <span className="font-medium">{text}</span>
-                            </div>
-                          ))}
-                        </div>
-                        {/* Payment methods */}
-                        {course.price > 0 && (
-                          <div className="pt-3 border-t border-border/50">
-                            <PaymentMethodIcons />
-                          </div>
-                        )}
-                      </div>
-                    </div>
                   )}
                 </motion.div>
               </div>
