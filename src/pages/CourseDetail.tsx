@@ -543,7 +543,7 @@ const CourseDetail: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-8 lg:gap-10">
               {/* Left: Video (desktop) + Course Info */}
-              <div className="lg:col-span-7">
+              <div className="md:col-span-7">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                   {/* Desktop Video — inline in left column */}
                   <div className="hidden lg:block">
