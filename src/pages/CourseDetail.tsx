@@ -490,59 +490,124 @@ const CourseDetail: React.FC = () => {
       <main>
         {/* Hero Section */}
         <section className="relative overflow-hidden">
-          {/* Full-width Intro Video or Thumbnail at top */}
-          {course.preview_video_url ? (
-            <div className="w-full bg-card md:max-w-3xl md:mx-auto md:my-6 md:rounded-xl md:overflow-hidden">
-              {previewVideoPlaying ? (
-                <div className="aspect-video w-full">
-                  <BunnyVideoEmbed
-                    videoUrl={course.preview_video_url}
-                    title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
-                    isPreview
-                  />
-                </div>
-              ) : (
-                <button
-                  onClick={() => setPreviewVideoPlaying(true)}
-                  className="relative w-full aspect-video group cursor-pointer focus:outline-none"
-                  aria-label={isRTL ? 'تشغيل الفيديو التعريفي' : 'Play preview video'}
-                >
-                  <img
-                    src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
-                    alt={isRTL ? 'صورة مصغرة للفيديو' : 'Video thumbnail'}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl">
-                      <Play className="w-7 h-7 sm:w-9 sm:h-9 text-primary-foreground ms-1" fill="currentColor" />
+          {/* Mobile only: Full-width Intro Video or Thumbnail at top */}
+          <div className="lg:hidden">
+            {course.preview_video_url ? (
+              <div className="w-full bg-card">
+                {previewVideoPlaying ? (
+                  <div className="aspect-video w-full">
+                    <BunnyVideoEmbed
+                      videoUrl={course.preview_video_url}
+                      title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
+                      isPreview
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setPreviewVideoPlaying(true)}
+                    className="relative w-full aspect-video group cursor-pointer focus:outline-none"
+                    aria-label={isRTL ? 'تشغيل الفيديو التعريفي' : 'Play preview video'}
+                  >
+                    <img
+                      src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
+                      alt={isRTL ? 'صورة مصغرة للفيديو' : 'Video thumbnail'}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl">
+                        <Play className="w-7 h-7 sm:w-9 sm:h-9 text-primary-foreground ms-1" fill="currentColor" />
+                      </div>
                     </div>
-                  </div>
-                  <div className="absolute bottom-4 start-4">
-                    <span className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-sm font-medium backdrop-blur-sm">
-                      {isRTL ? 'شاهد الفيديو التعريفي' : 'Watch Preview'}
-                    </span>
-                  </div>
-                </button>
-              )}
-            </div>
-          ) : course.thumbnail_url ? (
-            <div className="relative w-full bg-card">
-              <img
-                src={course.thumbnail_url}
-                alt={courseTitle}
-                className="w-full aspect-video object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60" />
-            </div>
-          ) : null}
+                    <div className="absolute bottom-4 start-4">
+                      <span className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-sm font-medium backdrop-blur-sm">
+                        {isRTL ? 'شاهد الفيديو التعريفي' : 'Watch Preview'}
+                      </span>
+                    </div>
+                  </button>
+                )}
+              </div>
+            ) : course.thumbnail_url ? (
+              <div className="relative w-full bg-card">
+                <img
+                  src={course.thumbnail_url}
+                  alt={courseTitle}
+                  className="w-full aspect-video object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60" />
+              </div>
+            ) : null}
+          </div>
 
           <div className="page-container relative z-10 pt-3 sm:pt-6 pb-6 sm:pb-12 px-4 sm:px-6">
-            {/* Back link — below the image on mobile, inline on desktop */}
+            {/* Back link */}
             <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-3 lg:mb-8 text-xs sm:text-sm">
               <BackIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 me-1" />
               {t('courses.backToCourses')}
             </Link>
+
+            {/* Desktop: Video + Purchase Card side by side */}
+            <div className="hidden lg:grid lg:grid-cols-5 gap-8 mb-8">
+              {/* Video — left 3 cols */}
+              <div className="lg:col-span-3">
+                {course.preview_video_url ? (
+                  <div className="w-full bg-card rounded-xl overflow-hidden">
+                    {previewVideoPlaying ? (
+                      <div className="aspect-video w-full">
+                        <BunnyVideoEmbed
+                          videoUrl={course.preview_video_url}
+                          title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
+                          isPreview
+                        />
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setPreviewVideoPlaying(true)}
+                        className="relative w-full aspect-video group cursor-pointer focus:outline-none"
+                        aria-label={isRTL ? 'تشغيل الفيديو التعريفي' : 'Play preview video'}
+                      >
+                        <img
+                          src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
+                          alt={isRTL ? 'صورة مصغرة للفيديو' : 'Video thumbnail'}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-20 h-20 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl">
+                            <Play className="w-9 h-9 text-primary-foreground ms-1" fill="currentColor" />
+                          </div>
+                        </div>
+                        <div className="absolute bottom-4 start-4">
+                          <span className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-sm font-medium backdrop-blur-sm">
+                            {isRTL ? 'شاهد الفيديو التعريفي' : 'Watch Preview'}
+                          </span>
+                        </div>
+                      </button>
+                    )}
+                  </div>
+                ) : course.thumbnail_url ? (
+                  <div className="relative w-full bg-card rounded-xl overflow-hidden">
+                    <img
+                      src={course.thumbnail_url}
+                      alt={courseTitle}
+                      className="w-full aspect-video object-cover"
+                    />
+                  </div>
+                ) : null}
+              </div>
+
+              {/* Purchase Card — right 2 cols */}
+              <div ref={ctaCardCallbackRef} className="lg:col-span-2">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                  className="card-premium p-6 lg:sticky lg:top-28"
+                >
+                  {renderPurchaseCard()}
+                </motion.div>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-12">
               {/* Left: Course Info (3 cols) */}
