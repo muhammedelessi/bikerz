@@ -1,0 +1,1 @@
+ALTER TABLE public.tap_charges ADD COLUMN IF NOT EXISTS device_info text DEFAULT NULL;
