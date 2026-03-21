@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { arSA } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { lovable } from '@/integrations/lovable/index';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
 import { useAuthPageContent } from '@/hooks/useAuthPageContent';
 import { useNavigate } from 'react-router-dom';
@@ -21,8 +23,22 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AlertCircle, Zap, Eye, EyeOff } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { AlertCircle, Eye, EyeOff, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+
+const GoogleIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+  </svg>
+);
 
 interface GuestSignupModalProps {
   open: boolean;
@@ -44,7 +60,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { sendCourseStatus } = useGHLFormWebhook();
+  const { sendFormData, sendCourseStatus } = useGHLFormWebhook();
   const { data: authContent } = useAuthPageContent();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -54,9 +70,12 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [gender, setGender] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState<Date>();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
 
@@ -89,6 +108,42 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
       setKeyboardOffset(0);
     };
   }, [open, isIOS]);
+
+  const saveProfileAndSync = async (userId: string, fullName: string, userEmail: string, genderVal: string, dob: Date | undefined) => {
+    if (genderVal || dob) {
+      try {
+        await supabase.from('profiles').update({
+          gender: genderVal || null,
+          date_of_birth: dob ? format(dob, 'yyyy-MM-dd') : null,
+        } as any).eq('user_id', userId);
+      } catch (e) {
+        console.error('Failed to save gender/DOB:', e);
+      }
+    }
+
+    try {
+      await supabase.functions.invoke('ghl-sync', {
+        body: {
+          action: 'create_or_update_contact',
+          data: {
+            full_name: fullName,
+            email: userEmail,
+            date_of_birth: dob ? dob.toISOString().split('T')[0] : '',
+            gender: genderVal || '',
+          },
+        },
+      });
+    } catch (syncErr) {
+      console.error('GHL signup sync failed:', syncErr);
+    }
+
+    sendCourseStatus(userId, course.id, course.title, 'not purchased', {
+      full_name: fullName,
+      email: userEmail,
+      isRTL,
+      silent: true,
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,18 +202,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
         .update({ full_name: name.trim() })
         .eq('user_id', signupData.user.id);
 
-      sendCourseStatus(
-        signupData.user.id,
-        course.id,
-        course.title,
-        'not purchased',
-        {
-          full_name: name.trim(),
-          email: email.trim(),
-          isRTL,
-          silent: true,
-        }
-      );
+      await saveProfileAndSync(signupData.user.id, name.trim(), email.trim(), gender, dateOfBirth);
 
       toast.success(t('auth.signup.success'));
       onOpenChange(false);
@@ -171,11 +215,60 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setIsGoogleLoading(true);
+
+    try {
+      const result = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: window.location.origin,
+      });
+
+      if (result.redirected) return;
+
+      if (result.error) {
+        setError(result.error.message || (isRTL ? 'فشل تسجيل الدخول بجوجل' : 'Google sign-in failed'));
+        setIsGoogleLoading(false);
+        return;
+      }
+
+      const { data: { user } } = await (supabase.auth as any).getUser();
+      if (!user) {
+        setError(isRTL ? 'فشل في الحصول على بيانات المستخدم' : 'Failed to get user data');
+        setIsGoogleLoading(false);
+        return;
+      }
+
+      const googleName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+      const googleAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture || '';
+
+      try {
+        const updateData: Record<string, any> = {};
+        if (googleName) updateData.full_name = googleName;
+        if (googleAvatar) updateData.avatar_url = googleAvatar;
+        if (Object.keys(updateData).length > 0) {
+          await supabase.from('profiles').update(updateData).eq('user_id', user.id);
+        }
+      } catch (e) {
+        console.error('Failed to update profile with Google data:', e);
+      }
+
+      await saveProfileAndSync(user.id, googleName, user.email || '', '', undefined);
+
+      toast.success(isRTL ? 'تم التسجيل بنجاح!' : 'Signed up successfully!');
+      setIsGoogleLoading(false);
+      onOpenChange(false);
+      onAuthenticated();
+    } catch (err: any) {
+      console.error('Google sign-in error:', err);
+      setError(err?.message || (isRTL ? 'فشل تسجيل الدخول بجوجل' : 'Google sign-in failed'));
+      setIsGoogleLoading(false);
+    }
+  };
+
   const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     if (!isIOS) return;
-
     const input = e.target;
-
     requestAnimationFrame(() => {
       input.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
       setTimeout(() => {
@@ -192,6 +285,36 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
           <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
+
+      {/* Google Sign-In Button */}
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full h-10 sm:h-11 text-sm sm:text-base gap-3 border-border"
+        onClick={handleGoogleSignIn}
+        disabled={isGoogleLoading || loading}
+      >
+        {isGoogleLoading ? (
+          <div className="w-5 h-5 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
+        ) : (
+          <>
+            <GoogleIcon />
+            {isRTL ? 'التسجيل بحساب جوجل' : 'Sign up with Google'}
+          </>
+        )}
+      </Button>
+
+      {/* Divider */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-card px-2 text-muted-foreground">
+            {isRTL ? 'أو' : 'or'}
+          </span>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-3.5">
         <div className="space-y-1.5">
@@ -271,18 +394,63 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
           </div>
         </div>
 
+        {/* Gender */}
+        <div className="space-y-1.5">
+          <Label className="text-sm">{isRTL ? 'الجنس' : 'Gender'}</Label>
+          <Select value={gender} onValueChange={setGender} dir={isRTL ? 'rtl' : 'ltr'}>
+            <SelectTrigger className="form-input h-10 sm:h-11 text-sm sm:text-base text-start">
+              <SelectValue placeholder={isRTL ? 'اختر الجنس' : 'Select gender'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="male">{isRTL ? 'ذكر' : 'Male'}</SelectItem>
+              <SelectItem value="female">{isRTL ? 'أنثى' : 'Female'}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Date of Birth */}
+        <div className="space-y-1.5">
+          <Label className="text-sm">{isRTL ? 'تاريخ الميلاد' : 'Date of Birth'}</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full h-10 sm:h-11 text-sm sm:text-base justify-start font-normal form-input text-start",
+                  !dateOfBirth && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="w-4 h-4 me-2" />
+                {dateOfBirth ? format(dateOfBirth, 'PPP', { locale: isRTL ? arSA : undefined }) : (isRTL ? 'اختر التاريخ' : 'Pick a date')}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start" dir={isRTL ? 'rtl' : 'ltr'}>
+              <Calendar
+                mode="single"
+                selected={dateOfBirth}
+                onSelect={setDateOfBirth}
+                disabled={(date) => date > new Date() || date < new Date('1940-01-01')}
+                initialFocus
+                captionLayout="dropdown-buttons"
+                fromYear={1940}
+                toYear={new Date().getFullYear()}
+                locale={isRTL ? arSA : undefined}
+                dir={isRTL ? 'rtl' : 'ltr'}
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+
         <Button
           type="submit"
           className="w-full btn-cta h-11 text-base mt-1"
-          disabled={loading}
+          disabled={loading || isGoogleLoading}
         >
           {loading ? (
             <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
           ) : (
-            <>
-              <Zap className="w-5 h-5 me-2" />
-              {isRTL ? 'متابعة إلى الدفع' : 'Continue to Payment'}
-            </>
+            isRTL ? 'متابعة إلى الدفع' : 'Continue to Payment'
           )}
         </Button>
 
@@ -296,13 +464,11 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   );
 
   const headerContent = (
-    <>
-      <p className="text-sm text-muted-foreground text-center mt-1">
-        {isRTL
-          ? 'سيتم توجيهك للدفع مباشرة بعد التسجيل'
-          : "You'll be directed to payment right after signing up"}
-      </p>
-    </>
+    <p className="text-sm text-muted-foreground text-center mt-1">
+      {isRTL
+        ? 'سيتم توجيهك للدفع مباشرة بعد التسجيل'
+        : "You'll be directed to payment right after signing up"}
+    </p>
   );
 
   const titleText = isRTL ? 'أنشئ حسابك للمتابعة' : 'Create your account to continue';
@@ -338,7 +504,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[420px] bg-card border-2 border-border shadow-2xl p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[420px] bg-card border-2 border-border shadow-2xl p-0 overflow-hidden max-h-[90vh] overflow-y-auto">
         <DialogHeader className="px-6 pt-6 pb-0">
           <DialogTitle className="text-lg font-bold text-center">
             {titleText}
