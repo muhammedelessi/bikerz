@@ -133,6 +133,7 @@ const AdminPayments = () => {
         metadata: p.metadata as Record<string, unknown> | null,
         tap_response: p.tap_response as Record<string, unknown> | null,
         payment_method: p.payment_method || 'card',
+        device_info: (p as any).device_info || null,
       }));
 
       const all = [...manualData, ...tapData].sort(
