@@ -106,10 +106,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // sessionStorage may be unavailable in some WebKit contexts
       }
 
+      // Force viewport meta before redirect
+      const vp = document.querySelector('meta[name="viewport"]');
+      if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+
       window.scrollTo(0, 0);
 
-      // Clean redirect to root — forces full page load, fixes mobile scaling
-      window.location.href = '/';
+      // Use replace to force full page reload and reset responsive layout
+      window.location.replace('/');
     };
 
     const initializeAuth = async () => {
