@@ -758,6 +758,12 @@ const AdminPayments = () => {
                                 : <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-xs">{isRTL ? 'لا' : 'No'}</Badge>
                             }
                           />
+                          {selectedPayment.device_info && (
+                            <DetailRow
+                              label={isRTL ? 'جهاز المستخدم' : 'User Device'}
+                              value={<span className="text-xs font-mono">{selectedPayment.device_info}</span>}
+                            />
+                          )}
                         </>
                       )}
 
