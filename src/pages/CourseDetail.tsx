@@ -491,7 +491,7 @@ const CourseDetail: React.FC = () => {
         {/* Hero Section */}
         <section className="relative overflow-hidden">
           {/* Mobile: stacked video on top */}
-          <div className="lg:hidden">
+          <div className="md:hidden">
             {course.preview_video_url ? (
               <div className="w-full">
                 {previewVideoPlaying ? (
