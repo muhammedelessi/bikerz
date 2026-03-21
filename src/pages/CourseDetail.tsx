@@ -583,9 +583,8 @@ const CourseDetail: React.FC = () => {
                         )}
                       </div>
                     ) : course.thumbnail_url ? (
-                      <div className="relative rounded-2xl overflow-hidden border border-border/50 shadow-lg">
+                      <div className="relative rounded-2xl overflow-hidden">
                         <img src={course.thumbnail_url} alt={courseTitle} className="w-full aspect-video object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60" />
                       </div>
                     ) : null}
                   </div>
