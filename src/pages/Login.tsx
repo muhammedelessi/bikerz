@@ -156,8 +156,10 @@ const Login: React.FC = () => {
                     setEmail(e.target.value);
                     setEmailChecked(false);
                     setIsGoogleUser(false);
+                    setIsEmailUser(false);
+                    setUserExists(false);
                   }}
-                  onBlur={() => checkIfGoogleUser(email)}
+                  onBlur={() => checkProviders(email)}
                   placeholder="your@email.com"
                   required
                   className="form-input h-11 sm:h-12 text-base"
@@ -167,7 +169,7 @@ const Login: React.FC = () => {
               {emailChecked && isGoogleUser ? (
                 <>
                   <p className="text-sm text-muted-foreground text-center">
-                    {isRTL ? 'هذا الحساب مسجل عبر جوجل' : 'This account was created with Google'}
+                    {isRTL ? 'هذا الحساب مسجل عبر جوجل. استخدم زر جوجل لتسجيل الدخول.' : 'This account was created with Google. Please use the Google button to sign in.'}
                   </p>
                   <Button
                     type="button"
