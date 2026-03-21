@@ -11,7 +11,7 @@ import SEOHead from "@/components/common/SEOHead";
 
 const Index: React.FC = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <SEOHead
         title="Learn Motorcycle Riding with Expert Instructors"
         description="BIKERZ Academy is your premier online motorcycle riding school. Learn from certified instructors, master riding techniques, and join a thriving biker community."
