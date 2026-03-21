@@ -490,226 +490,63 @@ const CourseDetail: React.FC = () => {
       <main>
         {/* Hero Section */}
         <section className="relative overflow-hidden">
-          {/* Mobile only: Full-width Intro Video or Thumbnail at top */}
-          <div className="lg:hidden">
-            {course.preview_video_url ? (
-              <div className="w-full bg-card">
-                {previewVideoPlaying ? (
-                  <div className="aspect-video w-full">
-                    <BunnyVideoEmbed
-                      videoUrl={course.preview_video_url}
-                      title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
-                      isPreview
-                    />
+          {/* Full-width Intro Video or Thumbnail at top */}
+          {course.preview_video_url ? (
+            <div className="w-full bg-card md:max-w-3xl md:mx-auto md:my-6 md:rounded-xl md:overflow-hidden">
+              {previewVideoPlaying ? (
+                <div className="aspect-video w-full">
+                  <BunnyVideoEmbed
+                    videoUrl={course.preview_video_url}
+                    title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
+                    isPreview
+                  />
+                </div>
+              ) : (
+                <button
+                  onClick={() => setPreviewVideoPlaying(true)}
+                  className="relative w-full aspect-video group cursor-pointer focus:outline-none"
+                  aria-label={isRTL ? 'تشغيل الفيديو التعريفي' : 'Play preview video'}
+                >
+                  <img
+                    src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
+                    alt={isRTL ? 'صورة مصغرة للفيديو' : 'Video thumbnail'}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl">
+                      <Play className="w-7 h-7 sm:w-9 sm:h-9 text-primary-foreground ms-1" fill="currentColor" />
+                    </div>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => setPreviewVideoPlaying(true)}
-                    className="relative w-full aspect-video group cursor-pointer focus:outline-none"
-                    aria-label={isRTL ? 'تشغيل الفيديو التعريفي' : 'Play preview video'}
-                  >
-                    <img
-                      src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
-                      alt={isRTL ? 'صورة مصغرة للفيديو' : 'Video thumbnail'}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl">
-                        <Play className="w-7 h-7 sm:w-9 sm:h-9 text-primary-foreground ms-1" fill="currentColor" />
-                      </div>
-                    </div>
-                    <div className="absolute bottom-4 start-4">
-                      <span className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-sm font-medium backdrop-blur-sm">
-                        {isRTL ? 'شاهد الفيديو التعريفي' : 'Watch Preview'}
-                      </span>
-                    </div>
-                  </button>
-                )}
-              </div>
-            ) : course.thumbnail_url ? (
-              <div className="relative w-full bg-card">
-                <img
-                  src={course.thumbnail_url}
-                  alt={courseTitle}
-                  className="w-full aspect-video object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60" />
-              </div>
-            ) : null}
-          </div>
+                  <div className="absolute bottom-4 start-4">
+                    <span className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-sm font-medium backdrop-blur-sm">
+                      {isRTL ? 'شاهد الفيديو التعريفي' : 'Watch Preview'}
+                    </span>
+                  </div>
+                </button>
+              )}
+            </div>
+          ) : course.thumbnail_url ? (
+            <div className="relative w-full bg-card">
+              <img
+                src={course.thumbnail_url}
+                alt={courseTitle}
+                className="w-full aspect-video object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60" />
+            </div>
+          ) : null}
 
           <div className="page-container relative z-10 pt-3 sm:pt-6 pb-6 sm:pb-12 px-4 sm:px-6">
-            {/* Back link */}
+            {/* Back link — below the image on mobile, inline on desktop */}
             <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-3 lg:mb-8 text-xs sm:text-sm">
               <BackIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 me-1" />
               {t('courses.backToCourses')}
             </Link>
 
-            {/* Desktop: Video + Purchase Card side by side */}
-            <div className="hidden lg:grid lg:grid-cols-5 gap-8 mb-8">
-              {/* Video — left 3 cols */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-12">
+              {/* Left: Course Info (3 cols) */}
               <div className="lg:col-span-3">
-                {course.preview_video_url ? (
-                  <div className="w-full bg-card rounded-xl overflow-hidden">
-                    {previewVideoPlaying ? (
-                      <div className="aspect-video w-full">
-                        <BunnyVideoEmbed
-                          videoUrl={course.preview_video_url}
-                          title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
-                          isPreview
-                        />
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setPreviewVideoPlaying(true)}
-                        className="relative w-full aspect-video group cursor-pointer focus:outline-none"
-                        aria-label={isRTL ? 'تشغيل الفيديو التعريفي' : 'Play preview video'}
-                      >
-                        <img
-                          src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
-                          alt={isRTL ? 'صورة مصغرة للفيديو' : 'Video thumbnail'}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-20 h-20 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl">
-                            <Play className="w-9 h-9 text-primary-foreground ms-1" fill="currentColor" />
-                          </div>
-                        </div>
-                        <div className="absolute bottom-4 start-4">
-                          <span className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-sm font-medium backdrop-blur-sm">
-                            {isRTL ? 'شاهد الفيديو التعريفي' : 'Watch Preview'}
-                          </span>
-                        </div>
-                      </button>
-                    )}
-                  </div>
-                ) : course.thumbnail_url ? (
-                  <div className="relative w-full bg-card rounded-xl overflow-hidden">
-                    <img
-                      src={course.thumbnail_url}
-                      alt={courseTitle}
-                      className="w-full aspect-video object-cover"
-                    />
-                  </div>
-                ) : null}
-              </div>
-
-              {/* Purchase Card — right 2 cols (desktop only) */}
-              <div ref={ctaCardCallbackRef} className="lg:col-span-2">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="card-premium p-6 lg:sticky lg:top-28"
-                >
-                  {isEnrolled ? (
-                    <div className="space-y-5">
-                      <div className="flex items-center gap-4">
-                        <div className="relative w-16 h-16 flex-shrink-0">
-                          <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
-                            <circle cx="32" cy="32" r="28" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
-                            <circle cx="32" cy="32" r="28" fill="none" stroke="hsl(var(--primary))" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${2 * Math.PI * 28}`} strokeDashoffset={`${2 * Math.PI * 28 * (1 - progressPercentage / 100)}`} className="transition-all duration-700" />
-                          </svg>
-                          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-foreground">{progressPercentage}%</span>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 text-primary mb-1">
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span className="font-semibold text-sm">{isRTL ? 'مسجّل' : 'Enrolled'}</span>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{completedLessons} / {totalLessons} {isRTL ? 'مكتمل' : 'completed'}</p>
-                        </div>
-                      </div>
-                      {remainingMinutes > 0 && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 text-sm">
-                          <Clock className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-muted-foreground">{isRTL ? `${formatDuration(remainingMinutes)} متبقية` : `${formatDuration(remainingMinutes)} remaining`}</span>
-                        </div>
-                      )}
-                      {resumeLesson && (
-                        <Button className="w-full btn-cta h-12 text-base" asChild>
-                          <Link to={`/courses/${id}/lessons/${resumeLesson.id}`}>
-                            <Play className="w-5 h-5 me-2" />
-                            {isRTL ? 'أكمل التعلم' : 'Resume Learning'}
-                          </Link>
-                        </Button>
-                      )}
-                      {progressPercentage === 100 && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20">
-                          <Trophy className="w-5 h-5 text-primary" />
-                          <span className="text-sm font-medium text-primary">{isRTL ? '🎉 أكملت الدورة!' : '🎉 Course completed!'}</span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="space-y-5">
-                      <div className="text-center py-2">
-                        {(() => {
-                          const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
-                          const sym = getCurrencySymbol(priceInfo.currency, isRTL);
-                          if (priceInfo.discountPct > 0 && course.price > 0) {
-                            return (
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-center gap-2">
-                                  <span className="text-lg text-muted-foreground line-through">{priceInfo.originalPrice} {sym}</span>
-                                  <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-sm font-bold">-{priceInfo.discountPct}%</span>
-                                </div>
-                                <span className="text-4xl font-black text-foreground">{priceInfo.finalPrice} {sym}</span>
-                              </div>
-                            );
-                          }
-                          return <span className="text-4xl font-black text-foreground">{course.price === 0 ? t('common.free') : `${priceInfo.finalPrice} ${sym}`}</span>;
-                        })()}
-                        {course.price > 0 && <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'السعر غير شامل الضريبة' : 'Price excludes VAT'}</p>}
-                      </div>
-                      {course.price === 0 ? (
-                        user ? (
-                          <Button className="w-full btn-cta h-12 text-base" onClick={() => enrollMutation.mutate()} disabled={enrollMutation.isPending}>
-                            <Zap className="w-5 h-5 me-2" />
-                            {enrollMutation.isPending ? t('courses.enrolling') : t('courses.enrollForFree')}
-                          </Button>
-                        ) : (
-                          <Button className="w-full btn-cta h-12 text-base" asChild>
-                            <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}><Zap className="w-5 h-5 me-2" />{t('courses.enrollForFree')}</Link>
-                          </Button>
-                        )
-                      ) : user ? (
-                        <Button className="w-full btn-cta h-12 text-base" onClick={() => setShowCheckout(true)}>
-                          <ShoppingCart className="w-5 h-5 me-2" />
-                          {(() => { const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount); const sym = getCurrencySymbol(info.currency, isRTL); return isRTL ? `اشترك الآن – ${info.finalPrice} ${sym}` : `Buy now – ${info.finalPrice} ${sym}`; })()}
-                        </Button>
-                      ) : (
-                        <Button className="w-full btn-cta h-12 text-base" onClick={() => setShowGuestSignup(true)}>
-                          <Zap className="w-5 h-5 me-2" />
-                          {(() => { const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount); const sym = getCurrencySymbol(info.currency, isRTL); return isRTL ? `اشترك الآن – ${info.finalPrice} ${sym}` : `Buy now – ${info.finalPrice} ${sym}`; })()}
-                        </Button>
-                      )}
-                      <div className="space-y-3 pt-2">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'يشمل الاشتراك' : 'This course includes'}</p>
-                        <div className="space-y-2.5">
-                          {[
-                            { icon: Video, text: isRTL ? `${totalLessons} درس فيديو` : `${totalLessons} video lessons` },
-                            { icon: Clock, text: isRTL ? `${formatDuration(totalDurationMinutes)} محتوى` : `${formatDuration(totalDurationMinutes)} of content` },
-                            { icon: ClipboardList, text: isRTL ? 'اختبارات تفاعلية' : 'Interactive quizzes' },
-                          ].map(({ icon: Icon, text }, i) => (
-                            <div key={i} className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                              <Icon className="w-4 h-4 text-primary/70 flex-shrink-0" />
-                              <span>{text}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-5 lg:gap-12">
-              {/* Course Info */}
-              <div>
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                   {/* Badges */}
                   <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
@@ -791,7 +628,7 @@ const CourseDetail: React.FC = () => {
               </div>
 
               {/* Right: Enrollment Card (2 cols, sticky) */}
-              <div ref={ctaCardCallbackRef} className="lg:hidden order-last">
+              <div ref={ctaCardCallbackRef} className="lg:col-span-2 order-last lg:order-last">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
