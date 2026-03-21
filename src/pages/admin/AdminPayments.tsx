@@ -355,7 +355,7 @@ const AdminPayments = () => {
     const headers = [
       'Date', 'Customer Name', 'Email', 'Phone', 'City', 'Country',
       'Course', 'Amount', 'Currency', 'Status', 'Payment Method',
-      'Transaction ID', 'Source', 'Error Message', 'Profile Complete',
+      'Transaction ID', 'Source', 'Device Info', 'Error Message', 'Profile Complete',
     ];
     const rows = filteredPayments.map((p) => {
       const displayName = p.source === 'tap' ? p.customer_name || p.profile?.full_name : p.profile?.full_name;
