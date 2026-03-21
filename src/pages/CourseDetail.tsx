@@ -493,7 +493,7 @@ const CourseDetail: React.FC = () => {
           {/* Mobile: stacked video on top */}
           <div className="lg:hidden">
             {course.preview_video_url ? (
-              <div className="w-full bg-card">
+              <div className="w-full">
                 {previewVideoPlaying ? (
                   <div className="aspect-video w-full">
                     <BunnyVideoEmbed
