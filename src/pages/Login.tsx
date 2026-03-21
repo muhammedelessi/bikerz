@@ -32,22 +32,30 @@ const Login: React.FC = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isGoogleUser, setIsGoogleUser] = useState(false);
+  const [isEmailUser, setIsEmailUser] = useState(false);
+  const [userExists, setUserExists] = useState(false);
   const [emailChecked, setEmailChecked] = useState(false);
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
-  const checkIfGoogleUser = useCallback(async (emailValue: string) => {
+  const checkProviders = useCallback(async (emailValue: string) => {
     if (!emailValue || !emailValue.includes('@')) {
       setIsGoogleUser(false);
+      setIsEmailUser(false);
+      setUserExists(false);
       setEmailChecked(false);
       return;
     }
     try {
-      const { data } = await supabase.rpc('check_google_provider' as any, { p_email: emailValue });
-      const result = data as boolean;
-      setIsGoogleUser(!!result);
+      const { data } = await supabase.rpc('get_auth_providers' as any, { p_email: emailValue });
+      const result = data as { has_email: boolean; has_google: boolean; exists: boolean } | null;
+      setIsGoogleUser(!!result?.has_google && !result?.has_email);
+      setIsEmailUser(!!result?.has_email);
+      setUserExists(!!result?.exists);
       setEmailChecked(true);
     } catch {
       setIsGoogleUser(false);
+      setIsEmailUser(false);
+      setUserExists(false);
       setEmailChecked(true);
     }
   }, []);
