@@ -191,6 +191,130 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
 
         <Separator />
 
+        {/* Gender */}
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-muted/30 flex items-center justify-center flex-shrink-0">
+            <User className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <Label className="text-xs text-muted-foreground">{isRTL ? 'الجنس' : 'Gender'}</Label>
+            {isEditingGender ? (
+              <div className="flex items-center gap-2 mt-1">
+                <Select value={gender} onValueChange={handleSaveGender}>
+                  <SelectTrigger className="h-8 w-40">
+                    <SelectValue placeholder={isRTL ? 'اختر' : 'Select'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Male">{isRTL ? 'ذكر' : 'Male'}</SelectItem>
+                    <SelectItem value="Female">{isRTL ? 'أنثى' : 'Female'}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  onClick={() => {
+                    setGender(profile.gender || '');
+                    setIsEditingGender(false);
+                  }}
+                >
+                  <X className="w-4 h-4 text-destructive" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <p className="text-foreground font-medium">
+                  {profile.gender
+                    ? (isRTL ? (profile.gender === 'Male' ? 'ذكر' : 'أنثى') : profile.gender)
+                    : (isRTL ? 'غير محدد' : 'Not set')}
+                </p>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6"
+                  onClick={() => setIsEditingGender(true)}
+                >
+                  <Edit2 className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Date of Birth */}
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-muted/30 flex items-center justify-center flex-shrink-0">
+            <CalendarIcon className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <Label className="text-xs text-muted-foreground">{isRTL ? 'تاريخ الميلاد' : 'Date of Birth'}</Label>
+            {isEditingDob ? (
+              <div className="flex items-center gap-2 mt-1">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "h-8 w-48 justify-start text-start font-normal",
+                        !dob && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="me-2 h-4 w-4" />
+                      {dob
+                        ? format(dob, 'PPP', { locale: isRTL ? arSA : undefined })
+                        : (isRTL ? 'اختر تاريخ' : 'Pick a date')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dob}
+                      onSelect={(date) => handleSaveDob(date)}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date('1920-01-01')
+                      }
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                      dir={isRTL ? 'rtl' : 'ltr'}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  onClick={() => {
+                    setDob(profile.date_of_birth ? new Date(profile.date_of_birth) : undefined);
+                    setIsEditingDob(false);
+                  }}
+                >
+                  <X className="w-4 h-4 text-destructive" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <p className="text-foreground font-medium">
+                  {profile.date_of_birth
+                    ? format(new Date(profile.date_of_birth), 'PPP', { locale: isRTL ? arSA : undefined })
+                    : (isRTL ? 'غير محدد' : 'Not set')}
+                </p>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6"
+                  onClick={() => setIsEditingDob(true)}
+                >
+                  <Edit2 className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Separator />
+
         {/* Password Management */}
         <div className="flex items-start gap-4">
           <div className="w-10 h-10 rounded-lg bg-muted/30 flex items-center justify-center flex-shrink-0">
