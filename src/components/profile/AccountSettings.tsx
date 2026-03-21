@@ -51,6 +51,10 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
   const [passwordData, setPasswordData] = useState({ newPassword: '', confirmPassword: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+  const [isEditingGender, setIsEditingGender] = useState(false);
+  const [gender, setGender] = useState(profile.gender || '');
+  const [isEditingDob, setIsEditingDob] = useState(false);
+  const [dob, setDob] = useState<Date | undefined>(profile.date_of_birth ? new Date(profile.date_of_birth) : undefined);
 
   const handleSavePhone = async () => {
     await onUpdate({ phone: phone || null });
