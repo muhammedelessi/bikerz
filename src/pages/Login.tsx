@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -11,6 +11,8 @@ import LanguageToggle from '@/components/common/LanguageToggle';
 import { useAuthPageContent } from '@/hooks/useAuthPageContent';
 import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { lovable } from '@/integrations/lovable/index';
 import defaultHeroImage from '@/assets/hero-rider.jpg';
 import bikerzLogo from '@/assets/bikerz-logo.png';
 import SEOHead from '@/components/common/SEOHead';
