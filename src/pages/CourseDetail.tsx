@@ -490,64 +490,106 @@ const CourseDetail: React.FC = () => {
       <main>
         {/* Hero Section */}
         <section className="relative overflow-hidden">
-          {/* Full-width Intro Video or Thumbnail at top */}
-          {course.preview_video_url ? (
-            <div className="w-full bg-card md:max-w-3xl md:mx-auto md:my-6 md:rounded-xl md:overflow-hidden">
-              {previewVideoPlaying ? (
-                <div className="aspect-video w-full">
-                  <BunnyVideoEmbed
-                    videoUrl={course.preview_video_url}
-                    title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
-                    isPreview
-                  />
-                </div>
-              ) : (
-                <button
-                  onClick={() => setPreviewVideoPlaying(true)}
-                  className="relative w-full aspect-video group cursor-pointer focus:outline-none"
-                  aria-label={isRTL ? 'تشغيل الفيديو التعريفي' : 'Play preview video'}
-                >
-                  <img
-                    src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
-                    alt={isRTL ? 'صورة مصغرة للفيديو' : 'Video thumbnail'}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl">
-                      <Play className="w-7 h-7 sm:w-9 sm:h-9 text-primary-foreground ms-1" fill="currentColor" />
+          {/* Mobile: stacked video on top */}
+          <div className="lg:hidden">
+            {course.preview_video_url ? (
+              <div className="w-full bg-card">
+                {previewVideoPlaying ? (
+                  <div className="aspect-video w-full">
+                    <BunnyVideoEmbed
+                      videoUrl={course.preview_video_url}
+                      title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
+                      isPreview
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setPreviewVideoPlaying(true)}
+                    className="relative w-full aspect-video group cursor-pointer focus:outline-none"
+                    aria-label={isRTL ? 'تشغيل الفيديو التعريفي' : 'Play preview video'}
+                  >
+                    <img
+                      src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
+                      alt={isRTL ? 'صورة مصغرة للفيديو' : 'Video thumbnail'}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl">
+                        <Play className="w-7 h-7 text-primary-foreground ms-1" fill="currentColor" />
+                      </div>
                     </div>
-                  </div>
-                  <div className="absolute bottom-4 start-4">
-                    <span className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-sm font-medium backdrop-blur-sm">
-                      {isRTL ? 'شاهد الفيديو التعريفي' : 'Watch Preview'}
-                    </span>
-                  </div>
-                </button>
-              )}
-            </div>
-          ) : course.thumbnail_url ? (
-            <div className="relative w-full bg-card">
-              <img
-                src={course.thumbnail_url}
-                alt={courseTitle}
-                className="w-full aspect-video object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60" />
-            </div>
-          ) : null}
+                    <div className="absolute bottom-4 start-4">
+                      <span className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-sm font-medium backdrop-blur-sm">
+                        {isRTL ? 'شاهد الفيديو التعريفي' : 'Watch Preview'}
+                      </span>
+                    </div>
+                  </button>
+                )}
+              </div>
+            ) : course.thumbnail_url ? (
+              <div className="relative w-full bg-card">
+                <img src={course.thumbnail_url} alt={courseTitle} className="w-full aspect-video object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60" />
+              </div>
+            ) : null}
+          </div>
 
-          <div className="page-container relative z-10 pt-3 sm:pt-6 pb-6 sm:pb-12 px-4 sm:px-6">
-            {/* Back link — below the image on mobile, inline on desktop */}
-            <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-3 lg:mb-8 text-xs sm:text-sm">
+          <div className="page-container relative z-10 pt-3 sm:pt-6 pb-6 lg:pb-16 px-4 sm:px-6">
+            <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-3 lg:mb-6 text-xs sm:text-sm">
               <BackIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 me-1" />
               {t('courses.backToCourses')}
             </Link>
 
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-12">
-              {/* Left: Course Info (3 cols) */}
-              <div className="lg:col-span-3">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-10">
+              {/* Left: Video (desktop) + Course Info */}
+              <div className="lg:col-span-7">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                  {/* Desktop Video — inline in left column */}
+                  <div className="hidden lg:block mb-6">
+                    {course.preview_video_url ? (
+                      <div className="rounded-2xl overflow-hidden border border-border/50 shadow-lg">
+                        {previewVideoPlaying ? (
+                          <div className="aspect-video w-full">
+                            <BunnyVideoEmbed
+                              videoUrl={course.preview_video_url}
+                              title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
+                              isPreview
+                            />
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setPreviewVideoPlaying(true)}
+                            className="relative w-full aspect-video group cursor-pointer focus:outline-none"
+                            aria-label={isRTL ? 'تشغيل الفيديو التعريفي' : 'Play preview video'}
+                          >
+                            <img
+                              src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
+                              alt={isRTL ? 'صورة مصغرة للفيديو' : 'Video thumbnail'}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors duration-300" />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-20 h-20 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl ring-4 ring-primary/20">
+                                <Play className="w-9 h-9 text-primary-foreground ms-1" fill="currentColor" />
+                              </div>
+                            </div>
+                            <div className="absolute bottom-5 start-5">
+                              <span className="px-4 py-2 rounded-xl bg-black/50 text-white text-sm font-medium backdrop-blur-md border border-white/10">
+                                {isRTL ? 'شاهد الفيديو التعريفي' : 'Watch Preview'}
+                              </span>
+                            </div>
+                          </button>
+                        )}
+                      </div>
+                    ) : course.thumbnail_url ? (
+                      <div className="relative rounded-2xl overflow-hidden border border-border/50 shadow-lg">
+                        <img src={course.thumbnail_url} alt={courseTitle} className="w-full aspect-video object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60" />
+                      </div>
+                    ) : null}
+                  </div>
+
                   {/* Badges */}
                   <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
                     {course.price === 0 && (
@@ -558,7 +600,7 @@ const CourseDetail: React.FC = () => {
                   </div>
 
                   {/* Title */}
-                  <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-5xl font-black text-foreground mb-2 sm:mb-4 leading-tight">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-foreground mb-2 sm:mb-4 leading-tight">
                     {courseTitle}
                   </h1>
 
@@ -620,7 +662,7 @@ const CourseDetail: React.FC = () => {
 
                   {/* Description */}
                   {courseDescription && (
-                    <p className="text-sm sm:text-base lg:text-lg text-muted-foreground mb-4 sm:mb-8 leading-relaxed max-w-2xl">
+                    <p className="text-sm sm:text-base lg:text-base text-muted-foreground mb-4 sm:mb-8 leading-relaxed max-w-2xl">
                       {courseDescription}
                     </p>
                   )}
@@ -628,12 +670,12 @@ const CourseDetail: React.FC = () => {
               </div>
 
               {/* Right: Enrollment Card (2 cols, sticky) */}
-              <div ref={ctaCardCallbackRef} className="lg:col-span-2 order-last lg:order-last">
+              <div ref={ctaCardCallbackRef} className="lg:col-span-5 order-last lg:order-last">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
-                  className="card-premium p-4 sm:p-6 lg:sticky lg:top-28 mx-0"
+                  className="card-premium p-5 sm:p-6 lg:p-8 lg:sticky lg:top-28 mx-0 lg:rounded-2xl"
                 >
                   {isEnrolled ? (
                     <div className="space-y-5">
@@ -786,22 +828,32 @@ const CourseDetail: React.FC = () => {
                       )}
 
                       {/* Course includes */}
-                      <div className="space-y-3 pt-2">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      <div className="space-y-3 pt-3 border-t border-border/50">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-1">
                           {isRTL ? 'يشمل الاشتراك' : 'This course includes'}
                         </p>
-                        <div className="space-y-2.5">
+                        <div className="space-y-3">
                           {[
                             { icon: Video, text: isRTL ? `${totalLessons} درس فيديو` : `${totalLessons} video lessons` },
                             { icon: Clock, text: isRTL ? `${formatDuration(totalDurationMinutes)} محتوى` : `${formatDuration(totalDurationMinutes)} of content` },
                             { icon: ClipboardList, text: isRTL ? 'اختبارات تفاعلية' : 'Interactive quizzes' },
+                            { icon: Infinity, text: isRTL ? 'وصول مدى الحياة' : 'Lifetime access' },
+                            { icon: MonitorPlay, text: isRTL ? 'مشاهدة من أي جهاز' : 'Watch on any device' },
                           ].map(({ icon: Icon, text }, i) => (
-                            <div key={i} className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                              <Icon className="w-4 h-4 text-primary/70 flex-shrink-0" />
-                              <span>{text}</span>
+                            <div key={i} className="flex items-center gap-3 text-sm text-foreground/80">
+                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <Icon className="w-4 h-4 text-primary" />
+                              </div>
+                              <span className="font-medium">{text}</span>
                             </div>
                           ))}
                         </div>
+                        {/* Payment methods */}
+                        {course.price > 0 && (
+                          <div className="pt-3 border-t border-border/50">
+                            <PaymentMethodIcons />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -820,30 +872,37 @@ const CourseDetail: React.FC = () => {
           const showSection = outcomes ? outcomes.length > 0 : chapters.length > 0;
           if (!showSection) return null;
           return (
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14">
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14 lg:py-16">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary/15 flex items-center justify-center">
+                <div className="flex items-center gap-3 mb-5 sm:mb-8">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/15 flex items-center justify-center">
                     <Target className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                   </div>
-                  <h2 className="text-lg sm:text-2xl font-bold text-foreground">
-                    {isRTL ? 'ماذا ستتعلم' : 'What You\'ll Learn'}
-                  </h2>
+                  <div>
+                    <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-foreground">
+                      {isRTL ? 'ماذا ستتعلم' : 'What You\'ll Learn'}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                      {isRTL ? 'المهارات التي ستكتسبها' : 'Skills you\'ll gain from this course'}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
                   {outcomes ? (
                     outcomes.map((item, idx) => {
                       const text = isRTL && item.text_ar ? item.text_ar : item.text_en;
                       return (
-                        <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                          <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                          <p className="text-sm font-medium text-foreground">{text}</p>
+                        <div key={idx} className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50 hover:border-primary/20 transition-colors">
+                          <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                          </div>
+                          <p className="text-sm font-medium text-foreground leading-relaxed">{text}</p>
                         </div>
                       );
                     })
@@ -852,10 +911,12 @@ const CourseDetail: React.FC = () => {
                       const chTitle = isRTL && chapter.title_ar ? chapter.title_ar : chapter.title;
                       const chDesc = isRTL && chapter.description_ar ? chapter.description_ar : chapter.description;
                       return (
-                        <div key={chapter.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                          <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                        <div key={chapter.id} className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50 hover:border-primary/20 transition-colors">
+                          <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                          </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground">{chTitle}</p>
+                            <p className="text-sm font-medium text-foreground leading-relaxed">{chTitle}</p>
                             {chDesc && (
                               <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{chDesc}</p>
                             )}
@@ -871,20 +932,20 @@ const CourseDetail: React.FC = () => {
         })()}
 
         {/* Chapter Roadmap Timeline */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-20">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-20 lg:pb-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <div className="flex items-center justify-between mb-6 sm:mb-8">
+            <div className="flex items-center justify-between mb-6 sm:mb-10">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-secondary/30 flex items-center justify-center">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-secondary/30 flex items-center justify-center">
                   <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-secondary-foreground" />
                 </div>
                 <div>
-                  <h2 className="text-lg sm:text-2xl font-bold text-foreground">
+                  <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-foreground">
                     {isRTL ? 'خطة التعلم' : 'Learning Roadmap'}
                   </h2>
                   <p className="text-xs sm:text-sm text-muted-foreground">
@@ -899,7 +960,7 @@ const CourseDetail: React.FC = () => {
                 {/* Vertical timeline line */}
                 <div className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-4 bottom-4 w-0.5 bg-border hidden sm:block`} />
 
-                <div className="space-y-6">
+                <div className="space-y-4 lg:space-y-5">
                   {chapters.map((chapter, chapterIndex) => {
                     const chTitle = isRTL && chapter.title_ar ? chapter.title_ar : chapter.title;
                     const chProgress = getChapterProgress(chapter);
@@ -937,7 +998,7 @@ const CourseDetail: React.FC = () => {
                           <div className="flex-1 min-w-0">
                             <button
                               onClick={() => toggleChapter(chapter.id)}
-                              className="w-full text-start card-premium p-4 sm:p-5 transition-colors hover:border-primary/30"
+                              className="w-full text-start card-premium p-4 sm:p-5 lg:p-6 transition-all hover:border-primary/30 hover:shadow-md"
                             >
                               <div className="flex items-start justify-between gap-3 mb-3">
                                 <div className="min-w-0">
