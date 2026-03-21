@@ -550,9 +550,6 @@ const CourseDetail: React.FC = () => {
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                   {/* Badges */}
                   <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getDifficultyColor(course.difficulty_level)}`}>
-                      {t(`courses.difficulty.${course.difficulty_level}`)}
-                    </span>
                     {course.price === 0 && (
                       <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold border border-primary/30">
                         {t('common.free')}

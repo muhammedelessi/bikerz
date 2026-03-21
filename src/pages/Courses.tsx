@@ -207,11 +207,6 @@ const Courses: React.FC = () => {
                             loading="lazy"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-                          <div className="absolute top-3 end-3">
-                            <span className={`px-2.5 py-1 rounded-full backdrop-blur-sm text-xs font-semibold border ${getDifficultyColor(course.difficulty_level)}`}>
-                              {getDifficultyLabel(course.difficulty_level)}
-                            </span>
-                          </div>
                           <div className="absolute bottom-3 start-3">
                             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform shadow-glow">
                               <Play className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground ms-0.5" />
