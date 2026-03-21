@@ -548,7 +548,7 @@ const CourseDetail: React.FC = () => {
                   {/* Desktop Video — inline in left column */}
                   <div className="hidden lg:block">
                     {course.preview_video_url ? (
-                      <div className="rounded-2xl overflow-hidden border border-border/50 shadow-lg">
+                      <div className="rounded-2xl overflow-hidden">
                         {previewVideoPlaying ? (
                           <div className="aspect-video w-full">
                             <BunnyVideoEmbed
