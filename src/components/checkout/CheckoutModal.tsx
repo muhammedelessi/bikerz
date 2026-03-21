@@ -202,25 +202,62 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       : `-${formatLocal(appliedCoupon.discount_amount)}`
     : '';
 
-  // Pre-fill from profile (only for logged-in users)
+  // Pre-fill from profile (only for logged-in users) and auto-advance if complete
   useEffect(() => {
     if (!open) return;
-    if (!user) return; // Guest users fill the form themselves
+    if (!user) return;
     if (profile?.full_name) setFullName(profile.full_name);
     if (user?.email) setEmail(user.email);
     if (profile?.phone) setPhone(profile.phone || '');
-    // Load billing and bike info from profile
     const loadProfileData = async () => {
       if (!user?.id) return;
       const { data } = await supabase
         .from('profiles')
-        .select('city, country, postal_code')
+        .select('city, country, postal_code, phone')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data) {
         if (data.city) setCity(data.city);
         if (data.country) setCountry(data.country);
         if (data.postal_code) setPostalCode(data.postal_code);
+        
+        // Match country to dropdown
+        if (data.country) {
+          const matched = COUNTRIES.find(c => c.en === data.country || c.ar === data.country);
+          if (matched) {
+            setSelectedCountryCode(matched.code);
+            setIsOtherCountry(false);
+          } else {
+            setIsOtherCountry(true);
+            setCountryManual(data.country);
+          }
+        }
+        
+        // Match city for "other" case
+        if (data.city && data.country) {
+          const matchedCountry = COUNTRIES.find(c => c.en === data.country || c.ar === data.country);
+          if (matchedCountry) {
+            const cityMatch = matchedCountry.cities.find(ct => ct.en === data.city || ct.ar === data.city);
+            if (!cityMatch) {
+              setIsOtherCity(true);
+              setCityManual(data.city);
+            }
+          } else {
+            setCityManual(data.city);
+          }
+        }
+
+        // Auto-advance: if profile + billing fields are already filled, skip to payment
+        const hasProfile = (profile?.full_name && profile.full_name.trim().length >= 3) 
+          && user.email 
+          && (data.phone || profile?.phone);
+        const hasBilling = data.city && data.country;
+        
+        if (hasProfile && hasBilling) {
+          setCurrentStep('payment');
+        } else if (hasProfile) {
+          setCurrentStep('billing');
+        }
       }
     };
     loadProfileData();
