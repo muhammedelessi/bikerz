@@ -492,7 +492,7 @@ const CourseDetail: React.FC = () => {
         <section className="relative overflow-hidden">
           {/* Full-width Intro Video or Thumbnail at top */}
           {course.preview_video_url ? (
-            <div className="w-full bg-card max-w-4xl mx-auto px-4 pt-6">
+            <div className="w-full bg-card">
               {previewVideoPlaying ? (
                 <div className="aspect-video w-full">
                   <BunnyVideoEmbed
