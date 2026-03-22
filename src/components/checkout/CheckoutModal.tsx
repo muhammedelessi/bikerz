@@ -93,9 +93,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     error: paymentError,
     isReady,
     threeDSUrl,
-    sdkLoaded,
-    loadSDK,
-    openPaymentPopup,
+    mountCard,
     unmountCard,
     submitPayment,
     reset: resetPayment,
@@ -104,6 +102,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { supportsApplePay, supportsGooglePay } = usePaymentMethodDetection();
   const [guestSigningUp, setGuestSigningUp] = useState(false);
   const [tapPublicKey, setTapPublicKey] = useState<string | null>(null);
+  const cardMountedRef = React.useRef(false);
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('profile');
   
