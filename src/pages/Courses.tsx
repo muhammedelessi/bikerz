@@ -25,6 +25,8 @@ interface Course {
   difficulty_level: string;
   price: number;
   is_published: boolean;
+  discount_percentage: number | null;
+  discount_expires_at: string | null;
 }
 
 interface CourseWithStats extends Course {
