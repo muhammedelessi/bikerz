@@ -704,28 +704,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         {/* Content */}
         <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0">
-          {/* 3DS iframe overlay */}
-          {threeDSUrl && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center py-2 space-y-3"
-            >
-              <p className="text-sm text-muted-foreground text-center">
-                {isRTL ? 'يرجى إكمال التحقق الأمني' : 'Please complete security verification'}
-              </p>
-              <iframe
-                src={threeDSUrl}
-                className="w-full rounded-lg border border-border"
-                style={{ height: '420px' }}
-                title="3D Secure Verification"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"
-              />
-            </motion.div>
-          )}
-
           {/* Verifying state */}
-          {paymentStatus === 'verifying' && !threeDSUrl && (
+          {paymentStatus === 'verifying' && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -787,14 +767,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <p className="text-muted-foreground mb-4">
                 {paymentError || (isRTL ? 'حدث خطأ أثناء الدفع. يرجى المحاولة مرة أخرى.' : 'An error occurred. Please try again.')}
               </p>
-              <Button variant="outline" onClick={() => { resetPayment(); cardMountedRef.current = false; setCurrentStep('payment'); }}>
+              <Button variant="outline" onClick={() => { resetPayment(); setCurrentStep('payment'); }}>
                 {isRTL ? 'حاول مرة أخرى' : 'Try Again'}
               </Button>
             </motion.div>
           )}
 
           {/* Normal step flow */}
-          {!threeDSUrl && paymentStatus !== 'verifying' && paymentStatus !== 'succeeded' && paymentStatus !== 'failed' && (
+          {paymentStatus !== 'verifying' && paymentStatus !== 'succeeded' && paymentStatus !== 'failed' && (
             <AnimatePresence mode="wait">
               {/* Step 1: Personal Info */}
               {currentStep === 'profile' && (
