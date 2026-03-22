@@ -169,11 +169,9 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      <motion.nav
+      <nav
         ref={navRef}
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        className={`fixed top-0 left-0 right-0 z-50 safe-area-top ${
+        className={`fixed top-0 left-0 right-0 z-50 safe-area-top transition-colors duration-300 ${
           isScrolled || isMobileMenuOpen
             ? 'bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg'
             : 'bg-background/80 backdrop-blur-sm'
@@ -183,10 +181,11 @@ const Navbar: React.FC = () => {
           <div className="flex items-center justify-between h-16 sm:h-20 lg:h-24">
             {/* Logo */}
             <Link to="/" className="flex items-center flex-shrink-0">
-              <motion.img
+              <img
                 src={logoUrl}
                 alt={logoAlt}
-                whileHover={{ scale: 1.05 }}
+                width={96}
+                height={96}
                 className="h-12 sm:h-16 md:h-20 lg:h-24 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]"
               />
             </Link>
@@ -258,7 +257,7 @@ const Navbar: React.FC = () => {
             </div>
           </div>
         </div>
-      </motion.nav>
+      </nav>
 
       {/* Mobile Menu - Full Screen Slide-in */}
       <AnimatePresence>
@@ -288,6 +287,8 @@ const Navbar: React.FC = () => {
                     <img
                       src={logoUrl}
                       alt={logoAlt}
+                      width={40}
+                      height={40}
                       className="h-10 w-auto object-contain"
                     />
                   </Link>
