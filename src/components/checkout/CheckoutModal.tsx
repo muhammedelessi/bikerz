@@ -946,30 +946,29 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <div className="flex items-center gap-2">
                       <CreditCard className="w-4 h-4 text-primary" />
                       <h4 className="font-semibold text-foreground text-sm">
-                        {isRTL ? 'طريقة الدفع' : 'Payment Method'}
+                        {isRTL ? 'طرق الدفع المتاحة' : 'Accepted Payment Methods'}
                       </h4>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 border-primary/30 bg-primary/5">
+                      <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
                         <VisaIcon className="h-5 w-auto" />
                       </div>
-                      <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 border-primary/30 bg-primary/5">
+                      <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
                         <MastercardIcon className="h-5 w-auto" />
                       </div>
-                      {supportsApplePay && (
-                        <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-muted/30">
-                          <ApplePayIcon className="h-5 w-auto" />
-                        </div>
-                      )}
-                      {supportsGooglePay && (
-                        <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-muted/30">
-                          <GooglePayIcon className="h-5 w-auto" />
-                        </div>
-                      )}
+                      <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
+                        <MadaIcon className="h-5 w-auto" />
+                      </div>
+                      <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
+                        <ApplePayIcon className="h-5 w-auto" />
+                      </div>
+                      <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
+                        <GooglePayIcon className="h-5 w-auto" />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Promo Code — collapsible style */}
+                  {/* Promo Code */}
                   <div className="space-y-2">
                     <Label className="text-sm font-medium flex items-center gap-1.5">
                       <Gift className="w-3.5 h-3.5 text-primary" />
@@ -981,7 +980,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           value={promoCode}
                           onChange={(e) => setPromoCode(e.target.value)}
                           placeholder={isRTL ? 'أدخل رمز الخصم' : 'Enter promo code'}
-                          disabled={promoApplied || paymentStatus === 'processing' || paymentStatus === 'tokenizing'}
+                          disabled={promoApplied || paymentStatus === 'processing'}
                           className="w-full pe-9 h-10"
                         />
                         {promoCode && !promoApplied && (
@@ -1079,29 +1078,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     );
                   })()}
 
-                  {/* Card Input */}
-                  {discountedPrice > 0 && (
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium flex items-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5 text-primary" />
-                        {isRTL ? 'بيانات البطاقة' : 'Card Details'}
-                      </Label>
-                      {(paymentStatus === 'loading_sdk' || paymentStatus === 'idle') && (
-                        <div className="flex items-center justify-center py-8 rounded-lg border border-dashed border-border bg-muted/10">
-                          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground me-2" />
-                          <span className="text-sm text-muted-foreground">
-                            {isRTL ? 'جاري تحميل نموذج الدفع...' : 'Loading payment form...'}
-                          </span>
-                        </div>
-                      )}
-                      <div
-                        id="tap-card-element"
-                        className="min-h-[80px] rounded-lg overflow-hidden border border-border p-1"
-                        style={{ display: (paymentStatus === 'loading_sdk' || paymentStatus === 'idle') ? 'none' : 'block' }}
-                      />
-                    </div>
-                  )}
-
                   {/* Pay Now CTA */}
                   {discountedPrice > 0 && (() => {
                     const total = discountedPrice + Math.ceil(discountedPrice * 0.15);
@@ -1110,37 +1086,25 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         className="w-full h-12 rounded-xl text-base font-bold shadow-glow hover:shadow-glow-lg transition-all duration-300"
                         variant="cta"
                         onClick={() => handleSubmitPayment('card')}
-                        disabled={
-                          paymentStatus === 'processing' ||
-                          paymentStatus === 'tokenizing' ||
-                          paymentStatus === 'loading_sdk' ||
-                          guestSigningUp ||
-                          !isPaymentReady ||
-                          (!isReady && !!user)
-                        }
+                        disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady}
                       >
                         {guestSigningUp ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin me-2" />
                             <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
                           </>
-                        ) : paymentStatus === 'tokenizing' ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin me-2" />
-                            <span>{isRTL ? 'جاري تأمين البيانات...' : 'Securing card details...'}</span>
-                          </>
                         ) : paymentStatus === 'processing' ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin me-2" />
-                            <span>{isRTL ? 'جاري معالجة الدفع...' : 'Processing payment...'}</span>
+                            <span>{isRTL ? 'جاري التحويل لصفحة الدفع...' : 'Redirecting to payment...'}</span>
                           </>
                         ) : (
                           <>
                             <Lock className="w-4 h-4 me-2" />
                             <span>
                               {isRTL
-                                ? `ادفع ${total} ${currencyLabel}`
-                                : `Pay ${total} ${currencyLabel}`}
+                                ? `ادفع الآن ${total} ${currencyLabel}`
+                                : `Pay Now ${total} ${currencyLabel}`}
                             </span>
                           </>
                         )}
@@ -1148,21 +1112,23 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     );
                   })()}
 
-                  {/* Trust Bar */}
-                  <div className="flex items-center justify-center gap-3 pt-1">
+                  {/* Trust Badge */}
+                  <div className="flex flex-col items-center gap-2 pt-2">
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Shield className="w-3.5 h-3.5 text-primary" />
-                      <span>{isRTL ? 'دفع آمن' : 'Secure Payment'}</span>
+                      <Lock className="w-3.5 h-3.5 text-primary" />
+                      <span>🔒 {isRTL ? 'مُؤمّن بواسطة Tap Payments' : 'Secured by Tap Payments'}</span>
                     </div>
-                    <span className="text-muted-foreground/30">|</span>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Lock className="w-3 h-3 text-primary" />
-                      <span>3D Secure</span>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                        <Shield className="w-3 h-3" />
+                        <span>3D Secure</span>
+                      </div>
+                      <span className="text-muted-foreground/20">|</span>
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                        <Shield className="w-3 h-3" />
+                        <span>PCI DSS</span>
+                      </div>
                     </div>
-                    <span className="text-muted-foreground/30">|</span>
-                    <span className="text-[10px] text-muted-foreground/60">
-                      {isRTL ? 'مُؤمّن بواسطة Tap' : 'Secured by Tap'}
-                    </span>
                   </div>
                 </motion.div>
               )}
