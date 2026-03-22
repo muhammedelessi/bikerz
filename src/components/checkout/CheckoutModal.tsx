@@ -337,13 +337,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   useEffect(() => {
     if (currentStep !== 'payment' || !tapPublicKey || cardMountedRef.current) return;
     if (discountedPrice <= 0) return; // No card needed for free
-    // Small delay to ensure DOM element exists
+    // Longer delay for Elements SDK iframe to initialize
     const timer = setTimeout(() => {
       if (!cardMountedRef.current) {
         cardMountedRef.current = true;
         mountCard('tap-card-element', tapPublicKey, discountedPrice, 'SAR');
       }
-    }, 100);
+    }, 300);
     return () => clearTimeout(timer);
   }, [currentStep, tapPublicKey, discountedPrice, mountCard]);
 
