@@ -1126,72 +1126,59 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     );
                   })()}
 
-                  {/* Card Input */}
-                  {discountedPrice > 0 && (
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium flex items-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5 text-primary" />
-                        {isRTL ? 'بيانات البطاقة' : 'Card Details'}
-                      </Label>
-                      {(paymentStatus === 'loading_sdk' || paymentStatus === 'idle') && (
-                        <div className="flex items-center justify-center py-8 rounded-lg border border-dashed border-border bg-muted/10">
-                          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground me-2" />
-                          <span className="text-sm text-muted-foreground">
-                            {isRTL ? 'جاري تحميل نموذج الدفع...' : 'Loading payment form...'}
-                          </span>
-                        </div>
-                      )}
-                      <div
-                        id="tap-card-element"
-                        className="min-h-[80px] rounded-lg overflow-hidden border border-border p-1"
-                        style={{ display: (paymentStatus === 'loading_sdk' || paymentStatus === 'idle') ? 'none' : 'block' }}
-                      />
-                    </div>
-                  )}
-
                   {/* Pay Now CTA */}
                   {discountedPrice > 0 && (() => {
                     const total = discountedPrice + Math.ceil(discountedPrice * 0.15);
                     return (
-                      <Button
-                        className="w-full h-12 rounded-xl text-base font-bold shadow-glow hover:shadow-glow-lg transition-all duration-300"
-                        variant="cta"
-                        onClick={() => handleSubmitPayment('card')}
-                        disabled={
-                          paymentStatus === 'processing' ||
-                          paymentStatus === 'tokenizing' ||
-                          paymentStatus === 'loading_sdk' ||
-                          guestSigningUp ||
-                          !isPaymentReady ||
-                          (!isReady && !!user)
-                        }
-                      >
-                        {guestSigningUp ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin me-2" />
-                            <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
-                          </>
-                        ) : paymentStatus === 'tokenizing' ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin me-2" />
-                            <span>{isRTL ? 'جاري تأمين البيانات...' : 'Securing card details...'}</span>
-                          </>
-                        ) : paymentStatus === 'processing' ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin me-2" />
-                            <span>{isRTL ? 'جاري معالجة الدفع...' : 'Processing payment...'}</span>
-                          </>
-                        ) : (
-                          <>
-                            <Lock className="w-4 h-4 me-2" />
-                            <span>
-                              {isRTL
-                                ? `ادفع ${total} ${currencyLabel}`
-                                : `Pay ${total} ${currencyLabel}`}
+                      <>
+                        {paymentStatus === 'loading_sdk' && (
+                          <div className="flex items-center justify-center py-4">
+                            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground me-2" />
+                            <span className="text-sm text-muted-foreground">
+                              {isRTL ? 'جاري تحميل بوابة الدفع...' : 'Loading payment gateway...'}
                             </span>
-                          </>
+                          </div>
                         )}
-                      </Button>
+                        <Button
+                          className="w-full h-12 rounded-xl text-base font-bold shadow-glow hover:shadow-glow-lg transition-all duration-300"
+                          variant="cta"
+                          onClick={() => handleSubmitPayment('card')}
+                          disabled={
+                            paymentStatus === 'processing' ||
+                            paymentStatus === 'tokenizing' ||
+                            paymentStatus === 'loading_sdk' ||
+                            guestSigningUp ||
+                            !isPaymentReady ||
+                            !sdkLoaded
+                          }
+                        >
+                          {guestSigningUp ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin me-2" />
+                              <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
+                            </>
+                          ) : paymentStatus === 'tokenizing' ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin me-2" />
+                              <span>{isRTL ? 'جاري تأمين البيانات...' : 'Securing card details...'}</span>
+                            </>
+                          ) : paymentStatus === 'processing' ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin me-2" />
+                              <span>{isRTL ? 'جاري معالجة الدفع...' : 'Processing payment...'}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="w-4 h-4 me-2" />
+                              <span>
+                                {isRTL
+                                  ? `ادفع ${total} ${currencyLabel}`
+                                  : `Pay ${total} ${currencyLabel}`}
+                              </span>
+                            </>
+                          )}
+                        </Button>
+                      </>
                     );
                   })()}
 
