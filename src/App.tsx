@@ -13,19 +13,19 @@ import SocialProofNotification from "@/components/common/SocialProofNotification
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
 import React, { Suspense, lazy } from "react";
 
-// Critical route - loaded eagerly
+// Critical routes - loaded eagerly (above-the-fold / high-traffic)
 import Index from "./pages/Index";
+import Courses from "./pages/Courses";
+import CourseDetail from "./pages/CourseDetail";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 
-// Lazy-loaded routes
-const Login = lazy(() => import("./pages/Login"));
-const Signup = lazy(() => import("./pages/Signup"));
+// Secondary public routes - lazy loaded
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const AboutUs = lazy(() => import("./pages/AboutUs"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const ContactUs = lazy(() => import("./pages/ContactUs"));
-const Courses = lazy(() => import("./pages/Courses"));
-const CourseDetail = lazy(() => import("./pages/CourseDetail"));
 const CourseLearn = lazy(() => import("./pages/CourseLearn"));
 const Mentors = lazy(() => import("./pages/Mentors"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -94,19 +94,22 @@ const AnalyticsTracker = () => {
 const AppRoutes = () => (
   <>
     <AnalyticsTracker />
+    <Routes>
+      {/* Critical eager-loaded routes (no Suspense overhead) */}
+      <Route path="/" element={<Index />} />
+      <Route path="/courses" element={<Courses />} />
+      <Route path="/courses/:id" element={<CourseDetail />} />
+      <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
+      <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
+    </Routes>
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Index />} />
-        <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
-        <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
+        {/* Secondary public routes */}
         <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/contact" element={<ContactUs />} />
-        <Route path="/courses" element={<Courses />} />
-        <Route path="/courses/:id" element={<CourseDetail />} />
         <Route path="/courses/:id/learn" element={<CourseLearn />} />
         <Route path="/courses/:id/lessons/:lessonId" element={<CourseLearn />} />
         <Route path="/mentors" element={<Mentors />} />
