@@ -76,4 +76,4 @@ const PaymentMethodIcons: React.FC<PaymentMethodIconsProps> = ({ className = '',
 };
 
 export default PaymentMethodIcons;
-export { ApplePayIcon, GooglePayIcon, VisaIcon, MastercardIcon };
+export { ApplePayIcon, GooglePayIcon, VisaIcon, MastercardIcon, MadaIcon };
