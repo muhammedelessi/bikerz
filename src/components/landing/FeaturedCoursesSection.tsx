@@ -161,7 +161,7 @@ const FeaturedCoursesSection: React.FC = () => {
                           </div>
 
                           {/* Price & Countdown */}
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <span className="text-lg font-black text-primary">
                                 {priceInfo.finalPrice} {sym}
@@ -172,15 +172,15 @@ const FeaturedCoursesSection: React.FC = () => {
                                 </span>
                               )}
                             </div>
-                            {priceInfo.discountPct > 0 && course.discount_expires_at ? (
+                            {priceInfo.discountPct > 0 && course.discount_expires_at && (
                               <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
-                            ) : (
-                              <span className="text-xs font-medium text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {isRTL ? "عرض الدورة" : "View Course"}
-                                <Arrow className="w-3.5 h-3.5" />
-                              </span>
                             )}
                           </div>
+
+                          {/* Enroll Now Button */}
+                          <Button variant="default" size="sm" className="w-full">
+                            {isRTL ? "سجّل الآن" : "Enroll Now"}
+                          </Button>
                         </div>
                       </div>
                     </Link>
