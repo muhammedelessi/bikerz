@@ -317,9 +317,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Determine redirect URL — send user to the dedicated success page
+    // Determine redirect URL
     const origin = req.headers.get("origin") || "https://bikerz.lovable.app";
-    const redirectBackUrl = `${origin}/payment-success?course=${course_id}`;
+    // If token_id is provided (embedded flow), redirect to 3DS callback page
+    const redirectBackUrl = token_id
+      ? `${origin}/tap-3ds-callback.html?course=${course_id}`
+      : `${origin}/payment-success?course=${course_id}`;
 
     // ── Create Tap charge ──
     const chargePayload: Record<string, unknown> = {
