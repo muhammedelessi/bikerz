@@ -118,7 +118,7 @@ const FeaturedCoursesSection: React.FC = () => {
                 <Skeleton key={i} className="aspect-[4/3] rounded-2xl" />
               ))
             : courses.map((course: any, index: number) => (
-                <CourseCard key={course.id} course={course} index={index} inView={inView} />
+                <CourseCard key={course.id} course={course} index={index} inView={inView} enrollment={getEnrollment(course.id)} />
               ))}
         </div>
 
