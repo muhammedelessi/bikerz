@@ -11,57 +11,58 @@ import { HelmetProvider } from "react-helmet-async";
 import ScrollToTop from "@/components/common/ScrollToTop";
 import SocialProofNotification from "@/components/common/SocialProofNotification";
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import ForgotPassword from "./pages/ForgotPassword";
-import AboutUs from "./pages/AboutUs";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfService from "./pages/TermsOfService";
-import ContactUs from "./pages/ContactUs";
-import Courses from "./pages/Courses";
-import CourseDetail from "./pages/CourseDetail";
-import CourseLearn from "./pages/CourseLearn";
-import Mentors from "./pages/Mentors";
-import Dashboard from "./pages/Dashboard";
-import Profile from "./pages/Profile";
-import NotFound from "./pages/NotFound";
-import PaymentSuccess from "./pages/PaymentSuccess";
+import React, { Suspense, lazy } from "react";
 
-// Admin Pages
-import AdminHome from "./pages/admin/AdminHome";
-import AdminCourses from "./pages/admin/AdminCourses";
-import AdminCourseEditor from "./pages/admin/AdminCourseEditor";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminInstructors from "./pages/admin/AdminInstructors";
-import AdminPayments from "./pages/admin/AdminPayments";
-import AdminAnalytics from "./pages/admin/AdminAnalytics";
-import AdminRoles from "./pages/admin/AdminRoles";
-import AdminSettings from "./pages/admin/AdminSettings";
-import AdminSupport from "./pages/admin/AdminSupport";
-import AdminLessonDiscussions from "./pages/admin/AdminLessonDiscussions";
-import AdminContent from "./pages/admin/AdminContent";
-import AdminCoupons from "./pages/admin/AdminCoupons";
-import AdminCourseReviews from "./pages/admin/AdminCourseReviews";
+// Critical route - loaded eagerly
+import Index from "./pages/Index";
+
+// Lazy-loaded routes
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const AboutUs = lazy(() => import("./pages/AboutUs"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const ContactUs = lazy(() => import("./pages/ContactUs"));
+const Courses = lazy(() => import("./pages/Courses"));
+const CourseDetail = lazy(() => import("./pages/CourseDetail"));
+const CourseLearn = lazy(() => import("./pages/CourseLearn"));
+const Mentors = lazy(() => import("./pages/Mentors"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Profile = lazy(() => import("./pages/Profile"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+
+// Admin Pages - lazy loaded
+const AdminHome = lazy(() => import("./pages/admin/AdminHome"));
+const AdminCourses = lazy(() => import("./pages/admin/AdminCourses"));
+const AdminCourseEditor = lazy(() => import("./pages/admin/AdminCourseEditor"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
+const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
+const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
+const AdminRoles = lazy(() => import("./pages/admin/AdminRoles"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminSupport = lazy(() => import("./pages/admin/AdminSupport"));
+const AdminLessonDiscussions = lazy(() => import("./pages/admin/AdminLessonDiscussions"));
+const AdminContent = lazy(() => import("./pages/admin/AdminContent"));
+const AdminCoupons = lazy(() => import("./pages/admin/AdminCoupons"));
+const AdminCourseReviews = lazy(() => import("./pages/admin/AdminCourseReviews"));
 
 const queryClient = new QueryClient();
+
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+  </div>
+);
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
+  if (isLoading) return <PageLoader />;
+  if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 };
 
@@ -69,22 +70,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, canAccessAdmin, isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!canAccessAdmin) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  if (isLoading) return <PageLoader />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!canAccessAdmin) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 };
 
@@ -92,18 +80,8 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  if (isLoading) return <PageLoader />;
+  if (user) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 };
 
@@ -116,47 +94,49 @@ const AnalyticsTracker = () => {
 const AppRoutes = () => (
   <>
     <AnalyticsTracker />
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/" element={<Index />} />
-      <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
-      <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
-      <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
-      <Route path="/about" element={<AboutUs />} />
-      <Route path="/privacy" element={<PrivacyPolicy />} />
-      <Route path="/terms" element={<TermsOfService />} />
-      <Route path="/contact" element={<ContactUs />} />
-      <Route path="/courses" element={<Courses />} />
-      <Route path="/courses/:id" element={<CourseDetail />} />
-      <Route path="/courses/:id/learn" element={<CourseLearn />} />
-      <Route path="/courses/:id/lessons/:lessonId" element={<CourseLearn />} />
-      <Route path="/mentors" element={<Mentors />} />
-      <Route path="/payment-success" element={<PaymentSuccess />} />
-      
-      {/* Protected Routes */}
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      
-      {/* Admin Routes */}
-      <Route path="/admin" element={<AdminRoute><AdminHome /></AdminRoute>} />
-      <Route path="/admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
-      <Route path="/admin/courses/new" element={<AdminRoute><AdminCourseEditor /></AdminRoute>} />
-      <Route path="/admin/courses/:id" element={<AdminRoute><AdminCourseEditor /></AdminRoute>} />
-      <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-      <Route path="/admin/instructors" element={<AdminRoute><AdminInstructors /></AdminRoute>} />
-      <Route path="/admin/payments" element={<AdminRoute><AdminPayments /></AdminRoute>} />
-      <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
-      <Route path="/admin/roles" element={<AdminRoute><AdminRoles /></AdminRoute>} />
-      <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
-      <Route path="/admin/support" element={<AdminRoute><AdminSupport /></AdminRoute>} />
-      <Route path="/admin/discussions" element={<AdminRoute><AdminLessonDiscussions /></AdminRoute>} />
-      <Route path="/admin/content" element={<AdminRoute><AdminContent /></AdminRoute>} />
-      <Route path="/admin/coupons" element={<AdminRoute><AdminCoupons /></AdminRoute>} />
-      <Route path="/admin/courses/:id/reviews" element={<AdminRoute><AdminCourseReviews /></AdminRoute>} />
-      
-      {/* 404 */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Index />} />
+        <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
+        <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
+        <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
+        <Route path="/about" element={<AboutUs />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/contact" element={<ContactUs />} />
+        <Route path="/courses" element={<Courses />} />
+        <Route path="/courses/:id" element={<CourseDetail />} />
+        <Route path="/courses/:id/learn" element={<CourseLearn />} />
+        <Route path="/courses/:id/lessons/:lessonId" element={<CourseLearn />} />
+        <Route path="/mentors" element={<Mentors />} />
+        <Route path="/payment-success" element={<PaymentSuccess />} />
+        
+        {/* Protected Routes */}
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        
+        {/* Admin Routes */}
+        <Route path="/admin" element={<AdminRoute><AdminHome /></AdminRoute>} />
+        <Route path="/admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
+        <Route path="/admin/courses/new" element={<AdminRoute><AdminCourseEditor /></AdminRoute>} />
+        <Route path="/admin/courses/:id" element={<AdminRoute><AdminCourseEditor /></AdminRoute>} />
+        <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+        <Route path="/admin/instructors" element={<AdminRoute><AdminInstructors /></AdminRoute>} />
+        <Route path="/admin/payments" element={<AdminRoute><AdminPayments /></AdminRoute>} />
+        <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
+        <Route path="/admin/roles" element={<AdminRoute><AdminRoles /></AdminRoute>} />
+        <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
+        <Route path="/admin/support" element={<AdminRoute><AdminSupport /></AdminRoute>} />
+        <Route path="/admin/discussions" element={<AdminRoute><AdminLessonDiscussions /></AdminRoute>} />
+        <Route path="/admin/content" element={<AdminRoute><AdminContent /></AdminRoute>} />
+        <Route path="/admin/coupons" element={<AdminRoute><AdminCoupons /></AdminRoute>} />
+        <Route path="/admin/courses/:id/reviews" element={<AdminRoute><AdminCourseReviews /></AdminRoute>} />
+        
+        {/* 404 */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   </>
 );
 
