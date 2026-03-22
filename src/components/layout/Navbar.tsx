@@ -181,10 +181,11 @@ const Navbar: React.FC = () => {
           <div className="flex items-center justify-between h-16 sm:h-20 lg:h-24">
             {/* Logo */}
             <Link to="/" className="flex items-center flex-shrink-0">
-              <motion.img
+              <img
                 src={logoUrl}
                 alt={logoAlt}
-                whileHover={{ scale: 1.05 }}
+                width={96}
+                height={96}
                 className="h-12 sm:h-16 md:h-20 lg:h-24 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]"
               />
             </Link>

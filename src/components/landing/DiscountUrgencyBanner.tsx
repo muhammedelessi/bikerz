@@ -131,17 +131,17 @@ const DiscountUrgencyBanner: React.FC<{ courseId?: string }> = ({ courseId }) =>
     return () => clearInterval(interval);
   }, [courses.length]);
 
-  if (courses.length === 0) return null;
+  if (courses.length === 0) {
+    // Reserve space to prevent CLS — render an empty placeholder with same height
+    return <div className="h-[52px] sm:h-[40px] bg-near-black" />;
+  }
 
   const currentCourse = courses[activeIndex % courses.length];
 
   return (
-    <div>
-      <motion.section
+    <div className="min-h-[52px] sm:min-h-[40px]">
+      <section
         id="discount-urgency-banner"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.3 }}
         className="overflow-hidden bg-near-black border-b border-accent-orange/20 shadow-[0_2px_16px_hsl(var(--accent-orange)/0.25)]"
       >
         <div className="px-3 sm:px-6 py-1.5 sm:py-2 relative">
@@ -177,7 +177,7 @@ const DiscountUrgencyBanner: React.FC<{ courseId?: string }> = ({ courseId }) =>
             </div>
           )}
         </div>
-      </motion.section>
+      </section>
     </div>
   );
 };
