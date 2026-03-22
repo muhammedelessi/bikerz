@@ -7,7 +7,7 @@ import type { DropdownOption } from '@/components/checkout/SearchableDropdown';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useTapPayment, PaymentMethod, PaymentStatus } from '@/hooks/useTapPayment';
+import { useTapPayment, PaymentMethod } from '@/hooks/useTapPayment';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
