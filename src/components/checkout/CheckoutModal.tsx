@@ -957,9 +957,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         <MastercardIcon className="h-5 w-auto" />
                       </div>
                       <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
-                        <MadaIcon className="h-5 w-auto" />
-                      </div>
-                      <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
                         <ApplePayIcon className="h-5 w-auto" />
                       </div>
                       <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
