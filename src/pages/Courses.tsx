@@ -188,6 +188,10 @@ const Courses: React.FC = () => {
                 const description = isRTL && course.description_ar ? course.description_ar : course.description;
                 const enrollment = getEnrollment(course.id);
                 const isEnrolled = !!enrollment;
+                const isDiscountExpired = course.discount_expires_at && new Date(course.discount_expires_at).getTime() <= Date.now();
+                const effectiveDiscount = isDiscountExpired ? 0 : (course.discount_percentage || 0);
+                const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                const sym = getCurrencySymbol(priceInfo.currency, isRTL);
 
                 return (
                   <motion.div
