@@ -56,6 +56,24 @@ const FeaturedCoursesSection: React.FC = () => {
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: enrollments = [] } = useQuery({
+    queryKey: ['user-enrollments-featured', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('course_enrollments')
+        .select('course_id, progress_percentage')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const getEnrollment = (courseId: string) =>
+    enrollments.find((e: any) => e.course_id === courseId);
+
   if (!isLoading && courses.length === 0) return null;
 
   return (
