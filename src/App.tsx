@@ -13,19 +13,19 @@ import SocialProofNotification from "@/components/common/SocialProofNotification
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
 import React, { Suspense, lazy } from "react";
 
-// Critical route - loaded eagerly
+// Critical routes - loaded eagerly (above-the-fold / high-traffic)
 import Index from "./pages/Index";
+import Courses from "./pages/Courses";
+import CourseDetail from "./pages/CourseDetail";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 
-// Lazy-loaded routes
-const Login = lazy(() => import("./pages/Login"));
-const Signup = lazy(() => import("./pages/Signup"));
+// Secondary public routes - lazy loaded
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const AboutUs = lazy(() => import("./pages/AboutUs"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const ContactUs = lazy(() => import("./pages/ContactUs"));
-const Courses = lazy(() => import("./pages/Courses"));
-const CourseDetail = lazy(() => import("./pages/CourseDetail"));
 const CourseLearn = lazy(() => import("./pages/CourseLearn"));
 const Mentors = lazy(() => import("./pages/Mentors"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
