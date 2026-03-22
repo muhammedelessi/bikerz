@@ -262,11 +262,11 @@ const Courses: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Enroll Now / Continue Button */}
+                          {/* Subscribe Now / Continue Button */}
                           <Button variant="default" size="sm" className="w-full">
                             {isEnrolled
                               ? (isRTL ? 'أكمل التعلم' : 'Continue Learning')
-                              : (isRTL ? 'سجّل الآن' : 'Enroll Now')
+                              : (isRTL ? `اشترك الآن – ${priceInfo.finalPrice} ${sym}` : `Subscribe now – ${priceInfo.finalPrice} ${sym}`)
                             }
                           </Button>
                         </div>
