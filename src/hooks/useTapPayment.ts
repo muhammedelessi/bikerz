@@ -33,8 +33,7 @@ function parseDeviceInfo(): string {
   } catch { return 'Unknown'; }
 }
 
-const TAP_ELEMENTS_SDK_URL = 'https://tap-sdks.b-cdn.net/elements/1.0.0/index.js';
-const TAP_BLUEBIRD_URL = 'https://cdnjs.cloudflare.com/ajax/libs/bluebird/3.3.4/bluebird.min.js';
+const GOSELL_SDK_URL = 'https://goSell.tap.company/js/gosell.js';
 
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -68,10 +67,14 @@ interface UseTapPaymentReturn {
   error: string | null;
   isReady: boolean;
   threeDSUrl: string | null;
-  mountCard: (elementId: string, publicKey: string, amount: number, currency: string) => Promise<void>;
-  unmountCard: () => void;
+  sdkLoaded: boolean;
+  loadSDK: () => Promise<void>;
+  openPaymentPopup: (config: TapPaymentConfig, publicKey: string, amount: number, currency: string) => void;
   submitPayment: (config: TapPaymentConfig) => Promise<void>;
   reset: () => void;
+  // Keep old API for compatibility but they are no-ops
+  mountCard: (elementId: string, publicKey: string, amount: number, currency: string) => Promise<void>;
+  unmountCard: () => void;
 }
 
 export function useTapPayment(): UseTapPaymentReturn {
@@ -80,10 +83,213 @@ export function useTapPayment(): UseTapPaymentReturn {
   const [status, setStatus] = useState<PaymentStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [threeDSUrl, setThreeDSUrl] = useState<string | null>(null);
+  const [sdkLoaded, setSdkLoaded] = useState(false);
 
-  const tokenizeRef = useRef<(() => Promise<any>) | null>(null);
-  const unmountRef = useRef<(() => void) | null>(null);
-  const pendingChargeRef = useRef<{ chargeId: string; courseId: string } | null>(null);
+  const pendingConfigRef = useRef<TapPaymentConfig | null>(null);
+
+  const verifyCharge = useCallback(async (chargeId: string) => {
+    setStatus('verifying');
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke('tap-verify-charge', {
+        body: { charge_id: chargeId },
+      });
+      if (fnErr) throw new Error(fnErr.message);
+      if (data?.status === 'succeeded') {
+        setStatus('succeeded');
+      } else if (data?.status === 'failed' || data?.status === 'cancelled') {
+        setError('Payment was declined. Please try again.');
+        setStatus('failed');
+      } else {
+        await new Promise(r => setTimeout(r, 3000));
+        const { data: d2 } = await supabase.functions.invoke('tap-verify-charge', {
+          body: { charge_id: chargeId },
+        });
+        if (d2?.status === 'succeeded') {
+          setStatus('succeeded');
+        } else {
+          setError('Payment verification timed out. Please check your email for confirmation.');
+          setStatus('failed');
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'Payment verification failed');
+      setStatus('failed');
+    }
+  }, []);
+
+  // Load the goSell SDK
+  const loadSDK = useCallback(async () => {
+    if (sdkLoaded) return;
+    setStatus('loading_sdk');
+    try {
+      await loadScript(GOSELL_SDK_URL);
+      setSdkLoaded(true);
+      setStatus('ready');
+    } catch (err: any) {
+      console.error('[Tap] goSell SDK load error:', err);
+      setError(err.message || 'Failed to load payment SDK');
+      setStatus('failed');
+    }
+  }, [sdkLoaded]);
+
+  // Open goSell lightbox popup
+  const openPaymentPopup = useCallback((config: TapPaymentConfig, publicKey: string, amount: number, currency: string) => {
+    const goSell = (window as any).goSell;
+    if (!goSell) {
+      setError('Payment SDK not loaded');
+      setStatus('failed');
+      return;
+    }
+
+    pendingConfigRef.current = config;
+    setStatus('tokenizing');
+    setError(null);
+
+    const isArabic = document.documentElement.lang === 'ar';
+    const nameParts = (config.customerName || 'Customer').split(' ');
+    const firstName = nameParts[0] || 'Customer';
+    const lastName = nameParts.slice(1).join(' ') || '';
+    const phoneNum = (config.customerPhone || '').replace(/^(\+?966|0)/, '');
+
+    goSell.config({
+      containerID: 'gosell-popup-root',
+      gateway: {
+        publicKey: publicKey,
+        language: isArabic ? 'ar' : 'en',
+        contactInfo: false,
+        supportedCurrencies: [currency || 'SAR'],
+        supportedPaymentMethods: 'all',
+        saveCardOption: false,
+        customerCards: false,
+        notifications: 'standard',
+        backgroundImg: {
+          url: '',
+          opacity: '0',
+        },
+        labels: {
+          cardNumber: isArabic ? 'رقم البطاقة' : 'Card Number',
+          expirationDate: 'MM/YY',
+          cvv: 'CVV',
+          cardHolder: isArabic ? 'اسم حامل البطاقة' : 'Card Holder Name',
+        },
+        style: {
+          base: {
+            color: '#535353',
+            lineHeight: '18px',
+            fontFamily: 'system-ui, sans-serif',
+            fontSmoothing: 'antialiased',
+            fontSize: '16px',
+            '::placeholder': {
+              color: 'rgba(0, 0, 0, 0.26)',
+              fontSize: '15px',
+            },
+          },
+          invalid: {
+            color: 'red',
+          },
+        },
+        callback: (response: any) => {
+          console.log('[Tap] goSell callback:', response);
+          handleGoSellCallback(response);
+        },
+        onClose: () => {
+          console.log('[Tap] goSell popup closed');
+          if (status === 'tokenizing') {
+            setStatus('ready');
+          }
+        },
+      },
+      customer: {
+        first_name: firstName,
+        last_name: lastName,
+        email: config.customerEmail,
+        phone: phoneNum ? { country_code: '966', number: phoneNum } : undefined,
+      },
+      order: {
+        amount: amount,
+        currency: currency || 'SAR',
+        items: [{
+          id: config.courseId,
+          name: 'Course Enrollment',
+          quantity: 1,
+          amount_per_unit: amount,
+        }],
+      },
+      transaction: {
+        mode: 'token',
+      },
+    });
+
+    goSell.openLightBox();
+  }, [status]);
+
+  const handleGoSellCallback = useCallback(async (response: any) => {
+    const config = pendingConfigRef.current;
+    if (!config) {
+      setError('Payment configuration lost');
+      setStatus('failed');
+      return;
+    }
+
+    // In token mode, response contains token info
+    const tokenId = response?.id || response?.token?.id || response?.callback?.id;
+    if (!tokenId) {
+      console.error('[Tap] No token received:', response);
+      setError('Card tokenization failed. Please try again.');
+      setStatus('failed');
+      return;
+    }
+
+    console.log('[Tap] Token received:', tokenId);
+    setStatus('processing');
+
+    try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession?.access_token) {
+        setError('Please sign in to make a payment');
+        setStatus('failed');
+        return;
+      }
+
+      const idempotencyKey = `${config.courseId}_${currentSession.user.id}_${Date.now()}`;
+      const { data, error: fnError } = await supabase.functions.invoke('tap-create-charge', {
+        body: {
+          course_id: config.courseId,
+          currency: config.currency,
+          customer_name: config.customerName,
+          customer_email: config.customerEmail,
+          customer_phone: config.customerPhone,
+          idempotency_key: idempotencyKey,
+          coupon_id: config.couponId || null,
+          payment_method: config.paymentMethod || 'card',
+          detected_country: detectedCountry || null,
+          device_info: parseDeviceInfo(),
+          token_id: tokenId,
+        },
+      });
+
+      if (fnError) throw new Error(fnError.message || 'Payment request failed');
+      if (data?.error) throw new Error(data.error);
+
+      console.log('[Tap] Charge response:', data?.status, data?.charge_id);
+
+      if (data?.status === 'succeeded') {
+        setStatus('succeeded');
+      } else if (data?.redirect_url && data?.charge_id) {
+        // 3DS required
+        setThreeDSUrl(data.redirect_url);
+        setStatus('threeds');
+      } else if (data?.charge_id) {
+        verifyCharge(data.charge_id);
+      } else {
+        throw new Error('Unexpected payment response');
+      }
+    } catch (err: any) {
+      console.error('[Tap] Payment error:', err);
+      setError(err.message || 'Payment failed. Please try again.');
+      setStatus('failed');
+    }
+  }, [detectedCountry, verifyCharge]);
 
   // Listen for 3DS completion postMessage
   useEffect(() => {
@@ -100,204 +306,34 @@ export function useTapPayment(): UseTapPaymentReturn {
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, []);
+  }, [verifyCharge]);
 
-  const verifyCharge = async (chargeId: string) => {
-    setStatus('verifying');
-    try {
-      const { data, error: fnErr } = await supabase.functions.invoke('tap-verify-charge', {
-        body: { charge_id: chargeId },
-      });
-      if (fnErr) throw new Error(fnErr.message);
-      if (data?.status === 'succeeded') {
-        setStatus('succeeded');
-      } else if (data?.status === 'failed' || data?.status === 'cancelled') {
-        setError('Payment was declined. Please try again.');
-        setStatus('failed');
-      } else {
-        // Still processing — poll once more after delay
-        await new Promise(r => setTimeout(r, 3000));
-        const { data: d2 } = await supabase.functions.invoke('tap-verify-charge', {
-          body: { charge_id: chargeId },
-        });
-        if (d2?.status === 'succeeded') {
-          setStatus('succeeded');
-        } else {
-          setError('Payment verification timed out. Please check your email for confirmation.');
-          setStatus('failed');
-        }
-      }
-    } catch (err: any) {
-      setError(err.message || 'Payment verification failed');
-      setStatus('failed');
-    }
-  };
-
-  const tapInstanceRef = useRef<any>(null);
-  const cardElementRef = useRef<any>(null);
-
-  const mountCard = useCallback(async (elementId: string, publicKey: string, amount: number, currency: string) => {
-    setStatus('loading_sdk');
-    setError(null);
-    try {
-      // Load bluebird polyfill (required by Tap Elements on iOS 14+)
-      await loadScript(TAP_BLUEBIRD_URL);
-      await loadScript(TAP_ELEMENTS_SDK_URL);
-
-      var TapjsliFn = (window as any).Tapjsli;
-      if (!TapjsliFn) throw new Error('Tap Elements SDK not available');
-
-      var tap = TapjsliFn(publicKey);
-      tapInstanceRef.current = tap;
-      var elements = tap.elements({});
-
-      var isDark = document.documentElement.classList.contains('dark');
-      var style = {
-        base: {
-          color: isDark ? '#e5e5e5' : '#1c1d1d',
-          lineHeight: '24px',
-          fontFamily: 'Roboto, system-ui, sans-serif',
-          fontSmoothing: 'antialiased',
-          fontSize: '16px',
-          '::placeholder': {
-            color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.26)',
-          },
-        },
-        invalid: {
-          color: '#ef4444',
-        },
-      };
-
-      var paymentOptions = {
-        currencyCode: [currency || 'SAR'],
-        labels: {
-          cardNumber: document.documentElement.lang === 'ar' ? 'رقم البطاقة' : 'Card Number',
-          expirationDate: 'MM/YY',
-          cvv: 'CVV',
-          cardHolder: document.documentElement.lang === 'ar' ? 'اسم حامل البطاقة' : 'Card Holder Name',
-        },
-        TextDirection: document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr',
-      };
-
-      var card = elements.create('card', { style: style }, paymentOptions);
-      card.mount('#' + elementId);
-      cardElementRef.current = card;
-
-      card.addEventListener('change', function (e: any) {
-        if (e.error) {
-          // Don't overwrite status, just surface inline error from SDK
-        }
-      });
-
-      // Wait a tick for the iframe to render
-      await new Promise(function (r) { setTimeout(r, 300); });
-
-      tokenizeRef.current = function () {
-        return tap.createToken(card);
-      };
-      unmountRef.current = function () {
-        try { card.unmount(); } catch (_e) { /* safe */ }
-      };
-      setStatus('ready');
-    } catch (err: any) {
-      console.error('[Tap] SDK mount error:', err);
-      setError(err.message || 'Failed to load payment form');
-      setStatus('failed');
-    }
-  }, []);
-
-  const unmountCard = useCallback(() => {
-    if (unmountRef.current) {
-      try { unmountRef.current(); } catch (_e) { /* safe */ }
-      unmountRef.current = null;
-    }
-    tokenizeRef.current = null;
-    cardElementRef.current = null;
-    tapInstanceRef.current = null;
-  }, []);
-
+  // Legacy submitPayment — kept for the free enrollment flow
   const submitPayment = useCallback(async (config: TapPaymentConfig) => {
-    const { data: { session: currentSession } } = await supabase.auth.getSession();
-    if (!currentSession?.access_token) {
-      setError('Please sign in to make a payment');
-      return;
-    }
-
-    if (!tokenizeRef.current) {
-      setError('Payment form not ready');
-      setStatus('failed');
-      return;
-    }
-
-    setStatus('tokenizing');
-    setError(null);
-
-    try {
-      // Step 1: Tokenize card via SDK
-      const tokenResult = await tokenizeRef.current();
-      console.log('[Tap] Token result:', tokenResult?.id, tokenResult?.status);
-
-      if (!tokenResult?.id) {
-        throw new Error('Card tokenization failed. Please check your card details.');
-      }
-
-      setStatus('processing');
-
-      // Step 2: Create charge with token
-      const idempotencyKey = `${config.courseId}_${currentSession.user.id}_${Date.now()}`;
-      const { data, error: fnError } = await supabase.functions.invoke('tap-create-charge', {
-        body: {
-          course_id: config.courseId,
-          currency: config.currency,
-          customer_name: config.customerName,
-          customer_email: config.customerEmail,
-          customer_phone: config.customerPhone,
-          idempotency_key: idempotencyKey,
-          coupon_id: config.couponId || null,
-          payment_method: config.paymentMethod || 'card',
-          detected_country: detectedCountry || null,
-          device_info: parseDeviceInfo(),
-          token_id: tokenResult.id,
-        },
-      });
-
-      if (fnError) throw new Error(fnError.message || 'Payment request failed');
-      if (data?.error) throw new Error(data.error);
-
-      console.log('[Tap] Charge response:', data?.status, data?.charge_id);
-
-      if (data?.status === 'succeeded') {
-        setStatus('succeeded');
-      } else if (data?.redirect_url && data?.charge_id) {
-        // 3DS required — show iframe
-        pendingChargeRef.current = { chargeId: data.charge_id, courseId: config.courseId };
-        setThreeDSUrl(data.redirect_url);
-        setStatus('threeds');
-      } else if (data?.charge_id) {
-        // Charge created but not captured yet — verify
-        verifyCharge(data.charge_id);
-      } else {
-        throw new Error('Unexpected payment response');
-      }
-    } catch (err: any) {
-      console.error('[Tap] Payment error:', err);
-      setError(err.message || 'Payment failed. Please try again.');
-      setStatus('failed');
-    }
-  }, [detectedCountry]);
+    // This is now only used for the free enrollment path
+    // The popup flow handles paid transactions
+    console.warn('[Tap] submitPayment called directly — use openPaymentPopup for paid flows');
+  }, []);
 
   const reset = useCallback(() => {
-    setStatus('idle');
+    setStatus(sdkLoaded ? 'ready' : 'idle');
     setError(null);
     setThreeDSUrl(null);
-    pendingChargeRef.current = null;
-  }, []);
+    pendingConfigRef.current = null;
+  }, [sdkLoaded]);
+
+  // No-op stubs for backward compatibility
+  const mountCard = useCallback(async () => { /* no-op */ }, []);
+  const unmountCard = useCallback(() => { /* no-op */ }, []);
 
   return {
     status,
     error,
     isReady: status === 'ready',
     threeDSUrl,
+    sdkLoaded,
+    loadSDK,
+    openPaymentPopup,
     mountCard,
     unmountCard,
     submitPayment,
