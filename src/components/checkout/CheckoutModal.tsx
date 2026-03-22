@@ -41,7 +41,7 @@ import { toast } from 'sonner';
 import { trackInitiateCheckout, trackAddPaymentInfo } from '@/utils/metaPixel';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
 import { usePaymentMethodDetection } from '@/hooks/usePaymentMethodDetection';
-import { ApplePayIcon, GooglePayIcon, VisaIcon, MastercardIcon, MadaIcon } from '@/components/checkout/PaymentMethodIcons';
+import { ApplePayIcon, GooglePayIcon, VisaIcon, MastercardIcon } from '@/components/checkout/PaymentMethodIcons';
 
 interface CheckoutModalProps {
   open: boolean;
@@ -955,9 +955,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       </div>
                       <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
                         <MastercardIcon className="h-5 w-auto" />
-                      </div>
-                      <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
-                        <MadaIcon className="h-5 w-auto" />
                       </div>
                       <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
                         <ApplePayIcon className="h-5 w-auto" />
