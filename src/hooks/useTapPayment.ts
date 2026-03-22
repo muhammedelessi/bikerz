@@ -208,10 +208,12 @@ export function useTapPayment(): UseTapPaymentReturn {
 
   const unmountCard = useCallback(() => {
     if (unmountRef.current) {
-      try { unmountRef.current(); } catch {}
+      try { unmountRef.current(); } catch (_e) { /* safe */ }
       unmountRef.current = null;
     }
     tokenizeRef.current = null;
+    cardElementRef.current = null;
+    tapInstanceRef.current = null;
   }, []);
 
   const submitPayment = useCallback(async (config: TapPaymentConfig) => {
