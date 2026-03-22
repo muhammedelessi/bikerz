@@ -13,6 +13,7 @@ import CourseCard from "@/components/course/CourseCard";
 
 const FeaturedCoursesSection: React.FC = () => {
   const { isRTL } = useLanguage();
+  const { user } = useAuth();
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
