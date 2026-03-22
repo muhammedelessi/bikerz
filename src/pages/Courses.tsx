@@ -86,6 +86,8 @@ const Courses: React.FC = () => {
           difficulty_level: course.difficulty_level,
           price: course.price,
           is_published: course.is_published,
+          discount_percentage: course.discount_percentage,
+          discount_expires_at: course.discount_expires_at,
           lessonCount,
           totalDurationMinutes,
         };
