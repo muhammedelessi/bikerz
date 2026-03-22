@@ -179,7 +179,7 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <ScrollToTop />
-                <SocialProofNotification />
+                <DeferredSocialProof />
                 <AppRoutes />
               </BrowserRouter>
             </TooltipProvider>
