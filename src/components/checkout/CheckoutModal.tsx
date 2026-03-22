@@ -93,9 +93,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     error: paymentError,
     isReady,
     threeDSUrl,
-    sdkLoaded,
-    loadSDK,
-    openPaymentPopup,
+    mountCard,
     unmountCard,
     submitPayment,
     reset: resetPayment,
@@ -104,6 +102,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { supportsApplePay, supportsGooglePay } = usePaymentMethodDetection();
   const [guestSigningUp, setGuestSigningUp] = useState(false);
   const [tapPublicKey, setTapPublicKey] = useState<string | null>(null);
+  const cardMountedRef = React.useRef(false);
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('profile');
   
@@ -320,18 +319,32 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setPromoLoading(false);
       setErrors({});
       resetPayment();
+      unmountCard();
+      cardMountedRef.current = false;
       setTapPublicKey(null);
     }
-  }, [open, resetPayment]);
+  }, [open, resetPayment, unmountCard]);
 
-  // Fetch Tap public key and load SDK when modal opens
+  // Fetch Tap public key when modal opens
   useEffect(() => {
     if (!open) return;
     supabase.functions.invoke('tap-config').then(({ data }) => {
       if (data?.public_key) setTapPublicKey(data.public_key);
     });
-    loadSDK();
-  }, [open, loadSDK]);
+  }, [open]);
+
+  // Mount card element when payment step is reached
+  useEffect(() => {
+    if (currentStep !== 'payment' || !tapPublicKey || cardMountedRef.current) return;
+    if (discountedPrice <= 0) return;
+    const timer = setTimeout(() => {
+      if (!cardMountedRef.current) {
+        cardMountedRef.current = true;
+        mountCard('tap-card-element', tapPublicKey, discountedPrice, 'SAR');
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [currentStep, tapPublicKey, discountedPrice, mountCard]);
 
   // Validation
   const validateProfile = useCallback((): boolean => {
@@ -371,7 +384,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const isProfileValid = fullName.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && /^[0-9+\s()-]{7,15}$/.test(phone);
   const isBillingValid = ((isOtherCity || isOtherCountry) ? cityManual.trim().length > 0 : city.trim().length > 0) && (isOtherCountry ? countryManual.trim().length > 0 : country.trim().length > 0);
   // For guest users, isReady won't be true yet - we'll handle signup before payment
-  const isPaymentReady = isProfileValid && isBillingValid && (sdkLoaded || !user);
+  const isPaymentReady = isProfileValid && isBillingValid && (user ? (isReady || paymentStatus === 'idle' || paymentStatus === 'loading_sdk') : true);
 
   // Save profile data to DB
   const saveProfileData = async (userId?: string) => {
@@ -613,13 +626,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       }
     );
 
-    // Open goSell popup for payment
-    if (!tapPublicKey) {
-      toast.error(isRTL ? 'خطأ في تحميل بوابة الدفع' : 'Payment gateway not loaded');
-      return;
-    }
-
-    const paymentConfig = {
+    await submitPayment({
       courseId: course.id,
       currency: 'SAR',
       customerName: fullName,
@@ -627,10 +634,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       couponId: appliedCoupon?.coupon_id,
       customerPhone: phone,
       paymentMethod: method,
-    };
-
-    const total = discountedPrice + Math.ceil(discountedPrice * 0.15);
-    openPaymentPopup(paymentConfig, tapPublicKey, total, 'SAR');
+    });
   };
 
   const handleClose = () => {
@@ -659,7 +663,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // No auth guard — guest checkout is supported
 
   return (
-    <>
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[520px] w-full max-w-full h-[100dvh] sm:h-auto max-h-[100dvh] sm:max-h-[92vh] bg-card border-0 sm:border-2 sm:border-border shadow-2xl p-0 overflow-hidden flex flex-col !rounded-none sm:!rounded-lg !left-0 !top-0 !translate-x-0 !translate-y-0 sm:!left-[50%] sm:!top-[50%] sm:!-translate-x-1/2 sm:!-translate-y-1/2 gap-0">
         {/* Header */}
@@ -815,7 +818,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <p className="text-muted-foreground mb-4">
                 {paymentError || (isRTL ? 'حدث خطأ أثناء الدفع. يرجى المحاولة مرة أخرى.' : 'An error occurred. Please try again.')}
               </p>
-              <Button variant="outline" onClick={() => { resetPayment(); setCurrentStep('payment'); }}>
+              <Button variant="outline" onClick={() => { resetPayment(); cardMountedRef.current = false; setCurrentStep('payment'); }}>
                 {isRTL ? 'حاول مرة أخرى' : 'Try Again'}
               </Button>
             </motion.div>
@@ -1127,59 +1130,72 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     );
                   })()}
 
+                  {/* Card Input */}
+                  {discountedPrice > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5 text-primary" />
+                        {isRTL ? 'بيانات البطاقة' : 'Card Details'}
+                      </Label>
+                      {(paymentStatus === 'loading_sdk' || paymentStatus === 'idle') && (
+                        <div className="flex items-center justify-center py-8 rounded-lg border border-dashed border-border bg-muted/10">
+                          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground me-2" />
+                          <span className="text-sm text-muted-foreground">
+                            {isRTL ? 'جاري تحميل نموذج الدفع...' : 'Loading payment form...'}
+                          </span>
+                        </div>
+                      )}
+                      <div
+                        id="tap-card-element"
+                        className="min-h-[80px] rounded-lg overflow-hidden border border-border p-1"
+                        style={{ display: (paymentStatus === 'loading_sdk' || paymentStatus === 'idle') ? 'none' : 'block' }}
+                      />
+                    </div>
+                  )}
+
                   {/* Pay Now CTA */}
                   {discountedPrice > 0 && (() => {
                     const total = discountedPrice + Math.ceil(discountedPrice * 0.15);
                     return (
-                      <>
-                        {paymentStatus === 'loading_sdk' && (
-                          <div className="flex items-center justify-center py-4">
-                            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground me-2" />
-                            <span className="text-sm text-muted-foreground">
-                              {isRTL ? 'جاري تحميل بوابة الدفع...' : 'Loading payment gateway...'}
+                      <Button
+                        className="w-full h-12 rounded-xl text-base font-bold shadow-glow hover:shadow-glow-lg transition-all duration-300"
+                        variant="cta"
+                        onClick={() => handleSubmitPayment('card')}
+                        disabled={
+                          paymentStatus === 'processing' ||
+                          paymentStatus === 'tokenizing' ||
+                          paymentStatus === 'loading_sdk' ||
+                          guestSigningUp ||
+                          !isPaymentReady ||
+                          (!isReady && !!user)
+                        }
+                      >
+                        {guestSigningUp ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin me-2" />
+                            <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
+                          </>
+                        ) : paymentStatus === 'tokenizing' ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin me-2" />
+                            <span>{isRTL ? 'جاري تأمين البيانات...' : 'Securing card details...'}</span>
+                          </>
+                        ) : paymentStatus === 'processing' ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin me-2" />
+                            <span>{isRTL ? 'جاري معالجة الدفع...' : 'Processing payment...'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-4 h-4 me-2" />
+                            <span>
+                              {isRTL
+                                ? `ادفع ${total} ${currencyLabel}`
+                                : `Pay ${total} ${currencyLabel}`}
                             </span>
-                          </div>
+                          </>
                         )}
-                        <Button
-                          className="w-full h-12 rounded-xl text-base font-bold shadow-glow hover:shadow-glow-lg transition-all duration-300"
-                          variant="cta"
-                          onClick={() => handleSubmitPayment('card')}
-                          disabled={
-                            paymentStatus === 'processing' ||
-                            paymentStatus === 'tokenizing' ||
-                            paymentStatus === 'loading_sdk' ||
-                            guestSigningUp ||
-                            !isPaymentReady ||
-                            !sdkLoaded
-                          }
-                        >
-                          {guestSigningUp ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin me-2" />
-                              <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
-                            </>
-                          ) : paymentStatus === 'tokenizing' ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin me-2" />
-                              <span>{isRTL ? 'جاري تأمين البيانات...' : 'Securing card details...'}</span>
-                            </>
-                          ) : paymentStatus === 'processing' ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin me-2" />
-                              <span>{isRTL ? 'جاري معالجة الدفع...' : 'Processing payment...'}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Lock className="w-4 h-4 me-2" />
-                              <span>
-                                {isRTL
-                                  ? `ادفع ${total} ${currencyLabel}`
-                                  : `Pay ${total} ${currencyLabel}`}
-                              </span>
-                            </>
-                          )}
-                        </Button>
-                      </>
+                      </Button>
                     );
                   })()}
 
@@ -1272,9 +1288,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         )}
       </DialogContent>
     </Dialog>
-    {/* goSell popup root container — must be outside DialogContent */}
-    <div id="gosell-popup-root" />
-    </>
   );
 };
 
