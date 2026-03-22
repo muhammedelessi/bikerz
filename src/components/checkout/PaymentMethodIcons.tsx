@@ -36,6 +36,12 @@ const MastercardIcon = ({ className = 'h-5 w-auto' }: { className?: string }) =>
   </svg>
 );
 
+const MadaIcon = ({ className = 'h-5 w-auto' }: { className?: string }) => (
+  <svg viewBox="0 0 48 20" className={className} style={{ direction: 'ltr' }}>
+    <text x="0" y="15" fontSize="13" fontWeight="700" fontFamily="system-ui, sans-serif" fill="#003B71" letterSpacing="0.5">mada</text>
+  </svg>
+);
+
 interface PaymentMethodIconsProps {
   className?: string;
   showLabel?: boolean;
