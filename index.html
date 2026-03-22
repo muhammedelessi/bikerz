@@ -42,19 +42,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://gifovgwlxwuiibfzyvwb.supabase.co" crossorigin />
-    <link rel="preconnect" href="https://www.googletagmanager.com" />
-    <link rel="preconnect" href="https://connect.facebook.net" />
-    <link rel="preconnect" href="https://analytics.tiktok.com" />
-    <link rel="preconnect" href="https://link.msgsndr.com" />
 
     <!-- DNS Prefetch fallbacks -->
     <link rel="dns-prefetch" href="https://gifovgwlxwuiibfzyvwb.supabase.co" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://connect.facebook.net" />
-    <link rel="dns-prefetch" href="https://analytics.tiktok.com" />
 
-    <!-- Preload critical hero image -->
-    <link rel="preload" as="image" type="image/webp" href="/src/assets/hero-rider.webp" />
+    <!-- Non-blocking font loading (was render-blocking @import in CSS) -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap" media="print" onload="this.media='all'" />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" />
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap" />
+    </noscript>
 
     <!-- Website Schema -->
     <script type="application/ld+json">
