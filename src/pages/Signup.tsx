@@ -21,9 +21,9 @@ import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle, CalendarIcon } from 'l
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import defaultHeroImage from '@/assets/community-ride.jpg';
+import defaultHeroImage from '@/assets/community-ride.webp';
 import SEOHead from '@/components/common/SEOHead';
-import bikerzLogo from '@/assets/bikerz-logo.png';
+import bikerzLogo from '@/assets/bikerz-logo.webp';
 import {
   Dialog,
   DialogContent,
@@ -272,7 +272,7 @@ const Signup: React.FC = () => {
           src={heroImage}
           alt="Motorcycle riders community"
           className="absolute inset-0 w-full h-full object-cover"
-        />
+         loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-l from-background via-background/50 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
       </div>
@@ -292,7 +292,7 @@ const Signup: React.FC = () => {
                 src={bikerzLogo}
                 alt="BIKERZ"
                 className="h-10 sm:h-12 lg:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
-              />
+               loading="lazy" />
             </Link>
             <LanguageToggle />
           </div>
@@ -497,7 +497,7 @@ const Signup: React.FC = () => {
           src={heroImage}
           alt=""
           className="w-full h-full object-cover"
-        />
+         loading="lazy" />
       </div>
 
       {/* Google Follow-Up Dialog for missing fields */}

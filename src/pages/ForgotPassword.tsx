@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { ArrowRight, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import bikerzLogo from '@/assets/bikerz-logo.png';
+import bikerzLogo from '@/assets/bikerz-logo.webp';
 import SEOHead from '@/components/common/SEOHead';
 
 const ForgotPassword: React.FC = () => {
@@ -60,7 +60,7 @@ const ForgotPassword: React.FC = () => {
               src={bikerzLogo}
               alt="BIKERZ"
               className="h-10 sm:h-12 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
-            />
+             loading="lazy" />
           </Link>
         </div>
       </header>

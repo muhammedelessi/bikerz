@@ -9,7 +9,7 @@ import { Trophy, Sparkles, Rocket, ArrowRight, ArrowLeft, CheckCircle2, BookOpen
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
-import bikerLogo from '@/assets/bikerz-logo.png';
+import bikerLogo from '@/assets/bikerz-logo.webp';
 import { trackPurchase } from '@/utils/metaPixel';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
 import type { User } from '@supabase/supabase-js';
@@ -233,7 +233,7 @@ const PaymentSuccess: React.FC = () => {
           transition={{ delay: 0.1 }}
           className="flex justify-center mb-8"
         >
-          <img src={bikerLogo} alt="Bikerz" className="h-10 object-contain" />
+          <img src={bikerLogo} alt="Bikerz" className="h-10 object-contain"  loading="lazy" />
         </motion.div>
 
         {/* Main card */}

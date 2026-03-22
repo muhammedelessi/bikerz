@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Instagram, Youtube, Facebook, Linkedin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import bikerzLogo from '@/assets/bikerz-logo.png';
+import bikerzLogo from '@/assets/bikerz-logo.webp';
 
 // Custom X (Twitter) icon
 const XIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -120,7 +120,7 @@ const Footer: React.FC = () => {
                 src={bikerzLogo}
                 alt="BIKERZ"
                 className="h-12 sm:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
-              />
+               loading="lazy" />
             </Link>
             <p className="text-muted-foreground text-sm max-w-xs">
               {tagline}

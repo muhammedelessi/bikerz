@@ -18,7 +18,7 @@ import {
   Mail,
   Clock
 } from 'lucide-react';
-import heroImage from '@/assets/community-ride.jpg';
+import heroImage from '@/assets/community-ride.webp';
 
 const AboutUs: React.FC = () => {
   const { t } = useTranslation();
@@ -100,7 +100,7 @@ const AboutUs: React.FC = () => {
             src={bgImage}
             alt="Motorcycle riders"
             className="w-full h-full object-cover opacity-30"
-          />
+           loading="lazy" />
           <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
         </div>
         
