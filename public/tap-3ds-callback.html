@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Payment Verification</title>
+<style>body{display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:system-ui,sans-serif;background:#0a0a0a;color:#fff}
+.spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.2);border-top-color:#f97316;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}</style>
+</head>
+<body>
+<div style="text-align:center"><div class="spinner" style="margin:0 auto 16px"></div><p>Verifying payment…</p></div>
+<script>
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  var tapId = params.get('tap_id') || '';
+  var courseId = params.get('course') || '';
+  if(window.parent && window.parent !== window){
+    window.parent.postMessage({type:'TAP_3DS_COMPLETE',tap_id:tapId,course_id:courseId},'*');
+  } else {
+    window.location.href='/payment-success?course='+encodeURIComponent(courseId)+'&tap_id='+encodeURIComponent(tapId);
+  }
+})();
+</script>
+</body>
+</html>
