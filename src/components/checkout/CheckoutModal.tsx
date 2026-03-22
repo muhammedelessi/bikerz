@@ -736,7 +736,75 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         {/* Content */}
         <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0">
-          {paymentStatus === 'failed' ? (
+          {/* 3DS iframe overlay */}
+          {threeDSUrl && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center py-2 space-y-3"
+            >
+              <p className="text-sm text-muted-foreground text-center">
+                {isRTL ? 'يرجى إكمال التحقق الأمني' : 'Please complete security verification'}
+              </p>
+              <iframe
+                src={threeDSUrl}
+                className="w-full rounded-lg border border-border"
+                style={{ height: '420px' }}
+                title="3D Secure Verification"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"
+              />
+            </motion.div>
+          )}
+
+          {/* Verifying state */}
+          {paymentStatus === 'verifying' && !threeDSUrl && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center py-12 text-center"
+            >
+              <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
+              <h4 className="text-lg font-bold text-foreground mb-1">
+                {isRTL ? 'جاري التحقق من الدفع...' : 'Verifying payment...'}
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                {isRTL ? 'يرجى الانتظار لحظة' : 'Please wait a moment'}
+              </p>
+            </motion.div>
+          )}
+
+          {/* Success state (in-modal) */}
+          {paymentStatus === 'succeeded' && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center justify-center py-8 text-center"
+            >
+              <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-8 h-8 text-green-500" />
+              </div>
+              <h4 className="text-xl font-bold text-foreground mb-2">
+                {isRTL ? '🎉 تم الدفع بنجاح!' : '🎉 Payment Successful!'}
+              </h4>
+              <p className="text-muted-foreground mb-4">
+                {isRTL ? 'تم تسجيلك في الدورة بنجاح' : 'You have been enrolled in the course'}
+              </p>
+              <Button
+                variant="cta"
+                onClick={() => {
+                  onSuccess();
+                  onOpenChange(false);
+                  navigate(`/courses/${course.id}/learn?welcome=1`);
+                }}
+              >
+                <Sparkles className="w-4 h-4 me-2" />
+                {isRTL ? 'ابدأ التعلم الآن' : 'Start Learning Now'}
+              </Button>
+            </motion.div>
+          )}
+
+          {/* Failed state */}
+          {paymentStatus === 'failed' && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -751,11 +819,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <p className="text-muted-foreground mb-4">
                 {paymentError || (isRTL ? 'حدث خطأ أثناء الدفع. يرجى المحاولة مرة أخرى.' : 'An error occurred. Please try again.')}
               </p>
-              <Button variant="outline" onClick={() => { resetPayment(); setCurrentStep('payment'); }}>
+              <Button variant="outline" onClick={() => { resetPayment(); cardMountedRef.current = false; setCurrentStep('payment'); }}>
                 {isRTL ? 'حاول مرة أخرى' : 'Try Again'}
               </Button>
             </motion.div>
-          ) : (
+          )}
+
+          {/* Normal step flow */}
+          {!threeDSUrl && paymentStatus !== 'verifying' && paymentStatus !== 'succeeded' && paymentStatus !== 'failed' && (
             <AnimatePresence mode="wait">
               {/* Step 1: Personal Info */}
               {currentStep === 'profile' && (
@@ -795,7 +866,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
                       placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
                       className={errors.email ? 'border-destructive' : ''}
-                      disabled={!!user} // Locked for logged-in users
+                      disabled={!!user}
                     />
                     {!user && (
                       <p className="text-[11px] text-muted-foreground">
@@ -892,7 +963,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     {renderFieldError('city')}
                   </div>
 
-
                   {/* Summary preview */}
                   <div className="p-3 rounded-lg bg-muted/30 mt-2">
                     <p className="text-xs text-muted-foreground mb-2 font-medium">{isRTL ? 'ملخص البيانات' : 'Data Summary'}</p>
@@ -914,7 +984,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </motion.div>
               )}
 
-
               {/* Step 3: Payment */}
               {currentStep === 'payment' && (
                 <motion.div
@@ -931,7 +1000,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </h4>
                   </div>
 
-
                   {/* Promo Code */}
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">
@@ -944,7 +1012,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           value={promoCode}
                           onChange={(e) => setPromoCode(e.target.value)}
                           placeholder={isRTL ? 'أدخل رمز الخصم' : 'Enter promo code'}
-                          disabled={promoApplied || paymentStatus === 'processing'}
+                          disabled={promoApplied || paymentStatus === 'processing' || paymentStatus === 'tokenizing'}
                           className="w-full pe-9"
                         />
                         {promoCode && !promoApplied && (
@@ -982,7 +1050,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   {/* Order Summary with Tax Breakdown */}
                   {(() => {
-                    // Tax computed directly on the already-converted local price
                     const subtotal = discountedPrice;
                     const tax = Math.ceil(subtotal * 0.15);
                     const total = subtotal + tax;
@@ -1003,7 +1070,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           <span className="font-medium">{effectiveCity}{effectiveCountry ? `, ${effectiveCountry}` : ''}</span>
                         </div>
                         <Separator />
-                        {/* Price breakdown */}
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">{isRTL ? 'المبلغ الأصلي' : 'Original Price'}</span>
                           <span className="font-medium">{formatLocal(basePrice)}</span>
@@ -1028,11 +1094,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           <span className="text-primary">{total} {currencyLabel}</span>
                         </div>
                         {!isSAR && (() => {
-                          // Compute SAR equivalent: apply same course discount to SAR base price
                           let sarBase = Math.ceil(course.price);
                           const courseDpct = course.discount_percentage || 0;
                           if (courseDpct > 0) sarBase = Math.ceil(sarBase * (1 - courseDpct / 100));
-                          // Apply coupon discount proportionally if present
                           if (appliedCoupon && basePrice > 0) {
                             const couponRatio = discountedPrice / basePrice;
                             sarBase = Math.ceil(sarBase * couponRatio);
@@ -1048,22 +1112,56 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     );
                   })()}
 
-                  {/* Pay Now - redirects to Tap hosted payment page */}
+                  {/* Embedded Card Form */}
+                  {discountedPrice > 0 && (
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium">
+                        {isRTL ? 'بيانات البطاقة' : 'Card Details'}
+                      </Label>
+                      {(paymentStatus === 'loading_sdk' || paymentStatus === 'idle') && (
+                        <div className="flex items-center justify-center py-6">
+                          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground me-2" />
+                          <span className="text-sm text-muted-foreground">
+                            {isRTL ? 'جاري تحميل نموذج الدفع...' : 'Loading payment form...'}
+                          </span>
+                        </div>
+                      )}
+                      <div
+                        id="tap-card-element"
+                        className="min-h-[80px] rounded-lg overflow-hidden"
+                        style={{ display: (paymentStatus === 'loading_sdk' || paymentStatus === 'idle') ? 'none' : 'block' }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Pay Now Button */}
                   {discountedPrice > 0 && (
                     <Button
                       className="w-full h-12 rounded-lg btn-cta"
                       onClick={() => handleSubmitPayment('card')}
-                      disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady}
+                      disabled={
+                        paymentStatus === 'processing' ||
+                        paymentStatus === 'tokenizing' ||
+                        paymentStatus === 'loading_sdk' ||
+                        guestSigningUp ||
+                        !isPaymentReady ||
+                        (!isReady && !!user)
+                      }
                     >
                       {guestSigningUp ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin me-2" />
                           <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
                         </>
+                      ) : paymentStatus === 'tokenizing' ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin me-2" />
+                          <span>{isRTL ? 'جاري تأمين البيانات...' : 'Securing card details...'}</span>
+                        </>
                       ) : paymentStatus === 'processing' ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin me-2" />
-                          <span>{isRTL ? 'جاري التوجيه للدفع...' : 'Redirecting to payment...'}</span>
+                          <span>{isRTL ? 'جاري معالجة الدفع...' : 'Processing payment...'}</span>
                         </>
                       ) : (
                         <>
@@ -1074,12 +1172,20 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </Button>
                   )}
 
+                  {/* Accepted methods */}
+                  <div className="flex items-center justify-center gap-2 py-1">
+                    <div className="flex items-center gap-2 opacity-60">
+                      <VisaIcon className="h-4 w-auto" />
+                      <MastercardIcon className="h-5 w-auto" />
+                    </div>
+                  </div>
+
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
                     <Shield className="w-4 h-4 text-primary flex-shrink-0" />
                     <span>
                       {isRTL
-                        ? 'جميع المدفوعات آمنة ومشفرة عبر بوابة الدفع'
-                        : 'All payments are secure and encrypted via the payment gateway'}
+                        ? 'جميع المدفوعات آمنة ومشفرة. بياناتك محمية بتقنية 3D Secure'
+                        : 'All payments are secure and encrypted with 3D Secure protection'}
                     </span>
                   </div>
                 </motion.div>
