@@ -3,7 +3,7 @@ import AnimatedCounter from '@/components/common/AnimatedCounter';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { useLanguage } from '@/contexts/LanguageContext';
-import defaultCommunityImage from '@/assets/community-ride.jpg';
+import defaultCommunityImage from '@/assets/community-ride.webp';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLandingContent, CommunityContent } from '@/hooks/useLandingContent';

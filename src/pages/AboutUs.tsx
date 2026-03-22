@@ -18,7 +18,7 @@ import {
   Mail,
   Clock
 } from 'lucide-react';
-import heroImage from '@/assets/community-ride.jpg';
+import heroImage from '@/assets/community-ride.webp';
 
 const AboutUs: React.FC = () => {
   const { t } = useTranslation();

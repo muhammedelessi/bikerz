@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Instagram, Youtube, Facebook, Linkedin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import bikerzLogo from '@/assets/bikerz-logo.png';
+import bikerzLogo from '@/assets/bikerz-logo.webp';
 
 // Custom X (Twitter) icon
 const XIcon: React.FC<{ className?: string }> = ({ className }) => (

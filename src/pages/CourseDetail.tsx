@@ -36,7 +36,7 @@ import {
   MonitorPlay,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import heroImage from '@/assets/hero-rider.jpg';
+import heroImage from '@/assets/hero-rider.webp';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
 import GuestSignupModal from '@/components/checkout/GuestSignupModal';
 import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';

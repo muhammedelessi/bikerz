@@ -26,7 +26,7 @@ import {
   Settings,
   User,
 } from 'lucide-react';
-import bikerzLogo from '@/assets/bikerz-logo.png';
+import bikerzLogo from '@/assets/bikerz-logo.webp';
 import { useState, useEffect } from 'react';
 
 const Profile: React.FC = () => {

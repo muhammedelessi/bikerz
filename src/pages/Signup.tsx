@@ -21,9 +21,9 @@ import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle, CalendarIcon } from 'l
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import defaultHeroImage from '@/assets/community-ride.jpg';
+import defaultHeroImage from '@/assets/community-ride.webp';
 import SEOHead from '@/components/common/SEOHead';
-import bikerzLogo from '@/assets/bikerz-logo.png';
+import bikerzLogo from '@/assets/bikerz-logo.webp';
 import {
   Dialog,
   DialogContent,

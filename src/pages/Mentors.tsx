@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { Star, Bike, Award, Users, MessageCircle, UserX } from 'lucide-react';
-import instructorImage from '@/assets/instructor.jpg';
+import instructorImage from '@/assets/instructor.webp';
 import SEOHead from '@/components/common/SEOHead';
 
 interface Mentor {

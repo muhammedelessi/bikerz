@@ -10,7 +10,7 @@ import Footer from '@/components/layout/Footer';
 import { Progress } from '@/components/ui/progress';
 import { Play, Clock, BookOpen, ChevronRight, ChevronLeft, Loader2, CheckCircle2, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import heroImage from '@/assets/hero-rider.jpg';
+import heroImage from '@/assets/hero-rider.webp';
 import SEOHead from '@/components/common/SEOHead';
 
 interface Course {

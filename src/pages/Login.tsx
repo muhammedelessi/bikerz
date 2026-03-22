@@ -13,8 +13,8 @@ import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
-import defaultHeroImage from '@/assets/hero-rider.jpg';
-import bikerzLogo from '@/assets/bikerz-logo.png';
+import defaultHeroImage from '@/assets/hero-rider.webp';
+import bikerzLogo from '@/assets/bikerz-logo.webp';
 import SEOHead from '@/components/common/SEOHead';
 
 const Login: React.FC = () => {

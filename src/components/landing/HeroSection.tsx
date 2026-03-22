@@ -7,7 +7,7 @@ import { ArrowRight, ArrowLeft, Play, Sparkles } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import defaultHeroImage from "@/assets/hero-rider.jpg";
+import defaultHeroImage from "@/assets/hero-rider.webp";
 import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
 import { Skeleton } from "@/components/ui/skeleton";
 

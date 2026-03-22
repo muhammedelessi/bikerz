@@ -10,8 +10,8 @@ import {
   LucideIcon
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import safetyImage from '@/assets/safety-hands.jpg';
-import instructorImage from '@/assets/instructor.jpg';
+import safetyImage from '@/assets/safety-hands.webp';
+import instructorImage from '@/assets/instructor.webp';
 import { useLandingContent, WhyContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
 

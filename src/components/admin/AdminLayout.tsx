@@ -36,7 +36,7 @@ import {
   HelpCircle,
   Tag,
 } from 'lucide-react';
-import bikerzLogo from '@/assets/bikerz-logo.png';
+import bikerzLogo from '@/assets/bikerz-logo.webp';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
