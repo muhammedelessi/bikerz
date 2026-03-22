@@ -233,7 +233,7 @@ const PaymentSuccess: React.FC = () => {
           transition={{ delay: 0.1 }}
           className="flex justify-center mb-8"
         >
-          <img src={bikerLogo} alt="Bikerz" className="h-10 object-contain" />
+          <img src={bikerLogo} alt="Bikerz" className="h-10 object-contain"  loading="lazy" />
         </motion.div>
 
         {/* Main card */}

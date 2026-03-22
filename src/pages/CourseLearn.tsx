@@ -857,7 +857,7 @@ const CourseLearn: React.FC = () => {
           </Button>
           
           <Link to="/courses" className="flex items-center gap-2 flex-shrink-0">
-            <img src={bikerzLogo} alt="BIKERZ" className="h-8 sm:h-10" />
+            <img src={bikerzLogo} alt="BIKERZ" className="h-8 sm:h-10"  loading="lazy" />
           </Link>
           
           <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground min-w-0">

@@ -154,7 +154,7 @@ const Mentors: React.FC = () => {
                         src={mentor.profile?.avatar_url || instructorImage}
                         alt={mentor.profile?.full_name || 'Mentor'}
                         className="w-full h-full object-cover opacity-80"
-                      />
+                       loading="lazy" />
                       <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
                       
                       {/* Rating Badge */}

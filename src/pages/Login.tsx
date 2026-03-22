@@ -137,7 +137,7 @@ const Login: React.FC = () => {
                 src={bikerzLogo}
                 alt="BIKERZ"
                 className="h-10 sm:h-12 lg:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
-              />
+               loading="lazy" />
             </Link>
             <LanguageToggle />
           </div>
@@ -311,7 +311,7 @@ const Login: React.FC = () => {
           src={heroImage}
           alt="Motorcycle rider"
           className="absolute inset-0 w-full h-full object-cover"
-        />
+         loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/50 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
       </div>
@@ -322,7 +322,7 @@ const Login: React.FC = () => {
           src={heroImage}
           alt=""
           className="w-full h-full object-cover"
-        />
+         loading="lazy" />
       </div>
     </div>
   );

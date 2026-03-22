@@ -60,7 +60,7 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
                   src={course.thumbnail_url}
                   alt={isRTL && course.title_ar ? course.title_ar : course.title}
                   className="w-full h-full object-cover"
-                />
+                 loading="lazy" />
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
                 <button
                   onClick={onClose}

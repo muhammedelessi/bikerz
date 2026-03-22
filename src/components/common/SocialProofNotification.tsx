@@ -189,7 +189,7 @@ const SocialProofNotification: React.FC = () => {
             src={current.thumbnail}
             alt=""
             className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-          />
+           loading="lazy" />
         ) : (
           <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
             <span className="text-2xl">{current.countryFlag}</span>

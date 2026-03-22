@@ -109,12 +109,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           {!sidebarCollapsed && (
             <Link to="/admin" className="flex items-center gap-2">
-              <img src={bikerzLogo} alt="BIKERZ" className="h-10" />
+              <img src={bikerzLogo} alt="BIKERZ" className="h-10"  loading="lazy" />
             </Link>
           )}
           {sidebarCollapsed && (
             <Link to="/admin" className="mx-auto">
-              <img src={bikerzLogo} alt="BIKERZ" className="h-8" />
+              <img src={bikerzLogo} alt="BIKERZ" className="h-8"  loading="lazy" />
             </Link>
           )}
           <Button
