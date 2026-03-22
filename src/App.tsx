@@ -94,16 +94,15 @@ const AnalyticsTracker = () => {
 const AppRoutes = () => (
   <>
     <AnalyticsTracker />
-    <Routes>
-      {/* Critical eager-loaded routes (no Suspense overhead) */}
-      <Route path="/" element={<Index />} />
-      <Route path="/courses" element={<Courses />} />
-      <Route path="/courses/:id" element={<CourseDetail />} />
-      <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
-      <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
-    </Routes>
     <Suspense fallback={<PageLoader />}>
       <Routes>
+        {/* Critical eager-loaded routes */}
+        <Route path="/" element={<Index />} />
+        <Route path="/courses" element={<Courses />} />
+        <Route path="/courses/:id" element={<CourseDetail />} />
+        <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
+        <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
+
         {/* Secondary public routes */}
         <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
         <Route path="/about" element={<AboutUs />} />
@@ -114,11 +113,11 @@ const AppRoutes = () => (
         <Route path="/courses/:id/lessons/:lessonId" element={<CourseLearn />} />
         <Route path="/mentors" element={<Mentors />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
-        
+
         {/* Protected Routes */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        
+
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminRoute><AdminHome /></AdminRoute>} />
         <Route path="/admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
@@ -135,7 +134,7 @@ const AppRoutes = () => (
         <Route path="/admin/content" element={<AdminRoute><AdminContent /></AdminRoute>} />
         <Route path="/admin/coupons" element={<AdminRoute><AdminCoupons /></AdminRoute>} />
         <Route path="/admin/courses/:id/reviews" element={<AdminRoute><AdminCourseReviews /></AdminRoute>} />
-        
+
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
