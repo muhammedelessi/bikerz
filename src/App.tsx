@@ -9,9 +9,10 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
 import ScrollToTop from "@/components/common/ScrollToTop";
-import SocialProofNotification from "@/components/common/SocialProofNotification";
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
+
+const SocialProofNotification = lazy(() => import("@/components/common/SocialProofNotification"));
 
 // Critical routes - loaded eagerly (above-the-fold / high-traffic)
 import Index from "./pages/Index";
