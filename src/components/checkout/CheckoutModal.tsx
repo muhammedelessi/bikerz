@@ -320,11 +320,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setPromoLoading(false);
       setErrors({});
       resetPayment();
-      unmountCard();
-      cardMountedRef.current = false;
       setTapPublicKey(null);
     }
-  }, [open, resetPayment, unmountCard]);
+  }, [open, resetPayment]);
 
   // Fetch Tap public key when modal opens
   useEffect(() => {
