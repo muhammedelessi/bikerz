@@ -1271,6 +1271,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         )}
       </DialogContent>
     </Dialog>
+    {/* goSell popup root container — must be outside DialogContent */}
+    <div id="gosell-popup-root" />
+    </>
   );
 };
 
