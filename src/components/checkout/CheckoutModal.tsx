@@ -780,8 +780,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               animate={{ opacity: 1, scale: 1 }}
               className="flex flex-col items-center justify-center py-8 text-center"
             >
-              <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mb-4">
-                <CheckCircle2 className="w-8 h-8 text-green-500" />
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-8 h-8 text-primary" />
               </div>
               <h4 className="text-xl font-bold text-foreground mb-2">
                 {isRTL ? '🎉 تم الدفع بنجاح!' : '🎉 Payment Successful!'}
