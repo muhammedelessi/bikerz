@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { Play, Clock, BookOpen, ChevronRight, ChevronLeft, Loader2, CheckCircle2, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import heroImage from '@/assets/hero-rider.webp';
