@@ -15,6 +15,20 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
     // Prevent "Invalid hook call" / dispatcher-null issues from duplicated React copies
-    dedupe: ["react", "react-dom"],
+    dedupe: ["react", "react-dom", "react/jsx-runtime"],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-query': ['@tanstack/react-query', '@tanstack/query-core'],
+          'vendor-ui': ['framer-motion', 'lucide-react', 'sonner'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-editor': ['@tiptap/react', '@tiptap/starter-kit', '@tiptap/extension-underline', '@tiptap/extension-text-align'],
+          'vendor-charts': ['recharts'],
+        },
+      },
+    },
   },
 }));
