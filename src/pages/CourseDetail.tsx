@@ -476,7 +476,7 @@ const CourseDetail: React.FC = () => {
                         const sym = getCurrencySymbol(info.currency, isRTL);
                         return isRTL
                           ? `اشترك الآن – ${info.finalPrice} ${sym}`
-                          : `Buy now – ${info.finalPrice} ${sym}`;
+                          : `Subscribe now – ${info.finalPrice} ${sym}`;
                       })()}
                     </Button>
                   )
@@ -797,7 +797,7 @@ const CourseDetail: React.FC = () => {
                             const sym = getCurrencySymbol(info.currency, isRTL);
                             return isRTL
                               ? `اشترك الآن – ${info.finalPrice} ${sym}`
-                              : `Buy now – ${info.finalPrice} ${sym}`;
+                              : `Subscribe now – ${info.finalPrice} ${sym}`;
                           })()}
                         </Button>
                       ) : (
@@ -811,7 +811,7 @@ const CourseDetail: React.FC = () => {
                             const sym = getCurrencySymbol(info.currency, isRTL);
                             return isRTL
                               ? `اشترك الآن – ${info.finalPrice} ${sym}`
-                              : `Buy now – ${info.finalPrice} ${sym}`;
+                              : `Subscribe now – ${info.finalPrice} ${sym}`;
                           })()}
                         </Button>
                       )}
@@ -1204,7 +1204,7 @@ const CourseDetail: React.FC = () => {
                     const sym = getCurrencySymbol(info.currency, isRTL);
                     return isRTL
                       ? `اشترك الآن – ${info.finalPrice} ${sym}`
-                      : `Buy now – ${info.finalPrice} ${sym}`;
+                      : `Subscribe now – ${info.finalPrice} ${sym}`;
                   })()}
                 </Button>
               )}

@@ -177,9 +177,9 @@ const FeaturedCoursesSection: React.FC = () => {
                             )}
                           </div>
 
-                          {/* Enroll Now Button */}
+                          {/* Subscribe Now Button */}
                           <Button variant="default" size="sm" className="w-full">
-                            {isRTL ? "سجّل الآن" : "Enroll Now"}
+                            {isRTL ? `اشترك الآن – ${priceInfo.finalPrice} ${sym}` : `Subscribe now – ${priceInfo.finalPrice} ${sym}`}
                           </Button>
                         </div>
                       </div>

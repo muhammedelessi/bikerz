@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Progress } from '@/components/ui/progress';
@@ -24,6 +25,8 @@ interface Course {
   difficulty_level: string;
   price: number;
   is_published: boolean;
+  discount_percentage: number | null;
+  discount_expires_at: string | null;
 }
 
 interface CourseWithStats extends Course {
@@ -40,6 +43,7 @@ const Courses: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
+  const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
 
   const { data: courses = [], isLoading } = useQuery({
@@ -50,6 +54,7 @@ const Courses: React.FC = () => {
         .select(`
           id, title, title_ar, description, description_ar,
           thumbnail_url, difficulty_level, price, is_published,
+          discount_percentage, discount_expires_at,
           chapters (
             id, is_published,
             lessons ( id, duration_minutes, is_published )
@@ -83,6 +88,8 @@ const Courses: React.FC = () => {
           difficulty_level: course.difficulty_level,
           price: course.price,
           is_published: course.is_published,
+          discount_percentage: course.discount_percentage,
+          discount_expires_at: course.discount_expires_at,
           lessonCount,
           totalDurationMinutes,
         };
@@ -181,6 +188,10 @@ const Courses: React.FC = () => {
                 const description = isRTL && course.description_ar ? course.description_ar : course.description;
                 const enrollment = getEnrollment(course.id);
                 const isEnrolled = !!enrollment;
+                const isDiscountExpired = course.discount_expires_at && new Date(course.discount_expires_at).getTime() <= Date.now();
+                const effectiveDiscount = isDiscountExpired ? 0 : (course.discount_percentage || 0);
+                const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                const sym = getCurrencySymbol(priceInfo.currency, isRTL);
 
                 return (
                   <motion.div
@@ -251,11 +262,11 @@ const Courses: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Enroll Now / Continue Button */}
+                          {/* Subscribe Now / Continue Button */}
                           <Button variant="default" size="sm" className="w-full">
                             {isEnrolled
                               ? (isRTL ? 'أكمل التعلم' : 'Continue Learning')
-                              : (isRTL ? 'سجّل الآن' : 'Enroll Now')
+                              : (isRTL ? `اشترك الآن – ${priceInfo.finalPrice} ${sym}` : `Subscribe now – ${priceInfo.finalPrice} ${sym}`)
                             }
                           </Button>
                         </div>
