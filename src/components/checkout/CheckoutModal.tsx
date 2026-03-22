@@ -639,7 +639,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   const handleClose = () => {
-    if (paymentStatus === 'processing') return;
+    if (paymentStatus === 'processing' || paymentStatus === 'tokenizing' || paymentStatus === 'threeds' || paymentStatus === 'verifying') return;
     onOpenChange(false);
   };
 
