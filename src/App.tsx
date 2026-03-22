@@ -92,6 +92,27 @@ const AnalyticsTracker = () => {
   return null;
 };
 
+// Deferred loader – renders SocialProofNotification after 4s idle to keep main thread free
+const DeferredSocialProof = () => {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const id = (window.requestIdleCallback || ((cb: IdleRequestCallback) => setTimeout(cb, 4000)))(
+      () => setShow(true),
+      { timeout: 5000 }
+    );
+    return () => {
+      if (window.cancelIdleCallback) window.cancelIdleCallback(id as number);
+      else clearTimeout(id as unknown as number);
+    };
+  }, []);
+  if (!show) return null;
+  return (
+    <Suspense fallback={null}>
+      <SocialProofNotification />
+    </Suspense>
+  );
+};
+
 const AppRoutes = () => (
   <>
     <AnalyticsTracker />
