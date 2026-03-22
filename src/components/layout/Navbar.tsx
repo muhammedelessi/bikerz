@@ -256,7 +256,7 @@ const Navbar: React.FC = () => {
             </div>
           </div>
         </div>
-      </motion.nav>
+      </nav>
 
       {/* Mobile Menu - Full Screen Slide-in */}
       <AnimatePresence>
