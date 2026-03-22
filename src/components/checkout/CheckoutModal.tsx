@@ -1144,7 +1144,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <Button
                   variant="outline"
                   onClick={handlePrevStep}
-                  disabled={paymentStatus === 'processing' || paymentStatus === 'tokenizing' || profileSaving}
+                  disabled={paymentStatus === 'processing' || profileSaving}
                   className="flex-shrink-0"
                 >
                   <BackArrowIcon className="w-4 h-4" />
