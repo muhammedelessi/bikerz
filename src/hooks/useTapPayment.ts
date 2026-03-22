@@ -133,53 +133,71 @@ export function useTapPayment(): UseTapPaymentReturn {
     }
   };
 
+  const tapInstanceRef = useRef<any>(null);
+  const cardElementRef = useRef<any>(null);
+
   const mountCard = useCallback(async (elementId: string, publicKey: string, amount: number, currency: string) => {
     setStatus('loading_sdk');
     setError(null);
     try {
-      await loadScript(TAP_CARD_SDK_URL);
-      const CardSDK = (window as any).CardSDK;
-      if (!CardSDK?.renderTapCard) throw new Error('Card SDK not available');
+      // Load bluebird polyfill (required by Tap Elements on iOS 14+)
+      await loadScript(TAP_BLUEBIRD_URL);
+      await loadScript(TAP_ELEMENTS_SDK_URL);
 
-      const { tokenize, unmount } = CardSDK.renderTapCard(elementId, {
-        publicKey,
-        merchant: { id: '' },
-        transaction: {
-          amount: String(amount),
-          currency: currency || 'SAR',
-        },
-        customer: {
-          editable: true,
-          name: [],
-          contact: [],
-        },
-        acceptance: {
-          supportedBrands: ['VISA', 'MASTERCARD', 'AMERICAN_EXPRESS', 'MADA'],
-          supportedCards: 'ALL',
-        },
-        fields: {
-          card: {
-            cardHolder: true,
-            cvv: true,
-            expiryDate: true,
+      var TapjsliFn = (window as any).Tapjsli;
+      if (!TapjsliFn) throw new Error('Tap Elements SDK not available');
+
+      var tap = TapjsliFn(publicKey);
+      tapInstanceRef.current = tap;
+      var elements = tap.elements({});
+
+      var isDark = document.documentElement.classList.contains('dark');
+      var style = {
+        base: {
+          color: isDark ? '#e5e5e5' : '#1c1d1d',
+          lineHeight: '24px',
+          fontFamily: 'Roboto, system-ui, sans-serif',
+          fontSmoothing: 'antialiased',
+          fontSize: '16px',
+          '::placeholder': {
+            color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.26)',
           },
         },
-        addons: {
-          loader: true,
-          saveCard: false,
-          displayPaymentBrands: true,
+        invalid: {
+          color: '#ef4444',
         },
-        interface: {
-          locale: document.documentElement.lang === 'ar' ? 'ar' : 'en',
-          direction: document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr',
-          theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
-          edges: 'curved',
-          cardDirection: 'ltr',
+      };
+
+      var paymentOptions = {
+        currencyCode: [currency || 'SAR'],
+        labels: {
+          cardNumber: document.documentElement.lang === 'ar' ? 'رقم البطاقة' : 'Card Number',
+          expirationDate: 'MM/YY',
+          cvv: 'CVV',
+          cardHolder: document.documentElement.lang === 'ar' ? 'اسم حامل البطاقة' : 'Card Holder Name',
         },
+        TextDirection: document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr',
+      };
+
+      var card = elements.create('card', { style: style }, paymentOptions);
+      card.mount('#' + elementId);
+      cardElementRef.current = card;
+
+      card.addEventListener('change', function (e: any) {
+        if (e.error) {
+          // Don't overwrite status, just surface inline error from SDK
+        }
       });
 
-      tokenizeRef.current = tokenize;
-      unmountRef.current = unmount;
+      // Wait a tick for the iframe to render
+      await new Promise(function (r) { setTimeout(r, 300); });
+
+      tokenizeRef.current = function () {
+        return tap.createToken(card);
+      };
+      unmountRef.current = function () {
+        try { card.unmount(); } catch (_e) { /* safe */ }
+      };
       setStatus('ready');
     } catch (err: any) {
       console.error('[Tap] SDK mount error:', err);
