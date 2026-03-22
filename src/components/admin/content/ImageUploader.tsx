@@ -94,7 +94,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
               src={value}
               alt="Preview"
               className="w-full h-full object-cover"
-              onError={(e) = loading="lazy" > {
+              loading="lazy"
+              onError={(e) => {
                 (e.target as HTMLImageElement).src = '/placeholder.svg';
               }}
             />
