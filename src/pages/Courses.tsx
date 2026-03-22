@@ -52,6 +52,7 @@ const Courses: React.FC = () => {
         .select(`
           id, title, title_ar, description, description_ar,
           thumbnail_url, difficulty_level, price, is_published,
+          discount_percentage, discount_expires_at,
           chapters (
             id, is_published,
             lessons ( id, duration_minutes, is_published )
