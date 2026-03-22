@@ -1195,14 +1195,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         </div>
 
         {/* Footer */}
-        {paymentStatus !== 'failed' && (
+        {paymentStatus !== 'failed' && paymentStatus !== 'succeeded' && !threeDSUrl && paymentStatus !== 'verifying' && (
           <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-5 border-t-2 border-border flex-shrink-0 space-y-2">
             <div className="flex gap-2">
               {currentStep !== 'profile' && (
                 <Button
                   variant="outline"
                   onClick={handlePrevStep}
-                  disabled={paymentStatus === 'processing' || profileSaving}
+                  disabled={paymentStatus === 'processing' || paymentStatus === 'tokenizing' || profileSaving}
                   className="flex-shrink-0"
                 >
                   <BackArrowIcon className="w-4 h-4" />
@@ -1245,11 +1245,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       {isRTL ? 'سجّل مجاناً' : 'Enroll for Free'}
                     </>
                   )}
-                </Button>
-              ) : paymentStatus === 'processing' ? (
-                <Button className="flex-1" variant="cta" disabled>
-                  <Loader2 className="w-4 h-4 animate-spin me-2" />
-                  {isRTL ? 'جاري التوجيه للدفع...' : 'Redirecting to payment...'}
                 </Button>
               ) : null}
             </div>
