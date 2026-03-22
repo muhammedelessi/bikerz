@@ -9,9 +9,10 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
 import ScrollToTop from "@/components/common/ScrollToTop";
-import SocialProofNotification from "@/components/common/SocialProofNotification";
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
+
+const SocialProofNotification = lazy(() => import("@/components/common/SocialProofNotification"));
 
 // Critical routes - loaded eagerly (above-the-fold / high-traffic)
 import Index from "./pages/Index";
@@ -91,6 +92,27 @@ const AnalyticsTracker = () => {
   return null;
 };
 
+// Deferred loader – renders SocialProofNotification after 4s idle to keep main thread free
+const DeferredSocialProof = () => {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const id = (window.requestIdleCallback || ((cb: IdleRequestCallback) => setTimeout(cb, 4000)))(
+      () => setShow(true),
+      { timeout: 5000 }
+    );
+    return () => {
+      if (window.cancelIdleCallback) window.cancelIdleCallback(id as number);
+      else clearTimeout(id as unknown as number);
+    };
+  }, []);
+  if (!show) return null;
+  return (
+    <Suspense fallback={null}>
+      <SocialProofNotification />
+    </Suspense>
+  );
+};
+
 const AppRoutes = () => (
   <>
     <AnalyticsTracker />
@@ -157,7 +179,7 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <ScrollToTop />
-                <SocialProofNotification />
+                <DeferredSocialProof />
                 <AppRoutes />
               </BrowserRouter>
             </TooltipProvider>

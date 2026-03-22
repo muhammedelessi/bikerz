@@ -100,6 +100,10 @@ const HeroSection: React.FC = () => {
         <img
           src={heroImage}
           alt="Motorcycle rider on desert highway"
+          width={1920}
+          height={1080}
+          fetchPriority="high"
+          decoding="async"
           className="w-full h-full object-cover object-center scale-105"
           loading="eager"
         />
