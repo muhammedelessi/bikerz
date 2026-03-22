@@ -92,6 +92,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     status: paymentStatus,
     error: paymentError,
     isReady,
+    threeDSUrl,
+    mountCard,
+    unmountCard,
     submitPayment,
     reset: resetPayment,
   } = useTapPayment();
