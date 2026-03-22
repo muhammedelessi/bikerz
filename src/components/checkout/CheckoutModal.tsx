@@ -91,18 +91,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const {
     status: paymentStatus,
     error: paymentError,
-    isReady,
-    threeDSUrl,
-    mountCard,
-    unmountCard,
     submitPayment,
     reset: resetPayment,
   } = useTapPayment();
   const { sendCourseStatus } = useGHLFormWebhook();
   const { supportsApplePay, supportsGooglePay } = usePaymentMethodDetection();
-  const [guestSigningUp, setGuestSigningUp] = useState(false);
-  const [tapPublicKey, setTapPublicKey] = useState<string | null>(null);
-  const cardMountedRef = React.useRef(false);
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('profile');
   
