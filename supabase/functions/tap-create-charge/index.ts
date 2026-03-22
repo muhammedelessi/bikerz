@@ -354,7 +354,7 @@ Deno.serve(async (req) => {
         internal_id: chargeRecord.id,
       },
       source: {
-        id: "src_all",
+        id: token_id || "src_all",
       },
       redirect: {
         url: redirectBackUrl,
