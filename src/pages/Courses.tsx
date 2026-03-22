@@ -41,6 +41,7 @@ const Courses: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
+  const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
 
   const { data: courses = [], isLoading } = useQuery({
