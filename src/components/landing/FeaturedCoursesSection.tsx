@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ArrowRight, ArrowLeft, Zap } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +13,7 @@ import CourseCard from "@/components/course/CourseCard";
 
 const FeaturedCoursesSection: React.FC = () => {
   const { isRTL } = useLanguage();
+  const { user } = useAuth();
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
@@ -53,6 +55,24 @@ const FeaturedCoursesSection: React.FC = () => {
     },
     staleTime: 5 * 60 * 1000,
   });
+
+  const { data: enrollments = [] } = useQuery({
+    queryKey: ['user-enrollments-featured', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('course_enrollments')
+        .select('course_id, progress_percentage')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const getEnrollment = (courseId: string) =>
+    enrollments.find((e: any) => e.course_id === courseId);
 
   if (!isLoading && courses.length === 0) return null;
 
@@ -98,7 +118,7 @@ const FeaturedCoursesSection: React.FC = () => {
                 <Skeleton key={i} className="aspect-[4/3] rounded-2xl" />
               ))
             : courses.map((course: any, index: number) => (
-                <CourseCard key={course.id} course={course} index={index} inView={inView} />
+                <CourseCard key={course.id} course={course} index={index} inView={inView} enrollment={getEnrollment(course.id)} />
               ))}
         </div>
 
