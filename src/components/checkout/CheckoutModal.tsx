@@ -313,32 +313,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setPromoLoading(false);
       setErrors({});
       resetPayment();
-      unmountCard();
-      cardMountedRef.current = false;
-      setTapPublicKey(null);
     }
-  }, [open, resetPayment, unmountCard]);
-
-  // Fetch Tap public key when modal opens
-  useEffect(() => {
-    if (!open) return;
-    supabase.functions.invoke('tap-config').then(({ data }) => {
-      if (data?.public_key) setTapPublicKey(data.public_key);
-    });
-  }, [open]);
-
-  // Mount card element when payment step is reached
-  useEffect(() => {
-    if (currentStep !== 'payment' || !tapPublicKey || cardMountedRef.current) return;
-    if (discountedPrice <= 0) return;
-    const timer = setTimeout(() => {
-      if (!cardMountedRef.current) {
-        cardMountedRef.current = true;
-        mountCard('tap-card-element', tapPublicKey, discountedPrice, 'SAR');
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [currentStep, tapPublicKey, discountedPrice, mountCard]);
+  }, [open, resetPayment]);
 
   // Validation
   const validateProfile = useCallback((): boolean => {
