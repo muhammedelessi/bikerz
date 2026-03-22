@@ -33,16 +33,17 @@ function parseDeviceInfo(): string {
   } catch { return 'Unknown'; }
 }
 
-const TAP_CARD_SDK_URL = 'https://tap-sdks.b-cdn.net/card/1.0.2/index.js';
+const TAP_ELEMENTS_SDK_URL = 'https://tap-sdks.b-cdn.net/elements/1.0.0/index.js';
+const TAP_BLUEBIRD_URL = 'https://cdnjs.cloudflare.com/ajax/libs/bluebird/3.3.4/bluebird.min.js';
 
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
-    const s = document.createElement('script');
+    var s = document.createElement('script');
     s.src = src;
     s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error('Failed to load payment SDK'));
+    s.onload = function () { resolve(); };
+    s.onerror = function () { reject(new Error('Failed to load: ' + src)); };
     document.head.appendChild(s);
   });
 }
