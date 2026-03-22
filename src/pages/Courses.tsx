@@ -240,26 +240,24 @@ const Courses: React.FC = () => {
                           )}
 
                           {/* Meta */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1.5">
-                                <BookOpen className="w-4 h-4" />
-                                <span>{course.lessonCount} {t('courses.lesson')}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <Clock className="w-4 h-4" />
-                                <span>{formatDuration(course.totalDurationMinutes)}</span>
-                              </div>
+                          <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-3">
+                            <div className="flex items-center gap-1.5">
+                              <BookOpen className="w-4 h-4" />
+                              <span>{course.lessonCount} {t('courses.lesson')}</span>
                             </div>
-                            {isEnrolled ? (
-                              <span className="text-xs font-medium text-primary flex items-center gap-1">
-                                {isRTL ? 'أكمل' : 'Continue'}
-                                <Chevron className="w-3.5 h-3.5" />
-                              </span>
-                            ) : (
-                              <Chevron className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                            )}
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="w-4 h-4" />
+                              <span>{formatDuration(course.totalDurationMinutes)}</span>
+                            </div>
                           </div>
+
+                          {/* Enroll Now / Continue Button */}
+                          <Button variant="default" size="sm" className="w-full">
+                            {isEnrolled
+                              ? (isRTL ? 'أكمل التعلم' : 'Continue Learning')
+                              : (isRTL ? 'سجّل الآن' : 'Enroll Now')
+                            }
+                          </Button>
                         </div>
                       </div>
                     </Link>
