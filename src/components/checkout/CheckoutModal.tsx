@@ -41,7 +41,7 @@ import { toast } from 'sonner';
 import { trackInitiateCheckout, trackAddPaymentInfo } from '@/utils/metaPixel';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
 import { usePaymentMethodDetection } from '@/hooks/usePaymentMethodDetection';
-import { ApplePayIcon, GooglePayIcon, VisaIcon, MastercardIcon } from '@/components/checkout/PaymentMethodIcons';
+import { ApplePayIcon, GooglePayIcon, VisaIcon, MastercardIcon, MadaIcon } from '@/components/checkout/PaymentMethodIcons';
 
 interface CheckoutModalProps {
   open: boolean;
