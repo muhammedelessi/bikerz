@@ -371,7 +371,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const isProfileValid = fullName.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && /^[0-9+\s()-]{7,15}$/.test(phone);
   const isBillingValid = ((isOtherCity || isOtherCountry) ? cityManual.trim().length > 0 : city.trim().length > 0) && (isOtherCountry ? countryManual.trim().length > 0 : country.trim().length > 0);
   // For guest users, isReady won't be true yet - we'll handle signup before payment
-  const isPaymentReady = isProfileValid && isBillingValid && (user ? (isReady || paymentStatus === 'idle' || paymentStatus === 'loading_sdk') : true);
+  const isPaymentReady = isProfileValid && isBillingValid && (sdkLoaded || !user);
 
   // Save profile data to DB
   const saveProfileData = async (userId?: string) => {
