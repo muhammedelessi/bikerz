@@ -613,7 +613,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       }
     );
 
-    await submitPayment({
+    // Open goSell popup for payment
+    if (!tapPublicKey) {
+      toast.error(isRTL ? 'خطأ في تحميل بوابة الدفع' : 'Payment gateway not loaded');
+      return;
+    }
+
+    const paymentConfig = {
       courseId: course.id,
       currency: 'SAR',
       customerName: fullName,
@@ -621,7 +627,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       couponId: appliedCoupon?.coupon_id,
       customerPhone: phone,
       paymentMethod: method,
-    });
+    };
+
+    const total = discountedPrice + Math.ceil(discountedPrice * 0.15);
+    openPaymentPopup(paymentConfig, tapPublicKey, total, 'SAR');
   };
 
   const handleClose = () => {
