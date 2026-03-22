@@ -85,7 +85,6 @@ const CommunitySection: React.FC = () => {
       <div className="absolute inset-0">
         <img
           src={communityImage}
-            loading="lazy"
           alt="Group of motorcycle riders"
           className="w-full h-full object-cover"
           loading="lazy"
