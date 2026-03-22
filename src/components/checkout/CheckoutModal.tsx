@@ -991,19 +991,40 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
-                  className="space-y-4"
+                  className="space-y-5"
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    <CreditCard className="w-4 h-4 text-primary" />
-                    <h4 className="font-semibold text-foreground">
-                      {isRTL ? 'تأكيد الدفع' : 'Confirm Payment'}
-                    </h4>
+                  {/* Accepted Payment Methods */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-primary" />
+                      <h4 className="font-semibold text-foreground text-sm">
+                        {isRTL ? 'طريقة الدفع' : 'Payment Method'}
+                      </h4>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 border-primary/30 bg-primary/5">
+                        <VisaIcon className="h-5 w-auto" />
+                      </div>
+                      <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 border-primary/30 bg-primary/5">
+                        <MastercardIcon className="h-5 w-auto" />
+                      </div>
+                      {supportsApplePay && (
+                        <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-muted/30">
+                          <ApplePayIcon className="h-5 w-auto" />
+                        </div>
+                      )}
+                      {supportsGooglePay && (
+                        <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-muted/30">
+                          <GooglePayIcon className="h-5 w-auto" />
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Promo Code */}
+                  {/* Promo Code — collapsible style */}
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">
-                      <Gift className="w-4 h-4 inline-block me-2" />
+                    <Label className="text-sm font-medium flex items-center gap-1.5">
+                      <Gift className="w-3.5 h-3.5 text-primary" />
                       {isRTL ? 'رمز الخصم' : 'Promo Code'}
                     </Label>
                     <div className="flex gap-2">
@@ -1013,7 +1034,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           onChange={(e) => setPromoCode(e.target.value)}
                           placeholder={isRTL ? 'أدخل رمز الخصم' : 'Enter promo code'}
                           disabled={promoApplied || paymentStatus === 'processing' || paymentStatus === 'tokenizing'}
-                          className="w-full pe-9"
+                          className="w-full pe-9 h-10"
                         />
                         {promoCode && !promoApplied && (
                           <button
@@ -1034,13 +1055,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           </button>
                         )}
                       </div>
-                      <Button variant="outline" onClick={handleApplyPromo} disabled={!promoCode || promoApplied || paymentStatus === 'processing'}>
+                      <Button variant="outline" size="default" onClick={handleApplyPromo} disabled={!promoCode || promoApplied || paymentStatus === 'processing'}>
                         {promoApplied ? (isRTL ? 'مطبق' : 'Applied') : (isRTL ? 'تطبيق' : 'Apply')}
                       </Button>
                     </div>
                     {promoApplied && appliedCoupon && (
-                      <p className="text-sm text-primary flex items-center gap-1">
-                        <Check className="w-4 h-4" />
+                      <p className="text-xs text-primary flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" />
                         {isRTL 
                           ? `تم تطبيق خصم ${discountLabel} (وفّرت ${formatLocal(discountAmount)})` 
                           : `${discountLabel} discount applied (saved ${formatLocal(discountAmount)})`}
@@ -1048,78 +1069,77 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     )}
                   </div>
 
-                  {/* Order Summary with Tax Breakdown */}
+                  {/* Order Summary */}
                   {(() => {
                     const subtotal = discountedPrice;
                     const tax = Math.ceil(subtotal * 0.15);
                     const total = subtotal + tax;
                     return (
-                      <div className="p-4 rounded-xl bg-muted/30 space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">{isRTL ? 'الدورة' : 'Course'}</span>
-                          <span className="font-medium truncate max-w-[200px]">
-                            {isRTL && course.title_ar ? course.title_ar : course.title}
-                          </span>
+                      <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
+                        <div className="px-4 py-3 bg-muted/30 border-b border-border">
+                          <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                            {isRTL ? 'ملخص الطلب' : 'Order Summary'}
+                          </p>
                         </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">{isRTL ? 'العميل' : 'Customer'}</span>
-                          <span className="font-medium">{fullName}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">{isRTL ? 'الموقع' : 'Location'}</span>
-                          <span className="font-medium">{effectiveCity}{effectiveCountry ? `, ${effectiveCountry}` : ''}</span>
-                        </div>
-                        <Separator />
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">{isRTL ? 'المبلغ الأصلي' : 'Original Price'}</span>
-                          <span className="font-medium">{formatLocal(basePrice)}</span>
-                        </div>
-                        {promoApplied && appliedCoupon && (
-                          <div className="flex justify-between text-sm text-primary">
-                            <span>{isRTL ? 'الخصم' : 'Discount'} ({discountLabel})</span>
-                            <span>-{formatLocal(discountAmount)}</span>
+                        <div className="p-4 space-y-2.5">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">{isRTL ? 'الدورة' : 'Course'}</span>
+                            <span className="font-medium truncate max-w-[200px]">
+                              {isRTL && course.title_ar ? course.title_ar : course.title}
+                            </span>
                           </div>
-                        )}
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">{isRTL ? 'المبلغ قبل الضريبة' : 'Subtotal (excl. tax)'}</span>
-                          <span className="font-medium">{subtotal} {currencyLabel}</span>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">{isRTL ? 'المبلغ الأصلي' : 'Original Price'}</span>
+                            <span className="font-medium">{formatLocal(basePrice)}</span>
+                          </div>
+                          {promoApplied && appliedCoupon && (
+                            <div className="flex justify-between text-sm text-primary">
+                              <span>{isRTL ? 'الخصم' : 'Discount'} ({discountLabel})</span>
+                              <span>-{formatLocal(discountAmount)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">{isRTL ? 'المبلغ قبل الضريبة' : 'Subtotal'}</span>
+                            <span className="font-medium">{subtotal} {currencyLabel}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">{isRTL ? vatLabelAr : vatLabel}</span>
+                            <span className="font-medium">{tax} {currencyLabel}</span>
+                          </div>
+                          <Separator className="my-1" />
+                          <div className="flex justify-between font-bold text-base">
+                            <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
+                            <span className="text-primary">{total} {currencyLabel}</span>
+                          </div>
+                          {!isSAR && (() => {
+                            let sarBase = Math.ceil(course.price);
+                            const courseDpct = course.discount_percentage || 0;
+                            if (courseDpct > 0) sarBase = Math.ceil(sarBase * (1 - courseDpct / 100));
+                            if (appliedCoupon && basePrice > 0) {
+                              const couponRatio = discountedPrice / basePrice;
+                              sarBase = Math.ceil(sarBase * couponRatio);
+                            }
+                            const sarTotal = Math.ceil(sarBase * 1.15);
+                            return (
+                              <p className="text-[10px] text-muted-foreground text-center mt-1">
+                                {isRTL ? `* سيتم تحصيل المبلغ بالريال السعودي (${sarTotal} ر.س)` : `* You will be charged in SAR (${sarTotal} SAR)`}
+                              </p>
+                            );
+                          })()}
                         </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">{isRTL ? vatLabelAr : vatLabel}</span>
-                          <span className="font-medium">{tax} {currencyLabel}</span>
-                        </div>
-                        <Separator />
-                        <div className="flex justify-between font-bold">
-                          <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
-                          <span className="text-primary">{total} {currencyLabel}</span>
-                        </div>
-                        {!isSAR && (() => {
-                          let sarBase = Math.ceil(course.price);
-                          const courseDpct = course.discount_percentage || 0;
-                          if (courseDpct > 0) sarBase = Math.ceil(sarBase * (1 - courseDpct / 100));
-                          if (appliedCoupon && basePrice > 0) {
-                            const couponRatio = discountedPrice / basePrice;
-                            sarBase = Math.ceil(sarBase * couponRatio);
-                          }
-                          const sarTotal = Math.ceil(sarBase * 1.15);
-                          return (
-                            <p className="text-[10px] text-muted-foreground text-center mt-1">
-                              {isRTL ? `* سيتم تحصيل المبلغ بالريال السعودي (${sarTotal} ر.س)` : `* You will be charged in SAR (${sarTotal} SAR)`}
-                            </p>
-                          );
-                        })()}
                       </div>
                     );
                   })()}
 
-                  {/* Embedded Card Form */}
+                  {/* Card Input */}
                   {discountedPrice > 0 && (
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5 text-primary" />
                         {isRTL ? 'بيانات البطاقة' : 'Card Details'}
                       </Label>
                       {(paymentStatus === 'loading_sdk' || paymentStatus === 'idle') && (
-                        <div className="flex items-center justify-center py-6">
+                        <div className="flex items-center justify-center py-8 rounded-lg border border-dashed border-border bg-muted/10">
                           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground me-2" />
                           <span className="text-sm text-muted-foreground">
                             {isRTL ? 'جاري تحميل نموذج الدفع...' : 'Loading payment form...'}
@@ -1128,64 +1148,72 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       )}
                       <div
                         id="tap-card-element"
-                        className="min-h-[80px] rounded-lg overflow-hidden"
+                        className="min-h-[80px] rounded-lg overflow-hidden border border-border p-1"
                         style={{ display: (paymentStatus === 'loading_sdk' || paymentStatus === 'idle') ? 'none' : 'block' }}
                       />
                     </div>
                   )}
 
-                  {/* Pay Now Button */}
-                  {discountedPrice > 0 && (
-                    <Button
-                      className="w-full h-12 rounded-lg btn-cta"
-                      onClick={() => handleSubmitPayment('card')}
-                      disabled={
-                        paymentStatus === 'processing' ||
-                        paymentStatus === 'tokenizing' ||
-                        paymentStatus === 'loading_sdk' ||
-                        guestSigningUp ||
-                        !isPaymentReady ||
-                        (!isReady && !!user)
-                      }
-                    >
-                      {guestSigningUp ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin me-2" />
-                          <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
-                        </>
-                      ) : paymentStatus === 'tokenizing' ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin me-2" />
-                          <span>{isRTL ? 'جاري تأمين البيانات...' : 'Securing card details...'}</span>
-                        </>
-                      ) : paymentStatus === 'processing' ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin me-2" />
-                          <span>{isRTL ? 'جاري معالجة الدفع...' : 'Processing payment...'}</span>
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="w-4 h-4 me-2" />
-                          <span>{isRTL ? 'ادفع الآن' : 'Pay Now'}</span>
-                        </>
-                      )}
-                    </Button>
-                  )}
+                  {/* Pay Now CTA */}
+                  {discountedPrice > 0 && (() => {
+                    const total = discountedPrice + Math.ceil(discountedPrice * 0.15);
+                    return (
+                      <Button
+                        className="w-full h-12 rounded-xl text-base font-bold shadow-glow hover:shadow-glow-lg transition-all duration-300"
+                        variant="cta"
+                        onClick={() => handleSubmitPayment('card')}
+                        disabled={
+                          paymentStatus === 'processing' ||
+                          paymentStatus === 'tokenizing' ||
+                          paymentStatus === 'loading_sdk' ||
+                          guestSigningUp ||
+                          !isPaymentReady ||
+                          (!isReady && !!user)
+                        }
+                      >
+                        {guestSigningUp ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin me-2" />
+                            <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
+                          </>
+                        ) : paymentStatus === 'tokenizing' ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin me-2" />
+                            <span>{isRTL ? 'جاري تأمين البيانات...' : 'Securing card details...'}</span>
+                          </>
+                        ) : paymentStatus === 'processing' ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin me-2" />
+                            <span>{isRTL ? 'جاري معالجة الدفع...' : 'Processing payment...'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-4 h-4 me-2" />
+                            <span>
+                              {isRTL
+                                ? `ادفع ${total} ${currencyLabel}`
+                                : `Pay ${total} ${currencyLabel}`}
+                            </span>
+                          </>
+                        )}
+                      </Button>
+                    );
+                  })()}
 
-                  {/* Accepted methods */}
-                  <div className="flex items-center justify-center gap-2 py-1">
-                    <div className="flex items-center gap-2 opacity-60">
-                      <VisaIcon className="h-4 w-auto" />
-                      <MastercardIcon className="h-5 w-auto" />
+                  {/* Trust Bar */}
+                  <div className="flex items-center justify-center gap-3 pt-1">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Shield className="w-3.5 h-3.5 text-primary" />
+                      <span>{isRTL ? 'دفع آمن' : 'Secure Payment'}</span>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
-                    <Shield className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span>
-                      {isRTL
-                        ? 'جميع المدفوعات آمنة ومشفرة. بياناتك محمية بتقنية 3D Secure'
-                        : 'All payments are secure and encrypted with 3D Secure protection'}
+                    <span className="text-muted-foreground/30">|</span>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Lock className="w-3 h-3 text-primary" />
+                      <span>3D Secure</span>
+                    </div>
+                    <span className="text-muted-foreground/30">|</span>
+                    <span className="text-[10px] text-muted-foreground/60">
+                      {isRTL ? 'مُؤمّن بواسطة Tap' : 'Secured by Tap'}
                     </span>
                   </div>
                 </motion.div>
