@@ -192,6 +192,38 @@ const PaymentSuccess: React.FC = () => {
     );
   }
 
+  // Cancelled state — user cancelled on Tap page
+  if (verifyStatus === 'cancelled') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-lg text-center space-y-6"
+        >
+          <div className="mx-auto w-20 h-20 rounded-full bg-muted flex items-center justify-center">
+            <span className="text-4xl">🚫</span>
+          </div>
+          <h1 className="text-2xl font-black text-foreground">
+            {isRTL ? 'تم إلغاء الدفع' : 'Payment Cancelled'}
+          </h1>
+          <p className="text-muted-foreground">
+            {isRTL
+              ? 'لقد ألغيت عملية الدفع. لم يتم خصم أي مبلغ من حسابك.'
+              : 'You cancelled the payment. No amount has been charged.'}
+          </p>
+          <Button
+            onClick={() => navigate(`/courses/${courseId}`)}
+            variant="cta"
+            className="h-12 px-8 rounded-2xl"
+          >
+            {isRTL ? 'العودة للدورة' : 'Back to Course'}
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
+
   // Failed state
   if (verifyStatus === 'failed') {
     return (
