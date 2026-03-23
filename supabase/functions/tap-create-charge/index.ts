@@ -317,9 +317,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Determine redirect URL — always use the published domain
-    // to prevent session loss when returning from Tap's hosted page
-    const origin = "https://academy.bikerz.com";
+    // Determine redirect URL — use request origin if it's a known Lovable domain
+    // (allows testing from preview), otherwise default to published domain
+    const requestOrigin = req.headers.get("origin") || "";
+    const isKnownOrigin =
+      requestOrigin === "https://academy.bikerz.com" ||
+      requestOrigin === "https://bikerz.lovable.app" ||
+      requestOrigin.endsWith(".lovable.app") ||
+      requestOrigin.endsWith(".lovableproject.com");
+    const origin = isKnownOrigin ? requestOrigin : "https://academy.bikerz.com";
     // If token_id is provided (embedded flow), redirect to 3DS callback page
     const redirectBackUrl = token_id
       ? `${origin}/tap-3ds-callback.html?course=${course_id}`

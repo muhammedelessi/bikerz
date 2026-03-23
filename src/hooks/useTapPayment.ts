@@ -119,7 +119,16 @@ export function useTapPayment(): UseTapPaymentReturn {
         setStatus('succeeded');
       } else if (data?.redirect_url) {
         // Redirect to Tap hosted payment page
-        window.location.href = data.redirect_url;
+        // If we're in an iframe (Lovable preview), open in new tab
+        // because Tap's checkout page blocks iframe loading (X-Frame-Options)
+        const inIframe = window.top !== window.self;
+        if (inIframe) {
+          window.open(data.redirect_url, '_blank');
+          // Reset status so user can retry if they close the tab
+          setStatus('idle');
+        } else {
+          window.location.href = data.redirect_url;
+        }
       } else if (data?.charge_id) {
         verifyCharge(data.charge_id);
       } else {
