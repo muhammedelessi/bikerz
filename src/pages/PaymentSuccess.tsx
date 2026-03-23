@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,7 +7,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Trophy, Sparkles, Rocket, ArrowRight, ArrowLeft, CheckCircle2, BookOpen, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import bikerLogo from '@/assets/bikerz-logo.webp';
 import { trackPurchase } from '@/utils/metaPixel';
@@ -25,7 +24,7 @@ function useAuthReady() {
     });
 
     const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(
-      (_event, session) => {
+      (_event: any, session: any) => {
         setUser(session?.user ?? null);
       }
     );
@@ -37,6 +36,9 @@ function useAuthReady() {
 }
 
 type VerifyStatus = 'verifying' | 'succeeded' | 'failed' | 'processing';
+
+const MAX_RETRIES = 4;
+const RETRY_DELAY = 3000;
 
 const PaymentSuccess: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -51,6 +53,7 @@ const PaymentSuccess: React.FC = () => {
 
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>('verifying');
   const [confettiFired, setConfettiFired] = useState(false);
+  const retryCountRef = useRef(0);
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
   // Fetch course info
@@ -77,28 +80,29 @@ const PaymentSuccess: React.FC = () => {
         value: course.price ?? 0,
         currency: 'SAR',
       });
-      // Send GHL webhook with "purchased" status (flat payload)
-      sendCourseStatus(
-        user!.id,
-        courseId,
-        course.title,
-        'purchased',
-        {
-          email: user!.email || '',
-          amount: String(course.price ?? 0),
-          dateOfBirth: profile?.date_of_birth || '',
-          gender: profile?.gender || '',
-          silent: true,
-        }
-      );
+      if (user) {
+        sendCourseStatus(
+          user.id,
+          courseId,
+          course.title,
+          'purchased',
+          {
+            email: user.email || '',
+            amount: String(course.price ?? 0),
+            dateOfBirth: profile?.date_of_birth || '',
+            gender: profile?.gender || '',
+            silent: true,
+          }
+        );
+      }
     }
   }, [verifyStatus, course, courseId]);
 
-  // Verify payment (skip for free enrollments)
+  // Verify payment with retry/polling logic
   useEffect(() => {
-    if (!isReady || !user) return;
+    if (!isReady) return;
 
-    // Free enrollment or coupon-based — already enrolled, skip verification
+    // Free enrollment — skip verification
     if (!tapId || tapId === 'free_enrollment') {
       setVerifyStatus('succeeded');
       return;
@@ -106,27 +110,53 @@ const PaymentSuccess: React.FC = () => {
 
     const verify = async () => {
       try {
+        // Call verify — works with or without auth (edge function handles both)
         const { data, error } = await supabase.functions.invoke('tap-verify-charge', {
           body: { charge_id: tapId },
         });
+
         if (error) throw error;
 
         if (data?.status === 'succeeded') {
           setVerifyStatus('succeeded');
-          queryClient.invalidateQueries({ queryKey: ['enrollment', courseId, user.id] });
-        } else if (data?.status === 'failed') {
-          setVerifyStatus('failed');
-        } else {
-          setVerifyStatus('processing');
-          queryClient.invalidateQueries({ queryKey: ['enrollment', courseId, user.id] });
+          if (user) {
+            queryClient.invalidateQueries({ queryKey: ['enrollment', courseId, user.id] });
+          }
+          return;
         }
-      } catch {
-        setVerifyStatus('failed');
+
+        if (data?.status === 'failed' || data?.status === 'cancelled') {
+          setVerifyStatus('failed');
+          return;
+        }
+
+        // Still processing — retry with polling
+        if (retryCountRef.current < MAX_RETRIES) {
+          retryCountRef.current += 1;
+          console.log(`[PaymentSuccess] Retry ${retryCountRef.current}/${MAX_RETRIES}...`);
+          setTimeout(verify, RETRY_DELAY);
+        } else {
+          // Max retries — still show success-ish if the charge exists
+          // The webhook will handle final enrollment
+          setVerifyStatus('processing');
+          if (user) {
+            queryClient.invalidateQueries({ queryKey: ['enrollment', courseId, user.id] });
+          }
+        }
+      } catch (err) {
+        console.error('[PaymentSuccess] Verify error:', err);
+        // On error, retry a few times before giving up
+        if (retryCountRef.current < MAX_RETRIES) {
+          retryCountRef.current += 1;
+          setTimeout(verify, RETRY_DELAY);
+        } else {
+          setVerifyStatus('failed');
+        }
       }
     };
 
     verify();
-  }, [tapId, user, courseId]);
+  }, [tapId, isReady]);
 
   // Fire confetti on success
   useEffect(() => {
@@ -189,8 +219,8 @@ const PaymentSuccess: React.FC = () => {
     );
   }
 
-  // Verifying / Processing state
-  if (verifyStatus === 'verifying' || verifyStatus === 'processing') {
+  // Verifying state — show spinner
+  if (verifyStatus === 'verifying') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <motion.div
@@ -210,10 +240,41 @@ const PaymentSuccess: React.FC = () => {
     );
   }
 
-  // Success state — the main congratulations page
+  // Processing state — payment initiated but not yet confirmed
+  if (verifyStatus === 'processing') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-lg text-center space-y-6"
+        >
+          <div className="mx-auto w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center">
+            <Loader2 className="w-10 h-10 text-primary animate-spin" />
+          </div>
+          <h1 className="text-2xl font-black text-foreground">
+            {isRTL ? 'جاري معالجة الدفع' : 'Payment Processing'}
+          </h1>
+          <p className="text-muted-foreground">
+            {isRTL
+              ? 'يتم معالجة دفعتك. ستتلقى رسالة تأكيد بالبريد الإلكتروني قريباً.'
+              : 'Your payment is being processed. You will receive a confirmation email shortly.'}
+          </p>
+          <Button
+            onClick={() => navigate(`/courses/${courseId}`)}
+            variant="cta"
+            className="h-12 px-8 rounded-2xl"
+          >
+            {isRTL ? 'العودة للدورة' : 'Back to Course'}
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Success state
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 overflow-hidden relative">
-      {/* Background decorations */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-10 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-10 right-10 w-96 h-96 bg-primary/8 rounded-full blur-3xl" />
@@ -226,25 +287,21 @@ const PaymentSuccess: React.FC = () => {
         transition={{ type: 'spring', damping: 20, stiffness: 200 }}
         className="relative z-10 w-full max-w-lg mx-auto"
       >
-        {/* Logo */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="flex justify-center mb-8"
         >
-          <img src={bikerLogo} alt="Bikerz" className="h-10 object-contain"  loading="lazy" />
+          <img src={bikerLogo} alt="Bikerz" className="h-10 object-contain" loading="lazy" />
         </motion.div>
 
-        {/* Main card */}
         <div className="bg-card border-2 border-primary/20 rounded-3xl p-8 sm:p-10 text-center shadow-2xl relative overflow-hidden">
-          {/* Inner glow */}
           <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-primary/5 pointer-events-none" />
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/15 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 space-y-7">
-            {/* Trophy */}
             <motion.div
               initial={{ scale: 0, rotate: -30 }}
               animate={{ scale: 1, rotate: 0 }}
@@ -254,7 +311,6 @@ const PaymentSuccess: React.FC = () => {
               <Trophy className="w-12 h-12 text-primary" />
             </motion.div>
 
-            {/* Congrats heading */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -272,7 +328,6 @@ const PaymentSuccess: React.FC = () => {
               </div>
             </motion.div>
 
-            {/* Course card */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -285,8 +340,6 @@ const PaymentSuccess: React.FC = () => {
               <p className="text-xl font-bold text-foreground leading-tight">
                 {courseTitle || '...'}
               </p>
-
-              {/* Quick stats */}
               <div className="flex items-center justify-center gap-6 pt-2">
                 {course?.total_lessons && (
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -301,7 +354,6 @@ const PaymentSuccess: React.FC = () => {
               </div>
             </motion.div>
 
-            {/* What's next */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -318,7 +370,6 @@ const PaymentSuccess: React.FC = () => {
               </p>
             </motion.div>
 
-            {/* CTA */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

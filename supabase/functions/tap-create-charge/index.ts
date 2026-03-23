@@ -317,8 +317,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Determine redirect URL
-    const origin = req.headers.get("origin") || "https://bikerz.lovable.app";
+    // Determine redirect URL — always use the published domain
+    // to prevent session loss when returning from Tap's hosted page
+    const origin = "https://academy.bikerz.com";
     // If token_id is provided (embedded flow), redirect to 3DS callback page
     const redirectBackUrl = token_id
       ? `${origin}/tap-3ds-callback.html?course=${course_id}`
