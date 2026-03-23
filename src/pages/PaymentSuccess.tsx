@@ -35,7 +35,7 @@ function useAuthReady() {
   return { user, isReady };
 }
 
-type VerifyStatus = 'verifying' | 'succeeded' | 'failed' | 'processing';
+type VerifyStatus = 'verifying' | 'succeeded' | 'failed' | 'cancelled' | 'processing';
 
 const MAX_RETRIES = 4;
 const RETRY_DELAY = 3000;
