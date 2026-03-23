@@ -125,7 +125,12 @@ const PaymentSuccess: React.FC = () => {
           return;
         }
 
-        if (data?.status === 'failed' || data?.status === 'cancelled') {
+        if (data?.status === 'cancelled') {
+          setVerifyStatus('cancelled');
+          return;
+        }
+
+        if (data?.status === 'failed') {
           setVerifyStatus('failed');
           return;
         }
