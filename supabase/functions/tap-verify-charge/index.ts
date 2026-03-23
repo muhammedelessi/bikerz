@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const VERIFY_TIMEOUT = 15000; // 15s timeout
+const VERIFY_TIMEOUT = 15000;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -14,14 +14,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -34,18 +26,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify user with getUser
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userData, error: userError } = await userClient.auth.getUser();
-    if (userError || !userData?.user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Try to authenticate user (optional — redirect flow may lose session)
+    let userId: string | null = null;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      try {
+        const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: userData } = await userClient.auth.getUser();
+        if (userData?.user) {
+          userId = userData.user.id;
+        }
+      } catch {
+        // Auth failed — continue without user context
+        console.warn("Auth verification failed, proceeding without user context");
+      }
     }
-    const userId = userData.user.id;
 
     let body: Record<string, any>;
     try {
@@ -65,7 +62,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate charge_id format (Tap charge IDs start with chg_)
     if (!charge_id.startsWith("chg_")) {
       return new Response(
         JSON.stringify({ error: "Invalid charge ID format" }),
@@ -112,22 +108,32 @@ Deno.serve(async (req) => {
 
     const status = mapTapStatus(tapCharge.status);
 
-    // Update DB record
+    // Use service role client for DB operations
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-    const { data: dbCharge } = await adminClient
+
+    // Find charge in DB — if user is authenticated, filter by user_id for extra security
+    // If not authenticated (session lost after redirect), look up by charge_id only
+    let dbQuery = adminClient
       .from("tap_charges")
       .select("id, user_id, course_id, status, metadata")
-      .eq("charge_id", charge_id)
-      .eq("user_id", userId)
-      .maybeSingle();
+      .eq("charge_id", charge_id);
+
+    if (userId) {
+      dbQuery = dbQuery.eq("user_id", userId);
+    }
+
+    const { data: dbCharge } = await dbQuery.maybeSingle();
 
     if (!dbCharge) {
-      console.warn("Charge not found in DB for user:", userId, "charge:", charge_id);
+      console.warn("Charge not found in DB:", charge_id, "userId:", userId);
       return new Response(
-        JSON.stringify({ status, charge_id, warning: "charge_not_found_for_user" }),
+        JSON.stringify({ status, charge_id, warning: "charge_not_found" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Use the DB record's user_id for enrollment (trustworthy — set at charge creation)
+    const chargeUserId = dbCharge.user_id;
 
     // Don't downgrade succeeded status
     if (dbCharge.status === "succeeded") {
@@ -152,14 +158,14 @@ Deno.serve(async (req) => {
     if (status === "succeeded" && dbCharge.course_id) {
       const { error: enrollError } = await adminClient
         .from("course_enrollments")
-        .insert({ user_id: userId, course_id: dbCharge.course_id });
+        .insert({ user_id: chargeUserId, course_id: dbCharge.course_id });
       if (enrollError && !enrollError.message.includes("duplicate")) {
         console.error("Enrollment error:", enrollError.message);
       }
 
-      // Record revenue analytics (idempotent - unique index prevents duplicates)
+      // Record revenue analytics
       const { error: revenueError } = await adminClient.from("revenue_analytics").insert({
-        user_id: userId,
+        user_id: chargeUserId,
         course_id: dbCharge.course_id,
         event_type: "payment",
         amount: tapCharge.amount || 0,
@@ -180,7 +186,7 @@ Deno.serve(async (req) => {
 
         await adminClient.rpc("increment_coupon_usage", {
           p_coupon_id: couponId,
-          p_user_id: userId,
+          p_user_id: chargeUserId,
           p_course_id: dbCharge.course_id,
           p_order_id: dbCharge.id,
           p_charge_id: charge_id,

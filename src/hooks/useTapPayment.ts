@@ -49,18 +49,9 @@ export function useTapPayment(): UseTapPaymentReturn {
   const [status, setStatus] = useState<PaymentStatus>('idle');
   const [error, setError] = useState<string | null>(null);
 
-  // Listen for return from Tap redirect via URL params
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tapId = params.get('tap_id');
-    if (tapId) {
-      verifyCharge(tapId);
-      // Clean URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete('tap_id');
-      window.history.replaceState({}, '', url.toString());
-    }
-  }, []);
+  // Note: tap_id return handling is done in PaymentSuccess page
+  // The checkout modal is closed after redirect, so this hook
+  // only handles direct/inline payment responses
 
   const verifyCharge = async (chargeId: string) => {
     setStatus('verifying');
