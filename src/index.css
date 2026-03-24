@@ -142,7 +142,6 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-en);
-    overflow-x: hidden;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
   }
