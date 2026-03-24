@@ -45,7 +45,6 @@ import { trackInitiateCheckout, trackAddPaymentInfo } from '@/utils/metaPixel';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
 import { usePaymentMethodDetection } from '@/hooks/usePaymentMethodDetection';
 import { ApplePayIcon, GooglePayIcon, VisaIcon, MastercardIcon } from '@/components/checkout/PaymentMethodIcons';
-import TapCardForm from '@/components/checkout/TapCardForm';
 
 import { PHONE_COUNTRIES } from '@/data/phoneCountryCodes';
 
@@ -103,8 +102,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { sendCourseStatus } = useGHLFormWebhook();
   const { supportsApplePay, supportsGooglePay } = usePaymentMethodDetection();
   const [guestSigningUp, setGuestSigningUp] = useState(false);
-  const [cardToken, setCardToken] = useState<string | null>(null);
-  const [cardSubmitting, setCardSubmitting] = useState(false);
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('info');
   
@@ -349,8 +346,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setPromoLoading(false);
       setErrors({});
       setIsEditingName(false);
-      setCardToken(null);
-      setCardSubmitting(false);
       resetPayment();
     }
   }, [open, resetPayment]);
@@ -555,8 +550,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  // Submit payment with optional token from inline card form
-  const handleSubmitPayment = async (method: PaymentMethod = 'card', tokenId?: string) => {
+  // Submit payment
+  const handleSubmitPayment = async (method: PaymentMethod = 'card') => {
     if (!isPaymentReady) return;
     onPaymentStarted?.();
 
@@ -655,27 +650,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       couponId: appliedCoupon?.coupon_id,
       customerPhone: fullPhone,
       paymentMethod: method,
-      tokenId: tokenId || undefined,
     });
-  };
-
-  // Handler for inline card token
-  const handleCardToken = useCallback((token: string) => {
-    setCardToken(token);
-    setCardSubmitting(false);
-    handleSubmitPayment('card', token);
-  }, [handleSubmitPayment]);
-
-  const handleCardError = useCallback((err: string) => {
-    setCardSubmitting(false);
-    toast.error(err);
-  }, []);
-
-  // Trigger inline card form submission
-  const handleInlineCardSubmit = () => {
-    if ((window as any).__tapCardSubmit) {
-      (window as any).__tapCardSubmit();
-    }
   };
 
   const handleClose = () => {
@@ -1030,34 +1005,28 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
                   className="space-y-5"
                 >
-                  {/* Inline Card Form */}
+                  {/* Accepted Payment Methods */}
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <CreditCard className="w-4 h-4 text-primary" />
                       <h4 className="font-semibold text-foreground text-sm">
-                        {isRTL ? 'بيانات البطاقة' : 'Card Details'}
+                        {isRTL ? 'طرق الدفع المتاحة' : 'Accepted Payment Methods'}
                       </h4>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap mb-2">
-                      <div className="flex items-center px-2 py-1 rounded border border-border/50 bg-muted/10">
-                        <VisaIcon className="h-4 w-auto" />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
+                        <VisaIcon className="h-5 w-auto" />
                       </div>
-                      <div className="flex items-center px-2 py-1 rounded border border-border/50 bg-muted/10">
-                        <MastercardIcon className="h-4 w-auto" />
+                      <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
+                        <MastercardIcon className="h-5 w-auto" />
                       </div>
-                      <div className="flex items-center px-2 py-1 rounded border border-border/50 bg-muted/10">
-                        <ApplePayIcon className="h-4 w-auto" />
+                      <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
+                        <ApplePayIcon className="h-5 w-auto" />
                       </div>
-                      <div className="flex items-center px-2 py-1 rounded border border-border/50 bg-muted/10">
-                        <GooglePayIcon className="h-4 w-auto" />
+                      <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
+                        <GooglePayIcon className="h-5 w-auto" />
                       </div>
                     </div>
-                    <TapCardForm
-                      onToken={handleCardToken}
-                      onError={handleCardError}
-                      isSubmitting={cardSubmitting}
-                      setIsSubmitting={setCardSubmitting}
-                    />
                   </div>
 
                   {/* Promo Code */}
@@ -1183,18 +1152,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <Button
                         className="w-full h-12 rounded-xl text-base font-bold shadow-glow hover:shadow-glow-lg transition-all duration-300"
                         variant="cta"
-                        onClick={handleInlineCardSubmit}
-                        disabled={paymentStatus === 'processing' || guestSigningUp || cardSubmitting || !isPaymentReady}
+                        onClick={() => handleSubmitPayment('card')}
+                        disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady}
                       >
                         {guestSigningUp ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin me-2" />
                             <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
                           </>
-                        ) : cardSubmitting || paymentStatus === 'processing' ? (
+                        ) : paymentStatus === 'processing' ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin me-2" />
-                            <span>{isRTL ? 'جاري معالجة الدفع...' : 'Processing payment...'}</span>
+                            <span>{isRTL ? 'جاري التحويل لصفحة الدفع...' : 'Redirecting to payment...'}</span>
                           </>
                         ) : (
                           <>
