@@ -189,11 +189,13 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
               className="w-full h-11 text-sm font-bold group/btn relative overflow-hidden"
             >
               <span className="relative z-10 flex items-center gap-2">
-                {isEnrolled
-                  ? (isRTL ? "أكمل التعلم" : "Continue Learning")
-                  : (isRTL
-                    ? `اشترك الآن – ${priceInfo.finalPrice} ${sym}`
-                    : `Subscribe now – ${priceInfo.finalPrice} ${sym}`)}
+                {isCompleted
+                  ? (isRTL ? "مراجعة الدورة" : "Review Course")
+                  : isEnrolled
+                    ? (isRTL ? "أكمل التعلم" : "Continue Learning")
+                    : (isRTL
+                      ? `اشترك الآن – ${priceInfo.finalPrice} ${sym}`
+                      : `Subscribe now – ${priceInfo.finalPrice} ${sym}`)}
                 <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
               </span>
             </Button>
