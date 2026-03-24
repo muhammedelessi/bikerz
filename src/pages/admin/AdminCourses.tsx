@@ -99,6 +99,7 @@ const AdminCourses: React.FC = () => {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [viewStudentsCourse, setViewStudentsCourse] = useState<{ id: string; title: string } | null>(null);
 
   // Form state
   interface CountryPrice {
