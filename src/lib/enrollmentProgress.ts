@@ -4,6 +4,7 @@ export interface EnrollmentWithProgress {
   course_id: string;
   progress_percentage: number;
   completed_at: string | null;
+  has_reviewed: boolean;
 }
 
 export const fetchEnrollmentsWithLiveProgress = async (
