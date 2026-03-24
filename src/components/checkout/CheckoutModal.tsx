@@ -360,11 +360,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (!email.trim() || !emailRegex.test(email)) {
       newErrors.email = isRTL ? 'بريد إلكتروني صحيح مطلوب' : 'Valid email required';
     }
-    // Build full phone for validation
-    const fullPhone = getFullPhone();
-    const phoneRegex = /^[0-9+\s()-]{7,15}$/;
-    if (!fullPhone || !phoneRegex.test(fullPhone)) {
-      newErrors.phone = isRTL ? 'رقم هاتف صحيح مطلوب' : 'Valid phone number required';
+    // Phone validation
+    const rawPhone = phone.trim();
+    if (!rawPhone) {
+      newErrors.phone = isRTL ? 'رقم الهاتف مطلوب' : 'Phone number is required';
+    } else if (!actualPrefix) {
+      newErrors.phone = isRTL ? 'يرجى اختيار رمز الدولة' : 'Please select a country code';
+    } else if (!/^\d+$/.test(rawPhone)) {
+      newErrors.phone = isRTL ? 'رقم الهاتف يجب أن يحتوي على أرقام فقط' : 'Phone must contain digits only';
+    } else if (rawPhone.length < 6) {
+      newErrors.phone = isRTL ? 'رقم الهاتف قصير جداً (6 أرقام على الأقل)' : 'Phone number too short (min 6 digits)';
+    } else if (rawPhone.length > 12) {
+      newErrors.phone = isRTL ? 'رقم الهاتف طويل جداً (12 رقم كحد أقصى)' : 'Phone number too long (max 12 digits)';
     }
     // Billing
     const c = (isOtherCity || isOtherCountry) ? cityManual.trim() : city.trim();
