@@ -77,6 +77,16 @@ const normalizeStatus = (status: string, source: 'manual' | 'tap'): string => {
   }
   return status;
 };
+/** Safely convert error_message (may be string or {code,message} object) to a display string */
+const safeErrorMessage = (msg: unknown): string | null => {
+  if (!msg) return null;
+  if (typeof msg === 'string') return msg;
+  if (typeof msg === 'object') {
+    const obj = msg as Record<string, unknown>;
+    return (obj.message as string) || JSON.stringify(msg);
+  }
+  return String(msg);
+};
 
 const AdminPayments = () => {
   const { isRTL } = useLanguage();
@@ -336,14 +346,14 @@ const AdminPayments = () => {
     const resp = payment.tap_response || {};
     const response = resp.response as Record<string, unknown> | undefined;
     const gateway = resp.gateway as Record<string, unknown> | undefined;
-    const code = (response?.code as string) || (gateway?.response?.toString()) || null;
+    const code = (response?.code as string) || (gateway?.response != null ? String(gateway.response) : null);
     const translatedReason = getTranslatedErrorReason(code);
-    // Full decline reason from Tap API response.message
     const tapDeclineMessage = (response?.message as string) || null;
+    const safeErr = safeErrorMessage(payment.error_message);
     return {
-      reason: translatedReason || payment.error_message || tapDeclineMessage || (isRTL ? 'فشل الدفع' : 'Payment failed'),
+      reason: translatedReason || safeErr || tapDeclineMessage || (isRTL ? 'فشل الدفع' : 'Payment failed'),
       code,
-      gatewayResponse: (gateway?.response as string) || null,
+      gatewayResponse: gateway?.response != null ? String(gateway.response) : null,
       translatedReason,
       tapDeclineMessage,
     };
@@ -374,7 +384,7 @@ const AdminPayments = () => {
         p.charge_id || p.reference_number || '',
         p.source,
         p.device_info || '',
-        p.error_message || '',
+        safeErrorMessage(p.error_message) || '',
         p.profile?.profile_complete ? 'Yes' : 'No',
       ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',');
     });
@@ -522,8 +532,8 @@ const AdminPayments = () => {
                           <div className="space-y-1">
                             {getStatusBadge(payment.status, payment.source)}
                             {isFailed && payment.error_message && (
-                              <p className="text-xs text-red-500 max-w-[150px] truncate" title={payment.error_message}>
-                                {payment.error_message}
+                              <p className="text-xs text-red-500 max-w-[150px] truncate" title={safeErrorMessage(payment.error_message) || ''}>
+                                {safeErrorMessage(payment.error_message)}
                               </p>
                             )}
                           </div>
