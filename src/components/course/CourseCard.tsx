@@ -178,32 +178,55 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
               )}
             </div>
 
-            {/* CTA Button */}
-            <Button
-              variant="default"
-              className={`w-full h-11 text-sm font-bold group/btn relative overflow-hidden ${isCompleted ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                {isCompleted ? (
-                  <>
+            {/* CTA Buttons */}
+            {isCompleted ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="default"
+                  className="flex-1 h-11 text-sm font-bold bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <span className="flex items-center gap-2">
                     <Trophy className="w-4 h-4" />
                     {isRTL ? 'مكتمل ✓' : 'Completed ✓'}
-                  </>
-                ) : isEnrolled ? (
-                  <>
-                    {isRTL ? "أكمل التعلم" : "Continue Learning"}
-                    <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
-                  </>
-                ) : (
-                  <>
-                    {isRTL
-                      ? `اشترك الآن – ${priceInfo.finalPrice} ${sym}`
-                      : `Subscribe now – ${priceInfo.finalPrice} ${sym}`}
-                    <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
-                  </>
+                  </span>
+                </Button>
+                {!hasReviewed && (
+                  <Button
+                    variant="outline"
+                    className="h-11 px-4 text-sm font-bold border-yellow-500/50 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/10"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      window.location.href = `/courses/${course.id}#reviews`;
+                    }}
+                  >
+                    <Star className="w-4 h-4 me-1.5 fill-yellow-500 text-yellow-500" />
+                    {isRTL ? 'قيّم' : 'Rate'}
+                  </Button>
                 )}
-              </span>
-            </Button>
+              </div>
+            ) : (
+              <Button
+                variant="default"
+                className="w-full h-11 text-sm font-bold group/btn relative overflow-hidden"
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  {isEnrolled ? (
+                    <>
+                      {isRTL ? "أكمل التعلم" : "Continue Learning"}
+                      <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
+                    </>
+                  ) : (
+                    <>
+                      {isRTL
+                        ? `اشترك الآن – ${priceInfo.finalPrice} ${sym}`
+                        : `Subscribe now – ${priceInfo.finalPrice} ${sym}`}
+                      <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
+                    </>
+                  )}
+                </span>
+              </Button>
+            )}
           </div>
         </div>
       </Link>
