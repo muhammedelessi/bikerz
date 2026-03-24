@@ -59,12 +59,7 @@ const Courses: React.FC = () => {
     queryKey: ['user-enrollments', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
-        .from('course_enrollments')
-        .select('course_id, progress_percentage, completed_at')
-        .eq('user_id', user.id);
-      if (error) throw error;
-      return (data || []) as Enrollment[];
+      return (await fetchEnrollmentsWithLiveProgress(user.id)) as EnrollmentWithProgress[];
     },
     enabled: !!user,
   });
