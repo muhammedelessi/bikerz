@@ -157,7 +157,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
                 </div>
                 <Progress value={enrollment.progress_percentage} className="h-1.5" />
               </div>
-            )}
+              )
             )}
 
             {/* Divider */}
