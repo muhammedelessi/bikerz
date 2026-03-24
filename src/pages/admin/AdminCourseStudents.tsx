@@ -328,7 +328,7 @@ const AdminCourseStudents: React.FC = () => {
                   {filteredStudents.map((student) => (
                     <button
                       key={student.user_id}
-                      onClick={() => setSelectedStudent(student.user_id)}
+                      onClick={() => navigate(`/admin/courses/${courseId}/students/${student.user_id}`)}
                       className="w-full text-start p-4 hover:bg-muted/30 transition-colors active:bg-muted/50"
                     >
                       <div className="flex items-center gap-3">
