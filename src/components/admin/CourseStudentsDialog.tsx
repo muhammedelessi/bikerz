@@ -21,12 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Dialog as SubDialog,
-  DialogContent as SubDialogContent,
-  DialogHeader as SubDialogHeader,
-  DialogTitle as SubDialogTitle,
-} from '@/components/ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Search,
   Users,
@@ -36,9 +31,13 @@ import {
   Calendar,
   DollarSign,
   ChevronRight,
+  ChevronLeft,
   GraduationCap,
   Clock,
-  X,
+  ArrowLeft,
+  ArrowRight,
+  TrendingUp,
+  Award,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -65,7 +64,6 @@ interface EnrolledStudent {
 }
 
 interface StudentDetail {
-  // All courses this student purchased
   allEnrollments: {
     course_id: string;
     course_title: string;
@@ -93,25 +91,19 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
 
-  // Fetch enrolled students for this course
   const { data: students = [], isLoading } = useQuery({
     queryKey: ['course-students', courseId],
     queryFn: async () => {
       if (!courseId) return [];
-
-      // Get enrollments
       const { data: enrollments, error } = await supabase
         .from('course_enrollments')
         .select('user_id, enrolled_at, progress_percentage, completed_at')
         .eq('course_id', courseId)
         .order('enrolled_at', { ascending: false });
-
       if (error) throw error;
       if (!enrollments?.length) return [];
 
       const userIds = enrollments.map((e) => e.user_id);
-
-      // Fetch profiles and emails in parallel
       const [profilesRes, emailsRes] = await Promise.all([
         supabase
           .from('profiles')
@@ -146,108 +138,52 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
     enabled: !!courseId,
   });
 
-  // Fetch detail for selected student
   const { data: studentDetail, isLoading: detailLoading } = useQuery({
     queryKey: ['student-detail', selectedStudent],
     queryFn: async (): Promise<StudentDetail> => {
       if (!selectedStudent) return { allEnrollments: [], totalLessonsCompleted: 0 };
-
-      // Get all enrollments for this student
       const { data: enrollments } = await supabase
         .from('course_enrollments')
         .select('course_id, enrolled_at, progress_percentage, completed_at')
         .eq('user_id', selectedStudent);
-
       if (!enrollments?.length) return { allEnrollments: [], totalLessonsCompleted: 0 };
 
       const courseIds = enrollments.map((e) => e.course_id);
-
-      // Fetch courses, reviews, payments, and lesson progress in parallel
       const [coursesRes, reviewsRes, tapRes, manualRes, progressRes] =
         await Promise.all([
-          supabase
-            .from('courses')
-            .select('id, title, title_ar')
-            .in('id', courseIds),
-          supabase
-            .from('course_reviews')
-            .select('course_id, rating, comment')
-            .eq('user_id', selectedStudent)
-            .in('course_id', courseIds),
-          supabase
-            .from('tap_charges')
-            .select('course_id, amount, currency, created_at, payment_method, status')
-            .eq('user_id', selectedStudent)
-            .eq('status', 'CAPTURED')
-            .in('course_id', courseIds),
-          supabase
-            .from('manual_payments')
-            .select('course_id, amount, currency, created_at, payment_method, status')
-            .eq('user_id', selectedStudent)
-            .eq('status', 'approved')
-            .in('course_id', courseIds),
-          supabase
-            .from('lesson_progress')
-            .select('lesson_id, is_completed')
-            .eq('user_id', selectedStudent)
-            .eq('is_completed', true),
+          supabase.from('courses').select('id, title, title_ar').in('id', courseIds),
+          supabase.from('course_reviews').select('course_id, rating, comment').eq('user_id', selectedStudent).in('course_id', courseIds),
+          supabase.from('tap_charges').select('course_id, amount, currency, created_at, payment_method, status').eq('user_id', selectedStudent).eq('status', 'CAPTURED').in('course_id', courseIds),
+          supabase.from('manual_payments').select('course_id, amount, currency, created_at, payment_method, status').eq('user_id', selectedStudent).eq('status', 'approved').in('course_id', courseIds),
+          supabase.from('lesson_progress').select('lesson_id, is_completed').eq('user_id', selectedStudent).eq('is_completed', true),
         ]);
 
-      const courseMap = new Map(
-        (coursesRes.data || []).map((c) => [c.id, c])
-      );
-      const reviewMap = new Map(
-        (reviewsRes.data || []).map((r) => [r.course_id, r])
-      );
-
-      // Merge tap + manual payments, pick first per course
-      const paymentMap = new Map<
-        string,
-        { amount: number; currency: string; date: string; method: string }
-      >();
+      const courseMap = new Map((coursesRes.data || []).map((c) => [c.id, c]));
+      const reviewMap = new Map((reviewsRes.data || []).map((r) => [r.course_id, r]));
+      const paymentMap = new Map<string, { amount: number; currency: string; date: string; method: string }>();
       [...(tapRes.data || []), ...(manualRes.data || [])].forEach((p) => {
         if (p.course_id && !paymentMap.has(p.course_id)) {
-          paymentMap.set(p.course_id, {
-            amount: Number(p.amount),
-            currency: p.currency || 'SAR',
-            date: p.created_at,
-            method: p.payment_method || '-',
-          });
+          paymentMap.set(p.course_id, { amount: Number(p.amount), currency: p.currency || 'SAR', date: p.created_at, method: p.payment_method || '-' });
         }
       });
 
-      // Count lessons per course (we need chapters → lessons mapping)
-      const { data: chapters } = await supabase
-        .from('chapters')
-        .select('id, course_id')
-        .in('course_id', courseIds);
-
+      const { data: chapters } = await supabase.from('chapters').select('id, course_id').in('course_id', courseIds);
       const chapterIds = (chapters || []).map((ch) => ch.id);
       const { data: lessons } = chapterIds.length
-        ? await supabase
-            .from('lessons')
-            .select('id, chapter_id')
-            .in('chapter_id', chapterIds)
+        ? await supabase.from('lessons').select('id, chapter_id').in('chapter_id', chapterIds)
         : { data: [] };
 
-      // Map lesson → course
-      const chapterCourseMap = new Map(
-        (chapters || []).map((ch) => [ch.id, ch.course_id])
-      );
+      const chapterCourseMap = new Map((chapters || []).map((ch) => [ch.id, ch.course_id]));
       const lessonCourseMap = new Map<string, string>();
       (lessons || []).forEach((l) => {
         const cId = chapterCourseMap.get(l.chapter_id);
         if (cId) lessonCourseMap.set(l.id, cId);
       });
-
-      // Total lessons per course
       const totalLessonsPerCourse = new Map<string, number>();
       (lessons || []).forEach((l) => {
         const cId = chapterCourseMap.get(l.chapter_id);
         if (cId) totalLessonsPerCourse.set(cId, (totalLessonsPerCourse.get(cId) || 0) + 1);
       });
-
-      // Completed lessons per course
       const completedPerCourse = new Map<string, number>();
       (progressRes.data || []).forEach((p) => {
         const cId = lessonCourseMap.get(p.lesson_id);
@@ -260,9 +196,7 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
         const payment = paymentMap.get(e.course_id);
         return {
           course_id: e.course_id,
-          course_title: isRTL && (course as any)?.title_ar
-            ? (course as any).title_ar
-            : course?.title || '-',
+          course_title: isRTL && (course as any)?.title_ar ? (course as any).title_ar : course?.title || '-',
           enrolled_at: e.enrolled_at,
           progress_percentage: e.progress_percentage,
           completed_at: e.completed_at,
@@ -277,10 +211,7 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
         };
       });
 
-      return {
-        allEnrollments,
-        totalLessonsCompleted: (progressRes.data || []).length,
-      };
+      return { allEnrollments, totalLessonsCompleted: (progressRes.data || []).length };
     },
     enabled: !!selectedStudent,
   });
@@ -295,320 +226,330 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
 
   const formatDate = (date: string) => {
     try {
-      return format(new Date(date), 'dd MMM yyyy', {
-        locale: isRTL ? ar : undefined,
-      });
+      return format(new Date(date), 'dd MMM yyyy', { locale: isRTL ? ar : undefined });
     } catch {
       return '-';
     }
   };
 
-  const selectedStudentData = students.find(
-    (s) => s.user_id === selectedStudent
-  );
+  const selectedStudentData = students.find((s) => s.user_id === selectedStudent);
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  };
+
+  const completedCount = students.filter((s) => s.completed_at).length;
+  const inProgressCount = students.filter((s) => !s.completed_at && s.progress_percentage > 0).length;
+  const avgProgress = students.length
+    ? Math.round(students.reduce((sum, s) => sum + s.progress_percentage, 0) / students.length)
+    : 0;
+
+  const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+  const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
 
   return (
     <>
-      <Dialog open={!!courseId} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              {isRTL ? 'طلاب الدورة' : 'Course Students'}
-              <span className="text-muted-foreground font-normal text-sm">
-                — {courseTitle}
-              </span>
+      {/* Main Students List Dialog */}
+      <Dialog open={!!courseId && !selectedStudent} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] flex flex-col gap-4 p-4 sm:p-6" dir={isRTL ? 'rtl' : 'ltr'}>
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+                <Users className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 min-w-0">
+                <span className="truncate">{isRTL ? 'طلاب الدورة' : 'Course Students'}</span>
+                <span className="text-muted-foreground font-normal text-xs sm:text-sm truncate">
+                  {courseTitle}
+                </span>
+              </div>
             </DialogTitle>
           </DialogHeader>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            <div className="bg-muted/50 rounded-xl p-3 text-center">
+              <Users className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
+              <p className="text-xl font-bold text-foreground">{students.length}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{isRTL ? 'إجمالي الطلاب' : 'Total Students'}</p>
+            </div>
+            <div className="bg-green-500/5 rounded-xl p-3 text-center">
+              <CheckCircle className="w-4 h-4 text-green-500 mx-auto mb-1" />
+              <p className="text-xl font-bold text-green-600">{completedCount}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{isRTL ? 'أكملوا الدورة' : 'Completed'}</p>
+            </div>
+            <div className="bg-blue-500/5 rounded-xl p-3 text-center">
+              <TrendingUp className="w-4 h-4 text-blue-500 mx-auto mb-1" />
+              <p className="text-xl font-bold text-blue-600">{inProgressCount}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{isRTL ? 'قيد التعلم' : 'In Progress'}</p>
+            </div>
+            <div className="bg-amber-500/5 rounded-xl p-3 text-center">
+              <Award className="w-4 h-4 text-amber-500 mx-auto mb-1" />
+              <p className="text-xl font-bold text-amber-600">{avgProgress}%</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{isRTL ? 'متوسط التقدم' : 'Avg Progress'}</p>
+            </div>
+          </div>
 
           {/* Search */}
           <div className="relative">
             <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder={
-                isRTL
-                  ? 'البحث بالاسم أو البريد أو الهاتف...'
-                  : 'Search by name, email or phone...'
-              }
+              placeholder={isRTL ? 'البحث بالاسم أو البريد أو الهاتف...' : 'Search by name, email or phone...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="ps-10"
+              className="ps-10 h-10"
             />
           </div>
 
-          {/* Summary */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Users className="w-4 h-4" />
-              {students.length} {isRTL ? 'طالب' : 'students'}
-            </span>
-            <span className="flex items-center gap-1">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              {students.filter((s) => s.completed_at).length}{' '}
-              {isRTL ? 'أكملوا' : 'completed'}
-            </span>
-          </div>
-
-          {/* Table */}
-          <ScrollArea className="flex-1 min-h-0">
+          {/* Student List */}
+          <ScrollArea className="flex-1 min-h-0 -mx-4 sm:-mx-6 px-4 sm:px-6">
             {isLoading ? (
-              <div className="space-y-3 p-4">
+              <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
+                  <Skeleton key={i} className="h-16 w-full rounded-xl" />
                 ))}
               </div>
             ) : filteredStudents.length === 0 ? (
-              <div className="p-12 text-center">
-                <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">
-                  {isRTL ? 'لا يوجد طلاب مسجلين' : 'No enrolled students'}
+              <div className="py-16 text-center">
+                <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground font-medium">
+                  {searchQuery
+                    ? (isRTL ? 'لا توجد نتائج للبحث' : 'No search results')
+                    : (isRTL ? 'لا يوجد طلاب مسجلين' : 'No enrolled students')}
                 </p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{isRTL ? 'الطالب' : 'Student'}</TableHead>
-                    <TableHead>{isRTL ? 'التقدم' : 'Progress'}</TableHead>
-                    <TableHead>
-                      {isRTL ? 'تاريخ التسجيل' : 'Enrolled'}
-                    </TableHead>
-                    <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
-                    <TableHead className="text-end">
-                      {isRTL ? 'التفاصيل' : 'Details'}
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStudents.map((student) => (
-                    <TableRow key={student.user_id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium text-foreground">
-                            {student.profile?.full_name || (isRTL ? 'بدون اسم' : 'No name')}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {student.email || student.profile?.phone || '-'}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary rounded-full transition-all"
-                              style={{
-                                width: `${Math.min(student.progress_percentage, 100)}%`,
-                              }}
-                            />
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {Math.round(student.progress_percentage)}%
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {formatDate(student.enrolled_at)}
-                      </TableCell>
-                      <TableCell>
-                        {student.completed_at ? (
-                          <Badge className="bg-green-500/10 text-green-500">
-                            {isRTL ? 'مكتمل' : 'Completed'}
-                          </Badge>
-                        ) : student.progress_percentage > 0 ? (
-                          <Badge className="bg-blue-500/10 text-blue-500">
-                            {isRTL ? 'قيد التعلم' : 'In Progress'}
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">
-                            {isRTL ? 'لم يبدأ' : 'Not Started'}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-end">
-                        <Button
-                          variant="ghost"
-                          size="sm"
+              <>
+                {/* Desktop Table */}
+                <div className="hidden sm:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{isRTL ? 'الطالب' : 'Student'}</TableHead>
+                        <TableHead>{isRTL ? 'التقدم' : 'Progress'}</TableHead>
+                        <TableHead>{isRTL ? 'تاريخ التسجيل' : 'Enrolled'}</TableHead>
+                        <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
+                        <TableHead className="w-10" />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredStudents.map((student) => (
+                        <TableRow
+                          key={student.user_id}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
                           onClick={() => setSelectedStudent(student.user_id)}
                         >
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="w-9 h-9 shrink-0">
+                                <AvatarImage src={student.profile?.avatar_url || undefined} />
+                                <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+                                  {getInitials(student.profile?.full_name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0">
+                                <p className="font-medium text-foreground truncate">
+                                  {student.profile?.full_name || (isRTL ? 'بدون اسم' : 'No name')}
+                                </p>
+                                <p className="text-xs text-muted-foreground truncate" dir="ltr" className={`text-xs text-muted-foreground truncate ${isRTL ? 'text-end' : ''}`}>
+                                  {student.email || student.profile?.phone || '-'}
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2 min-w-[120px]">
+                              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${
+                                    student.completed_at ? 'bg-green-500' :
+                                    student.progress_percentage > 50 ? 'bg-primary' : 'bg-amber-500'
+                                  }`}
+                                  style={{ width: `${Math.min(student.progress_percentage, 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-medium text-muted-foreground tabular-nums w-10 text-end">
+                                {Math.round(student.progress_percentage)}%
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                            {formatDate(student.enrolled_at)}
+                          </TableCell>
+                          <TableCell>
+                            <StudentStatusBadge
+                              completedAt={student.completed_at}
+                              progress={student.progress_percentage}
+                              isRTL={isRTL}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <ChevronIcon className="w-4 h-4 text-muted-foreground" />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile Card List */}
+                <div className="sm:hidden space-y-2">
+                  {filteredStudents.map((student) => (
+                    <button
+                      key={student.user_id}
+                      onClick={() => setSelectedStudent(student.user_id)}
+                      className="w-full text-start bg-card border border-border rounded-xl p-3 hover:bg-muted/30 transition-colors active:scale-[0.98]"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10 shrink-0">
+                          <AvatarImage src={student.profile?.avatar_url || undefined} />
+                          <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+                            {getInitials(student.profile?.full_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-medium text-foreground text-sm truncate">
+                              {student.profile?.full_name || (isRTL ? 'بدون اسم' : 'No name')}
+                            </p>
+                            <StudentStatusBadge
+                              completedAt={student.completed_at}
+                              progress={student.progress_percentage}
+                              isRTL={isRTL}
+                              compact
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5" dir="ltr" style={{ unicodeBidi: 'plaintext' }}>
+                            {student.email || student.profile?.phone || '-'}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${
+                                  student.completed_at ? 'bg-green-500' :
+                                  student.progress_percentage > 50 ? 'bg-primary' : 'bg-amber-500'
+                                }`}
+                                style={{ width: `${Math.min(student.progress_percentage, 100)}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-medium text-muted-foreground tabular-nums">
+                              {Math.round(student.progress_percentage)}%
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              · {formatDate(student.enrolled_at)}
+                            </span>
+                          </div>
+                        </div>
+                        <ChevronIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+                      </div>
+                    </button>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              </>
             )}
           </ScrollArea>
         </DialogContent>
       </Dialog>
 
-      {/* Student Detail Sub-Dialog */}
+      {/* Student Detail Dialog */}
       <Dialog
         open={!!selectedStudent}
         onOpenChange={(open) => !open && setSelectedStudent(null)}
       >
-        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] flex flex-col gap-4 p-4 sm:p-6" dir={isRTL ? 'rtl' : 'ltr'}>
+          <DialogHeader className="space-y-1">
             <DialogTitle className="flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-primary" />
-              {selectedStudentData?.profile?.full_name || (isRTL ? 'تفاصيل الطالب' : 'Student Details')}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-8 h-8 shrink-0"
+                onClick={() => setSelectedStudent(null)}
+              >
+                <BackIcon className="w-4 h-4" />
+              </Button>
+              {selectedStudentData && (
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar className="w-9 h-9 shrink-0">
+                    <AvatarImage src={selectedStudentData.profile?.avatar_url || undefined} />
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+                      {getInitials(selectedStudentData.profile?.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate text-base">
+                      {selectedStudentData.profile?.full_name || (isRTL ? 'تفاصيل الطالب' : 'Student Details')}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate" dir="ltr" style={{ unicodeBidi: 'plaintext' }}>
+                      {selectedStudentData.email || ''}
+                    </p>
+                  </div>
+                </div>
+              )}
             </DialogTitle>
           </DialogHeader>
 
-          {/* Student info summary */}
+          {/* Student Info Cards */}
           {selectedStudentData && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-muted-foreground text-xs mb-1">
-                  {isRTL ? 'البريد' : 'Email'}
-                </p>
-                <p className="font-medium truncate">
-                  {selectedStudentData.email || '-'}
-                </p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-muted-foreground text-xs mb-1">
-                  {isRTL ? 'الهاتف' : 'Phone'}
-                </p>
-                <p className="font-medium">
-                  {selectedStudentData.profile?.phone || '-'}
-                </p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-muted-foreground text-xs mb-1">
-                  {isRTL ? 'الموقع' : 'Location'}
-                </p>
-                <p className="font-medium truncate">
-                  {[
-                    selectedStudentData.profile?.city,
-                    selectedStudentData.profile?.country,
-                  ]
-                    .filter(Boolean)
-                    .join(', ') || '-'}
-                </p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-muted-foreground text-xs mb-1">
-                  {isRTL ? 'الدورات المشتراة' : 'Courses'}
-                </p>
-                <p className="font-medium">
-                  {studentDetail?.allEnrollments.length || 0}
-                </p>
-              </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              <InfoCard
+                label={isRTL ? 'البريد الإلكتروني' : 'Email'}
+                value={selectedStudentData.email || '-'}
+                dir="ltr"
+                isRTL={isRTL}
+              />
+              <InfoCard
+                label={isRTL ? 'رقم الهاتف' : 'Phone'}
+                value={selectedStudentData.profile?.phone || '-'}
+                dir="ltr"
+                isRTL={isRTL}
+              />
+              <InfoCard
+                label={isRTL ? 'الموقع' : 'Location'}
+                value={
+                  [selectedStudentData.profile?.city, selectedStudentData.profile?.country]
+                    .filter(Boolean).join(', ') || '-'
+                }
+              />
+              <InfoCard
+                label={isRTL ? 'الدورات المشتراة' : 'Courses'}
+                value={String(studentDetail?.allEnrollments.length || 0)}
+                highlight
+              />
             </div>
           )}
 
-          {/* All courses detail table */}
-          <ScrollArea className="flex-1 min-h-0">
+          {/* Enrolled Courses */}
+          <div className="flex items-center gap-2 pt-1">
+            <GraduationCap className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">
+              {isRTL ? 'الدورات المسجلة' : 'Enrolled Courses'}
+            </h3>
+          </div>
+
+          <ScrollArea className="flex-1 min-h-0 -mx-4 sm:-mx-6 px-4 sm:px-6">
             {detailLoading ? (
-              <div className="space-y-3 p-4">
+              <div className="space-y-3">
                 {[1, 2].map((i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
+                  <Skeleton key={i} className="h-32 w-full rounded-xl" />
                 ))}
               </div>
             ) : !studentDetail?.allEnrollments.length ? (
-              <p className="text-center text-muted-foreground py-8">
-                {isRTL ? 'لا توجد بيانات' : 'No data available'}
-              </p>
+              <div className="py-12 text-center">
+                <BookOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">{isRTL ? 'لا توجد بيانات' : 'No data available'}</p>
+              </div>
             ) : (
               <div className="space-y-3">
                 {studentDetail.allEnrollments.map((enrollment) => (
-                  <div
+                  <EnrollmentCard
                     key={enrollment.course_id}
-                    className="border border-border rounded-lg p-4 space-y-3"
-                  >
-                    {/* Course title */}
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="w-4 h-4 text-primary" />
-                        <span className="font-semibold text-foreground">
-                          {enrollment.course_title}
-                        </span>
-                      </div>
-                      {enrollment.completed_at ? (
-                        <Badge className="bg-green-500/10 text-green-500">
-                          {isRTL ? 'مكتمل' : 'Completed'}
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-blue-500/10 text-blue-500">
-                          {Math.round(enrollment.progress_percentage)}%
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Progress bar */}
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary rounded-full transition-all"
-                          style={{
-                            width: `${Math.min(enrollment.progress_percentage, 100)}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {enrollment.lessons_completed}/{enrollment.total_lessons}{' '}
-                        {isRTL ? 'درس' : 'lessons'}
-                      </span>
-                    </div>
-
-                    {/* Info grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Calendar className="w-3 h-3" />
-                        <span>{isRTL ? 'التسجيل:' : 'Enrolled:'}</span>
-                        <span className="text-foreground">
-                          {formatDate(enrollment.enrolled_at)}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <DollarSign className="w-3 h-3" />
-                        <span>{isRTL ? 'السعر:' : 'Price:'}</span>
-                        <span className="text-foreground">
-                          {enrollment.purchase_amount != null
-                            ? `${enrollment.purchase_amount} ${enrollment.purchase_currency}`
-                            : isRTL ? 'غير متاح' : 'N/A'}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        <span>{isRTL ? 'الشراء:' : 'Purchased:'}</span>
-                        <span className="text-foreground">
-                          {enrollment.purchase_date
-                            ? formatDate(enrollment.purchase_date)
-                            : '-'}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Star className="w-3 h-3" />
-                        <span>{isRTL ? 'التقييم:' : 'Rating:'}</span>
-                        <span className="text-foreground">
-                          {enrollment.review_rating != null
-                            ? `${enrollment.review_rating}/5`
-                            : isRTL ? 'لا يوجد' : 'None'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Review comment */}
-                    {enrollment.review_comment && (
-                      <div className="bg-muted/30 rounded p-2 text-xs text-muted-foreground italic">
-                        "{enrollment.review_comment}"
-                      </div>
-                    )}
-
-                    {/* Payment method */}
-                    {enrollment.payment_method && (
-                      <p className="text-xs text-muted-foreground">
-                        {isRTL ? 'طريقة الدفع:' : 'Payment method:'}{' '}
-                        <span className="text-foreground">{enrollment.payment_method}</span>
-                      </p>
-                    )}
-                  </div>
+                    enrollment={enrollment}
+                    isRTL={isRTL}
+                    formatDate={formatDate}
+                  />
                 ))}
               </div>
             )}
@@ -618,5 +559,146 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
     </>
   );
 };
+
+/* ─── Sub-components ─── */
+
+const StudentStatusBadge: React.FC<{
+  completedAt: string | null;
+  progress: number;
+  isRTL: boolean;
+  compact?: boolean;
+}> = ({ completedAt, progress, isRTL, compact }) => {
+  if (completedAt) {
+    return (
+      <Badge className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/10 text-[10px] sm:text-xs">
+        {compact ? (isRTL ? '✓' : '✓') : (isRTL ? 'مكتمل' : 'Completed')}
+      </Badge>
+    );
+  }
+  if (progress > 0) {
+    return (
+      <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/10 text-[10px] sm:text-xs">
+        {compact ? `${Math.round(progress)}%` : (isRTL ? 'قيد التعلم' : 'In Progress')}
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="secondary" className="text-[10px] sm:text-xs">
+      {compact ? (isRTL ? 'جديد' : 'New') : (isRTL ? 'لم يبدأ' : 'Not Started')}
+    </Badge>
+  );
+};
+
+const InfoCard: React.FC<{
+  label: string;
+  value: string;
+  dir?: string;
+  isRTL?: boolean;
+  highlight?: boolean;
+}> = ({ label, value, dir, isRTL, highlight }) => (
+  <div className={`rounded-xl p-3 ${highlight ? 'bg-primary/5 border border-primary/10' : 'bg-muted/50'}`}>
+    <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">{label}</p>
+    <p
+      className={`text-sm font-medium truncate ${highlight ? 'text-primary' : 'text-foreground'}`}
+      dir={dir}
+      style={dir === 'ltr' && isRTL ? { unicodeBidi: 'plaintext' as any } : undefined}
+    >
+      {value}
+    </p>
+  </div>
+);
+
+const EnrollmentCard: React.FC<{
+  enrollment: StudentDetail['allEnrollments'][number];
+  isRTL: boolean;
+  formatDate: (date: string) => string;
+}> = ({ enrollment, isRTL, formatDate }) => (
+  <div className="border border-border rounded-xl p-4 space-y-3 bg-card">
+    {/* Header */}
+    <div className="flex items-start justify-between gap-2">
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <BookOpen className="w-4 h-4 text-primary" />
+        </div>
+        <span className="font-semibold text-foreground text-sm truncate">
+          {enrollment.course_title}
+        </span>
+      </div>
+      {enrollment.completed_at ? (
+        <Badge className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/10 shrink-0 text-xs">
+          {isRTL ? 'مكتمل' : 'Completed'}
+        </Badge>
+      ) : (
+        <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/10 shrink-0 text-xs">
+          {Math.round(enrollment.progress_percentage)}%
+        </Badge>
+      )}
+    </div>
+
+    {/* Progress */}
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${
+            enrollment.completed_at ? 'bg-green-500' : 'bg-primary'
+          }`}
+          style={{ width: `${Math.min(enrollment.progress_percentage, 100)}%` }}
+        />
+      </div>
+      <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">
+        {enrollment.lessons_completed}/{enrollment.total_lessons} {isRTL ? 'درس' : 'lessons'}
+      </span>
+    </div>
+
+    {/* Info Grid */}
+    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+      <MetaRow icon={Calendar} label={isRTL ? 'التسجيل' : 'Enrolled'} value={formatDate(enrollment.enrolled_at)} />
+      <MetaRow
+        icon={DollarSign}
+        label={isRTL ? 'السعر' : 'Price'}
+        value={enrollment.purchase_amount != null ? `${enrollment.purchase_amount} ${enrollment.purchase_currency}` : (isRTL ? 'غير متاح' : 'N/A')}
+        dir="ltr"
+      />
+      <MetaRow icon={Clock} label={isRTL ? 'الشراء' : 'Purchased'} value={enrollment.purchase_date ? formatDate(enrollment.purchase_date) : '-'} />
+      <MetaRow
+        icon={Star}
+        label={isRTL ? 'التقييم' : 'Rating'}
+        value={enrollment.review_rating != null ? `${enrollment.review_rating}/5 ★` : (isRTL ? 'لا يوجد' : 'None')}
+        highlight={enrollment.review_rating != null}
+      />
+    </div>
+
+    {/* Review */}
+    {enrollment.review_comment && (
+      <div className="bg-muted/30 rounded-lg p-3 text-xs text-muted-foreground italic leading-relaxed">
+        "{enrollment.review_comment}"
+      </div>
+    )}
+
+    {/* Payment method */}
+    {enrollment.payment_method && enrollment.payment_method !== '-' && (
+      <p className="text-xs text-muted-foreground">
+        {isRTL ? 'طريقة الدفع:' : 'Payment:'}{' '}
+        <span className="text-foreground font-medium">{enrollment.payment_method}</span>
+      </p>
+    )}
+  </div>
+);
+
+const MetaRow: React.FC<{
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  dir?: string;
+  highlight?: boolean;
+}> = ({ icon: Icon, label, value, dir, highlight }) => (
+  <div className="flex items-center gap-1.5 text-muted-foreground">
+    <Icon className="w-3 h-3 shrink-0" />
+    <span>{label}:</span>
+    <span className={`truncate ${highlight ? 'text-amber-500 font-medium' : 'text-foreground'}`} dir={dir}>
+      {value}
+    </span>
+  </div>
+);
 
 export default CourseStudentsDialog;
