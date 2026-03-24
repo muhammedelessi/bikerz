@@ -231,7 +231,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (!user) return;
     if (profile?.full_name) setFullName(profile.full_name);
     if (user?.email) setEmail(user.email);
-    if (profile?.phone) setPhone(profile.phone || '');
+    if (profile?.phone) {
+      // Strip known prefix so it works with the split prefix+number input
+      let rawPhone = profile.phone;
+      for (const prefix of Object.values(COUNTRY_PHONE_PREFIXES)) {
+        if (rawPhone.startsWith(prefix)) {
+          rawPhone = rawPhone.slice(prefix.length);
+          break;
+        }
+      }
+      setPhone(rawPhone);
+    }
     const loadProfileData = async () => {
       if (!user?.id) return;
       const { data } = await supabase
