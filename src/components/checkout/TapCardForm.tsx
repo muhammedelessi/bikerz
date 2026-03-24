@@ -66,9 +66,15 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
         throw new Error(isRTL ? 'فشل تهيئة بوابة الدفع' : 'Payment gateway failed to initialize');
       }
 
-      // Brand orange from CSS: hsl(18 78% 45%) ≈ #CC4E1D
-      const brandColor = '#CC4E1D';
-      const cardBg = 'transparent';
+      // Read actual CSS variable values from the document for theme consistency
+      const root = document.documentElement;
+      const getVar = (v: string) => getComputedStyle(root).getPropertyValue(v).trim();
+      // Foreground (sand): hsl(43 18% 72%) → #C6BFAA
+      // Muted-foreground (gray): hsl(0 0% 55%) → #8D8D8D
+      // Card bg: hsl(180 5% 14%) → #222928
+      // Border: hsl(180 3% 22%) → #363938
+      // Primary (orange): hsl(18 78% 45%) → #CC4E1D
+      // Destructive: hsl(0 84% 60%) → #ef4444
 
       window.goSell.goSellElements({
         containerID: 'tap-card-container',
@@ -93,7 +99,7 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
               fontSmoothing: 'antialiased',
               fontSize: '16px',
               '::placeholder': {
-                color: 'rgba(141, 141, 141, 0.6)',
+                color: '#8D8D8D',
                 fontSize: '14px',
               },
             },
