@@ -158,25 +158,27 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
             {/* Divider */}
             <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
-            {/* Price row */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black text-primary">
-                  {priceInfo.finalPrice}
-                </span>
-                <span className="text-sm font-semibold text-primary/70">
-                  {sym}
-                </span>
-                {priceInfo.discountPct > 0 && (
-                  <span className="text-sm text-muted-foreground line-through ms-1">
-                    {priceInfo.originalPrice} {sym}
+            {/* Price row — hidden when completed */}
+            {!isCompleted && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-primary">
+                    {priceInfo.finalPrice}
                   </span>
+                  <span className="text-sm font-semibold text-primary/70">
+                    {sym}
+                  </span>
+                  {priceInfo.discountPct > 0 && (
+                    <span className="text-sm text-muted-foreground line-through ms-1">
+                      {priceInfo.originalPrice} {sym}
+                    </span>
+                  )}
+                </div>
+                {priceInfo.discountPct > 0 && course.discount_expires_at && (
+                  <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
                 )}
               </div>
-              {priceInfo.discountPct > 0 && course.discount_expires_at && (
-                <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
-              )}
-            </div>
+            )}
 
             {/* CTA Buttons */}
             {isCompleted ? (
