@@ -138,7 +138,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
 
             {/* Enrollment progress */}
             {isEnrolled && enrollment && (
-            {isCompleted ? (
+              isCompleted ? (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
                 <Trophy className="w-4 h-4 text-green-500" />
                 <span className="text-sm font-semibold text-green-600 dark:text-green-400">
