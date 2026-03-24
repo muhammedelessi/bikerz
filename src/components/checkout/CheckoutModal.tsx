@@ -36,12 +36,21 @@ import {
   User,
   MapPin,
   Lock,
+  Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trackInitiateCheckout, trackAddPaymentInfo } from '@/utils/metaPixel';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
 import { usePaymentMethodDetection } from '@/hooks/usePaymentMethodDetection';
 import { ApplePayIcon, GooglePayIcon, VisaIcon, MastercardIcon } from '@/components/checkout/PaymentMethodIcons';
+
+// Country code to phone prefix mapping
+const COUNTRY_PHONE_PREFIXES: Record<string, string> = {
+  SA: '+966', AE: '+971', KW: '+965', BH: '+973', QA: '+974', OM: '+968',
+  JO: '+962', EG: '+20', IQ: '+964', SY: '+963', LB: '+961', YE: '+967',
+  LY: '+218', TN: '+216', DZ: '+213', MA: '+212', SD: '+249', PS: '+970',
+  US: '+1', GB: '+44', TR: '+90', DE: '+49', FR: '+33',
+};
 
 interface CheckoutModalProps {
   open: boolean;
@@ -58,9 +67,9 @@ interface CheckoutModalProps {
   onPaymentStarted?: () => void;
 }
 
-type CheckoutStep = 'profile' | 'billing' | 'payment';
+type CheckoutStep = 'info' | 'payment';
 
-const CHECKOUT_STEPS_DISPLAY: CheckoutStep[] = ['profile', 'billing', 'payment'];
+const CHECKOUT_STEPS_DISPLAY: CheckoutStep[] = ['info', 'payment'];
 
 
 interface ValidationErrors {
@@ -80,7 +89,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { currencyCode, symbol, symbolAr, convertPrice, formatPrice, calculateTax, calculateTotalWithTax, getSarTotalWithVat, vatLabel, vatLabelAr, isSAR, getCoursePriceInfo, getCourseCurrency } = useCurrency();
+  const { currencyCode, symbol, symbolAr, convertPrice, formatPrice, calculateTax, calculateTotalWithTax, getSarTotalWithVat, vatLabel, vatLabelAr, isSAR, getCoursePriceInfo, getCourseCurrency, detectedCountry } = useCurrency();
   
   // Helper: format an already-converted local price (no re-conversion)
   const courseCurrency = getCourseCurrency(course.id);
@@ -98,7 +107,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { supportsApplePay, supportsGooglePay } = usePaymentMethodDetection();
   const [guestSigningUp, setGuestSigningUp] = useState(false);
 
-  const [currentStep, setCurrentStep] = useState<CheckoutStep>('profile');
+  const [currentStep, setCurrentStep] = useState<CheckoutStep>('info');
   
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
@@ -125,6 +134,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [postalCode, setPostalCode] = useState('');
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [profileSaving, setProfileSaving] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [phonePrefix, setPhonePrefix] = useState('');
 
   const selectedCountry = useMemo(
     () => COUNTRIES.find(function (c) { return c.code === selectedCountryCode; }) || null,
@@ -201,6 +212,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       : `-${formatLocal(appliedCoupon.discount_amount)}`
     : '';
 
+  // Set phone prefix based on detected country
+  useEffect(() => {
+    if (detectedCountry) {
+      const code = detectedCountry.toUpperCase();
+      const prefix = COUNTRY_PHONE_PREFIXES[code];
+      if (prefix) {
+        setPhonePrefix(prefix);
+      }
+    }
+  }, [detectedCountry]);
+
   // Pre-fill from profile (only for logged-in users) and auto-advance if complete
   useEffect(() => {
     if (!open) return;
@@ -246,7 +268,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           }
         }
 
-        // Auto-advance: if profile + billing fields are already filled, skip to payment
+        // Auto-advance: if all fields already filled, skip to payment
         const hasProfile = (profile?.full_name && profile.full_name.trim().length >= 3) 
           && user.email 
           && (data.phone || profile?.phone);
@@ -254,8 +276,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         
         if (hasProfile && hasBilling) {
           setCurrentStep('payment');
-        } else if (hasProfile) {
-          setCurrentStep('billing');
         }
       }
     };
@@ -306,18 +326,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Reset on close
   useEffect(() => {
     if (!open) {
-      setCurrentStep('profile');
+      setCurrentStep('info');
       setPromoCode('');
       setPromoApplied(false);
       setAppliedCoupon(null);
       setPromoLoading(false);
       setErrors({});
+      setIsEditingName(false);
       resetPayment();
     }
   }, [open, resetPayment]);
 
   // Validation
-  const validateProfile = useCallback((): boolean => {
+  const validateInfo = useCallback((): boolean => {
     const newErrors: ValidationErrors = {};
     if (!fullName.trim() || fullName.trim().length < 3) {
       newErrors.fullName = isRTL ? 'الاسم الكامل مطلوب (3 أحرف على الأقل)' : 'Full name required (min 3 chars)';
@@ -326,34 +347,50 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (!email.trim() || !emailRegex.test(email)) {
       newErrors.email = isRTL ? 'بريد إلكتروني صحيح مطلوب' : 'Valid email required';
     }
+    // Build full phone for validation
+    const fullPhone = getFullPhone();
     const phoneRegex = /^[0-9+\s()-]{7,15}$/;
-    if (!phone.trim() || !phoneRegex.test(phone)) {
+    if (!fullPhone || !phoneRegex.test(fullPhone)) {
       newErrors.phone = isRTL ? 'رقم هاتف صحيح مطلوب' : 'Valid phone number required';
     }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [fullName, email, phone, isRTL]);
-
-  const effectiveCity = (isOtherCity || isOtherCountry) ? cityManual.trim() : city.trim();
-  const effectiveCountry = isOtherCountry ? countryManual.trim() : country.trim();
-
-  const validateBilling = useCallback(function (): boolean {
-    var newErrors: ValidationErrors = {};
-    var c = (isOtherCity || isOtherCountry) ? cityManual.trim() : city.trim();
+    // Billing
+    const c = (isOtherCity || isOtherCountry) ? cityManual.trim() : city.trim();
     if (!c) {
       newErrors.city = isRTL ? 'المدينة مطلوبة' : 'City is required';
     }
-    var cn = isOtherCountry ? countryManual.trim() : country.trim();
+    const cn = isOtherCountry ? countryManual.trim() : country.trim();
     if (!cn) {
       newErrors.country = isRTL ? 'الدولة مطلوبة' : 'Country is required';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [city, cityManual, isOtherCity, country, countryManual, isOtherCountry, isRTL]);
+  }, [fullName, email, phone, phonePrefix, city, cityManual, isOtherCity, country, countryManual, isOtherCountry, isRTL]);
 
-  const isProfileValid = fullName.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && /^[0-9+\s()-]{7,15}$/.test(phone);
-  const isBillingValid = ((isOtherCity || isOtherCountry) ? cityManual.trim().length > 0 : city.trim().length > 0) && (isOtherCountry ? countryManual.trim().length > 0 : country.trim().length > 0);
-  const isPaymentReady = isProfileValid && isBillingValid;
+  const effectiveCity = (isOtherCity || isOtherCountry) ? cityManual.trim() : city.trim();
+  const effectiveCountry = isOtherCountry ? countryManual.trim() : country.trim();
+
+  // Helper to get the full phone number with prefix
+  const getFullPhone = useCallback(() => {
+    const rawPhone = phone.trim();
+    if (!rawPhone) return '';
+    // If user already typed a + prefix, don't double-add
+    if (rawPhone.startsWith('+')) return rawPhone;
+    if (phonePrefix && !rawPhone.startsWith(phonePrefix)) {
+      return `${phonePrefix}${rawPhone}`;
+    }
+    return rawPhone;
+  }, [phone, phonePrefix]);
+
+  const hasNamePrefilled = !!(profile?.full_name && profile.full_name.trim().length >= 3);
+  const hasPhonePrefilled = !!(profile?.phone && profile.phone.trim().length >= 7);
+
+  const fullPhone = getFullPhone();
+  const isInfoValid = fullName.trim().length >= 3 
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) 
+    && /^[0-9+\s()-]{7,15}$/.test(fullPhone)
+    && ((isOtherCity || isOtherCountry) ? cityManual.trim().length > 0 : city.trim().length > 0) 
+    && (isOtherCountry ? countryManual.trim().length > 0 : country.trim().length > 0);
+  const isPaymentReady = isInfoValid;
 
   // Save profile data to DB
   const saveProfileData = async (userId?: string) => {
@@ -365,7 +402,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         .from('profiles')
         .update({
           full_name: fullName.trim(),
-          phone: phone.trim(),
+          phone: fullPhone,
           city: effectiveCity,
           country: effectiveCountry,
           postal_code: postalCode.trim() || null,
@@ -406,7 +443,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       });
 
       if (error) {
-        // If user already exists, try signing in or prompt
         if (error.message?.includes('already registered') || error.message?.includes('already exists')) {
           toast.error(isRTL 
             ? 'هذا البريد مسجل بالفعل. يرجى تسجيل الدخول أولاً.' 
@@ -420,16 +456,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         throw new Error('Account creation failed');
       }
 
-      // Wait a moment for the profile trigger to create the profile row
       await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Save profile data using the new user ID
       await saveProfileData(data.user.id);
 
-      // Send password reset email so user can set their own password
       (supabase.auth as any).resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/forgot-password`,
-      }).catch(() => { /* silent - non-critical */ });
+      }).catch(() => {});
 
       return data.user.id;
     } catch (err: any) {
@@ -443,12 +475,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
 
   const handleNextStep = async () => {
-    if (currentStep === 'profile') {
-      if (!validateProfile()) return;
-      setCurrentStep('billing');
-    } else if (currentStep === 'billing') {
-      if (!validateBilling()) return;
-      // For logged-in users, save profile immediately
+    if (currentStep === 'info') {
+      if (!validateInfo()) return;
+      // Save profile for logged-in users
       if (user) {
         const saved = await saveProfileData();
         if (!saved) return;
@@ -458,8 +487,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   const handlePrevStep = () => {
-    if (currentStep === 'billing') setCurrentStep('profile');
-    else if (currentStep === 'payment') setCurrentStep('billing');
+    if (currentStep === 'payment') setCurrentStep('info');
   };
 
   const currentStepIndex = CHECKOUT_STEPS_DISPLAY.indexOf(currentStep as any);
@@ -503,14 +531,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (!isPaymentReady) return;
     onPaymentStarted?.();
 
-    // Compose address from billing fields
     const composedAddress = [effectiveCity, effectiveCountry, postalCode].filter(Boolean).join(', ');
 
-    // For guest users: auto-create account first
     let currentUserId = user?.id;
     if (!currentUserId) {
       const newUserId = await handleGuestSignup();
-      if (!newUserId) return; // signup failed
+      if (!newUserId) return;
       currentUserId = newUserId;
     }
 
@@ -537,7 +563,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           p_final_amount: 0,
         });
 
-        // Send GHL webhook for free enrollment with per-course tracking
         sendCourseStatus(
           currentUserId,
           course.id,
@@ -546,7 +571,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {
             full_name: fullName,
             email,
-            phone,
+            phone: fullPhone,
             city: effectiveCity,
             country: effectiveCountry,
             address: composedAddress,
@@ -567,14 +592,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
-    // Meta Pixel: AddPaymentInfo
     trackAddPaymentInfo({
       content_ids: [course.id],
       value: discountedPrice,
       currency: 'SAR',
     });
 
-    // Send GHL webhook with "pending" status when initiating payment
     sendCourseStatus(
       currentUserId,
       course.id,
@@ -583,7 +606,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       {
         full_name: fullName,
         email,
-        phone,
+        phone: fullPhone,
         city: effectiveCity,
         country: effectiveCountry,
         address: composedAddress,
@@ -601,7 +624,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       customerName: fullName,
       customerEmail: email,
       couponId: appliedCoupon?.coupon_id,
-      customerPhone: phone,
+      customerPhone: fullPhone,
       paymentMethod: method,
     });
   };
@@ -613,9 +636,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   // Step labels
   const stepLabels: Record<CheckoutStep, { en: string; ar: string }> = {
-    profile: { en: 'Personal Info', ar: 'المعلومات الشخصية' },
-    billing: { en: 'Billing Address', ar: 'عنوان الفاتورة' },
-    
+    info: { en: 'Personal Info', ar: 'المعلومات الشخصية' },
     payment: { en: 'Payment', ar: 'الدفع' },
   };
 
@@ -628,8 +649,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       </p>
     );
   };
-
-  // No auth guard — guest checkout is supported
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -646,7 +665,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           <div className="flex items-center gap-3 mt-3">
             <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
               {course.thumbnail_url ? (
-                <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover"  loading="lazy" />
+                <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" loading="lazy" />
               ) : (
                 <div className="w-full h-full bg-primary/20 flex items-center justify-center">
                   <CreditCard className="w-5 h-5 text-primary" />
@@ -721,7 +740,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </motion.div>
           )}
 
-          {/* Success state (in-modal) */}
+          {/* Success state */}
           {paymentStatus === 'succeeded' && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -776,163 +795,177 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {/* Normal step flow */}
           {paymentStatus !== 'verifying' && paymentStatus !== 'succeeded' && paymentStatus !== 'failed' && (
             <AnimatePresence mode="wait">
-              {/* Step 1: Personal Info */}
-              {currentStep === 'profile' && (
+              {/* Step 1: Personal Info + Billing combined */}
+              {currentStep === 'info' && (
                 <motion.div
-                  key="profile"
+                  key="info"
                   initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
                   className="space-y-4"
                 >
+                  {/* Personal Information Section */}
                   <div className="flex items-center gap-2 mb-1">
                     <User className="w-4 h-4 text-primary" />
                     <h4 className="font-semibold text-foreground">
                       {isRTL ? 'المعلومات الشخصية' : 'Personal Information'}
                     </h4>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {isRTL ? 'يجب تعبئة جميع الحقول لإتمام الشراء' : 'All fields are required to proceed with payment'}
-                  </p>
 
+                  {/* Name: read-only if prefilled, with edit button */}
                   <div className="space-y-2">
                     <Label>{isRTL ? 'الاسم الكامل' : 'Full Name'} <span className="text-destructive">*</span></Label>
-                    <Input
-                      value={fullName}
-                      onChange={(e) => { setFullName(e.target.value); setErrors(prev => ({ ...prev, fullName: undefined })); }}
-                      placeholder={isRTL ? 'أدخل اسمك الكامل' : 'Enter your full legal name'}
-                      className={errors.fullName ? 'border-destructive' : ''}
-                    />
+                    {hasNamePrefilled && !isEditingName ? (
+                      <div className="flex items-center justify-between rounded-md border border-input bg-muted/30 px-3 py-2 h-10">
+                        <span className="text-sm font-medium text-foreground">{fullName}</span>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingName(true)}
+                          className="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <Input
+                        value={fullName}
+                        onChange={(e) => { setFullName(e.target.value); setErrors(prev => ({ ...prev, fullName: undefined })); }}
+                        placeholder={isRTL ? 'أدخل اسمك الكامل' : 'Enter your full legal name'}
+                        className={errors.fullName ? 'border-destructive' : ''}
+                        autoFocus={isEditingName}
+                      />
+                    )}
                     {renderFieldError('fullName')}
                   </div>
 
+                  {/* Email: display only */}
                   <div className="space-y-2">
-                    <Label>{isRTL ? 'البريد الإلكتروني' : 'Email'} <span className="text-destructive">*</span></Label>
-                    <Input
-                      type="email"
-                      value={email}
-                      onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
-                      placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
-                      className={errors.email ? 'border-destructive' : ''}
-                      disabled={!!user}
-                    />
-                    {!user && (
-                      <p className="text-[11px] text-muted-foreground">
-                        {isRTL ? 'سيتم إنشاء حساب لك تلقائياً باستخدام هذا البريد' : 'An account will be created automatically with this email'}
-                      </p>
+                    <Label>{isRTL ? 'البريد الإلكتروني' : 'Email'}</Label>
+                    {user ? (
+                      <div className="flex items-center rounded-md border border-input bg-muted/30 px-3 py-2 h-10">
+                        <span className="text-sm text-foreground truncate" dir="ltr">{email}</span>
+                      </div>
+                    ) : (
+                      <>
+                        <Input
+                          type="email"
+                          value={email}
+                          onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
+                          placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
+                          className={errors.email ? 'border-destructive' : ''}
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          {isRTL ? 'سيتم إنشاء حساب لك تلقائياً باستخدام هذا البريد' : 'An account will be created automatically with this email'}
+                        </p>
+                      </>
                     )}
                     {renderFieldError('email')}
                   </div>
 
+                  {/* Phone: with country code prefix */}
                   <div className="space-y-2">
                     <Label>{isRTL ? 'رقم الهاتف' : 'Phone Number'} <span className="text-destructive">*</span></Label>
-                    <Input
-                      value={phone}
-                      onChange={(e) => { setPhone(e.target.value); setErrors(prev => ({ ...prev, phone: undefined })); }}
-                      placeholder={isRTL ? '05xxxxxxxx' : '05xxxxxxxx'}
-                      className={errors.phone ? 'border-destructive' : ''}
-                    />
+                    {hasPhonePrefilled ? (
+                      <div className="flex items-center rounded-md border border-input bg-muted/30 px-3 py-2 h-10">
+                        <span className="text-sm font-medium text-foreground" dir="ltr">{phone}</span>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2" dir="ltr">
+                        <div className="flex items-center rounded-md border border-input bg-muted/30 px-3 h-10 text-sm font-medium text-foreground flex-shrink-0 min-w-[70px] justify-center">
+                          {phonePrefix || '+---'}
+                        </div>
+                        <Input
+                          value={phone}
+                          onChange={(e) => { 
+                            // Only allow digits
+                            const val = e.target.value.replace(/[^0-9]/g, '');
+                            setPhone(val); 
+                            setErrors(prev => ({ ...prev, phone: undefined })); 
+                          }}
+                          placeholder="5XXXXXXXX"
+                          className={`flex-1 ${errors.phone ? 'border-destructive' : ''}`}
+                          dir="ltr"
+                        />
+                      </div>
+                    )}
                     {renderFieldError('phone')}
                   </div>
-                </motion.div>
-              )}
 
-              {/* Step 2: Billing */}
-              {currentStep === 'billing' && (
-                <motion.div
-                  key="billing"
-                  initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
-                  className="space-y-4"
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <MapPin className="w-4 h-4 text-primary" />
-                    <h4 className="font-semibold text-foreground">
-                      {isRTL ? 'عنوان الفاتورة' : 'Billing Address'}
-                    </h4>
-                  </div>
+                  {/* Billing Address Section */}
+                  <div className="rounded-lg border border-border p-3 space-y-3 mt-2">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-primary" />
+                      <h4 className="font-semibold text-foreground text-sm">
+                        {isRTL ? 'عنوان الفاتورة' : 'Billing Address'}
+                      </h4>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label>{isRTL ? 'الدولة' : 'Country'} <span className="text-destructive">*</span></Label>
-                    <SearchableDropdown
-                      options={countryOptions}
-                      value={isOtherCountry ? '__other__' : selectedCountryCode}
-                      onChange={handleCountryChange}
-                      placeholder={isRTL ? 'اختر الدولة' : 'Select country'}
-                      searchPlaceholder={isRTL ? 'ابحث عن دولة...' : 'Search country...'}
-                      hasError={!!errors.country}
-                      dir={isRTL ? 'rtl' : 'ltr'}
-                    />
-                    {isOtherCountry && (
-                      <Input
-                        value={countryManual}
-                        onChange={function (e) { setCountryManual(e.target.value); setCountry(e.target.value); setErrors(function (prev) { return Object.assign({}, prev, { country: undefined }); }); }}
-                        placeholder={isRTL ? 'أدخل اسم الدولة' : 'Enter country name'}
-                        className={errors.country ? 'border-destructive' : ''}
-                        autoFocus
-                      />
-                    )}
-                    {renderFieldError('country')}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
-                    {isOtherCountry ? (
-                      <Input
-                        value={cityManual}
-                        onChange={function (e) { setCityManual(e.target.value); setErrors(function (prev) { return Object.assign({}, prev, { city: undefined }); }); }}
-                        placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
-                        className={errors.city ? 'border-destructive' : ''}
-                      />
-                    ) : (
-                      <>
+                    {/* Country & City side by side */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Country */}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">{isRTL ? 'الدولة' : 'Country'} <span className="text-destructive">*</span></Label>
                         <SearchableDropdown
-                          options={cityOptions}
-                          value={isOtherCity ? '__other__' : city}
-                          onChange={handleCityChange}
-                          placeholder={isRTL ? (selectedCountry ? 'اختر المدينة' : 'اختر الدولة أولاً') : (selectedCountry ? 'Select city' : 'Select a country first')}
-                          searchPlaceholder={isRTL ? 'ابحث عن مدينة...' : 'Search city...'}
-                          hasError={!!errors.city}
-                          disabled={!selectedCountry}
+                          options={countryOptions}
+                          value={isOtherCountry ? '__other__' : selectedCountryCode}
+                          onChange={handleCountryChange}
+                          placeholder={isRTL ? 'اختر الدولة' : 'Select country'}
+                          searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
+                          hasError={!!errors.country}
                           dir={isRTL ? 'rtl' : 'ltr'}
                         />
-                        {isOtherCity && (
+                        {isOtherCountry && (
                           <Input
-                            value={cityManual}
-                            onChange={function (e) { setCityManual(e.target.value); setErrors(function (prev) { return Object.assign({}, prev, { city: undefined }); }); }}
-                            placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
-                            className={errors.city ? 'border-destructive' : ''}
+                            value={countryManual}
+                            onChange={function (e) { setCountryManual(e.target.value); setCountry(e.target.value); setErrors(function (prev) { return Object.assign({}, prev, { country: undefined }); }); }}
+                            placeholder={isRTL ? 'اسم الدولة' : 'Country name'}
+                            className={`text-sm ${errors.country ? 'border-destructive' : ''}`}
                             autoFocus
                           />
                         )}
-                      </>
-                    )}
-                    {renderFieldError('city')}
-                  </div>
+                        {renderFieldError('country')}
+                      </div>
 
-                  {/* Summary preview */}
-                  <div className="p-3 rounded-lg bg-muted/30 mt-2">
-                    <p className="text-xs text-muted-foreground mb-2 font-medium">{isRTL ? 'ملخص البيانات' : 'Data Summary'}</p>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{isRTL ? 'الاسم' : 'Name'}</span>
-                        <span className="font-medium">{fullName}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{isRTL ? 'الهاتف' : 'Phone'}</span>
-                        <span className="font-medium" dir="ltr">{phone}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{isRTL ? 'البريد' : 'Email'}</span>
-                        <span className="font-medium truncate max-w-[180px]" dir="ltr">{email}</span>
+                      {/* City */}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
+                        {isOtherCountry ? (
+                          <Input
+                            value={cityManual}
+                            onChange={function (e) { setCityManual(e.target.value); setErrors(function (prev) { return Object.assign({}, prev, { city: undefined }); }); }}
+                            placeholder={isRTL ? 'اسم المدينة' : 'City name'}
+                            className={`text-sm ${errors.city ? 'border-destructive' : ''}`}
+                          />
+                        ) : (
+                          <>
+                            <SearchableDropdown
+                              options={cityOptions}
+                              value={isOtherCity ? '__other__' : city}
+                              onChange={handleCityChange}
+                              placeholder={isRTL ? 'اختر المدينة' : 'Select city'}
+                              searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
+                              hasError={!!errors.city}
+                              dir={isRTL ? 'rtl' : 'ltr'}
+                            />
+                            {isOtherCity && (
+                              <Input
+                                value={cityManual}
+                                onChange={function (e) { setCityManual(e.target.value); setErrors(function (prev) { return Object.assign({}, prev, { city: undefined }); }); }}
+                                placeholder={isRTL ? 'اسم المدينة' : 'City name'}
+                                className={`text-sm ${errors.city ? 'border-destructive' : ''}`}
+                                autoFocus
+                              />
+                            )}
+                          </>
+                        )}
+                        {renderFieldError('city')}
                       </div>
                     </div>
                   </div>
                 </motion.div>
               )}
 
-              {/* Step 3: Payment */}
+              {/* Step 2: Payment */}
               {currentStep === 'payment' && (
                 <motion.div
                   key="payment"
@@ -1137,7 +1170,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         {paymentStatus !== 'failed' && paymentStatus !== 'succeeded' && paymentStatus !== 'verifying' && (
           <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-5 border-t-2 border-border flex-shrink-0 space-y-2">
             <div className="flex gap-2">
-              {currentStep !== 'profile' && (
+              {currentStep !== 'info' && (
                 <Button
                   variant="outline"
                   onClick={handlePrevStep}
@@ -1148,22 +1181,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </Button>
               )}
 
-              {currentStep !== 'payment' ? (
+              {currentStep === 'info' ? (
                 <Button
                   className="flex-1 btn-cta"
                   onClick={handleNextStep}
-                  disabled={
-                    profileSaving ||
-                    (currentStep === 'profile' && !isProfileValid) ||
-                    (currentStep === 'billing' && !isBillingValid)
-                  }
+                  disabled={profileSaving || !isInfoValid}
                 >
                   {profileSaving ? (
                     <Loader2 className="w-4 h-4 animate-spin me-2" />
                   ) : null}
-                  {currentStep === 'billing'
-                    ? (isRTL ? 'حفظ والمتابعة' : 'Save & Continue')
-                    : (isRTL ? 'التالي' : 'Next')}
+                  {isRTL ? 'حفظ والمتابعة' : 'Save & Continue'}
                   <ArrowIcon className="w-4 h-4 ms-2" />
                 </Button>
               ) : discountedPrice <= 0 && appliedCoupon ? (
