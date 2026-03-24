@@ -160,8 +160,8 @@ const Login: React.FC = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm sm:text-base">{t('auth.login.email')}</Label>
+              <div className="relative">
+                <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
                 <Input
                   id="email"
                   type="email"
@@ -174,9 +174,9 @@ const Login: React.FC = () => {
                     setUserExists(false);
                   }}
                   onBlur={() => checkProviders(email)}
-                  placeholder="your@email.com"
+                  placeholder={t('auth.login.email')}
                   required
-                  className="form-input h-11 sm:h-12 text-base"
+                  className="form-input h-11 sm:h-12 text-base ps-10"
                 />
               </div>
 
