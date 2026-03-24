@@ -97,11 +97,6 @@ const Signup: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    if (password !== confirmPassword) {
-      setError(t('auth.signup.passwordMismatch'));
-      return;
-    }
-
     if (password.length < 6) {
       setError(t('auth.signup.passwordTooShort'));
       return;
@@ -121,7 +116,7 @@ const Signup: React.FC = () => {
     try {
       const { data: { user: newUser } } = await (supabase.auth as any).getUser();
       if (newUser) {
-        await saveProfileAndSync(newUser.id, name, email, gender, dateOfBirth);
+        await saveProfileAndSync(newUser.id, name, email);
       }
     } catch (e) {
       console.error('Post-signup sync failed:', e);
