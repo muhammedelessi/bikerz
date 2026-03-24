@@ -235,9 +235,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (profile?.phone) {
       // Strip known prefix so it works with the split prefix+number input
       let rawPhone = profile.phone;
-      for (const prefix of Object.values(COUNTRY_PHONE_PREFIXES)) {
-        if (rawPhone.startsWith(prefix)) {
-          rawPhone = rawPhone.slice(prefix.length);
+      for (const pc of PHONE_COUNTRIES) {
+        if (rawPhone.startsWith(pc.prefix)) {
+          rawPhone = rawPhone.slice(pc.prefix.length);
           break;
         }
       }
