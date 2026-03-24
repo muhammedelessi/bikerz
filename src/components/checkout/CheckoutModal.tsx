@@ -1081,9 +1081,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {(() => {
                     // Prices from getCoursePriceInfo are already VAT-inclusive
                     const totalWithVat = discountedPrice;
-                    // Back-calculate subtotal and tax for breakdown display
-                    const subtotal = Math.round(totalWithVat / 1.15);
-                    const tax = totalWithVat - subtotal;
                     return (
                       <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
                         <div className="px-4 py-3 bg-muted/30 border-b border-border">
@@ -1098,20 +1095,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                               {isRTL && course.title_ar ? course.title_ar : course.title}
                             </span>
                           </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">{isRTL ? 'المبلغ قبل الضريبة' : 'Subtotal'}</span>
-                            <span className="font-medium">{subtotal} {currencyLabel}</span>
-                          </div>
                           {promoApplied && appliedCoupon && (
                             <div className="flex justify-between text-sm text-primary">
                               <span>{isRTL ? 'الخصم' : 'Discount'} ({discountLabel})</span>
                               <span>-{formatLocal(discountAmount)}</span>
                             </div>
                           )}
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">{isRTL ? vatLabelAr : vatLabel}</span>
-                            <span className="font-medium">{tax} {currencyLabel}</span>
-                          </div>
                           <Separator className="my-1" />
                           <div className="flex justify-between font-bold text-base">
                             <span>{isRTL ? 'الإجمالي (شامل الضريبة)' : 'Total (incl. VAT)'}</span>
@@ -1132,6 +1121,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                               </p>
                             );
                           })()}
+                          {/* VAT Number */}
+                          <div className="pt-2 border-t border-border/50">
+                            <p className="text-[11px] text-muted-foreground text-center">
+                              {isRTL ? 'الرقم الضريبي' : 'VAT Number'}: <span className="font-mono font-medium text-foreground/70">311508395300003</span>
+                            </p>
+                          </div>
                         </div>
                       </div>
                     );
