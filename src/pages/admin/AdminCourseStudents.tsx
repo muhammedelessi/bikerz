@@ -556,7 +556,7 @@ const StudentStatusBadge: React.FC<{
   isRTL: boolean;
   compact?: boolean;
 }> = ({ completedAt, progress, isRTL, compact }) => {
-  if (completedAt) {
+  if (completedAt || progress >= 100) {
     return (
       <Badge className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/10 text-[10px] sm:text-xs">
         {compact ? '✓' : (isRTL ? 'مكتمل' : 'Completed')}
