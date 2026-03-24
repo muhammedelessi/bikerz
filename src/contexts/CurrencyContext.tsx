@@ -335,29 +335,31 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [getCountryPriceEntry, currencyCode, rate]
   );
 
-  /** Get full price info for display — uses country pricing when available */
+  /** Get full price info for display — uses country pricing when available, VAT-inclusive */
   const getCoursePriceInfo = useCallback(
     (courseId: string, sarPrice: number, courseDiscountPct = 0): CoursePriceInfo => {
       const entry = getCountryPriceEntry(courseId);
       if (entry) {
-        // Country-specific pricing: use original_price and country discount
+        // Country-specific pricing: use original_price and country discount, add VAT
         const ccy = (entry.currency in CURRENCY_META ? entry.currency : currencyCode) as CurrencyCode;
+        const origWithVat = Math.ceil(entry.original_price * 1.15);
+        const finalWithVat = Math.ceil(entry.price * 1.15);
         return {
-          originalPrice: Math.ceil(entry.original_price),
+          originalPrice: origWithVat,
           discountPct: entry.discount_percentage,
-          finalPrice: Math.ceil(entry.price),
+          finalPrice: finalWithVat,
           currency: ccy,
           isCountryPrice: true,
         };
       }
-      // Fallback: convert SAR and apply course-level discount
+      // Fallback: convert SAR and apply course-level discount, then add VAT
       const convertedBase = currencyCode === 'SAR' ? Math.ceil(sarPrice) : Math.ceil(sarPrice * rate);
       const dPct = courseDiscountPct > 0 ? courseDiscountPct : 0;
-      const final = dPct > 0 ? Math.ceil(convertedBase * (1 - dPct / 100)) : convertedBase;
+      const finalBeforeVat = dPct > 0 ? Math.ceil(convertedBase * (1 - dPct / 100)) : convertedBase;
       return {
-        originalPrice: convertedBase,
+        originalPrice: Math.ceil(convertedBase * 1.15),
         discountPct: dPct,
-        finalPrice: final,
+        finalPrice: Math.ceil(finalBeforeVat * 1.15),
         currency: currencyCode,
         isCountryPrice: false,
       };

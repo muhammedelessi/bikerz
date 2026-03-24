@@ -101,7 +101,7 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
                 <div className="flex items-center justify-center gap-2">
                   {hasAnyDiscount && (
                     <span className="text-sm text-muted-foreground line-through">
-                      {formatPrice(course.price, isRTL)}
+                      {formatPrice(originalPriceWithVat, isRTL)}
                     </span>
                   )}
                   <span className="text-2xl font-black text-primary">
@@ -109,7 +109,7 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {isRTL ? 'السعر غير شامل الضريبة' : 'Price excludes VAT'}
+                  {isRTL ? 'السعر شامل الضريبة' : 'Price includes VAT'}
                 </p>
               </div>
 

@@ -1139,7 +1139,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   {/* Pay Now CTA */}
                   {discountedPrice > 0 && (() => {
-                    const total = discountedPrice + Math.ceil(discountedPrice * 0.15);
+                    const total = discountedPrice; // Already VAT-inclusive
                     return (
                       <Button
                         className="w-full h-12 rounded-xl text-base font-bold shadow-glow hover:shadow-glow-lg transition-all duration-300"
