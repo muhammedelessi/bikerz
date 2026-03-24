@@ -66,9 +66,15 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
         throw new Error(isRTL ? 'فشل تهيئة بوابة الدفع' : 'Payment gateway failed to initialize');
       }
 
-      // Brand orange from CSS: hsl(18 78% 45%) ≈ #CC4E1D
-      const brandColor = '#CC4E1D';
-      const cardBg = 'transparent';
+      // Read actual CSS variable values from the document for theme consistency
+      const root = document.documentElement;
+      const getVar = (v: string) => getComputedStyle(root).getPropertyValue(v).trim();
+      // Foreground (sand): hsl(43 18% 72%) → #C6BFAA
+      // Muted-foreground (gray): hsl(0 0% 55%) → #8D8D8D
+      // Card bg: hsl(180 5% 14%) → #222928
+      // Border: hsl(180 3% 22%) → #363938
+      // Primary (orange): hsl(18 78% 45%) → #CC4E1D
+      // Destructive: hsl(0 84% 60%) → #ef4444
 
       window.goSell.goSellElements({
         containerID: 'tap-card-container',
@@ -93,7 +99,7 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
               fontSmoothing: 'antialiased',
               fontSize: '16px',
               '::placeholder': {
-                color: 'rgba(141, 141, 141, 0.6)',
+                color: '#8D8D8D',
                 fontSize: '14px',
               },
             },
@@ -173,29 +179,27 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
           min-height: 180px;
           border-radius: 12px;
           padding: 16px;
-          background: hsl(180 5% 14%);
-          border: 1px solid hsl(180 3% 22%);
-          transition: border-color 0.3s ease;
+          background: hsl(var(--card));
+          border: 1px solid hsl(var(--border));
+          transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
         .tap-card-container:focus-within {
-          border-color: #CC4E1D;
-          box-shadow: 0 0 0 2px rgba(204, 78, 29, 0.15);
+          border-color: hsl(var(--primary));
+          box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15);
         }
-        /* goSell internal iframe styling overrides */
         .tap-card-container iframe {
           min-height: 160px !important;
         }
-        /* Tajawal font for the form */
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
         .tap-card-container,
         .tap-card-container * {
           font-family: 'Tajawal', 'Almarai', 'Roboto', sans-serif !important;
         }
-        /* goSell notification styling */
         .gosell-gateway-msg {
           font-family: 'Tajawal', 'Almarai', sans-serif !important;
           border-radius: 8px !important;
           font-size: 13px !important;
+          background: hsl(var(--muted)) !important;
+          color: hsl(var(--foreground)) !important;
         }
       `}</style>
     </div>
