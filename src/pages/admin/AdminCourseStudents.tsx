@@ -162,7 +162,6 @@ const AdminCourseStudents: React.FC = () => {
     return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   };
 
-  const selectedStudentData = students.find((s) => s.user_id === selectedStudent);
   const completedCount = students.filter((s) => s.completed_at || s.progress_percentage >= 100).length;
   const inProgressCount = students.filter((s) => !s.completed_at && s.progress_percentage > 0 && s.progress_percentage < 100).length;
   const avgProgress = students.length
