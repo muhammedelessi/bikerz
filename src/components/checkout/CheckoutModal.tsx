@@ -37,6 +37,8 @@ import {
   MapPin,
   Lock,
   Pencil,
+  Phone,
+  Mail,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trackInitiateCheckout, trackAddPaymentInfo } from '@/utils/metaPixel';
@@ -229,7 +231,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (!user) return;
     if (profile?.full_name) setFullName(profile.full_name);
     if (user?.email) setEmail(user.email);
-    if (profile?.phone) setPhone(profile.phone || '');
+    if (profile?.phone) {
+      // Strip known prefix so it works with the split prefix+number input
+      let rawPhone = profile.phone;
+      for (const prefix of Object.values(COUNTRY_PHONE_PREFIXES)) {
+        if (rawPhone.startsWith(prefix)) {
+          rawPhone = rawPhone.slice(prefix.length);
+          break;
+        }
+      }
+      setPhone(rawPhone);
+    }
     const loadProfileData = async () => {
       if (!user?.id) return;
       const { data } = await supabase
@@ -382,7 +394,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   }, [phone, phonePrefix]);
 
   const hasNamePrefilled = !!(profile?.full_name && profile.full_name.trim().length >= 3);
-  const hasPhonePrefilled = !!(profile?.phone && profile.phone.trim().length >= 7);
+  
 
   const fullPhone = getFullPhone();
   const isInfoValid = fullName.trim().length >= 3 
@@ -813,11 +825,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </div>
 
                   {/* Name: read-only if prefilled, with edit button */}
-                  <div className="space-y-2">
-                    <Label>{isRTL ? 'الاسم الكامل' : 'Full Name'} <span className="text-destructive">*</span></Label>
+                  <div className="space-y-1">
                     {hasNamePrefilled && !isEditingName ? (
                       <div className="flex items-center justify-between rounded-md border border-input bg-muted/30 px-3 py-2 h-10">
-                        <span className="text-sm font-medium text-foreground">{fullName}</span>
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-sm font-medium text-foreground">{fullName}</span>
+                        </div>
                         <button
                           type="button"
                           onClick={() => setIsEditingName(true)}
@@ -827,33 +841,39 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         </button>
                       </div>
                     ) : (
-                      <Input
-                        value={fullName}
-                        onChange={(e) => { setFullName(e.target.value); setErrors(prev => ({ ...prev, fullName: undefined })); }}
-                        placeholder={isRTL ? 'أدخل اسمك الكامل' : 'Enter your full legal name'}
-                        className={errors.fullName ? 'border-destructive' : ''}
-                        autoFocus={isEditingName}
-                      />
+                      <div className="relative">
+                        <User className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                        <Input
+                          value={fullName}
+                          onChange={(e) => { setFullName(e.target.value); setErrors(prev => ({ ...prev, fullName: undefined })); }}
+                          placeholder={isRTL ? 'الاسم الكامل' : 'Full name'}
+                          className={`ps-9 ${errors.fullName ? 'border-destructive' : ''}`}
+                          autoFocus={isEditingName}
+                        />
+                      </div>
                     )}
                     {renderFieldError('fullName')}
                   </div>
 
-                  {/* Email: display only */}
-                  <div className="space-y-2">
-                    <Label>{isRTL ? 'البريد الإلكتروني' : 'Email'}</Label>
+                  {/* Email: display only for logged-in, editable for guests */}
+                  <div className="space-y-1">
                     {user ? (
                       <div className="flex items-center rounded-md border border-input bg-muted/30 px-3 py-2 h-10">
+                        <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0 me-2" />
                         <span className="text-sm text-foreground truncate" dir="ltr">{email}</span>
                       </div>
                     ) : (
                       <>
-                        <Input
-                          type="email"
-                          value={email}
-                          onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
-                          placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
-                          className={errors.email ? 'border-destructive' : ''}
-                        />
+                        <div className="relative">
+                          <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                          <Input
+                            type="email"
+                            value={email}
+                            onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
+                            placeholder={isRTL ? 'البريد الإلكتروني' : 'Email address'}
+                            className={`ps-9 ${errors.email ? 'border-destructive' : ''}`}
+                          />
+                        </div>
                         <p className="text-[11px] text-muted-foreground">
                           {isRTL ? 'سيتم إنشاء حساب لك تلقائياً باستخدام هذا البريد' : 'An account will be created automatically with this email'}
                         </p>
@@ -862,32 +882,25 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     {renderFieldError('email')}
                   </div>
 
-                  {/* Phone: with country code prefix */}
-                  <div className="space-y-2">
-                    <Label>{isRTL ? 'رقم الهاتف' : 'Phone Number'} <span className="text-destructive">*</span></Label>
-                    {hasPhonePrefilled ? (
-                      <div className="flex items-center rounded-md border border-input bg-muted/30 px-3 py-2 h-10">
-                        <span className="text-sm font-medium text-foreground" dir="ltr">{phone}</span>
+                  {/* Phone: always editable with country code prefix */}
+                  <div className="space-y-1">
+                    <div className="flex gap-2" dir="ltr">
+                      <div className="flex items-center rounded-md border border-input bg-muted/30 px-3 h-10 text-sm font-medium text-foreground flex-shrink-0 min-w-[70px] justify-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-muted-foreground" />
+                        {phonePrefix || '+---'}
                       </div>
-                    ) : (
-                      <div className="flex gap-2" dir="ltr">
-                        <div className="flex items-center rounded-md border border-input bg-muted/30 px-3 h-10 text-sm font-medium text-foreground flex-shrink-0 min-w-[70px] justify-center">
-                          {phonePrefix || '+---'}
-                        </div>
-                        <Input
-                          value={phone}
-                          onChange={(e) => { 
-                            // Only allow digits
-                            const val = e.target.value.replace(/[^0-9]/g, '');
-                            setPhone(val); 
-                            setErrors(prev => ({ ...prev, phone: undefined })); 
-                          }}
-                          placeholder="5XXXXXXXX"
-                          className={`flex-1 ${errors.phone ? 'border-destructive' : ''}`}
-                          dir="ltr"
-                        />
-                      </div>
-                    )}
+                      <Input
+                        value={phone}
+                        onChange={(e) => { 
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setPhone(val); 
+                          setErrors(prev => ({ ...prev, phone: undefined })); 
+                        }}
+                        placeholder="5XXXXXXXX"
+                        className={`flex-1 ${errors.phone ? 'border-destructive' : ''}`}
+                        dir="ltr"
+                      />
+                    </div>
                     {renderFieldError('phone')}
                   </div>
 
