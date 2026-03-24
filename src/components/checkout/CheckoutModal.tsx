@@ -46,13 +46,7 @@ import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
 import { usePaymentMethodDetection } from '@/hooks/usePaymentMethodDetection';
 import { ApplePayIcon, GooglePayIcon, VisaIcon, MastercardIcon } from '@/components/checkout/PaymentMethodIcons';
 
-// Country code to phone prefix mapping
-const COUNTRY_PHONE_PREFIXES: Record<string, string> = {
-  SA: '+966', AE: '+971', KW: '+965', BH: '+973', QA: '+974', OM: '+968',
-  JO: '+962', EG: '+20', IQ: '+964', SY: '+963', LB: '+961', YE: '+967',
-  LY: '+218', TN: '+216', DZ: '+213', MA: '+212', SD: '+249', PS: '+970',
-  US: '+1', GB: '+44', TR: '+90', DE: '+49', FR: '+33',
-};
+import { PHONE_COUNTRIES } from '@/data/phoneCountryCodes';
 
 interface CheckoutModalProps {
   open: boolean;
