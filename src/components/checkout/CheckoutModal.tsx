@@ -219,9 +219,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   useEffect(() => {
     if (detectedCountry) {
       const code = detectedCountry.toUpperCase();
-      const prefix = COUNTRY_PHONE_PREFIXES[code];
-      if (prefix) {
-        setPhonePrefix(prefix);
+      const found = PHONE_COUNTRIES.find(pc => pc.code === code);
+      if (found) {
+        setPhonePrefix(found.prefix + '_' + found.code);
       }
     }
   }, [detectedCountry]);
