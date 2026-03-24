@@ -49,6 +49,7 @@ const AdminLessonDiscussions = lazy(() => import("./pages/admin/AdminLessonDiscu
 const AdminContent = lazy(() => import("./pages/admin/AdminContent"));
 const AdminCoupons = lazy(() => import("./pages/admin/AdminCoupons"));
 const AdminCourseReviews = lazy(() => import("./pages/admin/AdminCourseReviews"));
+const AdminCourseStudents = lazy(() => import("./pages/admin/AdminCourseStudents"));
 
 const queryClient = new QueryClient();
 
