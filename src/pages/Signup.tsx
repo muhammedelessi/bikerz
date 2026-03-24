@@ -170,51 +170,14 @@ const Signup: React.FC = () => {
         console.error('Failed to update profile with Google data:', e);
       }
 
-      // Check if gender/dob already set
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('gender, date_of_birth')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      const hasGender = profile?.gender && profile.gender !== '';
-      const hasDob = profile?.date_of_birth && profile.date_of_birth !== '';
-
       setIsGoogleLoading(false);
-
-      if (!hasGender || !hasDob) {
-        // Show follow-up form for missing fields
-        setShowGoogleFollowUp(true);
-      } else {
-        // All data present — sync and navigate
-        await saveProfileAndSync(user.id, googleName, user.email || '', profile?.gender || '', profile?.date_of_birth ? new Date(profile.date_of_birth) : undefined);
-        toast.success(isRTL ? 'تم التسجيل بنجاح!' : 'Signed up successfully!');
-        setShowProfileWizard(true);
-      }
+      await saveProfileAndSync(user.id, googleName, user.email || '');
+      toast.success(isRTL ? 'تم التسجيل بنجاح!' : 'Signed up successfully!');
+      setShowProfileWizard(true);
     } catch (err: any) {
       console.error('Google sign-in error:', err);
       setError(err?.message || (isRTL ? 'فشل تسجيل الدخول بجوجل' : 'Google sign-in failed'));
       setIsGoogleLoading(false);
-    }
-  };
-
-  const handleGoogleFollowUpSubmit = async () => {
-    setGoogleFollowUpLoading(true);
-    try {
-      const { data: { user } } = await (supabase.auth as any).getUser();
-      if (!user) return;
-
-      const googleName = user.user_metadata?.full_name || user.user_metadata?.name || '';
-
-      await saveProfileAndSync(user.id, googleName, user.email || '', googleGender, googleDateOfBirth);
-
-      toast.success(isRTL ? 'تم التسجيل بنجاح!' : 'Signed up successfully!');
-      setShowGoogleFollowUp(false);
-      setShowProfileWizard(true);
-    } catch (err) {
-      console.error('Google follow-up error:', err);
-    } finally {
-      setGoogleFollowUpLoading(false);
     }
   };
 
