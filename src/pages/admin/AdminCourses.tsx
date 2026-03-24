@@ -681,6 +681,10 @@ const AdminCourses: React.FC = () => {
                               {isRTL ? 'التقييمات والمراجعات' : 'Reviews & Ratings'}
                             </Link>
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setViewStudentsCourse({ id: course.id, title: isRTL && course.title_ar ? course.title_ar : course.title })}>
+                            <Users className="w-4 h-4 me-2" />
+                            {isRTL ? 'عرض الطلاب' : 'View Students'}
+                          </DropdownMenuItem>
                           <DropdownMenuItem>
                             <Copy className="w-4 h-4 me-2" />
                             {isRTL ? 'استنساخ' : 'Duplicate'}
