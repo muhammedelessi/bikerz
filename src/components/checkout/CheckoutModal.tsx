@@ -1028,28 +1028,34 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
                   className="space-y-5"
                 >
-                  {/* Accepted Payment Methods */}
+                  {/* Inline Card Form */}
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <CreditCard className="w-4 h-4 text-primary" />
                       <h4 className="font-semibold text-foreground text-sm">
-                        {isRTL ? 'طرق الدفع المتاحة' : 'Accepted Payment Methods'}
+                        {isRTL ? 'بيانات البطاقة' : 'Card Details'}
                       </h4>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
-                        <VisaIcon className="h-5 w-auto" />
+                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                      <div className="flex items-center px-2 py-1 rounded border border-border/50 bg-muted/10">
+                        <VisaIcon className="h-4 w-auto" />
                       </div>
-                      <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
-                        <MastercardIcon className="h-5 w-auto" />
+                      <div className="flex items-center px-2 py-1 rounded border border-border/50 bg-muted/10">
+                        <MastercardIcon className="h-4 w-auto" />
                       </div>
-                      <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
-                        <ApplePayIcon className="h-5 w-auto" />
+                      <div className="flex items-center px-2 py-1 rounded border border-border/50 bg-muted/10">
+                        <ApplePayIcon className="h-4 w-auto" />
                       </div>
-                      <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
-                        <GooglePayIcon className="h-5 w-auto" />
+                      <div className="flex items-center px-2 py-1 rounded border border-border/50 bg-muted/10">
+                        <GooglePayIcon className="h-4 w-auto" />
                       </div>
                     </div>
+                    <TapCardForm
+                      onToken={handleCardToken}
+                      onError={handleCardError}
+                      isSubmitting={cardSubmitting}
+                      setIsSubmitting={setCardSubmitting}
+                    />
                   </div>
 
                   {/* Promo Code */}
