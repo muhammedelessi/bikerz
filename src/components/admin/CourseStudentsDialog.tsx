@@ -104,7 +104,21 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
       if (!enrollments?.length) return [];
 
       const userIds = enrollments.map((e) => e.user_id);
-      const [profilesRes, emailsRes] = await Promise.all([
+
+      // Get total published lessons for this course
+      const { data: chapters } = await supabase
+        .from('chapters')
+        .select('id')
+        .eq('course_id', courseId);
+      const chapterIds = (chapters || []).map((ch) => ch.id);
+      const { data: courseLessons } = chapterIds.length
+        ? await supabase.from('lessons').select('id').in('chapter_id', chapterIds).eq('is_published', true)
+        : { data: [] };
+      const totalLessons = (courseLessons || []).length;
+      const lessonIds = (courseLessons || []).map((l) => l.id);
+
+      // Fetch profiles, emails, and actual lesson progress in parallel
+      const [profilesRes, emailsRes, progressRes] = await Promise.all([
         supabase
           .from('profiles')
           .select('user_id, full_name, phone, city, country, avatar_url')
@@ -114,6 +128,14 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
           .select('user_id, customer_email')
           .in('user_id', userIds)
           .not('customer_email', 'is', null),
+        lessonIds.length
+          ? supabase
+              .from('lesson_progress')
+              .select('user_id, lesson_id')
+              .in('user_id', userIds)
+              .in('lesson_id', lessonIds)
+              .eq('is_completed', true)
+          : Promise.resolve({ data: [] }),
       ]);
 
       const profileMap = new Map(
@@ -126,14 +148,24 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
         }
       });
 
-      return enrollments.map((e) => ({
-        user_id: e.user_id,
-        enrolled_at: e.enrolled_at,
-        progress_percentage: e.progress_percentage,
-        completed_at: e.completed_at,
-        profile: profileMap.get(e.user_id) || null,
-        email: emailMap.get(e.user_id) || null,
-      })) as EnrolledStudent[];
+      // Count completed lessons per user
+      const completedPerUser = new Map<string, number>();
+      (progressRes.data || []).forEach((p) => {
+        completedPerUser.set(p.user_id, (completedPerUser.get(p.user_id) || 0) + 1);
+      });
+
+      return enrollments.map((e) => {
+        const completed = completedPerUser.get(e.user_id) || 0;
+        const realProgress = totalLessons > 0 ? Math.round((completed / totalLessons) * 100) : 0;
+        return {
+          user_id: e.user_id,
+          enrolled_at: e.enrolled_at,
+          progress_percentage: realProgress,
+          completed_at: e.completed_at,
+          profile: profileMap.get(e.user_id) || null,
+          email: emailMap.get(e.user_id) || null,
+        };
+      }) as EnrolledStudent[];
     },
     enabled: !!courseId,
   });
