@@ -77,6 +77,16 @@ const normalizeStatus = (status: string, source: 'manual' | 'tap'): string => {
   }
   return status;
 };
+/** Safely convert error_message (may be string or {code,message} object) to a display string */
+const safeErrorMessage = (msg: unknown): string | null => {
+  if (!msg) return null;
+  if (typeof msg === 'string') return msg;
+  if (typeof msg === 'object') {
+    const obj = msg as Record<string, unknown>;
+    return (obj.message as string) || JSON.stringify(msg);
+  }
+  return String(msg);
+};
 
 const AdminPayments = () => {
   const { isRTL } = useLanguage();
