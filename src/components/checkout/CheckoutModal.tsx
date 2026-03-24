@@ -407,9 +407,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   
 
   const fullPhone = getFullPhone();
+  const rawPhoneTrimmed = phone.trim();
+  const isPhoneValid = !!actualPrefix && /^\d{6,12}$/.test(rawPhoneTrimmed);
   const isInfoValid = fullName.trim().length >= 3 
     && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) 
-    && /^[0-9+\s()-]{7,15}$/.test(fullPhone)
+    && isPhoneValid
     && ((isOtherCity || isOtherCountry) ? cityManual.trim().length > 0 : city.trim().length > 0) 
     && (isOtherCountry ? countryManual.trim().length > 0 : country.trim().length > 0);
   const isPaymentReady = isInfoValid;
