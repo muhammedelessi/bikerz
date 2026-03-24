@@ -60,7 +60,7 @@ const AdminCourseStudents: React.FC = () => {
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
+  
 
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
   const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
