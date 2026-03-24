@@ -230,6 +230,22 @@ const CourseDetail: React.FC = () => {
     enabled: !!id && !!user && chapters.length > 0,
   });
 
+  // Check if user has reviewed this course
+  const { data: hasReviewed = false } = useQuery({
+    queryKey: ['user-review-check', id, user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { count, error } = await supabase
+        .from('course_reviews')
+        .select('id', { count: 'exact', head: true })
+        .eq('course_id', id!)
+        .eq('user_id', user.id);
+      if (error) return false;
+      return (count || 0) > 0;
+    },
+    enabled: !!id && !!user,
+  });
+
   // Meta Pixel: ViewContent event
   useEffect(() => {
     if (course && id) {
