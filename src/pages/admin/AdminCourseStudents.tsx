@@ -375,70 +375,8 @@ const AdminCourseStudents: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Student Detail Dialog */}
-        <Dialog open={!!selectedStudent} onOpenChange={(open) => !open && setSelectedStudent(null)}>
-          <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] flex flex-col gap-4 p-4 sm:p-6 overflow-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
-            <DialogHeader className="space-y-1">
-              <DialogTitle className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0" onClick={() => setSelectedStudent(null)}>
-                  <BackIcon className="w-4 h-4" />
-                </Button>
-                {selectedStudentData && (
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Avatar className="w-9 h-9 shrink-0">
-                      <AvatarImage src={selectedStudentData.profile?.avatar_url || undefined} />
-                      <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
-                        {getInitials(selectedStudentData.profile?.full_name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <p className="font-semibold truncate text-base">
-                        {selectedStudentData.profile?.full_name || (isRTL ? 'تفاصيل الطالب' : 'Student Details')}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate" dir="ltr" style={{ unicodeBidi: 'plaintext' as any }}>
-                        {selectedStudentData.email || ''}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </DialogTitle>
-            </DialogHeader>
 
-            {/* Student Info Cards */}
-            {selectedStudentData && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                <InfoCard label={isRTL ? 'البريد الإلكتروني' : 'Email'} value={selectedStudentData.email || '-'} dir="ltr" isRTL={isRTL} />
-                <InfoCard label={isRTL ? 'رقم الهاتف' : 'Phone'} value={selectedStudentData.profile?.phone || '-'} dir="ltr" isRTL={isRTL} />
-                <InfoCard label={isRTL ? 'الموقع' : 'Location'} value={[selectedStudentData.profile?.city, selectedStudentData.profile?.country].filter(Boolean).join(', ') || '-'} />
-                <InfoCard label={isRTL ? 'الدورات المشتراة' : 'Courses'} value={String(studentDetail?.allEnrollments.length || 0)} highlight />
-              </div>
-            )}
 
-            <div className="flex items-center gap-2 pt-1">
-              <GraduationCap className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">{isRTL ? 'الدورات المسجلة' : 'Enrolled Courses'}</h3>
-            </div>
-
-            <ScrollArea className="flex-1 min-h-0" style={{ maxHeight: 'calc(90vh - 300px)' }}>
-              {detailLoading ? (
-                <div className="space-y-3">
-                  {[1, 2].map((i) => (<Skeleton key={i} className="h-32 w-full rounded-xl" />))}
-                </div>
-              ) : !studentDetail?.allEnrollments.length ? (
-                <div className="py-12 text-center">
-                  <BookOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">{isRTL ? 'لا توجد بيانات' : 'No data available'}</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {studentDetail.allEnrollments.map((enrollment) => (
-                    <EnrollmentCard key={enrollment.course_id} enrollment={enrollment} isRTL={isRTL} formatDate={formatDate} />
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
       </div>
     </AdminLayout>
   );
