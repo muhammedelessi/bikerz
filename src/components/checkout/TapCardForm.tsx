@@ -248,6 +248,8 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
           width: 100% !important;
           min-height: 140px !important;
           max-width: 100% !important;
+          background: ${BRAND.nearBlack} !important;
+          color-scheme: dark !important;
         }
         @media (min-width: 640px) {
           .tap-card-container iframe {
