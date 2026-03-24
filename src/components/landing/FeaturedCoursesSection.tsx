@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import CourseCard from "@/components/course/CourseCard";
+import { fetchEnrollmentsWithLiveProgress } from "@/lib/enrollmentProgress";
 
 const FeaturedCoursesSection: React.FC = () => {
   const { isRTL } = useLanguage();
@@ -60,12 +61,7 @@ const FeaturedCoursesSection: React.FC = () => {
     queryKey: ['user-enrollments-featured', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
-        .from('course_enrollments')
-        .select('course_id, progress_percentage, completed_at')
-        .eq('user_id', user.id);
-      if (error) throw error;
-      return data || [];
+      return await fetchEnrollmentsWithLiveProgress(user.id);
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
