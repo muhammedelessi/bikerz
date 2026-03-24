@@ -400,7 +400,7 @@ const AdminCourseStudents: React.FC = () => {
                               <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                                 <div
                                   className={`h-full rounded-full transition-all ${
-                                    student.completed_at ? 'bg-green-500' :
+                                    (student.completed_at || student.progress_percentage >= 100) ? 'bg-green-500' :
                                     student.progress_percentage > 50 ? 'bg-primary' : 'bg-amber-500'
                                   }`}
                                   style={{ width: `${Math.min(student.progress_percentage, 100)}%` }}
