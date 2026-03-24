@@ -131,7 +131,6 @@
   }
 
   #root {
-    overflow-x: hidden;
     min-height: 100dvh;
     padding-top: env(safe-area-inset-top, 0px);
     padding-left: env(safe-area-inset-left, 0px);
@@ -143,7 +142,6 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-en);
-    overflow-x: hidden;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
   }
