@@ -196,6 +196,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return items;
   }, [selectedCountry, isRTL]);
 
+  const phonePrefixOptions = useMemo((): DropdownOption[] => {
+    return Object.entries(COUNTRY_PHONE_PREFIXES).map(([code, prefix]) => {
+      const countryData = COUNTRIES.find(c => c.code === code);
+      const countryName = countryData ? (isRTL ? countryData.ar : countryData.en) : code;
+      return { value: prefix, label: `${prefix}  ${countryName}` };
+    });
+  }, [isRTL]);
+
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
   const BackArrowIcon = isRTL ? ArrowRight : ArrowLeft;
 
