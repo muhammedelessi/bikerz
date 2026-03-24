@@ -27,7 +27,7 @@ export interface CourseCardProps {
   };
   index?: number;
   inView?: boolean;
-  enrollment?: { progress_percentage: number } | null;
+  enrollment?: { progress_percentage: number; completed_at?: string | null } | null;
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = true, enrollment }) => {
