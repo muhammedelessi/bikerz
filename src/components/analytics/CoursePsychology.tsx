@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Table,
@@ -30,14 +31,16 @@ import {
   CheckCircle,
   TrendingUp,
   Award,
-  ChevronDown,
-  ChevronUp,
   ChevronRight,
   ChevronLeft,
+  BarChart3,
+  Activity,
+  Target,
 } from 'lucide-react';
 import { useCourseAnalytics } from '@/hooks/useAnalyticsDashboard';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface CoursePsychologyProps {
   dateRange: string;
@@ -58,6 +61,7 @@ interface EnrolledStudent {
   email: string | null;
 }
 
+/* ─── Status Badge ─── */
 const StudentStatusBadge: React.FC<{
   completedAt: string | null;
   progress: number;
@@ -85,7 +89,112 @@ const StudentStatusBadge: React.FC<{
   );
 };
 
-/* ─── Inline students panel for a single course ─── */
+/* ─── Health indicator dot ─── */
+const HealthDot: React.FC<{ rate: number }> = ({ rate }) => {
+  const color =
+    rate >= 70 ? 'bg-green-500' :
+    rate >= 50 ? 'bg-yellow-500' :
+    rate >= 30 ? 'bg-orange-500' : 'bg-red-500';
+  return <span className={`inline-block w-2.5 h-2.5 rounded-full ${color}`} />;
+};
+
+/* ─── Course Analytics Detail Panel ─── */
+const CourseAnalyticsPanel: React.FC<{
+  course: any;
+  isRTL: boolean;
+}> = ({ course, isRTL }) => {
+  const getLeakageColor = (rate: number) => {
+    if (rate <= 10) return 'text-green-500';
+    if (rate <= 20) return 'text-yellow-500';
+    if (rate <= 35) return 'text-orange-500';
+    return 'text-red-500';
+  };
+
+  const metrics = [
+    {
+      icon: TrendingDown,
+      iconColor: 'text-red-500',
+      label: isRTL ? 'لم يبدأوا الدرس الثاني' : 'Never started lesson 2',
+      value: `${course.neverStartLesson2Pct}%`,
+      valueColor: getLeakageColor(course.neverStartLesson2Pct),
+    },
+    {
+      icon: AlertTriangle,
+      iconColor: 'text-orange-500',
+      label: isRTL ? 'متوسط التسرب بين الدروس' : 'Avg lesson leakage',
+      value: `${course.avgLeakageRate}%`,
+      valueColor: getLeakageColor(course.avgLeakageRate),
+    },
+    {
+      icon: Clock,
+      iconColor: 'text-blue-500',
+      label: isRTL ? 'أيام حتى التوقف' : 'Days to drop-off',
+      value: `${course.avgTimeToDropoffDays}`,
+      valueColor: 'text-foreground',
+    },
+  ];
+
+  return (
+    <div className="space-y-5">
+      {/* Funnel visualization */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="relative p-4 rounded-xl bg-primary/5 border border-primary/10 text-center">
+          <p className="text-2xl font-bold text-primary">{course.totalEnrollments}</p>
+          <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'مسجلون' : 'Enrolled'}</p>
+        </div>
+        <div className="relative p-4 rounded-xl bg-yellow-500/5 border border-yellow-500/10 text-center">
+          <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+            {course.totalEnrollments - course.completedEnrollments}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'قيد التقدم' : 'In Progress'}</p>
+        </div>
+        <div className="relative p-4 rounded-xl bg-green-500/5 border border-green-500/10 text-center">
+          <p className="text-2xl font-bold text-green-600 dark:text-green-400">{course.completedEnrollments}</p>
+          <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'أكملوا' : 'Completed'}</p>
+        </div>
+      </div>
+
+      {/* Completion bar */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground font-medium flex items-center gap-2">
+            <Target className="w-4 h-4" />
+            {isRTL ? 'معدل الإكمال' : 'Completion Rate'}
+          </span>
+          <span className="font-bold text-lg">{course.completionRate}%</span>
+        </div>
+        <div className="relative h-3 rounded-full bg-muted overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${course.completionRate}%` }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+            className="absolute inset-y-0 start-0 rounded-full bg-gradient-to-r from-primary to-primary/70"
+          />
+        </div>
+      </div>
+
+      {/* Leakage metrics */}
+      <div className="space-y-1">
+        {metrics.map((m, i) => {
+          const Icon = m.icon;
+          return (
+            <div key={i} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
+                  <Icon className={`w-4 h-4 ${m.iconColor}`} />
+                </div>
+                <span className="text-sm text-foreground">{m.label}</span>
+              </div>
+              <span className={`font-bold text-sm tabular-nums ${m.valueColor}`}>{m.value}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ─── Course Students Panel ─── */
 const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ courseId, isRTL }) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -103,7 +212,6 @@ const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ c
       if (!enrollments?.length) return [];
 
       const userIds = enrollments.map((e) => e.user_id);
-
       const { data: chapters } = await supabase.from('chapters').select('id').eq('course_id', courseId);
       const chapterIds = (chapters || []).map((ch) => ch.id);
       const { data: courseLessons } = chapterIds.length
@@ -173,36 +281,31 @@ const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ c
     : 0;
 
   return (
-    <div className="space-y-4 pt-4 border-t border-border">
-      {/* Mini stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
-          <Users className="w-4 h-4 text-muted-foreground" />
-          <div>
-            <p className="text-lg font-bold">{students.length}</p>
-            <p className="text-[10px] text-muted-foreground">{isRTL ? 'إجمالي' : 'Total'}</p>
-          </div>
+    <div className="space-y-4">
+      {/* Quick stats strip */}
+      <div className="flex items-center gap-4 px-1">
+        <div className="flex items-center gap-1.5">
+          <Users className="w-3.5 h-3.5 text-muted-foreground" />
+          <span className="text-sm font-bold">{students.length}</span>
+          <span className="text-xs text-muted-foreground">{isRTL ? 'طالب' : 'total'}</span>
         </div>
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
-          <CheckCircle className="w-4 h-4 text-green-500" />
-          <div>
-            <p className="text-lg font-bold text-green-600">{completedCount}</p>
-            <p className="text-[10px] text-muted-foreground">{isRTL ? 'أكملوا' : 'Done'}</p>
-          </div>
+        <span className="text-border">·</span>
+        <div className="flex items-center gap-1.5">
+          <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+          <span className="text-sm font-bold text-green-600">{completedCount}</span>
+          <span className="text-xs text-muted-foreground">{isRTL ? 'أكملوا' : 'done'}</span>
         </div>
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
-          <TrendingUp className="w-4 h-4 text-blue-500" />
-          <div>
-            <p className="text-lg font-bold text-blue-600">{inProgressCount}</p>
-            <p className="text-[10px] text-muted-foreground">{isRTL ? 'قيد التعلم' : 'Active'}</p>
-          </div>
+        <span className="text-border">·</span>
+        <div className="flex items-center gap-1.5">
+          <Activity className="w-3.5 h-3.5 text-blue-500" />
+          <span className="text-sm font-bold text-blue-600">{inProgressCount}</span>
+          <span className="text-xs text-muted-foreground">{isRTL ? 'نشط' : 'active'}</span>
         </div>
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
-          <Award className="w-4 h-4 text-amber-500" />
-          <div>
-            <p className="text-lg font-bold text-amber-600">{avgProgress}%</p>
-            <p className="text-[10px] text-muted-foreground">{isRTL ? 'متوسط' : 'Avg'}</p>
-          </div>
+        <span className="text-border">·</span>
+        <div className="flex items-center gap-1.5">
+          <Award className="w-3.5 h-3.5 text-amber-500" />
+          <span className="text-sm font-bold text-amber-600">{avgProgress}%</span>
+          <span className="text-xs text-muted-foreground">{isRTL ? 'متوسط' : 'avg'}</span>
         </div>
       </div>
 
@@ -210,38 +313,38 @@ const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ c
       <div className="relative">
         <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder={isRTL ? 'بحث بالاسم أو البريد...' : 'Search name or email...'}
+          placeholder={isRTL ? 'بحث بالاسم أو البريد...' : 'Search by name or email...'}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="ps-10 h-9 text-sm"
+          className="ps-10 h-10 text-sm bg-muted/30 border-border/50 focus:bg-background"
         />
       </div>
 
-      {/* Students table */}
+      {/* Table */}
       {isLoading ? (
         <div className="space-y-2">
-          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
         </div>
       ) : filteredStudents.length === 0 ? (
-        <div className="py-8 text-center">
-          <Users className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">
-            {searchQuery
-              ? (isRTL ? 'لا توجد نتائج' : 'No results')
-              : (isRTL ? 'لا يوجد طلاب' : 'No students yet')}
+        <div className="py-12 text-center">
+          <div className="w-14 h-14 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
+            <Users className="w-7 h-7 text-muted-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground font-medium">
+            {searchQuery ? (isRTL ? 'لا توجد نتائج' : 'No results found') : (isRTL ? 'لا يوجد طلاب بعد' : 'No students yet')}
           </p>
         </div>
       ) : (
         <>
           {/* Desktop */}
-          <div className="hidden sm:block rounded-lg border border-border overflow-hidden">
+          <div className="hidden sm:block rounded-xl border border-border/60 overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>{isRTL ? 'الطالب' : 'Student'}</TableHead>
-                  <TableHead>{isRTL ? 'التقدم' : 'Progress'}</TableHead>
-                  <TableHead>{isRTL ? 'التسجيل' : 'Enrolled'}</TableHead>
-                  <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableHead className="font-semibold">{isRTL ? 'الطالب' : 'Student'}</TableHead>
+                  <TableHead className="font-semibold">{isRTL ? 'التقدم' : 'Progress'}</TableHead>
+                  <TableHead className="font-semibold">{isRTL ? 'التسجيل' : 'Enrolled'}</TableHead>
+                  <TableHead className="font-semibold">{isRTL ? 'الحالة' : 'Status'}</TableHead>
                   <TableHead className="w-8" />
                 </TableRow>
               </TableHeader>
@@ -249,19 +352,19 @@ const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ c
                 {filteredStudents.map((student) => (
                   <TableRow
                     key={student.user_id}
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    className="cursor-pointer hover:bg-muted/40 transition-colors group"
                     onClick={() => navigate(`/admin/courses/${courseId}/students/${student.user_id}`)}
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Avatar className="w-8 h-8 shrink-0">
+                        <Avatar className="w-9 h-9 shrink-0 ring-2 ring-background shadow-sm">
                           <AvatarImage src={student.profile?.avatar_url || undefined} />
-                          <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+                          <AvatarFallback className="text-xs bg-primary/10 text-primary font-bold">
                             {getInitials(student.profile?.full_name)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
-                          <p className="font-medium text-foreground text-sm truncate">
+                          <p className="font-medium text-foreground text-sm truncate group-hover:text-primary transition-colors">
                             {student.profile?.full_name || (isRTL ? 'بدون اسم' : 'No name')}
                           </p>
                           <p className="text-xs text-muted-foreground truncate" dir="ltr" style={{ unicodeBidi: 'plaintext' as any }}>
@@ -271,8 +374,8 @@ const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ c
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2 min-w-[100px]">
-                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div className="flex items-center gap-2 min-w-[110px]">
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all ${
                               (student.completed_at || student.progress_percentage >= 100) ? 'bg-green-500' :
@@ -281,7 +384,7 @@ const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ c
                             style={{ width: `${Math.min(student.progress_percentage, 100)}%` }}
                           />
                         </div>
-                        <span className="text-xs font-medium text-muted-foreground tabular-nums w-8 text-end">
+                        <span className="text-xs font-semibold text-muted-foreground tabular-nums w-9 text-end">
                           {Math.round(student.progress_percentage)}%
                         </span>
                       </div>
@@ -293,7 +396,7 @@ const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ c
                       <StudentStatusBadge completedAt={student.completed_at} progress={student.progress_percentage} isRTL={isRTL} />
                     </TableCell>
                     <TableCell>
-                      <ChevronIcon className="w-4 h-4 text-muted-foreground" />
+                      <ChevronIcon className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -302,17 +405,17 @@ const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ c
           </div>
 
           {/* Mobile */}
-          <div className="sm:hidden divide-y divide-border rounded-lg border border-border overflow-hidden">
+          <div className="sm:hidden divide-y divide-border/50 rounded-xl border border-border/60 overflow-hidden">
             {filteredStudents.map((student) => (
               <button
                 key={student.user_id}
                 onClick={() => navigate(`/admin/courses/${courseId}/students/${student.user_id}`)}
-                className="w-full text-start p-3 hover:bg-muted/30 transition-colors"
+                className="w-full text-start p-3.5 hover:bg-muted/30 transition-colors active:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
-                  <Avatar className="w-9 h-9 shrink-0">
+                  <Avatar className="w-10 h-10 shrink-0 ring-2 ring-background shadow-sm">
                     <AvatarImage src={student.profile?.avatar_url || undefined} />
-                    <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary font-bold">
                       {getInitials(student.profile?.full_name)}
                     </AvatarFallback>
                   </Avatar>
@@ -323,7 +426,7 @@ const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ c
                       </p>
                       <StudentStatusBadge completedAt={student.completed_at} progress={student.progress_percentage} isRTL={isRTL} compact />
                     </div>
-                    <div className="flex items-center gap-2 mt-1.5">
+                    <div className="flex items-center gap-2 mt-2">
                       <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full ${
@@ -349,239 +452,240 @@ const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ c
   );
 };
 
-/* ─── Main component ─── */
+/* ─── Main Component ─── */
 const CoursePsychology: React.FC<CoursePsychologyProps> = ({ dateRange }) => {
   const { isRTL } = useLanguage();
   const { data, isLoading } = useCourseAnalytics(dateRange);
-  const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
-  const getHealthColor = (rate: number) => {
-    if (rate >= 70) return 'bg-green-500';
-    if (rate >= 50) return 'bg-yellow-500';
-    if (rate >= 30) return 'bg-orange-500';
-    return 'bg-red-500';
-  };
+  const publishedCourses = (data?.courses || []).filter(c => c.isPublished);
+  const selectedCourse = publishedCourses.find(c => c.id === selectedCourseId) || publishedCourses[0] || null;
 
-  const getLeakageColor = (rate: number) => {
-    if (rate <= 10) return 'text-green-500';
-    if (rate <= 20) return 'text-yellow-500';
-    if (rate <= 35) return 'text-orange-500';
-    return 'text-red-500';
-  };
-
-  const toggleCourse = (courseId: string) => {
-    setExpandedCourse(prev => prev === courseId ? null : courseId);
-  };
+  // Auto-select first course
+  React.useEffect(() => {
+    if (!selectedCourseId && publishedCourses.length > 0) {
+      setSelectedCourseId(publishedCourses[0].id);
+    }
+  }, [publishedCourses.length, selectedCourseId]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-4">
-        <BookOpen className="w-6 h-6 text-primary" />
-        <h2 className="text-xl font-bold">
-          {isRTL ? 'سيكولوجية الدورات' : 'Course-Level Psychology'}
-        </h2>
+    <div className="space-y-6">
+      {/* ── Header ── */}
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+          <BookOpen className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-foreground">
+            {isRTL ? 'تحليلات الدورات' : 'Course Analytics'}
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            {isRTL ? 'أداء الدورات وتتبع الطلاب' : 'Course performance & student tracking'}
+          </p>
+        </div>
       </div>
 
-      {/* Summary */}
+      {/* ── Summary Stats ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Layers className="w-4 h-4 text-primary" />
-              <span className="text-xs text-muted-foreground">
-                {isRTL ? 'إجمالي الدورات' : 'Total Courses'}
-              </span>
-            </div>
-            <p className="text-2xl font-bold">
-              {isLoading ? <Skeleton className="h-8 w-12" /> : data?.totalCourses || 0}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <BookOpen className="w-4 h-4 text-green-500" />
-              <span className="text-xs text-muted-foreground">
-                {isRTL ? 'الدورات المنشورة' : 'Published'}
-              </span>
-            </div>
-            <p className="text-2xl font-bold text-green-500">
-              {isLoading ? <Skeleton className="h-8 w-12" /> : data?.publishedCourses || 0}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <GraduationCap className="w-4 h-4 text-blue-500" />
-              <span className="text-xs text-muted-foreground">
-                {isRTL ? 'متوسط الإكمال' : 'Avg Completion'}
-              </span>
-            </div>
-            <p className="text-2xl font-bold text-blue-500">
-              {isLoading ? <Skeleton className="h-8 w-16" /> : `${data?.avgCompletionRate || 0}%`}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-red-500/10 to-transparent border-red-500/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
-              <span className="text-xs text-muted-foreground">
-                {isRTL ? 'مؤشر الاحتكاك' : 'Friction Index'}
-              </span>
-            </div>
-            <p className="text-2xl font-bold text-red-500">
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                `${100 - (data?.avgCompletionRate || 0)}%`
-              )}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Course Cards */}
-      <div className="grid grid-cols-1 gap-4">
-        {isLoading ? (
-          [1, 2].map(i => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <Skeleton className="h-48 w-full" />
+        {[
+          {
+            icon: Layers, iconBg: 'bg-primary/10', iconColor: 'text-primary',
+            label: isRTL ? 'إجمالي الدورات' : 'Total Courses',
+            value: data?.totalCourses || 0, valueColor: 'text-foreground',
+          },
+          {
+            icon: BookOpen, iconBg: 'bg-green-500/10', iconColor: 'text-green-500',
+            label: isRTL ? 'منشورة' : 'Published',
+            value: data?.publishedCourses || 0, valueColor: 'text-green-600 dark:text-green-400',
+          },
+          {
+            icon: GraduationCap, iconBg: 'bg-blue-500/10', iconColor: 'text-blue-500',
+            label: isRTL ? 'متوسط الإكمال' : 'Avg Completion',
+            value: `${data?.avgCompletionRate || 0}%`, valueColor: 'text-blue-600 dark:text-blue-400',
+          },
+          {
+            icon: AlertTriangle, iconBg: 'bg-red-500/10', iconColor: 'text-red-500',
+            label: isRTL ? 'مؤشر الاحتكاك' : 'Friction Index',
+            value: `${100 - (data?.avgCompletionRate || 0)}%`, valueColor: 'text-red-600 dark:text-red-400',
+          },
+        ].map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={i} className="border-border/50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-lg ${stat.iconBg} flex items-center justify-center shrink-0`}>
+                    <Icon className={`w-4 h-4 ${stat.iconColor}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground truncate">{stat.label}</p>
+                    <p className={`text-xl font-bold ${stat.valueColor}`}>
+                      {isLoading ? <Skeleton className="h-7 w-10" /> : stat.value}
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-          ))
-        ) : (
-          (data?.courses || []).filter(c => c.isPublished).map(course => {
-            const isExpanded = expandedCourse === course.id;
-            return (
-              <Card key={course.id} className="overflow-hidden">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">
-                        {isRTL ? course.title_ar || course.title : course.title}
-                      </CardTitle>
-                      <CardDescription className="flex items-center gap-2 mt-1">
-                        <Users className="w-3 h-3" />
-                        {course.totalEnrollments} {isRTL ? 'مسجل' : 'enrolled'}
-                        <span>•</span>
-                        <Layers className="w-3 h-3" />
-                        {course.totalChapters} {isRTL ? 'فصول' : 'chapters'}
-                        <span>•</span>
-                        {course.totalLessons} {isRTL ? 'دروس' : 'lessons'}
-                      </CardDescription>
-                    </div>
-                    <Badge className={getHealthColor(course.completionRate)}>
-                      {course.completionRate}% {isRTL ? 'إكمال' : 'completion'}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Completion Funnel */}
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="p-2 bg-muted/30 rounded-lg">
-                      <p className="text-lg font-bold">{course.totalEnrollments}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {isRTL ? 'مسجلون' : 'Enrolled'}
-                      </p>
-                    </div>
-                    <div className="p-2 bg-muted/30 rounded-lg">
-                      <p className="text-lg font-bold text-yellow-500">
-                        {course.totalEnrollments - course.completedEnrollments}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {isRTL ? 'قيد التقدم' : 'In Progress'}
-                      </p>
-                    </div>
-                    <div className="p-2 bg-muted/30 rounded-lg">
-                      <p className="text-lg font-bold text-green-500">{course.completedEnrollments}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {isRTL ? 'أكملوا' : 'Completed'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Key Metrics */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <TrendingDown className="w-4 h-4 text-red-500" />
-                        <span className="text-sm">
-                          {isRTL ? 'لم يبدأوا الدرس الثاني' : 'Never start lesson 2'}
-                        </span>
-                      </div>
-                      <span className={`font-bold ${getLeakageColor(course.neverStartLesson2Pct)}`}>
-                        {course.neverStartLesson2Pct}%
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-orange-500" />
-                        <span className="text-sm">
-                          {isRTL ? 'متوسط التسرب بين الدروس' : 'Avg lesson leakage'}
-                        </span>
-                      </div>
-                      <span className={`font-bold ${getLeakageColor(course.avgLeakageRate)}`}>
-                        {course.avgLeakageRate}%
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-blue-500" />
-                        <span className="text-sm">
-                          {isRTL ? 'متوسط أيام حتى التوقف' : 'Avg days to drop-off'}
-                        </span>
-                      </div>
-                      <span className="font-bold">{course.avgTimeToDropoffDays} {isRTL ? 'يوم' : 'days'}</span>
-                    </div>
-                  </div>
-
-                  {/* Completion Progress */}
-                  <div className="pt-2 border-t border-border">
-                    <div className="flex items-center justify-between text-sm mb-1">
-                      <span className="text-muted-foreground">
-                        {isRTL ? 'تقدم الإكمال' : 'Completion Progress'}
-                      </span>
-                      <span className="font-medium">{course.completionRate}%</span>
-                    </div>
-                    <Progress value={course.completionRate} className="h-2" />
-                  </div>
-
-                  {/* Toggle Students */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => toggleCourse(course.id)}
-                  >
-                    <Users className="w-4 h-4 me-2" />
-                    {isRTL ? 'الطلاب' : 'Students'}
-                    {isExpanded ? (
-                      <ChevronUp className="w-4 h-4 ms-auto" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 ms-auto" />
-                    )}
-                  </Button>
-
-                  {/* Inline Students Panel */}
-                  {isExpanded && (
-                    <CourseStudentsPanel courseId={course.id} isRTL={isRTL} />
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })
-        )}
-        {!isLoading && (!data?.courses || data.courses.filter(c => c.isPublished).length === 0) && (
-          <Card className="col-span-full">
-            <CardContent className="p-8 text-center text-muted-foreground">
-              {isRTL ? 'لا توجد دورات منشورة بعد' : 'No published courses yet'}
-            </CardContent>
-          </Card>
-        )}
+          );
+        })}
       </div>
+
+      {/* ── Master-Detail Layout ── */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-4 space-y-2">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
+          </div>
+          <div className="lg:col-span-8">
+            <Skeleton className="h-96 w-full rounded-xl" />
+          </div>
+        </div>
+      ) : publishedCourses.length === 0 ? (
+        <Card className="border-border/50">
+          <CardContent className="p-12 text-center">
+            <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <p className="text-muted-foreground font-medium">
+              {isRTL ? 'لا توجد دورات منشورة بعد' : 'No published courses yet'}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          {/* Course Selector Sidebar */}
+          <div className="lg:col-span-4 xl:col-span-3 space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-3">
+              {isRTL ? 'الدورات' : 'Courses'} ({publishedCourses.length})
+            </p>
+            {publishedCourses.map((course) => {
+              const isSelected = selectedCourse?.id === course.id;
+              return (
+                <button
+                  key={course.id}
+                  onClick={() => setSelectedCourseId(course.id)}
+                  className={`w-full text-start p-3.5 rounded-xl border transition-all duration-200 ${
+                    isSelected
+                      ? 'bg-primary/5 border-primary/30 shadow-sm ring-1 ring-primary/20'
+                      : 'bg-card border-border/50 hover:border-border hover:bg-muted/30'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <HealthDot rate={course.completionRate} />
+                    <div className="flex-1 min-w-0 -mt-0.5">
+                      <p className={`text-sm font-semibold truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                        {isRTL ? course.title_ar || course.title : course.title}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {course.totalEnrollments}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Layers className="w-3 h-3" />
+                          {course.totalLessons}
+                        </span>
+                        <span className="font-semibold tabular-nums">
+                          {course.completionRate}%
+                        </span>
+                      </div>
+                      {/* Mini progress bar */}
+                      <div className="h-1 rounded-full bg-muted mt-2 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary/60 transition-all duration-500"
+                          style={{ width: `${course.completionRate}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Detail Panel */}
+          <div className="lg:col-span-8 xl:col-span-9">
+            <AnimatePresence mode="wait">
+              {selectedCourse && (
+                <motion.div
+                  key={selectedCourse.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Card className="border-border/50 overflow-hidden">
+                    {/* Course header */}
+                    <div className="px-6 pt-6 pb-4 border-b border-border/50">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <h3 className="text-lg font-bold text-foreground truncate">
+                            {isRTL ? selectedCourse.title_ar || selectedCourse.title : selectedCourse.title}
+                          </h3>
+                          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-3 flex-wrap">
+                            <span className="flex items-center gap-1">
+                              <Users className="w-3.5 h-3.5" />
+                              {selectedCourse.totalEnrollments} {isRTL ? 'مسجل' : 'enrolled'}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Layers className="w-3.5 h-3.5" />
+                              {selectedCourse.totalChapters} {isRTL ? 'فصول' : 'chapters'}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <BookOpen className="w-3.5 h-3.5" />
+                              {selectedCourse.totalLessons} {isRTL ? 'دروس' : 'lessons'}
+                            </span>
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <HealthDot rate={selectedCourse.completionRate} />
+                          <span className="text-sm font-bold tabular-nums">
+                            {selectedCourse.completionRate}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tabs: Analytics | Students */}
+                    <Tabs defaultValue="analytics" className="w-full">
+                      <div className="px-6 border-b border-border/50">
+                        <TabsList className="bg-transparent h-auto p-0 gap-6">
+                          <TabsTrigger
+                            value="analytics"
+                            className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-0 pb-3 pt-3 text-sm font-medium"
+                          >
+                            <BarChart3 className="w-4 h-4 me-2" />
+                            {isRTL ? 'التحليلات' : 'Analytics'}
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="students"
+                            className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-0 pb-3 pt-3 text-sm font-medium"
+                          >
+                            <Users className="w-4 h-4 me-2" />
+                            {isRTL ? 'الطلاب' : 'Students'}
+                            <Badge variant="secondary" className="ms-2 text-[10px] px-1.5 py-0">
+                              {selectedCourse.totalEnrollments}
+                            </Badge>
+                          </TabsTrigger>
+                        </TabsList>
+                      </div>
+
+                      <div className="p-6">
+                        <TabsContent value="analytics" className="m-0">
+                          <CourseAnalyticsPanel course={selectedCourse} isRTL={isRTL} />
+                        </TabsContent>
+                        <TabsContent value="students" className="m-0">
+                          <CourseStudentsPanel courseId={selectedCourse.id} isRTL={isRTL} />
+                        </TabsContent>
+                      </div>
+                    </Tabs>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
