@@ -5,7 +5,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 
 declare global {
   interface Window {
-    goSell: any;
+    CardSDK: any;
   }
 }
 
@@ -16,19 +16,19 @@ interface TapCardFormProps {
   setIsSubmitting: (val: boolean) => void;
 }
 
-const SCRIPT_URL = 'https://goSellJSLib.b-cdn.net/v2.0.0/js/gosell.js';
-const CONTAINER_ID = 'tap-card-container';
+const SCRIPT_URL = 'https://tap-sdks.b-cdn.net/card/1.0.0/index.js';
+const CONTAINER_ID = 'card-sdk-id';
 
 /* ── Brand hex values derived from design tokens ── */
 const BRAND = {
-  foreground: '#C6BFAA',       // --foreground  (sand)
-  mutedForeground: '#8D8D8D',  // --muted-foreground (gray)
-  primary: '#CC4E1D',          // --primary (accent orange)
-  destructive: '#E5443B',      // --destructive
-  cardBg: '#1F2526',           // --card
-  border: '#2E3233',           // --border
-  mutedBg: '#272B2C',          // --muted
-  nearBlack: '#1C1D1D',        // --near-black / background
+  foreground: '#C6BFAA',
+  mutedForeground: '#8D8D8D',
+  primary: '#CC4E1D',
+  destructive: '#E5443B',
+  cardBg: '#2E3233',
+  border: '#C6BFAA',
+  mutedBg: '#272B2C',
+  nearBlack: '#1C1D1D',
 } as const;
 
 const TapCardForm: React.FC<TapCardFormProps> = ({
@@ -42,19 +42,20 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const initialized = useRef(false);
+  const unmountRef = useRef<(() => void) | null>(null);
 
-  const initGoSell = useCallback(async () => {
+  const initCardSDK = useCallback(async () => {
     if (initialized.current) return;
     initialized.current = true;
 
     try {
-      /* 1 — Fetch public key from backend */
+      /* 1 — Fetch public key */
       const { data, error: fnErr } = await supabase.functions.invoke('tap-config');
       if (fnErr || !data?.public_key) {
         throw new Error(isRTL ? 'فشل تحميل إعدادات الدفع' : 'Failed to load payment config');
       }
 
-      /* 2 — Load goSell script if not present */
+      /* 2 — Load Card SDK V2 script */
       if (!document.querySelector(`script[src="${SCRIPT_URL}"]`)) {
         await new Promise<void>((resolve, reject) => {
           const script = document.createElement('script');
@@ -66,99 +67,86 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
         });
       }
 
-      /* 3 — Wait for goSell to be available on window */
+      /* 3 — Wait for CardSDK */
       let attempts = 0;
-      while (!window.goSell && attempts < 30) {
-        await new Promise(r => setTimeout(r, 100));
+      while (!window.CardSDK && attempts < 40) {
+        await new Promise(r => setTimeout(r, 150));
         attempts++;
       }
-      if (!window.goSell) {
+      if (!window.CardSDK) {
         throw new Error(isRTL ? 'فشل تهيئة بوابة الدفع' : 'Payment gateway failed to initialize');
       }
 
-      /* 4 — Ensure the container DOM node exists before mounting */
+      /* 4 — Ensure container exists */
       if (!document.getElementById(CONTAINER_ID)) {
         throw new Error('Card container not found in DOM');
       }
 
-      /* 5 — Detect dark/light theme from current CSS vars */
-      const isDark = (() => {
-        const bg = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
-        // Lightness < 30% ➜ dark
-        const parts = bg.replace(/%/g, '').split(/\s+/).map(Number);
-        return parts.length >= 3 && parts[2] < 30;
-      })();
+      /* 5 — Render via Card SDK V2 */
+      const {
+        renderTapCard,
+        Theme,
+        Currencies,
+        Direction,
+        Edges,
+        Locale,
+      } = window.CardSDK;
 
-      /* 6 — Initialize goSell Elements with full appearance overrides */
-      window.goSell.goSellElements({
-        containerID: CONTAINER_ID,
-        gateway: {
-          publicKey: data.public_key,
-          language: 'ar',
-          locale: 'ar',
-          supportedCurrencies: ['SAR', 'KWD', 'USD', 'AED', 'BHD', 'QAR', 'OMR', 'EGP'],
-          supportedPaymentMethods: 'all',
-          notifications: 'msg',
-
-          /* ── Labels ── */
-          labels: {
-            cardNumber: isRTL ? 'رقم البطاقة' : 'Card Number',
-            expirationDate: 'MM/YY',
-            cvv: 'CVV',
-            cardHolder: isRTL ? 'اسم حامل البطاقة' : 'Name on Card',
-            actionButton: isRTL ? 'ادفع' : 'Pay',
-          },
-
-          /* ── Appearance — explicit dark mode ── */
-          appearance: {
-            theme: 'dark',
-            appearanceMode: 'dark',
-          },
-
-          /* ── Style overrides applied inside the iframe ── */
-          style: {
-            base: {
-              color: '#FFFFFF',
-              lineHeight: '24px',
-              fontFamily: "'Tajawal', sans-serif",
-              fontSmoothing: 'antialiased',
-              fontSize: '16px',
-              fontWeight: '400',
-              textAlign: 'right',
-              direction: 'rtl',
-              backgroundColor: 'transparent',
-              '::placeholder': {
-                color: '#8D8D8D',
-                fontSize: '14px',
-                fontWeight: '300',
-              },
-            },
-            invalid: {
-              color: BRAND.destructive,
-              iconColor: BRAND.destructive,
-            },
-          },
-
-          /* ── Theme override ── */
-          theme: 'dark',
-
-          /* ── Token callback ── */
-          callback: (response: any) => {
-            setIsSubmitting(false);
-            if (response?.id) {
-              onToken(response.id);
-            } else if (response?.error) {
-              onError(
-                response.error?.message ||
-                (isRTL ? 'فشل معالجة البطاقة' : 'Card processing failed')
-              );
-            }
-          },
+      const { unmount } = renderTapCard(CONTAINER_ID, {
+        publicKey: data.public_key,
+        merchant: {
+          id: '',
         },
-        token: true,
+        transaction: {
+          currency: Currencies.SAR,
+        },
+        acceptance: {
+          supportedBrands: ['VISA', 'MASTERCARD', 'AMERICAN_EXPRESS'],
+          supportedCards: 'ALL',
+        },
+        fields: {
+          cardHolder: true,
+        },
+        addons: {
+          displayPaymentBrands: true,
+          loader: true,
+          saveCard: false,
+        },
+        interface: {
+          locale: Locale.AR,
+          theme: Theme.DARK,
+          edges: Edges.CURVED,
+          direction: Direction.RTL,
+        },
+        onReady: () => {
+          console.log('[TapCardSDK] Ready');
+          setLoading(false);
+        },
+        onFocus: () => {},
+        onBinIdentification: (data: any) => {
+          console.log('[TapCardSDK] BIN:', data);
+        },
+        onSuccess: (data: any) => {
+          console.log('[TapCardSDK] Success:', data);
+          setIsSubmitting(false);
+          if (data?.id) {
+            onToken(data.id);
+          }
+        },
+        onError: (err: any) => {
+          console.error('[TapCardSDK] Error:', err);
+          setIsSubmitting(false);
+          onError(
+            err?.message ||
+            (isRTL ? 'فشل معالجة البطاقة' : 'Card processing failed')
+          );
+        },
+        onValidInput: (valid: boolean) => {
+          console.log('[TapCardSDK] Valid input:', valid);
+        },
       });
 
-      setLoading(false);
+      unmountRef.current = unmount;
     } catch (err: any) {
       console.error('[TapCardForm] Init error:', err);
       setError(err.message);
@@ -167,17 +155,25 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
   }, [isRTL, onToken, onError, setIsSubmitting]);
 
   useEffect(() => {
-    initGoSell();
-  }, [initGoSell]);
+    initCardSDK();
+    return () => {
+      unmountRef.current?.();
+    };
+  }, [initCardSDK]);
 
   /* ── Submit handler exposed globally for the checkout modal ── */
   const handleSubmit = useCallback(() => {
-    if (!window.goSell) {
+    if (!window.CardSDK) {
       onError(isRTL ? 'بوابة الدفع غير جاهزة' : 'Payment gateway not ready');
       return;
     }
     setIsSubmitting(true);
-    window.goSell.submit();
+    // Card SDK V2 auto-submits via onSuccess callback when card is tokenized
+    // Trigger tokenization via the SDK's submit
+    const submitBtn = document.querySelector(`#${CONTAINER_ID} .tap-submit-btn, #${CONTAINER_ID} button[type="submit"]`) as HTMLButtonElement;
+    if (submitBtn) {
+      submitBtn.click();
+    }
   }, [isRTL, onError, setIsSubmitting]);
 
   useEffect(() => {
@@ -206,24 +202,22 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
         </div>
       )}
 
-      {/* Container div with specific ID — goSell mounts its iframe here */}
+      {/* Container — Card SDK V2 mounts here */}
       <div
         id={CONTAINER_ID}
         ref={containerRef}
-        className={`tap-card-container ${loading ? 'hidden' : ''}`}
+        className={`tap-card-sdk-container ${loading ? 'hidden' : ''}`}
         dir="rtl"
       />
 
-      {/* Scoped styles for the Tap card form & goSell overlays */}
+      {/* Scoped styles for Card SDK V2 dark theme + brand overrides */}
       <style>{`
-        /* ─────────────────────────────────────
-           Container — matches site card style
-           ───────────────────────────────────── */
-        .tap-card-container {
-          min-height: 160px;
+        /* ── Container ── */
+        .tap-card-sdk-container {
+          min-height: 200px;
           border-radius: 0.75rem;
-          padding: 12px;
-          background: ${BRAND.nearBlack} !important;
+          padding: 16px;
+          background: ${BRAND.cardBg} !important;
           border: 1px solid ${BRAND.border};
           transition: border-color 0.3s ease, box-shadow 0.3s ease;
           overflow: hidden;
@@ -231,75 +225,42 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
           text-align: right;
         }
         @media (min-width: 640px) {
-          .tap-card-container {
-            min-height: 180px;
-            padding: 16px;
+          .tap-card-sdk-container {
+            min-height: 220px;
+            padding: 20px;
           }
         }
-        .tap-card-container:focus-within {
+        .tap-card-sdk-container:focus-within {
           border-color: ${BRAND.primary};
-          box-shadow: 0 0 0 2px ${BRAND.primary}26;
+          box-shadow: 0 0 0 2px ${BRAND.primary}33;
         }
 
-        /* ─────────────────────────────────────
-           Iframe sizing — full-width responsive
-           ───────────────────────────────────── */
-        .tap-card-container iframe {
+        /* ── Iframe ── */
+        .tap-card-sdk-container iframe {
           width: 100% !important;
-          min-height: 140px !important;
+          min-height: 180px !important;
           max-width: 100% !important;
-          background: ${BRAND.nearBlack} !important;
+          border: none !important;
+          background: transparent !important;
           color-scheme: dark !important;
         }
         @media (min-width: 640px) {
-          .tap-card-container iframe {
-            min-height: 160px !important;
+          .tap-card-sdk-container iframe {
+            min-height: 200px !important;
           }
         }
 
-        /* ─────────────────────────────────────
-           Font override — Tajawal everywhere
-           ───────────────────────────────────── */
-        .tap-card-container,
-        .tap-card-container * {
+        /* ── Font ── */
+        .tap-card-sdk-container,
+        .tap-card-sdk-container * {
           font-family: 'Tajawal', 'Almarai', 'Roboto', sans-serif !important;
         }
 
-        /* ─────────────────────────────────────
-           goSell notification bar
-           ───────────────────────────────────── */
-        .gosell-gateway-msg {
-          font-family: 'Tajawal', 'Almarai', sans-serif !important;
-          border-radius: 8px !important;
-          font-size: 12px !important;
+        /* ── Card SDK V2 internal overrides ── */
+        #${CONTAINER_ID} .Input,
+        #${CONTAINER_ID} input {
           background: ${BRAND.mutedBg} !important;
-          color: ${BRAND.foreground} !important;
-          border: 1px solid ${BRAND.border} !important;
-          direction: rtl !important;
-          text-align: right !important;
-        }
-        @media (min-width: 640px) {
-          .gosell-gateway-msg {
-            font-size: 13px !important;
-          }
-        }
-
-        /* ─────────────────────────────────────
-           goSell overlay/modal theming
-           ───────────────────────────────────── */
-        .gosell-gateway,
-        .gosell-gateway .gosell-gateway-form {
-          background: ${BRAND.cardBg} !important;
-          color: ${BRAND.foreground} !important;
-          direction: rtl !important;
-          text-align: right !important;
-        }
-
-        /* Input fields — explicit 1px solid border */
-        .gosell-gateway .gosell-gateway-form input,
-        .gosell-gateway .gosell-gateway-form select {
-          background: ${BRAND.mutedBg} !important;
-          color: ${BRAND.foreground} !important;
+          color: #FFFFFF !important;
           border: 1px solid ${BRAND.border} !important;
           border-radius: 8px !important;
           font-size: 16px !important;
@@ -309,26 +270,30 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
           font-family: 'Tajawal', 'Almarai', sans-serif !important;
           transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
         }
-        .gosell-gateway .gosell-gateway-form input::placeholder {
+        #${CONTAINER_ID} .Input::placeholder,
+        #${CONTAINER_ID} input::placeholder {
           color: ${BRAND.mutedForeground} !important;
         }
 
-        /* Focus state — primary brand ring */
-        .gosell-gateway .gosell-gateway-form input:focus,
-        .gosell-gateway .gosell-gateway-form select:focus {
+        /* Focus — primary ring */
+        #${CONTAINER_ID} .Input:focus,
+        #${CONTAINER_ID} .Input--focus,
+        #${CONTAINER_ID} input:focus {
           border-color: ${BRAND.primary} !important;
-          box-shadow: 0 0 0 2px ${BRAND.primary}26 !important;
+          box-shadow: 0 0 0 2px ${BRAND.primary}33 !important;
           outline: none !important;
         }
 
         /* Invalid state */
-        .gosell-gateway .gosell-gateway-form input.invalid,
-        .gosell-gateway .gosell-gateway-form input:invalid {
+        #${CONTAINER_ID} .Input--invalid,
+        #${CONTAINER_ID} input:invalid,
+        #${CONTAINER_ID} .Input--error {
           border-color: ${BRAND.destructive} !important;
         }
 
-        /* Labels — RTL, brand muted color */
-        .gosell-gateway .gosell-gateway-form label {
+        /* Labels — RTL */
+        #${CONTAINER_ID} label,
+        #${CONTAINER_ID} .Label {
           color: ${BRAND.mutedForeground} !important;
           font-family: 'Tajawal', 'Almarai', sans-serif !important;
           direction: rtl !important;
@@ -337,13 +302,21 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
           font-weight: 500 !important;
         }
 
-        /* Buttons inside goSell modal */
-        .gosell-gateway .gosell-gateway-form button,
-        .gosell-gateway .gosell-gateway-form .gosell-gateway-btn {
+        /* Buttons */
+        #${CONTAINER_ID} button,
+        #${CONTAINER_ID} .tap-submit-btn {
           background: ${BRAND.primary} !important;
           border-color: ${BRAND.primary} !important;
           font-family: 'Tajawal', 'Almarai', sans-serif !important;
           border-radius: 8px !important;
+          color: #FFFFFF !important;
+        }
+
+        /* Card brands bar */
+        #${CONTAINER_ID} .payment-brands,
+        #${CONTAINER_ID} .brands-container {
+          direction: rtl !important;
+          justify-content: flex-end !important;
         }
       `}</style>
     </div>
