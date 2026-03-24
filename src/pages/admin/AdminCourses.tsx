@@ -1180,12 +1180,6 @@ const AdminCourses: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* View Students Dialog */}
-      <CourseStudentsDialog
-        courseId={viewStudentsCourse?.id || null}
-        courseTitle={viewStudentsCourse?.title || ''}
-        onClose={() => setViewStudentsCourse(null)}
-      />
     </div>
     </AdminLayout>
   );
