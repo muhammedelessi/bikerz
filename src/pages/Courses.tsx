@@ -14,6 +14,7 @@ import CourseCard from '@/components/course/CourseCard';
 interface Enrollment {
   course_id: string;
   progress_percentage: number;
+  completed_at: string | null;
 }
 
 const Courses: React.FC = () => {
@@ -65,7 +66,7 @@ const Courses: React.FC = () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from('course_enrollments')
-        .select('course_id, progress_percentage')
+        .select('course_id, progress_percentage, completed_at')
         .eq('user_id', user.id);
       if (error) throw error;
       return (data || []) as Enrollment[];

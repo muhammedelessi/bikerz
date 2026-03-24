@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Play, Clock, BookOpen, ArrowRight, ArrowLeft, Star } from "lucide-react";
+import { Play, Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ export interface CourseCardProps {
   };
   index?: number;
   inView?: boolean;
-  enrollment?: { progress_percentage: number } | null;
+  enrollment?: { progress_percentage: number; completed_at?: string | null } | null;
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = true, enrollment }) => {
@@ -44,6 +44,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   const rating = course.base_rating || 0;
   const reviewCount = course.base_review_count || 0;
   const isEnrolled = !!enrollment;
+  const isCompleted = isEnrolled && (enrollment.progress_percentage >= 100 || !!enrollment.completed_at);
 
   const formatDuration = (minutes: number) => {
     if (!minutes) return isRTL ? "0 ساعة" : "0h";
@@ -66,11 +67,16 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
       <Link to={`/courses/${course.id}`} className="block h-full">
         <div className="group relative h-full rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-primary/50 hover:shadow-[0_8px_40px_hsl(var(--primary)/0.15)]">
           {/* Enrolled indicator */}
-          {isEnrolled && (
+          {isCompleted ? (
+            <div className="absolute top-3 start-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-600/90 backdrop-blur-sm text-white text-xs font-semibold">
+              <Trophy className="w-3 h-3" />
+              {isRTL ? "مكتمل" : "Completed"}
+            </div>
+          ) : isEnrolled ? (
             <div className="absolute top-3 start-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/90 backdrop-blur-sm text-primary-foreground text-xs font-semibold">
               {isRTL ? "مسجّل" : "Enrolled"}
             </div>
-          )}
+          ) : null}
 
           {/* Image Container */}
           <div className="relative aspect-[16/9] overflow-hidden">
@@ -132,6 +138,14 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
 
             {/* Enrollment progress */}
             {isEnrolled && enrollment && (
+              isCompleted ? (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                <Trophy className="w-4 h-4 text-green-500" />
+                <span className="text-sm font-semibold text-green-600 dark:text-green-400">
+                  {isRTL ? '🎉 أكملت الدورة!' : '🎉 Course Completed!'}
+                </span>
+              </div>
+            ) : (
               <div>
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <span className="text-muted-foreground">
@@ -143,6 +157,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
                 </div>
                 <Progress value={enrollment.progress_percentage} className="h-1.5" />
               </div>
+              )
             )}
 
             {/* Divider */}
@@ -174,11 +189,13 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
               className="w-full h-11 text-sm font-bold group/btn relative overflow-hidden"
             >
               <span className="relative z-10 flex items-center gap-2">
-                {isEnrolled
-                  ? (isRTL ? "أكمل التعلم" : "Continue Learning")
-                  : (isRTL
-                    ? `اشترك الآن – ${priceInfo.finalPrice} ${sym}`
-                    : `Subscribe now – ${priceInfo.finalPrice} ${sym}`)}
+                {isCompleted
+                  ? (isRTL ? "مراجعة الدورة" : "Review Course")
+                  : isEnrolled
+                    ? (isRTL ? "أكمل التعلم" : "Continue Learning")
+                    : (isRTL
+                      ? `اشترك الآن – ${priceInfo.finalPrice} ${sym}`
+                      : `Subscribe now – ${priceInfo.finalPrice} ${sym}`)}
                 <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
               </span>
             </Button>

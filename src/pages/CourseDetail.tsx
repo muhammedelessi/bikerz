@@ -694,10 +694,19 @@ const CourseDetail: React.FC = () => {
                             {progressPercentage}%
                           </span>
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2 text-primary mb-1">
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span className="font-semibold text-sm">{isRTL ? 'مسجّل' : 'Enrolled'}</span>
+                         <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            {progressPercentage >= 100 ? (
+                              <>
+                                <Trophy className="w-4 h-4 text-green-500" />
+                                <span className="font-semibold text-sm text-green-600 dark:text-green-400">{isRTL ? 'مكتمل' : 'Completed'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="w-4 h-4 text-primary" />
+                                <span className="font-semibold text-sm text-primary">{isRTL ? 'مسجّل' : 'Enrolled'}</span>
+                              </>
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground">
                             {completedLessons} / {totalLessons} {isRTL ? 'مكتمل' : 'completed'}
