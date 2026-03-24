@@ -382,17 +382,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const effectiveCity = (isOtherCity || isOtherCountry) ? cityManual.trim() : city.trim();
   const effectiveCountry = isOtherCountry ? countryManual.trim() : country.trim();
 
+  // Extract actual prefix from composite value (e.g. "+966_SA" → "+966")
+  const actualPrefix = phonePrefix ? phonePrefix.split('_')[0] : '';
+
   // Helper to get the full phone number with prefix
   const getFullPhone = useCallback(() => {
     const rawPhone = phone.trim();
     if (!rawPhone) return '';
-    // If user already typed a + prefix, don't double-add
     if (rawPhone.startsWith('+')) return rawPhone;
-    if (phonePrefix && !rawPhone.startsWith(phonePrefix)) {
-      return `${phonePrefix}${rawPhone}`;
+    if (actualPrefix && !rawPhone.startsWith(actualPrefix)) {
+      return `${actualPrefix}${rawPhone}`;
     }
     return rawPhone;
-  }, [phone, phonePrefix]);
+  }, [phone, actualPrefix]);
 
   const hasNamePrefilled = !!(profile?.full_name && profile.full_name.trim().length >= 3);
   
