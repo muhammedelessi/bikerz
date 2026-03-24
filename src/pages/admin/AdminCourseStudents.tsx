@@ -219,14 +219,17 @@ const AdminCourseStudents: React.FC = () => {
         const c = courseMap.get(e.course_id);
         const review = reviewMap.get(e.course_id);
         const payment = paymentMap.get(e.course_id);
+        const lessonsCompleted = completedPerCourse.get(e.course_id) || 0;
+        const totalLessonCount = totalLessonsPerCourse.get(e.course_id) || 0;
+        const realProgress = totalLessonCount > 0 ? Math.round((lessonsCompleted / totalLessonCount) * 100) : 0;
         return {
           course_id: e.course_id,
           course_title: isRTL && (c as any)?.title_ar ? (c as any).title_ar : c?.title || '-',
           enrolled_at: e.enrolled_at,
-          progress_percentage: e.progress_percentage,
+          progress_percentage: realProgress,
           completed_at: e.completed_at,
-          lessons_completed: completedPerCourse.get(e.course_id) || 0,
-          total_lessons: totalLessonsPerCourse.get(e.course_id) || 0,
+          lessons_completed: lessonsCompleted,
+          total_lessons: totalLessonCount,
           review_rating: review?.rating || null,
           review_comment: review?.comment || null,
           purchase_amount: payment?.amount || null,
