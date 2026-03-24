@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { arSA } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,14 +21,8 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { AlertCircle, Eye, EyeOff, CalendarIcon } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, User, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 
 const GoogleIcon = () => (
   <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
@@ -70,11 +63,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [gender, setGender] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState<Date>();
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +75,6 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   const nameLabel = (isRTL ? cms.name_label_ar : cms.name_label_en) || t('auth.signup.name');
   const emailLabel = (isRTL ? cms.email_label_ar : cms.email_label_en) || t('auth.signup.email');
   const passwordLabel = (isRTL ? cms.password_label_ar : cms.password_label_en) || t('auth.signup.password');
-  const confirmLabel = (isRTL ? cms.confirm_label_ar : cms.confirm_label_en) || t('auth.signup.confirmPassword');
 
   // Hide navbar on mobile when modal is open
   useEffect(() => {
@@ -124,28 +112,12 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     };
   }, [open, isIOS]);
 
-  const saveProfileAndSync = async (userId: string, fullName: string, userEmail: string, genderVal: string, dob: Date | undefined) => {
-    if (genderVal || dob) {
-      try {
-        await supabase.from('profiles').update({
-          gender: genderVal || null,
-          date_of_birth: dob ? format(dob, 'yyyy-MM-dd') : null,
-        } as any).eq('user_id', userId);
-      } catch (e) {
-        console.error('Failed to save gender/DOB:', e);
-      }
-    }
-
+  const saveProfileAndSync = async (userId: string, fullName: string, userEmail: string) => {
     try {
       await supabase.functions.invoke('ghl-sync', {
         body: {
           action: 'create_or_update_contact',
-          data: {
-            full_name: fullName,
-            email: userEmail,
-            date_of_birth: dob ? dob.toISOString().split('T')[0] : '',
-            gender: genderVal || '',
-          },
+          data: { full_name: fullName, email: userEmail },
         },
       });
     } catch (syncErr) {
@@ -163,11 +135,6 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (password !== confirmPassword) {
-      setError(t('auth.signup.passwordMismatch'));
-      return;
-    }
 
     if (password.length < 6) {
       setError(t('auth.signup.passwordTooShort'));
@@ -217,7 +184,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
         .update({ full_name: name.trim() })
         .eq('user_id', signupData.user.id);
 
-      await saveProfileAndSync(signupData.user.id, name.trim(), email.trim(), gender, dateOfBirth);
+      await saveProfileAndSync(signupData.user.id, name.trim(), email.trim());
 
       toast.success(t('auth.signup.success'));
       onOpenChange(false);
@@ -268,7 +235,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
         console.error('Failed to update profile with Google data:', e);
       }
 
-      await saveProfileAndSync(user.id, googleName, user.email || '', '', undefined);
+      await saveProfileAndSync(user.id, googleName, user.email || '');
 
       toast.success(isRTL ? 'تم التسجيل بنجاح!' : 'Signed up successfully!');
       setIsGoogleLoading(false);
@@ -280,6 +247,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
       setIsGoogleLoading(false);
     }
   };
+
   const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     if (!isIOS) return;
     const input = e.target;
@@ -290,7 +258,6 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
       }, 250);
     });
   };
-
 
   const checkProviders = async (emailValue: string) => {
     if (!emailValue || !emailValue.includes('@')) {
@@ -384,8 +351,8 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
       </div>
 
       <form onSubmit={handleLogin} className="space-y-3.5">
-        <div className="space-y-1.5">
-          <Label htmlFor="login-email" className="text-sm">{emailLabel}</Label>
+        <div className="relative">
+          <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
           <Input
             id="login-email"
             type="email"
@@ -393,9 +360,9 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
             onChange={(e) => { setEmail(e.target.value); setEmailChecked(false); setIsGoogleUser(false); }}
             onBlur={() => checkProviders(email)}
             onFocus={handleInputFocus}
-            placeholder="your@email.com"
+            placeholder={emailLabel}
             required
-            className="form-input h-10 sm:h-11 text-sm sm:text-base"
+            className="form-input h-10 sm:h-11 text-sm sm:text-base ps-10"
           />
         </div>
 
@@ -405,28 +372,26 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
           </p>
         ) : (
           <>
-            <div className="space-y-1.5">
-              <Label htmlFor="login-password" className="text-sm">{passwordLabel}</Label>
-              <div className="relative">
-                <Input
-                  id="login-password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onFocus={handleInputFocus}
-                  placeholder="••••••••"
-                  required
-                  className="form-input h-10 sm:h-11 text-sm sm:text-base pe-12"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
+            <div className="relative">
+              <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+              <Input
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onFocus={handleInputFocus}
+                placeholder={passwordLabel}
+                required
+                className="form-input h-10 sm:h-11 text-sm sm:text-base ps-10 pe-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
 
             <Button
@@ -497,129 +462,55 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3.5">
-        <div className="space-y-1.5">
-          <Label htmlFor="guest-name" className="text-sm">{nameLabel}</Label>
+        <div className="relative">
+          <User className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
           <Input
             id="guest-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             onFocus={handleInputFocus}
-            placeholder={t('auth.signup.namePlaceholder')}
+            placeholder={nameLabel}
             required
-            className="form-input h-10 sm:h-11 text-sm sm:text-base"
+            className="form-input h-10 sm:h-11 text-sm sm:text-base ps-10"
           />
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="guest-email" className="text-sm">{emailLabel}</Label>
+        <div className="relative">
+          <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
           <Input
             id="guest-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onFocus={handleInputFocus}
-            placeholder="your@email.com"
+            placeholder={emailLabel}
             required
-            className="form-input h-10 sm:h-11 text-sm sm:text-base"
+            className="form-input h-10 sm:h-11 text-sm sm:text-base ps-10"
           />
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="guest-password" className="text-sm">{passwordLabel}</Label>
-          <div className="relative">
-            <Input
-              id="guest-password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onFocus={handleInputFocus}
-              placeholder="••••••••"
-              required
-              minLength={6}
-              className="form-input h-10 sm:h-11 text-sm sm:text-base pe-12"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
-              tabIndex={-1}
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="guest-confirm-password" className="text-sm">{confirmLabel}</Label>
-          <div className="relative">
-            <Input
-              id="guest-confirm-password"
-              type={showConfirmPassword ? 'text' : 'password'}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              onFocus={handleInputFocus}
-              placeholder="••••••••"
-              required
-              className="form-input h-10 sm:h-11 text-sm sm:text-base pe-12"
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
-              tabIndex={-1}
-            >
-              {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Gender */}
-        <div className="space-y-1.5">
-          <Label className="text-sm">{isRTL ? 'الجنس' : 'Gender'}</Label>
-          <Select value={gender} onValueChange={setGender} dir={isRTL ? 'rtl' : 'ltr'}>
-            <SelectTrigger className="form-input h-10 sm:h-11 text-sm sm:text-base text-start">
-              <SelectValue placeholder={isRTL ? 'اختر الجنس' : 'Select gender'} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="male">{isRTL ? 'ذكر' : 'Male'}</SelectItem>
-              <SelectItem value="female">{isRTL ? 'أنثى' : 'Female'}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Date of Birth */}
-        <div className="space-y-1.5">
-          <Label className="text-sm">{isRTL ? 'تاريخ الميلاد' : 'Date of Birth'}</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full h-10 sm:h-11 text-sm sm:text-base justify-start font-normal form-input text-start",
-                  !dateOfBirth && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="w-4 h-4 me-2" />
-                {dateOfBirth ? format(dateOfBirth, 'PPP', { locale: isRTL ? arSA : undefined }) : (isRTL ? 'اختر التاريخ' : 'Pick a date')}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start" dir={isRTL ? 'rtl' : 'ltr'}>
-              <Calendar
-                mode="single"
-                selected={dateOfBirth}
-                onSelect={setDateOfBirth}
-                disabled={(date) => date > new Date() || date < new Date('1940-01-01')}
-                initialFocus
-                captionLayout="dropdown-buttons"
-                fromYear={1940}
-                toYear={new Date().getFullYear()}
-                locale={isRTL ? arSA : undefined}
-                dir={isRTL ? 'rtl' : 'ltr'}
-                className={cn("p-3 pointer-events-auto")}
-              />
-            </PopoverContent>
-          </Popover>
+        <div className="relative">
+          <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+          <Input
+            id="guest-password"
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onFocus={handleInputFocus}
+            placeholder={passwordLabel}
+            required
+            minLength={6}
+            className="form-input h-10 sm:h-11 text-sm sm:text-base ps-10 pe-12"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
         </div>
 
         <Button
@@ -638,7 +529,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
           {isRTL ? 'لديك حساب بالفعل؟' : 'Already have an account?'}{' '}
           <button
             type="button"
-            onClick={() => { setMode('login'); setError(null); setPassword(''); setConfirmPassword(''); }}
+            onClick={() => { setMode('login'); setError(null); setPassword(''); }}
             className="text-primary hover:underline font-medium"
           >
             {isRTL ? 'تسجيل الدخول' : 'Login'}
