@@ -532,8 +532,8 @@ const AdminPayments = () => {
                           <div className="space-y-1">
                             {getStatusBadge(payment.status, payment.source)}
                             {isFailed && payment.error_message && (
-                              <p className="text-xs text-red-500 max-w-[150px] truncate" title={payment.error_message}>
-                                {payment.error_message}
+                              <p className="text-xs text-red-500 max-w-[150px] truncate" title={safeErrorMessage(payment.error_message) || ''}>
+                                {safeErrorMessage(payment.error_message)}
                               </p>
                             )}
                           </div>
