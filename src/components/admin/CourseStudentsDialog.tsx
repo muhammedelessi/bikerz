@@ -252,7 +252,7 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
     <>
       {/* Main Students List Dialog */}
       <Dialog open={!!courseId && !selectedStudent} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] flex flex-col gap-4 p-4 sm:p-6" dir={isRTL ? 'rtl' : 'ltr'}>
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] flex flex-col gap-4 p-4 sm:p-6 overflow-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
           <DialogHeader className="space-y-1">
             <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
@@ -459,7 +459,7 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
         open={!!selectedStudent}
         onOpenChange={(open) => !open && setSelectedStudent(null)}
       >
-        <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] flex flex-col gap-4 p-4 sm:p-6" dir={isRTL ? 'rtl' : 'ltr'}>
+        <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] flex flex-col gap-4 p-4 sm:p-6 overflow-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
           <DialogHeader className="space-y-1">
             <DialogTitle className="flex items-center gap-2">
               <Button
