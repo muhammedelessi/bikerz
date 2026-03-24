@@ -138,26 +138,20 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
 
             {/* Enrollment progress */}
             {isEnrolled && enrollment && (
-              isCompleted ? (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
-                <Trophy className="w-4 h-4 text-green-500" />
-                <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-                  {isRTL ? '🎉 أكملت الدورة!' : '🎉 Course Completed!'}
-                </span>
-              </div>
-            ) : (
               <div>
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <span className="text-muted-foreground">
                     {isRTL ? "التقدم" : "Progress"}
                   </span>
-                  <span className="font-semibold text-primary">
-                    {enrollment.progress_percentage}%
+                  <span className={`font-semibold ${isCompleted ? 'text-green-600 dark:text-green-400' : 'text-primary'}`}>
+                    {isCompleted ? (isRTL ? 'مكتمل' : 'Completed') : `${enrollment.progress_percentage}%`}
                   </span>
                 </div>
-                <Progress value={enrollment.progress_percentage} className="h-1.5" />
+                <Progress
+                  value={isCompleted ? 100 : enrollment.progress_percentage}
+                  className={`h-1.5 ${isCompleted ? '[&>div]:bg-green-500' : ''}`}
+                />
               </div>
-              )
             )}
 
             {/* Divider */}
@@ -186,17 +180,27 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
             {/* CTA Button */}
             <Button
               variant="default"
-              className="w-full h-11 text-sm font-bold group/btn relative overflow-hidden"
+              className={`w-full h-11 text-sm font-bold group/btn relative overflow-hidden ${isCompleted ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
             >
               <span className="relative z-10 flex items-center gap-2">
-                {isCompleted
-                  ? (isRTL ? "مراجعة الدورة" : "Review Course")
-                  : isEnrolled
-                    ? (isRTL ? "أكمل التعلم" : "Continue Learning")
-                    : (isRTL
+                {isCompleted ? (
+                  <>
+                    <Trophy className="w-4 h-4" />
+                    {isRTL ? 'مكتمل ✓' : 'Completed ✓'}
+                  </>
+                ) : isEnrolled ? (
+                  <>
+                    {isRTL ? "أكمل التعلم" : "Continue Learning"}
+                    <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
+                  </>
+                ) : (
+                  <>
+                    {isRTL
                       ? `اشترك الآن – ${priceInfo.finalPrice} ${sym}`
-                      : `Subscribe now – ${priceInfo.finalPrice} ${sym}`)}
-                <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
+                      : `Subscribe now – ${priceInfo.finalPrice} ${sym}`}
+                    <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
+                  </>
+                )}
               </span>
             </Button>
           </div>
