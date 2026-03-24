@@ -303,7 +303,7 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
           </div>
 
           {/* Student List */}
-          <ScrollArea className="flex-1 min-h-0 -mx-4 sm:-mx-6 px-4 sm:px-6">
+          <ScrollArea className="flex-1 min-h-0" style={{ maxHeight: 'calc(90vh - 320px)' }}>
             {isLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
