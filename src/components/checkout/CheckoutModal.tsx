@@ -394,7 +394,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   }, [phone, phonePrefix]);
 
   const hasNamePrefilled = !!(profile?.full_name && profile.full_name.trim().length >= 3);
-  const hasPhonePrefilled = !!(profile?.phone && profile.phone.trim().length >= 7);
+  
 
   const fullPhone = getFullPhone();
   const isInfoValid = fullName.trim().length >= 3 
