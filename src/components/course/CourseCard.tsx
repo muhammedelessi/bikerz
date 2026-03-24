@@ -67,11 +67,16 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
       <Link to={`/courses/${course.id}`} className="block h-full">
         <div className="group relative h-full rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-primary/50 hover:shadow-[0_8px_40px_hsl(var(--primary)/0.15)]">
           {/* Enrolled indicator */}
-          {isEnrolled && (
+          {isCompleted ? (
+            <div className="absolute top-3 start-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-600/90 backdrop-blur-sm text-white text-xs font-semibold">
+              <Trophy className="w-3 h-3" />
+              {isRTL ? "مكتمل" : "Completed"}
+            </div>
+          ) : isEnrolled ? (
             <div className="absolute top-3 start-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/90 backdrop-blur-sm text-primary-foreground text-xs font-semibold">
               {isRTL ? "مسجّل" : "Enrolled"}
             </div>
-          )}
+          ) : null}
 
           {/* Image Container */}
           <div className="relative aspect-[16/9] overflow-hidden">
