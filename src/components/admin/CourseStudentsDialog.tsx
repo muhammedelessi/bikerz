@@ -354,7 +354,7 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
                                 <p className="font-medium text-foreground truncate">
                                   {student.profile?.full_name || (isRTL ? 'بدون اسم' : 'No name')}
                                 </p>
-                                <p className="text-xs text-muted-foreground truncate" dir="ltr" className={`text-xs text-muted-foreground truncate ${isRTL ? 'text-end' : ''}`}>
+                                <p className={`text-xs text-muted-foreground truncate ${isRTL ? 'text-end' : ''}`} dir="ltr" style={{ unicodeBidi: 'plaintext' as any }}>
                                   {student.email || student.profile?.phone || '-'}
                                 </p>
                               </div>
