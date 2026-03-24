@@ -1181,18 +1181,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <Button
                         className="w-full h-12 rounded-xl text-base font-bold shadow-glow hover:shadow-glow-lg transition-all duration-300"
                         variant="cta"
-                        onClick={() => handleSubmitPayment('card')}
-                        disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady}
+                        onClick={handleInlineCardSubmit}
+                        disabled={paymentStatus === 'processing' || guestSigningUp || cardSubmitting || !isPaymentReady}
                       >
                         {guestSigningUp ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin me-2" />
                             <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
                           </>
-                        ) : paymentStatus === 'processing' ? (
+                        ) : cardSubmitting || paymentStatus === 'processing' ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin me-2" />
-                            <span>{isRTL ? 'جاري التحويل لصفحة الدفع...' : 'Redirecting to payment...'}</span>
+                            <span>{isRTL ? 'جاري معالجة الدفع...' : 'Processing payment...'}</span>
                           </>
                         ) : (
                           <>
