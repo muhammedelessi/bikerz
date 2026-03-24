@@ -44,23 +44,13 @@ const Signup: React.FC = () => {
   const returnTo = searchParams.get('returnTo');
   const { data: authContent } = useAuthPageContent();
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [gender, setGender] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState<Date>();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showProfileWizard, setShowProfileWizard] = useState(false);
-
-  // Google follow-up state
-  const [showGoogleFollowUp, setShowGoogleFollowUp] = useState(false);
-  const [googleGender, setGoogleGender] = useState('');
-  const [googleDateOfBirth, setGoogleDateOfBirth] = useState<Date>();
-  const [googleFollowUpLoading, setGoogleFollowUpLoading] = useState(false);
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const { sendFormData } = useGHLFormWebhook();
