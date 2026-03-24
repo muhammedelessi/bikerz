@@ -745,6 +745,14 @@ const CourseDetail: React.FC = () => {
                               {isRTL ? '🎉 أكملت الدورة!' : '🎉 Course completed!'}
                             </span>
                           </div>
+                          {resumeLesson && (
+                            <Button className="w-full h-12 text-base font-bold" asChild>
+                              <Link to={`/courses/${id}/lessons/${resumeLesson.id}`}>
+                                <BookOpen className="w-5 h-5 me-2" />
+                                {isRTL ? 'عرض الدورة' : 'View Course'}
+                              </Link>
+                            </Button>
+                          )}
                           {!hasReviewed && (
                             <Button
                               className="w-full h-12 text-base font-bold border-yellow-500/50 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/10"
@@ -753,7 +761,7 @@ const CourseDetail: React.FC = () => {
                                 document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' });
                               }}
                             >
-                              <Target className="w-5 h-5 me-2 text-yellow-500" />
+                              <Star className="w-5 h-5 me-2 fill-yellow-500 text-yellow-500" />
                               {isRTL ? 'قيّم الدورة' : 'Rate this Course'}
                             </Button>
                           )}
