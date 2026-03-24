@@ -24,6 +24,7 @@ import {
   AlertCircle,
   ShoppingCart,
   Target,
+  Star,
   Zap,
   Trophy,
   BarChart3,
