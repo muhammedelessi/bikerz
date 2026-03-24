@@ -54,24 +54,6 @@ interface EnrolledStudent {
   email: string | null;
 }
 
-interface StudentDetail {
-  allEnrollments: {
-    course_id: string;
-    course_title: string;
-    enrolled_at: string;
-    progress_percentage: number;
-    completed_at: string | null;
-    lessons_completed: number;
-    total_lessons: number;
-    review_rating: number | null;
-    review_comment: string | null;
-    purchase_amount: number | null;
-    purchase_currency: string | null;
-    purchase_date: string | null;
-    payment_method: string | null;
-  }[];
-  totalLessonsCompleted: number;
-}
 
 const AdminCourseStudents: React.FC = () => {
   const { id: courseId } = useParams<{ id: string }>();
