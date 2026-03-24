@@ -553,8 +553,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  // Submit payment
-  const handleSubmitPayment = async (method: PaymentMethod = 'card') => {
+  // Submit payment with optional token from inline card form
+  const handleSubmitPayment = async (method: PaymentMethod = 'card', tokenId?: string) => {
     if (!isPaymentReady) return;
     onPaymentStarted?.();
 
@@ -653,7 +653,27 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       couponId: appliedCoupon?.coupon_id,
       customerPhone: fullPhone,
       paymentMethod: method,
+      tokenId: tokenId || undefined,
     });
+  };
+
+  // Handler for inline card token
+  const handleCardToken = useCallback((token: string) => {
+    setCardToken(token);
+    setCardSubmitting(false);
+    handleSubmitPayment('card', token);
+  }, [handleSubmitPayment]);
+
+  const handleCardError = useCallback((err: string) => {
+    setCardSubmitting(false);
+    toast.error(err);
+  }, []);
+
+  // Trigger inline card form submission
+  const handleInlineCardSubmit = () => {
+    if ((window as any).__tapCardSubmit) {
+      (window as any).__tapCardSubmit();
+    }
   };
 
   const handleClose = () => {
