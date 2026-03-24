@@ -66,19 +66,7 @@ const Signup: React.FC = () => {
   const hasAccountText = (isRTL ? cms.has_account_ar : cms.has_account_en) || t('auth.signup.hasAccount');
   const loginLinkText = (isRTL ? cms.login_link_ar : cms.login_link_en) || t('auth.signup.loginLink');
 
-  const saveProfileAndSync = async (userId: string, fullName: string, userEmail: string, genderVal: string, dob: Date | undefined) => {
-    // Save gender and date_of_birth to profile
-    if (genderVal || dob) {
-      try {
-        await supabase.from('profiles').update({
-          gender: genderVal || null,
-          date_of_birth: dob ? format(dob, 'yyyy-MM-dd') : null,
-        } as any).eq('user_id', userId);
-      } catch (e) {
-        console.error('Failed to save gender/DOB:', e);
-      }
-    }
-
+  const saveProfileAndSync = async (userId: string, fullName: string, userEmail: string) => {
     // GHL sync
     try {
       await supabase.functions.invoke('ghl-sync', {
@@ -87,8 +75,6 @@ const Signup: React.FC = () => {
           data: {
             full_name: fullName,
             email: userEmail,
-            date_of_birth: dob ? dob.toISOString().split('T')[0] : '',
-            gender: genderVal || '',
           },
         },
       });
@@ -100,8 +86,6 @@ const Signup: React.FC = () => {
     sendFormData({
       full_name: fullName,
       email: userEmail,
-      dateOfBirth: dob ? dob.toISOString().split('T')[0] : '',
-      gender: genderVal || '',
       orderStatus: 'not purchased',
       courses: '[]',
       totalPurchased: 0,
