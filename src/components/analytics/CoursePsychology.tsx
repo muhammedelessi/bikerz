@@ -1,7 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -37,6 +39,7 @@ interface CoursePsychologyProps {
 
 const CoursePsychology: React.FC<CoursePsychologyProps> = ({ dateRange }) => {
   const { isRTL } = useLanguage();
+  const navigate = useNavigate();
   const { data, isLoading } = useCourseAnalytics(dateRange);
 
   const getHealthColor = (rate: number) => {
@@ -226,6 +229,17 @@ const CoursePsychology: React.FC<CoursePsychologyProps> = ({ dateRange }) => {
                   </div>
                   <Progress value={course.completionRate} className="h-2" />
                 </div>
+
+                {/* View Students */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => navigate(`/admin/courses/${course.id}/students`)}
+                >
+                  <Users className="w-4 h-4 me-2" />
+                  {isRTL ? 'عرض الطلاب' : 'View Students'}
+                </Button>
               </CardContent>
             </Card>
           ))
