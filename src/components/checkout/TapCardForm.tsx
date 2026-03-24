@@ -95,6 +95,7 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
         gateway: {
           publicKey: data.public_key,
           language: 'ar',
+          locale: 'ar',
           supportedCurrencies: ['SAR', 'KWD', 'USD', 'AED', 'BHD', 'QAR', 'OMR', 'EGP'],
           supportedPaymentMethods: 'all',
           notifications: 'msg',
@@ -108,19 +109,26 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
             actionButton: isRTL ? 'ادفع' : 'Pay',
           },
 
-          /* ── Appearance / Style ── */
+          /* ── Appearance — explicit dark mode ── */
+          appearance: {
+            theme: 'dark',
+            appearanceMode: 'dark',
+          },
+
+          /* ── Style overrides applied inside the iframe ── */
           style: {
             base: {
-              color: BRAND.foreground,
+              color: '#FFFFFF',
               lineHeight: '24px',
-              fontFamily: "'Tajawal', 'Almarai', 'Roboto', sans-serif",
+              fontFamily: "'Tajawal', sans-serif",
               fontSmoothing: 'antialiased',
               fontSize: '16px',
               fontWeight: '400',
               textAlign: 'right',
               direction: 'rtl',
+              backgroundColor: 'transparent',
               '::placeholder': {
-                color: BRAND.mutedForeground,
+                color: '#8D8D8D',
                 fontSize: '14px',
                 fontWeight: '300',
               },
@@ -132,7 +140,7 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
           },
 
           /* ── Theme override ── */
-          theme: isDark ? 'dark' : 'light',
+          theme: 'dark',
 
           /* ── Token callback ── */
           callback: (response: any) => {
