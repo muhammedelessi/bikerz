@@ -69,6 +69,15 @@ export const fetchEnrollmentsWithLiveProgress = async (
     completedPerCourse.set(courseId, (completedPerCourse.get(courseId) || 0) + 1);
   }
 
+  // Fetch user reviews to know which courses have been rated
+  const { data: reviewRows } = await supabase
+    .from("course_reviews")
+    .select("course_id")
+    .eq("user_id", userId)
+    .in("course_id", courseIds);
+
+  const reviewedCourses = new Set((reviewRows || []).map((r) => r.course_id));
+
   return enrollmentRows.map((row) => {
     const totalLessons = totalPerCourse.get(row.course_id) || 0;
     const completedLessons = completedPerCourse.get(row.course_id) || 0;
@@ -81,6 +90,7 @@ export const fetchEnrollmentsWithLiveProgress = async (
     return {
       ...row,
       progress_percentage: liveProgress,
+      has_reviewed: reviewedCourses.has(row.course_id),
     };
   }) as EnrollmentWithProgress[];
 };
