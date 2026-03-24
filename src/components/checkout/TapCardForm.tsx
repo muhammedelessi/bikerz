@@ -223,8 +223,8 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
           min-height: 160px;
           border-radius: 0.75rem;
           padding: 12px;
-          background: hsl(var(--card));
-          border: 1px solid hsl(var(--border));
+          background: ${BRAND.nearBlack} !important;
+          border: 1px solid ${BRAND.border};
           transition: border-color 0.3s ease, box-shadow 0.3s ease;
           overflow: hidden;
           direction: rtl;
