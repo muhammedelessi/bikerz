@@ -349,6 +349,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setPromoLoading(false);
       setErrors({});
       setIsEditingName(false);
+      setCardToken(null);
+      setCardSubmitting(false);
       resetPayment();
     }
   }, [open, resetPayment]);
