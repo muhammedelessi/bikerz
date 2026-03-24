@@ -27,11 +27,13 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
   const { isRTL } = useLanguage();
   const { formatPrice, getSarTotalWithVat } = useCurrency();
 
-  // Calculate price with course discount only
+  // Calculate price with course discount and VAT included
   const courseDiscountPct = course.discount_percentage && course.discount_percentage > 0 ? course.discount_percentage : 0;
-  const finalPrice = courseDiscountPct > 0
+  const priceBeforeVat = courseDiscountPct > 0
     ? Math.ceil(course.price * (1 - courseDiscountPct / 100))
     : course.price;
+  const finalPrice = Math.ceil(priceBeforeVat * 1.15);
+  const originalPriceWithVat = Math.ceil(course.price * 1.15);
 
   const hasAnyDiscount = courseDiscountPct > 0;
 
