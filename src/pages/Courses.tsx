@@ -14,6 +14,7 @@ import CourseCard from '@/components/course/CourseCard';
 interface Enrollment {
   course_id: string;
   progress_percentage: number;
+  completed_at: string | null;
 }
 
 const Courses: React.FC = () => {
