@@ -37,6 +37,8 @@ import {
   MapPin,
   Lock,
   Pencil,
+  Phone,
+  Mail,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trackInitiateCheckout, trackAddPaymentInfo } from '@/utils/metaPixel';
