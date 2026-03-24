@@ -1089,6 +1089,34 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           </p>
                         </div>
                         <div className="p-4 space-y-2.5">
+                          {/* Customer details */}
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">{isRTL ? 'الاسم' : 'Name'}</span>
+                            <span className="font-medium truncate max-w-[200px]">{fullName}</span>
+                          </div>
+                          {(() => {
+                            const prefixEntry = PHONE_COUNTRIES.find(pc => phonePrefix === pc.prefix + '_' + pc.code);
+                            const prefixStr = prefixEntry ? prefixEntry.prefix : '';
+                            return phone ? (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">{isRTL ? 'الهاتف' : 'Phone'}</span>
+                                <span className="font-medium font-mono" dir="ltr">{prefixStr}{phone}</span>
+                              </div>
+                            ) : null;
+                          })()}
+                          {(() => {
+                            const effectiveCountry = isOtherCountry ? countryManual : country;
+                            const effectiveCity = isOtherCity ? cityManual : city;
+                            const addressParts = [effectiveCity, effectiveCountry].filter(Boolean);
+                            return addressParts.length > 0 ? (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">{isRTL ? 'العنوان' : 'Address'}</span>
+                                <span className="font-medium truncate max-w-[200px]">{addressParts.join(', ')}</span>
+                              </div>
+                            ) : null;
+                          })()}
+                          <Separator className="my-1" />
+                          {/* Course & price */}
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">{isRTL ? 'الدورة' : 'Course'}</span>
                             <span className="font-medium truncate max-w-[200px]">
@@ -1106,21 +1134,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                             <span>{isRTL ? 'الإجمالي (شامل الضريبة)' : 'Total (incl. VAT)'}</span>
                             <span className="text-primary">{totalWithVat} {currencyLabel}</span>
                           </div>
-                          {!isSAR && (() => {
-                            let sarBase = Math.ceil(course.price);
-                            const courseDpct = course.discount_percentage || 0;
-                            if (courseDpct > 0) sarBase = Math.ceil(sarBase * (1 - courseDpct / 100));
-                            if (appliedCoupon && basePrice > 0) {
-                              const couponRatio = discountedPrice / basePrice;
-                              sarBase = Math.ceil(sarBase * couponRatio);
-                            }
-                            const sarTotal = Math.ceil(sarBase * 1.15);
-                            return (
-                              <p className="text-[10px] text-muted-foreground text-center mt-1">
-                                {isRTL ? `* سيتم تحصيل المبلغ بالريال السعودي (${sarTotal} ر.س)` : `* You will be charged in SAR (${sarTotal} SAR)`}
-                              </p>
-                            );
-                          })()}
                           {/* VAT Number */}
                           <div className="pt-2 border-t border-border/50">
                             <p className="text-[11px] text-muted-foreground text-center">
