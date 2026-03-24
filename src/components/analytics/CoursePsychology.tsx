@@ -228,6 +228,17 @@ const CoursePsychology: React.FC<CoursePsychologyProps> = ({ dateRange }) => {
                   </div>
                   <Progress value={course.completionRate} className="h-2" />
                 </div>
+
+                {/* View Students */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => navigate(`/admin/courses/${course.id}/students`)}
+                >
+                  <Users className="w-4 h-4 me-2" />
+                  {isRTL ? 'عرض الطلاب' : 'View Students'}
+                </Button>
               </CardContent>
             </Card>
           ))
