@@ -18,6 +18,20 @@ interface TapCardFormProps {
 
 const SCRIPT_URL = 'https://goSellJSLib.b-cdn.net/v2.0.0/js/gosell.js';
 
+/** Convert an HSL CSS variable value like "180 5% 14%" to a hex string */
+function hslVarToHex(hslStr: string): string {
+  const parts = hslStr.replace(/%/g, '').split(/\s+/).map(Number);
+  if (parts.length < 3) return '#C6BFAA';
+  const [h, s, l] = parts;
+  const a = (s / 100) * Math.min(l / 100, 1 - l / 100);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = l / 100 - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
 const TapCardForm: React.FC<TapCardFormProps> = ({
   onToken,
   onError,
@@ -35,7 +49,6 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
     initialized.current = true;
 
     try {
-      // Fetch public key from edge function
       const { data, error: fnErr } = await supabase.functions.invoke('tap-config');
       if (fnErr || !data?.public_key) {
         throw new Error(isRTL ? 'فشل تحميل إعدادات الدفع' : 'Failed to load payment config');
@@ -43,7 +56,6 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
 
       const publicKey = data.public_key;
 
-      // Load goSell.js script
       if (!document.querySelector(`script[src="${SCRIPT_URL}"]`)) {
         await new Promise<void>((resolve, reject) => {
           const script = document.createElement('script');
@@ -55,7 +67,6 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
         });
       }
 
-      // Wait for goSell to be available
       let attempts = 0;
       while (!window.goSell && attempts < 30) {
         await new Promise(r => setTimeout(r, 100));
@@ -66,15 +77,13 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
         throw new Error(isRTL ? 'فشل تهيئة بوابة الدفع' : 'Payment gateway failed to initialize');
       }
 
-      // Read actual CSS variable values from the document for theme consistency
+      // Resolve theme-aware colors from CSS variables at init time
       const root = document.documentElement;
-      const getVar = (v: string) => getComputedStyle(root).getPropertyValue(v).trim();
-      // Foreground (sand): hsl(43 18% 72%) → #C6BFAA
-      // Muted-foreground (gray): hsl(0 0% 55%) → #8D8D8D
-      // Card bg: hsl(180 5% 14%) → #222928
-      // Border: hsl(180 3% 22%) → #363938
-      // Primary (orange): hsl(18 78% 45%) → #CC4E1D
-      // Destructive: hsl(0 84% 60%) → #ef4444
+      const getVar = (name: string) => getComputedStyle(root).getPropertyValue(name).trim();
+
+      const fgHex = hslVarToHex(getVar('--foreground'));
+      const mutedFgHex = hslVarToHex(getVar('--muted-foreground'));
+      const destructiveHex = hslVarToHex(getVar('--destructive'));
 
       window.goSell.goSellElements({
         containerID: 'tap-card-container',
@@ -93,25 +102,24 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
           },
           style: {
             base: {
-              color: '#C6BFAA',
+              color: fgHex,
               lineHeight: '22px',
               fontFamily: "'Tajawal', 'Almarai', 'Roboto', sans-serif",
               fontSmoothing: 'antialiased',
               fontSize: '16px',
               '::placeholder': {
-                color: '#8D8D8D',
+                color: mutedFgHex,
                 fontSize: '14px',
               },
             },
             invalid: {
-              color: '#ef4444',
-              iconColor: '#ef4444',
+              color: destructiveHex,
+              iconColor: destructiveHex,
             },
           },
           callback: (response: any) => {
             setIsSubmitting(false);
             if (response?.id) {
-              // Token received
               onToken(response.id);
             } else if (response?.error) {
               onError(response.error?.message || (isRTL ? 'فشل معالجة البطاقة' : 'Card processing failed'));
@@ -133,7 +141,6 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
     initGoSell();
   }, [initGoSell]);
 
-  // Expose submit method
   const handleSubmit = useCallback(() => {
     if (!window.goSell) {
       onError(isRTL ? 'بوابة الدفع غير جاهزة' : 'Payment gateway not ready');
@@ -143,7 +150,6 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
     window.goSell.submit();
   }, [isRTL, onError, setIsSubmitting]);
 
-  // Expose submit via ref-like pattern using a global
   useEffect(() => {
     (window as any).__tapCardSubmit = handleSubmit;
     return () => { delete (window as any).__tapCardSubmit; };
@@ -151,7 +157,7 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 p-4 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+      <div className="flex items-center gap-2 p-3 sm:p-4 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs sm:text-sm">
         <AlertCircle className="w-4 h-4 flex-shrink-0" />
         <span>{error}</span>
       </div>
@@ -159,11 +165,11 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
   }
 
   return (
-    <div className="tap-card-wrapper space-y-3">
+    <div className="tap-card-wrapper space-y-2">
       {loading && (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 text-primary animate-spin" />
-          <span className="ms-2 text-sm text-muted-foreground">
+        <div className="flex items-center justify-center py-6 sm:py-8">
+          <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary animate-spin" />
+          <span className="ms-2 text-xs sm:text-sm text-muted-foreground">
             {isRTL ? 'جاري تحميل نموذج الدفع...' : 'Loading payment form...'}
           </span>
         </div>
@@ -176,30 +182,74 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
       />
       <style>{`
         .tap-card-container {
-          min-height: 180px;
-          border-radius: 12px;
-          padding: 16px;
+          min-height: 160px;
+          border-radius: 0.75rem;
+          padding: 12px;
           background: hsl(var(--card));
           border: 1px solid hsl(var(--border));
           transition: border-color 0.3s ease, box-shadow 0.3s ease;
+          overflow: hidden;
+        }
+        @media (min-width: 640px) {
+          .tap-card-container {
+            min-height: 180px;
+            padding: 16px;
+          }
         }
         .tap-card-container:focus-within {
           border-color: hsl(var(--primary));
           box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15);
         }
         .tap-card-container iframe {
-          min-height: 160px !important;
+          width: 100% !important;
+          min-height: 140px !important;
+          max-width: 100% !important;
+        }
+        @media (min-width: 640px) {
+          .tap-card-container iframe {
+            min-height: 160px !important;
+          }
         }
         .tap-card-container,
         .tap-card-container * {
           font-family: 'Tajawal', 'Almarai', 'Roboto', sans-serif !important;
         }
+        /* goSell notification bar */
         .gosell-gateway-msg {
           font-family: 'Tajawal', 'Almarai', sans-serif !important;
           border-radius: 8px !important;
-          font-size: 13px !important;
+          font-size: 12px !important;
           background: hsl(var(--muted)) !important;
           color: hsl(var(--foreground)) !important;
+          border: 1px solid hsl(var(--border)) !important;
+        }
+        @media (min-width: 640px) {
+          .gosell-gateway-msg {
+            font-size: 13px !important;
+          }
+        }
+        /* goSell overlay/modal dark theming */
+        .gosell-gateway,
+        .gosell-gateway .gosell-gateway-form {
+          background: hsl(var(--card)) !important;
+          color: hsl(var(--foreground)) !important;
+        }
+        .gosell-gateway .gosell-gateway-form input,
+        .gosell-gateway .gosell-gateway-form select {
+          background: hsl(var(--muted)) !important;
+          color: hsl(var(--foreground)) !important;
+          border-color: hsl(var(--border)) !important;
+          border-radius: 8px !important;
+          font-size: 16px !important;
+        }
+        .gosell-gateway .gosell-gateway-form input:focus,
+        .gosell-gateway .gosell-gateway-form select:focus {
+          border-color: hsl(var(--primary)) !important;
+          box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15) !important;
+        }
+        .gosell-gateway .gosell-gateway-form label {
+          color: hsl(var(--muted-foreground)) !important;
+          font-family: 'Tajawal', 'Almarai', sans-serif !important;
         }
       `}</style>
     </div>
