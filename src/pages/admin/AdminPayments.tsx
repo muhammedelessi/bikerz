@@ -346,14 +346,14 @@ const AdminPayments = () => {
     const resp = payment.tap_response || {};
     const response = resp.response as Record<string, unknown> | undefined;
     const gateway = resp.gateway as Record<string, unknown> | undefined;
-    const code = (response?.code as string) || (gateway?.response?.toString()) || null;
+    const code = (response?.code as string) || (gateway?.response != null ? String(gateway.response) : null);
     const translatedReason = getTranslatedErrorReason(code);
-    // Full decline reason from Tap API response.message
     const tapDeclineMessage = (response?.message as string) || null;
+    const safeErr = safeErrorMessage(payment.error_message);
     return {
-      reason: translatedReason || payment.error_message || tapDeclineMessage || (isRTL ? 'فشل الدفع' : 'Payment failed'),
+      reason: translatedReason || safeErr || tapDeclineMessage || (isRTL ? 'فشل الدفع' : 'Payment failed'),
       code,
-      gatewayResponse: (gateway?.response as string) || null,
+      gatewayResponse: gateway?.response != null ? String(gateway.response) : null,
       translatedReason,
       tapDeclineMessage,
     };
