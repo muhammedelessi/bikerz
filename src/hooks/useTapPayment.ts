@@ -35,6 +35,7 @@ interface TapPaymentConfig {
   customerPhone?: string;
   couponId?: string;
   paymentMethod?: PaymentMethod;
+  tokenId?: string;
 }
 
 interface UseTapPaymentReturn {
@@ -108,7 +109,7 @@ export function useTapPayment(): UseTapPaymentReturn {
           payment_method: config.paymentMethod || 'card',
           detected_country: detectedCountry || null,
           device_info: parseDeviceInfo(),
-          // No token_id → edge function uses src_all → Tap redirect page
+          token_id: config.tokenId || null,
         },
       });
 
