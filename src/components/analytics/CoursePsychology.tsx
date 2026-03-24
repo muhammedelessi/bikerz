@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +35,15 @@ import {
   BarChart3,
   Activity,
   Target,
+  ArrowLeft,
+  ArrowRight,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  DollarSign,
+  Star,
+  X,
 } from 'lucide-react';
 import { useCourseAnalytics } from '@/hooks/useAnalyticsDashboard';
 import { format } from 'date-fns';
@@ -96,6 +104,312 @@ const HealthDot: React.FC<{ rate: number }> = ({ rate }) => {
     rate >= 50 ? 'bg-yellow-500' :
     rate >= 30 ? 'bg-orange-500' : 'bg-red-500';
   return <span className={`inline-block w-2.5 h-2.5 rounded-full ${color}`} />;
+};
+
+/* ─── Helper functions ─── */
+const formatDateHelper = (date: string, isRTL: boolean) => {
+  try {
+    return format(new Date(date), 'dd MMM yyyy', { locale: isRTL ? ar : undefined });
+  } catch {
+    return '-';
+  }
+};
+
+const getInitials = (name: string | null | undefined) => {
+  if (!name) return '?';
+  return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+};
+
+/* ─── Inline Student Detail Panel ─── */
+const StudentDetailPanel: React.FC<{
+  userId: string;
+  courseId: string;
+  isRTL: boolean;
+  onBack: () => void;
+}> = ({ userId, courseId, isRTL, onBack }) => {
+  const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+
+  const { data: student, isLoading: studentLoading } = useQuery({
+    queryKey: ['analytics-student-profile', userId],
+    queryFn: async () => {
+      const [profileRes, emailRes] = await Promise.all([
+        supabase.from('profiles').select('full_name, phone, city, country, avatar_url').eq('user_id', userId).single(),
+        supabase.from('tap_charges').select('customer_email').eq('user_id', userId).not('customer_email', 'is', null).limit(1),
+      ]);
+      return {
+        profile: profileRes.data,
+        email: emailRes.data?.[0]?.customer_email || null,
+      };
+    },
+  });
+
+  const { data: enrollments = [], isLoading: enrollmentsLoading } = useQuery({
+    queryKey: ['analytics-student-enrollments', userId],
+    queryFn: async () => {
+      const { data: enrs } = await supabase
+        .from('course_enrollments')
+        .select('course_id, enrolled_at, progress_percentage, completed_at')
+        .eq('user_id', userId);
+      if (!enrs?.length) return [];
+
+      const courseIds = enrs.map(e => e.course_id);
+      const [coursesRes, reviewsRes, tapRes, manualRes, progressRes] = await Promise.all([
+        supabase.from('courses').select('id, title, title_ar').in('id', courseIds),
+        supabase.from('course_reviews').select('course_id, rating, comment').eq('user_id', userId).in('course_id', courseIds),
+        supabase.from('tap_charges').select('course_id, amount, currency, created_at, payment_method, status').eq('user_id', userId).eq('status', 'CAPTURED').in('course_id', courseIds),
+        supabase.from('manual_payments').select('course_id, amount, currency, created_at, payment_method, status').eq('user_id', userId).eq('status', 'approved').in('course_id', courseIds),
+        supabase.from('lesson_progress').select('lesson_id, is_completed').eq('user_id', userId).eq('is_completed', true),
+      ]);
+
+      const courseMap = new Map((coursesRes.data || []).map(c => [c.id, c]));
+      const reviewMap = new Map((reviewsRes.data || []).map(r => [r.course_id, r]));
+      const paymentMap = new Map<string, { amount: number; currency: string; date: string; method: string }>();
+      [...(tapRes.data || []), ...(manualRes.data || [])].forEach(p => {
+        if (p.course_id && !paymentMap.has(p.course_id)) {
+          paymentMap.set(p.course_id, { amount: Number(p.amount), currency: p.currency || 'SAR', date: p.created_at, method: p.payment_method || '-' });
+        }
+      });
+
+      const { data: chapters } = await supabase.from('chapters').select('id, course_id').in('course_id', courseIds);
+      const chapterIds = (chapters || []).map(ch => ch.id);
+      const { data: lessons } = chapterIds.length
+        ? await supabase.from('lessons').select('id, chapter_id').in('chapter_id', chapterIds)
+        : { data: [] };
+
+      const chapterCourseMap = new Map((chapters || []).map(ch => [ch.id, ch.course_id]));
+      const lessonCourseMap = new Map<string, string>();
+      (lessons || []).forEach(l => {
+        const cId = chapterCourseMap.get(l.chapter_id);
+        if (cId) lessonCourseMap.set(l.id, cId);
+      });
+      const totalLessonsPerCourse = new Map<string, number>();
+      (lessons || []).forEach(l => {
+        const cId = chapterCourseMap.get(l.chapter_id);
+        if (cId) totalLessonsPerCourse.set(cId, (totalLessonsPerCourse.get(cId) || 0) + 1);
+      });
+      const completedPerCourse = new Map<string, number>();
+      (progressRes.data || []).forEach(p => {
+        const cId = lessonCourseMap.get(p.lesson_id);
+        if (cId) completedPerCourse.set(cId, (completedPerCourse.get(cId) || 0) + 1);
+      });
+
+      return enrs.map(e => {
+        const c = courseMap.get(e.course_id);
+        const review = reviewMap.get(e.course_id);
+        const payment = paymentMap.get(e.course_id);
+        const lessonsCompleted = completedPerCourse.get(e.course_id) || 0;
+        const totalLessonCount = totalLessonsPerCourse.get(e.course_id) || 0;
+        const realProgress = totalLessonCount > 0 ? Math.round((lessonsCompleted / totalLessonCount) * 100) : 0;
+        return {
+          course_id: e.course_id,
+          course_title: isRTL && (c as any)?.title_ar ? (c as any).title_ar : c?.title || '-',
+          enrolled_at: e.enrolled_at,
+          progress_percentage: realProgress,
+          completed_at: e.completed_at,
+          lessons_completed: lessonsCompleted,
+          total_lessons: totalLessonCount,
+          review_rating: review?.rating || null,
+          review_comment: review?.comment || null,
+          purchase_amount: payment?.amount || null,
+          purchase_currency: payment?.currency || null,
+          purchase_date: payment?.date || null,
+          payment_method: payment?.method || null,
+        };
+      });
+    },
+  });
+
+  const isLoading = studentLoading || enrollmentsLoading;
+  const completedCourses = enrollments.filter(e => e.completed_at || e.progress_percentage >= 100).length;
+  const totalSpent = enrollments.reduce((sum, e) => sum + (e.purchase_amount || 0), 0);
+
+  return (
+    <div className="space-y-5">
+      {/* Back button & header */}
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onBack}
+          className="shrink-0 h-9 w-9"
+        >
+          <BackIcon className="w-4 h-4" />
+        </Button>
+        {isLoading ? (
+          <Skeleton className="h-10 w-48" />
+        ) : (
+          <div className="flex items-center gap-3 min-w-0">
+            <Avatar className="w-10 h-10 shrink-0 ring-2 ring-background shadow-sm">
+              <AvatarImage src={student?.profile?.avatar_url || undefined} />
+              <AvatarFallback className="text-xs bg-primary/10 text-primary font-bold">
+                {getInitials(student?.profile?.full_name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <h3 className="text-base font-bold text-foreground truncate">
+                {student?.profile?.full_name || (isRTL ? 'تفاصيل الطالب' : 'Student Details')}
+              </h3>
+              <p className="text-xs text-muted-foreground truncate" dir="ltr" style={{ unicodeBidi: 'plaintext' as any }}>
+                {student?.email || ''}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Student Info Cards */}
+      {!isLoading && student && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="rounded-xl border border-border/50 p-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground">{isRTL ? 'البريد' : 'Email'}</span>
+            </div>
+            <p className="text-xs font-medium text-foreground truncate" dir="ltr" style={{ unicodeBidi: 'plaintext' as any }}>
+              {student.email || '-'}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/50 p-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Phone className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground">{isRTL ? 'الهاتف' : 'Phone'}</span>
+            </div>
+            <p className="text-xs font-medium text-foreground truncate" dir="ltr" style={{ unicodeBidi: 'plaintext' as any }}>
+              {student.profile?.phone || '-'}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/50 p-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground">{isRTL ? 'الموقع' : 'Location'}</span>
+            </div>
+            <p className="text-xs font-medium text-foreground truncate">
+              {[student.profile?.city, student.profile?.country].filter(Boolean).join(', ') || '-'}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/50 p-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <GraduationCap className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[10px] text-muted-foreground">{isRTL ? 'الدورات' : 'Courses'}</span>
+            </div>
+            <p className="text-xs font-bold text-primary">{enrollments.length}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Summary Stats */}
+      {!isLoading && enrollments.length > 0 && (
+        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground px-1">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-green-500" />
+            {completedCourses} {isRTL ? 'مكتمل' : 'completed'}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-blue-500" />
+            {enrollments.length - completedCourses} {isRTL ? 'قيد التعلم' : 'in progress'}
+          </span>
+          {totalSpent > 0 && (
+            <span className="flex items-center gap-1.5">
+              <DollarSign className="w-3 h-3" />
+              {isRTL ? 'إجمالي:' : 'Total:'} {totalSpent} SAR
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Enrolled Courses */}
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2].map(i => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}
+        </div>
+      ) : enrollments.length === 0 ? (
+        <div className="py-10 text-center">
+          <BookOpen className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">{isRTL ? 'لا توجد بيانات' : 'No data available'}</p>
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-2 px-1">
+            <GraduationCap className="w-4 h-4 text-primary" />
+            <h4 className="text-sm font-semibold text-foreground">{isRTL ? 'الدورات المسجلة' : 'Enrolled Courses'}</h4>
+          </div>
+          {enrollments.map(enrollment => (
+            <div key={enrollment.course_id} className="rounded-xl border border-border/50 p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <BookOpen className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <span className="font-semibold text-foreground text-sm truncate">{enrollment.course_title}</span>
+                </div>
+                {(enrollment.completed_at || enrollment.progress_percentage >= 100) ? (
+                  <Badge className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/10 shrink-0 text-[10px]">
+                    {isRTL ? 'مكتمل' : 'Completed'}
+                  </Badge>
+                ) : (
+                  <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/10 shrink-0 text-[10px]">
+                    {Math.round(enrollment.progress_percentage)}%
+                  </Badge>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      (enrollment.completed_at || enrollment.progress_percentage >= 100) ? 'bg-green-500' : 'bg-primary'
+                    }`}
+                    style={{ width: `${Math.min(enrollment.progress_percentage, 100)}%` }}
+                  />
+                </div>
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap tabular-nums">
+                  {enrollment.lessons_completed}/{enrollment.total_lessons} {isRTL ? 'درس' : 'lessons'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Calendar className="w-3 h-3 shrink-0" />
+                  <span>{isRTL ? 'التسجيل:' : 'Enrolled:'}</span>
+                  <span className="text-foreground">{formatDateHelper(enrollment.enrolled_at, isRTL)}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <DollarSign className="w-3 h-3 shrink-0" />
+                  <span>{isRTL ? 'السعر:' : 'Price:'}</span>
+                  <span className="text-foreground" dir="ltr">
+                    {enrollment.purchase_amount != null ? `${enrollment.purchase_amount} ${enrollment.purchase_currency}` : '-'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Clock className="w-3 h-3 shrink-0" />
+                  <span>{isRTL ? 'الشراء:' : 'Purchased:'}</span>
+                  <span className="text-foreground">{enrollment.purchase_date ? formatDateHelper(enrollment.purchase_date, isRTL) : '-'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Star className="w-3 h-3 shrink-0" />
+                  <span>{isRTL ? 'التقييم:' : 'Rating:'}</span>
+                  <span className={enrollment.review_rating != null ? 'text-amber-500 font-medium' : 'text-foreground'}>
+                    {enrollment.review_rating != null ? `${enrollment.review_rating}/5 ★` : '-'}
+                  </span>
+                </div>
+              </div>
+
+              {enrollment.review_comment && (
+                <div className="bg-muted/30 rounded-lg p-2.5 text-[11px] text-muted-foreground italic leading-relaxed">
+                  "{enrollment.review_comment}"
+                </div>
+              )}
+              {enrollment.payment_method && enrollment.payment_method !== '-' && (
+                <p className="text-[11px] text-muted-foreground">
+                  {isRTL ? 'طريقة الدفع:' : 'Payment:'} <span className="text-foreground font-medium">{enrollment.payment_method}</span>
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 /* ─── Course Analytics Detail Panel ─── */
@@ -195,8 +509,11 @@ const CourseAnalyticsPanel: React.FC<{
 };
 
 /* ─── Course Students Panel ─── */
-const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ courseId, isRTL }) => {
-  const navigate = useNavigate();
+const CourseStudentsPanel: React.FC<{
+  courseId: string;
+  isRTL: boolean;
+  onSelectStudent: (userId: string) => void;
+}> = ({ courseId, isRTL, onSelectStudent }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
 
@@ -261,19 +578,6 @@ const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ c
     return name.includes(q) || email.includes(q) || phone.includes(q);
   });
 
-  const formatDate = (date: string) => {
-    try {
-      return format(new Date(date), 'dd MMM yyyy', { locale: isRTL ? ar : undefined });
-    } catch {
-      return '-';
-    }
-  };
-
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return '?';
-    return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-  };
-
   const completedCount = students.filter((s) => s.completed_at || s.progress_percentage >= 100).length;
   const inProgressCount = students.filter((s) => !s.completed_at && s.progress_percentage > 0 && s.progress_percentage < 100).length;
   const avgProgress = students.length
@@ -283,7 +587,7 @@ const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ c
   return (
     <div className="space-y-4">
       {/* Quick stats strip */}
-      <div className="flex items-center gap-4 px-1">
+      <div className="flex items-center gap-4 px-1 flex-wrap">
         <div className="flex items-center gap-1.5">
           <Users className="w-3.5 h-3.5 text-muted-foreground" />
           <span className="text-sm font-bold">{students.length}</span>
@@ -353,7 +657,7 @@ const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ c
                   <TableRow
                     key={student.user_id}
                     className="cursor-pointer hover:bg-muted/40 transition-colors group"
-                    onClick={() => navigate(`/admin/courses/${courseId}/students/${student.user_id}`)}
+                    onClick={() => onSelectStudent(student.user_id)}
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -390,7 +694,7 @@ const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ c
                       </div>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                      {formatDate(student.enrolled_at)}
+                      {formatDateHelper(student.enrolled_at, isRTL)}
                     </TableCell>
                     <TableCell>
                       <StudentStatusBadge completedAt={student.completed_at} progress={student.progress_percentage} isRTL={isRTL} />
@@ -409,7 +713,7 @@ const CourseStudentsPanel: React.FC<{ courseId: string; isRTL: boolean }> = ({ c
             {filteredStudents.map((student) => (
               <button
                 key={student.user_id}
-                onClick={() => navigate(`/admin/courses/${courseId}/students/${student.user_id}`)}
+                onClick={() => onSelectStudent(student.user_id)}
                 className="w-full text-start p-3.5 hover:bg-muted/30 transition-colors active:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
@@ -457,6 +761,7 @@ const CoursePsychology: React.FC<CoursePsychologyProps> = ({ dateRange }) => {
   const { isRTL } = useLanguage();
   const { data, isLoading } = useCourseAnalytics(dateRange);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
 
   const publishedCourses = (data?.courses || []).filter(c => c.isPublished);
   const selectedCourse = publishedCourses.find(c => c.id === selectedCourseId) || publishedCourses[0] || null;
@@ -469,7 +774,7 @@ const CoursePsychology: React.FC<CoursePsychologyProps> = ({ dateRange }) => {
   }, [publishedCourses.length, selectedCourseId]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* ── Header ── */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -563,7 +868,10 @@ const CoursePsychology: React.FC<CoursePsychologyProps> = ({ dateRange }) => {
               return (
                 <button
                   key={course.id}
-                  onClick={() => setSelectedCourseId(course.id)}
+                  onClick={() => {
+                    setSelectedCourseId(course.id);
+                    setSelectedStudentId(null);
+                  }}
                   className={`w-full text-start p-3.5 rounded-xl border transition-all duration-200 ${
                     isSelected
                       ? 'bg-primary/5 border-primary/30 shadow-sm ring-1 ring-primary/20'
@@ -608,78 +916,97 @@ const CoursePsychology: React.FC<CoursePsychologyProps> = ({ dateRange }) => {
             <AnimatePresence mode="wait">
               {selectedCourse && (
                 <motion.div
-                  key={selectedCourse.id}
+                  key={selectedStudentId ? `student-${selectedStudentId}` : `course-${selectedCourse.id}`}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Card className="border-border/50 overflow-hidden">
-                    {/* Course header */}
-                    <div className="px-6 pt-6 pb-4 border-b border-border/50">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <h3 className="text-lg font-bold text-foreground truncate">
-                            {isRTL ? selectedCourse.title_ar || selectedCourse.title : selectedCourse.title}
-                          </h3>
-                          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-3 flex-wrap">
-                            <span className="flex items-center gap-1">
-                              <Users className="w-3.5 h-3.5" />
-                              {selectedCourse.totalEnrollments} {isRTL ? 'مسجل' : 'enrolled'}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Layers className="w-3.5 h-3.5" />
-                              {selectedCourse.totalChapters} {isRTL ? 'فصول' : 'chapters'}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <BookOpen className="w-3.5 h-3.5" />
-                              {selectedCourse.totalLessons} {isRTL ? 'دروس' : 'lessons'}
-                            </span>
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <HealthDot rate={selectedCourse.completionRate} />
-                          <span className="text-sm font-bold tabular-nums">
-                            {selectedCourse.completionRate}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Tabs: Analytics | Students */}
-                    <Tabs defaultValue="analytics" className="w-full">
-                      <div className="px-6 border-b border-border/50">
-                        <TabsList className="bg-transparent h-auto p-0 gap-6">
-                          <TabsTrigger
-                            value="analytics"
-                            className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-0 pb-3 pt-3 text-sm font-medium"
-                          >
-                            <BarChart3 className="w-4 h-4 me-2" />
-                            {isRTL ? 'التحليلات' : 'Analytics'}
-                          </TabsTrigger>
-                          <TabsTrigger
-                            value="students"
-                            className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-0 pb-3 pt-3 text-sm font-medium"
-                          >
-                            <Users className="w-4 h-4 me-2" />
-                            {isRTL ? 'الطلاب' : 'Students'}
-                            <Badge variant="secondary" className="ms-2 text-[10px] px-1.5 py-0">
-                              {selectedCourse.totalEnrollments}
-                            </Badge>
-                          </TabsTrigger>
-                        </TabsList>
-                      </div>
-
+                  {selectedStudentId ? (
+                    /* ── Student Detail View ── */
+                    <Card className="border-border/50 overflow-hidden">
                       <div className="p-6">
-                        <TabsContent value="analytics" className="m-0">
-                          <CourseAnalyticsPanel course={selectedCourse} isRTL={isRTL} />
-                        </TabsContent>
-                        <TabsContent value="students" className="m-0">
-                          <CourseStudentsPanel courseId={selectedCourse.id} isRTL={isRTL} />
-                        </TabsContent>
+                        <StudentDetailPanel
+                          userId={selectedStudentId}
+                          courseId={selectedCourse.id}
+                          isRTL={isRTL}
+                          onBack={() => setSelectedStudentId(null)}
+                        />
                       </div>
-                    </Tabs>
-                  </Card>
+                    </Card>
+                  ) : (
+                    /* ── Course Analytics + Students View ── */
+                    <Card className="border-border/50 overflow-hidden">
+                      {/* Course header */}
+                      <div className="px-6 pt-6 pb-4 border-b border-border/50">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <h3 className="text-lg font-bold text-foreground truncate">
+                              {isRTL ? selectedCourse.title_ar || selectedCourse.title : selectedCourse.title}
+                            </h3>
+                            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-3 flex-wrap">
+                              <span className="flex items-center gap-1">
+                                <Users className="w-3.5 h-3.5" />
+                                {selectedCourse.totalEnrollments} {isRTL ? 'مسجل' : 'enrolled'}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Layers className="w-3.5 h-3.5" />
+                                {selectedCourse.totalChapters} {isRTL ? 'فصول' : 'chapters'}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <BookOpen className="w-3.5 h-3.5" />
+                                {selectedCourse.totalLessons} {isRTL ? 'دروس' : 'lessons'}
+                              </span>
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <HealthDot rate={selectedCourse.completionRate} />
+                            <span className="text-sm font-bold tabular-nums">
+                              {selectedCourse.completionRate}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tabs: Analytics | Students */}
+                      <Tabs defaultValue="analytics" className="w-full">
+                        <div className="px-6 border-b border-border/50">
+                          <TabsList className="bg-transparent h-auto p-0 gap-6">
+                            <TabsTrigger
+                              value="analytics"
+                              className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-0 pb-3 pt-3 text-sm font-medium"
+                            >
+                              <BarChart3 className="w-4 h-4 me-2" />
+                              {isRTL ? 'التحليلات' : 'Analytics'}
+                            </TabsTrigger>
+                            <TabsTrigger
+                              value="students"
+                              className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-0 pb-3 pt-3 text-sm font-medium"
+                            >
+                              <Users className="w-4 h-4 me-2" />
+                              {isRTL ? 'الطلاب' : 'Students'}
+                              <Badge variant="secondary" className="ms-2 text-[10px] px-1.5 py-0">
+                                {selectedCourse.totalEnrollments}
+                              </Badge>
+                            </TabsTrigger>
+                          </TabsList>
+                        </div>
+
+                        <div className="p-6">
+                          <TabsContent value="analytics" className="m-0">
+                            <CourseAnalyticsPanel course={selectedCourse} isRTL={isRTL} />
+                          </TabsContent>
+                          <TabsContent value="students" className="m-0">
+                            <CourseStudentsPanel
+                              courseId={selectedCourse.id}
+                              isRTL={isRTL}
+                              onSelectStudent={(uid) => setSelectedStudentId(uid)}
+                            />
+                          </TabsContent>
+                        </div>
+                      </Tabs>
+                    </Card>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
