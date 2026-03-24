@@ -272,7 +272,7 @@ const AdminCourseStudents: React.FC = () => {
                         <TableRow
                           key={student.user_id}
                           className="cursor-pointer hover:bg-muted/50 transition-colors"
-                          onClick={() => setSelectedStudent(student.user_id)}
+                          onClick={() => navigate(`/admin/courses/${courseId}/students/${student.user_id}`)}
                         >
                           <TableCell>
                             <div className="flex items-center gap-3">
