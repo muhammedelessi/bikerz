@@ -266,8 +266,8 @@ const AdminCourseStudents: React.FC = () => {
   };
 
   const selectedStudentData = students.find((s) => s.user_id === selectedStudent);
-  const completedCount = students.filter((s) => s.completed_at).length;
-  const inProgressCount = students.filter((s) => !s.completed_at && s.progress_percentage > 0).length;
+  const completedCount = students.filter((s) => s.completed_at || s.progress_percentage >= 100).length;
+  const inProgressCount = students.filter((s) => !s.completed_at && s.progress_percentage > 0 && s.progress_percentage < 100).length;
   const avgProgress = students.length
     ? Math.round(students.reduce((sum, s) => sum + s.progress_percentage, 0) / students.length)
     : 0;
@@ -400,7 +400,7 @@ const AdminCourseStudents: React.FC = () => {
                               <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                                 <div
                                   className={`h-full rounded-full transition-all ${
-                                    student.completed_at ? 'bg-green-500' :
+                                    (student.completed_at || student.progress_percentage >= 100) ? 'bg-green-500' :
                                     student.progress_percentage > 50 ? 'bg-primary' : 'bg-amber-500'
                                   }`}
                                   style={{ width: `${Math.min(student.progress_percentage, 100)}%` }}
@@ -455,7 +455,7 @@ const AdminCourseStudents: React.FC = () => {
                             <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full transition-all ${
-                                  student.completed_at ? 'bg-green-500' :
+                                  (student.completed_at || student.progress_percentage >= 100) ? 'bg-green-500' :
                                   student.progress_percentage > 50 ? 'bg-primary' : 'bg-amber-500'
                                 }`}
                                 style={{ width: `${Math.min(student.progress_percentage, 100)}%` }}
@@ -556,7 +556,7 @@ const StudentStatusBadge: React.FC<{
   isRTL: boolean;
   compact?: boolean;
 }> = ({ completedAt, progress, isRTL, compact }) => {
-  if (completedAt) {
+  if (completedAt || progress >= 100) {
     return (
       <Badge className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/10 text-[10px] sm:text-xs">
         {compact ? '✓' : (isRTL ? 'مكتمل' : 'Completed')}
