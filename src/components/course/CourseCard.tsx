@@ -44,6 +44,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   const rating = course.base_rating || 0;
   const reviewCount = course.base_review_count || 0;
   const isEnrolled = !!enrollment;
+  const isCompleted = isEnrolled && (enrollment.progress_percentage >= 100 || !!enrollment.completed_at);
 
   const formatDuration = (minutes: number) => {
     if (!minutes) return isRTL ? "0 ساعة" : "0h";
