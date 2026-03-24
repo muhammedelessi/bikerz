@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import CourseCard from "@/components/course/CourseCard";
+import { fetchEnrollmentsWithLiveProgress } from "@/lib/enrollmentProgress";
 
 const FeaturedCoursesSection: React.FC = () => {
   const { isRTL } = useLanguage();

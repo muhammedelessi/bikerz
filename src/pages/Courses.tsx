@@ -10,12 +10,7 @@ import { BookOpen, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import SEOHead from '@/components/common/SEOHead';
 import CourseCard from '@/components/course/CourseCard';
-
-interface Enrollment {
-  course_id: string;
-  progress_percentage: number;
-  completed_at: string | null;
-}
+import { fetchEnrollmentsWithLiveProgress, type EnrollmentWithProgress } from '@/lib/enrollmentProgress';
 
 const Courses: React.FC = () => {
   const { t } = useTranslation();
