@@ -179,29 +179,27 @@ const TapCardForm: React.FC<TapCardFormProps> = ({
           min-height: 180px;
           border-radius: 12px;
           padding: 16px;
-          background: hsl(180 5% 14%);
-          border: 1px solid hsl(180 3% 22%);
-          transition: border-color 0.3s ease;
+          background: hsl(var(--card));
+          border: 1px solid hsl(var(--border));
+          transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
         .tap-card-container:focus-within {
-          border-color: #CC4E1D;
-          box-shadow: 0 0 0 2px rgba(204, 78, 29, 0.15);
+          border-color: hsl(var(--primary));
+          box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15);
         }
-        /* goSell internal iframe styling overrides */
         .tap-card-container iframe {
           min-height: 160px !important;
         }
-        /* Tajawal font for the form */
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
         .tap-card-container,
         .tap-card-container * {
           font-family: 'Tajawal', 'Almarai', 'Roboto', sans-serif !important;
         }
-        /* goSell notification styling */
         .gosell-gateway-msg {
           font-family: 'Tajawal', 'Almarai', sans-serif !important;
           border-radius: 8px !important;
           font-size: 13px !important;
+          background: hsl(var(--muted)) !important;
+          color: hsl(var(--foreground)) !important;
         }
       `}</style>
     </div>
