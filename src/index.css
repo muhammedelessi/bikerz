@@ -134,15 +134,18 @@
     overflow-x: hidden;
     min-height: 100dvh;
     padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    transition: min-height 0.3s ease, padding-bottom 0.3s ease;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-en);
     overflow-x: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* iOS Safari: prevent auto-zoom on focus & remove native styling */
@@ -167,7 +170,7 @@
     font-size: max(16px, 1em) !important;
     -webkit-appearance: none;
     appearance: none;
-    border-radius: 0;
+    border-radius: 8px;
   }
 
   html[dir="rtl"] body {
