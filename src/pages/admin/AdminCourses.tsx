@@ -64,8 +64,7 @@ import {
   Star,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
-import CourseStudentsDialog from '@/components/admin/CourseStudentsDialog';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface Course {
   id: string;
