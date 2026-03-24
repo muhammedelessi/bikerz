@@ -762,7 +762,7 @@ const CourseDetail: React.FC = () => {
                         })()}
                         {course.price > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            {isRTL ? 'السعر غير شامل الضريبة' : 'Price excludes VAT'}
+                            {isRTL ? 'السعر شامل الضريبة' : 'Price includes VAT'}
                           </p>
                         )}
                       </div>

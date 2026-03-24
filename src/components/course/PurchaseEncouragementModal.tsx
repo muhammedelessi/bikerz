@@ -27,11 +27,13 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
   const { isRTL } = useLanguage();
   const { formatPrice, getSarTotalWithVat } = useCurrency();
 
-  // Calculate price with course discount only
+  // Calculate price with course discount and VAT included
   const courseDiscountPct = course.discount_percentage && course.discount_percentage > 0 ? course.discount_percentage : 0;
-  const finalPrice = courseDiscountPct > 0
+  const priceBeforeVat = courseDiscountPct > 0
     ? Math.ceil(course.price * (1 - courseDiscountPct / 100))
     : course.price;
+  const finalPrice = Math.ceil(priceBeforeVat * 1.15);
+  const originalPriceWithVat = Math.ceil(course.price * 1.15);
 
   const hasAnyDiscount = courseDiscountPct > 0;
 
@@ -99,7 +101,7 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
                 <div className="flex items-center justify-center gap-2">
                   {hasAnyDiscount && (
                     <span className="text-sm text-muted-foreground line-through">
-                      {formatPrice(course.price, isRTL)}
+                      {formatPrice(originalPriceWithVat, isRTL)}
                     </span>
                   )}
                   <span className="text-2xl font-black text-primary">
@@ -107,7 +109,7 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {isRTL ? 'السعر غير شامل الضريبة' : 'Price excludes VAT'}
+                  {isRTL ? 'السعر شامل الضريبة' : 'Price includes VAT'}
                 </p>
               </div>
 
