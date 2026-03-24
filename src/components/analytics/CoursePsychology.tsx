@@ -38,6 +38,7 @@ interface CoursePsychologyProps {
 
 const CoursePsychology: React.FC<CoursePsychologyProps> = ({ dateRange }) => {
   const { isRTL } = useLanguage();
+  const navigate = useNavigate();
   const { data, isLoading } = useCourseAnalytics(dateRange);
 
   const getHealthColor = (rate: number) => {
