@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Play, Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy } from "lucide-react";
+import { Play, Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy, Star as StarIcon } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ export interface CourseCardProps {
   };
   index?: number;
   inView?: boolean;
-  enrollment?: { progress_percentage: number; completed_at?: string | null } | null;
+  enrollment?: { progress_percentage: number; completed_at?: string | null; has_reviewed?: boolean } | null;
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = true, enrollment }) => {
@@ -45,6 +45,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   const reviewCount = course.base_review_count || 0;
   const isEnrolled = !!enrollment;
   const isCompleted = isEnrolled && (enrollment.progress_percentage >= 100 || !!enrollment.completed_at);
+  const hasReviewed = enrollment?.has_reviewed ?? false;
 
   const formatDuration = (minutes: number) => {
     if (!minutes) return isRTL ? "0 ساعة" : "0h";
@@ -157,52 +158,77 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
             {/* Divider */}
             <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
-            {/* Price row */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black text-primary">
-                  {priceInfo.finalPrice}
-                </span>
-                <span className="text-sm font-semibold text-primary/70">
-                  {sym}
-                </span>
-                {priceInfo.discountPct > 0 && (
-                  <span className="text-sm text-muted-foreground line-through ms-1">
-                    {priceInfo.originalPrice} {sym}
+            {/* Price row — hidden when completed */}
+            {!isCompleted && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-primary">
+                    {priceInfo.finalPrice}
                   </span>
+                  <span className="text-sm font-semibold text-primary/70">
+                    {sym}
+                  </span>
+                  {priceInfo.discountPct > 0 && (
+                    <span className="text-sm text-muted-foreground line-through ms-1">
+                      {priceInfo.originalPrice} {sym}
+                    </span>
+                  )}
+                </div>
+                {priceInfo.discountPct > 0 && course.discount_expires_at && (
+                  <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
                 )}
               </div>
-              {priceInfo.discountPct > 0 && course.discount_expires_at && (
-                <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
-              )}
-            </div>
+            )}
 
-            {/* CTA Button */}
-            <Button
-              variant="default"
-              className={`w-full h-11 text-sm font-bold group/btn relative overflow-hidden ${isCompleted ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                {isCompleted ? (
-                  <>
+            {/* CTA Buttons */}
+            {isCompleted ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="default"
+                  className="flex-1 h-11 text-sm font-bold bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <span className="flex items-center gap-2">
                     <Trophy className="w-4 h-4" />
                     {isRTL ? 'مكتمل ✓' : 'Completed ✓'}
-                  </>
-                ) : isEnrolled ? (
-                  <>
-                    {isRTL ? "أكمل التعلم" : "Continue Learning"}
-                    <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
-                  </>
-                ) : (
-                  <>
-                    {isRTL
-                      ? `اشترك الآن – ${priceInfo.finalPrice} ${sym}`
-                      : `Subscribe now – ${priceInfo.finalPrice} ${sym}`}
-                    <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
-                  </>
+                  </span>
+                </Button>
+                {!hasReviewed && (
+                  <Button
+                    variant="outline"
+                    className="h-11 px-4 text-sm font-bold border-yellow-500/50 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/10"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      window.location.href = `/courses/${course.id}#reviews`;
+                    }}
+                  >
+                    <Star className="w-4 h-4 me-1.5 fill-yellow-500 text-yellow-500" />
+                    {isRTL ? 'قيّم' : 'Rate'}
+                  </Button>
                 )}
-              </span>
-            </Button>
+              </div>
+            ) : (
+              <Button
+                variant="default"
+                className="w-full h-11 text-sm font-bold group/btn relative overflow-hidden"
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  {isEnrolled ? (
+                    <>
+                      {isRTL ? "أكمل التعلم" : "Continue Learning"}
+                      <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
+                    </>
+                  ) : (
+                    <>
+                      {isRTL
+                        ? `اشترك الآن – ${priceInfo.finalPrice} ${sym}`
+                        : `Subscribe now – ${priceInfo.finalPrice} ${sym}`}
+                      <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
+                    </>
+                  )}
+                </span>
+              </Button>
+            )}
           </div>
         </div>
       </Link>
