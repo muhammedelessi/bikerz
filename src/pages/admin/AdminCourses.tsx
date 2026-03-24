@@ -64,8 +64,7 @@ import {
   Star,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
-import CourseStudentsDialog from '@/components/admin/CourseStudentsDialog';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface Course {
   id: string;
@@ -99,7 +98,7 @@ const AdminCourses: React.FC = () => {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [viewStudentsCourse, setViewStudentsCourse] = useState<{ id: string; title: string } | null>(null);
+  const navigate = useNavigate();
 
   // Form state
   interface CountryPrice {
@@ -681,7 +680,7 @@ const AdminCourses: React.FC = () => {
                               {isRTL ? 'التقييمات والمراجعات' : 'Reviews & Ratings'}
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setViewStudentsCourse({ id: course.id, title: isRTL && course.title_ar ? course.title_ar : course.title })}>
+                          <DropdownMenuItem onClick={() => navigate(`/admin/courses/${course.id}/students`)}>
                             <Users className="w-4 h-4 me-2" />
                             {isRTL ? 'عرض الطلاب' : 'View Students'}
                           </DropdownMenuItem>
@@ -1181,12 +1180,6 @@ const AdminCourses: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* View Students Dialog */}
-      <CourseStudentsDialog
-        courseId={viewStudentsCourse?.id || null}
-        courseTitle={viewStudentsCourse?.title || ''}
-        onClose={() => setViewStudentsCourse(null)}
-      />
     </div>
     </AdminLayout>
   );
