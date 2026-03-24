@@ -230,6 +230,22 @@ const CourseDetail: React.FC = () => {
     enabled: !!id && !!user && chapters.length > 0,
   });
 
+  // Check if user has reviewed this course
+  const { data: hasReviewed = false } = useQuery({
+    queryKey: ['user-review-check', id, user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { count, error } = await supabase
+        .from('course_reviews')
+        .select('id', { count: 'exact', head: true })
+        .eq('course_id', id!)
+        .eq('user_id', user.id);
+      if (error) return false;
+      return (count || 0) > 0;
+    },
+    enabled: !!id && !!user,
+  });
+
   // Meta Pixel: ViewContent event
   useEffect(() => {
     if (course && id) {
@@ -721,22 +737,35 @@ const CourseDetail: React.FC = () => {
                           </span>
                         </div>
                       )}
-                      {resumeLesson && (
+                      {progressPercentage >= 100 ? (
+                        <>
+                          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                            <Trophy className="w-5 h-5 text-green-500" />
+                            <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                              {isRTL ? '🎉 أكملت الدورة!' : '🎉 Course completed!'}
+                            </span>
+                          </div>
+                          {!hasReviewed && (
+                            <Button
+                              className="w-full h-12 text-base font-bold border-yellow-500/50 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/10"
+                              variant="outline"
+                              onClick={() => {
+                                document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' });
+                              }}
+                            >
+                              <Target className="w-5 h-5 me-2 text-yellow-500" />
+                              {isRTL ? 'قيّم الدورة' : 'Rate this Course'}
+                            </Button>
+                          )}
+                        </>
+                      ) : resumeLesson ? (
                         <Button className="w-full btn-cta h-12 text-base" asChild>
                           <Link to={`/courses/${id}/lessons/${resumeLesson.id}`}>
                             <Play className="w-5 h-5 me-2" />
                             {isRTL ? 'أكمل التعلم' : 'Resume Learning'}
                           </Link>
                         </Button>
-                      )}
-                      {progressPercentage === 100 && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20">
-                          <Trophy className="w-5 h-5 text-primary" />
-                          <span className="text-sm font-medium text-primary">
-                            {isRTL ? '🎉 أكملت الدورة!' : '🎉 Course completed!'}
-                          </span>
-                        </div>
-                      )}
+                      ) : null}
                     </div>
                   ) : (
                     <div className="space-y-5">
