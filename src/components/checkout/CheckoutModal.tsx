@@ -885,10 +885,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {/* Phone: always editable with country code prefix */}
                   <div className="space-y-1">
                     <div className="flex gap-2" dir="ltr">
-                      <div className="flex items-center rounded-md border border-input bg-muted/30 px-3 h-10 text-sm font-medium text-foreground flex-shrink-0 min-w-[70px] justify-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5 text-muted-foreground" />
-                        {phonePrefix || '+---'}
-                      </div>
+                      <select
+                        value={phonePrefix}
+                        onChange={(e) => setPhonePrefix(e.target.value)}
+                        className="flex items-center rounded-md border border-input bg-muted/30 px-2 h-10 text-sm font-medium text-foreground flex-shrink-0 min-w-[85px] appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+                        dir="ltr"
+                      >
+                        <option value="" disabled>{'+---'}</option>
+                        {Object.entries(COUNTRY_PHONE_PREFIXES).map(([code, prefix]) => (
+                          <option key={code} value={prefix}>
+                            {prefix} {code}
+                          </option>
+                        ))}
+                      </select>
                       <Input
                         value={phone}
                         onChange={(e) => { 
