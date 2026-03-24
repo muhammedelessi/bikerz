@@ -680,6 +680,10 @@ const AdminCourses: React.FC = () => {
                               {isRTL ? 'التقييمات والمراجعات' : 'Reviews & Ratings'}
                             </Link>
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/admin/courses/${course.id}/students`)}>
+                            <Users className="w-4 h-4 me-2" />
+                            {isRTL ? 'عرض الطلاب' : 'View Students'}
+                          </DropdownMenuItem>
                           <DropdownMenuItem>
                             <Copy className="w-4 h-4 me-2" />
                             {isRTL ? 'استنساخ' : 'Duplicate'}
