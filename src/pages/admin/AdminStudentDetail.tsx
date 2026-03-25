@@ -424,6 +424,7 @@ const AdminStudentDetail: React.FC = () => {
             <div className="space-y-3">
               {enrollments.map(enrollment => {
                 const courseBehaviors = getSessionsForCourse(enrollment.course_id);
+                const lessonBehaviors = getBehaviorsForCourse(enrollment.course_id);
                 return (
                   <Card key={enrollment.course_id}>
                     <CardContent className="p-4 space-y-3">
