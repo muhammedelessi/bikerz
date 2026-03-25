@@ -46,6 +46,7 @@ interface EnrolledCourse {
     total_lessons: number | null;
   };
   nextLesson?: {
+    id: string;
     title: string;
     title_ar: string | null;
   } | null;
