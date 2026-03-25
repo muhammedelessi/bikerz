@@ -179,7 +179,7 @@ export function useUserProfile() {
   const loadAllData = async (userId: string) => {
     try {
       // Fetch profile, enrollments, lesson progress, gamification, and activities in parallel
-      const [profileRes, enrollmentsRes, progressRes, gamificationRes, activitiesRes] = await Promise.all([
+      const [profileRes, enrollmentsRes, liveProgress, progressRes, gamificationRes, activitiesRes] = await Promise.all([
         supabase
           .from('profiles')
           .select('*')
@@ -215,6 +215,9 @@ export function useUserProfile() {
       const enrollments = enrollmentsRes.data || [];
       const progress = progressRes.data || [];
       const gamification = gamificationRes.data;
+
+      // Build a map of live progress percentages
+      const liveProgressMap = new Map(liveProgress.map(lp => [lp.course_id, lp.progress_percentage]));
 
       const totalCourses = enrollments.length;
       const coursesInProgress = enrollments.filter(e => !e.completed_at).length;
