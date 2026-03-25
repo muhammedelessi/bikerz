@@ -51,6 +51,18 @@ interface WatchSession {
   started_at: string;
 }
 
+interface WatchBehavior {
+  lesson_id: string;
+  course_id: string | null;
+  total_watched_seconds: number | null;
+  skipped_segments: SkippedSegment[] | null;
+  rewatched_segments: RewatchedSegment[] | null;
+  last_position_seconds: number | null;
+  video_duration_seconds: number | null;
+  completion_percentage: number | null;
+  updated_at: string;
+}
+
 // ── Helpers ──
 
 const fmtTime = (seconds: number): string => {
