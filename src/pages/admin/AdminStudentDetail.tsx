@@ -627,127 +627,133 @@ const SessionCard: React.FC<{
   const progressColor = pct >= 90 ? 'bg-green-500' : pct >= 50 ? 'bg-primary' : 'bg-orange-400';
 
   return (
-    <Card className={`overflow-hidden ${isDiffIP ? 'border-orange-500/40 shadow-orange-500/5 shadow-sm' : ''}`}>
+    <Card className={`overflow-hidden ${isDiffIP ? 'border-orange-500/40' : ''}`}>
       <CardContent className="p-0">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border/50">
-          <div className="flex items-center gap-2 min-w-0">
-            <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-            <span className="text-sm font-medium text-foreground">
-              {isRTL ? `جلسة ${index + 1}` : `Session ${index + 1}`}
+        {/* Header row: session label + date + completion */}
+        <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30">
+          <span className="text-xs font-semibold text-foreground tabular-nums">
+            {isRTL ? `جلسة ${index + 1}` : `Session ${index + 1}`}
+          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {format(new Date(s.started_at), 'dd MMM yyyy · HH:mm')}
             </span>
-            <span className="text-xs text-muted-foreground">
-              {format(new Date(s.started_at), 'dd MMM yyyy, HH:mm')}
+            <span className={`text-xs font-bold tabular-nums ${
+              pct >= 90 ? 'text-green-500' : pct >= 50 ? 'text-primary' : 'text-orange-500'
+            }`}>
+              {pct}%
             </span>
           </div>
-          <Badge
-            variant="secondary"
-            className={`text-xs px-2 h-5 font-bold ${
-              pct >= 90
-                ? 'bg-green-500/15 text-green-600'
-                : pct >= 50
-                ? 'bg-primary/10 text-primary'
-                : 'bg-orange-500/10 text-orange-500'
-            }`}
-          >
-            {pct}%
-          </Badge>
         </div>
 
-        {/* Progress bar */}
-        <div className="h-1.5 bg-muted">
+        {/* Thin progress bar */}
+        <div className="h-1 bg-muted/50">
           <div className={`h-full transition-all ${progressColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
         </div>
 
-        {/* Body */}
-        <div className="px-4 py-3 space-y-3">
-          {/* Watch time row */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-              <span className="text-sm text-foreground">
-                {isRTL ? 'المشاهدة' : 'Watched'}
-              </span>
+        {/* Stats grid */}
+        <div className="px-4 py-3">
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <p className="text-[11px] text-muted-foreground mb-0.5">{isRTL ? 'المشاهدة' : 'Watched'}</p>
+              <p className="text-sm font-bold text-foreground tabular-nums">{fmtDuration(watched)}</p>
+              <p className="text-[10px] text-muted-foreground tabular-nums">/ {fmtDuration(duration)}</p>
             </div>
-            <span className="text-sm font-semibold text-foreground tabular-nums">
-              {fmtDuration(watched)} <span className="text-muted-foreground font-normal">/ {fmtDuration(duration)}</span>
-            </span>
+            <div>
+              <p className="text-[11px] text-muted-foreground mb-0.5">{isRTL ? 'تخطى' : 'Skipped'}</p>
+              <p className={`text-sm font-bold tabular-nums ${skipped.length > 0 ? 'text-orange-500' : 'text-muted-foreground'}`}>
+                {skipped.length > 0 ? fmtDuration(skippedTime) : '—'}
+              </p>
+              {skipped.length > 0 && (
+                <p className="text-[10px] text-orange-500/70 tabular-nums">{skipped.length} {skipped.length === 1 ? 'clip' : 'clips'}</p>
+              )}
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground mb-0.5">{isRTL ? 'أعاد' : 'Replayed'}</p>
+              <p className={`text-sm font-bold tabular-nums ${rewatched.length > 0 ? 'text-blue-500' : 'text-muted-foreground'}`}>
+                {rewatched.length > 0 ? fmtDuration(rewatchedTime) : '—'}
+              </p>
+              {rewatched.length > 0 && (
+                <p className="text-[10px] text-blue-500/70 tabular-nums">{rewatched.length} {rewatched.length === 1 ? 'clip' : 'clips'}</p>
+              )}
+            </div>
           </div>
+        </div>
 
-          {/* Skipped segments */}
-          {skipped.length > 0 && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <SkipForward className="w-4 h-4 text-orange-500 shrink-0" />
-                  <span className="text-sm text-orange-600 dark:text-orange-400">
-                    {isRTL ? 'تخطى' : 'Skipped'}
-                  </span>
-                </div>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {fmtDuration(skippedTime)} · {skipped.length} {skipped.length === 1 ? (isRTL ? 'مقطع' : 'segment') : (isRTL ? 'مقاطع' : 'segments')}
+        {/* Skipped segments detail */}
+        {skipped.length > 0 && (
+          <div className="px-4 pb-3">
+            <div className="rounded-lg bg-orange-500/5 border border-orange-500/10 p-3">
+              <div className="flex items-center gap-1.5 mb-2">
+                <SkipForward className="w-3.5 h-3.5 text-orange-500" />
+                <span className="text-xs font-semibold text-orange-500">
+                  {isRTL ? 'المقاطع المتخطاة' : 'Skipped Segments'}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-1.5 ms-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 {skipped.map((seg, i) => (
-                  <Badge key={i} variant="outline" className="text-xs px-2.5 py-1 h-6 border-orange-500/25 text-orange-500/90 font-mono">
-                    {fmtTime(Math.round(seg.from))} → {fmtTime(Math.round(seg.to))}
-                  </Badge>
+                  <div key={i} className="bg-orange-500/5 rounded px-2.5 py-1.5 text-center">
+                    <span className="text-xs font-mono text-orange-400 tabular-nums">
+                      {fmtTime(Math.round(seg.from))} → {fmtTime(Math.round(seg.to))}
+                    </span>
+                  </div>
                 ))}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Rewatched segments */}
-          {rewatched.length > 0 && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Repeat className="w-4 h-4 text-blue-500 shrink-0" />
-                  <span className="text-sm text-blue-600 dark:text-blue-400">
-                    {isRTL ? 'أعاد المشاهدة' : 'Replayed'}
-                  </span>
-                </div>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {fmtDuration(rewatchedTime)} · {rewatched.length} {rewatched.length === 1 ? (isRTL ? 'مقطع' : 'segment') : (isRTL ? 'مقاطع' : 'segments')}
+        {/* Rewatched segments detail */}
+        {rewatched.length > 0 && (
+          <div className="px-4 pb-3">
+            <div className="rounded-lg bg-blue-500/5 border border-blue-500/10 p-3">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Repeat className="w-3.5 h-3.5 text-blue-500" />
+                <span className="text-xs font-semibold text-blue-500">
+                  {isRTL ? 'المقاطع المعادة' : 'Replayed Segments'}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-1.5 ms-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 {rewatched.map((r, i) => (
-                  <Badge key={i} variant="outline" className="text-xs px-2.5 py-1 h-6 border-blue-500/25 text-blue-500/90 font-mono">
-                    {fmtTime(Math.round(r.from))} → {fmtTime(Math.round(r.to))} ×{r.count}
-                  </Badge>
+                  <div key={i} className="bg-blue-500/5 rounded px-2.5 py-1.5 text-center">
+                    <span className="text-xs font-mono text-blue-400 tabular-nums">
+                      {fmtTime(Math.round(r.from))} → {fmtTime(Math.round(r.to))}
+                    </span>
+                    <span className="text-[10px] text-blue-500/60 ms-1">×{r.count}</span>
+                  </div>
                 ))}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Clean watch */}
-          {isCleanWatch && (
-            <div className="flex items-center gap-2 bg-green-500/5 rounded-md px-3 py-2">
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
-              <span className="text-sm text-green-600 dark:text-green-400">
+        {/* Clean watch indicator */}
+        {isCleanWatch && (
+          <div className="px-4 pb-3">
+            <div className="flex items-center gap-2 bg-green-500/5 border border-green-500/10 rounded-lg px-3 py-2">
+              <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+              <span className="text-xs text-green-500">
                 {isRTL ? 'مشاهدة نظيفة — بدون تخطي أو إعادة' : 'Clean watch — no skips or replays'}
               </span>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* IP address */}
-          {s.ip_address && s.ip_address !== 'unknown' && (
-            <div className={`flex items-center gap-2 rounded-md px-3 py-2 ${
-              isDiffIP ? 'bg-orange-500/5' : 'bg-muted/30'
-            }`}>
-              <Globe className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
-              <span className="text-xs font-mono text-muted-foreground">{s.ip_address}</span>
-              {isDiffIP && (
-                <Badge className="text-[10px] px-1.5 h-4 bg-orange-500/15 text-orange-500 border-orange-500/20 hover:bg-orange-500/15 gap-0.5">
-                  <AlertTriangle className="w-3 h-3" />
-                  {isRTL ? 'IP مختلف!' : 'Different IP!'}
-                </Badge>
-              )}
-            </div>
-          )}
-        </div>
+        {/* IP footer */}
+        {s.ip_address && s.ip_address !== 'unknown' && (
+          <div className={`flex items-center gap-2 px-4 py-2 border-t border-border/30 ${
+            isDiffIP ? 'bg-orange-500/5' : 'bg-muted/20'
+          }`}>
+            <Globe className="w-3 h-3 shrink-0 text-muted-foreground" />
+            <span className="text-[11px] font-mono text-muted-foreground">{s.ip_address}</span>
+            {isDiffIP && (
+              <Badge className="text-[10px] px-1.5 h-4 bg-orange-500/15 text-orange-500 border-orange-500/20 hover:bg-orange-500/15 gap-0.5">
+                <AlertTriangle className="w-3 h-3" />
+                {isRTL ? 'IP مختلف!' : 'Different IP!'}
+              </Badge>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
