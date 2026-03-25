@@ -259,11 +259,29 @@ export function useUserProfile() {
       const completedCourses = courseItems.filter(c => c.completed_at || c.progress_percentage >= 100);
       const remainingCourses = courseItems.filter(c => !c.completed_at && c.progress_percentage < 100);
 
+      // Fetch all published courses the user hasn't enrolled in
+      const enrolledCourseIds = enrollments.map((e: any) => e.course_id);
+      let availableCourses: AvailableCourseItem[] = [];
+      
+      const availableQuery = supabase
+        .from('courses')
+        .select('id, title, title_ar, thumbnail_url, price, currency, difficulty_level, discount_percentage')
+        .eq('is_published', true);
+      
+      if (enrolledCourseIds.length > 0) {
+        // Filter out enrolled courses - need to use not.in
+        const { data: allCourses } = await availableQuery;
+        availableCourses = (allCourses || []).filter(c => !enrolledCourseIds.includes(c.id)) as AvailableCourseItem[];
+      } else {
+        const { data: allCourses } = await availableQuery;
+        availableCourses = (allCourses || []) as AvailableCourseItem[];
+      }
+
       // Get last lesson details (most recently watched, already sorted by last_watched_at desc)
       let lastLessonTitle = null;
       let lastLessonTitleAr = null;
       
-      const lastProgress = progress[0]; // First item is most recent due to ordering
+      const lastProgress = progress[0];
       if (lastProgress) {
         const { data: lessonData } = await supabase
           .from('lessons')
@@ -281,7 +299,6 @@ export function useUserProfile() {
       const totalXp = gamification?.total_xp || 0;
       const newLevel = calculateExperienceLevel(totalXp, completedLessons);
       
-      // Update experience level if changed (do this silently, no state flicker)
       let finalProfile = profileData;
       if (profileData && profileData.experience_level !== newLevel) {
         await supabase
@@ -291,7 +308,6 @@ export function useUserProfile() {
         
         finalProfile = { ...profileData, experience_level: newLevel };
         
-        // Log activity for level change
         await supabase.from('user_activity_timeline').insert({
           user_id: userId,
           activity_type: 'level_change',
@@ -300,7 +316,6 @@ export function useUserProfile() {
         });
       }
 
-      // Set all state at once to prevent multiple re-renders
       setProfile(finalProfile);
       setLearningStats({
         totalCourses,
@@ -312,6 +327,7 @@ export function useUserProfile() {
         lastLessonTitleAr,
         completedCourses,
         remainingCourses,
+        availableCourses,
       });
       setActivities(activitiesRes.data || []);
     } catch (error) {
