@@ -696,7 +696,8 @@ const SessionCard: React.FC<{
                 ))}
               </div>
             </div>
-          )
+          )}
+
           {/* Rewatched segments */}
           {rewatched.length > 0 && (
             <div className="space-y-1.5">
