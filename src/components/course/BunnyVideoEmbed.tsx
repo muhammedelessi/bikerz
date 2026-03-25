@@ -334,6 +334,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Save aggregated behavior (per user+lesson, merged across all sessions)
       await supabase.from("video_watch_behavior" as any).upsert({
         user_id: user.id,
         lesson_id: lessonId,
@@ -352,15 +353,17 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
         body: {
           lessonId,
           courseId,
-          watchSessionId: watchSessionIdRef.current,
+          sessionId: watchSessionIdRef.current,
           startedAt: startedAtRef.current,
+          skippedSegments: b.skippedSegments,
+          rewatchedSegments: b.rewatchedSegments,
           watchData: {
             totalWatchedSeconds: computeTotalWatched(b.watchedIntervals),
             videoDuration: Math.floor(b.videoDuration),
             lastPosition: b.lastPosition,
             completionPercentage: computeCompletion(b.watchedIntervals, b.videoDuration),
-          }
-        }
+          },
+        },
       });
     } catch (err) {
       console.warn("[BunnyVideoEmbed] Failed to save watch behavior:", err);
