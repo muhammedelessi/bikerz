@@ -2612,13 +2612,6 @@ export type Database = {
             referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "video_watch_sessions_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "user_sessions"
-            referencedColumns: ["id"]
-          },
         ]
       }
       xp_transactions: {

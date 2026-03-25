@@ -1,0 +1,1 @@
+ALTER TABLE public.video_watch_sessions DROP CONSTRAINT IF EXISTS video_watch_sessions_session_id_fkey;
