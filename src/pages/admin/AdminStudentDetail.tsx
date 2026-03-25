@@ -208,6 +208,20 @@ const AdminStudentDetail: React.FC = () => {
     enabled: !!userId,
   });
 
+  // Fetch video_watch_behavior for detailed skipped/rewatched data
+  const { data: watchBehaviors = [] } = useQuery({
+    queryKey: ['student-watch-behavior', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data } = await supabase
+        .from('video_watch_behavior')
+        .select('lesson_id, course_id, total_watched_seconds, skipped_segments, rewatched_segments, last_position_seconds, video_duration_seconds, completion_percentage, updated_at')
+        .eq('user_id', userId);
+      return (data || []) as WatchBehavior[];
+    },
+    enabled: !!userId,
+  });
+
   const firstIP: string | null = null;
 
   const { data: lessonTitles = [] } = useQuery({
