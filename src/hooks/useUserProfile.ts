@@ -25,6 +25,15 @@ export interface ExtendedProfile {
   updated_at: string;
 }
 
+export interface EnrolledCourseItem {
+  course_id: string;
+  title: string;
+  title_ar: string | null;
+  thumbnail_url: string | null;
+  progress_percentage: number;
+  completed_at: string | null;
+}
+
 export interface LearningStats {
   totalCourses: number;
   coursesInProgress: number;
@@ -33,6 +42,8 @@ export interface LearningStats {
   overallProgress: number;
   lastLessonTitle: string | null;
   lastLessonTitleAr: string | null;
+  completedCourses: EnrolledCourseItem[];
+  remainingCourses: EnrolledCourseItem[];
 }
 
 export interface ActivityItem {
@@ -175,7 +186,7 @@ export function useUserProfile() {
           .single(),
         supabase
           .from('course_enrollments')
-          .select('id, progress_percentage, completed_at, course_id')
+          .select('id, progress_percentage, completed_at, course_id, course:courses!course_enrollments_course_id_fkey(title, title_ar, thumbnail_url)')
           .eq('user_id', userId),
         supabase
           .from('lesson_progress')
