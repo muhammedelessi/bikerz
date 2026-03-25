@@ -271,6 +271,20 @@ const AdminStudentDetail: React.FC = () => {
   const completedCourses = enrollments.filter(e => e.completed_at || e.progress_percentage >= 100).length;
   const totalSpent = enrollments.reduce((sum, e) => sum + (e.purchase_amount || 0), 0);
 
+  // Get behaviors for a specific course
+  const getBehaviorsForCourse = (cId: string): (WatchBehavior & { lessonTitle: string })[] => {
+    return watchBehaviors
+      .filter(b => b.course_id === cId)
+      .map(b => ({
+        ...b,
+        lessonTitle: (() => {
+          const l = lessonTitleMap.get(b.lesson_id);
+          if (!l) return b.lesson_id.slice(0, 8);
+          return isRTL && l.title_ar ? l.title_ar : l.title;
+        })(),
+      }));
+  };
+
   // Get sessions for a specific course
   const getSessionsForCourse = (cId: string): (WatchSession & { lessonTitle: string })[] => {
     return watchSessions
