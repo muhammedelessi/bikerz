@@ -697,7 +697,7 @@ const SessionCard: React.FC<{
                 )}
               </div>
             </div>
-          )}
+
 
           {/* Rewatched segments */}
           {rewatched.length > 0 && (
@@ -714,16 +714,11 @@ const SessionCard: React.FC<{
                 </span>
               </div>
               <div className="flex flex-wrap gap-1.5 ms-6">
-                {rewatched.slice(0, 6).map((r, i) => (
-                  <Badge key={i} variant="outline" className="text-[11px] px-2 h-5 border-blue-500/25 text-blue-500/90 font-mono">
+                {rewatched.map((r, i) => (
+                  <Badge key={i} variant="outline" className="text-xs px-2.5 py-1 h-6 border-blue-500/25 text-blue-500/90 font-mono">
                     {fmtTime(Math.round(r.from))} → {fmtTime(Math.round(r.to))} ×{r.count}
                   </Badge>
                 ))}
-                {rewatched.length > 6 && (
-                  <Badge variant="outline" className="text-[11px] px-2 h-5 border-muted text-muted-foreground">
-                    +{rewatched.length - 6} {isRTL ? 'أخرى' : 'more'}
-                  </Badge>
-                )}
               </div>
             </div>
           )}
