@@ -49,6 +49,8 @@ const CourseRow: React.FC<{ course: EnrolledCourseItem; isRTL: boolean }> = ({ c
 
 export const LearningProgress: React.FC<LearningProgressProps> = ({ stats }) => {
   const { isRTL } = useLanguage();
+  const completedCourses = stats.completedCourses || [];
+  const remainingCourses = stats.remainingCourses || [];
 
   const statCards = [
     {
@@ -149,12 +151,12 @@ export const LearningProgress: React.FC<LearningProgressProps> = ({ stats }) => 
               {isRTL ? 'الدورات المكتملة' : 'Completed Courses'}
             </h3>
             <p className="text-xs text-muted-foreground">
-              {stats.completedCourses.length} {isRTL ? 'دورة' : stats.completedCourses.length === 1 ? 'course' : 'courses'}
+              {completedCourses.length} {isRTL ? 'دورة' : completedCourses.length === 1 ? 'course' : 'courses'}
             </p>
           </div>
         </div>
 
-        {stats.completedCourses.length === 0 ? (
+        {completedCourses.length === 0 ? (
           <div className="text-center py-6 bg-muted/20 rounded-lg">
             <Trophy className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">
@@ -163,7 +165,7 @@ export const LearningProgress: React.FC<LearningProgressProps> = ({ stats }) => 
           </div>
         ) : (
           <div className="space-y-2">
-            {stats.completedCourses.map((course) => (
+            {completedCourses.map((course) => (
               <CourseRow key={course.course_id} course={course} isRTL={isRTL} />
             ))}
           </div>
@@ -171,7 +173,7 @@ export const LearningProgress: React.FC<LearningProgressProps> = ({ stats }) => 
       </div>
 
       {/* Remaining Courses */}
-      {stats.remainingCourses.length > 0 && (
+      {remainingCourses.length > 0 && (
         <div className="card-premium p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
@@ -182,13 +184,13 @@ export const LearningProgress: React.FC<LearningProgressProps> = ({ stats }) => 
                 {isRTL ? 'الدورات المتبقية' : 'Remaining Courses'}
               </h3>
               <p className="text-xs text-muted-foreground">
-                {stats.remainingCourses.length} {isRTL ? 'دورة' : stats.remainingCourses.length === 1 ? 'course' : 'courses'}
+                {remainingCourses.length} {isRTL ? 'دورة' : remainingCourses.length === 1 ? 'course' : 'courses'}
               </p>
             </div>
           </div>
 
           <div className="space-y-2">
-            {stats.remainingCourses.map((course) => (
+            {remainingCourses.map((course) => (
               <CourseRow key={course.course_id} course={course} isRTL={isRTL} />
             ))}
           </div>
