@@ -1,61 +1,39 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-
-// Updated role types matching the database enum
-type AppRole = 
-  | 'super_admin'
-  | 'academy_admin'
-  | 'instructor'
-  | 'moderator'
-  | 'finance'
-  | 'support'
-  | 'student';
-
-interface UserProfile {
-  id: string;
-  user_id: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  phone: string | null;
-  city: string | null;
-  country: string | null;
-  postal_code: string | null;
-  phone_verified: boolean;
-  profile_complete: boolean;
-  date_of_birth: string | null;
-  gender: string | null;
-}
-
-interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  profile: UserProfile | null;
-  roles: AppRole[];
-  isLoading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
-  hasRole: (role: AppRole) => boolean;
-  hasAnyRole: (roles: AppRole[]) => boolean;
-  // Convenience role checks
-  isAdmin: boolean;
-  isSuperAdmin: boolean;
-  isAcademyAdmin: boolean;
-  isInstructor: boolean;
-  isModerator: boolean;
-  isFinance: boolean;
-  isSupport: boolean;
-  isStudent: boolean;
-  // Can access admin panel
-  canAccessAdmin: boolean;
-}
+import type { User, Session } from '@supabase/supabase-js';
+import type { AppRole, UserProfile, AuthContextType } from '@/types/auth';
+import { ADMIN_ROLES } from '@/types/auth';
+import {
+  fetchUserData,
+  signUpUser,
+  signInUser,
+  signOutUser,
+  getSession,
+  onAuthStateChange,
+} from '@/services/auth.service';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Admin roles that can access the admin panel
-const ADMIN_ROLES: AppRole[] = ['super_admin', 'academy_admin', 'instructor', 'moderator', 'finance', 'support'];
 const OAUTH_VIEWPORT_RESET_KEY = 'oauth_viewport_reset_pending';
+
+function redirectAfterOAuth() {
+  const hash = window.location.hash || '';
+  const search = window.location.search || '';
+  const isOAuthRedirect = hash.includes('access_token') || search.includes('code=');
+
+  if (!isOAuthRedirect) return;
+
+  try {
+    sessionStorage.setItem(OAUTH_VIEWPORT_RESET_KEY, '1');
+  } catch {
+    // sessionStorage may be unavailable in some WebKit contexts
+  }
+
+  const vp = document.querySelector('meta[name="viewport"]');
+  if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+
+  window.scrollTo(0, 0);
+  window.location.replace('/');
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -65,63 +43,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  const fetchUserData = useCallback(async (userId: string): Promise<{ profile: UserProfile | null; roles: AppRole[] }> => {
-    try {
-      // Fetch profile and roles in parallel
-      const [profileResult, rolesResult] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle(),
-        supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', userId)
-      ]);
-
-      const fetchedProfile = profileResult.data || null;
-      const fetchedRoles = rolesResult.data?.map((r) => r.role as AppRole) || [];
-
-      return { profile: fetchedProfile, roles: fetchedRoles };
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      return { profile: null, roles: [] };
-    }
+  const loadUserData = useCallback(async (userId: string) => {
+    const { profile: fetchedProfile, roles: fetchedRoles } = await fetchUserData(userId);
+    return { fetchedProfile, fetchedRoles };
   }, []);
 
   useEffect(() => {
     let mounted = true;
 
-    const redirectAfterOAuth = () => {
-      const hash = window.location.hash || '';
-      const search = window.location.search || '';
-      const isOAuthRedirect = hash.includes('access_token') || search.includes('code=');
-
-      if (!isOAuthRedirect) return;
-
-      try {
-        sessionStorage.setItem(OAUTH_VIEWPORT_RESET_KEY, '1');
-      } catch {
-        // sessionStorage may be unavailable in some WebKit contexts
-      }
-
-      // Force viewport meta before redirect
-      const vp = document.querySelector('meta[name="viewport"]');
-      if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
-
-      window.scrollTo(0, 0);
-
-      // Use replace to force full page reload and reset responsive layout
-      window.location.replace('/');
-    };
-
     const initializeAuth = async () => {
       try {
-        // Get existing session first
-        const {
-          data: { session: existingSession },
-        } = await (supabase.auth as any).getSession();
+        const existingSession = await getSession();
 
         if (!mounted) return;
 
@@ -131,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           redirectAfterOAuth();
 
-          const { profile: fetchedProfile, roles: fetchedRoles } = await fetchUserData(existingSession.user.id);
+          const { fetchedProfile, fetchedRoles } = await loadUserData(existingSession.user.id);
 
           if (!mounted) return;
 
@@ -152,8 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initializeAuth();
 
-    // Set up auth state listener for subsequent changes
-    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(
+    const { data: { subscription } } = onAuthStateChange(
       async (_event: any, newSession: any) => {
         if (_event === 'SIGNED_IN') {
           redirectAfterOAuth();
@@ -161,14 +92,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (!mounted || !initialized) return;
 
-        // Handle auth state changes after initialization
         setSession(newSession);
         setUser(newSession?.user ?? null);
 
         if (newSession?.user) {
           setTimeout(async () => {
             if (!mounted) return;
-            const { profile: fetchedProfile, roles: fetchedRoles } = await fetchUserData(newSession.user.id);
+            const { fetchedProfile, fetchedRoles } = await loadUserData(newSession.user.id);
             if (mounted) {
               setProfile(fetchedProfile);
               setRoles(fetchedRoles);
@@ -185,52 +115,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchUserData, initialized]);
+  }, [loadUserData, initialized]);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await (supabase.auth as any).signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
-    return { error: error as Error | null };
-  };
+  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
+    return signUpUser(email, password, fullName);
+  }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { error, data } = await (supabase.auth as any).signInWithPassword({
-      email,
-      password,
-    });
+  const signIn = useCallback(async (email: string, password: string) => {
+    const { error, data } = await signInUser(email, password);
 
-    // After successful sign in, fetch user data immediately
     if (!error && data.user) {
-      const { profile: fetchedProfile, roles: fetchedRoles } = await fetchUserData(data.user.id);
+      const { fetchedProfile, fetchedRoles } = await loadUserData(data.user.id);
       setProfile(fetchedProfile);
       setRoles(fetchedRoles);
       setUser(data.user);
       setSession(data.session);
     }
 
-    return { error: error as Error | null };
-  };
+    return { error };
+  }, [loadUserData]);
 
-  const signOut = async () => {
-    await (supabase.auth as any).signOut();
+  const signOut = useCallback(async () => {
+    await signOutUser();
     setUser(null);
     setSession(null);
     setProfile(null);
     setRoles([]);
-  };
+  }, []);
 
   const hasRole = useCallback((role: AppRole) => roles.includes(role), [roles]);
   const hasAnyRole = useCallback((checkRoles: AppRole[]) => checkRoles.some(role => roles.includes(role)), [roles]);
 
-  // Memoize role checks to ensure they update when roles change
   const roleChecks = useMemo(() => {
     const isSuperAdmin = roles.includes('super_admin');
     const isAcademyAdmin = roles.includes('academy_admin');
@@ -241,7 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isStudent = roles.includes('student');
     const isAdmin = ADMIN_ROLES.some(role => roles.includes(role));
     const canAccessAdmin = isAdmin;
-    
+
     return {
       isSuperAdmin,
       isAcademyAdmin,
@@ -267,7 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hasRole,
     hasAnyRole,
     ...roleChecks,
-  }), [user, session, profile, roles, isLoading, hasRole, hasAnyRole, roleChecks]);
+  }), [user, session, profile, roles, isLoading, signUp, signIn, signOut, hasRole, hasAnyRole, roleChecks]);
 
   return (
     <AuthContext.Provider value={value}>

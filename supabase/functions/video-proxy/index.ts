@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
+import { serve } from "std/http/server";
+import { encode as base64Encode } from "std/encoding/base64";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,11 +30,9 @@ const generateBunnyToken = async (
   const encoder = new TextEncoder();
   const data = encoder.encode(signatureString);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
 
   // Convert bytes to base64 and make URL-safe
-  const hashBytes = new Uint8Array(hashArray);
-  const base64Token = base64Encode(hashBytes);
+  const base64Token = base64Encode(hashBuffer);
 
   // URL-safe base64
   return base64Token.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");

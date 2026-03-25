@@ -272,6 +272,8 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   const saveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const behaviorDirtyRef = useRef(false);
   const trackingEnabledRef = useRef(!!lessonId && !!courseId);
+  const watchSessionIdRef = useRef<string>(crypto.randomUUID());
+  const startedAtRef = useRef<string>(new Date().toISOString());
 
   useEffect(() => {
     onEndedRef.current = onEnded;
@@ -344,6 +346,22 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
         completion_percentage: computeCompletion(b.watchedIntervals, b.videoDuration),
         updated_at: new Date().toISOString(),
       } as any, { onConflict: "user_id,lesson_id" } as any);
+
+      // Session-based tracking with IP capture via Edge Function
+      await supabase.functions.invoke("video-tracking", {
+        body: {
+          lessonId,
+          courseId,
+          watchSessionId: watchSessionIdRef.current,
+          startedAt: startedAtRef.current,
+          watchData: {
+            totalWatchedSeconds: computeTotalWatched(b.watchedIntervals),
+            videoDuration: Math.floor(b.videoDuration),
+            lastPosition: b.lastPosition,
+            completionPercentage: computeCompletion(b.watchedIntervals, b.videoDuration),
+          }
+        }
+      });
     } catch (err) {
       console.warn("[BunnyVideoEmbed] Failed to save watch behavior:", err);
     }
@@ -487,6 +505,8 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
     durationRef.current = null;
     progressRef.current = 0;
     prevTimeRef.current = null;
+    watchSessionIdRef.current = crypto.randomUUID();
+    startedAtRef.current = new Date().toISOString();
     clearTimers();
   }, [videoUrl, clearTimers]);
 

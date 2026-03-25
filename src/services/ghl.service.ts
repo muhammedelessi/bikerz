@@ -1,0 +1,86 @@
+import { supabase } from '@/integrations/supabase/client';
+import type { FormWebhookData } from '@/types/ghl';
+
+function getVisitSource(): string {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const utmSource = params.get('utm_source');
+    if (utmSource) return utmSource.toLowerCase();
+
+    const stored = sessionStorage.getItem('utm_source');
+    if (stored) return stored.toLowerCase();
+  } catch {
+    // ignore
+  }
+  return 'direct';
+}
+
+// Persist UTM on first load
+if (typeof window !== 'undefined') {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const utm = params.get('utm_source');
+    if (utm) sessionStorage.setItem('utm_source', utm);
+  } catch {
+    // ignore
+  }
+}
+
+export async function sendGHLFormData(data: FormWebhookData): Promise<boolean> {
+  const { isRTL, silent, ...rest } = data;
+  const payload = {
+    ...rest,
+    source: getVisitSource(),
+  };
+
+  try {
+    const { error } = await supabase.functions.invoke('ghl-form-webhook', {
+      body: payload,
+    });
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error('GHL form webhook failed:', err);
+    return false;
+  }
+}
+
+export async function upsertCourseStatus(
+  userId: string,
+  courseId: string,
+  courseName: string,
+  orderStatus: string,
+) {
+  const { data, error } = await supabase.rpc('upsert_course_status', {
+    p_user_id: userId,
+    p_course_id: courseId,
+    p_course_name: courseName,
+    p_order_status: orderStatus,
+  });
+
+  if (error) {
+    console.error('upsert_course_status error:', error);
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    coursesJson: row?.courses_json || '[]',
+    totalPurchased: row?.total_purchased ?? 0,
+  };
+}
+
+export async function getUserCourseStatuses(userId: string) {
+  const { data, error } = await supabase.rpc('get_user_course_statuses', {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    console.error('get_user_course_statuses error:', error);
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    coursesJson: row?.courses_json || '[]',
+    totalPurchased: row?.total_purchased ?? 0,
+  };
+}

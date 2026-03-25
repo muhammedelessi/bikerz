@@ -8,10 +8,10 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import * as LucideIcons from 'lucide-react';
 import SEOHead from '@/components/common/SEOHead';
-import { 
-  Target, 
-  Users, 
-  Shield, 
+import {
+  Target,
+  Users,
+  Shield,
   Award,
   MapPin,
   Phone,
@@ -51,11 +51,11 @@ const AboutUs: React.FC = () => {
   const values = [0, 1, 2, 3].map((i) => ({
     icon: getIcon(d[`value${i}_icon`] || '', defaultIcons[i]),
     title: isRTL
-      ? (d[`value${i}_title_ar`] || t(`aboutUs.values.${['safety','community','excellence','passion'][i]}.title`))
-      : (d[`value${i}_title_en`] || t(`aboutUs.values.${['safety','community','excellence','passion'][i]}.title`)),
+      ? (d[`value${i}_title_ar`] || t(`aboutUs.values.${['safety', 'community', 'excellence', 'passion'][i]}.title`))
+      : (d[`value${i}_title_en`] || t(`aboutUs.values.${['safety', 'community', 'excellence', 'passion'][i]}.title`)),
     description: isRTL
-      ? (d[`value${i}_desc_ar`] || t(`aboutUs.values.${['safety','community','excellence','passion'][i]}.description`))
-      : (d[`value${i}_desc_en`] || t(`aboutUs.values.${['safety','community','excellence','passion'][i]}.description`)),
+      ? (d[`value${i}_desc_ar`] || t(`aboutUs.values.${['safety', 'community', 'excellence', 'passion'][i]}.description`))
+      : (d[`value${i}_desc_en`] || t(`aboutUs.values.${['safety', 'community', 'excellence', 'passion'][i]}.description`)),
   }));
 
   const contactInfo = [
@@ -92,7 +92,7 @@ const AboutUs: React.FC = () => {
         breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'About Us', url: '/about' }]}
       />
       <Navbar />
-      
+
       {/* Hero Section */}
       <section className="relative pt-[var(--navbar-h)] pb-16 sm:pb-20 overflow-hidden">
         <div className="absolute inset-0">
@@ -100,10 +100,10 @@ const AboutUs: React.FC = () => {
             src={bgImage}
             alt="Motorcycle riders"
             className="w-full h-full object-cover opacity-30"
-           loading="lazy" />
+            loading="lazy" />
           <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
         </div>
-        
+
         <div className="relative section-container text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -164,7 +164,7 @@ const AboutUs: React.FC = () => {
                 {isRTL ? (d.mission_desc_ar || t('aboutUs.mission.description')) : (d.mission_desc_en || t('aboutUs.mission.description'))}
               </p>
             </motion.div>
-            
+
             <motion.div
               initial={{ opacity: 0, x: isRTL ? -30 : 30 }}
               whileInView={{ opacity: 1, x: 0 }}

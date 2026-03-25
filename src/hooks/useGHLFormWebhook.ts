@@ -1,64 +1,19 @@
 import { useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-function getVisitSource(): string {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const utmSource = params.get('utm_source');
-    if (utmSource) return utmSource.toLowerCase();
-
-    const stored = sessionStorage.getItem('utm_source');
-    if (stored) return stored.toLowerCase();
-  } catch {
-    // ignore
-  }
-  return 'direct';
-}
-
-// Persist UTM on first load
-if (typeof window !== 'undefined') {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const utm = params.get('utm_source');
-    if (utm) sessionStorage.setItem('utm_source', utm);
-  } catch {
-    // ignore
-  }
-}
-
-interface FormWebhookData {
-  full_name?: string;
-  email?: string;
-  phone?: string;
-  city?: string;
-  country?: string;
-  address?: string;
-  courseName?: string;
-  amount?: string;
-  orderStatus?: string;
-  courses?: string;
-  totalPurchased?: number;
-  dateOfBirth?: string;
-  gender?: string;
-  isRTL?: boolean;
-  silent?: boolean;
-}
+import type { FormWebhookData } from '@/types/ghl';
+import {
+  sendGHLFormData,
+  upsertCourseStatus,
+  getUserCourseStatuses,
+} from '@/services/ghl.service';
 
 export function useGHLFormWebhook() {
   const sendFormData = useCallback(async (data: FormWebhookData) => {
-    const { isRTL, silent, ...rest } = data;
-    const payload = {
-      ...rest,
-      source: getVisitSource(),
-    };
+    const { isRTL, silent } = data;
 
     try {
-      const { error } = await supabase.functions.invoke('ghl-form-webhook', {
-        body: payload,
-      });
-
-      if (error) throw error;
+      const success = await sendGHLFormData(data);
+      if (!success) throw new Error('Webhook failed');
 
       if (!silent) {
         toast.success(isRTL ? '✅ تم إرسال البيانات بنجاح' : '✅ Data submitted successfully');
@@ -73,9 +28,6 @@ export function useGHLFormWebhook() {
     }
   }, []);
 
-  /**
-   * Upsert a course status, then send the full courses array to GHL.
-   */
   const sendCourseStatus = useCallback(async (
     userId: string,
     courseId: string,
@@ -84,21 +36,12 @@ export function useGHLFormWebhook() {
     extraData: Omit<FormWebhookData, 'courses' | 'totalPurchased' | 'orderStatus' | 'courseName'>
   ) => {
     try {
-      // Upsert and get full array
-      const { data, error: rpcError } = await supabase.rpc('upsert_course_status', {
-        p_user_id: userId,
-        p_course_id: courseId,
-        p_course_name: courseName,
-        p_order_status: orderStatus,
-      });
-
-      if (rpcError) {
-        console.error('upsert_course_status error:', rpcError);
-      }
-
-      const row = Array.isArray(data) ? data[0] : data;
-      const coursesJson = row?.courses_json || '[]';
-      const totalPurchased = row?.total_purchased ?? 0;
+      const { coursesJson, totalPurchased } = await upsertCourseStatus(
+        userId,
+        courseId,
+        courseName,
+        orderStatus,
+      );
 
       return sendFormData({
         ...extraData,
@@ -113,25 +56,12 @@ export function useGHLFormWebhook() {
     }
   }, [sendFormData]);
 
-  /**
-   * Send webhook with current courses array (no upsert). Used at signup.
-   */
   const sendWithCourses = useCallback(async (
     userId: string,
     extraData: FormWebhookData
   ) => {
     try {
-      const { data, error: rpcError } = await supabase.rpc('get_user_course_statuses', {
-        p_user_id: userId,
-      });
-
-      if (rpcError) {
-        console.error('get_user_course_statuses error:', rpcError);
-      }
-
-      const row = Array.isArray(data) ? data[0] : data;
-      const coursesJson = row?.courses_json || '[]';
-      const totalPurchased = row?.total_purchased ?? 0;
+      const { coursesJson, totalPurchased } = await getUserCourseStatuses(userId);
 
       return sendFormData({
         ...extraData,

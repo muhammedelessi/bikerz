@@ -15,8 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { 
-  Mail, Phone, MapPin, Clock, MessageSquare, Send, 
+import {
+  Mail, Phone, MapPin, Clock, MessageSquare, Send,
   Loader2, CheckCircle, HelpCircle, CreditCard, BookOpen, User, RefreshCw, Award, MoreHorizontal
 } from 'lucide-react';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
@@ -92,7 +92,7 @@ const ContactUs: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast.error(isRTL ? 'يرجى تسجيل الدخول لإرسال طلب الدعم' : 'Please log in to submit a support request');
       navigate('/login');
@@ -144,7 +144,7 @@ const ContactUs: React.FC = () => {
         <SEOHead title="Contact Us" description="Get in touch with BIKERZ Academy. We're here to help with course inquiries, technical support, and partnership opportunities." canonical="/contact" breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Contact', url: '/contact' }]} />
         <Navbar />
         <main className="pt-[var(--navbar-h)] pb-16">
-            <div className="page-container">
+          <div className="page-container">
             <div className="max-w-lg mx-auto">
               <Card className="text-center">
                 <CardContent className="pt-12 pb-8">
@@ -190,7 +190,7 @@ const ContactUs: React.FC = () => {
     <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <SEOHead title="Contact Us" description="Get in touch with BIKERZ Academy. We're here to help with course inquiries, technical support, and partnership opportunities." canonical="/contact" breadcrumbs={[{ name: 'Home', url: '/' }, { name: 'Contact', url: '/contact' }]} />
       <Navbar />
-      
+
       <main className="pt-[var(--navbar-h)] pb-16">
         {/* Header */}
         <section className="bg-gradient-to-br from-primary/10 via-background to-secondary/10 py-16 sm:py-20">
@@ -236,6 +236,7 @@ const ContactUs: React.FC = () => {
                       </CardContent>
                     </Card>
                   ))}
+
                 </div>
 
                 {/* Contact Form */}
@@ -247,7 +248,7 @@ const ContactUs: React.FC = () => {
                         {t('contact.form.title')}
                       </CardTitle>
                       <CardDescription>
-                        {user 
+                        {user
                           ? t('contact.form.loggedInDescription')
                           : t('contact.form.guestDescription')
                         }
@@ -329,9 +330,9 @@ const ContactUs: React.FC = () => {
                             <p className="text-sm text-muted-foreground">
                               {t('contact.form.loginRequired')}
                             </p>
-                            <Button 
-                              type="button" 
-                              variant="link" 
+                            <Button
+                              type="button"
+                              variant="link"
                               className="p-0 h-auto text-primary"
                               onClick={() => navigate('/login')}
                             >
@@ -340,8 +341,8 @@ const ContactUs: React.FC = () => {
                           </div>
                         )}
 
-                        <Button 
-                          type="submit" 
+                        <Button
+                          type="submit"
                           className="w-full"
                           disabled={submitTicketMutation.isPending || !user}
                         >
