@@ -443,7 +443,7 @@ const Dashboard: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.4, delay: 0.2 + index * 0.1 }}
                     >
-                      <Link to={`/courses/${course.id}/learn`} className="block h-full">
+                      <Link to={enrollment.nextLesson ? `/courses/${course.id}/lessons/${enrollment.nextLesson.id}` : `/courses/${course.id}/learn`} className="block h-full">
                         <div className="group card-premium flex flex-col h-full transition-all duration-300 hover:border-primary/40 hover:shadow-lg active:scale-[0.99] overflow-hidden">
                           {/* Thumbnail with overlay */}
                           <div className="relative aspect-video w-full overflow-hidden bg-muted">
