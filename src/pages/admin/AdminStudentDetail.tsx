@@ -31,6 +31,7 @@ import {
   SkipForward,
   Repeat,
   Play,
+  AlertCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -42,13 +43,12 @@ interface RewatchedSegment { from: number; to: number; count: number }
 
 interface WatchSession {
   lesson_id: string;
-  total_watch_time_seconds: number;
-  max_position_reached_seconds: number;
-  video_duration_seconds: number;
-  completion_percentage: number;
-  ip_address: string | null;
-  watch_session_id: string | null;
-  updated_at: string;
+  total_watch_time_seconds: number | null;
+  max_position_reached_seconds: number | null;
+  video_duration_seconds: number | null;
+  completion_percentage: number | null;
+  session_id: string | null;
+  started_at: string;
 }
 
 // ── Helpers ──
@@ -188,16 +188,15 @@ const AdminStudentDetail: React.FC = () => {
       if (!userId) return [];
       const { data } = await supabase
         .from('video_watch_sessions')
-        .select('lesson_id, total_watch_time_seconds, max_position_reached_seconds, video_duration_seconds, completion_percentage, ip_address, watch_session_id, updated_at')
+        .select('lesson_id, total_watch_time_seconds, max_position_reached_seconds, video_duration_seconds, completion_percentage, session_id, started_at')
         .eq('user_id', userId)
-        .order('updated_at', { ascending: true });
+        .order('started_at', { ascending: true });
       return (data || []) as WatchSession[];
     },
     enabled: !!userId,
   });
 
-  const uniqueIPs = [...new Set(watchSessions.map(s => s.ip_address).filter(Boolean))];
-  const firstIP = uniqueIPs[0] || null;
+  const firstIP: string | null = null;
 
   const { data: lessonTitles = [] } = useQuery({
     queryKey: ['lesson-titles-for-behavior', watchSessions.map(b => b.lesson_id).join(',')],
