@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
+import { fetchEnrollmentsWithLiveProgress } from '@/lib/enrollmentProgress';
 
 export interface ExtendedProfile {
   id: string;
@@ -188,6 +189,7 @@ export function useUserProfile() {
           .from('course_enrollments')
           .select('id, progress_percentage, completed_at, course_id, course:courses!course_enrollments_course_id_fkey(title, title_ar, thumbnail_url)')
           .eq('user_id', userId),
+        fetchEnrollmentsWithLiveProgress(userId),
         supabase
           .from('lesson_progress')
           .select('id, is_completed, watch_time_seconds, lesson_id, completed_at, last_watched_at')
