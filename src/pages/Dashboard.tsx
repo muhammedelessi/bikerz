@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchEnrollmentsWithLiveProgress } from '@/lib/enrollmentProgress';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import LanguageToggle from '@/components/common/LanguageToggle';
@@ -60,11 +61,15 @@ const Dashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
 
-  // Fetch enrolled courses from database
+  // Fetch enrolled courses with live progress
   const { data: enrolledCourses = [], isLoading: coursesLoading } = useQuery({
     queryKey: ['enrolled-courses', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
+
+      // Get live progress
+      const liveProgress = await fetchEnrollmentsWithLiveProgress(user.id);
+      const liveMap = new Map(liveProgress.map(lp => [lp.course_id, lp.progress_percentage]));
 
       const { data: enrollments, error } = await supabase
         .from('course_enrollments')
@@ -76,7 +81,8 @@ const Dashboard: React.FC = () => {
             id,
             title,
             title_ar,
-            thumbnail_url
+            thumbnail_url,
+            total_lessons
           )
         `)
         .eq('user_id', user.id)
@@ -84,19 +90,18 @@ const Dashboard: React.FC = () => {
 
       if (error) throw error;
 
+      // Get all completed lesson ids for next lesson detection
+      const { data: completedLessons } = await supabase
+        .from('lesson_progress')
+        .select('lesson_id')
+        .eq('user_id', user.id)
+        .eq('is_completed', true);
+
+      const completedIds = new Set((completedLessons || []).map(l => l.lesson_id));
+
       // Fetch next lesson for each enrollment
       const coursesWithNextLesson = await Promise.all(
         (enrollments || []).map(async (enrollment) => {
-          // Get completed lessons
-          const { data: completedLessons } = await supabase
-            .from('lesson_progress')
-            .select('lesson_id')
-            .eq('user_id', user.id)
-            .eq('is_completed', true);
-
-          const completedIds = (completedLessons || []).map(l => l.lesson_id);
-
-          // Get first uncompleted lesson from the course
           const { data: chapters } = await supabase
             .from('chapters')
             .select('id')
@@ -105,21 +110,29 @@ const Dashboard: React.FC = () => {
             .order('position', { ascending: true });
 
           let nextLesson = null;
+          let totalLessons = 0;
+          let completedCount = 0;
           if (chapters && chapters.length > 0) {
             const { data: lessons } = await supabase
               .from('lessons')
               .select('id, title, title_ar')
               .in('chapter_id', chapters.map(c => c.id))
               .eq('is_published', true)
-              .order('position', { ascending: true })
-              .limit(10);
+              .order('position', { ascending: true });
 
-            nextLesson = lessons?.find(l => !completedIds.includes(l.id)) || null;
+            totalLessons = lessons?.length || 0;
+            completedCount = lessons?.filter(l => completedIds.has(l.id)).length || 0;
+            nextLesson = lessons?.find(l => !completedIds.has(l.id)) || null;
           }
+
+          const realProgress = liveMap.get(enrollment.course_id) ?? enrollment.progress_percentage;
 
           return {
             ...enrollment,
+            progress_percentage: realProgress,
             nextLesson,
+            totalLessons,
+            completedLessons: completedCount,
           } as EnrolledCourse;
         })
       );
