@@ -28,6 +28,7 @@ import {
   Users,
   User,
   Loader2,
+  CheckCircle2,
 } from 'lucide-react';
 import bikerzLogo from '@/assets/bikerz-logo.webp';
 
