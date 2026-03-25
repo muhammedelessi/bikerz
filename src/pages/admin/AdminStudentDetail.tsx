@@ -209,10 +209,14 @@ const AdminStudentDetail: React.FC = () => {
       if (!userId) return [];
       const { data } = await supabase
         .from('video_watch_sessions')
-        .select('lesson_id, total_watch_time_seconds, max_position_reached_seconds, video_duration_seconds, completion_percentage, session_id, started_at')
+        .select('lesson_id, total_watch_time_seconds, max_position_reached_seconds, video_duration_seconds, completion_percentage, session_id, started_at, ip_address, skipped_segments, rewatched_segments')
         .eq('user_id', userId)
         .order('started_at', { ascending: true });
-      return (data || []) as WatchSession[];
+      return (data || []).map(d => ({
+        ...d,
+        skipped_segments: Array.isArray(d.skipped_segments) ? d.skipped_segments : [],
+        rewatched_segments: Array.isArray(d.rewatched_segments) ? d.rewatched_segments : [],
+      })) as unknown as WatchSession[];
     },
     enabled: !!userId,
   });
