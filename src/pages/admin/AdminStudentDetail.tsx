@@ -694,11 +694,9 @@ const SessionCard: React.FC<{
                     {fmtTime(Math.round(seg.from))} → {fmtTime(Math.round(seg.to))}
                   </Badge>
                 ))}
-                )}
               </div>
             </div>
-
-
+          )
           {/* Rewatched segments */}
           {rewatched.length > 0 && (
             <div className="space-y-1.5">
