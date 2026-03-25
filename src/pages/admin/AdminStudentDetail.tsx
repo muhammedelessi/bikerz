@@ -573,82 +573,196 @@ const BehaviorPanel: React.FC<{
 }> = ({ behaviors, isRTL }) => {
   const [open, setOpen] = useState(false);
 
+  const totalWatched = behaviors.reduce((s, b) => s + (b.total_watched_seconds || 0), 0);
+  const totalDuration = behaviors.reduce((s, b) => s + (b.video_duration_seconds || 0), 0);
+  const avgCompletion = behaviors.length > 0
+    ? Math.round(behaviors.reduce((s, b) => s + (b.completion_percentage || 0), 0) / behaviors.length)
+    : 0;
+  const totalSkips = behaviors.reduce((s, b) => s + ((b.skipped_segments as SkippedSegment[] || []).length), 0);
+  const totalRewatches = behaviors.reduce((s, b) => s + ((b.rewatched_segments as RewatchedSegment[] || []).length), 0);
+
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger asChild>
-        <Button variant="ghost" size="sm" className="w-full justify-between text-xs h-8 px-2 text-muted-foreground hover:text-foreground">
-          <span className="flex items-center gap-1.5">
-            <Play className="w-3.5 h-3.5" />
-            {isRTL ? `سلوك المشاهدة (${behaviors.length} درس)` : `Watch Behavior (${behaviors.length} lessons)`}
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`w-full justify-between text-xs h-9 px-3 rounded-lg transition-colors ${
+            open
+              ? 'bg-primary/10 text-primary hover:bg-primary/15'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <Activity className="w-3.5 h-3.5" />
+            {isRTL ? `سلوك المشاهدة` : `Watch Behavior`}
+            <Badge variant="secondary" className="text-[9px] px-1.5 h-4 font-normal">
+              {behaviors.length} {isRTL ? 'درس' : 'lessons'}
+            </Badge>
           </span>
-          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
         </Button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="mt-2 space-y-2">
-          {behaviors.map((b) => {
-            const skipped = (b.skipped_segments || []) as SkippedSegment[];
-            const rewatched = (b.rewatched_segments || []) as RewatchedSegment[];
-            const watched = b.total_watched_seconds || 0;
-            const duration = b.video_duration_seconds || 0;
-            const skippedTime = skipped.reduce((sum, s) => sum + Math.max(0, s.to - s.from), 0);
+        <div className="mt-3 space-y-3">
+          {/* Summary stats row */}
+          <div className="grid grid-cols-4 gap-2">
+            <StatMini
+              icon={Timer}
+              label={isRTL ? 'مشاهدة' : 'Watched'}
+              value={fmtDuration(totalWatched)}
+              sub={`/ ${fmtDuration(totalDuration)}`}
+            />
+            <StatMini
+              icon={CheckCircle2}
+              label={isRTL ? 'إكمال' : 'Avg Done'}
+              value={`${avgCompletion}%`}
+              accent={avgCompletion >= 80}
+            />
+            <StatMini
+              icon={SkipForward}
+              label={isRTL ? 'تخطي' : 'Skips'}
+              value={String(totalSkips)}
+              warn={totalSkips > 3}
+            />
+            <StatMini
+              icon={Repeat}
+              label={isRTL ? 'إعادة' : 'Replays'}
+              value={String(totalRewatches)}
+            />
+          </div>
 
-            return (
-              <div key={b.lesson_id} className="bg-muted/30 rounded-lg p-3 space-y-2 border border-border/50">
-                <p className="text-xs font-bold text-foreground">{b.lessonTitle}</p>
-                
-                {/* Summary line */}
-                <p className="text-[11px] text-muted-foreground">
-                  <span className="text-foreground font-medium">
-                    {isRTL ? 'شاهد' : 'Watched'} {fmtDuration(watched)}/{fmtDuration(duration)}
-                  </span>
-                  {' · '}
-                  <span>{Math.round(b.completion_percentage || 0)}%</span>
-                </p>
-
-                {/* Skipped segments */}
-                {skipped.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    <span className="flex items-center gap-1 text-[10px] text-orange-500">
-                      <SkipForward className="w-3 h-3" />
-                      {isRTL ? 'تخطى:' : 'Skipped:'}
-                    </span>
-                    {skipped.map((s, i) => (
-                      <Badge key={i} variant="outline" className="text-[9px] px-1.5 h-4 border-orange-500/30 text-orange-500">
-                        {fmtTime(Math.round(s.from))}→{fmtTime(Math.round(s.to))}
-                      </Badge>
-                    ))}
-                    <span className="text-[10px] text-muted-foreground">({fmtDuration(skippedTime)})</span>
-                  </div>
-                )}
-
-                {/* Rewatched segments */}
-                {rewatched.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    <span className="flex items-center gap-1 text-[10px] text-blue-500">
-                      <Repeat className="w-3 h-3" />
-                      {isRTL ? 'أعاد:' : 'Rewatched:'}
-                    </span>
-                    {rewatched.map((r, i) => (
-                      <Badge key={i} variant="outline" className="text-[9px] px-1.5 h-4 border-blue-500/30 text-blue-500">
-                        {fmtTime(Math.round(r.from))}→{fmtTime(Math.round(r.to))} (x{r.count})
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                {skipped.length === 0 && rewatched.length === 0 && (
-                  <p className="text-[10px] text-green-500 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {isRTL ? 'مشاهدة كاملة بدون تخطي' : 'Full watch, no skips'}
-                  </p>
-                )}
-              </div>
-            );
-          })}
+          {/* Per-lesson cards */}
+          <div className="space-y-2">
+            {behaviors.map((b) => (
+              <LessonBehaviorCard key={b.lesson_id} behavior={b} isRTL={isRTL} />
+            ))}
+          </div>
         </div>
       </CollapsibleContent>
     </Collapsible>
+  );
+};
+
+// ── Stat Mini Card ──
+
+const StatMini: React.FC<{
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  sub?: string;
+  accent?: boolean;
+  warn?: boolean;
+}> = ({ icon: Icon, label, value, sub, accent, warn }) => (
+  <div className="bg-muted/40 rounded-lg p-2 text-center space-y-0.5">
+    <Icon className={`w-3.5 h-3.5 mx-auto ${warn ? 'text-orange-500' : accent ? 'text-green-500' : 'text-muted-foreground'}`} />
+    <p className={`text-xs font-bold tabular-nums ${warn ? 'text-orange-500' : accent ? 'text-green-500' : 'text-foreground'}`}>
+      {value}
+      {sub && <span className="text-muted-foreground font-normal text-[10px]"> {sub}</span>}
+    </p>
+    <p className="text-[9px] text-muted-foreground leading-none">{label}</p>
+  </div>
+);
+
+// ── Lesson Behavior Card ──
+
+const LessonBehaviorCard: React.FC<{
+  behavior: WatchBehavior & { lessonTitle: string };
+  isRTL: boolean;
+}> = ({ behavior: b, isRTL }) => {
+  const skipped = (b.skipped_segments || []) as SkippedSegment[];
+  const rewatched = (b.rewatched_segments || []) as RewatchedSegment[];
+  const watched = b.total_watched_seconds || 0;
+  const duration = b.video_duration_seconds || 1;
+  const pct = Math.round(b.completion_percentage || 0);
+  const skippedTime = skipped.reduce((sum, s) => sum + Math.max(0, s.to - s.from), 0);
+  const isCleanWatch = skipped.length === 0 && rewatched.length === 0;
+
+  return (
+    <div className="rounded-lg border border-border/60 overflow-hidden">
+      {/* Header with progress bar */}
+      <div className="relative px-3 py-2 bg-muted/20">
+        {/* Thin progress indicator at top */}
+        <div className="absolute top-0 inset-x-0 h-0.5 bg-muted">
+          <div
+            className={`h-full transition-all ${pct >= 90 ? 'bg-green-500' : pct >= 50 ? 'bg-primary' : 'bg-orange-400'}`}
+            style={{ width: `${Math.min(pct, 100)}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between gap-2 pt-0.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <Play className="w-3 h-3 text-primary shrink-0" />
+            <span className="text-xs font-semibold text-foreground truncate">{b.lessonTitle}</span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[10px] text-muted-foreground tabular-nums">
+              {fmtDuration(watched)}<span className="text-muted-foreground/60">/{fmtDuration(duration)}</span>
+            </span>
+            <Badge
+              variant="secondary"
+              className={`text-[9px] px-1.5 h-4 font-bold ${
+                pct >= 90
+                  ? 'bg-green-500/15 text-green-600 border-green-500/20'
+                  : pct >= 50
+                  ? 'bg-primary/10 text-primary border-primary/20'
+                  : 'bg-orange-500/10 text-orange-500 border-orange-500/20'
+              }`}
+            >
+              {pct}%
+            </Badge>
+          </div>
+        </div>
+      </div>
+
+      {/* Segments detail */}
+      {!isCleanWatch && (
+        <div className="px-3 py-2 space-y-1.5 bg-background">
+          {skipped.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="flex items-center gap-1 text-[10px] text-orange-500 font-medium shrink-0">
+                <SkipForward className="w-3 h-3" />
+                {isRTL ? 'تخطى' : 'Skipped'}
+                <span className="text-muted-foreground font-normal">({fmtDuration(skippedTime)})</span>
+              </span>
+              {skipped.slice(0, 5).map((s, i) => (
+                <Badge key={i} variant="outline" className="text-[9px] px-1.5 h-4 border-orange-500/25 text-orange-500/80 font-mono">
+                  {fmtTime(Math.round(s.from))}→{fmtTime(Math.round(s.to))}
+                </Badge>
+              ))}
+              {skipped.length > 5 && (
+                <span className="text-[9px] text-muted-foreground">+{skipped.length - 5}</span>
+              )}
+            </div>
+          )}
+          {rewatched.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="flex items-center gap-1 text-[10px] text-blue-500 font-medium shrink-0">
+                <Repeat className="w-3 h-3" />
+                {isRTL ? 'أعاد' : 'Replayed'}
+              </span>
+              {rewatched.slice(0, 5).map((r, i) => (
+                <Badge key={i} variant="outline" className="text-[9px] px-1.5 h-4 border-blue-500/25 text-blue-500/80 font-mono">
+                  {fmtTime(Math.round(r.from))}→{fmtTime(Math.round(r.to))} ×{r.count}
+                </Badge>
+              ))}
+              {rewatched.length > 5 && (
+                <span className="text-[9px] text-muted-foreground">+{rewatched.length - 5}</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Clean watch indicator */}
+      {isCleanWatch && (
+        <div className="px-3 py-1.5 bg-green-500/5 flex items-center gap-1.5">
+          <CheckCircle2 className="w-3 h-3 text-green-500" />
+          <span className="text-[10px] text-green-600 font-medium">
+            {isRTL ? 'مشاهدة كاملة بدون تخطي' : 'Clean watch — no skips or replays'}
+          </span>
+        </div>
+      )}
+    </div>
   );
 };
 
