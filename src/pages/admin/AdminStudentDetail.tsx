@@ -562,6 +562,93 @@ const WatchSessionsPanel: React.FC<{
   );
 };
 
+// ── Behavior Panel ──
+
+const BehaviorPanel: React.FC<{
+  behaviors: (WatchBehavior & { lessonTitle: string })[];
+  isRTL: boolean;
+}> = ({ behaviors, isRTL }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost" size="sm" className="w-full justify-between text-xs h-8 px-2 text-muted-foreground hover:text-foreground">
+          <span className="flex items-center gap-1.5">
+            <Play className="w-3.5 h-3.5" />
+            {isRTL ? `سلوك المشاهدة (${behaviors.length} درس)` : `Watch Behavior (${behaviors.length} lessons)`}
+          </span>
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="mt-2 space-y-2">
+          {behaviors.map((b) => {
+            const skipped = (b.skipped_segments || []) as SkippedSegment[];
+            const rewatched = (b.rewatched_segments || []) as RewatchedSegment[];
+            const watched = b.total_watched_seconds || 0;
+            const duration = b.video_duration_seconds || 0;
+            const skippedTime = skipped.reduce((sum, s) => sum + Math.max(0, s.to - s.from), 0);
+
+            return (
+              <div key={b.lesson_id} className="bg-muted/30 rounded-lg p-3 space-y-2 border border-border/50">
+                <p className="text-xs font-bold text-foreground">{b.lessonTitle}</p>
+                
+                {/* Summary line */}
+                <p className="text-[11px] text-muted-foreground">
+                  <span className="text-foreground font-medium">
+                    {isRTL ? 'شاهد' : 'Watched'} {fmtDuration(watched)}/{fmtDuration(duration)}
+                  </span>
+                  {' · '}
+                  <span>{Math.round(b.completion_percentage || 0)}%</span>
+                </p>
+
+                {/* Skipped segments */}
+                {skipped.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    <span className="flex items-center gap-1 text-[10px] text-orange-500">
+                      <SkipForward className="w-3 h-3" />
+                      {isRTL ? 'تخطى:' : 'Skipped:'}
+                    </span>
+                    {skipped.map((s, i) => (
+                      <Badge key={i} variant="outline" className="text-[9px] px-1.5 h-4 border-orange-500/30 text-orange-500">
+                        {fmtTime(Math.round(s.from))}→{fmtTime(Math.round(s.to))}
+                      </Badge>
+                    ))}
+                    <span className="text-[10px] text-muted-foreground">({fmtDuration(skippedTime)})</span>
+                  </div>
+                )}
+
+                {/* Rewatched segments */}
+                {rewatched.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    <span className="flex items-center gap-1 text-[10px] text-blue-500">
+                      <Repeat className="w-3 h-3" />
+                      {isRTL ? 'أعاد:' : 'Rewatched:'}
+                    </span>
+                    {rewatched.map((r, i) => (
+                      <Badge key={i} variant="outline" className="text-[9px] px-1.5 h-4 border-blue-500/30 text-blue-500">
+                        {fmtTime(Math.round(r.from))}→{fmtTime(Math.round(r.to))} (x{r.count})
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {skipped.length === 0 && rewatched.length === 0 && (
+                  <p className="text-[10px] text-green-500 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {isRTL ? 'مشاهدة كاملة بدون تخطي' : 'Full watch, no skips'}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
+
 // ── Sub-components ──
 
 const MetaRow: React.FC<{
