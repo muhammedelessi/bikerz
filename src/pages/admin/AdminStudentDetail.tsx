@@ -526,15 +526,15 @@ const WatchSessionsPanel: React.FC<{
           {/* Summary bar */}
           <div className="grid grid-cols-3 gap-2">
             <div className="bg-muted/40 rounded-lg p-3 text-center">
-              <p className="text-lg font-bold text-foreground tabular-nums">{fmtDuration(totalWatched)}</p>
+              <p className="text-lg font-bold text-foreground tabular-nums" dir="ltr">{fmtDuration(totalWatched)}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">{isRTL ? 'وقت المشاهدة' : 'Total Watched'}</p>
             </div>
             <div className="bg-muted/40 rounded-lg p-3 text-center">
-              <p className="text-lg font-bold text-foreground tabular-nums">{fmtDuration(totalDuration)}</p>
+              <p className="text-lg font-bold text-foreground tabular-nums" dir="ltr">{fmtDuration(totalDuration)}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">{isRTL ? 'مدة الفيديو' : 'Video Duration'}</p>
             </div>
             <div className="bg-muted/40 rounded-lg p-3 text-center">
-              <p className={`text-lg font-bold tabular-nums ${avgCompletion >= 80 ? 'text-green-500' : avgCompletion >= 50 ? 'text-primary' : 'text-orange-500'}`}>
+              <p className={`text-lg font-bold tabular-nums ${avgCompletion >= 80 ? 'text-green-500' : avgCompletion >= 50 ? 'text-primary' : 'text-orange-500'}`} dir="ltr">
                 {avgCompletion}%
               </p>
               <p className="text-[10px] text-muted-foreground mt-0.5">{isRTL ? 'متوسط الإكمال' : 'Avg Completion'}</p>
