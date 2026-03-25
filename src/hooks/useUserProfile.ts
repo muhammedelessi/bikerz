@@ -25,6 +25,15 @@ export interface ExtendedProfile {
   updated_at: string;
 }
 
+export interface EnrolledCourseItem {
+  course_id: string;
+  title: string;
+  title_ar: string | null;
+  thumbnail_url: string | null;
+  progress_percentage: number;
+  completed_at: string | null;
+}
+
 export interface LearningStats {
   totalCourses: number;
   coursesInProgress: number;
@@ -33,6 +42,8 @@ export interface LearningStats {
   overallProgress: number;
   lastLessonTitle: string | null;
   lastLessonTitleAr: string | null;
+  completedCourses: EnrolledCourseItem[];
+  remainingCourses: EnrolledCourseItem[];
 }
 
 export interface ActivityItem {
@@ -175,7 +186,7 @@ export function useUserProfile() {
           .single(),
         supabase
           .from('course_enrollments')
-          .select('id, progress_percentage, completed_at, course_id')
+          .select('id, progress_percentage, completed_at, course_id, course:courses!course_enrollments_course_id_fkey(title, title_ar, thumbnail_url)')
           .eq('user_id', userId),
         supabase
           .from('lesson_progress')
@@ -213,6 +224,22 @@ export function useUserProfile() {
       const overallProgress = totalCourses > 0
         ? Math.round(enrollments.reduce((acc, e) => acc + e.progress_percentage, 0) / totalCourses)
         : 0;
+
+      // Build course items from enrollments with joined course data
+      const courseItems: EnrolledCourseItem[] = enrollments.map((e: any) => {
+        const course = Array.isArray(e.course) ? e.course[0] : e.course;
+        return {
+          course_id: e.course_id,
+          title: course?.title || '',
+          title_ar: course?.title_ar || null,
+          thumbnail_url: course?.thumbnail_url || null,
+          progress_percentage: e.progress_percentage,
+          completed_at: e.completed_at,
+        };
+      });
+
+      const completedCourses = courseItems.filter(c => c.completed_at || c.progress_percentage >= 100);
+      const remainingCourses = courseItems.filter(c => !c.completed_at && c.progress_percentage < 100);
 
       // Get last lesson details (most recently watched, already sorted by last_watched_at desc)
       let lastLessonTitle = null;
@@ -265,6 +292,8 @@ export function useUserProfile() {
         overallProgress,
         lastLessonTitle,
         lastLessonTitleAr,
+        completedCourses,
+        remainingCourses,
       });
       setActivities(activitiesRes.data || []);
     } catch (error) {
