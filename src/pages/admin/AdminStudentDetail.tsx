@@ -488,34 +488,21 @@ const WatchSessionsPanel: React.FC<{
             <div key={lessonId} className="space-y-2">
               <p className="text-xs font-bold text-foreground px-1">{group.title}</p>
               <div className="space-y-1.5 ms-2">
-                {group.items.sort((a,b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()).map((s, idx) => {
-                  const isDifferentIP = firstIP && s.ip_address && s.ip_address !== firstIP;
+                {group.items.sort((a,b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime()).map((s, idx) => {
                   return (
                     <div key={idx} className="bg-muted/30 rounded-lg p-2.5 space-y-1 border border-border/50">
                       <div className="flex justify-between items-center text-[11px]">
                         <span className="font-semibold text-primary">
-                          {isRTL ? `جلسة ${idx + 1}` : `Session ${idx + 1}`} — {format(new Date(s.updated_at), 'dd MMM')}
+                          {isRTL ? `جلسة ${idx + 1}` : `Session ${idx + 1}`} — {format(new Date(s.started_at), 'dd MMM')}
                         </span>
                         <div className="flex items-center gap-2">
                           <span className="text-muted-foreground">
-                            {fmtDuration(s.total_watch_time_seconds)}/{fmtDuration(s.video_duration_seconds)}
+                            {fmtDuration(s.total_watch_time_seconds || 0)}/{fmtDuration(s.video_duration_seconds || 0)}
                           </span>
                           <Badge variant="secondary" className="text-[9px] px-1 h-3.5">
-                            {s.completion_percentage}%
+                            {s.completion_percentage || 0}%
                           </Badge>
                         </div>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-muted-foreground truncate max-w-[150px]" dir="ltr">
-                          IP: {s.ip_address || '?.?.?.?'}
-                        </span>
-                        {isDifferentIP && (
-                          <span className="text-destructive font-bold flex items-center gap-0.5">
-                            <AlertCircle className="w-3 h-3" />
-                            {isRTL ? 'IP مختلف' : 'Different IP'} ⚠️
-                          </span>
-                        )}
                       </div>
                     </div>
                   );
