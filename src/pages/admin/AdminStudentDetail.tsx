@@ -217,7 +217,7 @@ const AdminStudentDetail: React.FC = () => {
         .from('video_watch_behavior')
         .select('lesson_id, course_id, total_watched_seconds, skipped_segments, rewatched_segments, last_position_seconds, video_duration_seconds, completion_percentage, updated_at')
         .eq('user_id', userId);
-      return (data || []) as WatchBehavior[];
+      return (data || []) as unknown as WatchBehavior[];
     },
     enabled: !!userId,
   });
