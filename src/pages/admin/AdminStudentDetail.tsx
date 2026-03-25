@@ -31,10 +31,7 @@ import {
   SkipForward,
   Repeat,
   Play,
-  AlertCircle,
   CheckCircle2,
-  Timer,
-  Activity,
   Globe,
   AlertTriangle,
   Shield,
@@ -58,18 +55,6 @@ interface WatchSession {
   ip_address: string | null;
   skipped_segments: SkippedSegment[] | null;
   rewatched_segments: RewatchedSegment[] | null;
-}
-
-interface WatchBehavior {
-  lesson_id: string;
-  course_id: string | null;
-  total_watched_seconds: number | null;
-  skipped_segments: SkippedSegment[] | null;
-  rewatched_segments: RewatchedSegment[] | null;
-  last_position_seconds: number | null;
-  video_duration_seconds: number | null;
-  completion_percentage: number | null;
-  updated_at: string;
 }
 
 // ── Helpers ──
@@ -221,20 +206,6 @@ const AdminStudentDetail: React.FC = () => {
     enabled: !!userId,
   });
 
-  // Fetch video_watch_behavior for detailed skipped/rewatched data
-  const { data: watchBehaviors = [] } = useQuery({
-    queryKey: ['student-watch-behavior', userId],
-    queryFn: async () => {
-      if (!userId) return [];
-      const { data } = await supabase
-        .from('video_watch_behavior')
-        .select('lesson_id, course_id, total_watched_seconds, skipped_segments, rewatched_segments, last_position_seconds, video_duration_seconds, completion_percentage, updated_at')
-        .eq('user_id', userId);
-      return (data || []) as unknown as WatchBehavior[];
-    },
-    enabled: !!userId,
-  });
-
   const firstIP: string | null = watchSessions.length > 0 ? (watchSessions.find(s => s.ip_address && s.ip_address !== 'unknown')?.ip_address || null) : null;
 
   const { data: lessonTitles = [] } = useQuery({
@@ -283,20 +254,6 @@ const AdminStudentDetail: React.FC = () => {
   const isLoading = studentLoading || enrollmentsLoading;
   const completedCourses = enrollments.filter(e => e.completed_at || e.progress_percentage >= 100).length;
   const totalSpent = enrollments.reduce((sum, e) => sum + (e.purchase_amount || 0), 0);
-
-  // Get behaviors for a specific course
-  const getBehaviorsForCourse = (cId: string): (WatchBehavior & { lessonTitle: string })[] => {
-    return watchBehaviors
-      .filter(b => b.course_id === cId)
-      .map(b => ({
-        ...b,
-        lessonTitle: (() => {
-          const l = lessonTitleMap.get(b.lesson_id);
-          if (!l) return b.lesson_id.slice(0, 8);
-          return isRTL && l.title_ar ? l.title_ar : l.title;
-        })(),
-      }));
-  };
 
   // Get sessions for a specific course
   const getSessionsForCourse = (cId: string): (WatchSession & { lessonTitle: string })[] => {
@@ -436,8 +393,7 @@ const AdminStudentDetail: React.FC = () => {
           ) : (
             <div className="space-y-3">
               {enrollments.map(enrollment => {
-                const courseBehaviors = getSessionsForCourse(enrollment.course_id);
-                const lessonBehaviors = getBehaviorsForCourse(enrollment.course_id);
+                const courseSessions = getSessionsForCourse(enrollment.course_id);
                 return (
                   <Card key={enrollment.course_id}>
                     <CardContent className="p-4 space-y-3">
@@ -489,15 +445,10 @@ const AdminStudentDetail: React.FC = () => {
                         </p>
                       )}
 
-                      {/* Behavior Details Section */}
-                      {lessonBehaviors.length > 0 && (
-                        <BehaviorPanel behaviors={lessonBehaviors} isRTL={isRTL} />
-                      )}
-
                       {/* Watch Sessions Section */}
-                      {courseBehaviors.length > 0 && (
+                      {courseSessions.length > 0 && (
                         <WatchSessionsPanel 
-                          sessions={courseBehaviors} 
+                          sessions={courseSessions} 
                           isRTL={isRTL} 
                           firstIP={firstIP}
                         />
@@ -523,9 +474,15 @@ const WatchSessionsPanel: React.FC<{
 }> = ({ sessions, isRTL, firstIP }) => {
   const [open, setOpen] = useState(false);
 
-  // Collect all unique IPs
   const allIPs = [...new Set(sessions.map(s => s.ip_address).filter(Boolean))] as string[];
   const hasMultipleIPs = allIPs.filter(ip => ip !== 'unknown').length > 1;
+
+  // Aggregate stats
+  const totalWatched = sessions.reduce((s, ses) => s + (ses.total_watch_time_seconds || 0), 0);
+  const totalDuration = sessions.reduce((s, ses) => s + (ses.video_duration_seconds || 0), 0);
+  const avgCompletion = sessions.length > 0
+    ? Math.round(sessions.reduce((s, ses) => s + (Number(ses.completion_percentage) || 0), 0) / sessions.length)
+    : 0;
 
   // Group sessions by lesson
   const sessionsByLesson = sessions.reduce((acc, s) => {
@@ -549,12 +506,12 @@ const WatchSessionsPanel: React.FC<{
           <span className="flex items-center gap-2">
             <Eye className="w-3.5 h-3.5" />
             {isRTL ? 'جلسات المشاهدة' : 'Watch Sessions'}
-            <Badge variant="secondary" className="text-[9px] px-1.5 h-4 font-normal">
+            <Badge variant="secondary" className="text-[10px] px-1.5 h-4 font-normal">
               {sessions.length}
             </Badge>
             {hasMultipleIPs && (
-              <Badge className="text-[9px] px-1.5 h-4 bg-orange-500/15 text-orange-500 border-orange-500/20 hover:bg-orange-500/15">
-                <AlertTriangle className="w-2.5 h-2.5 me-0.5" />
+              <Badge className="text-[10px] px-1.5 h-4 bg-orange-500/15 text-orange-500 border-orange-500/20 hover:bg-orange-500/15">
+                <AlertTriangle className="w-3 h-3 me-0.5" />
                 {isRTL ? 'عدة IPs' : 'Multi-IP'}
               </Badge>
             )}
@@ -564,155 +521,79 @@ const WatchSessionsPanel: React.FC<{
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="mt-3 space-y-4">
+          {/* Summary bar */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-muted/40 rounded-lg p-3 text-center">
+              <p className="text-lg font-bold text-foreground tabular-nums">{fmtDuration(totalWatched)}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{isRTL ? 'وقت المشاهدة' : 'Total Watched'}</p>
+            </div>
+            <div className="bg-muted/40 rounded-lg p-3 text-center">
+              <p className="text-lg font-bold text-foreground tabular-nums">{fmtDuration(totalDuration)}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{isRTL ? 'مدة الفيديو' : 'Video Duration'}</p>
+            </div>
+            <div className="bg-muted/40 rounded-lg p-3 text-center">
+              <p className={`text-lg font-bold tabular-nums ${avgCompletion >= 80 ? 'text-green-500' : avgCompletion >= 50 ? 'text-primary' : 'text-orange-500'}`}>
+                {avgCompletion}%
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{isRTL ? 'متوسط الإكمال' : 'Avg Completion'}</p>
+            </div>
+          </div>
+
           {/* IP summary */}
           {allIPs.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 px-1">
-              <Globe className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground">{isRTL ? 'عناوين IP:' : 'IPs detected:'}</span>
-              {allIPs.map((ip, i) => (
-                <Badge
-                  key={i}
-                  variant="outline"
-                  className={`text-[9px] px-1.5 h-4 font-mono ${
-                    ip === firstIP
-                      ? 'border-green-500/30 text-green-600'
-                      : 'border-orange-500/30 text-orange-500'
-                  }`}
-                >
-                  {ip === firstIP && <Shield className="w-2.5 h-2.5 me-0.5" />}
-                  {ip !== firstIP && hasMultipleIPs && <AlertTriangle className="w-2.5 h-2.5 me-0.5" />}
-                  {ip}
-                </Badge>
-              ))}
+            <div className="flex flex-wrap items-center gap-2 bg-muted/20 rounded-lg px-3 py-2">
+              <Globe className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <span className="text-xs text-muted-foreground">{isRTL ? 'عناوين IP:' : 'IP Addresses:'}</span>
+              {allIPs.map((ip, i) => {
+                const isPrimary = ip === firstIP;
+                const isSuspicious = !isPrimary && hasMultipleIPs && ip !== 'unknown';
+                return (
+                  <Badge
+                    key={i}
+                    variant="outline"
+                    className={`text-[10px] px-2 h-5 font-mono gap-1 ${
+                      isPrimary
+                        ? 'border-green-500/30 text-green-600 bg-green-500/5'
+                        : isSuspicious
+                        ? 'border-orange-500/30 text-orange-500 bg-orange-500/5'
+                        : 'text-muted-foreground'
+                    }`}
+                  >
+                    {isPrimary && <Shield className="w-3 h-3" />}
+                    {isSuspicious && <AlertTriangle className="w-3 h-3" />}
+                    {ip}
+                  </Badge>
+                );
+              })}
             </div>
           )}
 
+          {/* Lessons with sessions */}
           {Object.entries(sessionsByLesson).map(([lessonId, group]) => (
             <div key={lessonId} className="space-y-2">
-              <div className="flex items-center gap-2 px-1">
-                <Play className="w-3 h-3 text-primary shrink-0" />
-                <p className="text-xs font-bold text-foreground">{group.title}</p>
+              {/* Lesson title */}
+              <div className="flex items-center gap-2">
+                <Play className="w-3.5 h-3.5 text-primary shrink-0" />
+                <p className="text-sm font-semibold text-foreground">{group.title}</p>
+                <Badge variant="secondary" className="text-[10px] px-1.5 h-4">
+                  {group.items.length} {group.items.length === 1 ? (isRTL ? 'جلسة' : 'session') : (isRTL ? 'جلسات' : 'sessions')}
+                </Badge>
               </div>
-              <div className="space-y-2 ms-1">
+
+              {/* Session cards */}
+              <div className="space-y-2 ms-2">
                 {group.items
                   .sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime())
-                  .map((s, idx) => {
-                    const pct = Math.round(Number(s.completion_percentage) || 0);
-                    const watched = s.total_watch_time_seconds || 0;
-                    const duration = s.video_duration_seconds || 1;
-                    const skipped = (s.skipped_segments || []) as SkippedSegment[];
-                    const rewatched = (s.rewatched_segments || []) as RewatchedSegment[];
-                    const skippedTime = skipped.reduce((sum, seg) => sum + Math.max(0, seg.to - seg.from), 0);
-                    const isDiffIP = s.ip_address && firstIP && s.ip_address !== firstIP && s.ip_address !== 'unknown';
-
-                    return (
-                      <div
-                        key={s.session_id || idx}
-                        className={`rounded-lg border overflow-hidden ${
-                          isDiffIP ? 'border-orange-500/40' : 'border-border/60'
-                        }`}
-                      >
-                        {/* Session header */}
-                        <div className="relative px-3 py-2 bg-muted/20">
-                          {/* Progress bar at top */}
-                          <div className="absolute top-0 inset-x-0 h-1 bg-muted">
-                            <div
-                              className={`h-full transition-all ${
-                                pct >= 90 ? 'bg-green-500' : pct >= 50 ? 'bg-primary' : 'bg-orange-400'
-                              }`}
-                              style={{ width: `${Math.min(pct, 100)}%` }}
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between gap-2 pt-1">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-3 h-3 text-muted-foreground" />
-                              <span className="text-[11px] font-semibold text-foreground">
-                                {isRTL ? `جلسة ${idx + 1}` : `Session ${idx + 1}`}
-                                <span className="text-muted-foreground font-normal ms-1">
-                                  — {format(new Date(s.started_at), 'dd MMM yyyy')}
-                                </span>
-                              </span>
-                            </div>
-                            <Badge
-                              variant="secondary"
-                              className={`text-[9px] px-1.5 h-4 font-bold ${
-                                pct >= 90
-                                  ? 'bg-green-500/15 text-green-600'
-                                  : pct >= 50
-                                  ? 'bg-primary/10 text-primary'
-                                  : 'bg-orange-500/10 text-orange-500'
-                              }`}
-                            >
-                              {pct}%
-                            </Badge>
-                          </div>
-                        </div>
-
-                        {/* Session body */}
-                        <div className="px-3 py-2 space-y-2 bg-background">
-                          {/* Watch time */}
-                          <div className="flex items-center gap-1.5 text-[11px]">
-                            <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0" />
-                            <span className="text-foreground font-medium">
-                              {isRTL ? 'شاهد:' : 'Watched:'} {fmtDuration(watched)}/{fmtDuration(duration)}
-                            </span>
-                          </div>
-
-                          {/* Skipped segments */}
-                          {skipped.length > 0 && (
-                            <div className="flex flex-wrap items-center gap-1">
-                              <span className="flex items-center gap-1 text-[10px] text-orange-500 font-medium shrink-0">
-                                <SkipForward className="w-3 h-3" />
-                                {isRTL ? 'تخطى' : 'Skipped'}
-                                <span className="text-muted-foreground font-normal">({fmtDuration(skippedTime)})</span>
-                              </span>
-                              {skipped.slice(0, 4).map((seg, i) => (
-                                <Badge key={i} variant="outline" className="text-[9px] px-1.5 h-4 border-orange-500/25 text-orange-500/80 font-mono">
-                                  {fmtTime(Math.round(seg.from))}→{fmtTime(Math.round(seg.to))}
-                                </Badge>
-                              ))}
-                              {skipped.length > 4 && (
-                                <span className="text-[9px] text-muted-foreground">+{skipped.length - 4}</span>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Rewatched segments */}
-                          {rewatched.length > 0 && (
-                            <div className="flex flex-wrap items-center gap-1">
-                              <span className="flex items-center gap-1 text-[10px] text-blue-500 font-medium shrink-0">
-                                <Repeat className="w-3 h-3" />
-                                {isRTL ? 'أعاد' : 'Replayed'}
-                              </span>
-                              {rewatched.slice(0, 4).map((r, i) => (
-                                <Badge key={i} variant="outline" className="text-[9px] px-1.5 h-4 border-blue-500/25 text-blue-500/80 font-mono">
-                                  {fmtTime(Math.round(r.from))}→{fmtTime(Math.round(r.to))} ×{r.count}
-                                </Badge>
-                              ))}
-                              {rewatched.length > 4 && (
-                                <span className="text-[9px] text-muted-foreground">+{rewatched.length - 4}</span>
-                              )}
-                            </div>
-                          )}
-
-                          {/* IP address */}
-                          {s.ip_address && s.ip_address !== 'unknown' && (
-                            <div className={`flex items-center gap-1.5 text-[10px] ${isDiffIP ? 'text-orange-500' : 'text-muted-foreground'}`}>
-                              <Globe className="w-3 h-3" />
-                              <span className="font-mono">{s.ip_address}</span>
-                              {isDiffIP && (
-                                <Badge className="text-[8px] px-1 h-3.5 bg-orange-500/15 text-orange-500 border-orange-500/20 hover:bg-orange-500/15">
-                                  <AlertTriangle className="w-2 h-2 me-0.5" />
-                                  {isRTL ? 'IP مختلف!' : 'Different IP!'}
-                                </Badge>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  .map((s, idx) => (
+                    <SessionCard
+                      key={s.session_id || idx}
+                      session={s}
+                      index={idx}
+                      isRTL={isRTL}
+                      firstIP={firstIP}
+                      hasMultipleIPs={hasMultipleIPs}
+                    />
+                  ))}
               </div>
             </div>
           ))}
@@ -722,204 +603,161 @@ const WatchSessionsPanel: React.FC<{
   );
 };
 
-// ── Behavior Panel ──
+// ── Session Card ──
 
-const BehaviorPanel: React.FC<{
-  behaviors: (WatchBehavior & { lessonTitle: string })[];
+const SessionCard: React.FC<{
+  session: WatchSession & { lessonTitle: string };
+  index: number;
   isRTL: boolean;
-}> = ({ behaviors, isRTL }) => {
-  const [open, setOpen] = useState(false);
-
-  const totalWatched = behaviors.reduce((s, b) => s + (b.total_watched_seconds || 0), 0);
-  const totalDuration = behaviors.reduce((s, b) => s + (b.video_duration_seconds || 0), 0);
-  const avgCompletion = behaviors.length > 0
-    ? Math.round(behaviors.reduce((s, b) => s + (b.completion_percentage || 0), 0) / behaviors.length)
-    : 0;
-  const totalSkips = behaviors.reduce((s, b) => s + ((b.skipped_segments as SkippedSegment[] || []).length), 0);
-  const totalRewatches = behaviors.reduce((s, b) => s + ((b.rewatched_segments as RewatchedSegment[] || []).length), 0);
-
-  return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`w-full justify-between text-xs h-9 px-3 rounded-lg transition-colors ${
-            open
-              ? 'bg-primary/10 text-primary hover:bg-primary/15'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <Activity className="w-3.5 h-3.5" />
-            {isRTL ? `سلوك المشاهدة` : `Watch Behavior`}
-            <Badge variant="secondary" className="text-[9px] px-1.5 h-4 font-normal">
-              {behaviors.length} {isRTL ? 'درس' : 'lessons'}
-            </Badge>
-          </span>
-          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-        </Button>
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <div className="mt-3 space-y-3">
-          {/* Summary stats row */}
-          <div className="grid grid-cols-4 gap-2">
-            <StatMini
-              icon={Timer}
-              label={isRTL ? 'مشاهدة' : 'Watched'}
-              value={fmtDuration(totalWatched)}
-              sub={`/ ${fmtDuration(totalDuration)}`}
-            />
-            <StatMini
-              icon={CheckCircle2}
-              label={isRTL ? 'إكمال' : 'Avg Done'}
-              value={`${avgCompletion}%`}
-              accent={avgCompletion >= 80}
-            />
-            <StatMini
-              icon={SkipForward}
-              label={isRTL ? 'تخطي' : 'Skips'}
-              value={String(totalSkips)}
-              warn={totalSkips > 3}
-            />
-            <StatMini
-              icon={Repeat}
-              label={isRTL ? 'إعادة' : 'Replays'}
-              value={String(totalRewatches)}
-            />
-          </div>
-
-          {/* Per-lesson cards */}
-          <div className="space-y-2">
-            {behaviors.map((b) => (
-              <LessonBehaviorCard key={b.lesson_id} behavior={b} isRTL={isRTL} />
-            ))}
-          </div>
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
-  );
-};
-
-// ── Stat Mini Card ──
-
-const StatMini: React.FC<{
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  sub?: string;
-  accent?: boolean;
-  warn?: boolean;
-}> = ({ icon: Icon, label, value, sub, accent, warn }) => (
-  <div className="bg-muted/40 rounded-lg p-2 text-center space-y-0.5">
-    <Icon className={`w-3.5 h-3.5 mx-auto ${warn ? 'text-orange-500' : accent ? 'text-green-500' : 'text-muted-foreground'}`} />
-    <p className={`text-xs font-bold tabular-nums ${warn ? 'text-orange-500' : accent ? 'text-green-500' : 'text-foreground'}`}>
-      {value}
-      {sub && <span className="text-muted-foreground font-normal text-[10px]"> {sub}</span>}
-    </p>
-    <p className="text-[9px] text-muted-foreground leading-none">{label}</p>
-  </div>
-);
-
-// ── Lesson Behavior Card ──
-
-const LessonBehaviorCard: React.FC<{
-  behavior: WatchBehavior & { lessonTitle: string };
-  isRTL: boolean;
-}> = ({ behavior: b, isRTL }) => {
-  const skipped = (b.skipped_segments || []) as SkippedSegment[];
-  const rewatched = (b.rewatched_segments || []) as RewatchedSegment[];
-  const watched = b.total_watched_seconds || 0;
-  const duration = b.video_duration_seconds || 1;
-  const pct = Math.round(b.completion_percentage || 0);
-  const skippedTime = skipped.reduce((sum, s) => sum + Math.max(0, s.to - s.from), 0);
+  firstIP: string | null;
+  hasMultipleIPs: boolean;
+}> = ({ session: s, index, isRTL, firstIP, hasMultipleIPs }) => {
+  const pct = Math.round(Number(s.completion_percentage) || 0);
+  const watched = s.total_watch_time_seconds || 0;
+  const duration = s.video_duration_seconds || 1;
+  const skipped = (s.skipped_segments || []) as SkippedSegment[];
+  const rewatched = (s.rewatched_segments || []) as RewatchedSegment[];
+  const skippedTime = skipped.reduce((sum, seg) => sum + Math.max(0, seg.to - seg.from), 0);
+  const rewatchedTime = rewatched.reduce((sum, seg) => sum + Math.max(0, seg.to - seg.from) * (seg.count || 1), 0);
+  const isDiffIP = s.ip_address && firstIP && s.ip_address !== firstIP && s.ip_address !== 'unknown';
   const isCleanWatch = skipped.length === 0 && rewatched.length === 0;
 
+  const progressColor = pct >= 90 ? 'bg-green-500' : pct >= 50 ? 'bg-primary' : 'bg-orange-400';
+
   return (
-    <div className="rounded-lg border border-border/60 overflow-hidden">
-      {/* Header with progress bar */}
-      <div className="relative px-3 py-2 bg-muted/20">
-        {/* Thin progress indicator at top */}
-        <div className="absolute top-0 inset-x-0 h-0.5 bg-muted">
-          <div
-            className={`h-full transition-all ${pct >= 90 ? 'bg-green-500' : pct >= 50 ? 'bg-primary' : 'bg-orange-400'}`}
-            style={{ width: `${Math.min(pct, 100)}%` }}
-          />
-        </div>
-        <div className="flex items-center justify-between gap-2 pt-0.5">
+    <Card className={`overflow-hidden ${isDiffIP ? 'border-orange-500/40 shadow-orange-500/5 shadow-sm' : ''}`}>
+      <CardContent className="p-0">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border/50">
           <div className="flex items-center gap-2 min-w-0">
-            <Play className="w-3 h-3 text-primary shrink-0" />
-            <span className="text-xs font-semibold text-foreground truncate">{b.lessonTitle}</span>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-[10px] text-muted-foreground tabular-nums">
-              {fmtDuration(watched)}<span className="text-muted-foreground/60">/{fmtDuration(duration)}</span>
+            <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <span className="text-sm font-medium text-foreground">
+              {isRTL ? `جلسة ${index + 1}` : `Session ${index + 1}`}
             </span>
-            <Badge
-              variant="secondary"
-              className={`text-[9px] px-1.5 h-4 font-bold ${
-                pct >= 90
-                  ? 'bg-green-500/15 text-green-600 border-green-500/20'
-                  : pct >= 50
-                  ? 'bg-primary/10 text-primary border-primary/20'
-                  : 'bg-orange-500/10 text-orange-500 border-orange-500/20'
-              }`}
-            >
-              {pct}%
-            </Badge>
+            <span className="text-xs text-muted-foreground">
+              {format(new Date(s.started_at), 'dd MMM yyyy, HH:mm')}
+            </span>
           </div>
+          <Badge
+            variant="secondary"
+            className={`text-xs px-2 h-5 font-bold ${
+              pct >= 90
+                ? 'bg-green-500/15 text-green-600'
+                : pct >= 50
+                ? 'bg-primary/10 text-primary'
+                : 'bg-orange-500/10 text-orange-500'
+            }`}
+          >
+            {pct}%
+          </Badge>
         </div>
-      </div>
 
-      {/* Segments detail */}
-      {!isCleanWatch && (
-        <div className="px-3 py-2 space-y-1.5 bg-background">
+        {/* Progress bar */}
+        <div className="h-1.5 bg-muted">
+          <div className={`h-full transition-all ${progressColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+        </div>
+
+        {/* Body */}
+        <div className="px-4 py-3 space-y-3">
+          {/* Watch time row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+              <span className="text-sm text-foreground">
+                {isRTL ? 'المشاهدة' : 'Watched'}
+              </span>
+            </div>
+            <span className="text-sm font-semibold text-foreground tabular-nums">
+              {fmtDuration(watched)} <span className="text-muted-foreground font-normal">/ {fmtDuration(duration)}</span>
+            </span>
+          </div>
+
+          {/* Skipped segments */}
           {skipped.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1">
-              <span className="flex items-center gap-1 text-[10px] text-orange-500 font-medium shrink-0">
-                <SkipForward className="w-3 h-3" />
-                {isRTL ? 'تخطى' : 'Skipped'}
-                <span className="text-muted-foreground font-normal">({fmtDuration(skippedTime)})</span>
-              </span>
-              {skipped.slice(0, 5).map((s, i) => (
-                <Badge key={i} variant="outline" className="text-[9px] px-1.5 h-4 border-orange-500/25 text-orange-500/80 font-mono">
-                  {fmtTime(Math.round(s.from))}→{fmtTime(Math.round(s.to))}
-                </Badge>
-              ))}
-              {skipped.length > 5 && (
-                <span className="text-[9px] text-muted-foreground">+{skipped.length - 5}</span>
-              )}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <SkipForward className="w-4 h-4 text-orange-500 shrink-0" />
+                  <span className="text-sm text-orange-600 dark:text-orange-400">
+                    {isRTL ? 'تخطى' : 'Skipped'}
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {fmtDuration(skippedTime)} · {skipped.length} {skipped.length === 1 ? (isRTL ? 'مقطع' : 'segment') : (isRTL ? 'مقاطع' : 'segments')}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 ms-6">
+                {skipped.slice(0, 6).map((seg, i) => (
+                  <Badge key={i} variant="outline" className="text-[11px] px-2 h-5 border-orange-500/25 text-orange-500/90 font-mono">
+                    {fmtTime(Math.round(seg.from))} → {fmtTime(Math.round(seg.to))}
+                  </Badge>
+                ))}
+                {skipped.length > 6 && (
+                  <Badge variant="outline" className="text-[11px] px-2 h-5 border-muted text-muted-foreground">
+                    +{skipped.length - 6} {isRTL ? 'أخرى' : 'more'}
+                  </Badge>
+                )}
+              </div>
             </div>
           )}
-          {rewatched.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1">
-              <span className="flex items-center gap-1 text-[10px] text-blue-500 font-medium shrink-0">
-                <Repeat className="w-3 h-3" />
-                {isRTL ? 'أعاد' : 'Replayed'}
-              </span>
-              {rewatched.slice(0, 5).map((r, i) => (
-                <Badge key={i} variant="outline" className="text-[9px] px-1.5 h-4 border-blue-500/25 text-blue-500/80 font-mono">
-                  {fmtTime(Math.round(r.from))}→{fmtTime(Math.round(r.to))} ×{r.count}
-                </Badge>
-              ))}
-              {rewatched.length > 5 && (
-                <span className="text-[9px] text-muted-foreground">+{rewatched.length - 5}</span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* Clean watch indicator */}
-      {isCleanWatch && (
-        <div className="px-3 py-1.5 bg-green-500/5 flex items-center gap-1.5">
-          <CheckCircle2 className="w-3 h-3 text-green-500" />
-          <span className="text-[10px] text-green-600 font-medium">
-            {isRTL ? 'مشاهدة كاملة بدون تخطي' : 'Clean watch — no skips or replays'}
-          </span>
+          {/* Rewatched segments */}
+          {rewatched.length > 0 && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Repeat className="w-4 h-4 text-blue-500 shrink-0" />
+                  <span className="text-sm text-blue-600 dark:text-blue-400">
+                    {isRTL ? 'أعاد المشاهدة' : 'Replayed'}
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {fmtDuration(rewatchedTime)} · {rewatched.length} {rewatched.length === 1 ? (isRTL ? 'مقطع' : 'segment') : (isRTL ? 'مقاطع' : 'segments')}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 ms-6">
+                {rewatched.slice(0, 6).map((r, i) => (
+                  <Badge key={i} variant="outline" className="text-[11px] px-2 h-5 border-blue-500/25 text-blue-500/90 font-mono">
+                    {fmtTime(Math.round(r.from))} → {fmtTime(Math.round(r.to))} ×{r.count}
+                  </Badge>
+                ))}
+                {rewatched.length > 6 && (
+                  <Badge variant="outline" className="text-[11px] px-2 h-5 border-muted text-muted-foreground">
+                    +{rewatched.length - 6} {isRTL ? 'أخرى' : 'more'}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Clean watch */}
+          {isCleanWatch && (
+            <div className="flex items-center gap-2 bg-green-500/5 rounded-md px-3 py-2">
+              <CheckCircle2 className="w-4 h-4 text-green-500" />
+              <span className="text-sm text-green-600 dark:text-green-400">
+                {isRTL ? 'مشاهدة نظيفة — بدون تخطي أو إعادة' : 'Clean watch — no skips or replays'}
+              </span>
+            </div>
+          )}
+
+          {/* IP address */}
+          {s.ip_address && s.ip_address !== 'unknown' && (
+            <div className={`flex items-center gap-2 rounded-md px-3 py-2 ${
+              isDiffIP ? 'bg-orange-500/5' : 'bg-muted/30'
+            }`}>
+              <Globe className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+              <span className="text-xs font-mono text-muted-foreground">{s.ip_address}</span>
+              {isDiffIP && (
+                <Badge className="text-[10px] px-1.5 h-4 bg-orange-500/15 text-orange-500 border-orange-500/20 hover:bg-orange-500/15 gap-0.5">
+                  <AlertTriangle className="w-3 h-3" />
+                  {isRTL ? 'IP مختلف!' : 'Different IP!'}
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 
