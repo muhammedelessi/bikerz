@@ -35,6 +35,9 @@ import {
   CheckCircle2,
   Timer,
   Activity,
+  Globe,
+  AlertTriangle,
+  Shield,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
