@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchEnrollmentsWithLiveProgress } from '@/lib/enrollmentProgress';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import LanguageToggle from '@/components/common/LanguageToggle';
@@ -27,6 +28,7 @@ import {
   Users,
   User,
   Loader2,
+  CheckCircle2,
 } from 'lucide-react';
 import bikerzLogo from '@/assets/bikerz-logo.webp';
 
@@ -34,11 +36,14 @@ interface EnrolledCourse {
   id: string;
   course_id: string;
   progress_percentage: number;
+  totalLessons: number;
+  completedLessons: number;
   course: {
     id: string;
     title: string;
     title_ar: string | null;
     thumbnail_url: string | null;
+    total_lessons: number | null;
   };
   nextLesson?: {
     title: string;
@@ -60,11 +65,15 @@ const Dashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
 
-  // Fetch enrolled courses from database
+  // Fetch enrolled courses with live progress
   const { data: enrolledCourses = [], isLoading: coursesLoading } = useQuery({
     queryKey: ['enrolled-courses', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
+
+      // Get live progress
+      const liveProgress = await fetchEnrollmentsWithLiveProgress(user.id);
+      const liveMap = new Map(liveProgress.map(lp => [lp.course_id, lp.progress_percentage]));
 
       const { data: enrollments, error } = await supabase
         .from('course_enrollments')
@@ -76,7 +85,8 @@ const Dashboard: React.FC = () => {
             id,
             title,
             title_ar,
-            thumbnail_url
+            thumbnail_url,
+            total_lessons
           )
         `)
         .eq('user_id', user.id)
@@ -84,19 +94,18 @@ const Dashboard: React.FC = () => {
 
       if (error) throw error;
 
+      // Get all completed lesson ids for next lesson detection
+      const { data: completedLessons } = await supabase
+        .from('lesson_progress')
+        .select('lesson_id')
+        .eq('user_id', user.id)
+        .eq('is_completed', true);
+
+      const completedIds = new Set((completedLessons || []).map(l => l.lesson_id));
+
       // Fetch next lesson for each enrollment
       const coursesWithNextLesson = await Promise.all(
         (enrollments || []).map(async (enrollment) => {
-          // Get completed lessons
-          const { data: completedLessons } = await supabase
-            .from('lesson_progress')
-            .select('lesson_id')
-            .eq('user_id', user.id)
-            .eq('is_completed', true);
-
-          const completedIds = (completedLessons || []).map(l => l.lesson_id);
-
-          // Get first uncompleted lesson from the course
           const { data: chapters } = await supabase
             .from('chapters')
             .select('id')
@@ -105,21 +114,29 @@ const Dashboard: React.FC = () => {
             .order('position', { ascending: true });
 
           let nextLesson = null;
+          let totalLessons = 0;
+          let completedCount = 0;
           if (chapters && chapters.length > 0) {
             const { data: lessons } = await supabase
               .from('lessons')
               .select('id, title, title_ar')
               .in('chapter_id', chapters.map(c => c.id))
               .eq('is_published', true)
-              .order('position', { ascending: true })
-              .limit(10);
+              .order('position', { ascending: true });
 
-            nextLesson = lessons?.find(l => !completedIds.includes(l.id)) || null;
+            totalLessons = lessons?.length || 0;
+            completedCount = lessons?.filter(l => completedIds.has(l.id)).length || 0;
+            nextLesson = lessons?.find(l => !completedIds.has(l.id)) || null;
           }
+
+          const realProgress = liveMap.get(enrollment.course_id) ?? enrollment.progress_percentage;
 
           return {
             ...enrollment,
+            progress_percentage: realProgress,
             nextLesson,
+            totalLessons,
+            completedLessons: completedCount,
           } as EnrolledCourse;
         })
       );
@@ -398,15 +415,16 @@ const Dashboard: React.FC = () => {
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {enrolledCourses.map((enrollment, index) => {
                   const course = enrollment.course as EnrolledCourse['course'];
                   const title = isRTL && course.title_ar ? course.title_ar : course.title;
+                  const isCompleted = enrollment.progress_percentage >= 100;
                   const nextLessonTitle = enrollment.nextLesson
                     ? (isRTL && enrollment.nextLesson.title_ar 
                         ? enrollment.nextLesson.title_ar 
                         : enrollment.nextLesson.title)
-                    : t('dashboard.courseCompleted');
+                    : null;
 
                   return (
                     <motion.div
@@ -415,54 +433,95 @@ const Dashboard: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.4, delay: 0.2 + index * 0.1 }}
                     >
-                      <Link to={`/courses/${course.id}/learn`}>
-                        <div className="group card-premium p-3 sm:p-4 flex gap-3 sm:gap-4 transition-all duration-300 hover:border-primary/40 active:scale-[0.99]">
-                          {/* Thumbnail */}
-                          <div className="relative w-24 h-20 sm:w-32 sm:h-24 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
+                      <Link to={`/courses/${course.id}/learn`} className="block h-full">
+                        <div className="group card-premium flex flex-col h-full transition-all duration-300 hover:border-primary/40 hover:shadow-lg active:scale-[0.99] overflow-hidden">
+                          {/* Thumbnail with overlay */}
+                          <div className="relative aspect-video w-full overflow-hidden bg-muted">
                             {course.thumbnail_url ? (
                               <img
                                 src={course.thumbnail_url}
                                 alt={title}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 loading="lazy"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <BookOpen className="w-8 h-8 text-muted-foreground" />
+                              <div className="w-full h-full flex items-center justify-center bg-muted">
+                                <BookOpen className="w-10 h-10 text-muted-foreground" />
                               </div>
                             )}
-                            <div className="absolute inset-0 bg-background/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Play className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
+                            {/* Play overlay */}
+                            <div className="absolute inset-0 bg-background/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center shadow-lg">
+                                <Play className="w-5 h-5 text-primary-foreground ms-0.5" />
+                              </div>
                             </div>
+                            {/* Completion badge */}
+                            {isCompleted && (
+                              <div className="absolute top-2 end-2 bg-green-500/90 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                {isRTL ? 'مكتمل' : 'Completed'}
+                              </div>
+                            )}
+                            {/* Progress percentage circle */}
+                            {!isCompleted && (
+                              <div className="absolute top-2 end-2 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center shadow border border-border">
+                                <span className="text-xs font-bold text-primary">{enrollment.progress_percentage}%</span>
+                              </div>
+                            )}
                           </div>
 
-                          {/* Info */}
-                          <div className="flex-1 min-w-0 flex flex-col justify-between">
-                            <div>
-                              <h3 className="font-bold text-sm sm:text-base text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                                {title}
-                              </h3>
-                              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                                {t('dashboard.nextLesson')}{nextLessonTitle}
-                              </p>
+                          {/* Content */}
+                          <div className="flex-1 flex flex-col p-4 gap-3">
+                            <h3 className="font-bold text-sm sm:text-base text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
+                              {title}
+                            </h3>
+
+                            {/* Lesson count */}
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <BookOpen className="w-3.5 h-3.5" />
+                              <span>
+                                {enrollment.completedLessons}/{enrollment.totalLessons} {isRTL ? 'دروس' : 'lessons'}
+                              </span>
                             </div>
 
-                            {/* Progress */}
-                            <div className="space-y-1 mt-2">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">{t('dashboard.progress')}</span>
-                                <span className="text-primary font-medium">{enrollment.progress_percentage}%</span>
+                            {/* Next lesson hint */}
+                            {nextLessonTitle && !isCompleted && (
+                              <div className="flex items-start gap-2 bg-muted/50 rounded-lg p-2.5 mt-auto">
+                                <Play className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">
+                                    {isRTL ? 'الدرس التالي' : 'Up Next'}
+                                  </p>
+                                  <p className="text-xs text-foreground font-medium line-clamp-1">{nextLessonTitle}</p>
+                                </div>
                               </div>
-                              <div className="progress-track">
+                            )}
+
+                            {isCompleted && (
+                              <div className="flex items-center gap-2 bg-green-500/10 rounded-lg p-2.5 mt-auto">
+                                <Trophy className="w-4 h-4 text-green-500" />
+                                <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                                  {isRTL ? 'أحسنت! أكملت هذه الدورة' : 'Well done! Course completed'}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Progress bar */}
+                            <div className="space-y-1.5">
+                              <div className="progress-track h-2 rounded-full">
                                 <div
-                                  className="progress-fill"
+                                  className={`h-full rounded-full transition-all duration-700 ${isCompleted ? 'bg-green-500' : 'progress-fill'}`}
                                   style={{ width: `${enrollment.progress_percentage}%` }}
                                 />
                               </div>
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-muted-foreground">{t('dashboard.progress')}</span>
+                                <span className={`font-semibold ${isCompleted ? 'text-green-500' : 'text-primary'}`}>
+                                  {enrollment.progress_percentage}%
+                                </span>
+                              </div>
                             </div>
                           </div>
-
-                          <Chevron className="w-5 h-5 text-muted-foreground self-center opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" />
                         </div>
                       </Link>
                     </motion.div>
