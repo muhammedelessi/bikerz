@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
+import { fetchEnrollmentsWithLiveProgress } from '@/lib/enrollmentProgress';
 
 export interface ExtendedProfile {
   id: string;
@@ -178,7 +179,7 @@ export function useUserProfile() {
   const loadAllData = async (userId: string) => {
     try {
       // Fetch profile, enrollments, lesson progress, gamification, and activities in parallel
-      const [profileRes, enrollmentsRes, progressRes, gamificationRes, activitiesRes] = await Promise.all([
+      const [profileRes, enrollmentsRes, liveProgress, progressRes, gamificationRes, activitiesRes] = await Promise.all([
         supabase
           .from('profiles')
           .select('*')
@@ -188,6 +189,7 @@ export function useUserProfile() {
           .from('course_enrollments')
           .select('id, progress_percentage, completed_at, course_id, course:courses!course_enrollments_course_id_fkey(title, title_ar, thumbnail_url)')
           .eq('user_id', userId),
+        fetchEnrollmentsWithLiveProgress(userId),
         supabase
           .from('lesson_progress')
           .select('id, is_completed, watch_time_seconds, lesson_id, completed_at, last_watched_at')
@@ -214,6 +216,9 @@ export function useUserProfile() {
       const progress = progressRes.data || [];
       const gamification = gamificationRes.data;
 
+      // Build a map of live progress percentages
+      const liveProgressMap = new Map(liveProgress.map(lp => [lp.course_id, lp.progress_percentage]));
+
       const totalCourses = enrollments.length;
       const coursesInProgress = enrollments.filter(e => !e.completed_at).length;
       const completedLessons = progress.filter(p => p.is_completed).length;
@@ -228,12 +233,13 @@ export function useUserProfile() {
       // Build course items from enrollments with joined course data
       const courseItems: EnrolledCourseItem[] = enrollments.map((e: any) => {
         const course = Array.isArray(e.course) ? e.course[0] : e.course;
+        const realProgress = liveProgressMap.get(e.course_id) ?? e.progress_percentage;
         return {
           course_id: e.course_id,
           title: course?.title || '',
           title_ar: course?.title_ar || null,
           thumbnail_url: course?.thumbnail_url || null,
-          progress_percentage: e.progress_percentage,
+          progress_percentage: realProgress,
           completed_at: e.completed_at,
         };
       });
