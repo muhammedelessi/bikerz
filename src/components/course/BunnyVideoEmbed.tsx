@@ -10,6 +10,8 @@ interface BunnyVideoEmbedProps {
   initialTime?: number;
   isPreview?: boolean;
   autoPlay?: boolean;
+  lessonId?: string;
+  courseId?: string;
 }
 
 type PlayerJsPayload = Record<string, unknown> | string | number | null | undefined;
@@ -78,8 +80,6 @@ const loadPlayerJs = async (): Promise<void> => {
   return playerJsLoaderPromise;
 };
 
-// Extract Bunny video ID from CDN URL
-// Pattern: https://vz-XXXX.b-cdn.net/{videoId}/playlist.m3u8
 const extractBunnyVideoId = (url: string): string | null => {
   try {
     const urlObj = new URL(url);
@@ -101,13 +101,11 @@ const extractBunnyVideoId = (url: string): string | null => {
   return match ? match[1] : null;
 };
 
-// Cache for library ID
 let cachedLibraryId: string | null = null;
 
 const fetchLibraryId = async (videoId: string): Promise<string | null> => {
   if (cachedLibraryId) return cachedLibraryId;
 
-  // Try bunny-embed first (public, no auth required — avoids 401 on expired sessions)
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -128,7 +126,6 @@ const fetchLibraryId = async (videoId: string): Promise<string | null> => {
     console.warn("[BunnyVideoEmbed] bunny-embed failed:", err);
   }
 
-  // Fallback: try bunny-stream function (authenticated)
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     const { data } = await supabase.functions.invoke("bunny-stream", {
@@ -194,6 +191,47 @@ const parseTimeUpdatePayload = (
   return { currentTime, duration, progress };
 };
 
+// ── Watch Behavior Tracker ──
+
+interface SkippedSegment { from: number; to: number }
+interface RewatchedSegment { from: number; to: number; count: number }
+
+interface WatchBehaviorState {
+  watchedIntervals: [number, number][]; // merged intervals of actually watched seconds
+  skippedSegments: SkippedSegment[];
+  rewatchedSegments: RewatchedSegment[];
+  lastPosition: number;
+  videoDuration: number;
+}
+
+const mergeInterval = (intervals: [number, number][], start: number, end: number): [number, number][] => {
+  if (start >= end) return intervals;
+  const newIntervals = [...intervals, [start, end] as [number, number]];
+  newIntervals.sort((a, b) => a[0] - b[0]);
+  const merged: [number, number][] = [newIntervals[0]];
+  for (let i = 1; i < newIntervals.length; i++) {
+    const last = merged[merged.length - 1];
+    if (newIntervals[i][0] <= last[1] + 1) {
+      last[1] = Math.max(last[1], newIntervals[i][1]);
+    } else {
+      merged.push(newIntervals[i]);
+    }
+  }
+  return merged;
+};
+
+const computeTotalWatched = (intervals: [number, number][]): number => {
+  return intervals.reduce((sum, [a, b]) => sum + (b - a), 0);
+};
+
+const computeCompletion = (intervals: [number, number][], duration: number): number => {
+  if (duration <= 0) return 0;
+  const watched = computeTotalWatched(intervals);
+  return Math.min(100, Math.round((watched / duration) * 100));
+};
+
+const SAVE_INTERVAL_MS = 5000;
+
 const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   videoUrl,
   title,
@@ -203,6 +241,8 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   initialTime = 0,
   isPreview = false,
   autoPlay = false,
+  lessonId,
+  courseId,
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -220,6 +260,19 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   const iframeLoadFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playerReadyRef = useRef(false);
 
+  // ── Watch behavior tracking refs ──
+  const behaviorRef = useRef<WatchBehaviorState>({
+    watchedIntervals: [],
+    skippedSegments: [],
+    rewatchedSegments: [],
+    lastPosition: 0,
+    videoDuration: 0,
+  });
+  const prevTimeRef = useRef<number | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const behaviorDirtyRef = useRef(false);
+  const trackingEnabledRef = useRef(!!lessonId && !!courseId);
+
   useEffect(() => {
     onEndedRef.current = onEnded;
   }, [onEnded]);
@@ -231,6 +284,116 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   useEffect(() => {
     onTimeUpdateRef.current = onTimeUpdate;
   }, [onTimeUpdate]);
+
+  // ── Behavior: detect skip/rewatch on each time update ──
+  const trackTimeChange = useCallback((currentTime: number, duration: number) => {
+    if (!trackingEnabledRef.current) return;
+    const b = behaviorRef.current;
+    b.videoDuration = duration;
+    const prev = prevTimeRef.current;
+    const ct = Math.floor(currentTime);
+
+    if (prev !== null) {
+      const delta = ct - prev;
+
+      if (delta > 0 && delta <= 3) {
+        // Normal playback – record watched interval
+        b.watchedIntervals = mergeInterval(b.watchedIntervals, prev, ct);
+      } else if (delta > 3) {
+        // Forward skip
+        b.skippedSegments.push({ from: prev, to: ct });
+      } else if (delta < -1) {
+        // Rewind – check if segment already tracked
+        const existing = b.rewatchedSegments.find(
+          (s) => Math.abs(s.from - ct) < 3 && Math.abs(s.to - prev) < 3
+        );
+        if (existing) {
+          existing.count += 1;
+        } else {
+          b.rewatchedSegments.push({ from: ct, to: prev, count: 1 });
+        }
+      }
+    }
+
+    b.lastPosition = ct;
+    prevTimeRef.current = ct;
+    behaviorDirtyRef.current = true;
+  }, []);
+
+  // ── Save behavior to DB ──
+  const saveBehavior = useCallback(async () => {
+    if (!trackingEnabledRef.current || !behaviorDirtyRef.current) return;
+    if (!lessonId || !courseId) return;
+    behaviorDirtyRef.current = false;
+
+    const b = behaviorRef.current;
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      await supabase.from("video_watch_behavior" as any).upsert({
+        user_id: user.id,
+        lesson_id: lessonId,
+        course_id: courseId,
+        total_watched_seconds: computeTotalWatched(b.watchedIntervals),
+        skipped_segments: b.skippedSegments,
+        rewatched_segments: b.rewatchedSegments,
+        last_position_seconds: b.lastPosition,
+        video_duration_seconds: Math.floor(b.videoDuration),
+        completion_percentage: computeCompletion(b.watchedIntervals, b.videoDuration),
+        updated_at: new Date().toISOString(),
+      } as any, { onConflict: "user_id,lesson_id" } as any);
+    } catch (err) {
+      console.warn("[BunnyVideoEmbed] Failed to save watch behavior:", err);
+    }
+  }, [lessonId, courseId]);
+
+  // ── Periodic save timer ──
+  useEffect(() => {
+    if (!trackingEnabledRef.current) return;
+    saveTimerRef.current = setInterval(saveBehavior, SAVE_INTERVAL_MS);
+    return () => {
+      if (saveTimerRef.current) clearInterval(saveTimerRef.current);
+      // Save on unmount
+      saveBehavior();
+    };
+  }, [saveBehavior]);
+
+  // ── Load existing behavior on mount ──
+  useEffect(() => {
+    if (!lessonId || !courseId) return;
+    trackingEnabledRef.current = true;
+
+    const loadExisting = async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data } = await supabase
+          .from("video_watch_behavior" as any)
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("lesson_id", lessonId)
+          .maybeSingle();
+
+        if (data) {
+          const d = data as any;
+          behaviorRef.current = {
+            watchedIntervals: [], // Start fresh intervals for this session, total will merge
+            skippedSegments: Array.isArray(d.skipped_segments) ? d.skipped_segments : [],
+            rewatchedSegments: Array.isArray(d.rewatched_segments) ? d.rewatched_segments : [],
+            lastPosition: d.last_position_seconds || 0,
+            videoDuration: d.video_duration_seconds || 0,
+          };
+        }
+      } catch {
+        // ignore
+      }
+    };
+    loadExisting();
+  }, [lessonId, courseId]);
 
   const clearTimers = useCallback(() => {
     if (endedTimeoutRef.current) {
@@ -253,8 +416,10 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
     if (endedCalledRef.current) return;
     endedCalledRef.current = true;
     clearTimers();
+    // Final save on ended
+    saveBehavior();
     onEndedRef.current?.();
-  }, [clearTimers]);
+  }, [clearTimers, saveBehavior]);
 
   const updatePlaybackState = useCallback(
     ({
@@ -272,6 +437,14 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
 
       if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) {
         durationRef.current = duration;
+      }
+
+      // Track watch behavior
+      if (typeof currentTime === "number" && Number.isFinite(currentTime)) {
+        const dur = durationRef.current || 0;
+        if (dur > 0) {
+          trackTimeChange(currentTime, dur);
+        }
       }
 
       let computedProgress: number | null = null;
@@ -302,7 +475,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
         fireOnEnded();
       }
     },
-    [fireOnEnded]
+    [fireOnEnded, trackTimeChange]
   );
 
   const videoId = useMemo(() => extractBunnyVideoId(videoUrl), [videoUrl]);
@@ -313,6 +486,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
     playerReadyRef.current = false;
     durationRef.current = null;
     progressRef.current = 0;
+    prevTimeRef.current = null;
     clearTimers();
   }, [videoUrl, clearTimers]);
 
@@ -368,8 +542,6 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
     let cancelled = false;
     let player: PlayerJsInstance | null = null;
 
-    // iOS Safari fallback: if Player.js "ready" never fires, hide spinner
-    // after the iframe has had time to render (8s timeout)
     iframeLoadFallbackRef.current = setTimeout(() => {
       if (!cancelled && !playerReadyRef.current) {
         console.warn("[BunnyVideoEmbed] Player.js ready timeout – removing loading overlay (iOS fallback)");
@@ -391,7 +563,6 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
           setError(null);
           setIsLoading(false);
 
-          // Clear the iOS fallback since ready fired
           if (iframeLoadFallbackRef.current) {
             clearTimeout(iframeLoadFallbackRef.current);
             iframeLoadFallbackRef.current = null;
@@ -473,8 +644,6 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
       } catch (setupError) {
         console.error("[BunnyVideoEmbed] Failed to initialize Player.js:", setupError);
         if (!cancelled) {
-          // On iOS, Player.js may fail to load but the iframe itself works fine
-          // Don't show error, just hide loading
           setIsLoading(false);
         }
       }
@@ -493,9 +662,7 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
     };
   }, [embedUrl, initialTime, updatePlaybackState, fireOnEnded, clearTimers]);
 
-  // Iframe native onLoad handler – fallback for iOS where Player.js may not connect
   const handleIframeLoad = useCallback(() => {
-    // Give Player.js 3 more seconds after iframe loads; if it doesn't fire ready, clear spinner
     setTimeout(() => {
       if (!playerReadyRef.current) {
         console.warn("[BunnyVideoEmbed] iframe loaded but Player.js not ready – clearing spinner");
@@ -566,18 +733,14 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
           allowFullScreen
           title={title || "Video player"}
           onLoad={handleIframeLoad}
-          // Avoid loading="lazy" – iOS Safari may not trigger load for lazy iframes
-          // playsinline is handled by Bunny's embed params
         />
       )}
 
-      {/* Transparent overlay to block right-click on iframe */}
       <div
         className="absolute inset-0 z-10 pointer-events-none"
         onContextMenu={handleContextMenu}
       />
 
-      {/* Loading indicator */}
       {isLoading && (
         <div className="absolute inset-0 grid place-items-center bg-background/80 backdrop-blur-sm z-20">
           <div className="flex flex-col items-center gap-3">
@@ -591,4 +754,3 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
 };
 
 export default BunnyVideoEmbed;
-

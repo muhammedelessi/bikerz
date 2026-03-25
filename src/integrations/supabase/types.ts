@@ -2471,6 +2471,66 @@ export type Database = {
           },
         ]
       }
+      video_watch_behavior: {
+        Row: {
+          completion_percentage: number
+          course_id: string
+          created_at: string
+          id: string
+          last_position_seconds: number
+          lesson_id: string
+          rewatched_segments: Json
+          skipped_segments: Json
+          total_watched_seconds: number
+          updated_at: string
+          user_id: string
+          video_duration_seconds: number
+        }
+        Insert: {
+          completion_percentage?: number
+          course_id: string
+          created_at?: string
+          id?: string
+          last_position_seconds?: number
+          lesson_id: string
+          rewatched_segments?: Json
+          skipped_segments?: Json
+          total_watched_seconds?: number
+          updated_at?: string
+          user_id: string
+          video_duration_seconds?: number
+        }
+        Update: {
+          completion_percentage?: number
+          course_id?: string
+          created_at?: string
+          id?: string
+          last_position_seconds?: number
+          lesson_id?: string
+          rewatched_segments?: Json
+          skipped_segments?: Json
+          total_watched_seconds?: number
+          updated_at?: string
+          user_id?: string
+          video_duration_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_watch_behavior_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_watch_behavior_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_watch_sessions: {
         Row: {
           average_playback_speed: number | null

@@ -960,6 +960,8 @@ const CourseLearn: React.FC = () => {
                         onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
                         onProgress={handleVideoProgress}
                         onEnded={handleVideoEnded}
+                        lessonId={currentLesson.id}
+                        courseId={id}
                       />
                     ) : (
                       <div ref={videoContainerRef} className="w-full h-full">
