@@ -35,11 +35,14 @@ interface EnrolledCourse {
   id: string;
   course_id: string;
   progress_percentage: number;
+  totalLessons: number;
+  completedLessons: number;
   course: {
     id: string;
     title: string;
     title_ar: string | null;
     thumbnail_url: string | null;
+    total_lessons: number | null;
   };
   nextLesson?: {
     title: string;
