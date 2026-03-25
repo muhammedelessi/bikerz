@@ -35,6 +35,17 @@ export interface EnrolledCourseItem {
   completed_at: string | null;
 }
 
+export interface AvailableCourseItem {
+  id: string;
+  title: string;
+  title_ar: string | null;
+  thumbnail_url: string | null;
+  price: number;
+  currency: string | null;
+  difficulty_level: string;
+  discount_percentage: number | null;
+}
+
 export interface LearningStats {
   totalCourses: number;
   coursesInProgress: number;
@@ -45,6 +56,7 @@ export interface LearningStats {
   lastLessonTitleAr: string | null;
   completedCourses: EnrolledCourseItem[];
   remainingCourses: EnrolledCourseItem[];
+  availableCourses: AvailableCourseItem[];
 }
 
 export interface ActivityItem {
