@@ -70,7 +70,7 @@ const PaymentSuccess: React.FC = () => {
     enabled: !!courseId,
   });
 
-  // Meta Pixel: Purchase event on successful verification
+  // Meta Pixel + n8n webhook on successful verification
   useEffect(() => {
     if (verifyStatus === 'succeeded' && course && courseId) {
       trackPurchase({
@@ -94,6 +94,22 @@ const PaymentSuccess: React.FC = () => {
             silent: true,
           }
         );
+
+        // Send order data to n8n webhook (fire-and-forget)
+        fetch('https://n8n.srv1504278.hstgr.cloud/webhook/new_order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email || '',
+            full_name: profile?.full_name || '',
+            phone: profile?.phone || '',
+            courseName: course.title || '',
+            amount: String(course.price ?? 0),
+            currency: 'SAR',
+            orderStatus: 'purchased',
+            date: new Date().toISOString(),
+          }),
+        }).catch((err) => console.warn('[n8n webhook] failed:', err));
       }
     }
   }, [verifyStatus, course, courseId]);
