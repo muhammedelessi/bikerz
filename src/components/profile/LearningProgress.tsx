@@ -49,6 +49,8 @@ const CourseRow: React.FC<{ course: EnrolledCourseItem; isRTL: boolean }> = ({ c
 
 export const LearningProgress: React.FC<LearningProgressProps> = ({ stats }) => {
   const { isRTL } = useLanguage();
+  const completedCourses = stats.completedCourses || [];
+  const remainingCourses = stats.remainingCourses || [];
 
   const statCards = [
     {
