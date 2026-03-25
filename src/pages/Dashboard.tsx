@@ -103,12 +103,12 @@ const Dashboard: React.FC = () => {
 
       const completedIds = new Set((completedLessons || []).map(l => l.lesson_id));
 
-      // Fetch next lesson for each enrollment
+      // Fetch next lesson for each enrollment (respecting chapter order)
       const coursesWithNextLesson = await Promise.all(
         (enrollments || []).map(async (enrollment) => {
           const { data: chapters } = await supabase
             .from('chapters')
-            .select('id')
+            .select('id, position')
             .eq('course_id', enrollment.course_id)
             .eq('is_published', true)
             .order('position', { ascending: true });
@@ -116,17 +116,27 @@ const Dashboard: React.FC = () => {
           let nextLesson = null;
           let totalLessons = 0;
           let completedCount = 0;
-          if (chapters && chapters.length > 0) {
-            const { data: lessons } = await supabase
-              .from('lessons')
-              .select('id, title, title_ar')
-              .in('chapter_id', chapters.map(c => c.id))
-              .eq('is_published', true)
-              .order('position', { ascending: true });
 
-            totalLessons = lessons?.length || 0;
-            completedCount = lessons?.filter(l => completedIds.has(l.id)).length || 0;
-            nextLesson = lessons?.find(l => !completedIds.has(l.id)) || null;
+          if (chapters && chapters.length > 0) {
+            // Fetch lessons per chapter in order to respect chapter→lesson ordering
+            for (const chapter of chapters) {
+              const { data: lessons } = await supabase
+                .from('lessons')
+                .select('id, title, title_ar')
+                .eq('chapter_id', chapter.id)
+                .eq('is_published', true)
+                .order('position', { ascending: true });
+
+              if (!lessons) continue;
+              totalLessons += lessons.length;
+              for (const lesson of lessons) {
+                if (completedIds.has(lesson.id)) {
+                  completedCount++;
+                } else if (!nextLesson) {
+                  nextLesson = lesson;
+                }
+              }
+            }
           }
 
           const realProgress = liveMap.get(enrollment.course_id) ?? enrollment.progress_percentage;
