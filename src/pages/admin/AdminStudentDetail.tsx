@@ -55,6 +55,9 @@ interface WatchSession {
   completion_percentage: number | null;
   session_id: string | null;
   started_at: string;
+  ip_address: string | null;
+  skipped_segments: SkippedSegment[] | null;
+  rewatched_segments: RewatchedSegment[] | null;
 }
 
 interface WatchBehavior {
