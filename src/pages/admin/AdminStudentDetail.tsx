@@ -235,7 +235,7 @@ const AdminStudentDetail: React.FC = () => {
     enabled: !!userId,
   });
 
-  const firstIP: string | null = null;
+  const firstIP: string | null = watchSessions.length > 0 ? (watchSessions.find(s => s.ip_address && s.ip_address !== 'unknown')?.ip_address || null) : null;
 
   const { data: lessonTitles = [] } = useQuery({
     queryKey: ['lesson-titles-for-behavior', watchSessions.map(b => b.lesson_id).join(',')],
