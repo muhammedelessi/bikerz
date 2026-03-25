@@ -35,6 +35,9 @@ import {
   CheckCircle2,
   Timer,
   Activity,
+  Globe,
+  AlertTriangle,
+  Shield,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -52,6 +55,9 @@ interface WatchSession {
   completion_percentage: number | null;
   session_id: string | null;
   started_at: string;
+  ip_address: string | null;
+  skipped_segments: SkippedSegment[] | null;
+  rewatched_segments: RewatchedSegment[] | null;
 }
 
 interface WatchBehavior {
@@ -203,10 +209,14 @@ const AdminStudentDetail: React.FC = () => {
       if (!userId) return [];
       const { data } = await supabase
         .from('video_watch_sessions')
-        .select('lesson_id, total_watch_time_seconds, max_position_reached_seconds, video_duration_seconds, completion_percentage, session_id, started_at')
+        .select('lesson_id, total_watch_time_seconds, max_position_reached_seconds, video_duration_seconds, completion_percentage, session_id, started_at, ip_address, skipped_segments, rewatched_segments')
         .eq('user_id', userId)
         .order('started_at', { ascending: true });
-      return (data || []) as WatchSession[];
+      return (data || []).map(d => ({
+        ...d,
+        skipped_segments: Array.isArray(d.skipped_segments) ? d.skipped_segments : [],
+        rewatched_segments: Array.isArray(d.rewatched_segments) ? d.rewatched_segments : [],
+      })) as unknown as WatchSession[];
     },
     enabled: !!userId,
   });
@@ -225,7 +235,7 @@ const AdminStudentDetail: React.FC = () => {
     enabled: !!userId,
   });
 
-  const firstIP: string | null = null;
+  const firstIP: string | null = watchSessions.length > 0 ? (watchSessions.find(s => s.ip_address && s.ip_address !== 'unknown')?.ip_address || null) : null;
 
   const { data: lessonTitles = [] } = useQuery({
     queryKey: ['lesson-titles-for-behavior', watchSessions.map(b => b.lesson_id).join(',')],
@@ -513,49 +523,196 @@ const WatchSessionsPanel: React.FC<{
 }> = ({ sessions, isRTL, firstIP }) => {
   const [open, setOpen] = useState(false);
 
+  // Collect all unique IPs
+  const allIPs = [...new Set(sessions.map(s => s.ip_address).filter(Boolean))] as string[];
+  const hasMultipleIPs = allIPs.filter(ip => ip !== 'unknown').length > 1;
+
   // Group sessions by lesson
   const sessionsByLesson = sessions.reduce((acc, s) => {
     if (!acc[s.lesson_id]) acc[s.lesson_id] = { title: s.lessonTitle, items: [] };
     acc[s.lesson_id].items.push(s);
     return acc;
-  }, {} as Record<string, { title: string; items: WatchSession[] }>);
+  }, {} as Record<string, { title: string; items: (WatchSession & { lessonTitle: string })[] }>);
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger asChild>
-        <Button variant="ghost" size="sm" className="w-full justify-between text-xs h-8 px-2 text-muted-foreground hover:text-foreground">
-          <span className="flex items-center gap-1.5">
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`w-full justify-between text-xs h-9 px-3 rounded-lg transition-colors ${
+            open
+              ? 'bg-primary/10 text-primary hover:bg-primary/15'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+          }`}
+        >
+          <span className="flex items-center gap-2">
             <Eye className="w-3.5 h-3.5" />
-            {isRTL ? `جلسات المشاهدة (${sessions.length})` : `Watch Sessions (${sessions.length})`}
+            {isRTL ? 'جلسات المشاهدة' : 'Watch Sessions'}
+            <Badge variant="secondary" className="text-[9px] px-1.5 h-4 font-normal">
+              {sessions.length}
+            </Badge>
+            {hasMultipleIPs && (
+              <Badge className="text-[9px] px-1.5 h-4 bg-orange-500/15 text-orange-500 border-orange-500/20 hover:bg-orange-500/15">
+                <AlertTriangle className="w-2.5 h-2.5 me-0.5" />
+                {isRTL ? 'عدة IPs' : 'Multi-IP'}
+              </Badge>
+            )}
           </span>
-          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
         </Button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="mt-2 space-y-4">
+        <div className="mt-3 space-y-4">
+          {/* IP summary */}
+          {allIPs.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 px-1">
+              <Globe className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground">{isRTL ? 'عناوين IP:' : 'IPs detected:'}</span>
+              {allIPs.map((ip, i) => (
+                <Badge
+                  key={i}
+                  variant="outline"
+                  className={`text-[9px] px-1.5 h-4 font-mono ${
+                    ip === firstIP
+                      ? 'border-green-500/30 text-green-600'
+                      : 'border-orange-500/30 text-orange-500'
+                  }`}
+                >
+                  {ip === firstIP && <Shield className="w-2.5 h-2.5 me-0.5" />}
+                  {ip !== firstIP && hasMultipleIPs && <AlertTriangle className="w-2.5 h-2.5 me-0.5" />}
+                  {ip}
+                </Badge>
+              ))}
+            </div>
+          )}
+
           {Object.entries(sessionsByLesson).map(([lessonId, group]) => (
             <div key={lessonId} className="space-y-2">
-              <p className="text-xs font-bold text-foreground px-1">{group.title}</p>
-              <div className="space-y-1.5 ms-2">
-                {group.items.sort((a,b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime()).map((s, idx) => {
-                  return (
-                    <div key={idx} className="bg-muted/30 rounded-lg p-2.5 space-y-1 border border-border/50">
-                      <div className="flex justify-between items-center text-[11px]">
-                        <span className="font-semibold text-primary">
-                          {isRTL ? `جلسة ${idx + 1}` : `Session ${idx + 1}`} — {format(new Date(s.started_at), 'dd MMM')}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">
-                            {fmtDuration(s.total_watch_time_seconds || 0)}/{fmtDuration(s.video_duration_seconds || 0)}
-                          </span>
-                          <Badge variant="secondary" className="text-[9px] px-1 h-3.5">
-                            {s.completion_percentage || 0}%
-                          </Badge>
+              <div className="flex items-center gap-2 px-1">
+                <Play className="w-3 h-3 text-primary shrink-0" />
+                <p className="text-xs font-bold text-foreground">{group.title}</p>
+              </div>
+              <div className="space-y-2 ms-1">
+                {group.items
+                  .sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime())
+                  .map((s, idx) => {
+                    const pct = Math.round(Number(s.completion_percentage) || 0);
+                    const watched = s.total_watch_time_seconds || 0;
+                    const duration = s.video_duration_seconds || 1;
+                    const skipped = (s.skipped_segments || []) as SkippedSegment[];
+                    const rewatched = (s.rewatched_segments || []) as RewatchedSegment[];
+                    const skippedTime = skipped.reduce((sum, seg) => sum + Math.max(0, seg.to - seg.from), 0);
+                    const isDiffIP = s.ip_address && firstIP && s.ip_address !== firstIP && s.ip_address !== 'unknown';
+
+                    return (
+                      <div
+                        key={s.session_id || idx}
+                        className={`rounded-lg border overflow-hidden ${
+                          isDiffIP ? 'border-orange-500/40' : 'border-border/60'
+                        }`}
+                      >
+                        {/* Session header */}
+                        <div className="relative px-3 py-2 bg-muted/20">
+                          {/* Progress bar at top */}
+                          <div className="absolute top-0 inset-x-0 h-1 bg-muted">
+                            <div
+                              className={`h-full transition-all ${
+                                pct >= 90 ? 'bg-green-500' : pct >= 50 ? 'bg-primary' : 'bg-orange-400'
+                              }`}
+                              style={{ width: `${Math.min(pct, 100)}%` }}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2 pt-1">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-3 h-3 text-muted-foreground" />
+                              <span className="text-[11px] font-semibold text-foreground">
+                                {isRTL ? `جلسة ${idx + 1}` : `Session ${idx + 1}`}
+                                <span className="text-muted-foreground font-normal ms-1">
+                                  — {format(new Date(s.started_at), 'dd MMM yyyy')}
+                                </span>
+                              </span>
+                            </div>
+                            <Badge
+                              variant="secondary"
+                              className={`text-[9px] px-1.5 h-4 font-bold ${
+                                pct >= 90
+                                  ? 'bg-green-500/15 text-green-600'
+                                  : pct >= 50
+                                  ? 'bg-primary/10 text-primary'
+                                  : 'bg-orange-500/10 text-orange-500'
+                              }`}
+                            >
+                              {pct}%
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Session body */}
+                        <div className="px-3 py-2 space-y-2 bg-background">
+                          {/* Watch time */}
+                          <div className="flex items-center gap-1.5 text-[11px]">
+                            <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0" />
+                            <span className="text-foreground font-medium">
+                              {isRTL ? 'شاهد:' : 'Watched:'} {fmtDuration(watched)}/{fmtDuration(duration)}
+                            </span>
+                          </div>
+
+                          {/* Skipped segments */}
+                          {skipped.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1">
+                              <span className="flex items-center gap-1 text-[10px] text-orange-500 font-medium shrink-0">
+                                <SkipForward className="w-3 h-3" />
+                                {isRTL ? 'تخطى' : 'Skipped'}
+                                <span className="text-muted-foreground font-normal">({fmtDuration(skippedTime)})</span>
+                              </span>
+                              {skipped.slice(0, 4).map((seg, i) => (
+                                <Badge key={i} variant="outline" className="text-[9px] px-1.5 h-4 border-orange-500/25 text-orange-500/80 font-mono">
+                                  {fmtTime(Math.round(seg.from))}→{fmtTime(Math.round(seg.to))}
+                                </Badge>
+                              ))}
+                              {skipped.length > 4 && (
+                                <span className="text-[9px] text-muted-foreground">+{skipped.length - 4}</span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Rewatched segments */}
+                          {rewatched.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1">
+                              <span className="flex items-center gap-1 text-[10px] text-blue-500 font-medium shrink-0">
+                                <Repeat className="w-3 h-3" />
+                                {isRTL ? 'أعاد' : 'Replayed'}
+                              </span>
+                              {rewatched.slice(0, 4).map((r, i) => (
+                                <Badge key={i} variant="outline" className="text-[9px] px-1.5 h-4 border-blue-500/25 text-blue-500/80 font-mono">
+                                  {fmtTime(Math.round(r.from))}→{fmtTime(Math.round(r.to))} ×{r.count}
+                                </Badge>
+                              ))}
+                              {rewatched.length > 4 && (
+                                <span className="text-[9px] text-muted-foreground">+{rewatched.length - 4}</span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* IP address */}
+                          {s.ip_address && s.ip_address !== 'unknown' && (
+                            <div className={`flex items-center gap-1.5 text-[10px] ${isDiffIP ? 'text-orange-500' : 'text-muted-foreground'}`}>
+                              <Globe className="w-3 h-3" />
+                              <span className="font-mono">{s.ip_address}</span>
+                              {isDiffIP && (
+                                <Badge className="text-[8px] px-1 h-3.5 bg-orange-500/15 text-orange-500 border-orange-500/20 hover:bg-orange-500/15">
+                                  <AlertTriangle className="w-2 h-2 me-0.5" />
+                                  {isRTL ? 'IP مختلف!' : 'Different IP!'}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
           ))}

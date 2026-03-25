@@ -2540,12 +2540,15 @@ export type Database = {
           device_type: string | null
           ended_at: string | null
           id: string
+          ip_address: string | null
           lesson_id: string
           max_position_reached_seconds: number | null
           pause_count: number | null
+          rewatched_segments: Json | null
           rewind_count: number | null
           seek_count: number | null
           session_id: string | null
+          skipped_segments: Json | null
           speed_changes: number | null
           started_at: string
           total_buffering_time_ms: number | null
@@ -2561,12 +2564,15 @@ export type Database = {
           device_type?: string | null
           ended_at?: string | null
           id?: string
+          ip_address?: string | null
           lesson_id: string
           max_position_reached_seconds?: number | null
           pause_count?: number | null
+          rewatched_segments?: Json | null
           rewind_count?: number | null
           seek_count?: number | null
           session_id?: string | null
+          skipped_segments?: Json | null
           speed_changes?: number | null
           started_at?: string
           total_buffering_time_ms?: number | null
@@ -2582,12 +2588,15 @@ export type Database = {
           device_type?: string | null
           ended_at?: string | null
           id?: string
+          ip_address?: string | null
           lesson_id?: string
           max_position_reached_seconds?: number | null
           pause_count?: number | null
+          rewatched_segments?: Json | null
           rewind_count?: number | null
           seek_count?: number | null
           session_id?: string | null
+          skipped_segments?: Json | null
           speed_changes?: number | null
           started_at?: string
           total_buffering_time_ms?: number | null
