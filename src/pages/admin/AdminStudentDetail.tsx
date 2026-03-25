@@ -526,15 +526,15 @@ const WatchSessionsPanel: React.FC<{
           {/* Summary bar */}
           <div className="grid grid-cols-3 gap-2">
             <div className="bg-muted/40 rounded-lg p-3 text-center">
-              <p className="text-lg font-bold text-foreground tabular-nums">{fmtDuration(totalWatched)}</p>
+              <p className="text-lg font-bold text-foreground tabular-nums" dir="ltr">{fmtDuration(totalWatched)}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">{isRTL ? 'وقت المشاهدة' : 'Total Watched'}</p>
             </div>
             <div className="bg-muted/40 rounded-lg p-3 text-center">
-              <p className="text-lg font-bold text-foreground tabular-nums">{fmtDuration(totalDuration)}</p>
+              <p className="text-lg font-bold text-foreground tabular-nums" dir="ltr">{fmtDuration(totalDuration)}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">{isRTL ? 'مدة الفيديو' : 'Video Duration'}</p>
             </div>
             <div className="bg-muted/40 rounded-lg p-3 text-center">
-              <p className={`text-lg font-bold tabular-nums ${avgCompletion >= 80 ? 'text-green-500' : avgCompletion >= 50 ? 'text-primary' : 'text-orange-500'}`}>
+              <p className={`text-lg font-bold tabular-nums ${avgCompletion >= 80 ? 'text-green-500' : avgCompletion >= 50 ? 'text-primary' : 'text-orange-500'}`} dir="ltr">
                 {avgCompletion}%
               </p>
               <p className="text-[10px] text-muted-foreground mt-0.5">{isRTL ? 'متوسط الإكمال' : 'Avg Completion'}</p>
@@ -635,19 +635,19 @@ const SessionCard: React.FC<{
             {isRTL ? `جلسة ${index + 1}` : `Session ${index + 1}`}
           </span>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground tabular-nums">
+            <span className="text-xs text-muted-foreground tabular-nums" dir="ltr">
               {format(new Date(s.started_at), 'dd MMM yyyy · HH:mm')}
             </span>
             <span className={`text-xs font-bold tabular-nums ${
               pct >= 90 ? 'text-green-500' : pct >= 50 ? 'text-primary' : 'text-orange-500'
-            }`}>
+            }`} dir="ltr">
               {pct}%
             </span>
           </div>
         </div>
 
-        {/* Thin progress bar */}
-        <div className="h-1 bg-muted/50">
+        {/* Thin progress bar — always fills left-to-right */}
+        <div className="h-1 bg-muted/50" dir="ltr">
           <div className={`h-full transition-all ${progressColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
         </div>
 
@@ -656,25 +656,29 @@ const SessionCard: React.FC<{
           <div className="grid grid-cols-3 gap-3 text-center">
             <div>
               <p className="text-[11px] text-muted-foreground mb-0.5">{isRTL ? 'المشاهدة' : 'Watched'}</p>
-              <p className="text-sm font-bold text-foreground tabular-nums">{fmtDuration(watched)}</p>
-              <p className="text-[10px] text-muted-foreground tabular-nums">/ {fmtDuration(duration)}</p>
+              <p className="text-sm font-bold text-foreground tabular-nums" dir="ltr">{fmtDuration(watched)}</p>
+              <p className="text-[10px] text-muted-foreground tabular-nums" dir="ltr">/ {fmtDuration(duration)}</p>
             </div>
             <div>
               <p className="text-[11px] text-muted-foreground mb-0.5">{isRTL ? 'تخطى' : 'Skipped'}</p>
-              <p className={`text-sm font-bold tabular-nums ${skipped.length > 0 ? 'text-orange-500' : 'text-muted-foreground'}`}>
+              <p className={`text-sm font-bold tabular-nums ${skipped.length > 0 ? 'text-orange-500' : 'text-muted-foreground'}`} dir="ltr">
                 {skipped.length > 0 ? fmtDuration(skippedTime) : '—'}
               </p>
               {skipped.length > 0 && (
-                <p className="text-[10px] text-orange-500/70 tabular-nums">{skipped.length} {skipped.length === 1 ? 'clip' : 'clips'}</p>
+                <p className="text-[10px] text-orange-500/70 tabular-nums" dir="ltr">
+                  {skipped.length} {skipped.length === 1 ? (isRTL ? 'مقطع' : 'clip') : (isRTL ? 'مقاطع' : 'clips')}
+                </p>
               )}
             </div>
             <div>
               <p className="text-[11px] text-muted-foreground mb-0.5">{isRTL ? 'أعاد' : 'Replayed'}</p>
-              <p className={`text-sm font-bold tabular-nums ${rewatched.length > 0 ? 'text-blue-500' : 'text-muted-foreground'}`}>
+              <p className={`text-sm font-bold tabular-nums ${rewatched.length > 0 ? 'text-blue-500' : 'text-muted-foreground'}`} dir="ltr">
                 {rewatched.length > 0 ? fmtDuration(rewatchedTime) : '—'}
               </p>
               {rewatched.length > 0 && (
-                <p className="text-[10px] text-blue-500/70 tabular-nums">{rewatched.length} {rewatched.length === 1 ? 'clip' : 'clips'}</p>
+                <p className="text-[10px] text-blue-500/70 tabular-nums" dir="ltr">
+                  {rewatched.length} {rewatched.length === 1 ? (isRTL ? 'مقطع' : 'clip') : (isRTL ? 'مقاطع' : 'clips')}
+                </p>
               )}
             </div>
           </div>
@@ -685,14 +689,14 @@ const SessionCard: React.FC<{
           <div className="px-4 pb-3">
             <div className="rounded-lg bg-orange-500/5 border border-orange-500/10 p-3">
               <div className="flex items-center gap-1.5 mb-2">
-                <SkipForward className="w-3.5 h-3.5 text-orange-500" />
+                <SkipForward className={`w-3.5 h-3.5 text-orange-500 ${isRTL ? 'scale-x-[-1]' : ''}`} />
                 <span className="text-xs font-semibold text-orange-500">
                   {isRTL ? 'المقاطع المتخطاة' : 'Skipped Segments'}
                 </span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 {skipped.map((seg, i) => (
-                  <div key={i} className="bg-orange-500/5 rounded px-2.5 py-1.5 text-center">
+                  <div key={i} className="bg-orange-500/5 rounded px-2.5 py-1.5 text-center" dir="ltr">
                     <span className="text-xs font-mono text-orange-400 tabular-nums">
                       {fmtTime(Math.round(seg.from))} → {fmtTime(Math.round(seg.to))}
                     </span>
@@ -715,7 +719,7 @@ const SessionCard: React.FC<{
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 {rewatched.map((r, i) => (
-                  <div key={i} className="bg-blue-500/5 rounded px-2.5 py-1.5 text-center">
+                  <div key={i} className="bg-blue-500/5 rounded px-2.5 py-1.5 text-center" dir="ltr">
                     <span className="text-xs font-mono text-blue-400 tabular-nums">
                       {fmtTime(Math.round(r.from))} → {fmtTime(Math.round(r.to))}
                     </span>
@@ -745,7 +749,7 @@ const SessionCard: React.FC<{
             isDiffIP ? 'bg-orange-500/5' : 'bg-muted/20'
           }`}>
             <Globe className="w-3 h-3 shrink-0 text-muted-foreground" />
-            <span className="text-[11px] font-mono text-muted-foreground">{s.ip_address}</span>
+            <span className="text-[11px] font-mono text-muted-foreground" dir="ltr">{s.ip_address}</span>
             {isDiffIP && (
               <Badge className="text-[10px] px-1.5 h-4 bg-orange-500/15 text-orange-500 border-orange-500/20 hover:bg-orange-500/15 gap-0.5">
                 <AlertTriangle className="w-3 h-3" />
