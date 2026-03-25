@@ -476,6 +476,11 @@ const AdminStudentDetail: React.FC = () => {
                         </p>
                       )}
 
+                      {/* Behavior Details Section */}
+                      {lessonBehaviors.length > 0 && (
+                        <BehaviorPanel behaviors={lessonBehaviors} isRTL={isRTL} />
+                      )}
+
                       {/* Watch Sessions Section */}
                       {courseBehaviors.length > 0 && (
                         <WatchSessionsPanel 
