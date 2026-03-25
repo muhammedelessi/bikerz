@@ -233,12 +233,13 @@ export function useUserProfile() {
       // Build course items from enrollments with joined course data
       const courseItems: EnrolledCourseItem[] = enrollments.map((e: any) => {
         const course = Array.isArray(e.course) ? e.course[0] : e.course;
+        const realProgress = liveProgressMap.get(e.course_id) ?? e.progress_percentage;
         return {
           course_id: e.course_id,
           title: course?.title || '',
           title_ar: course?.title_ar || null,
           thumbnail_url: course?.thumbnail_url || null,
-          progress_percentage: e.progress_percentage,
+          progress_percentage: realProgress,
           completed_at: e.completed_at,
         };
       });
