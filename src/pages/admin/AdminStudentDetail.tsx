@@ -32,6 +32,9 @@ import {
   Repeat,
   Play,
   AlertCircle,
+  CheckCircle2,
+  Timer,
+  Activity,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
