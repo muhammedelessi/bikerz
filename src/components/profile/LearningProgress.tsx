@@ -2,8 +2,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, Clock, CheckCircle, Play, TrendingUp, Trophy, ChevronRight, ChevronLeft } from 'lucide-react';
-import { LearningStats, EnrolledCourseItem } from '@/hooks/useUserProfile';
+import { BookOpen, Clock, CheckCircle, Play, TrendingUp, Trophy, ChevronRight, ChevronLeft, ShoppingCart, GraduationCap } from 'lucide-react';
+import { LearningStats, EnrolledCourseItem, AvailableCourseItem } from '@/hooks/useUserProfile';
+import { Button } from '@/components/ui/button';
 
 interface LearningProgressProps {
   stats: LearningStats;
@@ -18,7 +19,6 @@ const CourseRow: React.FC<{ course: EnrolledCourseItem; isRTL: boolean }> = ({ c
       to={`/courses/${course.course_id}/learn`}
       className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
     >
-      {/* Thumbnail */}
       <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
         {course.thumbnail_url ? (
           <img src={course.thumbnail_url} alt={title} className="w-full h-full object-cover" loading="lazy" />
@@ -28,8 +28,6 @@ const CourseRow: React.FC<{ course: EnrolledCourseItem; isRTL: boolean }> = ({ c
           </div>
         )}
       </div>
-
-      {/* Info */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
           {title}
@@ -41,16 +39,80 @@ const CourseRow: React.FC<{ course: EnrolledCourseItem; isRTL: boolean }> = ({ c
           </span>
         </div>
       </div>
-
       <Chevron className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
     </Link>
   );
+};
+
+const AvailableCourseRow: React.FC<{ course: AvailableCourseItem; isRTL: boolean }> = ({ course, isRTL }) => {
+  const title = isRTL && course.title_ar ? course.title_ar : course.title;
+  const Chevron = isRTL ? ChevronLeft : ChevronRight;
+  const hasDiscount = course.discount_percentage && course.discount_percentage > 0;
+  const discountedPrice = hasDiscount
+    ? Math.round(course.price * (1 - (course.discount_percentage! / 100)))
+    : course.price;
+
+  return (
+    <Link
+      to={`/courses/${course.id}`}
+      className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
+    >
+      <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
+        {course.thumbnail_url ? (
+          <img src={course.thumbnail_url} alt={title} className="w-full h-full object-cover" loading="lazy" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <BookOpen className="w-5 h-5 text-muted-foreground" />
+          </div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+          {title}
+        </p>
+        <div className="flex items-center gap-2 mt-1">
+          {hasDiscount ? (
+            <>
+              <span className="text-xs text-muted-foreground line-through" dir="ltr">
+                {course.price} {course.currency || 'SAR'}
+              </span>
+              <span className="text-xs font-semibold text-primary" dir="ltr">
+                {discountedPrice} {course.currency || 'SAR'}
+              </span>
+            </>
+          ) : (
+            <span className="text-xs font-semibold text-primary" dir="ltr">
+              {course.price > 0 ? `${course.price} ${course.currency || 'SAR'}` : (isRTL ? 'مجاني' : 'Free')}
+            </span>
+          )}
+        </div>
+      </div>
+      <Chevron className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+    </Link>
+  );
+};
+
+const DIFFICULTY_LABELS: Record<string, { en: string; ar: string; icon: string }> = {
+  beginner: { en: 'Beginner', ar: 'مبتدئ', icon: '🟢' },
+  intermediate: { en: 'Intermediate', ar: 'متوسط', icon: '🟡' },
+  advanced: { en: 'Advanced', ar: 'متقدم', icon: '🔴' },
+  theoretical: { en: 'Theoretical Training', ar: 'تدريب نظري', icon: '📚' },
+  practical: { en: 'Practical Training', ar: 'تدريب عملي', icon: '🏍️' },
 };
 
 export const LearningProgress: React.FC<LearningProgressProps> = ({ stats }) => {
   const { isRTL } = useLanguage();
   const completedCourses = stats.completedCourses || [];
   const remainingCourses = stats.remainingCourses || [];
+  const availableCourses = stats.availableCourses || [];
+
+  // Group available courses by difficulty_level
+  const groupedAvailable = availableCourses.reduce<Record<string, AvailableCourseItem[]>>((acc, course) => {
+    const key = course.difficulty_level || 'other';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(course);
+    return acc;
+  }, {});
 
   const statCards = [
     {
@@ -172,7 +234,7 @@ export const LearningProgress: React.FC<LearningProgressProps> = ({ stats }) => 
         )}
       </div>
 
-      {/* Remaining Courses */}
+      {/* In-Progress Courses */}
       {remainingCourses.length > 0 && (
         <div className="card-premium p-6">
           <div className="flex items-center gap-3 mb-4">
@@ -181,18 +243,69 @@ export const LearningProgress: React.FC<LearningProgressProps> = ({ stats }) => 
             </div>
             <div>
               <h3 className="text-lg font-semibold text-foreground">
-                {isRTL ? 'الدورات المتبقية' : 'Remaining Courses'}
+                {isRTL ? 'الدورات قيد التقدم' : 'In-Progress Courses'}
               </h3>
               <p className="text-xs text-muted-foreground">
                 {remainingCourses.length} {isRTL ? 'دورة' : remainingCourses.length === 1 ? 'course' : 'courses'}
               </p>
             </div>
           </div>
-
           <div className="space-y-2">
             {remainingCourses.map((course) => (
               <CourseRow key={course.course_id} course={course} isRTL={isRTL} />
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Available Courses (Not Enrolled) — grouped by difficulty */}
+      {availableCourses.length > 0 && (
+        <div className="card-premium p-6">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center">
+              <GraduationCap className="w-5 h-5 text-accent-foreground" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">
+                {isRTL ? 'الدورات المتبقية' : 'Remaining Courses'}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {availableCourses.length} {isRTL ? 'دورة متاحة للتسجيل' : availableCourses.length === 1 ? 'course available' : 'courses available'}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-5">
+            {Object.entries(groupedAvailable).map(([level, courses]) => {
+              const labelInfo = DIFFICULTY_LABELS[level] || { en: level, ar: level, icon: '📖' };
+              return (
+                <div key={level}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-base">{labelInfo.icon}</span>
+                    <h4 className="text-sm font-semibold text-foreground">
+                      {isRTL ? labelInfo.ar : labelInfo.en}
+                    </h4>
+                    <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                      {courses.length}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {courses.map((course) => (
+                      <AvailableCourseRow key={course.id} course={course} isRTL={isRTL} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-5 text-center">
+            <Link to="/courses">
+              <Button variant="outline" size="sm" className="gap-2">
+                <ShoppingCart className="w-4 h-4" />
+                {isRTL ? 'تصفح جميع الدورات' : 'Browse All Courses'}
+              </Button>
+            </Link>
           </div>
         </div>
       )}
