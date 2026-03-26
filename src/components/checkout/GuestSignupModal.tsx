@@ -98,7 +98,10 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     const viewport = window.visualViewport;
 
     const updateHeight = () => {
-      setVisualViewportHeight(viewport.height);
+      // Use requestAnimationFrame for smoother updates on iOS
+      requestAnimationFrame(() => {
+        setVisualViewportHeight(viewport.height);
+      });
     };
 
     updateHeight();
@@ -557,12 +560,28 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     ? `${visualViewportHeight}px`
     : '100dvh';
 
+  // On iOS, when keyboard opens the visual viewport shrinks and offsets.
+  // We need to position the drawer at the top of the visual viewport, not bottom.
+  const drawerStyle: React.CSSProperties = isIOS && visualViewportHeight != null
+    ? {
+        height: `${visualViewportHeight}px`,
+        maxHeight: `${visualViewportHeight}px`,
+        top: `${window.visualViewport?.offsetTop ?? 0}px`,
+        bottom: 'auto',
+        transition: 'height 0.1s ease, top 0.1s ease',
+      }
+    : {
+        height: drawerHeight,
+        maxHeight: drawerHeight,
+        transition: 'height 0.15s ease',
+      };
+
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent
           className="bg-card border-border overflow-hidden flex flex-col"
-          style={{ height: drawerHeight, maxHeight: drawerHeight, transition: 'height 0.15s ease' }}
+          style={drawerStyle}
         >
           <DrawerHeader className="pb-1 pt-2 flex-shrink-0">
             <DrawerTitle className="text-base font-bold text-center">
