@@ -591,7 +591,7 @@ const CourseDetail: React.FC = () => {
         </Breadcrumb>
       </nav>
 
-
+      <main>
         {/* Hero Section */}
         <section className="relative overflow-hidden">
           {/* Mobile: stacked video on top */}
