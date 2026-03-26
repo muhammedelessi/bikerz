@@ -91,7 +91,7 @@ const HeroSection: React.FC = () => {
   const secondaryCta = getText("secondary_cta_en", "secondary_cta_ar", "Explore Courses", "استكشف الدورات");
   const badgeText = getText("badge_text_en", "badge_text_ar", "GCC Riders", "راكب في الخليج");
 
-  const heroImage = (content as any)?.background_image || defaultHeroImage;
+  const heroImage = (content as any)?.defaultHeroImage || defaultHeroImage;
 
   return (
     <section className="relative min-h-[80svh] flex items-center justify-center overflow-hidden pt-6 sm:pt-8 lg:pt-10 will-change-auto">
@@ -100,6 +100,8 @@ const HeroSection: React.FC = () => {
         <img
           src={heroImage}
           alt="Motorcycle rider on desert highway"
+          width={1920}
+          height={1080}
           fetchPriority="high"
           decoding="async"
           className="w-full h-full object-cover object-center scale-105"
