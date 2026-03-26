@@ -97,6 +97,16 @@ const HeroSection: React.FC = () => {
     <section className="relative min-h-[80svh] flex items-center justify-center overflow-hidden pt-6 sm:pt-8 lg:pt-10 will-change-auto">
       {/* Background Image with cinematic overlay */}
       <div className="absolute inset-0">
+        <img
+          src={heroImage}
+          alt="Motorcycle rider on desert highway"
+          width={1920}
+          height={1080}
+          fetchPriority="high"
+          decoding="async"
+          className="w-full h-full object-cover object-center scale-105"
+          loading="eager"
+        />
         {/* Multi-layer cinematic gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/30" />
         <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-background/80" />
