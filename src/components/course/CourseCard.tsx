@@ -62,6 +62,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.6, delay: index * 0.15, ease: [0.16, 1, 0.3, 1] }}
     >
       <Link to={`/courses/${course.id}`} className="block h-full">
@@ -86,8 +87,6 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               loading="lazy"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-card/20 via-transparent to-card/20" />
 
             {/* Play button - centered */}
             <div className="absolute inset-0 flex items-center justify-center">
