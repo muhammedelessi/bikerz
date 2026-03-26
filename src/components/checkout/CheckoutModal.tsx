@@ -120,10 +120,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     const viewport = window.visualViewport;
     const updateKeyboardOffset = () => {
-      requestAnimationFrame(() => {
-        const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
-        setKeyboardOffset(offset);
-      });
+      const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      setKeyboardOffset(offset);
     };
 
     updateKeyboardOffset();
