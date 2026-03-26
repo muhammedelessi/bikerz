@@ -1277,7 +1277,48 @@ const CourseDetail: React.FC = () => {
 
         {/* Reviews Section */}
         <CourseReviews courseId={id!} isEnrolled={isEnrolled} />
+
+        {/* You Might Also Like Section */}
+        {relatedCourses.length > 0 && (
+          <section className="section-container">
+            <div className="flex items-center justify-between mb-6 sm:mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                {isRTL ? 'قد يعجبك أيضاً' : 'You Might Also Like'}
+              </h2>
+              <Button variant="outline" size="sm" className="text-xs" asChild>
+                <Link to="/courses">
+                  <Eye className="w-3.5 h-3.5 me-1.5" />
+                  {isRTL ? 'عرض الكل' : 'View All'}
+                </Link>
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-7">
+              {relatedCourses.slice(0, 4).map((rc: any, idx: number) => (
+                <CourseCard
+                  key={rc.id}
+                  course={rc}
+                  index={idx}
+                  enrollment={getRelatedEnrollment(rc.id)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
+
+      {/* Persistent "View All Courses" button — mobile only */}
+      <div className="fixed bottom-20 end-4 z-50 lg:hidden">
+        <Button
+          size="sm"
+          className="h-10 px-4 text-xs font-bold rounded-full shadow-lg"
+          asChild
+        >
+          <Link to="/courses">
+            <BookOpen className="w-3.5 h-3.5 me-1.5" />
+            {isRTL ? 'كل الدورات' : 'All Courses'}
+          </Link>
+        </Button>
+      </div>
 
       <Footer />
       </div>
