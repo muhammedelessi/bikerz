@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Play, Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy, Tag } from "lucide-react";
+import { Play, Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy, Tag, Percent } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
@@ -60,66 +60,66 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0, y: 30 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, delay: index * 0.15, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.5, delay: index * 0.12, ease: [0.16, 1, 0.3, 1] }}
     >
       <Link to={`/courses/${course.id}`} className="block h-full">
-        <div className="group relative h-full rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-primary/50 hover:shadow-[0_8px_40px_hsl(var(--primary)/0.15)]">
+        <div className="group relative h-full rounded-xl border border-border/50 bg-card/90 backdrop-blur-sm overflow-hidden transition-all duration-400 hover:border-primary/40 hover:shadow-[0_6px_30px_hsl(var(--primary)/0.12)]">
           {/* Status badge */}
           {isCompleted ? (
-            <div className="absolute top-3 start-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-600/90 backdrop-blur-sm text-white text-xs font-semibold">
-              <Trophy className="w-3 h-3" />
+            <div className="absolute top-2.5 start-2.5 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-600/90 backdrop-blur-sm text-white text-[10px] font-semibold">
+              <Trophy className="w-2.5 h-2.5" />
               {isRTL ? "مكتمل" : "Completed"}
             </div>
           ) : isEnrolled ? (
-            <div className="absolute top-3 start-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/90 backdrop-blur-sm text-primary-foreground text-xs font-semibold">
+            <div className="absolute top-2.5 start-2.5 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/90 backdrop-blur-sm text-primary-foreground text-[10px] font-semibold">
               {isRTL ? "مسجّل" : "Enrolled"}
             </div>
           ) : null}
 
-          {/* Image */}
-          <div className="relative aspect-[16/9] overflow-hidden">
+          {/* Image — shorter aspect ratio */}
+          <div className="relative aspect-[2/1] overflow-hidden">
             <img
               src={course.thumbnail_url || heroImage}
               alt={title}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               loading="lazy"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/15 to-transparent" />
 
             {/* Play button */}
             <div className="absolute inset-0 flex items-center justify-center">
               <motion.div
                 whileHover={{ scale: 1.1 }}
-                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/90 backdrop-blur-md flex items-center justify-center shadow-[0_0_30px_hsl(var(--primary)/0.4)] opacity-0 group-hover:opacity-100 transition-all duration-300"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/90 backdrop-blur-md flex items-center justify-center shadow-[0_0_24px_hsl(var(--primary)/0.35)] opacity-0 group-hover:opacity-100 transition-all duration-300"
               >
-                <Play className="w-5 h-5 sm:w-6 sm:h-6 text-primary-foreground ms-0.5" />
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground ms-0.5" />
               </motion.div>
             </div>
 
             {/* Discount badge */}
             {hasDiscount && (
-              <div className="absolute top-3 end-3 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-destructive/90 backdrop-blur-sm text-destructive-foreground text-xs font-bold shadow-lg">
-                <Tag className="w-3 h-3" />
+              <div className="absolute top-2.5 end-2.5 flex items-center gap-1 px-2 py-0.5 rounded-md bg-destructive/90 backdrop-blur-sm text-destructive-foreground text-[10px] font-bold shadow-md">
+                <Tag className="w-2.5 h-2.5" />
                 {isRTL ? `خصم ${priceInfo.discountPct}%` : `${priceInfo.discountPct}% OFF`}
               </div>
             )}
 
             {/* Meta pills */}
-            <div className="absolute bottom-0 inset-x-0 p-3">
-              <div className="flex items-center gap-2 text-[11px] text-foreground/80">
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-background/60 backdrop-blur-sm">
-                  <BookOpen className="w-3 h-3" />
+            <div className="absolute bottom-0 inset-x-0 px-2.5 pb-2">
+              <div className="flex items-center gap-1.5 text-[10px] text-foreground/80">
+                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-background/60 backdrop-blur-sm">
+                  <BookOpen className="w-2.5 h-2.5" />
                   {course.lessonCount} {isRTL ? "درس" : "lessons"}
                 </span>
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-background/60 backdrop-blur-sm">
-                  <Clock className="w-3 h-3" />
+                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-background/60 backdrop-blur-sm">
+                  <Clock className="w-2.5 h-2.5" />
                   {formatDuration(course.totalMinutes)}
                 </span>
                 {reviewCount > 0 && (
-                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-background/60 backdrop-blur-sm ms-auto">
-                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-background/60 backdrop-blur-sm ms-auto">
+                    <Star className="w-2.5 h-2.5 text-yellow-500 fill-yellow-500" />
                     {rating.toFixed(1)}
                   </span>
                 )}
@@ -128,16 +128,16 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
           </div>
 
           {/* Content */}
-          <div className="p-4 sm:p-5 flex flex-col gap-3">
+          <div className="p-3 sm:p-4 flex flex-col gap-2.5">
             {/* Title */}
-            <h3 className="text-base sm:text-lg font-bold text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2 leading-snug">
+            <h3 className="text-sm sm:text-base font-bold text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2 leading-snug">
               {title}
             </h3>
 
             {/* Enrollment progress */}
             {isEnrolled && enrollment && (
               <div>
-                <div className="flex items-center justify-between text-xs mb-1.5">
+                <div className="flex items-center justify-between text-[10px] mb-1">
                   <span className="text-muted-foreground">
                     {isRTL ? "التقدم" : "Progress"}
                   </span>
@@ -147,77 +147,90 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
                 </div>
                 <Progress
                   value={isCompleted ? 100 : enrollment.progress_percentage}
-                  className={`h-1.5 ${isCompleted ? '[&>div]:bg-green-500' : ''}`}
+                  className={`h-1 ${isCompleted ? '[&>div]:bg-green-500' : ''}`}
                 />
               </div>
             )}
 
-            {/* Price + CTA row */}
+            {/* Price + CTA */}
             {isCompleted ? (
-              <div className="flex items-center gap-2 mt-auto">
+              <div className="flex items-center gap-1.5 mt-auto">
                 <Button
                   variant="default"
-                  className="flex-1 h-10 text-sm font-bold bg-green-600 hover:bg-green-700 text-white"
+                  size="sm"
+                  className="flex-1 h-8 text-xs font-bold bg-green-600 hover:bg-green-700 text-white"
                 >
-                  <Trophy className="w-4 h-4 me-1.5" />
+                  <Trophy className="w-3 h-3 me-1" />
                   {isRTL ? 'مكتمل ✓' : 'Completed ✓'}
                 </Button>
                 {!hasReviewed && (
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-10 w-10 border-yellow-500/50 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/10"
+                    className="h-8 w-8 border-yellow-500/50 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/10"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       window.location.href = `/courses/${course.id}#reviews`;
                     }}
                   >
-                    <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                    <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
                   </Button>
                 )}
               </div>
             ) : (
-              <div className="flex items-center justify-between gap-3 mt-auto">
-                {/* Price block */}
+              <>
+                {/* Price display — prominent */}
                 {!isEnrolled && (
-                  <div className="flex flex-col">
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-xl sm:text-2xl font-black text-primary leading-none">
+                  <div className="flex items-center gap-2.5">
+                    {/* Final price */}
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-lg sm:text-xl font-black text-primary leading-none">
                         {priceInfo.finalPrice}
                       </span>
-                      <span className="text-xs font-bold text-primary/70">
+                      <span className="text-[10px] font-bold text-primary/70 leading-none">
                         {sym}
                       </span>
                     </div>
+
+                    {/* Original price struck through */}
                     {hasDiscount && (
-                      <span className="text-xs text-muted-foreground line-through mt-0.5">
-                        {priceInfo.originalPrice} {sym}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-muted-foreground line-through">
+                          {priceInfo.originalPrice} {sym}
+                        </span>
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold">
+                          <Percent className="w-2.5 h-2.5" />
+                          {isRTL ? `وفّر ${priceInfo.discountPct}%` : `Save ${priceInfo.discountPct}%`}
+                        </span>
+                      </div>
                     )}
                   </div>
                 )}
 
-                {/* CTA */}
+                {/* CTA button */}
                 <Button
                   variant="default"
-                  className={`h-10 text-sm font-bold group/btn ${isEnrolled ? 'w-full' : 'flex-1'}`}
+                  size="sm"
+                  className="w-full h-8 text-xs font-bold group/btn mt-auto"
                 >
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-1.5">
                     {isEnrolled ? (
                       <>
                         {isRTL ? "أكمل التعلم" : "Continue Learning"}
-                        <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
+                        <Arrow className="w-3.5 h-3.5 transition-transform group-hover/btn:translate-x-0.5 rtl:group-hover/btn:-translate-x-0.5" />
                       </>
                     ) : (
                       <>
-                        {isRTL ? "اشترك الآن" : "Enroll Now"}
-                        <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
+                        {isRTL
+                          ? `اشترك الآن – ${priceInfo.finalPrice} ${sym}`
+                          : `Enroll Now – ${priceInfo.finalPrice} ${sym}`}
+                        <Arrow className="w-3.5 h-3.5 transition-transform group-hover/btn:translate-x-0.5 rtl:group-hover/btn:-translate-x-0.5" />
                       </>
                     )}
                   </span>
                 </Button>
-              </div>
+              </>
             )}
           </div>
         </div>
