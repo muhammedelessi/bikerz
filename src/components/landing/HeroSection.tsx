@@ -97,16 +97,6 @@ const HeroSection: React.FC = () => {
     <section className="relative min-h-[80svh] flex items-center justify-center overflow-hidden pt-6 sm:pt-8 lg:pt-10 will-change-auto">
       {/* Background Image with cinematic overlay */}
       <div className="absolute inset-0">
-        <img
-          src={heroImage}
-          alt="Motorcycle rider on desert highway"
-          width={1920}
-          height={1080}
-          fetchPriority="high"
-          decoding="async"
-          className="w-full h-full object-cover object-center scale-105"
-          loading="eager"
-        />
         {/* Multi-layer cinematic gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/30" />
         <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-background/80" />
@@ -115,7 +105,8 @@ const HeroSection: React.FC = () => {
       </div>
 
       {/* Animated grain texture */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay"
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
         }}
@@ -127,7 +118,7 @@ const HeroSection: React.FC = () => {
         animate={{ opacity: 0.15 }}
         transition={{ duration: 2, delay: 0.5 }}
         className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full blur-[120px] pointer-events-none"
-        style={{ background: 'hsl(var(--primary) / 0.4)' }}
+        style={{ background: "hsl(var(--primary) / 0.4)" }}
       />
 
       {/* Content */}
@@ -189,13 +180,21 @@ const HeroSection: React.FC = () => {
             className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-3 px-4 sm:px-0"
           >
             <Link to="/courses" className="w-full sm:w-auto">
-              <Button variant="hero" size="lg" className="group w-full sm:w-auto min-h-[44px] sm:min-h-[52px] text-sm sm:text-base shadow-[0_4px_24px_hsl(var(--primary)/0.4)]">
+              <Button
+                variant="hero"
+                size="lg"
+                className="group w-full sm:w-auto min-h-[44px] sm:min-h-[52px] text-sm sm:text-base shadow-[0_4px_24px_hsl(var(--primary)/0.4)]"
+              >
                 <Play className="w-4 h-4 sm:w-5 sm:h-5" />
                 {secondaryCta}
               </Button>
             </Link>
             <Link to="/signup" className="w-full sm:w-auto">
-              <Button variant="heroOutline" size="lg" className="group w-full sm:w-auto min-h-[44px] sm:min-h-[52px] text-sm sm:text-base backdrop-blur-sm">
+              <Button
+                variant="heroOutline"
+                size="lg"
+                className="group w-full sm:w-auto min-h-[44px] sm:min-h-[52px] text-sm sm:text-base backdrop-blur-sm"
+              >
                 {ctaText}
                 <Arrow className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
               </Button>
