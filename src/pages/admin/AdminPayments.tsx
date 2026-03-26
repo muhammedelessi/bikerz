@@ -39,13 +39,11 @@ interface UnifiedPayment {
   status: string;
   created_at: string;
   source: 'manual' | 'tap';
-  // manual fields
   payment_method?: string;
   reference_number?: string | null;
   notes?: string | null;
   approved_by?: string | null;
   approved_at?: string | null;
-  // tap fields
   charge_id?: string | null;
   card_brand?: string | null;
   card_last_four?: string | null;
@@ -57,7 +55,6 @@ interface UnifiedPayment {
   metadata?: Record<string, unknown> | null;
   tap_response?: Record<string, unknown> | null;
   device_info?: string | null;
-  // joined
   profile?: {
     full_name: string | null;
     phone: string | null;
@@ -79,7 +76,6 @@ const normalizeStatus = (status: string, source: 'manual' | 'tap'): string => {
 };
 
 const AdminPayments = () => {
-  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -286,7 +282,6 @@ const AdminPayments = () => {
     return method || 'Card';
   };
 
-  // Extract price breakdown from metadata/tap_response
   const getPriceBreakdown = (payment: UnifiedPayment) => {
     const meta = payment.metadata || {};
     const originalAmount = (meta.original_amount as number) || (meta.price_before_tax as number) || null;
@@ -295,30 +290,27 @@ const AdminPayments = () => {
     const vatAmount = (meta.vat_amount as number) || null;
     const courseDiscount = (meta.course_discount as number) || 0;
 
-    // Calculate VAT: amount includes 15% VAT, so pre-VAT = amount / 1.15
     const amountBeforeVAT = vatAmount !== null ? payment.amount - vatAmount : Math.round((payment.amount / 1.15) * 100) / 100;
     const calculatedVAT = vatAmount !== null ? vatAmount : Math.round((payment.amount - amountBeforeVAT) * 100) / 100;
 
-    return { originalAmount, couponDiscount, couponCode, va   const tapErrorTranslations: Record<string, string> = {
-    '101': 'insufficient_funds',
-    '102': 'card_expired',
-    '103': 'card_declined',
-    '104': 'invalid_card',
-    '105': 'limit_exceeded',
-    '106': 'not_supported',
-    '107': 'restricted',
-    '108': 'auth_failed',
-    '109': '3ds_failed',
-    '110': 'not_permitted',
-    '200': 'comm_error',
-    '301': 'timeout',
-    '302': 'cancelled',
-    '303': 'duplicate',
-    '401': 'auth_required',
-    '501': 'gateway_error',
-    '502': 'gateway_timeout',
-    '507': 'issuer_decline',
-  };ar: 'عملية مكررة' },
+    return { originalAmount, couponDiscount, couponCode, vatAmount: calculatedVAT, amountBeforeVAT, courseDiscount };
+  };
+
+  const tapErrorTranslations: Record<string, { en: string; ar: string }> = {
+    '101': { en: 'Insufficient funds', ar: 'رصيد غير كافٍ' },
+    '102': { en: 'Card expired', ar: 'البطاقة منتهية الصلاحية' },
+    '103': { en: 'Card declined', ar: 'تم رفض البطاقة' },
+    '104': { en: 'Invalid card number', ar: 'رقم بطاقة غير صالح' },
+    '105': { en: 'Limit exceeded', ar: 'تم تجاوز الحد المسموح' },
+    '106': { en: 'Card not supported', ar: 'البطاقة غير مدعومة' },
+    '107': { en: 'Restricted card', ar: 'بطاقة مقيّدة' },
+    '108': { en: 'Authentication failed', ar: 'فشل التحقق' },
+    '109': { en: '3D Secure failed', ar: 'فشل التحقق الثلاثي' },
+    '110': { en: 'Transaction not permitted', ar: 'العملية غير مسموحة' },
+    '200': { en: 'Communication error', ar: 'خطأ في الاتصال' },
+    '301': { en: 'Transaction timeout', ar: 'انتهت مهلة العملية' },
+    '302': { en: 'Transaction cancelled', ar: 'تم إلغاء العملية' },
+    '303': { en: 'Duplicate transaction', ar: 'عملية مكررة' },
     '401': { en: 'Authentication required', ar: 'مطلوب التحقق من الهوية' },
     '501': { en: 'Gateway error', ar: 'خطأ في بوابة الدفع' },
     '502': { en: 'Gateway timeout', ar: 'انتهت مهلة بوابة الدفع' },
@@ -332,7 +324,6 @@ const AdminPayments = () => {
     return null;
   };
 
-  // Extract failure details from tap_response
   const getFailureDetails = (payment: UnifiedPayment) => {
     if (normalizeStatus(payment.status, payment.source) !== 'rejected') return null;
     const resp = payment.tap_response || {};
@@ -340,7 +331,6 @@ const AdminPayments = () => {
     const gateway = resp.gateway as Record<string, unknown> | undefined;
     const code = (response?.code as string) || (gateway?.response?.toString()) || null;
     const translatedReason = getTranslatedErrorReason(code);
-    // Full decline reason from Tap API response.message
     const tapDeclineMessage = (response?.message as string) || null;
     return {
       reason: translatedReason || payment.error_message || tapDeclineMessage || (isRTL ? 'فشل الدفع' : 'Payment failed'),
@@ -351,7 +341,6 @@ const AdminPayments = () => {
     };
   };
 
-  // CSV Export
   const exportToCSV = () => {
     if (!filteredPayments?.length) return;
     const headers = [
@@ -577,7 +566,7 @@ const AdminPayments = () => {
           </CardContent>
         </Card>
 
-        {/* Detail Dialog — expanded */}
+        {/* Detail Dialog */}
         <Dialog open={!!selectedPayment} onOpenChange={() => setSelectedPayment(null)}>
           <DialogContent dir={isRTL ? 'rtl' : 'ltr'} className="max-w-2xl max-h-[90vh] p-0">
             <DialogHeader className="p-6 pb-0">
@@ -593,7 +582,7 @@ const AdminPayments = () => {
             {selectedPayment && (
               <ScrollArea className="max-h-[calc(90vh-100px)] px-6 pb-6">
                 <div className="space-y-5">
-                  {/* Status Banner */}
+                  {/* Failure Banner */}
                   {(() => {
                     const failureDetails = getFailureDetails(selectedPayment);
                     if (failureDetails) {
@@ -616,33 +605,82 @@ const AdminPayments = () => {
                           )}
                           {failureDetails.gatewayResponse && (
                             <p className="text-xs text-red-400/70">
-                              {isRTL ? 'استجابة البو�                         value={
-                          selectedPayment.profile?.profile_complete
-                            ? <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-xs">{t('admin.payments.details.complete')}</Badge>
-                            : <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-xs">{t('admin.payments.details.incomplete')}</Badge>
-                        }? 'الدولة' : 'Country'}
-                        value={selectedPayment.profile?.country || '-'}
+                              {isRTL ? 'استجابة البوابة' : 'Gateway Response'}: {failureDetails.gatewayResponse}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {/* Customer Info */}
+                  <div>
+                    <h4 className="text-sm font-semibold mb-3">{isRTL ? 'معلومات العميل' : 'Customer Info'}</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <DetailRow
+                        icon={User}
+                        label={isRTL ? 'الاسم' : 'Name'}
+                        value={selectedPayment.source === 'tap' ? selectedPayment.customer_name || selectedPayment.profile?.full_name : selectedPayment.profile?.full_name}
+                      />
+                      <DetailRow
+                        icon={Mail}
+                        label={isRTL ? 'البريد الإلكتروني' : 'Email'}
+                        value={selectedPayment.customer_email}
+                      />
+                      <DetailRow
+                        icon={Phone}
+                        label={isRTL ? 'الهاتف' : 'Phone'}
+                        value={selectedPayment.customer_phone || selectedPayment.profile?.phone}
+                      />
+                      <DetailRow
+                        icon={MapPin}
+                        label={isRTL ? 'المدينة' : 'City'}
+                        value={selectedPayment.profile?.city}
+                      />
+                      <DetailRow
+                        icon={MapPin}
+                        label={isRTL ? 'الدولة' : 'Country'}
+                        value={selectedPayment.profile?.country}
                       />
                       <DetailRow
                         icon={Shield}
                         label={isRTL ? 'حالة الملف الشخصي' : 'Profile Status'}
                         value={
                           selectedPayment.profile?.profile_complete
-                            ? <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-xs">{isRTL ? 'مكتم                             {breakdown.originalAmount && (
+                            ? <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-xs">{isRTL ? 'مكتمل' : 'Complete'}</Badge>
+                            : <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-xs">{isRTL ? 'غير مكتمل' : 'Incomplete'}</Badge>
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Payment Details */}
+                  <div>
+                    <h4 className="text-sm font-semibold mb-3">{isRTL ? 'تفاصيل الدفع' : 'Payment Details'}</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Price Breakdown */}
+                      {(() => {
+                        const breakdown = getPriceBreakdown(selectedPayment);
+                        return (
+                          <>
+                            {breakdown.originalAmount && (
                               <DetailRow
-                                label={t('admin.payments.details.originalPrice')}
+                                label={isRTL ? 'السعر الأصلي' : 'Original Price'}
                                 value={`${breakdown.originalAmount.toFixed(2)} ${selectedPayment.currency}`}
                               />
                             )}
                             {breakdown.courseDiscount > 0 && (
                               <DetailRow
-                                label={t('admin.payments.details.courseDiscount')}
+                                label={isRTL ? 'خصم الدورة' : 'Course Discount'}
                                 value={<span className="text-green-500">-{breakdown.courseDiscount.toFixed(2)} {selectedPayment.currency}</span>}
                               />
                             )}
                             {breakdown.couponDiscount > 0 && (
                               <DetailRow
-                                label={t('admin.payments.details.couponDiscount')}
+                                label={isRTL ? 'خصم الكوبون' : 'Coupon Discount'}
                                 value={
                                   <span className="text-green-500">
                                     -{breakdown.couponDiscount.toFixed(2)} {selectedPayment.currency}
@@ -652,52 +690,41 @@ const AdminPayments = () => {
                               />
                             )}
                             <DetailRow
-                              label={t('admin.payments.details.amountBeforeVat')}
+                              label={isRTL ? 'المبلغ قبل الضريبة' : 'Amount Before VAT'}
                               value={`${breakdown.amountBeforeVAT.toFixed(2)} ${selectedPayment.currency}`}
                             />
                             <DetailRow
-                              label={t('admin.payments.details.vat')}
+                              label={isRTL ? 'ضريبة القيمة المضافة (15%)' : 'VAT (15%)'}
                               value={`${breakdown.vatAmount.toFixed(2)} ${selectedPayment.currency}`}
                             />
                           </>
                         );
                       })()}
                       <DetailRow
-                        label={t('admin.payments.details.totalCharged')}
+                        label={isRTL ? 'إجمالي المحصّل' : 'Total Charged'}
                         value={<span className="text-base font-bold">{selectedPayment.amount.toFixed(2)} {selectedPayment.currency}</span>}
                       />
                       <DetailRow
-                        label={t('admin.payments.details.currency')}
+                        label={isRTL ? 'العملة' : 'Currency'}
                         value={selectedPayment.currency}
                       />
                       <DetailRow
-                        label={t('admin.payments.details.method')}
+                        label={isRTL ? 'طريقة الدفع' : 'Payment Method'}
                         value={getPaymentMethodLabel(selectedPayment)}
                       />
                       <DetailRow
-                        label={t('admin.payments.details.source')}
+                        label={isRTL ? 'المصدر' : 'Source'}
                         value={getSourceBadge(selectedPayment.source)}
-                      />        })()}
+                      />
 
-                      <DetailRow
-                        label={isRTL ? 'ا�                           <DetailRow
-                            label={t('admin.payments.details.transactionId')}
+                      {selectedPayment.source === 'tap' && (
+                        <>
+                          <DetailRow
+                            label={isRTL ? 'رقم العملية' : 'Transaction ID'}
                             value={<span className="font-mono text-xs">{selectedPayment.charge_id || '-'}</span>}
                           />
                           <DetailRow
-                            label={t('admin.payments.details.webhookVerified')}
-                            value={
-                              selectedPayment.webhook_verified
-                                ? <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-xs">✓ {t('admin.payments.details.yes')}</Badge>
-                                : <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-xs">{t('admin.payments.details.no')}</Badge>
-                            }
-                          />
-                          {selectedPayment.device_info && (
-                            <DetailRow
-                              label={t('admin.payments.details.userDevice')}
-                              value={<span className="text-xs font-mono">{selectedPayment.device_info}</span>}
-                            />
-                          )}       label={isRTL ? 'تم التحقق من الويب هوك' : 'Webhook Verified'}
+                            label={isRTL ? 'تم التحقق من الويب هوك' : 'Webhook Verified'}
                             value={
                               selectedPayment.webhook_verified
                                 ? <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-xs">✓ {isRTL ? 'نعم' : 'Yes'}</Badge>
@@ -727,7 +754,7 @@ const AdminPayments = () => {
                     </div>
                   </div>
 
-                  {/* Notes (for manual) */}
+                  {/* Notes */}
                   {selectedPayment.notes && (
                     <>
                       <Separator />
