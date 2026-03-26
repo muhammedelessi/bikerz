@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { AlertCircle, Eye, EyeOff, User, Mail, Lock } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, User, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 const GoogleIcon = () => (
