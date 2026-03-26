@@ -13,6 +13,14 @@ import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import {
   Play,
   Clock,
   BookOpen,
@@ -35,6 +43,7 @@ import {
   ClipboardList,
   Infinity,
   MonitorPlay,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.webp';
@@ -48,6 +57,8 @@ import StarRating from '@/components/course/StarRating';
 import { useDiscountCountdown } from '@/hooks/useDiscountCountdown';
 import DiscountCountdown from '@/components/common/DiscountCountdown';
 import DiscountUrgencyBanner from '@/components/landing/DiscountUrgencyBanner';
+import CourseCard from '@/components/course/CourseCard';
+import { fetchEnrollmentsWithLiveProgress, type EnrollmentWithProgress } from '@/lib/enrollmentProgress';
 
 
 interface Lesson {
