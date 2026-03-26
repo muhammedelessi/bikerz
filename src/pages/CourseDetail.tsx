@@ -1306,6 +1306,9 @@ const CourseDetail: React.FC = () => {
         )}
       </main>
 
+      <Footer />
+      </div>
+
       {/* Persistent "View All Courses" button — mobile only */}
       <div className="fixed bottom-20 end-4 z-50 lg:hidden">
         <Button
@@ -1318,9 +1321,6 @@ const CourseDetail: React.FC = () => {
             {isRTL ? 'كل الدورات' : 'All Courses'}
           </Link>
         </Button>
-      </div>
-
-      <Footer />
       </div>
 
       {/* Checkout Modal */}
