@@ -87,6 +87,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               loading="lazy"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-card/20 via-transparent to-card/20" />
 
             {/* Play button - centered */}
             <div className="absolute inset-0 flex items-center justify-center">
@@ -168,6 +170,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
                     </span>
                   )}
                 </div>
+                {priceInfo.discountPct > 0 && course.discount_expires_at && (
+                  <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
+                )}
               </div>
             )}
 
