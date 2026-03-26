@@ -75,7 +75,7 @@ const ContactUs: React.FC = () => {
     onSuccess: (ticketNum) => {
       setTicketNumber(ticketNum);
       setIsSubmitted(true);
-      toast.success(isRTL ? 'تم إرسال طلبك بنجاح!' : 'Your request has been submitted!');
+      toast.success(t('contact.requestSubmitted'));
 
       // Send to GHL form webhook
       sendFormData({
@@ -86,7 +86,7 @@ const ContactUs: React.FC = () => {
       });
     },
     onError: (error: Error) => {
-      toast.error(error.message || (isRTL ? 'فشل في إرسال الطلب' : 'Failed to submit request'));
+      toast.error(error.message || t('contact.failedToSubmit'));
     }
   });
 
@@ -94,13 +94,13 @@ const ContactUs: React.FC = () => {
     e.preventDefault();
 
     if (!user) {
-      toast.error(isRTL ? 'يرجى تسجيل الدخول لإرسال طلب الدعم' : 'Please log in to submit a support request');
+      toast.error(t('contact.loginToSubmit'));
       navigate('/login');
       return;
     }
 
     if (!formData.subject.trim() || !formData.message.trim()) {
-      toast.error(isRTL ? 'يرجى ملء جميع الحقول المطلوبة' : 'Please fill in all required fields');
+      toast.error(t('contact.fillAllRequired'));
       return;
     }
 
@@ -264,7 +264,7 @@ const ContactUs: React.FC = () => {
                                 id="name"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                placeholder={isRTL ? 'اسمك الكامل' : 'Your full name'}
+                                placeholder={t('auth.signup.namePlaceholder')}
                               />
                             </div>
                             <div className="space-y-2">
@@ -274,7 +274,7 @@ const ContactUs: React.FC = () => {
                                 type="email"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                placeholder={isRTL ? 'بريدك@الإلكتروني.com' : 'your@email.com'}
+                                placeholder={t('auth.emailPlaceholder')}
                               />
                             </div>
                           </div>
@@ -287,7 +287,7 @@ const ContactUs: React.FC = () => {
                             onValueChange={(value: typeof formData.category) => setFormData({ ...formData, category: value })}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder={isRTL ? 'اختر الفئة' : 'Select category'} />
+                              <SelectValue placeholder={t('contact.form.categoryPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
                               {categories.map((cat) => (
@@ -308,7 +308,7 @@ const ContactUs: React.FC = () => {
                             id="subject"
                             value={formData.subject}
                             onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                            placeholder={isRTL ? 'موضوع رسالتك' : 'Subject of your message'}
+                            placeholder={t('contact.form.subjectPlaceholder')}
                             required
                           />
                         </div>
@@ -319,7 +319,7 @@ const ContactUs: React.FC = () => {
                             id="message"
                             value={formData.message}
                             onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                            placeholder={isRTL ? 'اكتب رسالتك هنا...' : 'Write your message here...'}
+                            placeholder={t('contact.form.messagePlaceholder')}
                             rows={6}
                             required
                           />

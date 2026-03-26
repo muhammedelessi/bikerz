@@ -11,9 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import CourseCard from "@/components/course/CourseCard";
 import { fetchEnrollmentsWithLiveProgress } from "@/lib/enrollmentProgress";
+import { useTranslation } from "react-i18next";
 
 const FeaturedCoursesSection: React.FC = () => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
@@ -93,17 +95,15 @@ const FeaturedCoursesSection: React.FC = () => {
           >
             <Zap className="w-3.5 h-3.5 text-primary" />
             <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-              {isRTL ? "الأكثر طلباً" : "Most Popular"}
+              {t("landing.featuredCourses.mostPopular")}
             </span>
           </motion.div>
 
           <h2 className="section-title text-foreground mb-3 sm:mb-4">
-            {isRTL ? "دوراتنا التدريبية" : "Our Training Courses"}
+            {t("landing.featuredCourses.title")}
           </h2>
           <p className="section-subtitle max-w-xl mx-auto">
-            {isRTL
-              ? "اختر الدورة المناسبة لمستواك وابدأ رحلتك اليوم"
-              : "Choose the course that fits your level and start your riding journey today"}
+            {t("landing.featuredCourses.subtitle")}
           </p>
         </motion.div>
 
@@ -127,7 +127,7 @@ const FeaturedCoursesSection: React.FC = () => {
         >
           <Link to="/courses">
             <Button variant="outline" size="lg" className="group border-primary/30 hover:border-primary/60 hover:bg-primary/5">
-              {isRTL ? "عرض جميع الدورات" : "View All Courses"}
+              {t("landing.featuredCourses.viewAllCourses")}
               <Arrow className="w-4 h-4 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
             </Button>
           </Link>

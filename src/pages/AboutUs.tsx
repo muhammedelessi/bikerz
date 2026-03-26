@@ -61,22 +61,22 @@ const AboutUs: React.FC = () => {
   const contactInfo = [
     {
       icon: MapPin,
-      label: isRTL ? 'الموقع' : 'Location',
+      label: t('aboutUs.contact.location'),
       value: isRTL ? (d.location_ar || t('footer.location')) : (d.location_en || t('footer.location')),
     },
     {
       icon: Phone,
-      label: isRTL ? 'الهاتف' : 'Phone',
+      label: t('aboutUs.contact.phone'),
       value: d.phone || '+966 50 111 1111',
     },
     {
       icon: Mail,
-      label: isRTL ? 'البريد الإلكتروني' : 'Email',
+      label: t('aboutUs.contact.email'),
       value: d.email || 'info@bikerz.sa',
     },
     {
       icon: Clock,
-      label: isRTL ? 'ساعات العمل' : 'Working Hours',
+      label: t('aboutUs.contact.hours'),
       value: isRTL ? (d.hours_ar || t('aboutUs.contact.hoursValue')) : (d.hours_en || t('aboutUs.contact.hoursValue')),
     },
   ];
@@ -96,11 +96,15 @@ const AboutUs: React.FC = () => {
       {/* Hero Section */}
       <section className="relative pt-[var(--navbar-h)] pb-16 sm:pb-20 overflow-hidden">
         <div className="absolute inset-0">
-          <img
-            src={bgImage}
-            alt="Motorcycle riders"
-            className="w-full h-full object-cover opacity-30"
-            loading="lazy" />
+          <picture>
+            <source srcSet={bgImage} type="image/webp" />
+            <img
+              src={bgImage}
+              alt="Motorcycle riders"
+              className="w-full h-full object-cover opacity-30"
+              loading="lazy"
+            />
+          </picture>
           <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
         </div>
 

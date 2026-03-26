@@ -4,6 +4,7 @@ import { X, ShoppingCart } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 interface PurchaseEncouragementModalProps {
   open: boolean;
@@ -25,6 +26,7 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
   course,
 }) => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const { formatPrice, getSarTotalWithVat } = useCurrency();
 
   // Calculate price with course discount and VAT included
@@ -87,12 +89,10 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
               {/* Emoji Title */}
               <div className="space-y-2">
                 <h3 className="text-xl font-bold text-foreground">
-                  {isRTL ? 'أعجبك المحتوى؟ 🎉' : 'Enjoying the content? 🎉'}
+                  {t('course.purchaseEncouragementModal.title')}
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  {isRTL
-                    ? 'لقد أنهيت المقاطع المجانية! اشترِ الكورس الآن لمتابعة تعلمك واكتشاف المزيد'
-                    : "You've finished the free previews! Buy the course now to continue your learning journey"}
+                  {t('course.purchaseEncouragementModal.subtitle')}
                 </p>
               </div>
 
@@ -109,7 +109,7 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {isRTL ? 'السعر شامل الضريبة' : 'Price includes VAT'}
+                  {t('course.purchaseEncouragementModal.vatIncluded')}
                 </p>
               </div>
 
@@ -122,13 +122,13 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
                   onClick={onBuyNow}
                 >
                   <ShoppingCart className="w-5 h-5 me-2" />
-                  {isRTL ? 'اشترك الآن' : 'Buy Now'}
+                  {t('course.purchaseEncouragementModal.buyNow')}
                 </Button>
                 <button
                   onClick={onClose}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {isRTL ? 'ليس الآن' : 'Not now'}
+                  {t('course.purchaseEncouragementModal.notNow')}
                 </button>
               </div>
             </div>

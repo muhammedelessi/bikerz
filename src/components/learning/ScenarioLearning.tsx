@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,7 @@ export const ScenarioLearning: React.FC<ScenarioLearningProps> = ({
   onComplete,
   onClose
 }) => {
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { trackScenarioMistake } = useQuizMistakeTracking();
   
@@ -147,21 +149,17 @@ export const ScenarioLearning: React.FC<ScenarioLearningProps> = ({
         </div>
 
         <h3 className="text-2xl font-bold text-foreground mb-2">
-          {isRTL ? 'أحسنت!' : 'Well Done!'}
+          {t('scenario.wellDone')}
         </h3>
 
         <p className="text-muted-foreground mb-4">
-          {isRTL 
-            ? `اخترت القرارات الآمنة في ${results.safeChoices} من ${scenarios.length} مواقف`
-            : `You made safe decisions in ${results.safeChoices} out of ${scenarios.length} scenarios`}
+          {t('scenario.safeDecisionsMade', { safe: results.safeChoices, total: scenarios.length })}
         </p>
 
         {results.unsafeChoices > 0 && (
           <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-4 text-start">
             <p className="text-sm text-amber-800 dark:text-amber-200">
-              {isRTL 
-                ? 'لا بأس! التعلم من السيناريوهات يساعدك على اتخاذ قرارات أفضل على الطريق.'
-                : "That's okay! Learning from scenarios helps you make better decisions on the road."}
+              {t('scenario.noWorries')}
             </p>
           </div>
         )}
@@ -169,7 +167,7 @@ export const ScenarioLearning: React.FC<ScenarioLearningProps> = ({
         <div className="flex gap-2">
           {onClose && (
             <Button variant="outline" onClick={onClose} className="flex-1">
-              {isRTL ? 'إغلاق' : 'Close'}
+              {t('common.close')}
             </Button>
           )}
           <Button onClick={() => {
@@ -179,7 +177,7 @@ export const ScenarioLearning: React.FC<ScenarioLearningProps> = ({
             setResults({ safeChoices: 0, unsafeChoices: 0 });
             setIsComplete(false);
           }} className="flex-1">
-            {isRTL ? 'تدرب مرة أخرى' : 'Practice Again'}
+            {t('scenario.practiceAgain')}
           </Button>
         </div>
       </motion.div>
@@ -195,14 +193,12 @@ export const ScenarioLearning: React.FC<ScenarioLearningProps> = ({
       {/* Progress indicator */}
       <div className="flex items-center justify-between mb-4">
         <span className="text-sm text-muted-foreground">
-          {isRTL 
-            ? `السيناريو ${currentIndex + 1} من ${scenarios.length}` 
-            : `Scenario ${currentIndex + 1} of ${scenarios.length}`}
+          {t('scenario.scenarioOf', { current: currentIndex + 1, total: scenarios.length })}
         </span>
         <div className="flex items-center gap-2">
           <ShieldAlert className="w-4 h-4 text-primary" />
           <span className="text-sm font-medium text-primary">
-            {isRTL ? 'تدريب السلامة' : 'Safety Training'}
+            {t('scenario.safetyTraining')}
           </span>
         </div>
       </div>
@@ -242,7 +238,7 @@ export const ScenarioLearning: React.FC<ScenarioLearningProps> = ({
           {/* Choices */}
           <div className="space-y-3 mb-6">
             <p className="text-sm font-medium text-foreground mb-2">
-              {isRTL ? 'ماذا ستفعل؟' : 'What would you do?'}
+              {t('scenario.whatToDo')}
             </p>
             
             {currentScenario.choices.map((choice, index) => (
@@ -311,8 +307,8 @@ export const ScenarioLearning: React.FC<ScenarioLearningProps> = ({
             >
               <Button onClick={handleNext} className="w-full">
                 {currentIndex < scenarios.length - 1 
-                  ? (isRTL ? 'السيناريو التالي' : 'Next Scenario')
-                  : (isRTL ? 'إنهاء' : 'Finish')}
+                  ? t('scenario.nextScenario')
+                  : t('scenario.finish')}
                 <NextIcon className="w-4 h-4 ms-2" />
               </Button>
             </motion.div>

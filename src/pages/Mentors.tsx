@@ -150,11 +150,15 @@ const Mentors: React.FC = () => {
                   <div className="card-premium overflow-hidden transition-all duration-500 hover:border-primary/40">
                     {/* Header with Avatar */}
                     <div className="relative h-48 bg-gradient-to-br from-secondary to-secondary/60">
-                      <img
-                        src={mentor.profile?.avatar_url || instructorImage}
-                        alt={mentor.profile?.full_name || 'Mentor'}
-                        className="w-full h-full object-cover opacity-80"
-                       loading="lazy" />
+                      <picture>
+                        <source srcSet={mentor.profile?.avatar_url || instructorImage} type="image/webp" />
+                        <img
+                          src={mentor.profile?.avatar_url || instructorImage}
+                          alt={mentor.profile?.full_name || 'Mentor'}
+                          className="w-full h-full object-cover opacity-80"
+                          loading="lazy"
+                        />
+                      </picture>
                       <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
                       
                       {/* Rating Badge */}

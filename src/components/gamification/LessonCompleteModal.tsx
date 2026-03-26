@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   CheckCircle2,
@@ -40,6 +41,7 @@ const LessonCompleteModal: React.FC<LessonCompleteModalProps> = ({
   hasNextLesson = true,
 }) => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const NextIcon = isRTL ? ArrowLeft : ArrowRight;
 
   useEffect(() => {
@@ -115,12 +117,12 @@ const LessonCompleteModal: React.FC<LessonCompleteModalProps> = ({
             >
               <h2 className="text-2xl font-black text-foreground mb-1">
                 {isPerfect 
-                  ? (isRTL ? '🌟 أداء مثالي!' : '🌟 Perfect!')
-                  : (isRTL ? '🎉 أحسنت!' : '🎉 Great Job!')
+                  ? t('gamification.lessonCompleteModal.perfect')
+                  : t('gamification.lessonCompleteModal.greatJob')
                 }
               </h2>
               <p className="text-muted-foreground text-sm">
-                {isRTL ? 'أكملت الدرس' : 'Lesson completed'}: {lessonTitle}
+                {t('gamification.lessonCompleteModal.lessonCompleted')}: {lessonTitle}
               </p>
             </motion.div>
 
@@ -147,7 +149,7 @@ const LessonCompleteModal: React.FC<LessonCompleteModalProps> = ({
                   <span className="text-2xl font-black text-orange-400">{streakDays}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {isRTL ? 'يوم سلسلة' : 'Day Streak'}
+                  {t('gamification.lessonCompleteModal.dayStreak')}
                 </p>
               </div>
             </motion.div>
@@ -163,7 +165,7 @@ const LessonCompleteModal: React.FC<LessonCompleteModalProps> = ({
                 <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-full px-4 py-2 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-yellow-400" />
                   <span className="text-sm font-bold text-yellow-400">
-                    {isRTL ? `مضاعف x${multiplier.toFixed(1)}` : `${multiplier.toFixed(1)}x Multiplier`}
+                    {t('gamification.lessonCompleteModal.multiplier', { multiplier: multiplier.toFixed(1) })}
                   </span>
                 </div>
               </motion.div>
@@ -181,7 +183,7 @@ const LessonCompleteModal: React.FC<LessonCompleteModalProps> = ({
                   onClick={onNextLesson}
                   className="w-full h-12 text-base font-bold"
                 >
-                  {isRTL ? 'الدرس التالي' : 'Next Lesson'}
+                  {t('gamification.lessonCompleteModal.nextLesson')}
                   <NextIcon className="w-5 h-5 ms-2" />
                 </Button>
               )}
@@ -193,7 +195,7 @@ const LessonCompleteModal: React.FC<LessonCompleteModalProps> = ({
                   className="w-full h-10"
                 >
                   <RotateCcw className="w-4 h-4 me-2" />
-                  {isRTL ? 'أعد النشاط للتحسين' : 'Redo for Better Score'}
+                  {t('gamification.lessonCompleteModal.redoForBetterScore')}
                 </Button>
               )}
 
@@ -202,7 +204,7 @@ const LessonCompleteModal: React.FC<LessonCompleteModalProps> = ({
                 onClick={onClose}
                 className="w-full"
               >
-                {isRTL ? 'إغلاق' : 'Close'}
+                {t('gamification.lessonCompleteModal.close')}
               </Button>
             </motion.div>
           </motion.div>

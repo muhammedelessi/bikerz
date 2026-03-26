@@ -6,9 +6,11 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const PromoOfferBanner: React.FC = () => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.2 });
   const [copied, setCopied] = useState(false);
 
@@ -39,25 +41,21 @@ const PromoOfferBanner: React.FC = () => {
 
   const discountText =
     promo.type === "percentage"
-      ? isRTL
-        ? `خصم ${promo.value}%`
-        : `${promo.value}% OFF`
-      : isRTL
-        ? `خصم ${promo.value} ر.س`
-        : `${promo.value} SAR OFF`;
+      ? t("landing.promoOfferBanner.discount.percentage", { value: promo.value })
+      : t("landing.promoOfferBanner.discount.fixed", { value: promo.value });
 
   const description = isRTL
-    ? promo.description_ar || "استخدم الكود أدناه واحصل على خصم فوري عند التسجيل!"
-    : promo.description || "Use the code below and get an instant discount on enrollment!";
+    ? promo.description_ar || t("landing.promoOfferBanner.descriptionFallback")
+    : promo.description || t("landing.promoOfferBanner.descriptionFallback");
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(promo.code);
       setCopied(true);
-      toast.success(isRTL ? "تم نسخ الكود!" : "Code copied!");
+      toast.success(t("landing.promoOfferBanner.toasts.copied"));
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error(isRTL ? "فشل النسخ" : "Failed to copy");
+      toast.error(t("landing.promoOfferBanner.toasts.copyFailed"));
     }
   };
 
@@ -87,7 +85,7 @@ const PromoOfferBanner: React.FC = () => {
               <div className="flex items-center gap-2 justify-center sm:justify-start mb-1">
                 <Sparkles className="w-4 h-4 text-primary" />
                 <span className="text-sm font-bold text-primary uppercase tracking-wider">
-                  {isRTL ? "عرض خاص" : "Special Offer"}
+                  {t("landing.promoOfferBanner.specialOffer")}
                 </span>
               </div>
               <h3 className="text-xl sm:text-2xl font-black text-foreground mb-1">

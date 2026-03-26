@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -77,6 +78,7 @@ const fmtDuration = (seconds: number): string => {
 const AdminStudentDetail: React.FC = () => {
   const { id: courseId, userId } = useParams<{ id: string; userId: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
 
@@ -296,7 +298,7 @@ const AdminStudentDetail: React.FC = () => {
               </Avatar>
               <div className="min-w-0">
                 <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">
-                  {student?.profile?.full_name || (isRTL ? 'تفاصيل الطالب' : 'Student Details')}
+                  {student?.profile?.full_name || t('admin.studentDetail.title')}
                 </h1>
                 <p className="text-sm text-muted-foreground truncate" dir="ltr" style={{ unicodeBidi: 'plaintext' as any }}>
                   {student?.email || ''}
@@ -313,7 +315,7 @@ const AdminStudentDetail: React.FC = () => {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Mail className="w-4 h-4 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">{isRTL ? 'البريد الإلكتروني' : 'Email'}</p>
+                  <p className="text-xs text-muted-foreground">{t('admin.studentDetail.email')}</p>
                 </div>
                 <p className="text-sm font-medium text-foreground truncate" dir="ltr" style={isRTL ? { unicodeBidi: 'plaintext' as any } : undefined}>
                   {student.email || '-'}
@@ -324,7 +326,7 @@ const AdminStudentDetail: React.FC = () => {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Phone className="w-4 h-4 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">{isRTL ? 'رقم الهاتف' : 'Phone'}</p>
+                  <p className="text-xs text-muted-foreground">{t('admin.studentDetail.phone')}</p>
                 </div>
                 <p className="text-sm font-medium text-foreground truncate" dir="ltr" style={isRTL ? { unicodeBidi: 'plaintext' as any } : undefined}>
                   {student.profile?.phone || '-'}
@@ -335,7 +337,7 @@ const AdminStudentDetail: React.FC = () => {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">{isRTL ? 'الموقع' : 'Location'}</p>
+                  <p className="text-xs text-muted-foreground">{t('admin.studentDetail.location')}</p>
                 </div>
                 <p className="text-sm font-medium text-foreground truncate">
                   {[student.profile?.city, student.profile?.country].filter(Boolean).join(', ') || '-'}
@@ -346,7 +348,7 @@ const AdminStudentDetail: React.FC = () => {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <GraduationCap className="w-4 h-4 text-primary" />
-                  <p className="text-xs text-muted-foreground">{isRTL ? 'الدورات' : 'Courses'}</p>
+                  <p className="text-xs text-muted-foreground">{t('admin.studentDetail.courses')}</p>
                 </div>
                 <p className="text-sm font-bold text-primary">{enrollments.length}</p>
               </CardContent>
@@ -359,16 +361,16 @@ const AdminStudentDetail: React.FC = () => {
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-green-500" />
-              {completedCourses} {isRTL ? 'مكتمل' : 'completed'}
+              {completedCourses} {t('admin.studentDetail.completed')}
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-blue-500" />
-              {enrollments.length - completedCourses} {isRTL ? 'قيد التعلم' : 'in progress'}
+              {enrollments.length - completedCourses} {t('admin.studentDetail.inProgress')}
             </span>
             {totalSpent > 0 && (
               <span className="flex items-center gap-1.5">
                 <DollarSign className="w-3.5 h-3.5" />
-                {isRTL ? 'إجمالي المدفوعات:' : 'Total spent:'} {totalSpent} SAR
+                {t('admin.studentDetail.totalSpent')} {totalSpent} SAR
               </span>
             )}
           </div>
@@ -378,7 +380,7 @@ const AdminStudentDetail: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-4">
             <GraduationCap className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">{isRTL ? 'الدورات المسجلة' : 'Enrolled Courses'}</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t('admin.studentDetail.enrolledCourses')}</h2>
           </div>
 
           {isLoading ? (
@@ -388,8 +390,7 @@ const AdminStudentDetail: React.FC = () => {
           ) : enrollments.length === 0 ? (
             <Card>
               <CardContent className="py-16 text-center">
-                <BookOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">{isRTL ? 'لا توجد بيانات' : 'No data available'}</p>
+                <p className="text-muted-foreground">{t('admin.studentDetail.na')}</p>
               </CardContent>
             </Card>
           ) : (
@@ -408,7 +409,7 @@ const AdminStudentDetail: React.FC = () => {
                         </div>
                         {(enrollment.completed_at || enrollment.progress_percentage >= 100) ? (
                           <Badge className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/10 shrink-0 text-xs">
-                            {isRTL ? 'مكتمل' : 'Completed'}
+                            {t('admin.studentDetail.completed')}
                           </Badge>
                         ) : (
                           <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/10 shrink-0 text-xs">
@@ -427,15 +428,15 @@ const AdminStudentDetail: React.FC = () => {
                           />
                         </div>
                         <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">
-                          {enrollment.lessons_completed}/{enrollment.total_lessons} {isRTL ? 'درس' : 'lessons'}
+                           {t('admin.studentDetail.lessonsCount', { completed: enrollment.lessons_completed, total: enrollment.total_lessons })}
                         </span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                        <MetaRow icon={Calendar} label={isRTL ? 'التسجيل' : 'Enrolled'} value={formatDate(enrollment.enrolled_at)} />
-                        <MetaRow icon={DollarSign} label={isRTL ? 'السعر' : 'Price'} value={enrollment.purchase_amount != null ? `${enrollment.purchase_amount} ${enrollment.purchase_currency}` : (isRTL ? 'غير متاح' : 'N/A')} dir="ltr" />
-                        <MetaRow icon={Clock} label={isRTL ? 'الشراء' : 'Purchased'} value={enrollment.purchase_date ? formatDate(enrollment.purchase_date) : '-'} />
-                        <MetaRow icon={Star} label={isRTL ? 'التقييم' : 'Rating'} value={enrollment.review_rating != null ? `${enrollment.review_rating}/5 ★` : (isRTL ? 'لا يوجد' : 'None')} highlight={enrollment.review_rating != null} />
+                        <MetaRow icon={Calendar} label={t('admin.studentDetail.enrolled')} value={formatDate(enrollment.enrolled_at)} />
+                        <MetaRow icon={DollarSign} label={t('admin.studentDetail.price')} value={enrollment.purchase_amount != null ? `${enrollment.purchase_amount} ${enrollment.purchase_currency}` : t('admin.studentDetail.na')} dir="ltr" />
+                        <MetaRow icon={Clock} label={t('admin.studentDetail.purchased')} value={enrollment.purchase_date ? formatDate(enrollment.purchase_date) : '-'} />
+                        <MetaRow icon={Star} label={t('admin.studentDetail.rating')} value={enrollment.review_rating != null ? `${enrollment.review_rating}/5 ★` : t('admin.studentDetail.none')} highlight={enrollment.review_rating != null} />
                       </div>
 
                       {enrollment.review_comment && (
@@ -443,16 +444,17 @@ const AdminStudentDetail: React.FC = () => {
                       )}
                       {enrollment.payment_method && enrollment.payment_method !== '-' && (
                         <p className="text-xs text-muted-foreground">
-                          {isRTL ? 'طريقة الدفع:' : 'Payment:'} <span className="text-foreground font-medium">{enrollment.payment_method}</span>
+                          {t('admin.studentDetail.payment')} <span className="text-foreground font-medium">{enrollment.payment_method}</span>
                         </p>
                       )}
 
                       {/* Watch Sessions Section */}
                       {courseSessions.length > 0 && (
-                        <WatchSessionsPanel 
-                          sessions={courseSessions} 
-                          isRTL={isRTL} 
+                        <WatchSessionsPanel
+                          sessions={courseSessions}
+                          isRTL={isRTL}
                           firstIP={firstIP}
+                          t={t}
                         />
                       )}
                     </CardContent>
@@ -473,7 +475,8 @@ const WatchSessionsPanel: React.FC<{
   sessions: (WatchSession & { lessonTitle: string })[];
   isRTL: boolean;
   firstIP: string | null;
-}> = ({ sessions, isRTL, firstIP }) => {
+  t: any;
+}> = ({ sessions, isRTL, firstIP, t }) => {
   const [open, setOpen] = useState(false);
 
   const allIPs = [...new Set(sessions.map(s => s.ip_address).filter(Boolean))] as string[];
@@ -507,14 +510,14 @@ const WatchSessionsPanel: React.FC<{
         >
           <span className="flex items-center gap-2">
             <Eye className="w-3.5 h-3.5" />
-            {isRTL ? 'جلسات المشاهدة' : 'Watch Sessions'}
+            {t('admin.studentDetail.watchSessions')}
             <Badge variant="secondary" className="text-[10px] px-1.5 h-4 font-normal">
               {sessions.length}
             </Badge>
             {hasMultipleIPs && (
               <Badge className="text-[10px] px-1.5 h-4 bg-orange-500/15 text-orange-500 border-orange-500/20 hover:bg-orange-500/15">
                 <AlertTriangle className="w-3 h-3 me-0.5" />
-                {isRTL ? 'عدة IPs' : 'Multi-IP'}
+                {t('admin.studentDetail.multiIP')}
               </Badge>
             )}
           </span>
@@ -527,17 +530,17 @@ const WatchSessionsPanel: React.FC<{
           <div className="grid grid-cols-3 gap-2">
             <div className="bg-muted/40 rounded-lg p-3 text-center">
               <p className="text-lg font-bold text-foreground tabular-nums" dir="ltr">{fmtDuration(totalWatched)}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{isRTL ? 'وقت المشاهدة' : 'Total Watched'}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{t('admin.studentDetail.totalWatched')}</p>
             </div>
             <div className="bg-muted/40 rounded-lg p-3 text-center">
               <p className="text-lg font-bold text-foreground tabular-nums" dir="ltr">{fmtDuration(totalDuration)}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{isRTL ? 'مدة الفيديو' : 'Video Duration'}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{t('admin.studentDetail.videoDuration')}</p>
             </div>
             <div className="bg-muted/40 rounded-lg p-3 text-center">
               <p className={`text-lg font-bold tabular-nums ${avgCompletion >= 80 ? 'text-green-500' : avgCompletion >= 50 ? 'text-primary' : 'text-orange-500'}`} dir="ltr">
                 {avgCompletion}%
               </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{isRTL ? 'متوسط الإكمال' : 'Avg Completion'}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{t('admin.studentDetail.avgCompletion')}</p>
             </div>
           </div>
 
@@ -545,7 +548,7 @@ const WatchSessionsPanel: React.FC<{
           {allIPs.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 bg-muted/20 rounded-lg px-3 py-2">
               <Globe className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <span className="text-xs text-muted-foreground">{isRTL ? 'عناوين IP:' : 'IP Addresses:'}</span>
+              <span className="text-xs text-muted-foreground">{t('admin.studentDetail.ipAddresses')}</span>
               {allIPs.map((ip, i) => {
                 const isPrimary = ip === firstIP;
                 const isSuspicious = !isPrimary && hasMultipleIPs && ip !== 'unknown';
@@ -578,7 +581,7 @@ const WatchSessionsPanel: React.FC<{
                 <Play className="w-3.5 h-3.5 text-primary shrink-0" />
                 <p className="text-sm font-semibold text-foreground">{group.title}</p>
                 <Badge variant="secondary" className="text-[10px] px-1.5 h-4">
-                  {group.items.length} {group.items.length === 1 ? (isRTL ? 'جلسة' : 'session') : (isRTL ? 'جلسات' : 'sessions')}
+                  {group.items.length} {t('admin.studentDetail.session', { count: group.items.length })}
                 </Badge>
               </div>
 
@@ -594,6 +597,7 @@ const WatchSessionsPanel: React.FC<{
                       isRTL={isRTL}
                       firstIP={firstIP}
                       hasMultipleIPs={hasMultipleIPs}
+                      t={t}
                     />
                   ))}
               </div>
@@ -613,7 +617,8 @@ const SessionCard: React.FC<{
   isRTL: boolean;
   firstIP: string | null;
   hasMultipleIPs: boolean;
-}> = ({ session: s, index, isRTL, firstIP, hasMultipleIPs }) => {
+  t: any;
+}> = ({ session: s, index, isRTL, firstIP, hasMultipleIPs, t }) => {
   const pct = Math.round(Number(s.completion_percentage) || 0);
   const watched = s.total_watch_time_seconds || 0;
   const duration = s.video_duration_seconds || 1;
@@ -632,7 +637,7 @@ const SessionCard: React.FC<{
         {/* Header row: session label + date + completion */}
         <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30">
           <span className="text-xs font-semibold text-foreground tabular-nums">
-            {isRTL ? `جلسة ${index + 1}` : `Session ${index + 1}`}
+            {t('admin.studentDetail.sessionLabel', { index: index + 1 })}
           </span>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground tabular-nums" dir="ltr">
@@ -655,29 +660,29 @@ const SessionCard: React.FC<{
         <div className="px-4 py-3">
           <div className="grid grid-cols-3 gap-3 text-center">
             <div>
-              <p className="text-[11px] text-muted-foreground mb-0.5">{isRTL ? 'المشاهدة' : 'Watched'}</p>
+              <p className="text-[11px] text-muted-foreground mb-0.5">{t('admin.studentDetail.watched')}</p>
               <p className="text-sm font-bold text-foreground tabular-nums" dir="ltr">{fmtDuration(watched)}</p>
               <p className="text-[10px] text-muted-foreground tabular-nums" dir="ltr">/ {fmtDuration(duration)}</p>
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground mb-0.5">{isRTL ? 'تخطى' : 'Skipped'}</p>
+              <p className="text-[11px] text-muted-foreground mb-0.5">{t('admin.studentDetail.skipped')}</p>
               <p className={`text-sm font-bold tabular-nums ${skipped.length > 0 ? 'text-orange-500' : 'text-muted-foreground'}`} dir="ltr">
                 {skipped.length > 0 ? fmtDuration(skippedTime) : '—'}
               </p>
               {skipped.length > 0 && (
                 <p className="text-[10px] text-orange-500/70 tabular-nums" dir="ltr">
-                  {skipped.length} {skipped.length === 1 ? (isRTL ? 'مقطع' : 'clip') : (isRTL ? 'مقاطع' : 'clips')}
+                   {skipped.length} {t('admin.studentDetail.clip', { count: skipped.length })}
                 </p>
               )}
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground mb-0.5">{isRTL ? 'أعاد' : 'Replayed'}</p>
+              <p className="text-[11px] text-muted-foreground mb-0.5">{t('admin.studentDetail.replayed')}</p>
               <p className={`text-sm font-bold tabular-nums ${rewatched.length > 0 ? 'text-blue-500' : 'text-muted-foreground'}`} dir="ltr">
                 {rewatched.length > 0 ? fmtDuration(rewatchedTime) : '—'}
               </p>
               {rewatched.length > 0 && (
                 <p className="text-[10px] text-blue-500/70 tabular-nums" dir="ltr">
-                  {rewatched.length} {rewatched.length === 1 ? (isRTL ? 'مقطع' : 'clip') : (isRTL ? 'مقاطع' : 'clips')}
+                   {rewatched.length} {t('admin.studentDetail.clip', { count: rewatched.length })}
                 </p>
               )}
             </div>
@@ -691,7 +696,7 @@ const SessionCard: React.FC<{
               <div className="flex items-center gap-1.5 mb-2">
                 <SkipForward className={`w-3.5 h-3.5 text-orange-500 ${isRTL ? 'scale-x-[-1]' : ''}`} />
                 <span className="text-xs font-semibold text-orange-500">
-                  {isRTL ? 'المقاطع المتخطاة' : 'Skipped Segments'}
+                   {t('admin.studentDetail.skippedSegments')}
                 </span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
@@ -714,7 +719,7 @@ const SessionCard: React.FC<{
               <div className="flex items-center gap-1.5 mb-2">
                 <Repeat className="w-3.5 h-3.5 text-blue-500" />
                 <span className="text-xs font-semibold text-blue-500">
-                  {isRTL ? 'المقاطع المعادة' : 'Replayed Segments'}
+                   {t('admin.studentDetail.replayedSegments')}
                 </span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
@@ -737,7 +742,7 @@ const SessionCard: React.FC<{
             <div className="flex items-center gap-2 bg-green-500/5 border border-green-500/10 rounded-lg px-3 py-2">
               <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
               <span className="text-xs text-green-500">
-                {isRTL ? 'مشاهدة نظيفة — بدون تخطي أو إعادة' : 'Clean watch — no skips or replays'}
+                 {t('admin.studentDetail.cleanWatch')}
               </span>
             </div>
           </div>
@@ -752,8 +757,8 @@ const SessionCard: React.FC<{
             <span className="text-[11px] font-mono text-muted-foreground" dir="ltr">{s.ip_address}</span>
             {isDiffIP && (
               <Badge className="text-[10px] px-1.5 h-4 bg-orange-500/15 text-orange-500 border-orange-500/20 hover:bg-orange-500/15 gap-0.5">
-                <AlertTriangle className="w-3 h-3" />
-                {isRTL ? 'IP مختلف!' : 'Different IP!'}
+                 <AlertTriangle className="w-3 h-3" />
+                {t('admin.studentDetail.differentIP')}
               </Badge>
             )}
           </div>

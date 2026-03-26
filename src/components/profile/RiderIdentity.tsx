@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -110,15 +111,15 @@ const isProfileComplete = (profile: ExtendedProfile): boolean => {
 };
 
 // Get missing fields
-const getMissingFields = (profile: ExtendedProfile, isRTL: boolean): string[] => {
+const getMissingFields = (profile: ExtendedProfile, t: any): string[] => {
   const missing: string[] = [];
-  if (!profile.full_name) missing.push(isRTL ? 'الاسم الكامل' : 'Full Name');
-  if (!profile.rider_nickname) missing.push(isRTL ? 'اللقب' : 'Nickname');
-  if (!profile.bike_brand) missing.push(isRTL ? 'ماركة الدراجة' : 'Bike Brand');
-  if (!profile.bike_model) missing.push(isRTL ? 'موديل الدراجة' : 'Bike Model');
-  if (!profile.engine_size_cc) missing.push(isRTL ? 'حجم المحرك' : 'Engine Size');
-  if (profile.riding_experience_years === null) missing.push(isRTL ? 'سنوات الخبرة' : 'Experience Years');
-  if (!profile.avatar_url) missing.push(isRTL ? 'الصورة الشخصية' : 'Profile Photo');
+  if (!profile.full_name) missing.push(t('profile.fullName'));
+  if (!profile.rider_nickname) missing.push(t('profile.riderNickname'));
+  if (!profile.bike_brand) missing.push(t('profile.bikeBrand'));
+  if (!profile.bike_model) missing.push(t('profile.bikeModel'));
+  if (!profile.engine_size_cc) missing.push(t('profile.engineSize'));
+  if (profile.riding_experience_years === null) missing.push(t('profile.experienceYears'));
+  if (!profile.avatar_url) missing.push(t('profile.profilePhoto'));
   return missing;
 };
 
@@ -128,6 +129,7 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
   onAvatarUpload,
   isUpdating,
 }) => {
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEditingNickname, setIsEditingNickname] = useState(false);
@@ -150,7 +152,7 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
 
   const currentRankIndex = RANKS.findIndex(r => r.name === profile.experience_level);
   const profileComplete = isProfileComplete(profile);
-  const missingFields = getMissingFields(profile, isRTL);
+  const missingFields = getMissingFields(profile, t);
 
   return (
     <div className="space-y-4">
@@ -193,7 +195,7 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
           <div className="flex-1 text-center sm:text-start space-y-3">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-                {profile.full_name || (isRTL ? 'مستخدم' : 'User')}
+                {profile.full_name || t('common.user')}
               </h2>
               
               {/* Rider Nickname */}
@@ -203,7 +205,7 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
                     <Input
                       value={nickname}
                       onChange={(e) => setNickname(e.target.value)}
-                      placeholder={isRTL ? 'اللقب' : 'Nickname'}
+                      placeholder={t('profile.riderNickname')}
                       className="h-8 w-40"
                       autoFocus
                     />
@@ -231,7 +233,7 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
                 ) : (
                   <>
                     <span className="text-sm text-muted-foreground">
-                      {profile.rider_nickname || (isRTL ? 'أضف لقب' : 'Add nickname')}
+                      {profile.rider_nickname || t('profile.addNickname')}
                     </span>
                     <Button
                       size="icon"
@@ -251,7 +253,7 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
         {/* Ranking System */}
         <div className="mt-6 pt-6 border-t border-border">
           <h3 className="text-sm font-semibold text-muted-foreground mb-4 text-center">
-            {isRTL ? 'نظام التصنيف' : 'Ranking System'}
+            {t('profile.rankingSystem')}
           </h3>
           
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
@@ -323,9 +325,7 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
           </div>
           
           <p className="text-xs text-muted-foreground text-center mt-4">
-            {isRTL 
-              ? 'مستوى الخبرة يُحسب تلقائياً بناءً على تقدمك في التعلم' 
-              : 'Experience level is automatically calculated based on your learning progress'}
+            {t('profile.experienceLevelDesc')}
           </p>
         </div>
       </div>

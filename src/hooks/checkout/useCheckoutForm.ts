@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
 import { PHONE_COUNTRIES } from '@/data/phoneCountryCodes';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -9,6 +10,7 @@ import type { DropdownOption } from '@/components/checkout/SearchableDropdown';
 import type { ValidationErrors } from '@/types/payment';
 
 export function useCheckoutForm(open: boolean) {
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user, profile } = useAuth();
   const { detectedCountry } = useCurrency();
@@ -120,35 +122,35 @@ export function useCheckoutForm(open: boolean) {
   const validateInfo = useCallback((): boolean => {
     const newErrors: ValidationErrors = {};
     if (!fullName.trim() || fullName.trim().length < 3) {
-      newErrors.fullName = isRTL ? 'الاسم الكامل مطلوب (3 أحرف على الأقل)' : 'Full name required (min 3 chars)';
+      newErrors.fullName = t('checkout.validation.fullNameRequired');
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim() || !emailRegex.test(email)) {
-      newErrors.email = isRTL ? 'بريد إلكتروني صحيح مطلوب' : 'Valid email required';
+      newErrors.email = t('checkout.validation.validEmailRequired');
     }
     const rawPhone = phone.trim();
     if (!rawPhone) {
-      newErrors.phone = isRTL ? 'رقم الهاتف مطلوب' : 'Phone number is required';
+      newErrors.phone = t('checkout.validation.phoneRequired');
     } else if (!actualPrefix) {
-      newErrors.phone = isRTL ? 'يرجى اختيار رمز الدولة' : 'Please select a country code';
+      newErrors.phone = t('checkout.validation.selectCountryCode');
     } else if (!/^\d+$/.test(rawPhone)) {
-      newErrors.phone = isRTL ? 'رقم الهاتف يجب أن يحتوي على أرقام فقط' : 'Phone must contain digits only';
+      newErrors.phone = t('checkout.validation.phoneDigitsOnly');
     } else if (rawPhone.length < 6) {
-      newErrors.phone = isRTL ? 'رقم الهاتف قصير جداً (6 أرقام على الأقل)' : 'Phone number too short (min 6 digits)';
+      newErrors.phone = t('checkout.validation.phoneTooShort');
     } else if (rawPhone.length > 12) {
-      newErrors.phone = isRTL ? 'رقم الهاتف طويل جداً (12 رقم كحد أقصى)' : 'Phone number too long (max 12 digits)';
+      newErrors.phone = t('checkout.validation.phoneTooLong');
     }
     const c = (isOtherCity || isOtherCountry) ? cityManual.trim() : city.trim();
     if (!c) {
-      newErrors.city = isRTL ? 'المدينة مطلوبة' : 'City is required';
+      newErrors.city = t('checkout.validation.cityRequired');
     }
     const cn = isOtherCountry ? countryManual.trim() : country.trim();
     if (!cn) {
-      newErrors.country = isRTL ? 'الدولة مطلوبة' : 'Country is required';
+      newErrors.country = t('checkout.validation.countryRequired');
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [fullName, email, phone, actualPrefix, city, cityManual, isOtherCity, country, countryManual, isOtherCountry, isRTL]);
+  }, [fullName, email, phone, actualPrefix, city, cityManual, isOtherCity, country, countryManual, isOtherCountry, t]);
 
   // Set phone prefix based on detected country
   useEffect(() => {

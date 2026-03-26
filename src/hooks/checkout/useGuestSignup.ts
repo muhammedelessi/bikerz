@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import {
   createGuestAccount,
   sendPasswordReset,
@@ -8,7 +8,7 @@ import {
 } from '@/services/supabase.service';
 
 export function useGuestSignup() {
-  const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const [guestSigningUp, setGuestSigningUp] = useState(false);
 
   const generatePassword = useCallback(() => {
@@ -35,9 +35,7 @@ export function useGuestSignup() {
 
       if (error) {
         if (error.message?.includes('already registered') || error.message?.includes('already exists')) {
-          toast.error(isRTL
-            ? 'هذا البريد مسجل بالفعل. يرجى تسجيل الدخول أولاً.'
-            : 'This email is already registered. Please log in first.');
+          toast.error(t('auth.signup.emailExists'));
           return null;
         }
         throw error;
@@ -63,12 +61,12 @@ export function useGuestSignup() {
       return data.user.id;
     } catch (err: any) {
       console.error('Guest signup error:', err);
-      toast.error(err.message || (isRTL ? 'فشل إنشاء الحساب' : 'Failed to create account'));
+      toast.error(err.message || t('checkout.failedToCreateAccount'));
       return null;
     } finally {
       setGuestSigningUp(false);
     }
-  }, [generatePassword, isRTL]);
+  }, [generatePassword, t]);
 
   return { guestSigningUp, handleGuestSignup };
 }

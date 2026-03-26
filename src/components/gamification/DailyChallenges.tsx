@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Clock,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface DailyChallengesProps {
   challenges: DailyChallenge[];
@@ -35,13 +36,14 @@ const DailyChallenges: React.FC<DailyChallengesProps> = ({
   onClaimReward,
 }) => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
 
   if (challenges.length === 0) {
     return (
       <div className="card-premium p-4 text-center">
         <Clock className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
         <p className="text-sm text-muted-foreground">
-          {isRTL ? 'التحديات اليومية قادمة قريباً!' : 'Daily challenges coming soon!'}
+          {t('gamification.dailyChallenges.comingSoon')}
         </p>
       </div>
     );
@@ -52,7 +54,7 @@ const DailyChallenges: React.FC<DailyChallengesProps> = ({
       <div className="flex items-center gap-2 mb-4">
         <Target className="w-5 h-5 text-primary" />
         <h3 className="font-bold text-foreground">
-          {isRTL ? 'التحديات اليومية' : 'Daily Challenges'}
+          {t('gamification.dailyChallenges.title')}
         </h3>
       </div>
 
@@ -128,7 +130,7 @@ const DailyChallenges: React.FC<DailyChallengesProps> = ({
                       className="w-full h-8 text-xs gap-1"
                     >
                       <Gift className="w-3 h-3" />
-                      {isRTL ? 'استلم المكافأة' : 'Claim Reward'}
+                      {t('gamification.dailyChallenges.claimReward')}
                     </Button>
                   </motion.div>
                 )}
@@ -136,7 +138,7 @@ const DailyChallenges: React.FC<DailyChallengesProps> = ({
                 {hasClaimed && (
                   <p className="text-xs text-primary mt-2 flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3" />
-                    {isRTL ? 'تم استلام المكافأة' : 'Reward Claimed'}
+                    {t('gamification.dailyChallenges.rewardClaimed')}
                   </p>
                 )}
               </div>

@@ -445,7 +445,7 @@ const CourseLearn: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lesson-progress-learn'] });
-      toast.success(isRTL ? 'تم إكمال الدرس!' : 'Lesson completed!');
+      toast.success(t('courseLearn.lessonCompleted'));
     },
   });
 
@@ -575,7 +575,7 @@ const CourseLearn: React.FC = () => {
     const targetLesson = allLessons.find(l => l.id === lessonId);
     const targetChapter = chapters.find(ch => ch.lessons.some(l => l.id === lessonId));
     if (targetLesson && targetChapter && isLessonLocked(targetLesson, targetChapter)) {
-      toast.error(isRTL ? 'يجب عليك شراء الدورة للوصول لهذا الدرس' : 'You need to purchase the course to access this lesson');
+      toast.error(t('courseLearn.purchaseRequired'));
       return;
     }
     setShowNextCountdown(false);
@@ -702,15 +702,15 @@ const CourseLearn: React.FC = () => {
         <div className="text-center">
           <AlertCircle className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
-            {isRTL ? 'الدورة غير موجودة' : 'Course Not Found'}
+            {t('courses.courseNotFound')}
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground mb-6">
-            {isRTL ? 'لم نتمكن من العثور على هذه الدورة' : "We couldn't find this course"}
+            {t('courses.courseNotFoundDescription')}
           </p>
           <Button asChild className="h-11">
             <Link to="/courses">
               <BackIcon className="w-4 h-4 me-2" />
-              {isRTL ? 'العودة للدورات' : 'Back to Courses'}
+              {t('courses.backToCourses')}
             </Link>
           </Button>
         </div>
@@ -758,12 +758,10 @@ const CourseLearn: React.FC = () => {
                 className="space-y-3"
               >
                 <h1 className="text-3xl sm:text-4xl font-black text-foreground">
-                  {isRTL ? 'أهلاً بك! 👋' : 'Welcome! 👋'}
+                  {t('courseLearn.welcomeMessage')}
                 </h1>
                 <p className="text-muted-foreground text-base sm:text-lg leading-relaxed max-w-md mx-auto">
-                  {isRTL 
-                    ? 'أنت على وشك بدء رحلة تعليمية ممتعة. استمتع بتعلم كل ما تحتاجه عن عالم الدراجات النارية.'
-                    : "You're about to start an exciting learning journey. Enjoy mastering everything about the motorcycle world."}
+                  {t('courseLearn.welcomeDescription')}
                 </p>
               </motion.div>
 
@@ -777,12 +775,12 @@ const CourseLearn: React.FC = () => {
                 <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4" />
-                    <span>{totalLessons} {isRTL ? 'درس' : 'lessons'}</span>
+                    <span>{totalLessons} {t('courseLearn.lessonsCount')}</span>
                   </div>
                   {totalQuizzes > 0 && (
                     <div className="flex items-center gap-1.5">
                       <ClipboardList className="w-4 h-4" />
-                      <span>{totalQuizzes} {isRTL ? 'اختبار' : 'quizzes'}</span>
+                      <span>{totalQuizzes} {t('courseLearn.quizzesCount')}</span>
                     </div>
                   )}
                 </div>
@@ -808,7 +806,7 @@ const CourseLearn: React.FC = () => {
                   }}
                 >
                   <Play className="w-5 h-5" />
-                  {isRTL ? 'ابدأ الدرس الأول' : 'Start First Lesson'}
+                  {t('courseLearn.startFirstLesson')}
                 </Button>
               </motion.div>
             </motion.div>
@@ -823,9 +821,7 @@ const CourseLearn: React.FC = () => {
             <div className="flex items-center gap-3 text-center sm:text-start">
               <BookOpen className="w-5 h-5 hidden sm:block" />
               <p className="text-sm sm:text-base font-medium">
-                {isRTL 
-                  ? 'أنت تشاهد معاينة مجانية. سجل الآن للحصول على الوصول الكامل!'
-                  : "You're watching a free preview. Enroll now for full access!"}
+                {t('courseLearn.freePreviewMessage')}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -836,7 +832,7 @@ const CourseLearn: React.FC = () => {
                 asChild
               >
                 <Link to="/signup">
-                  {isRTL ? 'سجل الآن' : 'Register Now'}
+                  {t('courseLearn.registerNow')}
                 </Link>
               </Button>
             </div>
@@ -857,7 +853,10 @@ const CourseLearn: React.FC = () => {
           </Button>
           
           <Link to="/courses" className="flex items-center gap-2 flex-shrink-0">
-            <img src={bikerzLogo} alt="BIKERZ" className="h-8 sm:h-10"  loading="lazy" />
+            <picture>
+              <source srcSet={bikerzLogo} type="image/webp" />
+              <img src={bikerzLogo} alt="BIKERZ" className="h-8 sm:h-10"  loading="lazy" />
+            </picture>
           </Link>
           
           <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground min-w-0">
@@ -878,7 +877,7 @@ const CourseLearn: React.FC = () => {
           
           <Button variant="outline" size="sm" asChild className="hidden sm:flex">
             <Link to={`/courses/${id}`}>
-              {isRTL ? 'تفاصيل الدورة' : 'Course Details'}
+              {t('courseLearn.courseDetails')}
             </Link>
           </Button>
         </div>
@@ -913,7 +912,7 @@ const CourseLearn: React.FC = () => {
                   onComplete={() => {
                     setShowTest(null);
                     queryClient.invalidateQueries({ queryKey: ['test-attempts'] });
-                    toast.success(isRTL ? 'أحسنت! أكملت الاختبار' : 'Great job! Test completed');
+                    toast.success(t('courseLearn.testCompleted'));
                   }}
                   onBack={() => setShowTest(null)}
                 />
@@ -1002,14 +1001,14 @@ const CourseLearn: React.FC = () => {
                           className="h-10 sm:h-9"
                         >
                           <CheckCircle2 className="w-4 h-4 me-2" />
-                          {isRTL ? 'وضع علامة مكتمل' : 'Mark Complete'}
+                          {t('courseLearn.markComplete')}
                         </Button>
                       )}
                       
                       {currentLesson && isLessonCompleted(currentLesson.id) && (
                         <div className="flex items-center gap-2 text-primary">
                           <CheckCircle2 className="w-5 h-5" />
-                          <span className="font-medium text-sm sm:text-base">{isRTL ? 'مكتمل' : 'Completed'}</span>
+                          <span className="font-medium text-sm sm:text-base">{t('courseLearn.completed')}</span>
                         </div>
                       )}
 
@@ -1021,7 +1020,7 @@ const CourseLearn: React.FC = () => {
                         className="lg:hidden h-10 sm:h-9 ms-auto"
                       >
                         <BookOpen className="w-4 h-4 me-2" />
-                        {isRTL ? 'المحتوى' : 'Content'}
+                        {t('courseLearn.content')}
                       </Button>
                     </div>
                   </div>
@@ -1046,7 +1045,7 @@ const CourseLearn: React.FC = () => {
                         isQuizOnlyLesson={!currentLesson.video_url}
                         onComplete={(totalXp) => {
                           if (totalXp > 0) {
-                            toast.success(isRTL ? `أحسنت! حصلت على ${totalXp} نقطة XP` : `Great job! You earned ${totalXp} XP`);
+                            toast.success(t('courseLearn.xpEarned', { xp: totalXp }));
                           }
                         }}
                       />
@@ -1067,7 +1066,7 @@ const CourseLearn: React.FC = () => {
                   {resources.length > 0 && (
                     <div className="mb-6 sm:mb-8">
                       <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">
-                        {isRTL ? 'الموارد' : 'Resources'}
+                        {t('courseLearn.resourcesTab')}
                       </h3>
                       <div className="grid gap-2">
                         {resources.map((resource) => (
@@ -1099,12 +1098,10 @@ const CourseLearn: React.FC = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-lg font-semibold text-foreground mb-1">
-                            {isRTL ? 'جاهز للاختبار!' : 'Ready for the Quiz!'}
+                            {t('courseLearn.readyForQuiz')}
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            {isRTL 
-                              ? `أكملت جميع دروس هذا الفصل. اختبر معلوماتك الآن!`
-                              : `You've completed all lessons in this chapter. Test your knowledge now!`}
+                            {t('courseLearn.readyForQuizDescription')}
                           </p>
                         </div>
                         <Button 
@@ -1112,7 +1109,7 @@ const CourseLearn: React.FC = () => {
                           className="btn-cta h-11 w-full sm:w-auto"
                         >
                           <Trophy className="w-4 h-4 me-2" />
-                          {isRTL ? 'ابدأ الاختبار' : 'Take Quiz'}
+                          {t('courseLearn.takeQuiz')}
                         </Button>
                       </div>
                     </motion.div>
@@ -1131,12 +1128,10 @@ const CourseLearn: React.FC = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-lg font-semibold text-foreground mb-1">
-                            {isRTL ? 'حاول مرة أخرى!' : 'Try Again!'}
+                            {t('courseLearn.tryAgain')}
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            {isRTL 
-                              ? `نتيجتك الأخيرة: ${getLastTestScore(currentChapter.test.id)}%. راجع الدروس وحاول مرة أخرى.`
-                              : `Your last score: ${getLastTestScore(currentChapter.test.id)}%. Review the lessons and try again.`}
+                            {t('courseLearn.lastScore', { score: getLastTestScore(currentChapter.test.id) })}
                           </p>
                         </div>
                         <Button 
@@ -1145,7 +1140,7 @@ const CourseLearn: React.FC = () => {
                           className="h-11 w-full sm:w-auto"
                         >
                           <ClipboardList className="w-4 h-4 me-2" />
-                          {isRTL ? 'إعادة الاختبار' : 'Retake Quiz'}
+                          {t('courseLearn.retakeTest')}
                         </Button>
                       </div>
                     </motion.div>
@@ -1156,7 +1151,7 @@ const CourseLearn: React.FC = () => {
                     {prevLesson ? (
                       <Button variant="outline" onClick={() => goToLesson(prevLesson.id)} className="h-11 sm:h-10 order-2 sm:order-1">
                         <BackIcon className="w-4 h-4 me-2" />
-                        <span className="truncate">{isRTL ? 'الدرس السابق' : 'Previous'}</span>
+                        <span className="truncate">{t('courses.prevLesson')}</span>
                       </Button>
                     ) : (
                       <div className="hidden sm:block" />
@@ -1168,11 +1163,11 @@ const CourseLearn: React.FC = () => {
                       return nextLocked ? (
                         <Button variant="outline" disabled className="h-11 sm:h-10 order-1 sm:order-2 opacity-50">
                           <Lock className="w-4 h-4 me-2" />
-                          <span className="truncate">{isRTL ? 'الدرس التالي مقفل' : 'Next Lesson Locked'}</span>
+                          <span className="truncate">{t('courseLearn.nextLessonLocked')}</span>
                         </Button>
                       ) : (
                         <Button onClick={() => goToLesson(nextLesson.id)} className="h-11 sm:h-10 order-1 sm:order-2">
-                          <span className="truncate">{isRTL ? 'الدرس التالي' : 'Next'}</span>
+                          <span className="truncate">{t('courses.nextLesson')}</span>
                           <ForwardIcon className="w-4 h-4 ms-2" />
                         </Button>
                       );
@@ -1180,12 +1175,12 @@ const CourseLearn: React.FC = () => {
                      : currentChapter?.test && isChapterComplete(currentChapter) ? (
                       <Button onClick={() => setShowTest(currentChapter.id)} className="btn-cta h-11 sm:h-10 order-1 sm:order-2">
                         <ClipboardList className="w-4 h-4 me-2" />
-                        {isRTL ? 'ابدأ الاختبار' : 'Take Test'}
+                        {t('courseLearn.takeTest')}
                       </Button>
                     ) : (
                       <Button disabled className="h-11 sm:h-10 order-1 sm:order-2">
                         <Trophy className="w-4 h-4 me-2" />
-                        {isRTL ? 'أكمل الدورة' : 'Course Complete'}
+                        {t('courseLearn.courseComplete')}
                       </Button>
                     )}
                   </div>
@@ -1213,7 +1208,7 @@ const CourseLearn: React.FC = () => {
             <div className="p-3 sm:p-4">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-semibold text-sm sm:text-base text-foreground">
-                  {isRTL ? 'محتوى الدورة' : 'Course Content'}
+                  {t('courses.courseContent')}
                 </h2>
                 <span className="text-xs sm:text-sm text-muted-foreground">
                   {completedLessons}/{totalLessons}
@@ -1227,7 +1222,7 @@ const CourseLearn: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <Trophy className="w-4 h-4 text-primary" />
                       <span className="text-xs sm:text-sm font-medium text-foreground">
-                        {isRTL ? 'تقدم الاختبارات' : 'Quiz Progress'}
+                        {t('courseLearn.quizProgress')}
                       </span>
                     </div>
                     <span className={`text-xs sm:text-sm font-bold ${passedQuizzes === totalQuizzes ? 'text-primary' : 'text-muted-foreground'}`}>
@@ -1240,7 +1235,7 @@ const CourseLearn: React.FC = () => {
                   />
                   {passedQuizzes === totalQuizzes && totalQuizzes > 0 && (
                     <p className="text-xs text-primary mt-2 font-medium">
-                      {isRTL ? '🎉 أكملت جميع الاختبارات!' : '🎉 All quizzes completed!'}
+                      {t('courseLearn.allQuizzesCompleted')}
                     </p>
                   )}
                 </div>
@@ -1356,14 +1351,12 @@ const CourseLearn: React.FC = () => {
                                 </span>
                                 {hasFailed && lastScore !== null && (
                                   <span className="text-xs text-destructive/80">
-                                    {isRTL ? `آخر نتيجة: ${lastScore}% - حاول مرة أخرى` : `Last score: ${lastScore}% - Retry`}
+                                    {t('courseLearn.lastScoreRetry', { score: lastScore })}
                                   </span>
                                 )}
                                 {!canAccess && requiredQuizName && (
                                   <span className="text-xs text-muted-foreground block mt-0.5">
-                                    {isRTL 
-                                      ? `🔒 اجتز "${requiredQuizName}" أولاً`
-                                      : `🔒 Pass "${requiredQuizName}" first`}
+                                      {t('courseLearn.passFirst', { name: requiredQuizName })}
                                   </span>
                                 )}
                               </div>
@@ -1371,7 +1364,7 @@ const CourseLearn: React.FC = () => {
                                 <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
                               ) : hasFailed && (
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/20 text-destructive flex-shrink-0">
-                                  {isRTL ? 'إعادة' : 'Retry'}
+                                  {t('courseLearn.retry')}
                                 </span>
                               )}
                             </button>
@@ -1387,9 +1380,7 @@ const CourseLearn: React.FC = () => {
                                   </TooltipTrigger>
                                   <TooltipContent side={isRTL ? 'left' : 'right'} className="max-w-[250px]">
                                     <p className="text-sm">
-                                      {isRTL 
-                                        ? `يجب اجتياز "${requiredQuizName}" لفتح هذا الاختبار`
-                                        : `You must pass "${requiredQuizName}" to unlock this quiz`}
+                                        {t('courseLearn.mustPassToUnlock', { name: requiredQuizName })}
                                     </p>
                                   </TooltipContent>
                                 </Tooltip>

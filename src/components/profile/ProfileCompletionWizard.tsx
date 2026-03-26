@@ -35,9 +35,9 @@ interface ProfileCompletionWizardProps {
 }
 
 const STEPS = [
-  { id: 'rider', icon: User, title: 'Rider Identity', title_ar: 'هوية الراكب' },
-  { id: 'bike', icon: Bike, title: 'Your Bike', title_ar: 'دراجتك' },
-  { id: 'complete', icon: Award, title: 'Complete!', title_ar: 'اكتمل!' },
+  { id: 'rider', icon: User, titleKey: 'profileCompletion.step1Title' },
+  { id: 'bike', icon: Bike, titleKey: 'profileCompletion.step2Title' },
+  { id: 'complete', icon: Award, titleKey: 'profileCompletion.step3Title' },
 ];
 
 const BIKE_BRANDS = [
@@ -159,11 +159,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
     localStorage.setItem('profile_completion_skipped', 'true');
     localStorage.setItem('profile_completion_skip_time', Date.now().toString());
     onOpenChange(false);
-    toast.info(
-      isRTL 
-        ? 'يمكنك إكمال ملفك الشخصي لاحقاً للحصول على خصم 10%!' 
-        : 'You can complete your profile later for 10% off!'
-    );
+    toast.info(t('profileCompletion.completeProfileLater'));
   };
 
   const saveProfile = async () => {
@@ -231,16 +227,12 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
         description_ar: 'حصل على خصم 10%',
       });
       
-      toast.success(
-        isRTL 
-          ? '🎉 تم إكمال ملفك الشخصي! حصلت على خصم 10%' 
-          : '🎉 Profile complete! You earned 10% off'
-      );
+      toast.success(t('profileCompletion.profileComplete'));
       
       onComplete?.();
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error(isRTL ? 'فشل في تحديث الملف الشخصي' : 'Failed to update profile');
+      toast.error(t('profile.profileUpdateFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -251,7 +243,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
   const handleClaimCoupon = () => {
     navigator.clipboard.writeText('PROFILE10');
     localStorage.setItem('profile_coupon_code', 'PROFILE10');
-    toast.success(isRTL ? 'تم نسخ الكوبون! تصفح الدورات الآن' : 'Coupon copied! Browse courses now');
+    toast.success(t('profileCompletion.couponCopiedBrowse'));
     onOpenChange(false);
     navigate('/courses');
   };
@@ -298,26 +290,26 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
                 </label>
               </div>
               <p className="text-sm text-muted-foreground">
-                {isRTL ? 'أضف صورتك الشخصية' : 'Add your profile photo'}
+                {t('profile.addProfilePhoto')}
               </p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="nickname">
-                {isRTL ? 'لقب الراكب' : 'Rider Nickname'}
+                {t('profile.riderNickname')}
               </Label>
               <Input
                 id="nickname"
                 value={riderNickname}
                 onChange={(e) => setRiderNickname(e.target.value)}
-                placeholder={isRTL ? 'مثال: النسر الأسود' : 'e.g., Black Eagle'}
+                placeholder={t('profile.nicknamePlaceholder')}
                 className="h-11"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="phone">
-                {isRTL ? 'رقم الهاتف' : 'Phone Number'}
+                {t('profile.phoneNumber')}
               </Label>
               <Input
                 id="phone"
@@ -332,7 +324,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
 
             <div className="space-y-2">
               <Label htmlFor="ridingYears">
-                {isRTL ? 'سنوات الخبرة في القيادة' : 'Years of Riding Experience'}
+                {t('profile.yearsOfExperience')}
               </Label>
               <Input
                 id="ridingYears"
@@ -341,7 +333,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
                 max="50"
                 value={ridingYears}
                 onChange={(e) => setRidingYears(e.target.value)}
-                placeholder={isRTL ? 'عدد السنوات' : 'Number of years'}
+                placeholder={t('profile.yearsPlaceholder')}
                 className="h-11"
               />
             </div>
@@ -374,10 +366,10 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
               />
               <div>
                 <span className="text-sm font-medium text-foreground">
-                  {isRTL ? 'لا أملك دراجة حالياً' : "I don't have a bike yet"}
+                  {t('profileCompletion.noBikeYet')}
                 </span>
                 <p className="text-xs text-muted-foreground">
-                  {isRTL ? 'يمكنك إضافة بيانات الدراجة لاحقاً' : 'You can add bike info later'}
+                  {t('profileCompletion.addBikeLater')}
                 </p>
               </div>
             </label>
@@ -386,7 +378,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
               <>
                 <div className="space-y-2">
                   <Label htmlFor="bikeBrand">
-                    {isRTL ? 'ماركة الدراجة' : 'Bike Brand'}
+                    {t('profile.bikeBrand')}
                   </Label>
                   <select
                     id="bikeBrand"
@@ -394,7 +386,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
                     onChange={(e) => setBikeBrand(e.target.value)}
                     className="w-full h-11 px-3 rounded-md border border-input bg-background text-foreground"
                   >
-                    <option value="">{isRTL ? 'اختر الماركة' : 'Select brand'}</option>
+                    <option value="">{t('profile.selectBrand')}</option>
                     {BIKE_BRANDS.map(brand => (
                       <option key={brand} value={brand}>{brand}</option>
                     ))}
@@ -403,20 +395,20 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
 
                 <div className="space-y-2">
                   <Label htmlFor="bikeModel">
-                    {isRTL ? 'موديل الدراجة' : 'Bike Model'}
+                    {t('profile.bikeModel')}
                   </Label>
                   <Input
                     id="bikeModel"
                     value={bikeModel}
                     onChange={(e) => setBikeModel(e.target.value)}
-                    placeholder={isRTL ? 'مثال: CBR 600RR' : 'e.g., CBR 600RR'}
+                    placeholder={t('profile.modelPlaceholder')}
                     className="h-11"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="engineSize">
-                    {isRTL ? 'حجم المحرك (سي سي)' : 'Engine Size (CC)'}
+                    {t('profile.engineSize')}
                   </Label>
                   <Input
                     id="engineSize"
@@ -425,7 +417,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
                     max="3000"
                     value={engineSize}
                     onChange={(e) => setEngineSize(e.target.value)}
-                    placeholder={isRTL ? 'مثال: 600' : 'e.g., 600'}
+                    placeholder={t('profile.enginePlaceholder')}
                     className="h-11"
                   />
                 </div>
@@ -447,20 +439,18 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
             </div>
             
             <h3 className="text-xl font-bold mb-2">
-              {isRTL ? '🎉 رائع! ملفك الشخصي مكتمل' : '🎉 Awesome! Profile Complete'}
+              {t('profileCompletion.profileCompleteSuccess')}
             </h3>
             
             <p className="text-muted-foreground mb-6">
-              {isRTL 
-                ? 'حصلت على كوبون خصم 10% على أول دورة!' 
-                : 'You earned a 10% discount coupon for your first course!'}
+                {t('profileCompletion.couponDescription')}
             </p>
 
             <div className="w-full p-4 rounded-lg bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Gift className="w-5 h-5 text-primary" />
                 <span className="font-bold text-lg text-primary">
-                  {isRTL ? 'خصم 10%' : '10% OFF'}
+                  {t('profileCompletion.discountOff')}
                 </span>
               </div>
               
@@ -477,27 +467,25 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
                 onClick={() => {
                   navigator.clipboard.writeText('PROFILE10');
                   setCouponCopied(true);
-                  toast.success(isRTL ? 'تم نسخ الكوبون!' : 'Coupon copied!');
+                  toast.success(t('profileCompletion.couponCopied'));
                   setTimeout(() => setCouponCopied(false), 2000);
                 }}
               >
                 {couponCopied ? (
                   <>
                     <Check className="w-4 h-4" />
-                    {isRTL ? 'تم النسخ' : 'Copied!'}
+                    {t('profileCompletion.copied')}
                   </>
                 ) : (
                   <>
                     <Gift className="w-4 h-4" />
-                    {isRTL ? 'نسخ الكوبون' : 'Copy Coupon'}
+                    {t('profileCompletion.copyCoupon')}
                   </>
                 )}
               </Button>
               
               <p className="text-xs text-muted-foreground mt-3">
-                {isRTL 
-                  ? 'استخدم هذا الكوبون عند الشراء في صفحة الدفع' 
-                  : 'Use this coupon at checkout when purchasing a course'}
+                {t('profileCompletion.useCouponAtCheckout')}
               </p>
             </div>
           </motion.div>
@@ -518,23 +506,19 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
           {isMobile ? (
             <>
               <DrawerTitle className="text-base sm:text-lg">
-                {isRTL ? STEPS[currentStep].title_ar : STEPS[currentStep].title}
+                {t(STEPS[currentStep].titleKey)}
               </DrawerTitle>
               <DrawerDescription className="text-xs sm:text-sm">
-                {isRTL 
-                  ? `الخطوة ${currentStep + 1} من ${STEPS.length}` 
-                  : `Step ${currentStep + 1} of ${STEPS.length}`}
+                  {t('profileCompletion.stepOf', { current: currentStep + 1, total: STEPS.length })}
               </DrawerDescription>
             </>
           ) : (
             <>
               <DialogTitle className="text-lg">
-                {isRTL ? STEPS[currentStep].title_ar : STEPS[currentStep].title}
+                {t(STEPS[currentStep].titleKey)}
               </DialogTitle>
               <DialogDescription className="text-sm">
-                {isRTL 
-                  ? `الخطوة ${currentStep + 1} من ${STEPS.length}` 
-                  : `Step ${currentStep + 1} of ${STEPS.length}`}
+                  {t('profileCompletion.stepOf', { current: currentStep + 1, total: STEPS.length })}
               </DialogDescription>
             </>
           )}
@@ -556,20 +540,20 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
       <div className="flex items-center justify-between gap-2 sm:gap-3 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t">
         {currentStep === 0 ? (
           <Button variant="ghost" onClick={handleSkip} className="text-muted-foreground text-sm">
-            {isRTL ? 'تخطي' : 'Skip for now'}
+            {t('profileCompletion.skipForNow')}
           </Button>
         ) : currentStep === 2 ? (
           null
         ) : (
           <Button variant="outline" onClick={handlePrev} disabled={isSubmitting} size={isMobile ? "sm" : "default"}>
             <ChevronPrev className="w-4 h-4" />
-            {isRTL ? 'السابق' : 'Previous'}
+            {t('profileCompletion.previous')}
           </Button>
         )}
 
         {currentStep === 0 ? (
           <Button onClick={handleNext} size={isMobile ? "sm" : "default"}>
-            {isRTL ? 'التالي' : 'Next'}
+            {t('profileCompletion.next')}
             <ChevronNext className="w-4 h-4" />
           </Button>
         ) : currentStep === 1 ? (
@@ -583,7 +567,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <>
-                {isRTL ? 'إكمال و الحصول على خصم' : 'Complete & Get Discount'}
+                {t('profileCompletion.completeAndGetDiscount')}
                 <Gift className="w-4 h-4" />
               </>
             )}
@@ -595,7 +579,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
             size={isMobile ? "sm" : "default"}
           >
             <Gift className="w-4 h-4" />
-            {isRTL ? 'احصل على كوبون الخصم' : 'Claim Discount Coupon'}
+            {t('profileCompletion.claimDiscountCoupon')}
           </Button>
         )}
       </div>

@@ -7,17 +7,19 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import { useLandingContent, CTAContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from 'react-i18next';
 
 const CTASection: React.FC = () => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   const { data: content, isLoading } = useLandingContent<CTAContent>('cta');
 
-  const title = isRTL ? (content?.title_ar || 'مستعد للانطلاق؟') : (content?.title_en || 'Ready to Ride?');
+  const title = isRTL ? (content?.title_ar || t('cta.title')) : (content?.title_en || t('cta.title'));
   const subtitle = isRTL ? (content?.subtitle_ar || '') : (content?.subtitle_en || '');
-  const buttonText = isRTL ? (content?.button_ar || 'ابدأ التعلم اليوم') : (content?.button_en || 'Start Learning Today');
+  const buttonText = isRTL ? (content?.button_ar || t('cta.button')) : (content?.button_en || t('cta.button'));
   const trustBadges = content?.trust_badges || [];
 
   return (
@@ -102,15 +104,15 @@ const CTASection: React.FC = () => {
               <>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-green-500" />
-                  {isRTL ? 'ابدأ مجاناً' : 'Start Free'}
+                  {t('cta.trustBadges.startFree')}
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-green-500" />
-                  {isRTL ? 'بدون بطاقة ائتمان' : 'No Credit Card'}
+                  {t('cta.trustBadges.noCreditCard')}
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-green-500" />
-                  {isRTL ? 'إلغاء في أي وقت' : 'Cancel Anytime'}
+                  {t('cta.trustBadges.cancelAnytime')}
                 </div>
               </>
             )}

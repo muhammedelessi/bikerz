@@ -181,10 +181,10 @@ const AdminUsers: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       setIsRoleDialogOpen(false);
-      toast.success(isRTL ? 'تم إضافة الدور بنجاح' : 'Role added successfully');
+      toast.success(t('admin.users.roleAddedSuccess'));
     },
     onError: (error: any) => {
-      toast.error(error.message || (isRTL ? 'فشل في إضافة الدور' : 'Failed to add role'));
+      toast.error(error.message || t('admin.users.roleAddFailed'));
     },
   });
 
@@ -214,19 +214,20 @@ const AdminUsers: React.FC = () => {
       student: 'bg-gray-500/10 text-gray-500',
     };
 
-    const roleLabels: Record<string, { en: string; ar: string }> = {
-      super_admin: { en: 'Super Admin', ar: 'مشرف عام' },
-      academy_admin: { en: 'Academy Admin', ar: 'مشرف أكاديمية' },
-      instructor: { en: 'Instructor', ar: 'مدرب' },
-      moderator: { en: 'Moderator', ar: 'مشرف' },
-      finance: { en: 'Finance', ar: 'مالية' },
-      support: { en: 'Support', ar: 'دعم' },
-      student: { en: 'Student', ar: 'طالب' },
+    const roleLabels: Record<string, string> = {
+      super_admin: t('admin.users.roles_labels.super_admin'),
+      academy_admin: t('admin.users.roles_labels.academy_admin'),
+      instructor: t('admin.users.roles_labels.instructor'),
+      moderator: t('admin.users.roles_labels.moderator'),
+      finance: t('admin.users.roles_labels.finance'),
+      support: t('admin.users.roles_labels.support'),
+      student: t('admin.users.roles_labels.student'),
     };
+
 
     return (
       <Badge className={roleStyles[role] || 'bg-gray-500/10 text-gray-500'}>
-        {isRTL ? roleLabels[role]?.ar : roleLabels[role]?.en || role}
+        {roleLabels[role] || role}
       </Badge>
     );
   };
@@ -248,10 +249,10 @@ const AdminUsers: React.FC = () => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">
-          {isRTL ? 'إدارة المستخدمين' : 'User Management'}
+          {t('admin.users.title')}
         </h1>
         <p className="text-muted-foreground">
-          {isRTL ? 'عرض وإدارة جميع المستخدمين' : 'View and manage all users'}
+          {t('admin.users.subtitle')}
         </p>
       </div>
 
@@ -263,7 +264,7 @@ const AdminUsers: React.FC = () => {
               <Users className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">{isRTL ? 'إجمالي المستخدمين' : 'Total Users'}</p>
+              <p className="text-sm text-muted-foreground">{t('admin.users.totalUsers')}</p>
               <p className="text-2xl font-bold">{users.length}</p>
             </div>
           </CardContent>
@@ -274,7 +275,7 @@ const AdminUsers: React.FC = () => {
               <GraduationCap className="w-6 h-6 text-green-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">{isRTL ? 'الطلاب' : 'Students'}</p>
+              <p className="text-sm text-muted-foreground">{t('admin.users.students')}</p>
               <p className="text-2xl font-bold">
                 {users.filter(u => u.roles.some(r => r.role === 'student')).length}
               </p>
@@ -287,7 +288,7 @@ const AdminUsers: React.FC = () => {
               <Shield className="w-6 h-6 text-blue-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">{isRTL ? 'المشرفون' : 'Admins'}</p>
+              <p className="text-sm text-muted-foreground">{t('admin.users.admins')}</p>
               <p className="text-2xl font-bold">
                 {users.filter(u => u.roles.some(r => ['super_admin', 'academy_admin'].includes(r.role))).length}
               </p>
@@ -300,7 +301,7 @@ const AdminUsers: React.FC = () => {
               <Users className="w-6 h-6 text-purple-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">{isRTL ? 'المدربون' : 'Instructors'}</p>
+              <p className="text-sm text-muted-foreground">{t('admin.users.instructors')}</p>
               <p className="text-2xl font-bold">
                 {users.filter(u => u.roles.some(r => r.role === 'instructor')).length}
               </p>
@@ -316,7 +317,7 @@ const AdminUsers: React.FC = () => {
             <div className="relative flex-1">
               <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder={isRTL ? 'البحث عن مستخدم...' : 'Search users...'}
+                placeholder={t('admin.users.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="ps-10"
@@ -325,14 +326,14 @@ const AdminUsers: React.FC = () => {
             <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <Filter className="w-4 h-4 me-2" />
-                <SelectValue placeholder={isRTL ? 'الدور' : 'Role'} />
+                <SelectValue placeholder={t('admin.users.role')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{isRTL ? 'الكل' : 'All'}</SelectItem>
-                <SelectItem value="student">{isRTL ? 'طالب' : 'Student'}</SelectItem>
-                <SelectItem value="instructor">{isRTL ? 'مدرب' : 'Instructor'}</SelectItem>
-                <SelectItem value="super_admin">{isRTL ? 'مشرف عام' : 'Super Admin'}</SelectItem>
-                <SelectItem value="academy_admin">{isRTL ? 'مشرف أكاديمية' : 'Academy Admin'}</SelectItem>
+                <SelectItem value="all">{t('admin.users.all')}</SelectItem>
+                <SelectItem value="student">{t('admin.users.roles_labels.student')}</SelectItem>
+                <SelectItem value="instructor">{t('admin.users.roles_labels.instructor')}</SelectItem>
+                <SelectItem value="super_admin">{t('admin.users.roles_labels.super_admin')}</SelectItem>
+                <SelectItem value="academy_admin">{t('admin.users.roles_labels.academy_admin')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -352,20 +353,20 @@ const AdminUsers: React.FC = () => {
             <div className="p-12 text-center">
               <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                {isRTL ? 'لا يوجد مستخدمين' : 'No users found'}
+                {t('admin.users.noUsersFound')}
               </h3>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{isRTL ? 'المستخدم' : 'User'}</TableHead>
-                  <TableHead>{isRTL ? 'البريد' : 'Email'}</TableHead>
-                  <TableHead>{isRTL ? 'الموقع' : 'Location'}</TableHead>
-                  <TableHead>{isRTL ? 'الأدوار' : 'Roles'}</TableHead>
-                  <TableHead>{isRTL ? 'التسجيلات' : 'Enrollments'}</TableHead>
-                  <TableHead>{isRTL ? 'تاريخ الانضمام' : 'Joined'}</TableHead>
-                  <TableHead className="text-end">{isRTL ? 'الإجراءات' : 'Actions'}</TableHead>
+                  <TableHead>{t('admin.users.user')}</TableHead>
+                  <TableHead>{t('admin.users.email')}</TableHead>
+                  <TableHead>{t('admin.users.location')}</TableHead>
+                  <TableHead>{t('admin.users.roles')}</TableHead>
+                  <TableHead>{t('admin.users.enrollments')}</TableHead>
+                  <TableHead>{t('admin.users.joined')}</TableHead>
+                  <TableHead className="text-end">{t('admin.users.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -381,7 +382,7 @@ const AdminUsers: React.FC = () => {
                         </Avatar>
                         <div>
                           <p className="font-medium text-foreground">
-                            {user.full_name || (isRTL ? 'بدون اسم' : 'No name')}
+                            {user.full_name || t('admin.users.noName')}
                           </p>
                           <p className="text-sm text-muted-foreground">{user.phone || '-'}</p>
                         </div>
@@ -400,7 +401,7 @@ const AdminUsers: React.FC = () => {
                             <span key={i}>{getRoleBadge(r.role)}</span>
                           ))
                         ) : (
-                          <Badge variant="outline">{isRTL ? 'بدون دور' : 'No role'}</Badge>
+                          <Badge variant="outline">{t('admin.users.noRole')}</Badge>
                         )}
                       </div>
                     </TableCell>
@@ -418,28 +419,28 @@ const AdminUsers: React.FC = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
-                          <DropdownMenuLabel>{isRTL ? 'الإجراءات' : 'Actions'}</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t('admin.users.actions')}</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => openUserDetail(user)}>
                             <Eye className="w-4 h-4 me-2" />
-                            {isRTL ? 'عرض التفاصيل' : 'View Details'}
+                            {t('admin.users.viewDetails')}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openRoleDialog(user)}>
                             <Shield className="w-4 h-4 me-2" />
-                            {isRTL ? 'إدارة الأدوار' : 'Manage Roles'}
+                            {t('admin.users.manageRoles')}
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             <Mail className="w-4 h-4 me-2" />
-                            {isRTL ? 'إرسال بريد' : 'Send Email'}
+                            {t('admin.users.sendEmail')}
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             <MessageSquare className="w-4 h-4 me-2" />
-                            {isRTL ? 'إضافة ملاحظة' : 'Add Note'}
+                            {t('admin.users.addNote')}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive">
                             <UserX className="w-4 h-4 me-2" />
-                            {isRTL ? 'تعليق الحساب' : 'Suspend User'}
+                            {t('admin.users.suspendUser')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -455,7 +456,7 @@ const AdminUsers: React.FC = () => {
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{isRTL ? 'تفاصيل المستخدم' : 'User Details'}</DialogTitle>
+            <DialogTitle>{t('admin.users.userDetails')}</DialogTitle>
           </DialogHeader>
           {selectedUser && (
             <div className="space-y-6">
@@ -468,7 +469,7 @@ const AdminUsers: React.FC = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="text-xl font-semibold">{selectedUser.full_name || 'No name'}</h3>
+                  <h3 className="text-xl font-semibold">{selectedUser.full_name || t('admin.users.noName')}</h3>
                   <p className="text-sm text-muted-foreground">{selectedUser.email || 'No email'}</p>
                   <div className="flex gap-1 mt-2">
                     {selectedUser.roles.map((r, i) => (
@@ -482,15 +483,15 @@ const AdminUsers: React.FC = () => {
               <div>
                 <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                   <Users className="w-4 h-4 text-primary" />
-                  {isRTL ? 'المعلومات الشخصية' : 'Personal Information'}
+                  {t('admin.users.personalInformation')}
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
-                  <InfoItem label={isRTL ? 'الاسم الكامل' : 'Full Name'} value={selectedUser.full_name} />
-                  <InfoItem label={isRTL ? 'الكنية' : 'Nickname'} value={selectedUser.rider_nickname} />
-                  <InfoItem label={isRTL ? 'رقم الهاتف' : 'Phone'} value={selectedUser.phone} />
-                  <InfoItem label={isRTL ? 'الهاتف موثق' : 'Phone Verified'} value={selectedUser.phone_verified ? (isRTL ? 'نعم ✓' : 'Yes ✓') : (isRTL ? 'لا ✗' : 'No ✗')} />
-                  <InfoItem label={isRTL ? 'البريد الإلكتروني' : 'Email'} value={selectedUser.email || null} />
-                  <InfoItem label={isRTL ? 'الملف مكتمل' : 'Profile Complete'} value={selectedUser.profile_complete ? (isRTL ? 'نعم ✓' : 'Yes ✓') : (isRTL ? 'لا ✗' : 'No ✗')} />
+                  <InfoItem label={t('admin.users.fullName')} value={selectedUser.full_name} />
+                  <InfoItem label={t('admin.users.nickname')} value={selectedUser.rider_nickname} />
+                  <InfoItem label={t('admin.users.phone')} value={selectedUser.phone} />
+                  <InfoItem label={t('admin.users.phoneVerified')} value={selectedUser.phone_verified ? (t('common.yes') + ' \u2713') : (t('common.no') + ' \u2717')} />
+                  <InfoItem label={t('admin.users.email')} value={selectedUser.email || null} />
+                  <InfoItem label={t('admin.users.profileComplete')} value={selectedUser.profile_complete ? (t('common.yes') + ' \u2713') : (t('common.no') + ' \u2717')} />
                 </div>
               </div>
 
@@ -498,12 +499,12 @@ const AdminUsers: React.FC = () => {
               <div>
                 <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                   <Mail className="w-4 h-4 text-primary" />
-                  {isRTL ? 'العنوان' : 'Location'}
+                  {t('admin.users.location')}
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
-                  <InfoItem label={isRTL ? 'البلد' : 'Country'} value={selectedUser.country} />
-                  <InfoItem label={isRTL ? 'المدينة' : 'City'} value={selectedUser.city} />
-                  <InfoItem label={isRTL ? 'الرمز البريدي' : 'Postal Code'} value={selectedUser.postal_code} />
+                  <InfoItem label={t('admin.users.country')} value={selectedUser.country} />
+                  <InfoItem label={t('admin.users.city')} value={selectedUser.city} />
+                  <InfoItem label={t('admin.users.postalCode')} value={selectedUser.postal_code} />
                 </div>
               </div>
 
@@ -511,25 +512,25 @@ const AdminUsers: React.FC = () => {
               <div>
                 <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                   <GraduationCap className="w-4 h-4 text-primary" />
-                  {isRTL ? 'معلومات الدراجة' : 'Bike Information'}
+                  {t('admin.users.bikeInformation')}
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
-                  <InfoItem label={isRTL ? 'ماركة الدراجة' : 'Bike Brand'} value={selectedUser.bike_brand} />
-                  <InfoItem label={isRTL ? 'موديل الدراجة' : 'Bike Model'} value={selectedUser.bike_model} />
-                  <InfoItem label={isRTL ? 'حجم المحرك' : 'Engine Size'} value={selectedUser.engine_size_cc ? `${selectedUser.engine_size_cc} cc` : null} />
-                  <InfoItem label={isRTL ? 'مستوى الخبرة' : 'Experience Level'} value={selectedUser.experience_level} />
-                  <InfoItem label={isRTL ? 'سنوات القيادة' : 'Riding Years'} value={selectedUser.riding_experience_years?.toString() || null} />
+                  <InfoItem label={t('admin.users.bikeBrand')} value={selectedUser.bike_brand} />
+                  <InfoItem label={t('admin.users.bikeModel')} value={selectedUser.bike_model} />
+                  <InfoItem label={t('admin.users.engineSize')} value={selectedUser.engine_size_cc ? `${selectedUser.engine_size_cc} cc` : null} />
+                  <InfoItem label={t('admin.users.experienceLevel')} value={selectedUser.experience_level} />
+                  <InfoItem label={t('admin.users.ridingYears')} value={selectedUser.riding_experience_years?.toString() || null} />
                 </div>
               </div>
 
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-sm text-muted-foreground">{isRTL ? 'التسجيلات' : 'Enrollments'}</p>
+                  <p className="text-sm text-muted-foreground">{t('admin.users.enrollments')}</p>
                   <p className="text-2xl font-bold">{selectedUser.enrollmentCount}</p>
                 </div>
                 <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-sm text-muted-foreground">{isRTL ? 'تاريخ الانضمام' : 'Joined'}</p>
+                  <p className="text-sm text-muted-foreground">{t('admin.users.joined')}</p>
                   <p className="text-lg font-semibold">
                     {format(new Date(selectedUser.created_at), 'dd MMM yyyy')}
                   </p>
@@ -544,40 +545,40 @@ const AdminUsers: React.FC = () => {
       <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{isRTL ? 'إدارة الأدوار' : 'Manage Roles'}</DialogTitle>
+            <DialogTitle>{t('admin.users.manageRoles')}</DialogTitle>
             <DialogDescription>
-              {isRTL ? 'إضافة أو إزالة أدوار المستخدم' : 'Add or remove user roles'}
+              {t('admin.users.addRoleDescription')}
             </DialogDescription>
           </DialogHeader>
           {selectedUser && (
             <div className="space-y-4">
               <div>
-                <Label>{isRTL ? 'الأدوار الحالية' : 'Current Roles'}</Label>
+                <Label>{t('admin.users.currentRoles')}</Label>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {selectedUser.roles.length > 0 ? (
                     selectedUser.roles.map((r, i) => (
                       <span key={i}>{getRoleBadge(r.role)}</span>
                     ))
                   ) : (
-                    <p className="text-muted-foreground text-sm">{isRTL ? 'لا توجد أدوار' : 'No roles'}</p>
+                    <p className="text-muted-foreground text-sm">{t('admin.users.noRole')}</p>
                   )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>{isRTL ? 'إضافة دور جديد' : 'Add New Role'}</Label>
+                <Label>{t('admin.users.addNewRole')}</Label>
                 <Select value={newRole} onValueChange={setNewRole}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="student">{isRTL ? 'طالب' : 'Student'}</SelectItem>
-                    <SelectItem value="instructor">{isRTL ? 'مدرب' : 'Instructor'}</SelectItem>
-                    <SelectItem value="moderator">{isRTL ? 'مشرف' : 'Moderator'}</SelectItem>
-                    <SelectItem value="support">{isRTL ? 'دعم' : 'Support'}</SelectItem>
-                    <SelectItem value="finance">{isRTL ? 'مالية' : 'Finance'}</SelectItem>
-                    <SelectItem value="academy_admin">{isRTL ? 'مشرف أكاديمية' : 'Academy Admin'}</SelectItem>
-                    <SelectItem value="super_admin">{isRTL ? 'مشرف عام' : 'Super Admin'}</SelectItem>
+                    <SelectItem value="student">{t('admin.users.roles_labels.student')}</SelectItem>
+                    <SelectItem value="instructor">{t('admin.users.roles_labels.instructor')}</SelectItem>
+                    <SelectItem value="moderator">{t('admin.users.roles_labels.moderator')}</SelectItem>
+                    <SelectItem value="support">{t('admin.users.roles_labels.support')}</SelectItem>
+                    <SelectItem value="finance">{t('admin.users.roles_labels.finance')}</SelectItem>
+                    <SelectItem value="academy_admin">{t('admin.users.roles_labels.academy_admin')}</SelectItem>
+                    <SelectItem value="super_admin">{t('admin.users.roles_labels.super_admin')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -585,13 +586,13 @@ const AdminUsers: React.FC = () => {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsRoleDialogOpen(false)}>
-              {isRTL ? 'إلغاء' : 'Cancel'}
+              {t('admin.users.cancel')}
             </Button>
             <Button 
               onClick={() => selectedUser && addRoleMutation.mutate({ userId: selectedUser.user_id, role: newRole })}
               disabled={addRoleMutation.isPending}
             >
-              {addRoleMutation.isPending ? (isRTL ? 'جاري الإضافة...' : 'Adding...') : (isRTL ? 'إضافة الدور' : 'Add Role')}
+              {addRoleMutation.isPending ? t('admin.users.adding') : t('admin.users.addRole')}
             </Button>
           </DialogFooter>
         </DialogContent>

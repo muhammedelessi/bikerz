@@ -116,11 +116,15 @@ const Footer: React.FC = () => {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="inline-block">
-              <img
-                src={bikerzLogo}
-                alt="BIKERZ"
-                className="h-12 sm:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
-               loading="lazy" />
+              <picture>
+                <source srcSet={bikerzLogo} type="image/webp" />
+                <img
+                  src={bikerzLogo}
+                  alt="BIKERZ"
+                  loading="lazy"
+                  className="h-12 sm:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+                />
+              </picture>
             </Link>
             <p className="text-muted-foreground text-sm max-w-xs">
               {tagline}
@@ -204,7 +208,7 @@ const Footer: React.FC = () => {
             © {new Date().getFullYear()} BIKERZ. {t('footer.rights')}
           </p>
           <p className="text-muted-foreground text-xs">
-            {isRTL ? 'الرقم الضريبي: 311508395300003' : 'VAT Number: 311508395300003'}
+            {t('footer.vatNumber')}
           </p>
         </div>
       </div>

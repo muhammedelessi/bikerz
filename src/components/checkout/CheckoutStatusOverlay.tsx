@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Loader2, CheckCircle2, XCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import type { PaymentStatus } from '@/types/payment';
 
 interface CheckoutStatusOverlayProps {
@@ -25,6 +26,7 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
   navigate,
 }) => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
 
   if (paymentStatus === 'verifying') {
     return (
@@ -35,10 +37,10 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
       >
         <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
         <h4 className="text-lg font-bold text-foreground mb-1">
-          {isRTL ? 'جاري التحقق من الدفع...' : 'Verifying payment...'}
+          {t('checkout.statusOverlay.verifyingPayment')}
         </h4>
         <p className="text-sm text-muted-foreground">
-          {isRTL ? 'يرجى الانتظار لحظة' : 'Please wait a moment'}
+          {t('checkout.statusOverlay.pleaseWaitMoment')}
         </p>
       </motion.div>
     );
@@ -55,10 +57,10 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
           <CheckCircle2 className="w-8 h-8 text-primary" />
         </div>
         <h4 className="text-xl font-bold text-foreground mb-2">
-          {isRTL ? '🎉 تم الدفع بنجاح!' : '🎉 Payment Successful!'}
+          {t('checkout.statusOverlay.paymentSuccessful')}
         </h4>
         <p className="text-muted-foreground mb-4">
-          {isRTL ? 'تم تسجيلك في الدورة بنجاح' : 'You have been enrolled in the course'}
+          {t('checkout.statusOverlay.enrolledSuccess')}
         </p>
         <Button
           variant="cta"
@@ -69,7 +71,7 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
           }}
         >
           <Sparkles className="w-4 h-4 me-2" />
-          {isRTL ? 'ابدأ التعلم الآن' : 'Start Learning Now'}
+          {t('checkout.statusOverlay.startLearningNow')}
         </Button>
       </motion.div>
     );
@@ -86,13 +88,13 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
           <XCircle className="w-8 h-8 text-destructive" />
         </div>
         <h4 className="text-xl font-bold text-foreground mb-2">
-          {isRTL ? 'فشل الدفع' : 'Payment Failed'}
+          {t('checkout.statusOverlay.paymentFailed')}
         </h4>
         <p className="text-muted-foreground mb-4">
-          {paymentError || (isRTL ? 'حدث خطأ أثناء الدفع. يرجى المحاولة مرة أخرى.' : 'An error occurred. Please try again.')}
+          {paymentError || t('checkout.statusOverlay.paymentErrorFallback')}
         </p>
         <Button variant="outline" onClick={onRetry}>
-          {isRTL ? 'حاول مرة أخرى' : 'Try Again'}
+          {t('checkout.statusOverlay.tryAgain')}
         </Button>
       </motion.div>
     );

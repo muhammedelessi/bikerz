@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ interface ProfileCompletionReminderProps {
 const ProfileCompletionReminder: React.FC<ProfileCompletionReminderProps> = ({ 
   variant = 'banner' 
 }) => {
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const [showReminder, setShowReminder] = useState(false);
@@ -52,8 +54,8 @@ const ProfileCompletionReminder: React.FC<ProfileCompletionReminderProps> = ({
       if (!profile) return;
       
       const missing: string[] = [];
-      if (!profile.rider_nickname) missing.push(isRTL ? 'لقب الراكب' : 'Rider Nickname');
-      if (!profile.avatar_url) missing.push(isRTL ? 'صورة الملف' : 'Profile Photo');
+      if (!profile.rider_nickname) missing.push(t('profile.riderNickname'));
+      if (!profile.avatar_url) missing.push(t('profile.profilePhoto'));
       
       if (missing.length > 0) {
         setMissingFields(missing);
@@ -99,9 +101,7 @@ const ProfileCompletionReminder: React.FC<ProfileCompletionReminderProps> = ({
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-sm sm:text-base">
-                        {isRTL 
-                          ? '👤 أكمل ملفك الشخصي لتجربة أفضل!' 
-                          : '👤 Complete your profile for a better experience!'}
+                        {t('profile.completeForBetterExperience')}
                       </p>
                       <p className="text-xs text-muted-foreground hidden sm:block">
                         {isRTL 
@@ -117,7 +117,7 @@ const ProfileCompletionReminder: React.FC<ProfileCompletionReminderProps> = ({
                       onClick={() => setShowWizard(true)}
                       className="bg-primary hover:bg-primary/90"
                     >
-                      {isRTL ? 'إكمال' : 'Complete'}
+                      {t('profileCompletion.complete')}
                       <Arrow className="w-4 h-4" />
                     </Button>
                     <Button 
@@ -160,12 +160,10 @@ const ProfileCompletionReminder: React.FC<ProfileCompletionReminderProps> = ({
           </div>
           <div className="flex-1">
             <h4 className="font-semibold mb-1">
-              {isRTL ? 'أكمل ملفك الشخصي' : 'Complete Your Profile'}
+              {t('profileCompletion.completeYourProfile')}
             </h4>
             <p className="text-sm text-muted-foreground mb-3">
-              {isRTL 
-                ? 'أضف بياناتك لتحسين تجربة التعلم الخاصة بك' 
-                : 'Add your details for a personalized learning experience'}
+              {t('profile.addDetailsForBetterExperience')}
             </p>
             
             <div className="flex flex-wrap gap-2 mb-4">
@@ -181,7 +179,7 @@ const ProfileCompletionReminder: React.FC<ProfileCompletionReminderProps> = ({
             
             <Button onClick={() => setShowWizard(true)} className="w-full sm:w-auto">
               <User className="w-4 h-4" />
-              {isRTL ? 'إكمال الملف الشخصي' : 'Complete Profile'}
+              {t('profileCompletion.completeProfile')}
             </Button>
           </div>
         </div>

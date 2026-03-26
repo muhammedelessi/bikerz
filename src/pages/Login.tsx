@@ -68,10 +68,10 @@ const Login: React.FC = () => {
         extraParams: email ? { login_hint: email } : undefined,
       });
       if (result.error) {
-        setError(isRTL ? "فشل تسجيل الدخول بجوجل" : "Google sign-in failed");
+        setError(t("auth.googleFailed"));
       }
     } catch {
-      setError(isRTL ? "فشل تسجيل الدخول بجوجل" : "Google sign-in failed");
+      setError(t("auth.googleFailed"));
     } finally {
       setIsGoogleLoading(false);
     }
@@ -92,11 +92,7 @@ const Login: React.FC = () => {
 
     // If we checked and user is Google-only, block password login
     if (emailChecked && isGoogleUser) {
-      setError(
-        isRTL
-          ? "هذا الحساب مسجل عبر جوجل. استخدم زر جوجل لتسجيل الدخول."
-          : "This account was created with Google. Please use the Google button to sign in.",
-      );
+      setError(t("auth.googleAccountRequired"));
       return;
     }
 
@@ -110,11 +106,7 @@ const Login: React.FC = () => {
         await checkProviders(email);
       }
       if (isGoogleUser) {
-        setError(
-          isRTL
-            ? "هذا الحساب مسجل عبر جوجل. استخدم زر جوجل لتسجيل الدخول."
-            : "This account was created with Google. Please use the Google button to sign in.",
-        );
+        setError(t("auth.googleAccountRequired"));
       } else {
         setError(t("auth.login.invalidCredentials"));
       }
@@ -144,12 +136,15 @@ const Login: React.FC = () => {
           {/* Header */}
           <div className="flex items-center justify-between mb-6 sm:mb-8">
             <Link to="/" className="flex items-center">
-              <img
-                src={bikerzLogo}
-                alt="BIKERZ"
-                className="h-10 sm:h-12 lg:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
-                loading="lazy"
-              />
+              <picture>
+                <source srcSet={bikerzLogo} type="image/webp" />
+                <img
+                  src={bikerzLogo}
+                  alt="BIKERZ"
+                  className="h-10 sm:h-12 lg:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+                  loading="lazy"
+                />
+              </picture>
             </Link>
             <LanguageToggle />
           </div>
@@ -192,9 +187,7 @@ const Login: React.FC = () => {
               {emailChecked && isGoogleUser ? (
                 <>
                   <p className="text-sm text-muted-foreground text-center">
-                    {isRTL
-                      ? "هذا الحساب مسجل عبر جوجل. استخدم زر جوجل لتسجيل الدخول."
-                      : "This account was created with Google. Please use the Google button to sign in."}
+                    {t("auth.googleAccountRequired")}
                   </p>
                   <Button
                     type="button"
@@ -225,7 +218,7 @@ const Login: React.FC = () => {
                             d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                           />
                         </svg>
-                        {isRTL ? "المتابعة مع جوجل" : "Continue with Google"}
+                        {t("auth.continueWithGoogle")}
                       </>
                     )}
                   </Button>
@@ -280,7 +273,7 @@ const Login: React.FC = () => {
                     <span className="w-full border-t border-border" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">{isRTL ? "أو" : "or"}</span>
+                    <span className="bg-card px-2 text-muted-foreground">{t("common.or")}</span>
                   </div>
                 </div>
 
@@ -313,7 +306,7 @@ const Login: React.FC = () => {
                           d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                         />
                       </svg>
-                      {isRTL ? "تسجيل الدخول بجوجل" : "Sign in with Google"}
+                      {t("auth.signInWithGoogle")}
                     </>
                   )}
                 </Button>
@@ -335,7 +328,10 @@ const Login: React.FC = () => {
 
       {/* Mobile Hero Image - Visible only on mobile as subtle background */}
       <div className="lg:hidden absolute inset-0 -z-10 opacity-10">
-        <img src={heroImage} alt="" className="w-full h-full object-cover" loading="lazy" />
+        <picture>
+          <source srcSet={heroImage} type="image/webp" />
+          <img src={heroImage} alt="" className="w-full h-full object-cover" loading="lazy" />
+        </picture>
       </div>
     </div>
   );

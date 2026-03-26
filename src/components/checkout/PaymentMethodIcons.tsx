@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 
 const ApplePayIcon = ({ className = 'h-5 w-auto' }: { className?: string }) => (
   <svg viewBox="0 0 50 20" className={className} style={{ direction: 'ltr' }}>
@@ -49,12 +50,13 @@ interface PaymentMethodIconsProps {
 
 const PaymentMethodIcons: React.FC<PaymentMethodIconsProps> = ({ className = '', showLabel = true }) => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
 
   return (
     <div className={`flex flex-col items-center gap-1.5 ${className}`}>
       {showLabel && (
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-          {isRTL ? 'طرق الدفع المتاحة' : 'Accepted Payment Methods'}
+          {t('checkout.paymentMethodIcons.acceptedPaymentMethods')}
         </p>
       )}
       <div className="flex items-center gap-3">

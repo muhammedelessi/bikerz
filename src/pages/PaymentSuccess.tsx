@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +42,7 @@ const MAX_RETRIES = 4;
 const RETRY_DELAY = 3000;
 
 const PaymentSuccess: React.FC = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const courseId = searchParams.get('course');
   const navigate = useNavigate();
@@ -220,20 +222,18 @@ const PaymentSuccess: React.FC = () => {
           <div className="mx-auto w-20 h-20 rounded-full bg-muted flex items-center justify-center">
             <span className="text-4xl">🚫</span>
           </div>
-          <h1 className="text-2xl font-black text-foreground">
-            {isRTL ? 'تم إلغاء الدفع' : 'Payment Cancelled'}
-          </h1>
+          <h2 className="text-2xl font-bold text-foreground mb-4">
+            {t('payment.cancelled')}
+          </h2>
           <p className="text-muted-foreground">
-            {isRTL
-              ? 'لقد ألغيت عملية الدفع. لم يتم خصم أي مبلغ من حسابك.'
-              : 'You cancelled the payment. No amount has been charged.'}
+            {t('payment.cancelledDescription')}
           </p>
           <Button
             onClick={() => navigate(`/courses/${courseId}`)}
             variant="cta"
             className="h-12 px-8 rounded-2xl"
           >
-            {isRTL ? 'العودة للدورة' : 'Back to Course'}
+            {t('payment.backToCourse')}
           </Button>
         </motion.div>
       </div>
@@ -252,20 +252,18 @@ const PaymentSuccess: React.FC = () => {
           <div className="mx-auto w-20 h-20 rounded-full bg-destructive/15 flex items-center justify-center">
             <span className="text-4xl">❌</span>
           </div>
-          <h1 className="text-2xl font-black text-foreground">
-            {isRTL ? 'فشل الدفع' : 'Payment Failed'}
-          </h1>
+          <h2 className="text-2xl font-bold text-foreground mb-4">
+            {t('payment.failed')}
+          </h2>
           <p className="text-muted-foreground">
-            {isRTL
-              ? 'لم نتمكن من إتمام عملية الدفع. يرجى المحاولة مرة أخرى.'
-              : 'We could not complete your payment. Please try again.'}
+            {t('payment.failedDescription')}
           </p>
           <Button
             onClick={() => navigate(`/courses/${courseId}`)}
             variant="cta"
             className="h-12 px-8 rounded-2xl"
           >
-            {isRTL ? 'العودة للدورة' : 'Back to Course'}
+            {t('payment.backToCourse')}
           </Button>
         </motion.div>
       </div>
@@ -282,11 +280,11 @@ const PaymentSuccess: React.FC = () => {
           className="text-center space-y-6"
         >
           <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto" />
-          <h1 className="text-xl font-bold text-foreground">
-            {isRTL ? 'جاري التحقق من الدفع...' : 'Verifying your payment...'}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {isRTL ? 'يرجى الانتظار لحظة' : 'Please wait a moment'}
+          <h2 className="text-2xl font-bold text-foreground mb-2">
+            {t('payment.verifying')}
+          </h2>
+          <p className="text-muted-foreground">
+            {t('payment.pleaseWait')}
           </p>
         </motion.div>
       </div>
@@ -305,20 +303,18 @@ const PaymentSuccess: React.FC = () => {
           <div className="mx-auto w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center">
             <Loader2 className="w-10 h-10 text-primary animate-spin" />
           </div>
-          <h1 className="text-2xl font-black text-foreground">
-            {isRTL ? 'جاري معالجة الدفع' : 'Payment Processing'}
-          </h1>
+          <h2 className="text-2xl font-bold text-foreground mb-4">
+            {t('payment.processing')}
+          </h2>
           <p className="text-muted-foreground">
-            {isRTL
-              ? 'يتم معالجة دفعتك. ستتلقى رسالة تأكيد بالبريد الإلكتروني قريباً.'
-              : 'Your payment is being processed. You will receive a confirmation email shortly.'}
+            {t('payment.processingDescription')}
           </p>
           <Button
             onClick={() => navigate(`/courses/${courseId}`)}
             variant="cta"
             className="h-12 px-8 rounded-2xl"
           >
-            {isRTL ? 'العودة للدورة' : 'Back to Course'}
+            {t('payment.backToCourse')}
           </Button>
         </motion.div>
       </div>
@@ -346,7 +342,17 @@ const PaymentSuccess: React.FC = () => {
           transition={{ delay: 0.1 }}
           className="flex justify-center mb-8"
         >
-          <img src={bikerLogo} alt="Bikerz" className="h-10 object-contain" loading="lazy" />
+            <Link to="/" className="inline-block mb-3 sm:mb-4 lg:mb-6">
+              <picture>
+                <source srcSet={bikerLogo} type="image/webp" />
+                <img
+                  src={bikerLogo}
+                  alt="BIKERZ"
+                  className="h-10 sm:h-12 lg:h-16 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                  loading="lazy"
+                />
+              </picture>
+            </Link>
         </motion.div>
 
         <div className="bg-card border-2 border-primary/20 rounded-3xl p-8 sm:p-10 text-center shadow-2xl relative overflow-hidden">
@@ -369,13 +375,13 @@ const PaymentSuccess: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <h1 className="text-3xl sm:text-4xl font-black text-foreground">
-                {isRTL ? '🎉 مبروك!' : '🎉 Congratulations!'}
-              </h1>
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground mb-3">
+                {t('payment.congratulations')}
+                </h2>
               <div className="flex items-center justify-center gap-2 mt-3">
                 <Sparkles className="w-4 h-4 text-primary" />
-                <p className="text-muted-foreground">
-                  {isRTL ? 'تم تسجيلك بنجاح في الدورة' : 'You have successfully enrolled'}
+                <p className="text-base sm:text-lg text-muted-foreground max-w-md mx-auto mb-8">
+                  {t('payment.successEnrollment')}
                 </p>
                 <Sparkles className="w-4 h-4 text-primary" />
               </div>
@@ -387,9 +393,9 @@ const PaymentSuccess: React.FC = () => {
               transition={{ delay: 0.6 }}
               className="bg-muted/50 rounded-2xl p-5 border border-border space-y-3"
             >
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-                {isRTL ? 'الدورة' : 'Your Course'}
-              </p>
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">
+                {t('payment.yourCourse')}
+                </h3>
               <p className="text-xl font-bold text-foreground leading-tight">
                 {courseTitle || '...'}
               </p>
@@ -397,12 +403,14 @@ const PaymentSuccess: React.FC = () => {
                 {course?.total_lessons && (
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <BookOpen className="w-4 h-4 text-primary" />
-                    <span>{course.total_lessons} {isRTL ? 'درس' : 'lessons'}</span>
+                    <span className="font-semibold text-foreground">{course.title}</span>
+                    <span className="hidden sm:inline text-border">•</span>
+                    <span>{course.total_lessons} {t('courses.lesson')}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  <span>{isRTL ? 'دفع مؤكد' : 'Payment confirmed'}</span>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 text-green-500 text-xs font-bold border border-green-500/20">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{t('payment.confirmed')}</span>
                 </div>
               </div>
             </motion.div>
@@ -413,13 +421,11 @@ const PaymentSuccess: React.FC = () => {
               transition={{ delay: 0.8 }}
               className="text-sm text-muted-foreground bg-muted/30 rounded-xl p-4 border border-border/50"
             >
-              <p className="font-semibold text-foreground mb-1">
-                {isRTL ? '🚀 ما التالي؟' : '🚀 What\'s next?'}
-              </p>
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">
+                {t('payment.whatsNext')}
+                </h3>
               <p>
-                {isRTL
-                  ? 'اضغط على الزر أدناه للبدء في أول درس لك. رحلتك في عالم الدراجات تبدأ الآن!'
-                  : 'Click the button below to jump into your first lesson. Your motorcycle journey starts now!'}
+                {t('payment.whatsNextDescription')}
               </p>
             </motion.div>
 
@@ -428,14 +434,11 @@ const PaymentSuccess: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.0 }}
             >
-              <Button
-                onClick={() => navigate(`/courses/${courseId}/learn?welcome=1`)}
-                variant="cta"
-                className="w-full h-14 text-base font-bold rounded-2xl gap-2"
-              >
-                <Rocket className="w-5 h-5" />
-                {isRTL ? 'ابدأ التعلم الآن' : 'Start Learning Now'}
-                <ArrowIcon className="w-5 h-5" />
+              <Button className="w-full btn-cta h-12 text-base font-bold shadow-xl shadow-primary/20" asChild>
+                <Link to={`/courses/${courseId}/learn?welcome=1`}>
+                  {t('payment.startLearning')}
+                  <ArrowIcon className="w-5 h-5 ms-2" />
+                </Link>
               </Button>
             </motion.div>
 
@@ -443,9 +446,9 @@ const PaymentSuccess: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.2 }}
-              className="text-xs text-muted-foreground"
+              className="text-sm text-muted-foreground"
             >
-              {isRTL ? 'رحلتك في عالم الدراجات تبدأ الآن 🏍️' : 'Welcome to the Bikerz family 🏍️'}
+              {t('payment.welcomeFamily')}
             </motion.p>
           </div>
         </div>

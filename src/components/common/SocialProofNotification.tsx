@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -37,20 +38,15 @@ const SHOW_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const INITIAL_DELAY_MS = 25000; // 25 seconds
 const DISMISS_AFTER_MS = 10000; // 10 seconds
 
-function formatTimeAgo(minutes: number, isRTL: boolean): string {
-  if (isRTL) {
-    if (minutes < 60) return `منذ ${minutes} دقيقة`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `منذ ${hours} ساعة`;
-    return `منذ يوم`;
-  }
-  if (minutes < 60) return `${minutes} minutes ago`;
+function formatTimeAgo(minutes: number, t: any): string {
+  if (minutes < 60) return t('time.minutesAgo', { count: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  return `1 day ago`;
+  if (hours < 24) return t('time.hoursAgo', { count: hours });
+  return t('time.daysAgo', { count: 1 });
 }
 
 const SocialProofNotification: React.FC = () => {
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
@@ -199,22 +195,14 @@ const SocialProofNotification: React.FC = () => {
         {/* Content */}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-foreground leading-snug">
-            {isRTL ? (
-              <>
-                <span className="font-bold">{current.firstNameAr}</span>{' '}
-                {current.countryFlag} اشترى{' '}
-                <span className="text-primary font-semibold">{current.courseNameAr}</span>
-              </>
-            ) : (
-              <>
-                <span className="font-bold">{current.firstName}</span>{' '}
-                {current.countryFlag} purchased{' '}
-                <span className="text-primary font-semibold">{current.courseName}</span>
-              </>
-            )}
+            {t('socialProof.purchased', {
+              name: isRTL ? current.firstNameAr : current.firstName,
+              flag: current.countryFlag,
+              course: isRTL ? current.courseNameAr : current.courseName
+            })}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {formatTimeAgo(current.minutesAgo, isRTL)}
+            {formatTimeAgo(current.minutesAgo, t)}
           </p>
         </div>
 

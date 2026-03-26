@@ -63,40 +63,47 @@ import {
   StickyNote,
 } from 'lucide-react';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 type TicketCategory = 'technical' | 'billing' | 'course_content' | 'account' | 'refund' | 'certificate' | 'other';
 type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
 type TicketStatus = 'open' | 'in_progress' | 'waiting_response' | 'resolved' | 'closed';
 
-const categoryConfig: Record<TicketCategory, { labelEn: string; labelAr: string; color: string }> = {
-  technical: { labelEn: 'Technical', labelAr: 'تقني', color: 'bg-blue-500/10 text-blue-600' },
-  billing: { labelEn: 'Billing', labelAr: 'الفواتير', color: 'bg-green-500/10 text-green-600' },
-  course_content: { labelEn: 'Course Content', labelAr: 'محتوى الدورة', color: 'bg-purple-500/10 text-purple-600' },
-  account: { labelEn: 'Account', labelAr: 'الحساب', color: 'bg-orange-500/10 text-orange-600' },
-  refund: { labelEn: 'Refund', labelAr: 'استرداد', color: 'bg-red-500/10 text-red-600' },
-  certificate: { labelEn: 'Certificate', labelAr: 'الشهادة', color: 'bg-yellow-500/10 text-yellow-600' },
-  other: { labelEn: 'Other', labelAr: 'أخرى', color: 'bg-gray-500/10 text-gray-600' },
-};
+const categoryConfig = (t: any): Record<TicketCategory, { label: string; color: string }> => ({
+  technical: { label: t('admin.support.categories.technical'), color: 'bg-blue-500/10 text-blue-600' },
+  billing: { label: t('admin.support.categories.billing'), color: 'bg-green-500/10 text-green-600' },
+  course_content: { label: t('admin.support.categories.course_content'), color: 'bg-purple-500/10 text-purple-600' },
+  account: { label: t('admin.support.categories.account'), color: 'bg-orange-500/10 text-orange-600' },
+  refund: { label: t('admin.support.categories.refund'), color: 'bg-red-500/10 text-red-600' },
+  certificate: { label: t('admin.support.categories.certificate'), color: 'bg-yellow-500/10 text-yellow-600' },
+  other: { label: t('admin.support.categories.other'), color: 'bg-gray-500/10 text-gray-600' },
+});
 
-const priorityConfig: Record<TicketPriority, { labelEn: string; labelAr: string; color: string; icon: React.ElementType }> = {
-  low: { labelEn: 'Low', labelAr: 'منخفض', color: 'bg-gray-500/10 text-gray-600 border-gray-300', icon: Clock },
-  medium: { labelEn: 'Medium', labelAr: 'متوسط', color: 'bg-blue-500/10 text-blue-600 border-blue-300', icon: AlertCircle },
-  high: { labelEn: 'High', labelAr: 'عالي', color: 'bg-orange-500/10 text-orange-600 border-orange-300', icon: AlertTriangle },
-  urgent: { labelEn: 'Urgent', labelAr: 'عاجل', color: 'bg-red-500/10 text-red-600 border-red-300', icon: XCircle },
-};
+const priorityConfig = (t: any): Record<TicketPriority, { label: string; color: string; icon: React.ElementType }> => ({
+  low: { label: t('admin.support.priorities.low'), color: 'bg-gray-500/10 text-gray-600 border-gray-300', icon: Clock },
+  medium: { label: t('admin.support.priorities.medium'), color: 'bg-blue-500/10 text-blue-600 border-blue-300', icon: AlertCircle },
+  high: { label: t('admin.support.priorities.high'), color: 'bg-orange-500/10 text-orange-600 border-orange-300', icon: AlertTriangle },
+  urgent: { label: t('admin.support.priorities.urgent'), color: 'bg-red-500/10 text-red-600 border-red-300', icon: XCircle },
+});
 
-const statusConfig: Record<TicketStatus, { labelEn: string; labelAr: string; color: string; icon: React.ElementType }> = {
-  open: { labelEn: 'Open', labelAr: 'مفتوح', color: 'bg-blue-500/10 text-blue-600', icon: Inbox },
-  in_progress: { labelEn: 'In Progress', labelAr: 'قيد المعالجة', color: 'bg-yellow-500/10 text-yellow-600', icon: Loader2 },
-  waiting_response: { labelEn: 'Waiting Response', labelAr: 'بانتظار الرد', color: 'bg-purple-500/10 text-purple-600', icon: Clock },
-  resolved: { labelEn: 'Resolved', labelAr: 'تم الحل', color: 'bg-green-500/10 text-green-600', icon: CheckCircle },
-  closed: { labelEn: 'Closed', labelAr: 'مغلق', color: 'bg-gray-500/10 text-gray-600', icon: XCircle },
-};
+const statusConfig = (t: any): Record<TicketStatus, { label: string; color: string; icon: React.ElementType }> => ({
+  open: { label: t('admin.support.statuses.open'), color: 'bg-blue-500/10 text-blue-600', icon: Inbox },
+  in_progress: { label: t('admin.support.statuses.in_progress'), color: 'bg-yellow-500/10 text-yellow-600', icon: Loader2 },
+  waiting_response: { label: t('admin.support.statuses.waiting_response'), color: 'bg-purple-500/10 text-purple-600', icon: Clock },
+  resolved: { label: t('admin.support.statuses.resolved'), color: 'bg-green-500/10 text-green-600', icon: CheckCircle },
+  closed: { label: t('admin.support.statuses.closed'), color: 'bg-gray-500/10 text-gray-600', icon: XCircle },
+});
 
 const AdminSupport = () => {
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  const categories = categoryConfig(t);
+  const priorities = priorityConfig(t);
+  const statuses = statusConfig(t);
+
   const queryClient = useQueryClient();
   const { logAction } = useAuditLog();
   const [searchQuery, setSearchQuery] = useState('');
@@ -210,8 +217,8 @@ const AdminSupport = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-support-tickets'] });
       toast({
-        title: isRTL ? 'تم التحديث' : 'Updated',
-        description: isRTL ? 'تم تحديث التذكرة بنجاح' : 'Ticket updated successfully',
+        title: t('admin.support.updated'),
+        description: t('admin.support.updateSuccess'),
       });
     },
   });
@@ -246,8 +253,8 @@ const AdminSupport = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-support-tickets'] });
       setReplyMessage('');
       toast({
-        title: isRTL ? 'تم الإرسال' : 'Sent',
-        description: isRTL ? 'تم إرسال الرد بنجاح' : 'Reply sent successfully',
+        title: t('admin.support.sent'),
+        description: t('admin.support.sendSuccess'),
       });
     },
   });
@@ -278,7 +285,7 @@ const AdminSupport = () => {
     return {
       isOverdue,
       text: isOverdue 
-        ? (isRTL ? 'متأخر' : 'Overdue')
+        ? t('admin.support.overdue')
         : formatDistanceToNow(dueDate, { addSuffix: true }),
     };
   };
@@ -290,10 +297,10 @@ const AdminSupport = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              {isRTL ? 'تذاكر الدعم' : 'Support Tickets'}
+              {t('admin.support.title')}
             </h1>
             <p className="text-muted-foreground">
-              {isRTL ? 'إدارة طلبات الدعم والمساعدة' : 'Manage support requests and assistance'}
+              {t('admin.support.subtitle')}
             </p>
           </div>
         </div>
@@ -304,7 +311,7 @@ const AdminSupport = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">{isRTL ? 'إجمالي التذاكر' : 'Total Tickets'}</p>
+                  <p className="text-sm text-muted-foreground">{t('admin.support.totalTickets')}</p>
                   <p className="text-2xl font-bold">{stats.total}</p>
                 </div>
                 <div className="p-3 bg-blue-500/10 rounded-full">
@@ -317,7 +324,7 @@ const AdminSupport = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">{isRTL ? 'مفتوحة' : 'Open'}</p>
+                  <p className="text-sm text-muted-foreground">{t('admin.support.open')}</p>
                   <p className="text-2xl font-bold">{stats.open}</p>
                 </div>
                 <div className="p-3 bg-yellow-500/10 rounded-full">
@@ -330,7 +337,7 @@ const AdminSupport = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">{isRTL ? 'قيد المعالجة' : 'In Progress'}</p>
+                  <p className="text-sm text-muted-foreground">{t('admin.support.inProgress')}</p>
                   <p className="text-2xl font-bold">{stats.inProgress}</p>
                 </div>
                 <div className="p-3 bg-purple-500/10 rounded-full">
@@ -343,7 +350,7 @@ const AdminSupport = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">{isRTL ? 'متأخرة SLA' : 'Overdue SLA'}</p>
+                  <p className="text-sm text-muted-foreground">{t('admin.support.overdueSLA')}</p>
                   <p className="text-2xl font-bold text-red-500">{stats.overdueSLA}</p>
                 </div>
                 <div className="p-3 bg-red-500/10 rounded-full">
@@ -361,7 +368,7 @@ const AdminSupport = () => {
               <div className="relative flex-1">
                 <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder={isRTL ? 'البحث بالرقم أو الموضوع أو المستخدم...' : 'Search by ticket #, subject, or user...'}
+                  placeholder={t('admin.support.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="ps-10"
@@ -369,26 +376,26 @@ const AdminSupport = () => {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-[150px]">
-                  <SelectValue placeholder={isRTL ? 'الحالة' : 'Status'} />
+                  <SelectValue placeholder={t('admin.support.status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{isRTL ? 'جميع الحالات' : 'All Status'}</SelectItem>
-                  {(Object.keys(statusConfig) as TicketStatus[]).map(status => (
+                  <SelectItem value="all">{t('admin.support.allStatus')}</SelectItem>
+                  {(Object.keys(statuses) as TicketStatus[]).map(status => (
                     <SelectItem key={status} value={status}>
-                      {isRTL ? statusConfig[status].labelAr : statusConfig[status].labelEn}
+                      {statuses[status].label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Select value={priorityFilter} onValueChange={setPriorityFilter}>
                 <SelectTrigger className="w-full sm:w-[150px]">
-                  <SelectValue placeholder={isRTL ? 'الأولوية' : 'Priority'} />
+                  <SelectValue placeholder={t('admin.support.priority')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{isRTL ? 'جميع الأولويات' : 'All Priorities'}</SelectItem>
-                  {(Object.keys(priorityConfig) as TicketPriority[]).map(priority => (
+                  <SelectItem value="all">{t('admin.support.allPriorities')}</SelectItem>
+                  {(Object.keys(priorities) as TicketPriority[]).map(priority => (
                     <SelectItem key={priority} value={priority}>
-                      {isRTL ? priorityConfig[priority].labelAr : priorityConfig[priority].labelEn}
+                      {priorities[priority].label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -400,7 +407,7 @@ const AdminSupport = () => {
         {/* Tickets Table */}
         <Card>
           <CardHeader>
-            <CardTitle>{isRTL ? 'قائمة التذاكر' : 'Tickets List'}</CardTitle>
+            <CardTitle>{t('admin.support.ticketsList')}</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -411,22 +418,22 @@ const AdminSupport = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{isRTL ? 'رقم التذكرة' : 'Ticket #'}</TableHead>
-                    <TableHead>{isRTL ? 'المستخدم' : 'User'}</TableHead>
-                    <TableHead>{isRTL ? 'الموضوع' : 'Subject'}</TableHead>
-                    <TableHead>{isRTL ? 'الفئة' : 'Category'}</TableHead>
-                    <TableHead>{isRTL ? 'الأولوية' : 'Priority'}</TableHead>
-                    <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
-                    <TableHead>{isRTL ? 'SLA' : 'SLA'}</TableHead>
-                    <TableHead>{isRTL ? 'التاريخ' : 'Date'}</TableHead>
+                    <TableHead>{t('admin.support.ticketNumber')}</TableHead>
+                    <TableHead>{t('admin.support.user')}</TableHead>
+                    <TableHead>{t('admin.support.subject')}</TableHead>
+                    <TableHead>{t('admin.support.category')}</TableHead>
+                    <TableHead>{t('admin.support.priority')}</TableHead>
+                    <TableHead>{t('admin.support.status')}</TableHead>
+                    <TableHead>{t('admin.support.sla')}</TableHead>
+                    <TableHead>{t('admin.support.date')}</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredTickets?.map((ticket) => {
                     const slaStatus = getSLAStatus(ticket);
-                    const StatusIcon = statusConfig[ticket.status as TicketStatus]?.icon || Inbox;
-                    const PriorityIcon = priorityConfig[ticket.priority as TicketPriority]?.icon || Clock;
+                    const StatusIcon = statuses[ticket.status as TicketStatus]?.icon || Inbox;
+                    const PriorityIcon = priorities[ticket.priority as TicketPriority]?.icon || Clock;
                     
                     return (
                       <TableRow 
@@ -443,33 +450,27 @@ const AdminSupport = () => {
                               <AvatarImage src={ticket.profile?.avatar_url || ''} />
                               <AvatarFallback>{ticket.profile?.full_name?.charAt(0) || 'U'}</AvatarFallback>
                             </Avatar>
-                            <span className="text-sm">{ticket.profile?.full_name || 'Unknown'}</span>
+                            <span className="text-sm">{ticket.profile?.full_name || t('admin.support.unknown')}</span>
                           </div>
                         </TableCell>
                         <TableCell className="max-w-[200px] truncate">
                           {isRTL ? ticket.subject_ar || ticket.subject : ticket.subject}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={categoryConfig[ticket.category as TicketCategory]?.color}>
-                            {isRTL 
-                              ? categoryConfig[ticket.category as TicketCategory]?.labelAr 
-                              : categoryConfig[ticket.category as TicketCategory]?.labelEn}
+                          <Badge variant="outline" className={categories[ticket.category as TicketCategory]?.color}>
+                            {categories[ticket.category as TicketCategory]?.label}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={priorityConfig[ticket.priority as TicketPriority]?.color}>
+                          <Badge variant="outline" className={priorities[ticket.priority as TicketPriority]?.color}>
                             <PriorityIcon className="w-3 h-3 me-1" />
-                            {isRTL 
-                              ? priorityConfig[ticket.priority as TicketPriority]?.labelAr 
-                              : priorityConfig[ticket.priority as TicketPriority]?.labelEn}
+                            {priorities[ticket.priority as TicketPriority]?.label}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={statusConfig[ticket.status as TicketStatus]?.color}>
+                          <Badge variant="outline" className={statuses[ticket.status as TicketStatus]?.color}>
                             <StatusIcon className="w-3 h-3 me-1" />
-                            {isRTL 
-                              ? statusConfig[ticket.status as TicketStatus]?.labelAr 
-                              : statusConfig[ticket.status as TicketStatus]?.labelEn}
+                            {statuses[ticket.status as TicketStatus]?.label}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -492,7 +493,7 @@ const AdminSupport = () => {
                             <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
                               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setSelectedTicket(ticket); }}>
                                 <MessageSquare className="w-4 h-4 me-2" />
-                                {isRTL ? 'عرض التفاصيل' : 'View Details'}
+                                {t('admin.support.viewDetails')}
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 onClick={(e) => { 
@@ -502,7 +503,7 @@ const AdminSupport = () => {
                                 className="text-green-600"
                               >
                                 <CheckCircle className="w-4 h-4 me-2" />
-                                {isRTL ? 'تم الحل' : 'Mark Resolved'}
+                                {t('admin.support.markResolved')}
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 onClick={(e) => { 
@@ -511,7 +512,7 @@ const AdminSupport = () => {
                                 }}
                               >
                                 <XCircle className="w-4 h-4 me-2" />
-                                {isRTL ? 'إغلاق' : 'Close Ticket'}
+                                {t('admin.support.closeTicket')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -522,7 +523,7 @@ const AdminSupport = () => {
                   {filteredTickets?.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                        {isRTL ? 'لا توجد تذاكر' : 'No tickets found'}
+                        {t('admin.support.noTickets')}
                       </TableCell>
                     </TableRow>
                   )}
@@ -542,7 +543,7 @@ const AdminSupport = () => {
                 <span>{isRTL ? selectedTicket?.subject_ar || selectedTicket?.subject : selectedTicket?.subject}</span>
               </DialogTitle>
               <DialogDescription>
-                {isRTL ? 'تفاصيل التذكرة والردود' : 'Ticket details and responses'}
+                {t('admin.support.ticketDetails')}
               </DialogDescription>
             </DialogHeader>
 
@@ -551,7 +552,7 @@ const AdminSupport = () => {
                 {/* Ticket Info */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">{isRTL ? 'الحالة' : 'Status'}</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t('admin.support.status')}</p>
                     <Select
                       value={selectedTicket.status}
                       onValueChange={(value) => {
@@ -563,16 +564,16 @@ const AdminSupport = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {(Object.keys(statusConfig) as TicketStatus[]).map(status => (
+                        {(Object.keys(statuses) as TicketStatus[]).map(status => (
                           <SelectItem key={status} value={status}>
-                            {isRTL ? statusConfig[status].labelAr : statusConfig[status].labelEn}
+                            {statuses[status].label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">{isRTL ? 'الأولوية' : 'Priority'}</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t('admin.support.priority')}</p>
                     <Select
                       value={selectedTicket.priority}
                       onValueChange={(value) => {
@@ -584,24 +585,22 @@ const AdminSupport = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {(Object.keys(priorityConfig) as TicketPriority[]).map(priority => (
+                        {(Object.keys(priorities) as TicketPriority[]).map(priority => (
                           <SelectItem key={priority} value={priority}>
-                            {isRTL ? priorityConfig[priority].labelAr : priorityConfig[priority].labelEn}
+                            {priorities[priority].label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">{isRTL ? 'الفئة' : 'Category'}</p>
-                    <Badge variant="outline" className={categoryConfig[selectedTicket.category as TicketCategory]?.color}>
-                      {isRTL 
-                        ? categoryConfig[selectedTicket.category as TicketCategory]?.labelAr 
-                        : categoryConfig[selectedTicket.category as TicketCategory]?.labelEn}
+                    <p className="text-xs text-muted-foreground mb-1">{t('admin.support.category')}</p>
+                    <Badge variant="outline" className={categoryConfig(t)[selectedTicket.category as TicketCategory]?.color}>
+                      {categories[selectedTicket.category as TicketCategory]?.label}
                     </Badge>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">{isRTL ? 'SLA' : 'SLA Due'}</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t('admin.support.slaDue')}</p>
                     {selectedTicket.sla_due_at && (
                       <span className={`text-sm ${isPast(new Date(selectedTicket.sla_due_at)) ? 'text-red-500 font-medium' : ''}`}>
                         {format(new Date(selectedTicket.sla_due_at), 'MMM dd, HH:mm')}
@@ -618,7 +617,7 @@ const AdminSupport = () => {
                       <AvatarFallback>{selectedTicket.profile?.full_name?.charAt(0) || 'U'}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">{selectedTicket.profile?.full_name || 'Unknown'}</p>
+                      <p className="font-medium">{selectedTicket.profile?.full_name || t('admin.support.unknown')}</p>
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(selectedTicket.created_at), 'MMM dd, yyyy HH:mm')}
                       </p>
@@ -633,7 +632,7 @@ const AdminSupport = () => {
                 <ScrollArea className="h-[200px] border rounded-lg p-4">
                   {ticketMessages?.length === 0 ? (
                     <p className="text-center text-muted-foreground text-sm py-8">
-                      {isRTL ? 'لا توجد ردود بعد' : 'No replies yet'}
+                      {t('admin.support.noReplies')}
                     </p>
                   ) : (
                     <div className="space-y-4">
@@ -649,12 +648,12 @@ const AdminSupport = () => {
                                 {message.sender?.full_name?.charAt(0) || 'U'}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-sm font-medium">{message.sender?.full_name || 'Unknown'}</span>
+                            <span className="text-sm font-medium">{message.sender?.full_name || t('admin.support.unknown')}</span>
                             {message.is_internal_note && (
                               <Badge variant="outline" className="text-xs bg-yellow-500/10">
-                                <StickyNote className="w-3 h-3 me-1" />
-                                {isRTL ? 'ملاحظة داخلية' : 'Internal Note'}
-                              </Badge>
+                                 <StickyNote className="w-3 h-3 me-1" />
+                                 {t('admin.support.internalNote')}
+                               </Badge>
                             )}
                             <span className="text-xs text-muted-foreground ms-auto">
                               {format(new Date(message.created_at), 'MMM dd, HH:mm')}
@@ -676,7 +675,7 @@ const AdminSupport = () => {
                       onClick={() => setIsInternalNote(false)}
                     >
                       <MessageSquare className="w-4 h-4 me-1" />
-                      {isRTL ? 'رد' : 'Reply'}
+                      {t('admin.support.reply')}
                     </Button>
                     <Button
                       variant={isInternalNote ? 'default' : 'outline'}
@@ -684,7 +683,7 @@ const AdminSupport = () => {
                       onClick={() => setIsInternalNote(true)}
                     >
                       <StickyNote className="w-4 h-4 me-1" />
-                      {isRTL ? 'ملاحظة داخلية' : 'Internal Note'}
+                      {t('admin.support.internalNote')}
                     </Button>
                   </div>
                   <div className="flex gap-2">
@@ -692,8 +691,8 @@ const AdminSupport = () => {
                       value={replyMessage}
                       onChange={(e) => setReplyMessage(e.target.value)}
                       placeholder={isInternalNote 
-                        ? (isRTL ? 'أضف ملاحظة داخلية...' : 'Add internal note...')
-                        : (isRTL ? 'اكتب ردك...' : 'Type your reply...')
+                        ? t('admin.support.addInternalNotePlaceholder')
+                        : t('admin.support.typeReplyPlaceholder')
                       }
                       rows={3}
                       className="flex-1"
@@ -709,9 +708,9 @@ const AdminSupport = () => {
                       disabled={!replyMessage.trim() || sendReplyMutation.isPending}
                     >
                       <Send className="w-4 h-4 me-2" />
-                      {isInternalNote 
-                        ? (isRTL ? 'إضافة ملاحظة' : 'Add Note')
-                        : (isRTL ? 'إرسال الرد' : 'Send Reply')
+                       {isInternalNote 
+                        ? t('admin.support.addNote')
+                        : t('admin.support.sendReply')
                       }
                     </Button>
                   </div>

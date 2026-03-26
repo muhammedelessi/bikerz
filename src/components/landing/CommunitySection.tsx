@@ -8,9 +8,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLandingContent, CommunityContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from 'react-i18next';
 
 const CommunitySection: React.FC = () => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
   const { data: content, isLoading: contentLoading } = useLandingContent<CommunityContent>('community');
@@ -54,26 +56,26 @@ const CommunitySection: React.FC = () => {
     return `${count}${suffix}`;
   };
 
-  const title = isRTL ? (content?.title_ar || 'انضم إلى الأخوية') : (content?.title_en || 'Join the Brotherhood');
+  const title = isRTL ? (content?.title_ar || t('community.title')) : (content?.title_en || t('community.title'));
   const subtitle = isRTL ? (content?.subtitle_ar || '') : (content?.subtitle_en || '');
   const communityImage = (content as any)?.background_image || defaultCommunityImage;
 
   const displayStats = [
     { 
       value: formatCount(stats?.members || 0), 
-      label: isRTL ? 'عضو في المجتمع' : 'Community Members' 
+      label: t('community.stat1.label')
     },
     { 
       value: formatCount(stats?.activeLearners || 0), 
-      label: isRTL ? 'متعلم نشط' : 'Active Learners' 
+      label: t('community.stat2.label')
     },
     { 
       value: stats?.successRate ? `${stats.successRate}%` : '0%', 
-      label: isRTL ? 'معدل النجاح' : 'Success Rate' 
+      label: t('community.stat3.label')
     },
     { 
       value: formatCount(stats?.lessons || 0), 
-      label: isRTL ? 'درس فيديو' : 'Video Lessons' 
+      label: t('community.stat4.label')
     },
   ];
 
@@ -83,12 +85,15 @@ const CommunitySection: React.FC = () => {
     <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
-        <img
-          src={communityImage}
-          alt="Group of motorcycle riders"
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
+        <picture>
+          <source srcSet={communityImage} type="image/webp" />
+          <img
+            src={communityImage}
+            alt="Group of motorcycle riders"
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </picture>
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-background/80" />
       </div>
 

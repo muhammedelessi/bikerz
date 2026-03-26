@@ -32,52 +32,52 @@ const TermsOfService: React.FC = () => {
   const defaultSections = [
     {
       icon: Users,
-      title_en: 'Account Registration',
-      title_ar: 'تسجيل الحساب',
-      content_en: 'To access our courses, you must register for an account. You agree to provide accurate and complete information during registration and to keep your account information updated. You are responsible for maintaining the confidentiality of your account credentials.',
-      content_ar: 'للوصول إلى دوراتنا، يجب عليك التسجيل للحصول على حساب. توافق على تقديم معلومات دقيقة وكاملة أثناء التسجيل والحفاظ على تحديث معلومات حسابك. أنت مسؤول عن الحفاظ على سرية بيانات اعتماد حسابك.'
+      title_en: t('legal.terms.sections.registration.title'),
+      title_ar: t('legal.terms.sections.registration.title'),
+      content_en: t('legal.terms.sections.registration.content'),
+      content_ar: t('legal.terms.sections.registration.content'),
     },
     {
       icon: CreditCard,
-      title_en: 'Payments and Refunds',
-      title_ar: 'المدفوعات والاسترداد',
-      content_en: 'Course fees are clearly displayed at the time of purchase. Payment must be made in full before accessing paid content. Refund requests may be considered within 14 days of purchase if you have not completed more than 30% of the course content.',
-      content_ar: 'يتم عرض رسوم الدورة بوضوح وقت الشراء. يجب دفع المبلغ كاملاً قبل الوصول إلى المحتوى المدفوع. يمكن النظر في طلبات الاسترداد خلال 14 يوماً من الشراء إذا لم تكن قد أكملت أكثر من 30% من محتوى الدورة.'
+      title_en: t('legal.terms.sections.payments.title'),
+      title_ar: t('legal.terms.sections.payments.title'),
+      content_en: t('legal.terms.sections.payments.content'),
+      content_ar: t('legal.terms.sections.payments.content'),
     },
     {
       icon: FileText,
-      title_en: 'Intellectual Property',
-      title_ar: 'الملكية الفكرية',
-      content_en: 'All course content, including videos, text, images, and materials, is owned by BIKERZ or our content creators. You may not copy, distribute, modify, or create derivative works from our content without express written permission.',
-      content_ar: 'جميع محتويات الدورة، بما في ذلك مقاطع الفيديو والنصوص والصور والمواد، مملوكة لـ BIKERZ أو منشئي المحتوى لدينا. لا يجوز لك نسخ أو توزيع أو تعديل أو إنشاء أعمال مشتقة من محتوانا دون إذن كتابي صريح.'
+      title_en: t('legal.terms.sections.intellectual.title'),
+      title_ar: t('legal.terms.sections.intellectual.title'),
+      content_en: t('legal.terms.sections.intellectual.content'),
+      content_ar: t('legal.terms.sections.intellectual.content'),
     },
     {
       icon: Ban,
-      title_en: 'Prohibited Activities',
-      title_ar: 'الأنشطة المحظورة',
-      content_en: 'You agree not to: share your account with others, use automated tools to access our services, attempt to bypass our security measures, post harmful or offensive content, or use our platform for any illegal activities.',
-      content_ar: 'توافق على عدم: مشاركة حسابك مع الآخرين، استخدام أدوات آلية للوصول إلى خدماتنا، محاولة تجاوز إجراءاتنا الأمنية، نشر محتوى ضار أو مسيء، أو استخدام منصتنا لأي أنشطة غير قانونية.'
+      title_en: t('legal.terms.sections.prohibited.title'),
+      title_ar: t('legal.terms.sections.prohibited.title'),
+      content_en: t('legal.terms.sections.prohibited.content'),
+      content_ar: t('legal.terms.sections.prohibited.content'),
     },
     {
       icon: AlertTriangle,
-      title_en: 'Disclaimer',
-      title_ar: 'إخلاء المسؤولية',
-      content_en: 'Our courses provide educational content about motorcycle riding. We are not responsible for any injuries, accidents, or damages that may occur while riding. Always practice safety and follow local traffic laws.',
-      content_ar: 'توفر دوراتنا محتوى تعليمياً حول ركوب الدراجات النارية. لسنا مسؤولين عن أي إصابات أو حوادث أو أضرار قد تحدث أثناء الركوب. مارس السلامة دائماً واتبع قوانين المرور المحلية.'
+      title_en: t('legal.terms.sections.disclaimer.title'),
+      title_ar: t('legal.terms.sections.disclaimer.title'),
+      content_en: t('legal.terms.sections.disclaimer.content'),
+      content_ar: t('legal.terms.sections.disclaimer.content'),
     },
     {
       icon: Scale,
-      title_en: 'Governing Law',
-      title_ar: 'القانون الحاكم',
-      content_en: 'These terms are governed by the laws of the Kingdom of Saudi Arabia. Any disputes will be resolved through the appropriate courts in Jeddah, Saudi Arabia.',
-      content_ar: 'تخضع هذه الشروط لقوانين المملكة العربية السعودية. سيتم حل أي نزاعات من خلال المحاكم المختصة في جدة، المملكة العربية السعودية.'
+      title_en: t('legal.terms.sections.governing.title'),
+      title_ar: t('legal.terms.sections.governing.title'),
+      content_en: t('legal.terms.sections.governing.content'),
+      content_ar: t('legal.terms.sections.governing.content'),
     },
     {
       icon: RefreshCw,
-      title_en: 'Changes to Terms',
-      title_ar: 'التغييرات على الشروط',
-      content_en: 'We reserve the right to modify these terms at any time. We will notify you of significant changes via email or through our platform. Your continued use of our services after changes constitutes acceptance of the new terms.',
-      content_ar: 'نحتفظ بالحق في تعديل هذه الشروط في أي وقت. سنخطرك بالتغييرات المهمة عبر البريد الإلكتروني أو من خلال منصتنا. استمرارك في استخدام خدماتنا بعد التغييرات يعني قبولك للشروط الجديدة.'
+      title_en: t('legal.terms.sections.changes.title'),
+      title_ar: t('legal.terms.sections.changes.title'),
+      content_en: t('legal.terms.sections.changes.content'),
+      content_ar: t('legal.terms.sections.changes.content'),
     }
   ];
 
@@ -119,10 +119,7 @@ const TermsOfService: React.FC = () => {
               <Card className="bg-muted/30">
                 <CardContent className="p-6">
                   <p className="text-muted-foreground leading-relaxed">
-                    {isRTL 
-                      ? 'مرحباً بك في بايكرز. باستخدام منصتنا، فإنك توافق على الالتزام بهذه الشروط والأحكام. يرجى قراءتها بعناية قبل استخدام خدماتنا.'
-                      : 'Welcome to BIKERZ. By using our platform, you agree to be bound by these terms and conditions. Please read them carefully before using our services.'
-                    }
+                    {t('legal.terms.welcome')}
                   </p>
                 </CardContent>
               </Card>

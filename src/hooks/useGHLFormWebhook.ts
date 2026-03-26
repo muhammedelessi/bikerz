@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import type { FormWebhookData } from '@/types/ghl';
 import {
   sendGHLFormData,
@@ -8,6 +9,7 @@ import {
 } from '@/services/ghl.service';
 
 export function useGHLFormWebhook() {
+  const { t } = useTranslation();
   const sendFormData = useCallback(async (data: FormWebhookData) => {
     const { isRTL, silent } = data;
 
@@ -16,17 +18,17 @@ export function useGHLFormWebhook() {
       if (!success) throw new Error('Webhook failed');
 
       if (!silent) {
-        toast.success(isRTL ? '✅ تم إرسال البيانات بنجاح' : '✅ Data submitted successfully');
+        toast.success(t('common.dataSubmitted'));
       }
       return true;
     } catch (err) {
       console.error('GHL form webhook failed:', err);
       if (!silent) {
-        toast.error(isRTL ? '❌ فشل في إرسال البيانات' : '❌ Failed to submit data');
+        toast.error(t('common.dataFailed'));
       }
       return false;
     }
-  }, []);
+  }, [t]);
 
   const sendCourseStatus = useCallback(async (
     userId: string,

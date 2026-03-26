@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+
 import {
   Dialog,
   DialogContent,
@@ -41,6 +43,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+const { t } = useTranslation();
 
 interface CourseStudentsDialogProps {
   courseId: string | null;
@@ -88,6 +91,7 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
   onClose,
 }) => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
 
@@ -291,7 +295,7 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
                 <Users className="w-4 h-4 text-primary" />
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 min-w-0">
-                <span className="truncate">{isRTL ? 'طلاب الدورة' : 'Course Students'}</span>
+                <span className="truncate">{t('admin.courseStudentsDialog.title')}</span>
                 <span className="text-muted-foreground font-normal text-xs sm:text-sm truncate">
                   {courseTitle}
                 </span>
@@ -304,22 +308,22 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
             <div className="bg-muted/50 rounded-xl p-3 text-center">
               <Users className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
               <p className="text-xl font-bold text-foreground">{students.length}</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">{isRTL ? 'إجمالي الطلاب' : 'Total Students'}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{t('admin.courseStudentsDialog.stats.totalStudents')}</p>
             </div>
             <div className="bg-green-500/5 rounded-xl p-3 text-center">
               <CheckCircle className="w-4 h-4 text-green-500 mx-auto mb-1" />
               <p className="text-xl font-bold text-green-600">{completedCount}</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">{isRTL ? 'أكملوا الدورة' : 'Completed'}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{t('admin.courseStudentsDialog.stats.completed')}</p>
             </div>
             <div className="bg-blue-500/5 rounded-xl p-3 text-center">
               <TrendingUp className="w-4 h-4 text-blue-500 mx-auto mb-1" />
               <p className="text-xl font-bold text-blue-600">{inProgressCount}</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">{isRTL ? 'قيد التعلم' : 'In Progress'}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{t('admin.courseStudentsDialog.stats.inProgress')}</p>
             </div>
             <div className="bg-amber-500/5 rounded-xl p-3 text-center">
               <Award className="w-4 h-4 text-amber-500 mx-auto mb-1" />
               <p className="text-xl font-bold text-amber-600">{avgProgress}%</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">{isRTL ? 'متوسط التقدم' : 'Avg Progress'}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{t('admin.courseStudentsDialog.stats.avgProgress')}</p>
             </div>
           </div>
 
@@ -327,7 +331,7 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
           <div className="relative">
             <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder={isRTL ? 'البحث بالاسم أو البريد أو الهاتف...' : 'Search by name, email or phone...'}
+              placeholder={t('admin.courseStudentsDialog.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="ps-10 h-10"
@@ -349,8 +353,8 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
                 </div>
                 <p className="text-muted-foreground font-medium">
                   {searchQuery
-                    ? (isRTL ? 'لا توجد نتائج للبحث' : 'No search results')
-                    : (isRTL ? 'لا يوجد طلاب مسجلين' : 'No enrolled students')}
+                    ? t('admin.courseStudentsDialog.empty.noSearchResults')
+                    : t('admin.courseStudentsDialog.empty.noEnrolledStudents')}
                 </p>
               </div>
             ) : (
@@ -360,10 +364,10 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{isRTL ? 'الطالب' : 'Student'}</TableHead>
-                        <TableHead>{isRTL ? 'التقدم' : 'Progress'}</TableHead>
-                        <TableHead>{isRTL ? 'تاريخ التسجيل' : 'Enrolled'}</TableHead>
-                        <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
+                        <TableHead>{t('admin.courseStudentsDialog.table.student')}</TableHead>
+                        <TableHead>{t('dashboard.progress')}</TableHead>
+                        <TableHead>{t('admin.courseStudentsDialog.table.enrolled')}</TableHead>
+                        <TableHead>{t('admin.courseStudentsDialog.table.status')}</TableHead>
                         <TableHead className="w-10" />
                       </TableRow>
                     </TableHeader>
@@ -512,7 +516,7 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
                   </Avatar>
                   <div className="min-w-0">
                     <p className="font-semibold truncate text-base">
-                      {selectedStudentData.profile?.full_name || (isRTL ? 'تفاصيل الطالب' : 'Student Details')}
+                      {selectedStudentData.profile?.full_name || t('admin.courseStudentsDialog.studentDetails')}
                     </p>
                     <p className="text-xs text-muted-foreground truncate" dir="ltr" style={{ unicodeBidi: 'plaintext' }}>
                       {selectedStudentData.email || ''}
@@ -527,26 +531,26 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
           {selectedStudentData && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               <InfoCard
-                label={isRTL ? 'البريد الإلكتروني' : 'Email'}
+                label={t('admin.courseStudentsDialog.labels.email')}
                 value={selectedStudentData.email || '-'}
                 dir="ltr"
                 isRTL={isRTL}
               />
               <InfoCard
-                label={isRTL ? 'رقم الهاتف' : 'Phone'}
+                label={t('admin.courseStudentsDialog.labels.phone')}
                 value={selectedStudentData.profile?.phone || '-'}
                 dir="ltr"
                 isRTL={isRTL}
               />
               <InfoCard
-                label={isRTL ? 'الموقع' : 'Location'}
+                label={t('admin.courseStudentsDialog.labels.location')}
                 value={
                   [selectedStudentData.profile?.city, selectedStudentData.profile?.country]
                     .filter(Boolean).join(', ') || '-'
                 }
               />
               <InfoCard
-                label={isRTL ? 'الدورات المشتراة' : 'Courses'}
+                label={t('admin.courseStudentsDialog.labels.purchasedCourses')}
                 value={String(studentDetail?.allEnrollments.length || 0)}
                 highlight
               />
@@ -557,7 +561,7 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
           <div className="flex items-center gap-2 pt-1">
             <GraduationCap className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">
-              {isRTL ? 'الدورات المسجلة' : 'Enrolled Courses'}
+              {t('admin.courseStudentsDialog.labels.enrolledCourses')}
             </h3>
           </div>
 
@@ -571,7 +575,7 @@ const CourseStudentsDialog: React.FC<CourseStudentsDialogProps> = ({
             ) : !studentDetail?.allEnrollments.length ? (
               <div className="py-12 text-center">
                 <BookOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">{isRTL ? 'لا توجد بيانات' : 'No data available'}</p>
+                <p className="text-muted-foreground">{t('admin.courseStudentsDialog.empty.noDataAvailable')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -603,20 +607,20 @@ const StudentStatusBadge: React.FC<{
   if (completedAt) {
     return (
       <Badge className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/10 text-[10px] sm:text-xs">
-        {compact ? (isRTL ? '✓' : '✓') : (isRTL ? 'مكتمل' : 'Completed')}
+        {compact ? '✓' : t('courseLearn.completed')}
       </Badge>
     );
   }
   if (progress > 0) {
     return (
       <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/10 text-[10px] sm:text-xs">
-        {compact ? `${Math.round(progress)}%` : (isRTL ? 'قيد التعلم' : 'In Progress')}
+        {compact ? `${Math.round(progress)}%` : t('admin.courseStudentsDialog.status.inProgress')}
       </Badge>
     );
   }
   return (
     <Badge variant="secondary" className="text-[10px] sm:text-xs">
-      {compact ? (isRTL ? 'جديد' : 'New') : (isRTL ? 'لم يبدأ' : 'Not Started')}
+      {compact ? t('admin.courseStudentsDialog.status.new') : t('admin.courseStudentsDialog.status.notStarted')}
     </Badge>
   );
 };
@@ -658,7 +662,7 @@ const EnrollmentCard: React.FC<{
       </div>
       {enrollment.completed_at ? (
         <Badge className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/10 shrink-0 text-xs">
-          {isRTL ? 'مكتمل' : 'Completed'}
+          {t('courseLearn.completed')}
         </Badge>
       ) : (
         <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/10 shrink-0 text-xs">
@@ -678,24 +682,28 @@ const EnrollmentCard: React.FC<{
         />
       </div>
       <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">
-        {enrollment.lessons_completed}/{enrollment.total_lessons} {isRTL ? 'درس' : 'lessons'}
+        {enrollment.lessons_completed}/{enrollment.total_lessons} {t('courses.lesson')}
       </span>
     </div>
 
     {/* Info Grid */}
     <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-      <MetaRow icon={Calendar} label={isRTL ? 'التسجيل' : 'Enrolled'} value={formatDate(enrollment.enrolled_at)} />
+      <MetaRow icon={Calendar} label={t('admin.courseStudentsDialog.meta.enrolled')} value={formatDate(enrollment.enrolled_at)} />
       <MetaRow
         icon={DollarSign}
-        label={isRTL ? 'السعر' : 'Price'}
-        value={enrollment.purchase_amount != null ? `${enrollment.purchase_amount} ${enrollment.purchase_currency}` : (isRTL ? 'غير متاح' : 'N/A')}
+        label={t('admin.courseStudentsDialog.meta.price')}
+        value={
+          enrollment.purchase_amount != null
+            ? `${enrollment.purchase_amount} ${enrollment.purchase_currency}`
+            : t('admin.studentDetail.na')
+        }
         dir="ltr"
       />
-      <MetaRow icon={Clock} label={isRTL ? 'الشراء' : 'Purchased'} value={enrollment.purchase_date ? formatDate(enrollment.purchase_date) : '-'} />
+      <MetaRow icon={Clock} label={t('admin.courseStudentsDialog.meta.purchased')} value={enrollment.purchase_date ? formatDate(enrollment.purchase_date) : '-'} />
       <MetaRow
         icon={Star}
-        label={isRTL ? 'التقييم' : 'Rating'}
-        value={enrollment.review_rating != null ? `${enrollment.review_rating}/5 ★` : (isRTL ? 'لا يوجد' : 'None')}
+        label={t('admin.courseStudentsDialog.meta.rating')}
+        value={enrollment.review_rating != null ? `${enrollment.review_rating}/5 ★` : t('admin.studentDetail.none')}
         highlight={enrollment.review_rating != null}
       />
     </div>
@@ -710,7 +718,7 @@ const EnrollmentCard: React.FC<{
     {/* Payment method */}
     {enrollment.payment_method && enrollment.payment_method !== '-' && (
       <p className="text-xs text-muted-foreground">
-        {isRTL ? 'طريقة الدفع:' : 'Payment:'}{' '}
+        {t('admin.courseStudentsDialog.meta.payment')}{' '}
         <span className="text-foreground font-medium">{enrollment.payment_method}</span>
       </p>
     )}

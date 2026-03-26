@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   Zap,
@@ -42,6 +43,7 @@ const RapidFireChallenge: React.FC<RapidFireChallengeProps> = ({
   onClose,
 }) => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(timePerQuestion);
   const [score, setScore] = useState(0);
@@ -164,7 +166,7 @@ const RapidFireChallenge: React.FC<RapidFireChallengeProps> = ({
         </motion.div>
 
         <h3 className="text-2xl font-bold text-foreground mb-2">
-          {isRTL ? 'تحدي النار السريع!' : 'Rapid Fire Complete!'}
+          {t('gamification.rapidFireChallenge.completeTitle')}
         </h3>
 
         <p className="text-5xl font-black text-primary mb-4">{percentage}%</p>
@@ -172,7 +174,7 @@ const RapidFireChallenge: React.FC<RapidFireChallengeProps> = ({
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="bg-muted/50 rounded-xl p-3">
             <p className="text-sm text-muted-foreground">
-              {isRTL ? 'النتيجة' : 'Score'}
+              {t('gamification.rapidFireChallenge.scoreLabel')}
             </p>
             <p className="text-xl font-bold text-foreground">
               {score}/{questions.length}
@@ -182,7 +184,7 @@ const RapidFireChallenge: React.FC<RapidFireChallengeProps> = ({
             <div className="flex items-center justify-center gap-1">
               <Flame className="w-4 h-4 text-orange-500" />
               <p className="text-sm text-muted-foreground">
-                {isRTL ? 'أفضل سلسلة' : 'Best Streak'}
+                {t('gamification.rapidFireChallenge.bestStreakLabel')}
               </p>
             </div>
             <p className="text-xl font-bold text-orange-500">{maxStreak}</p>
@@ -198,11 +200,11 @@ const RapidFireChallenge: React.FC<RapidFireChallengeProps> = ({
 
         <div className="flex gap-2">
           <Button variant="outline" onClick={onClose} className="flex-1">
-            {isRTL ? 'إغلاق' : 'Close'}
+            {t('gamification.rapidFireChallenge.close')}
           </Button>
           <Button onClick={() => window.location.reload()} className="flex-1">
             <RotateCcw className="w-4 h-4 me-2" />
-            {isRTL ? 'أعد المحاولة' : 'Try Again'}
+            {t('gamification.rapidFireChallenge.tryAgain')}
           </Button>
         </div>
       </motion.div>
@@ -220,7 +222,7 @@ const RapidFireChallenge: React.FC<RapidFireChallengeProps> = ({
         <div className="flex items-center gap-2">
           <Zap className="w-5 h-5 text-primary" />
           <span className="font-bold text-foreground">
-            {isRTL ? 'تحدي النار السريع' : 'Rapid Fire'}
+            {t('gamification.rapidFireChallenge.title')}
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -334,7 +336,7 @@ const RapidFireChallenge: React.FC<RapidFireChallengeProps> = ({
       <div className="flex justify-center">
         <div className="bg-muted/50 px-4 py-2 rounded-full">
           <span className="text-sm text-muted-foreground">
-            {isRTL ? 'النتيجة:' : 'Score:'}{' '}
+            {t('gamification.rapidFireChallenge.scorePrefix')}{' '}
             <span className="font-bold text-foreground">{score}</span>
           </span>
         </div>

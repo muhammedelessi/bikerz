@@ -125,14 +125,14 @@ const Signup: React.FC = () => {
       if (result.redirected) return;
 
       if (result.error) {
-        setError(result.error.message || (isRTL ? 'فشل تسجيل الدخول بجوجل' : 'Google sign-in failed'));
+        setError(result.error.message || t('auth.googleFailed'));
         setIsGoogleLoading(false);
         return;
       }
 
       const { data: { user } } = await (supabase.auth as any).getUser();
       if (!user) {
-        setError(isRTL ? 'فشل في الحصول على بيانات المستخدم' : 'Failed to get user data');
+        setError(t('auth.userDataFailed'));
         setIsGoogleLoading(false);
         return;
       }
@@ -153,11 +153,11 @@ const Signup: React.FC = () => {
 
       setIsGoogleLoading(false);
       await saveProfileAndSync(user.id, googleName, user.email || '');
-      toast.success(isRTL ? 'تم التسجيل بنجاح!' : 'Signed up successfully!');
+      toast.success(t('auth.signup.success'));
       setShowProfileWizard(true);
     } catch (err: any) {
       console.error('Google sign-in error:', err);
-      setError(err?.message || (isRTL ? 'فشل تسجيل الدخول بجوجل' : 'Google sign-in failed'));
+      setError(err?.message || t('auth.googleFailed'));
       setIsGoogleLoading(false);
     }
   };
@@ -174,11 +174,15 @@ const Signup: React.FC = () => {
       <SEOHead title="Sign Up" description="Create your BIKERZ Academy account and start learning motorcycle riding from expert instructors today." canonical="/signup" />
       {/* Image Section - Hidden on mobile */}
       <div className="hidden lg:block flex-1 relative">
-        <img
-          src={heroImage}
-          alt="Motorcycle riders community"
-          className="absolute inset-0 w-full h-full object-cover"
-          loading="lazy" />
+        <picture>
+          <source srcSet={heroImage} type="image/webp" />
+          <img
+            src={heroImage}
+            alt="Motorcycle riders community"
+            className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+          />
+        </picture>
         <div className="absolute inset-0 bg-gradient-to-l from-background via-background/50 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
       </div>
@@ -194,11 +198,15 @@ const Signup: React.FC = () => {
           {/* Header */}
           <div className="flex items-center justify-between mb-6 sm:mb-8">
             <Link to="/" className="flex items-center">
-              <img
-                src={bikerzLogo}
-                alt="BIKERZ"
-                className="h-10 sm:h-12 lg:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
-                loading="lazy" />
+              <picture>
+                <source srcSet={bikerzLogo} type="image/webp" />
+                <img
+                  src={bikerzLogo}
+                  alt="BIKERZ"
+                  className="h-10 sm:h-12 lg:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+                  loading="lazy"
+                />
+              </picture>
             </Link>
             <LanguageToggle />
           </div>
@@ -234,7 +242,7 @@ const Signup: React.FC = () => {
               ) : (
                 <>
                   <GoogleIcon />
-                  {isRTL ? 'التسجيل بحساب جوجل' : 'Sign up with Google'}
+                  {t('auth.signupWithGoogle')}
                 </>
               )}
             </Button>
@@ -246,7 +254,7 @@ const Signup: React.FC = () => {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground">
-                  {isRTL ? 'أو' : 'or'}
+                  {t('common.or')}
                 </span>
               </div>
             </div>
@@ -327,11 +335,15 @@ const Signup: React.FC = () => {
 
       {/* Mobile Hero Image */}
       <div className="lg:hidden absolute inset-0 -z-10 opacity-10">
-        <img
-          src={heroImage}
-          alt=""
-          className="w-full h-full object-cover"
-          loading="lazy" />
+        <picture>
+          <source srcSet={heroImage} type="image/webp" />
+          <img
+            src={heroImage}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </picture>
       </div>
 
       {/* Profile Completion Wizard */}

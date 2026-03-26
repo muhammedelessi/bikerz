@@ -56,11 +56,15 @@ const ForgotPassword: React.FC = () => {
       <header className="py-4 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link to="/">
-            <img
-              src={bikerzLogo}
-              alt="BIKERZ"
-              className="h-10 sm:h-12 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
-             loading="lazy" />
+            <picture>
+              <source srcSet={bikerzLogo} type="image/webp" />
+              <img
+                src={bikerzLogo}
+                alt="BIKERZ"
+                className="h-10 sm:h-12 lg:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+                loading="lazy"
+              />
+            </picture>
           </Link>
         </div>
       </header>

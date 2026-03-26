@@ -1,6 +1,7 @@
 import React from "react";
 import { Timer } from "lucide-react";
 import { useDiscountCountdown } from "@/hooks/useDiscountCountdown";
+import { useTranslation } from "react-i18next";
 
 interface DiscountCountdownProps {
   expiresAt: string | null | undefined;
@@ -10,22 +11,17 @@ interface DiscountCountdownProps {
 
 const DiscountCountdown: React.FC<DiscountCountdownProps> = ({ expiresAt, isRTL, className = "" }) => {
   const { days, hours, minutes, seconds, isExpired, hasExpiry } = useDiscountCountdown(expiresAt);
+  const { t } = useTranslation();
+  void isRTL; // Keep prop for backward-compatibility with existing callers
   if (!hasExpiry || isExpired) return null;
 
-  const label = isRTL ? "ينتهي خلال:" : "Ends in:";
-  const parts = isRTL
-    ? [
-        { value: days, unit: "ي" },
-        { value: hours, unit: "س" },
-        { value: minutes, unit: "د" },
-        { value: seconds, unit: "ث" },
-      ]
-    : [
-        { value: days, unit: "d" },
-        { value: hours, unit: "h" },
-        { value: minutes, unit: "m" },
-        { value: seconds, unit: "s" },
-      ];
+  const label = t("common.discountCountdown.endsIn");
+  const parts = [
+    { value: days, unit: t("common.discountCountdown.unitDay") },
+    { value: hours, unit: t("common.discountCountdown.unitHour") },
+    { value: minutes, unit: t("common.discountCountdown.unitMinute") },
+    { value: seconds, unit: t("common.discountCountdown.unitSecond") },
+  ];
 
   return (
     <div className={`flex items-center gap-1 flex-wrap justify-end ${className}`}>

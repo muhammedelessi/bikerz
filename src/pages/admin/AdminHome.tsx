@@ -1,5 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -35,6 +36,7 @@ import {
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
 const AdminHome: React.FC = () => {
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
 
   // Fetch real stats from database
@@ -177,9 +179,20 @@ const AdminHome: React.FC = () => {
           .gte('enrolled_at', startOfMonth)
           .lte('enrolled_at', endOfMonth);
 
-        const monthNames = isRTL
-          ? ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
-          : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const monthNames = [
+          t('admin.dashboard.months.jan'),
+          t('admin.dashboard.months.feb'),
+          t('admin.dashboard.months.mar'),
+          t('admin.dashboard.months.apr'),
+          t('admin.dashboard.months.may'),
+          t('admin.dashboard.months.jun'),
+          t('admin.dashboard.months.jul'),
+          t('admin.dashboard.months.aug'),
+          t('admin.dashboard.months.sep'),
+          t('admin.dashboard.months.oct'),
+          t('admin.dashboard.months.nov'),
+          t('admin.dashboard.months.dec')
+        ];
 
         months.push({
           name: monthNames[date.getMonth()],
@@ -206,9 +219,7 @@ const AdminHome: React.FC = () => {
       if (pendingPayments && pendingPayments > 0) {
         alertsList.push({
           type: 'warning',
-          message: isRTL 
-            ? `${pendingPayments} دفعة معلقة تحتاج مراجعة`
-            : `${pendingPayments} pending payment(s) need review`,
+          message: t('admin.dashboard.pendingPaymentsAlert', { count: pendingPayments }),
         });
       }
 
@@ -221,9 +232,7 @@ const AdminHome: React.FC = () => {
       if (openTickets && openTickets > 0) {
         alertsList.push({
           type: 'info',
-          message: isRTL 
-            ? `${openTickets} تذكرة دعم مفتوحة`
-            : `${openTickets} open support ticket(s)`,
+          message: t('admin.dashboard.openTicketsAlert', { count: openTickets }),
         });
       }
 
@@ -236,9 +245,7 @@ const AdminHome: React.FC = () => {
       if (pendingDiscussions && pendingDiscussions > 0) {
         alertsList.push({
           type: 'info',
-          message: isRTL 
-            ? `${pendingDiscussions} سؤال ينتظر الموافقة`
-            : `${pendingDiscussions} discussion(s) pending approval`,
+          message: t('admin.dashboard.pendingDiscussionsAlert', { count: pendingDiscussions }),
         });
       }
 
@@ -247,37 +254,37 @@ const AdminHome: React.FC = () => {
   });
 
   const enrollmentsByStatus = stats ? [
-    { name: isRTL ? 'مكتمل' : 'Completed', value: stats.enrollmentDistribution.completed },
-    { name: isRTL ? 'نشط' : 'Active', value: stats.enrollmentDistribution.active },
-    { name: isRTL ? 'متوقف' : 'Paused', value: stats.enrollmentDistribution.paused },
-    { name: isRTL ? 'جديد' : 'New', value: stats.enrollmentDistribution.new },
+    { name: t('admin.dashboard.completed'), value: stats.enrollmentDistribution.completed },
+    { name: t('admin.dashboard.active'), value: stats.enrollmentDistribution.active },
+    { name: t('admin.dashboard.paused'), value: stats.enrollmentDistribution.paused },
+    { name: t('admin.dashboard.new'), value: stats.enrollmentDistribution.new },
   ] : [];
 
   const statCards = [
     {
-      title: isRTL ? 'إجمالي المستخدمين' : 'Total Users',
+      title: t('admin.dashboard.totalUsers'),
       value: stats?.totalUsers || 0,
       icon: Users,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
     },
     {
-      title: isRTL ? 'الدورات النشطة' : 'Active Courses',
+      title: t('admin.dashboard.activeCourses'),
       value: stats?.totalCourses || 0,
       icon: BookOpen,
       color: 'text-green-500',
       bgColor: 'bg-green-500/10',
     },
     {
-      title: isRTL ? 'التسجيلات' : 'Enrollments',
+      title: t('admin.dashboard.enrollments'),
       value: stats?.totalEnrollments || 0,
       icon: GraduationCap,
       color: 'text-purple-500',
       bgColor: 'bg-purple-500/10',
     },
     {
-      title: isRTL ? 'إجمالي الإيرادات' : 'Total Revenue',
-      value: `${isRTL ? 'ر.س' : 'SAR'} ${stats?.totalRevenue?.toLocaleString() || 0}`,
+      title: t('admin.dashboard.totalRevenue'),
+      value: `${t('common.currency_sar')} ${stats?.totalRevenue?.toLocaleString() || 0}`,
       icon: DollarSign,
       color: 'text-amber-500',
       bgColor: 'bg-amber-500/10',
@@ -290,10 +297,10 @@ const AdminHome: React.FC = () => {
         {/* Page Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">
-            {isRTL ? 'لوحة التحكم' : 'Dashboard'}
+            {t('admin.dashboard.title')}
           </h1>
           <p className="text-muted-foreground">
-            {isRTL ? 'نظرة عامة على أداء الأكاديمية' : 'Academy performance overview'}
+            {t('admin.dashboard.subtitle')}
           </p>
         </div>
 
@@ -337,7 +344,7 @@ const AdminHome: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">
-                {isRTL ? 'التسجيلات الشهرية' : 'Monthly Enrollments'}
+                {t('admin.dashboard.monthlyEnrollments')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -365,8 +372,8 @@ const AdminHome: React.FC = () => {
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-muted-foreground">
-                    {isRTL ? 'لا توجد بيانات' : 'No data available'}
+                   <div className="h-full flex items-center justify-center text-muted-foreground">
+                    {t('admin.dashboard.noData')}
                   </div>
                 )}
               </div>
@@ -377,7 +384,7 @@ const AdminHome: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">
-                {isRTL ? 'أداء الدورات' : 'Course Performance'}
+                {t('admin.dashboard.coursePerformance')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -399,8 +406,8 @@ const AdminHome: React.FC = () => {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-muted-foreground">
-                    {isRTL ? 'لا توجد دورات' : 'No courses available'}
+                   <div className="h-full flex items-center justify-center text-muted-foreground">
+                    {t('admin.dashboard.noCourses')}
                   </div>
                 )}
               </div>
@@ -414,7 +421,7 @@ const AdminHome: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">
-                {isRTL ? 'توزيع التسجيلات' : 'Enrollment Distribution'}
+                {t('admin.dashboard.enrollmentDistribution')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -439,8 +446,8 @@ const AdminHome: React.FC = () => {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-muted-foreground">
-                    {isRTL ? 'لا توجد تسجيلات' : 'No enrollments'}
+                   <div className="h-full flex items-center justify-center text-muted-foreground">
+                    {t('admin.dashboard.noEnrollments')}
                   </div>
                 )}
               </div>
@@ -462,8 +469,8 @@ const AdminHome: React.FC = () => {
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Activity className="w-5 h-5" />
-                {isRTL ? 'التنبيهات والإشعارات' : 'Alerts & Notifications'}
+                 <Activity className="w-5 h-5" />
+                {t('admin.dashboard.alertsAndNotifications')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -486,8 +493,8 @@ const AdminHome: React.FC = () => {
                 ) : (
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-green-500/10">
                     <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <p className="text-sm text-foreground">
-                      {isRTL ? 'لا توجد تنبيهات حالياً' : 'No alerts at this time'}
+                     <p className="text-sm text-foreground">
+                      {t('admin.dashboard.noAlerts')}
                     </p>
                   </div>
                 )}
@@ -505,8 +512,8 @@ const AdminHome: React.FC = () => {
                   <CheckCircle2 className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">
-                    {isRTL ? 'معدل الإكمال' : 'Completion Rate'}
+                   <p className="text-sm text-muted-foreground">
+                    {t('admin.dashboard.completionRate')}
                   </p>
                   <p className="text-xl font-bold text-foreground">{stats?.completionRate || 0}%</p>
                 </div>
@@ -522,8 +529,8 @@ const AdminHome: React.FC = () => {
                   <GraduationCap className="w-5 h-5 text-green-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">
-                    {isRTL ? 'معدل النجاح' : 'Pass Rate'}
+                   <p className="text-sm text-muted-foreground">
+                    {t('admin.dashboard.passRate')}
                   </p>
                   <p className="text-xl font-bold text-foreground">{stats?.passRate || 0}%</p>
                 </div>
@@ -539,11 +546,11 @@ const AdminHome: React.FC = () => {
                   <Clock className="w-5 h-5 text-amber-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">
-                    {isRTL ? 'متوسط وقت المشاهدة' : 'Avg. Watch Time'}
+                   <p className="text-sm text-muted-foreground">
+                    {t('admin.dashboard.avgWatchTime')}
                   </p>
-                  <p className="text-xl font-bold text-foreground">
-                    {stats?.avgWatchTimeMinutes || 0} {isRTL ? 'د' : 'min'}
+                   <p className="text-xl font-bold text-foreground">
+                    {stats?.avgWatchTimeMinutes || 0} {t('admin.dashboard.minutes')}
                   </p>
                 </div>
               </div>
@@ -557,8 +564,8 @@ const AdminHome: React.FC = () => {
                   <Users className="w-5 h-5 text-purple-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">
-                    {isRTL ? 'المستخدمون النشطون' : 'Active Users'}
+                   <p className="text-sm text-muted-foreground">
+                    {t('admin.dashboard.activeUsers')}
                   </p>
                   <p className="text-xl font-bold text-foreground">{stats?.activeUsers || 0}</p>
                 </div>

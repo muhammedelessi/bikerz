@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { Badge, getRarityColor, getRarityGlow } from '@/hooks/useGamification';
 import {
   Trophy,
@@ -79,6 +80,7 @@ const BadgeDisplay: React.FC<BadgeDisplayProps> = ({
   onClick,
 }) => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const Icon = iconMap[badge.icon_name] || Trophy;
 
   const badgeContent = (
@@ -140,12 +142,12 @@ const BadgeDisplay: React.FC<BadgeDisplayProps> = ({
             </p>
             {earned && earnedAt && (
               <p className="text-xs text-primary mt-2">
-                {isRTL ? 'حصلت عليها' : 'Earned'}: {new Date(earnedAt).toLocaleDateString()}
+                {t('gamification.badgeDisplay.earned')}: {new Date(earnedAt).toLocaleDateString()}
               </p>
             )}
             {!earned && (
               <p className="text-xs text-muted-foreground/50 mt-2">
-                {isRTL ? '🔒 لم تفتح بعد' : '🔒 Not yet unlocked'}
+                {t('gamification.badgeDisplay.lockedNotYet')}
               </p>
             )}
             {badge.xp_reward > 0 && (

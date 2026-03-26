@@ -1,10 +1,12 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { validateCoupon } from '@/services/supabase.service';
 import type { AppliedCoupon } from '@/types/payment';
 
 export function useCheckoutPromo(courseId: string, basePrice: number) {
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
@@ -17,7 +19,7 @@ export function useCheckoutPromo(courseId: string, basePrice: number) {
     try {
       const { data, error } = await validateCoupon(promoCode.trim(), courseId, basePrice);
       if (error) {
-        let errorMsg = isRTL ? 'فشل التحقق من الرمز' : 'Failed to validate code';
+        let errorMsg = t('checkout.failedToValidateCode');
         try {
           if (error.context && typeof error.context.json === 'function') {
             const body = await error.context.json();
@@ -30,16 +32,16 @@ export function useCheckoutPromo(courseId: string, basePrice: number) {
       if (data?.valid) {
         setPromoApplied(true);
         setAppliedCoupon(data);
-        toast.success(isRTL ? 'تم تطبيق الخصم بنجاح!' : 'Discount applied successfully!');
+        toast.success(t('checkout.discountApplied'));
       } else {
-        toast.error(data?.error || (isRTL ? 'رمز الخصم غير صالح' : 'Invalid promo code'));
+        toast.error(data?.error || t('checkout.invalidPromoCode'));
       }
     } catch (err: any) {
-      toast.error(err.message || (isRTL ? 'فشل التحقق من الرمز' : 'Failed to validate code'));
+      toast.error(err.message || t('checkout.failedToValidateCode'));
     } finally {
       setPromoLoading(false);
     }
-  }, [promoCode, promoLoading, courseId, basePrice, isRTL]);
+  }, [promoCode, promoLoading, courseId, basePrice, t]);
 
   const autoApplySavedCoupon = useCallback(async () => {
     const savedCoupon = localStorage.getItem('profile_coupon_code');
@@ -51,7 +53,7 @@ export function useCheckoutPromo(courseId: string, basePrice: number) {
         if (!error && data?.valid) {
           setPromoApplied(true);
           setAppliedCoupon(data);
-          toast.success(isRTL ? 'تم تطبيق الكوبون تلقائياً!' : 'Coupon auto-applied!');
+          toast.success(t('checkout.couponAutoApplied'));
           localStorage.removeItem('profile_coupon_code');
         }
       } catch {

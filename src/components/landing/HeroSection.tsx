@@ -1,6 +1,7 @@
 import React from "react";
 import AnimatedCounter from "@/components/common/AnimatedCounter";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ArrowLeft, Play, Sparkles } from "lucide-react";
@@ -12,6 +13,7 @@ import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const HeroSection: React.FC = () => {
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
@@ -80,16 +82,16 @@ const HeroSection: React.FC = () => {
     return isRTL ? content[arKey] || fallbackAr : content[enKey] || fallbackEn;
   };
 
-  const title = getText("title_en", "title_ar", "Master the Art of Riding", "أتقن فن القيادة");
+  const title = getText("title_en", "title_ar", t("hero.title", { lng: 'en' }), t("hero.title", { lng: 'ar' }));
   const subtitle = getText(
     "subtitle_en",
     "subtitle_ar",
-    "Join 15,000+ GCC riders on their journey from beginner to confident road master.",
-    "انضم إلى أكثر من 15,000 راكب في الخليج في رحلتهم من المبتدئين إلى أساتذة الطريق.",
+    t("hero.subtitle", { lng: 'en' }),
+    t("hero.subtitle", { lng: 'ar' }),
   );
-  const ctaText = getText("cta_en", "cta_ar", "Start Your Journey", "ابدأ رحلتك");
-  const secondaryCta = getText("secondary_cta_en", "secondary_cta_ar", "Explore Courses", "استكشف الدورات");
-  const badgeText = getText("badge_text_en", "badge_text_ar", "GCC Riders", "راكب في الخليج");
+  const ctaText = getText("cta_en", "cta_ar", t("hero.cta", { lng: 'en' }), t("hero.cta", { lng: 'ar' }));
+  const secondaryCta = getText("secondary_cta_en", "secondary_cta_ar", t("hero.secondaryCta", { lng: 'en' }), t("hero.secondaryCta", { lng: 'ar' }));
+  const badgeText = getText("badge_text_en", "badge_text_ar", t("community.stat1.label", { lng: 'en' }), t("community.stat1.label", { lng: 'ar' }));
 
   const heroImage = (content as any)?.defaultHeroImage || defaultHeroImage;
 
@@ -97,16 +99,19 @@ const HeroSection: React.FC = () => {
     <section className="relative min-h-[80svh] flex items-center justify-center overflow-hidden pt-6 sm:pt-8 lg:pt-10 will-change-auto">
       {/* Background Image with cinematic overlay */}
       <div className="absolute inset-0">
-        <img
-          src={heroImage}
-          alt="Motorcycle rider on desert highway"
-          width={1920}
-          height={1080}
-          fetchPriority="high"
-          decoding="async"
-          className="w-full h-full object-cover object-center scale-105"
-          loading="eager"
-        />
+        <picture>
+          <source srcSet={heroImage} type="image/webp" />
+          <img
+            src={heroImage}
+            alt="Motorcycle rider on desert highway"
+            width={1920}
+            height={1080}
+            fetchPriority="high"
+            decoding="async"
+            className="w-full h-full object-cover object-center scale-105"
+            loading="eager"
+          />
+        </picture>
         {/* Multi-layer cinematic gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/30" />
         <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-background/80" />

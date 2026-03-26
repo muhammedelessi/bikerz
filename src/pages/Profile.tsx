@@ -106,11 +106,15 @@ const Profile: React.FC = () => {
           {/* Logo */}
           <div className="p-4 sm:p-6 border-b border-border flex items-center justify-between">
             <Link to="/" className="flex items-center">
-              <img
-                src={bikerzLogo}
-                alt="BIKERZ"
-                className="h-10 sm:h-12 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
-               loading="lazy" />
+              <picture>
+                <source srcSet={bikerzLogo} type="image/webp" />
+                <img
+                  src={bikerzLogo}
+                  alt="BIKERZ"
+                  className="h-10 sm:h-12 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+                  loading="lazy"
+                />
+              </picture>
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}

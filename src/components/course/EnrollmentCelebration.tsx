@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { Trophy, Sparkles, Rocket, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import confetti from 'canvas-confetti';
@@ -19,6 +20,7 @@ const EnrollmentCelebration: React.FC<EnrollmentCelebrationProps> = ({
   onContinue,
 }) => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const [stage, setStage] = useState(0);
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
@@ -96,12 +98,12 @@ const EnrollmentCelebration: React.FC<EnrollmentCelebrationProps> = ({
                 transition={{ duration: 0.4 }}
               >
                 <h2 className="text-2xl sm:text-3xl font-black text-foreground">
-                  {isRTL ? '🎉 مبروك!' : '🎉 Congratulations!'}
+                  {t('course.enrollmentCelebration.congrats')}
                 </h2>
                 <div className="flex items-center justify-center gap-2 mt-2">
                   <Sparkles className="w-4 h-4 text-primary" />
                   <p className="text-sm text-muted-foreground">
-                    {isRTL ? 'تم تسجيلك بنجاح' : 'You are now enrolled'}
+                    {t('course.enrollmentCelebration.enrolledSuccess')}
                   </p>
                   <Sparkles className="w-4 h-4 text-primary" />
                 </div>
@@ -115,7 +117,7 @@ const EnrollmentCelebration: React.FC<EnrollmentCelebrationProps> = ({
                 className="bg-muted/50 rounded-2xl p-4 border border-border"
               >
                 <p className="text-xs text-muted-foreground mb-1">
-                  {isRTL ? 'الدورة' : 'Course'}
+                  {t('course.enrollmentCelebration.courseLabel')}
                 </p>
                 <p className="text-lg font-bold text-foreground leading-tight">
                   {title}
@@ -134,13 +136,11 @@ const EnrollmentCelebration: React.FC<EnrollmentCelebrationProps> = ({
                   variant="cta"
                 >
                   <Rocket className="w-5 h-5" />
-                  {isRTL ? 'ابدأ التعلم الآن' : 'Start Learning Now'}
+                  {t('course.enrollmentCelebration.startLearningNow')}
                   <ArrowIcon className="w-5 h-5" />
                 </Button>
                 <p className="text-xs text-muted-foreground mt-3">
-                  {isRTL 
-                    ? 'رحلتك في عالم الدراجات تبدأ الآن 🏍️' 
-                    : 'Your motorcycle journey starts now 🏍️'}
+                  {t('course.enrollmentCelebration.journeyStarts')}
                 </p>
               </motion.div>
             </div>

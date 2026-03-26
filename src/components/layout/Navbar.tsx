@@ -101,30 +101,30 @@ const Navbar: React.FC = () => {
 
   // Use dynamic menu items from database or fallback to defaults
   const menuItems = headerContent?.menu_items?.filter(item => item.is_visible) || [
-    { id: 'home', title_en: 'Home', title_ar: 'الرئيسية', link: '/', is_visible: true, open_in_new_tab: false },
-    { id: 'courses', title_en: 'Courses', title_ar: 'الدورات', link: '/courses', is_visible: true, open_in_new_tab: false },
-    { id: 'mentors', title_en: 'Mentors', title_ar: 'المدربون', link: '/mentors', is_visible: true, open_in_new_tab: false },
-    { id: 'about', title_en: 'About', title_ar: 'من نحن', link: '/about', is_visible: true, open_in_new_tab: false },
+    { id: 'home', title_en: t('nav.home', { lng: 'en' }), title_ar: t('nav.home', { lng: 'ar' }), link: '/', is_visible: true, open_in_new_tab: false },
+    { id: 'courses', title_en: t('nav.courses', { lng: 'en' }), title_ar: t('nav.courses', { lng: 'ar' }), link: '/courses', is_visible: true, open_in_new_tab: false },
+    { id: 'mentors', title_en: t('nav.mentors', { lng: 'en' }), title_ar: t('nav.mentors', { lng: 'ar' }), link: '/mentors', is_visible: true, open_in_new_tab: false },
+    { id: 'about', title_en: t('nav.about', { lng: 'en' }), title_ar: t('nav.about', { lng: 'ar' }), link: '/about', is_visible: true, open_in_new_tab: false },
   ];
 
   const ctaButton = headerContent?.cta_button || {
-    text_en: t('nav.signup'),
-    text_ar: 'سجل الآن',
+    text_en: t('nav.signup', { lng: 'en' }),
+    text_ar: t('nav.signup', { lng: 'ar' }),
     link: '/signup',
     is_visible: true,
     style: 'cta'
   };
 
   const loginButton = headerContent?.login_button || {
-    text_en: t('nav.login'),
-    text_ar: 'تسجيل الدخول',
+    text_en: t('nav.login', { lng: 'en' }),
+    text_ar: t('nav.login', { lng: 'ar' }),
     link: '/login',
     is_visible: true
   };
 
   const showLanguageToggle = headerContent?.show_language_toggle !== false;
   const logoUrl = headerContent?.logo_url || bikerzLogo;
-  const logoAlt = isRTL ? (headerContent?.logo_alt_ar || 'بايكرز') : (headerContent?.logo_alt_en || 'BIKERZ');
+  const logoAlt = (isRTL ? headerContent?.logo_alt_ar : headerContent?.logo_alt_en) || t('common.bikerz');
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -181,13 +181,17 @@ const Navbar: React.FC = () => {
           <div className="flex items-center justify-between h-16 sm:h-20 lg:h-24">
             {/* Logo */}
             <Link to="/" className="flex items-center flex-shrink-0">
-              <img
-                src={logoUrl}
-                alt={logoAlt}
-                width={96}
-                height={96}
-                className="h-12 sm:h-16 md:h-20 lg:h-24 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]"
-              />
+              <picture>
+                <source srcSet={logoUrl} type="image/webp" />
+                <img
+                  src={logoUrl}
+                  alt={logoAlt}
+                  width={96}
+                  height={96}
+                  loading="lazy"
+                  className="h-12 sm:h-16 md:h-20 lg:h-24 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]"
+                />
+              </picture>
             </Link>
 
             {/* Desktop Navigation */}
@@ -284,13 +288,17 @@ const Navbar: React.FC = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-border">
                   <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>
-                    <img
-                      src={logoUrl}
-                      alt={logoAlt}
-                      width={40}
-                      height={40}
-                      className="h-10 w-auto object-contain"
-                    />
+                    <picture>
+                      <source srcSet={logoUrl} type="image/webp" />
+                      <img
+                        src={logoUrl}
+                        alt={logoAlt}
+                        width={40}
+                        height={40}
+                        loading="lazy"
+                        className="h-10 w-auto object-contain"
+                      />
+                    </picture>
                   </Link>
                   <button
                     onClick={() => setIsMobileMenuOpen(false)}
@@ -343,7 +351,7 @@ const Navbar: React.FC = () => {
                 {/* Theme Toggle Row */}
                 {/* <div className="px-4 pb-2">
                   <div className="flex items-center justify-between py-3 px-4 rounded-xl bg-muted/30">
-                    <span className="text-base text-foreground">{isRTL ? 'الوضع النهاري' : 'Dark Mode'}</span>
+                    <span className="text-base text-foreground">{t('common.darkMode')}</span>
                     <ThemeToggle />
                   </div>
                 </div> */}

@@ -7,6 +7,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import DiscountCountdown from "@/components/common/DiscountCountdown";
+import { useTranslation } from "react-i18next";
 
 interface DiscountedCourse {
   id: string;
@@ -22,6 +23,7 @@ const SlideItem: React.FC<{
   isRTL: boolean;
 }> = ({ course, isRTL }) => {
   const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
+  const { t } = useTranslation();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   const title = isRTL && course.title_ar ? course.title_ar : course.title;
@@ -35,7 +37,7 @@ const SlideItem: React.FC<{
         <div className="flex items-center gap-1.5 w-full justify-center">
           <Flame className="w-3.5 h-3.5 text-accent-orange animate-pulse flex-shrink-0 drop-shadow-[0_0_6px_hsl(var(--accent-orange)/0.6)]" />
           <span className="bg-accent-orange text-near-black text-[10px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider flex-shrink-0">
-            {priceInfo.discountPct}% {isRTL ? "خصم" : "OFF"}
+            {priceInfo.discountPct}% {t("landing.discountUrgencyBanner.discountLabel")}
           </span>
           <span className="text-[11px] font-bold text-sand truncate max-w-[120px]">
             {title}
@@ -53,7 +55,7 @@ const SlideItem: React.FC<{
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <Flame className="w-5 h-5 text-accent-orange animate-pulse flex-shrink-0 drop-shadow-[0_0_8px_hsl(var(--accent-orange)/0.6)]" />
           <span className="bg-accent-orange text-near-black text-xs font-black px-2 py-0.5 rounded-sm uppercase tracking-wider">
-            {priceInfo.discountPct}% {isRTL ? "خصم" : "OFF"}
+            {priceInfo.discountPct}% {t("landing.discountUrgencyBanner.discountLabel")}
           </span>
         </div>
 
@@ -71,7 +73,7 @@ const SlideItem: React.FC<{
         </div>
 
         <span className="hidden md:flex text-[11px] font-bold text-accent-orange items-center gap-1 group-hover:gap-2 transition-all uppercase tracking-wider">
-          {isRTL ? "سجّل" : "Enroll"}
+          {t("landing.discountUrgencyBanner.enroll")}
           <Arrow className="w-3 h-3" />
         </span>
       </div>

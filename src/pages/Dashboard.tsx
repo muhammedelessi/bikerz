@@ -262,11 +262,15 @@ const Dashboard: React.FC = () => {
           {/* Logo */}
           <div className="p-4 sm:p-6 border-b border-border flex items-center justify-between">
             <Link to="/" className="flex items-center">
-              <img
-                src={bikerzLogo}
-                alt="BIKERZ"
-                className="h-10 sm:h-12 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
-               loading="lazy" />
+              <picture>
+                <source srcSet={bikerzLogo} type="image/webp" />
+                <img
+                  src={bikerzLogo}
+                  alt="BIKERZ"
+                  className="h-10 sm:h-12 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+                  loading="lazy"
+                />
+              </picture>
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -449,12 +453,15 @@ const Dashboard: React.FC = () => {
                           {/* Thumbnail with overlay */}
                           <div className="relative aspect-video w-full overflow-hidden bg-muted">
                             {course.thumbnail_url ? (
-                              <img
-                                src={course.thumbnail_url}
-                                alt={title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                loading="lazy"
-                              />
+                              <picture>
+                                <source srcSet={course.thumbnail_url} type="image/webp" />
+                                <img
+                                  src={course.thumbnail_url}
+                                  alt={title}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                  loading="lazy"
+                                />
+                              </picture>
                             ) : (
                               <div className="w-full h-full flex items-center justify-center bg-muted">
                                 <BookOpen className="w-10 h-10 text-muted-foreground" />
@@ -470,7 +477,7 @@ const Dashboard: React.FC = () => {
                             {isCompleted && (
                               <div className="absolute top-2 end-2 bg-green-500/90 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
                                 <CheckCircle2 className="w-3.5 h-3.5" />
-                                {isRTL ? 'مكتمل' : 'Completed'}
+                                {t('dashboard.completed')}
                               </div>
                             )}
                             {/* Progress percentage circle */}
@@ -491,7 +498,7 @@ const Dashboard: React.FC = () => {
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <BookOpen className="w-3.5 h-3.5" />
                               <span>
-                                {enrollment.completedLessons}/{enrollment.totalLessons} {isRTL ? 'دروس' : 'lessons'}
+                                {enrollment.completedLessons}/{enrollment.totalLessons} {t('courses.lesson')}
                               </span>
                             </div>
 
@@ -501,7 +508,7 @@ const Dashboard: React.FC = () => {
                                 <Play className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
                                 <div className="min-w-0">
                                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">
-                                    {isRTL ? 'الدرس التالي' : 'Up Next'}
+                                    {t('dashboard.upNext')}
                                   </p>
                                   <p className="text-xs text-foreground font-medium line-clamp-1">{nextLessonTitle}</p>
                                 </div>
@@ -512,7 +519,7 @@ const Dashboard: React.FC = () => {
                               <div className="flex items-center gap-2 bg-green-500/10 rounded-lg p-2.5 mt-auto">
                                 <Trophy className="w-4 h-4 text-green-500" />
                                 <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                                  {isRTL ? 'أحسنت! أكملت هذه الدورة' : 'Well done! Course completed'}
+                                  {t('dashboard.courseCompletedWellDone')}
                                 </span>
                               </div>
                             )}
@@ -545,7 +552,7 @@ const Dashboard: React.FC = () => {
           {/* Quick Actions */}
           <section>
             <h2 className="text-lg sm:text-xl font-bold text-foreground mb-3 sm:mb-4">
-              {isRTL ? 'إجراءات سريعة' : 'Quick Actions'}
+              {t('dashboard.quickActions')}
             </h2>
             <div className="flex flex-col sm:flex-row gap-4 w-full">
               <Link to="/courses" className="block flex-1">
@@ -554,7 +561,7 @@ const Dashboard: React.FC = () => {
                     <BookOpen className="w-5 h-5 text-primary" />
                   </div>
                   <span className="font-medium text-sm sm:text-base text-foreground">
-                    {isRTL ? 'تصفح الدورات' : 'Browse Courses'}
+                    {t('dashboard.browseCourses')}
                   </span>
                 </div>
               </Link>
@@ -564,7 +571,7 @@ const Dashboard: React.FC = () => {
                     <Users className="w-5 h-5 text-secondary" />
                   </div>
                   <span className="font-medium text-sm sm:text-base text-foreground">
-                    {isRTL ? 'ابحث عن مدرب' : 'Find a Mentor'}
+                    {t('dashboard.findMentor')}
                   </span>
                 </div>
               </Link>

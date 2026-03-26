@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,6 +25,7 @@ const RARITY_COLORS: Record<string, string> = {
 };
 
 export const ProfileAchievements: React.FC = () => {
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
 
@@ -139,7 +141,7 @@ export const ProfileAchievements: React.FC = () => {
           <Trophy className="w-5 h-5 text-yellow-400" />
         </div>
         <h3 className="text-lg font-semibold text-foreground">
-          {isRTL ? 'الإنجازات' : 'Achievements'}
+          {t('profile.achievements')}
         </h3>
       </div>
 
@@ -167,7 +169,7 @@ export const ProfileAchievements: React.FC = () => {
               {!badge.earned && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-lg">
                   <span className="text-xs text-muted-foreground font-medium">
-                    {isRTL ? 'مغلق' : 'Locked'}
+                    {t('profile.locked')}
                   </span>
                 </div>
               )}
@@ -177,9 +179,7 @@ export const ProfileAchievements: React.FC = () => {
       </div>
 
       <p className="text-xs text-muted-foreground text-center mt-4">
-        {isRTL 
-          ? 'الإنجازات للتحفيز داخل المنصة فقط'
-          : 'Achievements are for in-platform motivation only'}
+          {t('profile.achievementsMotivation')}
       </p>
     </div>
   );

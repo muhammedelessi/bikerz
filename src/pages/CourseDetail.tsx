@@ -292,7 +292,7 @@ const CourseDetail: React.FC = () => {
       navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
     },
     onError: (error: any) => {
-      toast.error(error.message || (isRTL ? 'فشل التسجيل' : 'Failed to enroll'));
+      toast.error(error.message || t('courseDetail.failedToEnroll'));
     },
   });
 
@@ -321,11 +321,11 @@ const CourseDetail: React.FC = () => {
     ), [chapters, lessonProgress]);
 
   const formatDuration = (mins: number) => {
-    if (mins < 60) return isRTL ? `${mins} دقيقة` : `${mins} min`;
+    if (mins < 60) return `${mins} ${t('courseDetail.minuteAbbr')}`;
     const h = Math.floor(mins / 60);
     const m = mins % 60;
-    if (m === 0) return isRTL ? `${h} ساعة` : `${h}h`;
-    return isRTL ? `${h} ساعة ${m} دقيقة` : `${h}h ${m}m`;
+    if (m === 0) return `${h}${t('courses.hour')}`;
+    return `${h}${t('courses.hour')} ${m}${t('courses.minutes')}`;
   };
 
   const isLessonCompleted = (lessonId: string) =>
@@ -470,19 +470,19 @@ const CourseDetail: React.FC = () => {
                   <Button size="sm" className="btn-cta h-9 text-sm" asChild>
                     <Link to={`/courses/${id}/lessons/${resumeLesson.id}`}>
                       <Play className="w-3.5 h-3.5 me-1.5" />
-                      {isRTL ? 'أكمل التعلم' : 'Resume'}
+                      {t('courseDetail.resume')}
                     </Link>
                   </Button>
                 ) : !isEnrolled ? (
                   course.price === 0 ? (
                     user ? (
                       <Button size="sm" className="btn-cta h-9 text-sm" onClick={() => enrollMutation.mutate()} disabled={enrollMutation.isPending}>
-                        {isRTL ? 'سجّل مجاناً' : 'Enroll Free'}
+                        {t('courseDetail.enrollFree')}
                       </Button>
                     ) : (
                       <Button size="sm" className="btn-cta h-9 text-sm" asChild>
                         <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
-                          {isRTL ? 'سجّل مجاناً' : 'Enroll Free'}
+                          {t('courseDetail.enrollFree')}
                         </Link>
                       </Button>
                     )
@@ -515,7 +515,7 @@ const CourseDetail: React.FC = () => {
                   <div className="aspect-video w-full">
                     <BunnyVideoEmbed
                       videoUrl={course.preview_video_url}
-                      title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
+                      title={t('courseDetail.courseIntroduction')}
                       isPreview
                     />
                   </div>
@@ -523,13 +523,17 @@ const CourseDetail: React.FC = () => {
                   <button
                     onClick={() => setPreviewVideoPlaying(true)}
                     className="relative w-full aspect-video group cursor-pointer focus:outline-none"
-                    aria-label={isRTL ? 'تشغيل الفيديو التعريفي' : 'Play preview video'}
+                    aria-label={t('courseDetail.playPreviewVideo')}
                   >
-                    <img
-                      src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
-                      alt={isRTL ? 'صورة مصغرة للفيديو' : 'Video thumbnail'}
-                      className="w-full h-full object-cover"
-                     loading="lazy" />
+                    <picture>
+                      <source srcSet={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage} type="image/webp" />
+                      <img
+                        src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
+                        alt={t('courseDetail.videoThumbnail')}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </picture>
                     <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="w-16 h-16 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl">
@@ -538,7 +542,7 @@ const CourseDetail: React.FC = () => {
                     </div>
                     <div className="absolute bottom-4 start-4">
                       <span className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-sm font-medium backdrop-blur-sm">
-                        {isRTL ? 'شاهد الفيديو التعريفي' : 'Watch Preview'}
+                        {t('courseDetail.watchPreview')}
                       </span>
                     </div>
                   </button>
@@ -546,7 +550,10 @@ const CourseDetail: React.FC = () => {
               </div>
             ) : course.thumbnail_url ? (
               <div className="relative w-full">
-                <img src={course.thumbnail_url} alt={courseTitle} className="w-full aspect-video object-cover"  loading="lazy" />
+                <picture>
+                  <source srcSet={course.thumbnail_url} type="image/webp" />
+                  <img src={course.thumbnail_url} alt={courseTitle} className="w-full aspect-video object-cover"  loading="lazy" />
+                </picture>
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60" />
               </div>
             ) : null}
@@ -570,7 +577,7 @@ const CourseDetail: React.FC = () => {
                           <div className="aspect-video w-full">
                             <BunnyVideoEmbed
                               videoUrl={course.preview_video_url}
-                              title={isRTL ? 'فيديو تعريفي بالدورة' : 'Course Introduction'}
+                               title={t('courseDetail.courseIntroduction')}
                               isPreview
                             />
                           </div>
@@ -578,13 +585,17 @@ const CourseDetail: React.FC = () => {
                           <button
                             onClick={() => setPreviewVideoPlaying(true)}
                             className="relative w-full aspect-video group cursor-pointer focus:outline-none"
-                            aria-label={isRTL ? 'تشغيل الفيديو التعريفي' : 'Play preview video'}
+                            aria-label={t('courseDetail.playPreviewVideo')}
                           >
-                            <img
-                              src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
-                              alt={isRTL ? 'صورة مصغرة للفيديو' : 'Video thumbnail'}
-                              className="w-full h-full object-cover"
-                             loading="lazy" />
+                            <picture>
+                              <source srcSet={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage} type="image/webp" />
+                              <img
+                                src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
+                                alt={t('courseDetail.videoThumbnail')}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            </picture>
                             <div className="absolute inset-0" />
                             <div className="absolute inset-0 flex items-center justify-center">
                               <div className="w-20 h-20 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl ring-4 ring-primary/20">
@@ -593,7 +604,7 @@ const CourseDetail: React.FC = () => {
                             </div>
                             <div className="absolute bottom-5 start-5">
                               <span className="px-4 py-2 rounded-xl bg-black/50 text-white text-sm font-medium backdrop-blur-md border border-white/10">
-                                {isRTL ? 'شاهد الفيديو التعريفي' : 'Watch Preview'}
+                                {t('courseDetail.watchPreview')}
                               </span>
                             </div>
                           </button>
@@ -601,7 +612,10 @@ const CourseDetail: React.FC = () => {
                       </div>
                     ) : course.thumbnail_url ? (
                       <div className="relative rounded-2xl overflow-hidden">
-                        <img src={course.thumbnail_url} alt={courseTitle} className="w-full aspect-video object-cover"  loading="lazy" />
+                        <picture>
+                          <source srcSet={course.thumbnail_url} type="image/webp" />
+                          <img src={course.thumbnail_url} alt={courseTitle} className="w-full aspect-video object-cover"  loading="lazy" />
+                        </picture>
                       </div>
                     ) : null}
                   </div>
@@ -628,7 +642,7 @@ const CourseDetail: React.FC = () => {
                         <StarRating rating={reviewStats.avg} size="sm" />
                         <span className="text-sm font-semibold text-foreground">{reviewStats.avg.toFixed(1)}</span>
                         <span className="text-xs text-muted-foreground">
-                          ({reviewStats.count} {isRTL ? 'تقييم' : reviewStats.count === 1 ? 'review' : 'reviews'})
+                          ({reviewStats.count} {isRTL ? t('courseDetail.reviews') : reviewStats.count === 1 ? t('courseDetail.review') : t('courseDetail.reviews')})
                         </span>
                       </div>
                     )}
@@ -641,7 +655,7 @@ const CourseDetail: React.FC = () => {
                         </div>
                         <div>
                           <span className="font-semibold">{totalLessons}</span>
-                          <span className="text-muted-foreground ms-1">{isRTL ? 'درس' : 'lessons'}</span>
+                          <span className="text-muted-foreground ms-1">{t('courseDetail.lessons')}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
@@ -650,7 +664,7 @@ const CourseDetail: React.FC = () => {
                         </div>
                         <div>
                           <span className="font-semibold">{formatDuration(totalDurationMinutes)}</span>
-                          <span className="text-muted-foreground ms-1">{isRTL ? 'إجمالي' : 'total'}</span>
+                          <span className="text-muted-foreground ms-1">{t('courseDetail.total')}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
@@ -659,17 +673,17 @@ const CourseDetail: React.FC = () => {
                         </div>
                         <div>
                           <span className="font-semibold">{chapters.length}</span>
-                          <span className="text-muted-foreground ms-1">{isRTL ? 'فصول' : 'chapters'}</span>
+                          <span className="text-muted-foreground ms-1">{t('courseDetail.chapters')}</span>
                         </div>
                       </div>
                       <span className="hidden sm:inline text-border">|</span>
                       <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
                         <Infinity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
-                        <span className="text-muted-foreground">{isRTL ? 'وصول مدى الحياة' : 'Life-time Access'}</span>
+                        <span className="text-muted-foreground">{t('courseDetail.lifetimeAccess')}</span>
                       </div>
                       <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
                         <MonitorPlay className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
-                        <span className="text-muted-foreground">{isRTL ? 'دورة أونلاين' : 'Online Course'}</span>
+                        <span className="text-muted-foreground">{t('courseDetail.onlineCourse')}</span>
                       </div>
                     </div>
 
@@ -716,17 +730,17 @@ const CourseDetail: React.FC = () => {
                             {progressPercentage >= 100 ? (
                               <>
                                 <Trophy className="w-4 h-4 text-green-500" />
-                                <span className="font-semibold text-sm text-green-600 dark:text-green-400">{isRTL ? 'مكتمل' : 'Completed'}</span>
+                                <span className="font-semibold text-sm text-green-600 dark:text-green-400">{t('courseDetail.completed')}</span>
                               </>
                             ) : (
                               <>
                                 <CheckCircle2 className="w-4 h-4 text-primary" />
-                                <span className="font-semibold text-sm text-primary">{isRTL ? 'مسجّل' : 'Enrolled'}</span>
+                                <span className="font-semibold text-sm text-primary">{t('courseDetail.enrolled')}</span>
                               </>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {completedLessons} / {totalLessons} {isRTL ? 'مكتمل' : 'completed'}
+                            {completedLessons} / {totalLessons} {t('courseDetail.lessonsCompleted')}
                           </p>
                         </div>
                       </div>
@@ -734,7 +748,7 @@ const CourseDetail: React.FC = () => {
                         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 text-sm">
                           <Clock className="w-4 h-4 text-muted-foreground" />
                           <span className="text-muted-foreground">
-                            {isRTL ? `${formatDuration(remainingMinutes)} متبقية` : `${formatDuration(remainingMinutes)} remaining`}
+                              {t('courseDetail.remaining', { duration: formatDuration(remainingMinutes) })}
                           </span>
                         </div>
                       )}
@@ -743,14 +757,14 @@ const CourseDetail: React.FC = () => {
                           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
                             <Trophy className="w-5 h-5 text-green-500" />
                             <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                              {isRTL ? '🎉 أكملت الدورة!' : '🎉 Course completed!'}
+                              {t('courseDetail.courseCompleted')}
                             </span>
                           </div>
                           {resumeLesson && (
                             <Button className="w-full h-12 text-base font-bold" asChild>
                               <Link to={`/courses/${id}/lessons/${resumeLesson.id}`}>
                                 <BookOpen className="w-5 h-5 me-2" />
-                                {isRTL ? 'عرض الدورة' : 'View Course'}
+                                {t('courseDetail.viewCourse')}
                               </Link>
                             </Button>
                           )}
@@ -763,7 +777,7 @@ const CourseDetail: React.FC = () => {
                               }}
                             >
                               <Star className="w-5 h-5 me-2 fill-yellow-500 text-yellow-500" />
-                              {isRTL ? 'قيّم الدورة' : 'Rate this Course'}
+                              {t('courseDetail.rateThisCourse')}
                             </Button>
                           )}
                         </>
@@ -771,7 +785,7 @@ const CourseDetail: React.FC = () => {
                         <Button className="w-full btn-cta h-12 text-base" asChild>
                           <Link to={`/courses/${id}/lessons/${resumeLesson.id}`}>
                             <Play className="w-5 h-5 me-2" />
-                            {isRTL ? 'أكمل التعلم' : 'Resume Learning'}
+                            {t('courseDetail.resumeLearning')}
                           </Link>
                         </Button>
                       ) : null}
@@ -809,7 +823,7 @@ const CourseDetail: React.FC = () => {
                         })()}
                         {course.price > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            {isRTL ? 'السعر شامل الضريبة' : 'Price includes VAT'}
+                            {t('courseDetail.priceIncludesVAT')}
                           </p>
                         )}
                       </div>
@@ -864,15 +878,15 @@ const CourseDetail: React.FC = () => {
                       )}
                       <div className="space-y-3 pt-3 border-t border-border/50">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-1">
-                          {isRTL ? 'يشمل الاشتراك' : 'This course includes'}
+                          {t('courseDetail.thisCourseIncludes')}
                         </p>
                         <div className="space-y-3">
                           {[
-                            { icon: Video, text: isRTL ? `${totalLessons} درس فيديو` : `${totalLessons} video lessons` },
-                            { icon: Clock, text: isRTL ? `${formatDuration(totalDurationMinutes)} محتوى` : `${formatDuration(totalDurationMinutes)} of content` },
-                            { icon: ClipboardList, text: isRTL ? 'اختبارات تفاعلية' : 'Interactive quizzes' },
-                            { icon: Infinity, text: isRTL ? 'وصول مدى الحياة' : 'Lifetime access' },
-                            { icon: MonitorPlay, text: isRTL ? 'مشاهدة من أي جهاز' : 'Watch on any device' },
+                            { icon: Video, text: t('courseDetail.videoLessons', { count: totalLessons }) },
+                            { icon: Clock, text: t('courseDetail.contentOf', { duration: formatDuration(totalDurationMinutes) }) },
+                            { icon: ClipboardList, text: t('courseDetail.interactiveQuizzes') },
+                            { icon: Infinity, text: t('courseDetail.lifetimeAccess') },
+                            { icon: MonitorPlay, text: t('courseDetail.watchOnAnyDevice') },
                           ].map(({ icon: Icon, text }, i) => (
                             <div key={i} className="flex items-center gap-3 text-sm text-foreground/80">
                               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -919,10 +933,10 @@ const CourseDetail: React.FC = () => {
                   </div>
                   <div>
                     <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-foreground">
-                      {isRTL ? 'ماذا ستتعلم' : 'What You\'ll Learn'}
+                      {t('courseDetail.whatYoullLearn')}
                     </h2>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                      {isRTL ? 'المهارات التي ستكتسبها' : 'Skills you\'ll gain from this course'}
+                      {t('courseDetail.skillsYoullGain')}
                     </p>
                   </div>
                 </div>
@@ -980,10 +994,10 @@ const CourseDetail: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-foreground">
-                    {isRTL ? 'خطة التعلم' : 'Learning Roadmap'}
+                    {t('courseDetail.learningRoadmap')}
                   </h2>
                   <p className="text-xs sm:text-sm text-muted-foreground">
-                    {chapters.length} {isRTL ? 'فصول' : 'chapters'} • {totalLessons} {isRTL ? 'دروس' : 'lessons'}
+                    {chapters.length} {t('courseDetail.chapters')} • {totalLessons} {t('courseDetail.lessons')}
                   </p>
                 </div>
               </div>
@@ -1042,7 +1056,7 @@ const CourseDetail: React.FC = () => {
                                   <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                                     <span className="flex items-center gap-1">
                                       <BookOpen className="w-3.5 h-3.5" />
-                                      {chapter.lessons.length} {isRTL ? 'دروس' : 'lessons'}
+                                      {chapter.lessons.length} {t('courseDetail.lessons')}
                                     </span>
                                     <span className="flex items-center gap-1">
                                       <Clock className="w-3.5 h-3.5" />
@@ -1050,7 +1064,7 @@ const CourseDetail: React.FC = () => {
                                     </span>
                                     {chapter.is_free && (
                                       <span className="text-primary font-medium">
-                                        {isRTL ? 'مجاني' : 'Free'}
+                                        {t('courseDetail.free')}
                                       </span>
                                     )}
                                   </div>
@@ -1117,12 +1131,12 @@ const CourseDetail: React.FC = () => {
                                           <span className="flex-1 truncate text-foreground">{lTitle}</span>
                                           {lesson.duration_minutes && (
                                             <span className="text-xs text-muted-foreground flex-shrink-0">
-                                              {lesson.duration_minutes}{isRTL ? 'د' : 'm'}
+                                              {lesson.duration_minutes}{t('courseDetail.minuteAbbr')}
                                             </span>
                                           )}
                                           {lesson.is_free && !isEnrolled && (
                                             <span className="text-xs text-primary font-medium flex-shrink-0">
-                                              {isRTL ? 'مجاني' : 'Free'}
+                                              {t('courseDetail.free')}
                                             </span>
                                           )}
                                         </Link>
@@ -1143,7 +1157,7 @@ const CourseDetail: React.FC = () => {
               <div className="card-premium p-12 text-center">
                 <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">
-                  {isRTL ? 'لا توجد فصول متاحة حتى الآن' : 'No chapters available yet'}
+                  {t('courseDetail.noChaptersYet')}
                 </p>
               </div>
             )}
@@ -1230,13 +1244,13 @@ const CourseDetail: React.FC = () => {
                     disabled={enrollMutation.isPending}
                   >
                     <Zap className="w-4 h-4 me-1.5" />
-                    {isRTL ? 'سجّل مجاناً' : 'Enroll Free'}
+                    {t('courseDetail.enrollFree')}
                   </Button>
                 ) : (
                   <Button className="btn-cta h-11 text-sm px-6 flex-shrink-0" asChild>
                     <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
                       <Zap className="w-4 h-4 me-1.5" />
-                      {isRTL ? 'سجّل مجاناً' : 'Enroll Free'}
+                      {t('courseDetail.enrollFree')}
                     </Link>
                   </Button>
                 )

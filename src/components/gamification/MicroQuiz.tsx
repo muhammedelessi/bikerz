@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -51,6 +52,7 @@ const MicroQuiz: React.FC<MicroQuizProps> = ({
   titleAr = 'اختبار سريع',
 }) => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [timeLeft, setTimeLeft] = useState(timeLimit);
@@ -171,8 +173,8 @@ const MicroQuiz: React.FC<MicroQuizProps> = ({
 
         <h3 className="text-2xl font-bold text-foreground mb-2">
           {passed
-            ? (isRTL ? 'ممتاز! 🎉' : 'Excellent! 🎉')
-            : (isRTL ? 'حاول مرة أخرى' : 'Try Again')}
+            ? t('gamification.microQuiz.excellent')
+            : t('gamification.microQuiz.tryAgain')}
         </h3>
 
         <p className="text-4xl font-black text-foreground mb-4">{score}%</p>
@@ -192,12 +194,12 @@ const MicroQuiz: React.FC<MicroQuizProps> = ({
 
         <div className="flex gap-2">
           <Button variant="outline" onClick={onClose} className="flex-1">
-            {isRTL ? 'إغلاق' : 'Close'}
+            {t('gamification.microQuiz.close')}
           </Button>
           {!passed && (
             <Button onClick={() => window.location.reload()} className="flex-1">
               <RotateCcw className="w-4 h-4 me-2" />
-              {isRTL ? 'أعد المحاولة' : 'Retry'}
+              {t('gamification.microQuiz.retry')}
             </Button>
           )}
         </div>

@@ -44,25 +44,24 @@ interface AdminLayoutProps {
 
 interface NavItem {
   icon: React.ElementType;
-  labelEn: string;
-  labelAr: string;
+  labelKey: string;
   href: string;
   badge?: number;
 }
 
-const navItems: NavItem[] = [
-  { icon: LayoutDashboard, labelEn: 'Dashboard', labelAr: 'لوحة التحكم', href: '/admin' },
-  { icon: BookOpen, labelEn: 'Courses', labelAr: 'الدورات', href: '/admin/courses' },
-  { icon: Users, labelEn: 'Users', labelAr: 'المستخدمين', href: '/admin/users' },
-  { icon: GraduationCap, labelEn: 'Instructors', labelAr: 'المدربين', href: '/admin/instructors' },
-  { icon: CreditCard, labelEn: 'Payments', labelAr: 'المدفوعات', href: '/admin/payments' },
-  { icon: Tag, labelEn: 'Coupons', labelAr: 'الكوبونات', href: '/admin/coupons' },
-  { icon: BarChart3, labelEn: 'Analytics', labelAr: 'التحليلات', href: '/admin/analytics' },
-  { icon: FileText, labelEn: 'Content', labelAr: 'المحتوى', href: '/admin/content' },
-  { icon: MessagesSquare, labelEn: 'Discussions', labelAr: 'النقاشات', href: '/admin/discussions' },
-  { icon: MessageSquare, labelEn: 'Support', labelAr: 'الدعم', href: '/admin/support' },
-  { icon: Shield, labelEn: 'Roles & Permissions', labelAr: 'الأدوار والصلاحيات', href: '/admin/roles' },
-  { icon: Settings, labelEn: 'Settings', labelAr: 'الإعدادات', href: '/admin/settings' },
+ const navItems: NavItem[] = [
+  { icon: LayoutDashboard, labelKey: 'dashboard', href: '/admin' },
+  { icon: BookOpen, labelKey: 'courses', href: '/admin/courses' },
+  { icon: Users, labelKey: 'users', href: '/admin/users' },
+  { icon: GraduationCap, labelKey: 'instructors', href: '/admin/instructors' },
+  { icon: CreditCard, labelKey: 'payments', href: '/admin/payments' },
+  { icon: Tag, labelKey: 'coupons', href: '/admin/coupons' },
+  { icon: BarChart3, labelKey: 'analytics', href: '/admin/analytics' },
+  { icon: FileText, labelKey: 'content', href: '/admin/content' },
+  { icon: MessagesSquare, labelKey: 'discussions', href: '/admin/discussions' },
+  { icon: MessageSquare, labelKey: 'support', href: '/admin/support' },
+  { icon: Shield, labelKey: 'roles', href: '/admin/roles' },
+  { icon: Settings, labelKey: 'settings', href: '/admin/settings' },
 ];
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
@@ -109,12 +108,18 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           {!sidebarCollapsed && (
             <Link to="/admin" className="flex items-center gap-2">
-              <img src={bikerzLogo} alt="BIKERZ" className="h-10"  loading="lazy" />
+            <picture>
+              <source srcSet={bikerzLogo} type="image/webp" />
+              <img src={bikerzLogo} alt="BIKERZ" className="h-8 sm:h-10"  loading="lazy" />
+            </picture>
             </Link>
           )}
           {sidebarCollapsed && (
             <Link to="/admin" className="mx-auto">
+            <picture>
+              <source srcSet={bikerzLogo} type="image/webp" />
               <img src={bikerzLogo} alt="BIKERZ" className="h-8"  loading="lazy" />
+            </picture>
             </Link>
           )}
           <Button
@@ -144,12 +149,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   } ${sidebarCollapsed ? 'justify-center' : ''}`}
-                  title={sidebarCollapsed ? (isRTL ? item.labelAr : item.labelEn) : undefined}
+                  title={sidebarCollapsed ? t(`admin.menu.${item.labelKey}`) : undefined}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
                   {!sidebarCollapsed && (
                     <span className="font-medium">
-                      {isRTL ? item.labelAr : item.labelEn}
+                      {t(`admin.menu.${item.labelKey}`)}
                     </span>
                   )}
                   {!sidebarCollapsed && item.badge && (
@@ -191,7 +196,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             </Button>
             
             <h1 className="text-lg font-semibold text-foreground hidden sm:block">
-              {isRTL ? 'لوحة تحكم المشرف' : 'Admin Dashboard'}
+              {t('admin.dashboard.title')}
             </h1>
           </div>
 

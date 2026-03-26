@@ -1,5 +1,6 @@
 {
   "common": {
+    "bikerz": "BIKERZ",
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
@@ -61,7 +62,17 @@
     "returnToHome": "Return to Home",
     "all": "All",
     "none": "None",
-    "other": "Other"
+    "other": "Other",
+    "dataSubmitted": "\u2705 Data submitted successfully",
+    "dataFailed": "\u274c Failed to submit data",
+    "darkMode": "Dark Mode",
+    "discountCountdown": {
+      "endsIn": "Ends in:",
+      "unitDay": "d",
+      "unitHour": "h",
+      "unitMinute": "m",
+      "unitSecond": "s"
+    }
   },
   "nav": {
     "home": "Home",
@@ -155,7 +166,12 @@
   "cta": {
     "title": "Ready to Ride?",
     "subtitle": "Your journey to becoming a confident, skilled rider starts with a single step.",
-    "button": "Start Learning Today"
+    "button": "Start Learning Today",
+    "trustBadges": {
+      "startFree": "Start Free",
+      "noCreditCard": "No Credit Card",
+      "cancelAnytime": "Cancel Anytime"
+    }
   },
   "aboutUs": {
     "title": "About BIKERZ",
@@ -229,7 +245,8 @@
       "passwordMismatch": "Passwords do not match",
       "passwordTooShort": "Password must be at least 6 characters",
       "success": "Account created successfully!",
-      "namePlaceholder": "Your full name"
+      "namePlaceholder": "Your full name",
+      "emailExists": "This email is already registered. Please log in first."
     },
     "forgotPassword": {
       "title": "Forgot Password?",
@@ -242,7 +259,13 @@
       "tryDifferentEmail": "Try a different email"
     },
     "emailPlaceholder": "your@email.com",
-    "passwordPlaceholder": "••••••••"
+    "passwordPlaceholder": "••••••••",
+    "googleFailed": "Google sign-in failed",
+    "userDataFailed": "Failed to get user data",
+    "signupWithGoogle": "Sign up with Google",
+    "continueWithGoogle": "Continue with Google",
+    "googleAccountRequired": "This account was created with Google. Please use the Google button to sign in.",
+    "signInWithGoogle": "Sign in with Google"
   },
   "dashboard": {
     "welcome": "Welcome back",
@@ -259,7 +282,11 @@
     "startLearningJourney": "Start your learning journey by enrolling in a course",
     "browseCourses": "Browse Courses",
     "nextLesson": "Next: ",
-    "courseCompleted": "Course completed"
+    "upNext": "Up Next",
+    "courseCompleted": "Course completed",
+    "courseCompletedWellDone": "Well done! Course completed",
+    "quickActions": "Quick Actions",
+    "findMentor": "Find a Mentor"
   },
   "courses": {
     "title": "Courses",
@@ -298,7 +325,21 @@
     "lessonsCompleted": "lessons completed",
     "hours": "hours",
     "hour": "h",
-    "minutes": "m"
+    "minutes": "m",
+    "courseCard": {
+      "duration0": "0h",
+      "duration": {
+        "minutesOnly": "{{m}}min",
+        "hoursMinutes": "{{h}}h {{m}}min",
+        "hoursOnly": "{{h}}h"
+      },
+      "discountBadge": "{{pct}}% OFF",
+      "enrolled": "Enrolled",
+      "completedWithCheck": "Completed ✓",
+      "continueLearning": "Continue Learning",
+      "subscribeNow": "Subscribe now – {{price}} {{currency}}",
+      "rate": "Rate"
+    }
   },
   "courseLearn": {
     "backToCourse": "Back to Course",
@@ -320,7 +361,70 @@
     "resourcesTab": "Resources",
     "noResources": "No resources available for this lesson",
     "quizProgress": "Quiz Progress",
-    "quizzesCompleted": "quizzes completed"
+    "quizzesCompleted": "quizzes completed",
+    "welcomeMessage": "Welcome! 👋",
+    "welcomeDescription": "You're about to start an exciting learning journey. Enjoy mastering everything about the motorcycle world.",
+    "lessonsCount": "lessons",
+    "quizzesCount": "quizzes",
+    "startFirstLesson": "Start First Lesson",
+    "freePreviewMessage": "You're watching a free preview. Enroll now for full access!",
+    "registerNow": "Register Now",
+    "markComplete": "Mark Complete",
+    "completed": "Completed",
+    "content": "Content",
+    "readyForQuiz": "Ready for the Quiz!",
+    "readyForQuizDescription": "You've completed all lessons in this chapter. Test your knowledge now!",
+    "takeQuiz": "Take Quiz",
+    "tryAgain": "Try Again!",
+    "lastScore": "Your last score: {{score}}%. Review the lessons and try again.",
+    "nextLessonLocked": "Next Lesson Locked",
+    "courseComplete": "Course Complete",
+    "allQuizzesCompleted": "🎉 All quizzes completed!",
+    "lastScoreRetry": "Last score: {{score}}% - Retry",
+    "passFirst": "🔒 Pass \"{{name}}\" first",
+    "retry": "Retry",
+    "mustPassToUnlock": "You must pass \"{{name}}\" to unlock this quiz",
+    "courseDetails": "Course Details",
+    "testCompleted": "Great job! Test completed",
+    "purchaseRequired": "You need to purchase the course to access this lesson",
+    "xpEarned": "Great job! You earned {{xp}} XP"
+  },
+  "courseDetail": {
+    "resume": "Resume",
+    "enrollFree": "Enroll Free",
+    "subscribeNow": "Subscribe now – {{price}} {{currency}}",
+    "courseIntroduction": "Course Introduction",
+    "playPreviewVideo": "Play preview video",
+    "videoThumbnail": "Video thumbnail",
+    "watchPreview": "Watch Preview",
+    "review": "review",
+    "reviews": "reviews",
+    "lessons": "lessons",
+    "total": "total",
+    "chapters": "chapters",
+    "lifetimeAccess": "Life-time Access",
+    "onlineCourse": "Online Course",
+    "completed": "Completed",
+    "enrolled": "Enrolled",
+    "lessonsCompleted": "completed",
+    "courseCompleted": "🎉 Course completed!",
+    "viewCourse": "View Course",
+    "rateThisCourse": "Rate this Course",
+    "resumeLearning": "Resume Learning",
+    "priceIncludesVAT": "Price includes VAT",
+    "thisCourseIncludes": "This course includes",
+    "videoLessons": "{{count}} video lessons",
+    "contentOf": "{{duration}} of content",
+    "interactiveQuizzes": "Interactive quizzes",
+    "watchOnAnyDevice": "Watch on any device",
+    "whatYoullLearn": "What You'll Learn",
+    "skillsYoullGain": "Skills you'll gain from this course",
+    "learningRoadmap": "Learning Roadmap",
+    "noChaptersYet": "No chapters available yet",
+    "free": "Free",
+    "minuteAbbr": "m",
+    "remaining": "{{duration}} remaining",
+    "failedToEnroll": "Failed to enroll"
   },
   "mentors": {
     "title": "Expert Mentors",
@@ -356,8 +460,16 @@
     "enginePlaceholder": "e.g., 600",
     "addProfilePhoto": "Add your profile photo",
     "updateProfile": "Update Profile",
-    "profileUpdated": "Profile updated successfully!",
-    "profileUpdateFailed": "Failed to update profile"
+    "profileUpdateFailed": "Failed to update profile",
+    "addNickname": "Add nickname",
+    "rankingSystem": "Ranking System",
+    "profilePhoto": "Profile Photo",
+    "experienceYears": "Experience Years",
+    "experienceLevelDesc": "Experience level is automatically calculated based on your learning progress",
+    "completeForBetterExperience": "\ud83d\udc64 Complete your profile for a better experience!",
+    "addDetailsForBetterExperience": "Add your details for a personalized learning experience",
+    "locked": "Locked",
+    "achievementsMotivation": "Achievements are for in-platform motivation only"
   },
   "profileCompletion": {
     "step1Title": "Rider Identity",
@@ -375,7 +487,22 @@
     "completeYourProfile": "Complete Your Profile",
     "addDetailsForDiscount": "Add your details and get 10% off your first course!",
     "completeProfileBanner": "Complete your profile and get 10% off!",
-    "missing": "Missing"
+    "missing": "Missing",
+    "noBikeYet": "I don't have a bike yet",
+    "addBikeLater": "You can add bike info later",
+    "copied": "Copied!",
+    "copyCoupon": "Copy Coupon",
+    "couponCopied": "Coupon copied!",
+    "couponCopiedBrowse": "Coupon copied! Browse courses now",
+    "claimDiscountCoupon": "Claim Discount Coupon",
+    "complete": "Complete",
+    "completeProfile": "Complete Profile",
+    "profileCompleteSuccess": "\ud83c\udf89 Awesome! Profile Complete",
+    "step": "Step",
+    "next": "Next",
+    "previous": "Previous",
+    "couponDescription": "You earned a 10% discount coupon for your first course!",
+    "useCouponAtCheckout": "Use this coupon at checkout when purchasing a course"
   },
   "checkout": {
     "title": "Complete Purchase",
@@ -405,26 +532,415 @@
     "confirmPayment": "Confirm Payment",
     "processing": "Processing...",
     "purchaseSuccessful": "Purchase successful!",
-    "securePayment": "Your information is protected with secure SSL encryption"
+    "securePayment": "Your information is protected with secure SSL encryption",
+    "failedToValidateCode": "Failed to validate code",
+    "couponAutoApplied": "Coupon auto-applied!",
+    "failedToCreateAccount": "Failed to create account",
+    "validation": {
+      "fullNameRequired": "Full name required (min 3 chars)",
+      "validEmailRequired": "Valid email required",
+      "phoneRequired": "Phone number is required",
+      "selectCountryCode": "Please select a country code",
+      "phoneDigitsOnly": "Phone must contain digits only",
+      "phoneTooShort": "Phone number too short (min 6 digits)",
+      "phoneTooLong": "Phone number too long (max 12 digits)",
+      "cityRequired": "City is required",
+      "countryRequired": "Country is required"
+    },
+    "statusOverlay": {
+      "verifyingPayment": "Verifying payment...",
+      "pleaseWaitMoment": "Please wait a moment",
+      "paymentSuccessful": "🎉 Payment Successful!",
+      "enrolledSuccess": "You have been enrolled in the course",
+      "startLearningNow": "Start Learning Now",
+      "paymentFailed": "Payment Failed",
+      "paymentErrorFallback": "An error occurred. Please try again.",
+      "tryAgain": "Try Again"
+    },
+    "paymentMethodIcons": {
+      "acceptedPaymentMethods": "Accepted Payment Methods"
+    }
+  },
+  "payment": {
+    "cancelled": "Payment Cancelled",
+    "cancelledDescription": "You cancelled the payment. No amount has been charged.",
+    "failed": "Payment Failed",
+    "failedDescription": "Something went wrong with your payment. Please try again or contact support.",
+    "backToCourse": "Back to Course",
+    "verifying": "Verifying your payment...",
+    "pleaseWait": "Please wait while we confirm your enrollment.",
+    "viewOnDashboard": "View on Dashboard",
+    "processing": "Payment Processing",
+    "processingDescription": "Your payment is being processed. You will receive a confirmation email shortly.",
+    "congratulations": "🎉 Congratulations!",
+    "successEnrollment": "You have successfully enrolled",
+    "yourCourse": "Your Course",
+    "confirmed": "Payment confirmed",
+    "whatsNext": "🚀 What's next?",
+    "whatsNextDescription": "Click the button below to jump into your first lesson. Your motorcycle journey starts now!",
+    "startLearning": "Start Learning Now",
+    "welcomeFamily": "Welcome to the Bikerz family 🏍️"
   },
   "admin": {
     "title": "Admin Dashboard",
-    "users": "Users",
-    "courses": "Courses",
-    "chapters": "Chapters",
-    "lessons": "Lessons",
-    "analytics": "Analytics",
-    "settings": "Settings",
-    "create": "Create New",
-    "edit": "Edit",
-    "delete": "Delete",
-    "save": "Save Changes",
-    "cancel": "Cancel",
-    "content": "Content",
-    "instructors": "Instructors",
-    "payments": "Payments",
-    "roles": "Roles",
-    "support": "Support",
+    "users": {
+      "title": "User Management",
+      "subtitle": "View and manage all users",
+      "totalUsers": "Total Users",
+      "students": "Students",
+      "admins": "Admins",
+      "instructors": "Instructors",
+      "searchPlaceholder": "Search users...",
+      "role": "Role",
+      "all": "All",
+      "noUsersFound": "No users found",
+      "user": "User",
+      "email": "Email",
+      "location": "Location",
+      "roles": "Roles",
+      "enrollments": "Enrollments",
+      "joined": "Joined",
+      "actions": "Actions",
+      "noName": "No name",
+      "noRole": "No role",
+      "viewDetails": "View Details",
+      "manageRoles": "Manage Roles",
+      "sendEmail": "Send Email",
+      "addNote": "Add Note",
+      "suspendUser": "Suspend User",
+      "userDetails": "User Details",
+      "personalInformation": "Personal Information",
+      "fullName": "Full Name",
+      "nickname": "Nickname",
+      "phone": "Phone",
+      "phoneVerified": "Phone Verified",
+      "profileComplete": "Profile Complete",
+      "country": "Country",
+      "city": "City",
+      "postalCode": "Postal Code",
+      "bikeBrand": "Bike Brand",
+      "bikeModel": "Bike Model",
+      "engineSize": "Engine Size",
+      "experienceLevel": "Experience Level",
+      "ridingYears": "Riding Years",
+      "currentRoles": "Current Roles",
+      "addNewRole": "Add New Role",
+      "addRoleDescription": "Add or remove user roles",
+      "cancel": "Cancel",
+      "addRole": "Add Role",
+      "adding": "Adding...",
+      "roleAddedSuccess": "Role added successfully",
+      "roleAddFailed": "Failed to add role",
+      "roles_labels": {
+        "student": "Student",
+        "instructor": "Instructor",
+        "moderator": "Moderator",
+        "support": "Support",
+        "finance": "Finance",
+        "academy_admin": "Academy Admin",
+        "super_admin": "Super Admin"
+      }
+    },
+    "payments": {
+      "title": "Payment Management",
+      "subtitle": "All payments — card & manual",
+      "exportCsv": "Export CSV",
+      "stats": {
+        "totalRevenue": "Total Revenue",
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "filters": {
+        "searchPlaceholder": "Search by name, email, or reference...",
+        "all": "All",
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "records": {
+        "title": "Payment Records",
+        "user": "User",
+        "course": "Course",
+        "amount": "Amount",
+        "type": "Type",
+        "method": "Method",
+        "date": "Date",
+        "status": "Status",
+        "viewDetails": "View Details",
+        "approve": "Approve",
+        "reject": "Reject",
+        "noPayments": "No payments found"
+      },
+      "details": {
+        "title": "Order Details",
+        "customerInfo": "Customer Information",
+        "fullName": "Full Name",
+        "email": "Email",
+        "phone": "Phone",
+        "city": "City",
+        "country": "Country",
+        "profileStatus": "Profile Status",
+        "complete": "Complete",
+        "incomplete": "Incomplete",
+        "paymentInfo": "Payment Information",
+        "paymentStatus": "Payment Status",
+        "originalPrice": "Original Price",
+        "courseDiscount": "Course Discount",
+        "couponDiscount": "Coupon Discount",
+        "amountBeforeVat": "Amount Before VAT",
+        "vat": "VAT (15%)",
+        "totalCharged": "Total Charged",
+        "currency": "Currency",
+        "source": "Source",
+        "transactionId": "Transaction ID (Tap)",
+        "webhookVerified": "Webhook Verified",
+        "userDevice": "User Device",
+        "referenceNumber": "Reference Number",
+        "dateTime": "Date & Time",
+        "notes": "Notes",
+        "failedTitle": "Payment Failed",
+        "errorCode": "Error Code",
+        "declineDetails": "Decline Details",
+        "gatewayResponse": "Gateway Response",
+        "yes": "Yes",
+        "no": "No",
+        "card": "Card",
+        "manual": "Manual",
+        "approveAction": "Approve Payment",
+        "rejectAction": "Reject Payment",
+        "notesPlaceholder": "Admin notes (optional)..."
+      },
+      "toasts": {
+        "updated": "Updated",
+        "updatedDesc": "Payment status updated successfully",
+        "error": "Error",
+        "errorDesc": "Failed to update payment"
+      },
+      "errors": {
+        "insufficient_funds": "Insufficient funds",
+        "card_expired": "Card expired",
+        "card_declined": "Card declined",
+        "invalid_card": "Invalid card details",
+        "limit_exceeded": "Transaction limit exceeded",
+        "not_supported": "Card not supported",
+        "restricted": "Card restricted",
+        "auth_failed": "Authentication failed",
+        "3ds_failed": "3D Secure authentication failed",
+        "not_permitted": "Transaction not permitted",
+        "comm_error": "Communication error with bank",
+        "timeout": "Transaction timed out",
+        "cancelled": "Transaction cancelled by customer",
+        "duplicate": "Duplicate transaction",
+        "auth_required": "Authentication required",
+        "gateway_error": "Gateway error",
+        "gateway_timeout": "Gateway timeout",
+        "issuer_decline": "Card declined by issuing bank (Card Issuer)",
+        "default_failed": "Payment failed"
+      }
+    },
+    "studentDetail": {
+      "title": "Student Details",
+      "email": "Email",
+      "phone": "Phone",
+      "location": "Location",
+      "courses": "Courses",
+      "completed": "completed",
+      "inProgress": "in progress",
+      "totalSpent": "Total spent:",
+      "enrolledCourses": "Enrolled Courses",
+      "lessonsCount": "{{completed}}/{{total}} lessons",
+      "enrolled": "Enrolled",
+      "price": "Price",
+      "purchased": "Purchased",
+      "rating": "Rating",
+      "na": "N/A",
+      "none": "None",
+      "payment": "Payment:",
+      "watchSessions": "Watch Sessions",
+      "multiIP": "Multi-IP",
+      "totalWatched": "Total Watched",
+      "videoDuration": "Video Duration",
+      "avgCompletion": "Avg Completion",
+      "ipAddresses": "IP Addresses:",
+      "sessionLabel": "Session {{index}}",
+      "session_one": "session",
+      "session_other": "sessions",
+      "watched": "Watched",
+      "skipped": "Skipped",
+      "replayed": "Replayed",
+      "clip_one": "clip",
+      "clip_other": "clips",
+      "skippedSegments": "Skipped Segments",
+      "replayedSegments": "Replayed Segments",
+      "cleanWatch": "Clean watch — no skips or replays",
+      "differentIP": "Different IP!"
+    },
+    "courseStudentsDialog": {
+      "title": "Course Students",
+      "stats": {
+        "totalStudents": "Total Students",
+        "completed": "Completed",
+        "inProgress": "In Progress",
+        "avgProgress": "Avg Progress"
+      },
+      "searchPlaceholder": "Search by name, email or phone...",
+      "empty": {
+        "noSearchResults": "No search results",
+        "noEnrolledStudents": "No enrolled students",
+        "noDataAvailable": "No data available"
+      },
+      "table": {
+        "student": "Student",
+        "enrolled": "Enrolled",
+        "status": "Status"
+      },
+      "noName": "No name",
+      "studentDetails": "Student Details",
+      "labels": {
+        "email": "Email",
+        "phone": "Phone",
+        "location": "Location",
+        "purchasedCourses": "Courses",
+        "enrolledCourses": "Enrolled Courses"
+      },
+      "status": {
+        "inProgress": "In Progress",
+        "new": "New",
+        "notStarted": "Not Started"
+      },
+      "meta": {
+        "enrolled": "Enrolled",
+        "price": "Price",
+        "purchased": "Purchased",
+        "rating": "Rating",
+        "payment": "Payment:"
+      }
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Academy performance overview",
+      "totalUsers": "Total Users",
+      "activeCourses": "Active Courses",
+      "enrollments": "Enrollments",
+      "totalRevenue": "Total Revenue",
+      "monthlyEnrollments": "Monthly Enrollments",
+      "coursePerformance": "Course Performance",
+      "enrollmentDistribution": "Enrollment Distribution",
+      "alertsAndNotifications": "Alerts & Notifications",
+      "noAlerts": "No alerts at this time",
+      "completionRate": "Completion Rate",
+      "passRate": "Pass Rate",
+      "avgWatchTime": "Avg. Watch Time",
+      "activeUsers": "Active Users",
+      "noData": "No data available",
+      "noCourses": "No courses available",
+      "noEnrollments": "No enrollments",
+      "completed": "Completed",
+      "active": "Active",
+      "paused": "Paused",
+      "new": "New",
+      "pendingPaymentsAlert": "{{count}} pending payment(s) need review",
+      "openTicketsAlert": "{{count}} open support ticket(s)",
+      "pendingDiscussionsAlert": "{{count}} discussion(s) pending approval",
+      "minutes": "min",
+      "months": {
+        "jan": "Jan",
+        "feb": "Feb",
+        "mar": "Mar",
+        "apr": "Apr",
+        "may": "May",
+        "jun": "Jun",
+        "jul": "Jul",
+        "aug": "Aug",
+        "sep": "Sep",
+        "oct": "Oct",
+        "nov": "Nov",
+        "dec": "Dec"
+      }
+    },
+    "menu": {
+      "dashboard": "Dashboard",
+      "courses": "Courses",
+      "chapters": "Chapters",
+      "lessons": "Lessons",
+      "analytics": "Analytics",
+      "settings": "Settings",
+      "create": "Create New",
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save Changes",
+      "cancel": "Cancel",
+      "content": "Content",
+      "instructors": "Instructors",
+      "payments": "Payments",
+      "roles": "Roles",
+      "users": "Users",
+      "coupons": "Coupons",
+      "discussions": "Discussions",
+      "support": "Support"
+    },
+    "support": {
+      "title": "Support Tickets",
+      "subtitle": "Manage support requests and assistance",
+      "totalTickets": "Total Tickets",
+      "open": "Open",
+      "inProgress": "In Progress",
+      "overdueSLA": "Overdue SLA",
+      "searchPlaceholder": "Search by ticket #, subject, or user...",
+      "status": "Status",
+      "allStatus": "All Status",
+      "priority": "Priority",
+      "allPriorities": "All Priorities",
+      "ticketsList": "Tickets List",
+      "ticketNumber": "Ticket #",
+      "user": "User",
+      "subject": "Subject",
+      "category": "Category",
+      "sla": "SLA",
+      "date": "Date",
+      "unknown": "Unknown",
+      "viewDetails": "View Details",
+      "markResolved": "Mark Resolved",
+      "closeTicket": "Close Ticket",
+      "noTickets": "No tickets found",
+      "ticketDetails": "Ticket details and responses",
+      "slaDue": "SLA Due",
+      "noReplies": "No replies yet",
+      "internalNote": "Internal Note",
+      "reply": "Reply",
+      "addInternalNotePlaceholder": "Add internal note...",
+      "typeReplyPlaceholder": "Type your reply...",
+      "addNote": "Add Note",
+      "sendReply": "Send Reply",
+      "updated": "Updated",
+      "updateSuccess": "Ticket updated successfully",
+      "sent": "Sent",
+      "sendSuccess": "Reply sent successfully",
+      "overdue": "Overdue",
+      "categories": {
+        "technical": "Technical",
+        "billing": "Billing",
+        "course_content": "Course Content",
+        "account": "Account",
+        "refund": "Refund",
+        "certificate": "Certificate",
+        "other": "Other"
+      },
+      "priorities": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "urgent": "Urgent"
+      },
+      "statuses": {
+        "open": "Open",
+        "in_progress": "In Progress",
+        "waiting_response": "Waiting Response",
+        "resolved": "Resolved",
+        "closed": "Closed"
+      }
+    },
     "discussions": "Discussions"
   },
   "errors": {
@@ -459,6 +975,7 @@
     "terms": "Terms of Service",
     "contact": "Contact Us",
     "rights": "All rights reserved.",
+    "vatNumber": "VAT Number: 311508395300003",
     "location": "Jeddah, Saudi Arabia"
   },
   "legal": {
@@ -472,8 +989,39 @@
     "terms": {
       "title": "Terms of Service",
       "subtitle": "Please read these terms carefully before using our platform and services.",
+      "welcome": "Welcome to BIKERZ. By using our platform, you agree to be bound by these terms and conditions. Please read them carefully before using our services.",
       "questions": "Have questions about our terms?",
-      "contactUs": "Contact our support team for clarification."
+      "contactUs": "Contact our support team for clarification.",
+      "sections": {
+        "registration": {
+          "title": "Account Registration",
+          "content": "To access our courses, you must register for an account. You agree to provide accurate and complete information during registration and to keep your account information updated. You are responsible for maintaining the confidentiality of your account credentials."
+        },
+        "payments": {
+          "title": "Payments and Refunds",
+          "content": "Course fees are clearly displayed at the time of purchase. Payment must be made in full before accessing paid content. Refund requests may be considered within 14 days of purchase if you have not completed more than 30% of the course content."
+        },
+        "intellectual": {
+          "title": "Intellectual Property",
+          "content": "All course content, including videos, text, images, and materials, is owned by BIKERZ or our content creators. You may not copy, distribute, modify, or create derivative works from our content without express written permission."
+        },
+        "prohibited": {
+          "title": "Prohibited Activities",
+          "content": "You agree not to: share your account with others, use automated tools to access our services, attempt to bypass our security measures, post harmful or offensive content, or use our platform for any illegal activities."
+        },
+        "disclaimer": {
+          "title": "Disclaimer",
+          "content": "Our courses provide educational content about motorcycle riding. We are not responsible for any injuries, accidents, or damages that may occur while riding. Always practice safety and follow local traffic laws."
+        },
+        "governing": {
+          "title": "Governing Law",
+          "content": "These terms are governed by the laws of the Kingdom of Saudi Arabia. Any disputes will be resolved through the appropriate courts in Jeddah, Saudi Arabia."
+        },
+        "changes": {
+          "title": "Changes to Terms",
+          "content": "We reserve the right to modify these terms at any time. We will notify you of significant changes via email or through our platform. Your continued use of our services after changes constitutes acceptance of the new terms."
+        }
+      }
     }
   },
   "contact": {
@@ -492,7 +1040,10 @@
       "subject": "Subject",
       "message": "Message",
       "submit": "Submit Request",
-      "loginRequired": "You need to be logged in to submit a support ticket. This allows you to track your request in your dashboard."
+      "loginRequired": "You need to be logged in to submit a support ticket. This allows you to track your request in your dashboard.",
+      "categoryPlaceholder": "Select category",
+      "subjectPlaceholder": "Subject of your message",
+      "messagePlaceholder": "Write your message here..."
     },
     "success": {
       "title": "Request Submitted!",
@@ -500,12 +1051,17 @@
       "ticketNumber": "Your Ticket Number",
       "checkDashboard": "You can track the status of your request in your dashboard.",
       "submitAnother": "Submit Another Request"
-    }
+    },
+    "requestSubmitted": "Your request has been submitted!",
+    "failedToSubmit": "Failed to submit request",
+    "loginToSubmit": "Please log in to submit a support request",
+    "fillAllRequired": "Please fill in all required fields"
   },
   "notFound": {
     "title": "404",
     "subtitle": "Oops! Page not found",
-    "returnHome": "Return to Home"
+    "description": "The page you are looking for might have been moved or deleted.",
+    "backHome": "Back to Home"
   },
   "gamification": {
     "xp": "XP",
@@ -517,7 +1073,86 @@
     "leaderboard": "Leaderboard",
     "achievements": "Achievements",
     "points": "Points",
-    "rank": "Rank"
+    "rank": "Rank",
+    "dailyChallenges": {
+      "comingSoon": "Daily challenges coming soon!",
+      "title": "Daily Challenges",
+      "claimReward": "Claim Reward",
+      "rewardClaimed": "Reward Claimed"
+    },
+    "rapidFireChallenge": {
+      "completeTitle": "Rapid Fire Complete!",
+      "scoreLabel": "Score",
+      "bestStreakLabel": "Best Streak",
+      "close": "Close",
+      "tryAgain": "Try Again",
+      "title": "Rapid Fire",
+      "scorePrefix": "Score:"
+    },
+    "lessonCompleteModal": {
+      "perfect": "🌟 Perfect!",
+      "greatJob": "🎉 Great Job!",
+      "lessonCompleted": "Lesson completed",
+      "dayStreak": "Day Streak",
+      "multiplier": "{{multiplier}}x Multiplier",
+      "nextLesson": "Next Lesson",
+      "redoForBetterScore": "Redo for Better Score",
+      "close": "Close"
+    },
+    "microQuiz": {
+      "excellent": "Excellent! 🎉",
+      "tryAgain": "Try Again",
+      "close": "Close",
+      "retry": "Retry"
+    },
+    "badgeDisplay": {
+      "earned": "Earned",
+      "lockedNotYet": "🔒 Not yet unlocked"
+    }
+  },
+  "landing": {
+    "featuredCourses": {
+      "mostPopular": "Most Popular",
+      "title": "Our Training Courses",
+      "subtitle": "Choose the course that fits your level and start your riding journey today",
+      "viewAllCourses": "View All Courses"
+    },
+    "promoOfferBanner": {
+      "specialOffer": "Special Offer",
+      "discount": {
+        "percentage": "{{value}}% OFF",
+        "fixed": "{{value}} SAR OFF"
+      },
+      "descriptionFallback": "Use the code below and get an instant discount on enrollment!",
+      "toasts": {
+        "copied": "Code copied!",
+        "copyFailed": "Failed to copy"
+      }
+    },
+    "discountUrgencyBanner": {
+      "discountLabel": "OFF",
+      "enroll": "Enroll"
+    }
+  },
+  "course": {
+    "purchaseEncouragementModal": {
+      "title": "Enjoying the content? 🎉",
+      "subtitle": "You've finished the free previews! Buy the course now to continue your learning journey",
+      "vatIncluded": "Price includes VAT",
+      "buyNow": "Buy Now",
+      "notNow": "Not now"
+    },
+    "enrollmentCelebration": {
+      "congrats": "🎉 Congratulations!",
+      "enrolledSuccess": "You are now enrolled",
+      "courseLabel": "Course",
+      "startLearningNow": "Start Learning Now",
+      "journeyStarts": "Your motorcycle journey starts now 🏍️"
+    },
+    "nextLessonCountdown": {
+      "upNext": "Up next",
+      "now": "Now"
+    }
   },
   "quiz": {
     "question": "Question",
@@ -556,9 +1191,12 @@
   },
   "time": {
     "justNow": "Just now",
-    "minutesAgo": "{{count}} minutes ago",
-    "hoursAgo": "{{count}} hours ago",
-    "daysAgo": "{{count}} days ago",
+    "minutesAgo": "{{count}} minute ago",
+    "minutesAgo_plural": "{{count}} minutes ago",
+    "hoursAgo": "{{count}} hour ago",
+    "hoursAgo_plural": "{{count}} hours ago",
+    "daysAgo": "1 day ago",
+    "daysAgo_plural": "{{count}} days ago",
     "weeksAgo": "{{count}} weeks ago",
     "monthsAgo": "{{count}} months ago"
   },
@@ -566,5 +1204,19 @@
     "noData": "No data available",
     "noResults": "No results found",
     "noItems": "No items to display"
+  },
+  "scenario": {
+    "wellDone": "Well Done!",
+    "safeDecisionsMade": "You made safe decisions in {{safe}} out of {{total}} scenarios",
+    "noWorries": "That's okay! Learning from scenarios helps you make better decisions on the road.",
+    "practiceAgain": "Practice Again",
+    "scenarioOf": "Scenario {{current}} of {{total}}",
+    "safetyTraining": "Safety Training",
+    "whatToDo": "What would you do?",
+    "nextScenario": "Next Scenario",
+    "finish": "Finish"
+  },
+  "socialProof": {
+    "purchased": "{{name}} {{flag}} purchased {{course}}"
   }
 }

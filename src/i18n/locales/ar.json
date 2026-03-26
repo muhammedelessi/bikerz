@@ -1,5 +1,6 @@
 {
   "common": {
+    "bikerz": "بايكرز",
     "loading": "جاري التحميل...",
     "error": "خطأ",
     "success": "نجاح",
@@ -61,7 +62,17 @@
     "returnToHome": "العودة للرئيسية",
     "all": "الكل",
     "none": "لا شيء",
-    "other": "أخرى"
+    "other": "أخرى",
+    "dataSubmitted": "\u2705 تم إرسال البيانات بنجاح",
+    "dataFailed": "\u274c فشل في إرسال البيانات",
+    "darkMode": "الوضع النهاري",
+    "discountCountdown": {
+      "endsIn": "ينتهي خلال:",
+      "unitDay": "ي",
+      "unitHour": "س",
+      "unitMinute": "د",
+      "unitSecond": "ث"
+    }
   },
   "nav": {
     "home": "الرئيسية",
@@ -155,7 +166,12 @@
   "cta": {
     "title": "مستعد للانطلاق؟",
     "subtitle": "رحلتك لتصبح راكباً واثقاً وماهراً تبدأ بخطوة واحدة.",
-    "button": "ابدأ التعلم اليوم"
+    "button": "ابدأ التعلم اليوم",
+    "trustBadges": {
+      "startFree": "ابدأ مجاناً",
+      "noCreditCard": "بدون بطاقة ائتمان",
+      "cancelAnytime": "إلغاء في أي وقت"
+    }
   },
   "aboutUs": {
     "title": "عن بايكرز",
@@ -229,7 +245,8 @@
       "passwordMismatch": "كلمات المرور غير متطابقة",
       "passwordTooShort": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
       "success": "تم إنشاء الحساب بنجاح!",
-      "namePlaceholder": "اسمك الكامل"
+      "namePlaceholder": "اسمك الكامل",
+      "emailExists": "هذا البريد مسجل بالفعل. يرجى تسجيل الدخول أولاً."
     },
     "forgotPassword": {
       "title": "نسيت كلمة المرور؟",
@@ -242,7 +259,13 @@
       "tryDifferentEmail": "جرب بريداً إلكترونياً مختلفاً"
     },
     "emailPlaceholder": "بريدك@الإلكتروني.com",
-    "passwordPlaceholder": "••••••••"
+    "passwordPlaceholder": "••••••••",
+    "googleFailed": "فشل تسجيل الدخول بجوجل",
+    "userDataFailed": "فشل في الحصول على بيانات المستخدم",
+    "signupWithGoogle": "التسجيل بحساب جوجل",
+    "continueWithGoogle": "المتابعة مع جوجل",
+    "googleAccountRequired": "هذا الحساب مسجل عبر جوجل. استخدم زر جوجل لتسجيل الدخول.",
+    "signInWithGoogle": "تسجيل الدخول بجوجل"
   },
   "dashboard": {
     "welcome": "مرحباً بعودتك",
@@ -259,7 +282,11 @@
     "startLearningJourney": "ابدأ رحلتك التعليمية بالتسجيل في دورة",
     "browseCourses": "تصفح الدورات",
     "nextLesson": "التالي: ",
-    "courseCompleted": "تم إكمال الدورة"
+    "upNext": "الدرس التالي",
+    "courseCompleted": "تم إكمال الدورة",
+    "courseCompletedWellDone": "أحسنت! أكملت هذه الدورة",
+    "quickActions": "إجراءات سريعة",
+    "findMentor": "ابحث عن مدرب"
   },
   "courses": {
     "title": "الدورات",
@@ -298,7 +325,21 @@
     "lessonsCompleted": "دروس مكتملة",
     "hours": "ساعات",
     "hour": "س",
-    "minutes": "د"
+    "minutes": "د",
+    "courseCard": {
+      "duration0": "0 ساعة",
+      "duration": {
+        "minutesOnly": "{{m}} دقيقة",
+        "hoursMinutes": "{{h}} ساعة {{m}} دقيقة",
+        "hoursOnly": "{{h}} ساعة"
+      },
+      "discountBadge": "خصم {{pct}}%",
+      "enrolled": "مسجّل",
+      "completedWithCheck": "مكتمل ✓",
+      "continueLearning": "أكمل التعلم",
+      "subscribeNow": "اشترك الآن – {{price}} {{currency}}",
+      "rate": "قيّم"
+    }
   },
   "courseLearn": {
     "backToCourse": "العودة للدورة",
@@ -320,7 +361,70 @@
     "resourcesTab": "الموارد",
     "noResources": "لا توجد موارد متاحة لهذا الدرس",
     "quizProgress": "تقدم الاختبارات",
-    "quizzesCompleted": "اختبارات مكتملة"
+    "quizzesCompleted": "اختبارات مكتملة",
+    "welcomeMessage": "أهلاً بك! 👋",
+    "welcomeDescription": "أنت على وشك بدء رحلة تعليمية ممتعة. استمتع بتعلم كل ما تحتاجه عن عالم الدراجات النارية.",
+    "lessonsCount": "درس",
+    "quizzesCount": "اختبار",
+    "startFirstLesson": "ابدأ الدرس الأول",
+    "freePreviewMessage": "أنت تشاهد معاينة مجانية. سجل الآن للحصول على الوصول الكامل!",
+    "registerNow": "سجل الآن",
+    "markComplete": "وضع علامة مكتمل",
+    "completed": "مكتمل",
+    "content": "المحتوى",
+    "readyForQuiz": "جاهز للاختبار!",
+    "readyForQuizDescription": "أكملت جميع دروس هذا الفصل. اختبر معلوماتك الآن!",
+    "takeQuiz": "ابدأ الاختبار",
+    "tryAgain": "حاول مرة أخرى!",
+    "lastScore": "نتيجتك الأخيرة: {{score}}%. راجع الدروس وحاول مرة أخرى.",
+    "nextLessonLocked": "الدرس التالي مقفل",
+    "courseComplete": "أكمل الدورة",
+    "allQuizzesCompleted": "🎉 أكملت جميع الاختبارات!",
+    "lastScoreRetry": "آخر نتيجة: {{score}}% - حاول مرة أخرى",
+    "passFirst": "🔒 اجتز \"{{name}}\" أولاً",
+    "retry": "إعادة",
+    "mustPassToUnlock": "يجب اجتياز \"{{name}}\" لفتح هذا الاختبار",
+    "courseDetails": "تفاصيل الدورة",
+    "testCompleted": "أحسنت! أكملت الاختبار",
+    "purchaseRequired": "يجب عليك شراء الدورة للوصول لهذا الدرس",
+    "xpEarned": "أحسنت! حصلت على {{xp}} نقطة XP"
+  },
+  "courseDetail": {
+    "resume": "أكمل التعلم",
+    "enrollFree": "سجّل مجاناً",
+    "subscribeNow": "اشترك الآن – {{price}} {{currency}}",
+    "courseIntroduction": "فيديو تعريفي بالدورة",
+    "playPreviewVideo": "تشغيل الفيديو التعريفي",
+    "videoThumbnail": "صورة مصغرة للفيديو",
+    "watchPreview": "شاهد الفيديو التعريفي",
+    "review": "تقييم",
+    "reviews": "تقييم",
+    "lessons": "درس",
+    "total": "إجمالي",
+    "chapters": "فصول",
+    "lifetimeAccess": "وصول مدى الحياة",
+    "onlineCourse": "دورة أونلاين",
+    "completed": "مكتمل",
+    "enrolled": "مسجّل",
+    "lessonsCompleted": "مكتمل",
+    "courseCompleted": "🎉 أكملت الدورة!",
+    "viewCourse": "عرض الدورة",
+    "rateThisCourse": "قيّم الدورة",
+    "resumeLearning": "أكمل التعلم",
+    "priceIncludesVAT": "السعر شامل الضريبة",
+    "thisCourseIncludes": "يشمل الاشتراك",
+    "videoLessons": "{{count}} درس فيديو",
+    "contentOf": "{{duration}} محتوى",
+    "interactiveQuizzes": "اختبارات تفاعلية",
+    "watchOnAnyDevice": "مشاهدة من أي جهاز",
+    "whatYoullLearn": "ماذا ستتعلم",
+    "skillsYoullGain": "المهارات التي ستكتسبها",
+    "learningRoadmap": "خطة التعلم",
+    "noChaptersYet": "لا توجد فصول متاحة حتى الآن",
+    "free": "مجاني",
+    "minuteAbbr": "د",
+    "remaining": "متبقي {{duration}}",
+    "failedToEnroll": "فشل التسجيل"
   },
   "mentors": {
     "title": "المدربون الخبراء",
@@ -355,9 +459,16 @@
     "engineSize": "حجم المحرك (سي سي)",
     "enginePlaceholder": "مثال: 600",
     "addProfilePhoto": "أضف صورتك الشخصية",
-    "updateProfile": "تحديث الملف الشخصي",
-    "profileUpdated": "تم تحديث الملف الشخصي بنجاح!",
-    "profileUpdateFailed": "فشل في تحديث الملف الشخصي"
+    "profileUpdateFailed": "فشل في تحديث الملف الشخصي",
+    "addNickname": "أضف لقب",
+    "rankingSystem": "نظام التصنيف",
+    "profilePhoto": "الصورة الشخصية",
+    "experienceYears": "سنوات الخبرة",
+    "experienceLevelDesc": "مستوى الخبرة يُحسب تلقائياً بناءً على تقدمك في التعلم",
+    "completeForBetterExperience": "\ud83d\udc64 أكمل ملفك الشخصي لتجربة أفضل!",
+    "addDetailsForBetterExperience": "أضف بياناتك لتحسين تجربة التعلم الخاصة بك",
+    "locked": "مغلق",
+    "achievementsMotivation": "الإنجازات للتحفيز داخل المنصة فقط"
   },
   "profileCompletion": {
     "step1Title": "هوية الراكب",
@@ -373,9 +484,23 @@
     "completeProfileLater": "يمكنك إكمال ملفك الشخصي لاحقاً للحصول على خصم 10%!",
     "profileComplete": "تم إكمال ملفك الشخصي! حصلت على خصم 10%",
     "completeYourProfile": "أكمل ملفك الشخصي",
-    "addDetailsForDiscount": "أضف بياناتك واحصل على خصم 10% على أول دورة!",
     "completeProfileBanner": "أكمل ملفك الشخصي واحصل على خصم 10%!",
-    "missing": "متبقي"
+    "missing": "متبقي",
+    "noBikeYet": "لا أملك دراجة حالياً",
+    "addBikeLater": "يمكنك إضافة بيانات الدراجة لاحقاً",
+    "copied": "تم النسخ",
+    "copyCoupon": "نسخ الكوبون",
+    "couponCopied": "تم نسخ الكوبون!",
+    "couponCopiedBrowse": "تم نسخ الكوبون! تصفح الدورات الآن",
+    "claimDiscountCoupon": "احصل على كوبون الخصم",
+    "complete": "إكمال",
+    "completeProfile": "إكمال الملف الشخصي",
+    "profileCompleteSuccess": "\ud83c\udf89 رائع! ملفك الشخصي مكتمل",
+    "step": "الخطوة",
+    "next": "التالي",
+    "previous": "السابق",
+    "couponDescription": "حصلت على كوبون خصم 10% على أول دورة!",
+    "useCouponAtCheckout": "استخدم هذا الكوبون عند الشراء في صفحة الدفع"
   },
   "checkout": {
     "title": "إتمام الشراء",
@@ -402,29 +527,415 @@
     "paymentMethod": "طريقة الدفع",
     "discount": "الخصم",
     "total": "المجموع",
-    "confirmPayment": "تأكيد الدفع",
-    "processing": "جاري المعالجة...",
     "purchaseSuccessful": "تم الشراء بنجاح!",
-    "securePayment": "معلوماتك محمية بتشفير SSL آمن"
+    "securePayment": "معلوماتك محمية بتشفير SSL آمن",
+    "failedToValidateCode": "فشل التحقق من الرمز",
+    "couponAutoApplied": "تم تطبيق الكوبون تلقائياً!",
+    "failedToCreateAccount": "فشل إنشاء الحساب",
+    "validation": {
+      "fullNameRequired": "الاسم الكامل مطلوب (3 أحرف على الأقل)",
+      "validEmailRequired": "بريد إلكتروني صحيح مطلوب",
+      "phoneRequired": "رقم الهاتف مطلوب",
+      "selectCountryCode": "يرجى اختيار رمز الدولة",
+      "phoneDigitsOnly": "رقم الهاتف يجب أن يحتوي على أرقام فقط",
+      "phoneTooShort": "رقم الهاتف قصير جداً (6 أرقام على الأقل)",
+      "phoneTooLong": "رقم الهاتف طويل جداً (12 رقم كحد أقصى)",
+      "cityRequired": "المدينة مطلوبة",
+      "countryRequired": "الدولة مطلوبة"
+    },
+    "statusOverlay": {
+      "verifyingPayment": "جاري التحقق من الدفع...",
+      "pleaseWaitMoment": "يرجى الانتظار لحظة",
+      "paymentSuccessful": "🎉 تم الدفع بنجاح!",
+      "enrolledSuccess": "تم تسجيلك في الدورة بنجاح",
+      "startLearningNow": "ابدأ التعلم الآن",
+      "paymentFailed": "فشل الدفع",
+      "paymentErrorFallback": "حدث خطأ أثناء الدفع. يرجى المحاولة مرة أخرى.",
+      "tryAgain": "حاول مرة أخرى"
+    },
+    "paymentMethodIcons": {
+      "acceptedPaymentMethods": "طرق الدفع المتاحة"
+    }
+  },
+  "payment": {
+    "cancelled": "تم إلغاء الدفع",
+    "backToCourse": "العودة للدورة",
+    "failed": "فشلت عملية الدفع",
+    "cancelledDescription": "لقد ألغيت عملية الدفع. لم يتم خصم أي مبلغ من حسابك.",
+    "failedDescription": "حدث خطأ ما في عملية الدفع. يرجى المحاولة مرة أخرى أو الاتصال بالدعم.",
+    "verifying": "جاري التأكد من عملية الدفع...",
+    "pleaseWait": "يرجى الانتظار بينما نؤكد اشتراكك.",
+    "viewOnDashboard": "مشاهدة في لوحة التحكم",
+    "processing": "جاري معالجة الدفع",
+    "processingDescription": "يتم معالجة دفعتك. ستتلقى رسالة تأكيد بالبريد الإلكتروني قريباً.",
+    "congratulations": "🎉 مبروك!",
+    "successEnrollment": "تم تسجيلك بنجاح في الدورة",
+    "yourCourse": "الدورة",
+    "confirmed": "دفع مؤكد",
+    "whatsNext": "🚀 ما التالي؟",
+    "whatsNextDescription": "اضغط على الزر أدناه للبدء في أول درس لك. رحلتك في عالم الدراجات تبدأ الآن!",
+    "startLearning": "ابدأ التعلم الآن",
+    "welcomeFamily": "رحلتك في عالم الدراجات تبدأ الآن 🏍️"
   },
   "admin": {
     "title": "لوحة تحكم المسؤول",
-    "users": "المستخدمون",
-    "courses": "الدورات",
-    "chapters": "الفصول",
-    "lessons": "الدروس",
-    "analytics": "التحليلات",
-    "settings": "الإعدادات",
-    "create": "إنشاء جديد",
-    "edit": "تعديل",
-    "delete": "حذف",
-    "save": "حفظ التغييرات",
-    "cancel": "إلغاء",
-    "content": "المحتوى",
-    "instructors": "المدربون",
-    "payments": "المدفوعات",
-    "roles": "الأدوار",
-    "support": "الدعم",
+    "users": {
+      "title": "إدارة المستخدمين",
+      "subtitle": "عرض وإدارة جميع المستخدمين",
+      "totalUsers": "إجمالي المستخدمين",
+      "students": "الطلاب",
+      "admins": "المشرفون",
+      "instructors": "المدربون",
+      "searchPlaceholder": "البحث عن مستخدم...",
+      "role": "الدور",
+      "all": "الكل",
+      "noUsersFound": "لا يوجد مستخدمين",
+      "user": "المستخدم",
+      "email": "البريد",
+      "location": "الموقع",
+      "enrollments": "التسجيلات",
+      "joined": "تاريخ الانضمام",
+      "actions": "الإجراءات",
+      "noName": "بدون اسم",
+      "noRole": "بدون دور",
+      "viewDetails": "عرض التفاصيل",
+      "manageRoles": "إدارة الأدوار",
+      "sendEmail": "إرسال بريد",
+      "addNote": "إضافة ملاحظة",
+      "suspendUser": "تعليق الحساب",
+      "userDetails": "تفاصيل المستخدم",
+      "personalInformation": "المعلومات الشخصية",
+      "fullName": "الاسم الكامل",
+      "nickname": "الكنية",
+      "phone": "رقم الهاتف",
+      "phoneVerified": "الهاتف موثق",
+      "profileComplete": "الملف مكتمل",
+      "country": "البلد",
+      "city": "المدينة",
+      "postalCode": "الرمز البريدي",
+      "bikeBrand": "ماركة الدراجة",
+      "bikeModel": "موديل الدراجة",
+      "engineSize": "حجم المحرك",
+      "experienceLevel": "مستوى الخبرة",
+      "ridingYears": "سنوات القيادة",
+      "currentRoles": "الأدوار الحالية",
+      "addNewRole": "إضافة دور جديد",
+      "addRoleDescription": "إضافة أو إزالة أدوار المستخدم",
+      "cancel": "إلغاء",
+      "addRole": "إضافة الدور",
+      "adding": "جاري الإضافة...",
+      "roleAddedSuccess": "تم إضافة الدور بنجاح",
+      "roleAddFailed": "فشل في إضافة الدور",
+      "roles_labels": {
+        "student": "طالب",
+        "instructor": "مدرب",
+        "moderator": "مشرف",
+        "support": "دعم",
+        "finance": "مالية",
+        "academy_admin": "مشرف أكاديمية",
+        "super_admin": "مشرف عام"
+      }
+    },
+    "payments": {
+      "title": "إدارة المدفوعات",
+      "subtitle": "جميع المدفوعات — البطاقات واليدوية",
+      "exportCsv": "تصدير CSV",
+      "stats": {
+        "totalRevenue": "إجمالي الإيرادات",
+        "pending": "المعلقة",
+        "approved": "المعتمدة",
+        "rejected": "المرفوضة"
+      },
+      "filters": {
+        "searchPlaceholder": "البحث بالاسم أو البريد أو رقم المرجع...",
+        "all": "الكل",
+        "pending": "معلق",
+        "approved": "معتمد",
+        "rejected": "مرفوض"
+      },
+      "records": {
+        "title": "سجل المدفوعات",
+        "user": "المستخدم",
+        "course": "الدورة",
+        "amount": "المبلغ",
+        "type": "النوع",
+        "method": "طريقة الدفع",
+        "date": "التاريخ",
+        "status": "الحالة",
+        "viewDetails": "عرض التفاصيل",
+        "approve": "اعتماد",
+        "reject": "رفض",
+        "noPayments": "لا توجد مدفوعات"
+      },
+      "details": {
+        "title": "تفاصيل الطلب",
+        "customerInfo": "معلومات العميل",
+        "fullName": "الاسم الكامل",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "city": "المدينة",
+        "country": "الدولة",
+        "profileStatus": "حالة الملف الشخصي",
+        "complete": "مكتمل",
+        "incomplete": "غير مكتمل",
+        "paymentInfo": "معلومات الدفع",
+        "paymentStatus": "حالة الدفع",
+        "originalPrice": "السعر الأصلي",
+        "courseDiscount": "خصم الدورة",
+        "couponDiscount": "خصم الكوبون",
+        "amountBeforeVat": "المبلغ قبل الضريبة",
+        "vat": "ضريبة القيمة المضافة (15%)",
+        "totalCharged": "المبلغ المحصل",
+        "currency": "العملة",
+        "source": "النوع",
+        "transactionId": "رقم العملية (Tap)",
+        "webhookVerified": "تم التحقق من الويب هوك",
+        "userDevice": "جهاز المستخدم",
+        "referenceNumber": "رقم المرجع",
+        "dateTime": "التاريخ والوقت",
+        "notes": "ملاحظات",
+        "failedTitle": "فشل الدفع",
+        "errorCode": "رمز الخطأ",
+        "declineDetails": "تفاصيل الرفض",
+        "gatewayResponse": "استجابة البوابة",
+        "yes": "نعم",
+        "no": "لا",
+        "card": "بطاقة",
+        "manual": "يدوي",
+        "approveAction": "اعتماد الدفع",
+        "rejectAction": "رفض الدفع",
+        "notesPlaceholder": "ملاحظات الإدارة (اختياري)..."
+      },
+      "toasts": {
+        "updated": "تم التحديث",
+        "updatedDesc": "تم تحديث حالة الدفع بنجاح",
+        "error": "خطأ",
+        "errorDesc": "فشل في تحديث الدفع"
+      },
+      "errors": {
+        "insufficient_funds": "رصيد غير كافٍ",
+        "card_expired": "البطاقة منتهية الصلاحية",
+        "card_declined": "البطاقة مرفوضة",
+        "invalid_card": "خطأ في بيانات البطاقة",
+        "limit_exceeded": "تجاوز حد المعاملات",
+        "not_supported": "البطاقة غير مدعومة",
+        "restricted": "البطاقة مقيدة",
+        "auth_failed": "فشل التحقق من الهوية",
+        "3ds_failed": "فشل التحقق الأمني ثلاثي الأبعاد",
+        "not_permitted": "العملية غير مسموح بها",
+        "comm_error": "خطأ في الاتصال بالبنك",
+        "timeout": "انتهت مهلة العملية",
+        "cancelled": "تم إلغاء العملية من قبل العميل",
+        "duplicate": "عملية مكررة",
+        "auth_required": "مطلوب التحقق من الهوية",
+        "gateway_error": "خطأ في بوابة الدفع",
+        "gateway_timeout": "انتهت مهلة بوابة الدفع",
+        "issuer_decline": "تم رفض البطاقة من قبل البنك المُصدر",
+        "default_failed": "فشل الدفع"
+      }
+    },
+    "studentDetail": {
+      "title": "تفاصيل الطالب",
+      "email": "البريد الإلكتروني",
+      "phone": "رقم الهاتف",
+      "location": "الموقع",
+      "courses": "الدورات",
+      "completed": "مكتمل",
+      "inProgress": "قيد التعلم",
+      "totalSpent": "إجمالي المدفوعات:",
+      "enrolledCourses": "الدورات المسجلة",
+      "lessonsCount": "{{completed}}/{{total}} درس",
+      "enrolled": "التسجيل",
+      "price": "السعر",
+      "purchased": "الشراء",
+      "rating": "التقييم",
+      "na": "غير متاح",
+      "none": "لا يوجد",
+      "payment": "طريقة الدفع:",
+      "watchSessions": "جلسات المشاهدة",
+      "multiIP": "عدة IPs",
+      "totalWatched": "وقت المشاهدة",
+      "videoDuration": "مدة الفيديو",
+      "avgCompletion": "متوسط الإكمال",
+      "ipAddresses": "عناوين IP:",
+      "sessionLabel": "جلسة {{index}}",
+      "session_one": "جلسة",
+      "session_other": "جلسات",
+      "watched": "المشاهدة",
+      "skipped": "تخطى",
+      "replayed": "أعاد",
+      "clip_one": "مقطع",
+      "clip_other": "مقاطع",
+      "skippedSegments": "المقاطع المتخطاة",
+      "replayedSegments": "المقاطع المعادة",
+      "cleanWatch": "مشاهدة نظيفة — بدون تخطي أو إعادة",
+      "differentIP": "IP مختلف!"
+    },
+    "courseStudentsDialog": {
+      "title": "طلاب الدورة",
+      "stats": {
+        "totalStudents": "إجمالي الطلاب",
+        "completed": "أكملوا الدورة",
+        "inProgress": "قيد التعلم",
+        "avgProgress": "متوسط التقدم"
+      },
+      "searchPlaceholder": "البحث بالاسم أو البريد أو الهاتف...",
+      "empty": {
+        "noSearchResults": "لا توجد نتائج للبحث",
+        "noEnrolledStudents": "لا يوجد طلاب مسجلين",
+        "noDataAvailable": "لا توجد بيانات"
+      },
+      "table": {
+        "student": "الطالب",
+        "enrolled": "تاريخ التسجيل",
+        "status": "الحالة"
+      },
+      "noName": "بدون اسم",
+      "studentDetails": "تفاصيل الطالب",
+      "labels": {
+        "email": "البريد الإلكتروني",
+        "phone": "رقم الهاتف",
+        "location": "الموقع",
+        "purchasedCourses": "الدورات المشتراة",
+        "enrolledCourses": "الدورات المسجلة"
+      },
+      "status": {
+        "inProgress": "قيد التعلم",
+        "new": "جديد",
+        "notStarted": "لم يبدأ"
+      },
+      "meta": {
+        "enrolled": "التسجيل",
+        "price": "السعر",
+        "purchased": "الشراء",
+        "rating": "التقييم",
+        "payment": "طريقة الدفع:"
+      }
+    },
+    "dashboard": {
+      "title": "لوحة التحكم",
+      "subtitle": "نظرة عامة على أداء الأكاديمية",
+      "totalUsers": "إجمالي المستخدمين",
+      "activeCourses": "الدورات النشطة",
+      "enrollments": "التسجيلات",
+      "totalRevenue": "إجمالي الإيرادات",
+      "monthlyEnrollments": "التسجيلات الشهرية",
+      "coursePerformance": "أداء الدورات",
+      "enrollmentDistribution": "توزيع التسجيلات",
+      "alertsAndNotifications": "التنبيهات والإشعارات",
+      "noAlerts": "لا توجد تنبيهات حالياً",
+      "completionRate": "معدل الإكمال",
+      "passRate": "معدل النجاح",
+      "avgWatchTime": "متوسط وقت المشاهدة",
+      "activeUsers": "المستخدمون النشطون",
+      "noData": "لا توجد بيانات",
+      "noCourses": "لا توجد دورات",
+      "noEnrollments": "لا توجد تسجيلات",
+      "completed": "مكتمل",
+      "active": "نشط",
+      "paused": "متوقف",
+      "new": "جديد",
+      "pendingPaymentsAlert": "{{count}} دفعة معلقة تحتاج مراجعة",
+      "openTicketsAlert": "{{count}} تذكرة دعم مفتوحة",
+      "pendingDiscussionsAlert": "{{count}} سؤال ينتظر الموافقة",
+      "minutes": "د",
+      "months": {
+        "jan": "يناير",
+        "feb": "فبراير",
+        "mar": "مارس",
+        "apr": "أبريل",
+        "may": "مايو",
+        "jun": "يونيو",
+        "jul": "يوليو",
+        "aug": "أغسطس",
+        "sep": "سبتمبر",
+        "oct": "أكتوبر",
+        "nov": "نوفمبر",
+        "dec": "ديسمبر"
+      }
+    },
+    "menu": {
+      "dashboard": "لوحة التحكم",
+      "courses": "الدورات",
+      "chapters": "الفصول",
+      "lessons": "الدروس",
+      "analytics": "التحليلات",
+      "settings": "الإعدادات",
+      "create": "إنشاء جديد",
+      "edit": "تعديل",
+      "delete": "حذف",
+      "save": "حفظ التغييرات",
+      "cancel": "إلغاء",
+      "content": "المحتوى",
+      "instructors": "المدربون",
+      "payments": "المدفوعات",
+      "roles": "الأدوار",
+      "users": "المستخدمين",
+      "coupons": "الكوبونات",
+      "discussions": "النقاشات",
+      "support": "الدعم"
+    },
+    "support": {
+      "title": "تذاكر الدعم",
+      "subtitle": "إدارة طلبات الدعم والمساعدة",
+      "totalTickets": "إجمالي التذاكر",
+      "open": "مفتوحة",
+      "inProgress": "قيد المعالجة",
+      "overdueSLA": "متأخرة SLA",
+      "searchPlaceholder": "البحث بالرقم أو الموضوع أو المستخدم...",
+      "status": "الحالة",
+      "allStatus": "جميع الحالات",
+      "priority": "الأولوية",
+      "allPriorities": "جميع الأولويات",
+      "ticketsList": "قائمة التذاكر",
+      "ticketNumber": "رقم التذكرة",
+      "user": "المستخدم",
+      "subject": "الموضوع",
+      "category": "الفئة",
+      "sla": "SLA",
+      "date": "التاريخ",
+      "unknown": "غير معروف",
+      "viewDetails": "عرض التفاصيل",
+      "markResolved": "تم الحل",
+      "closeTicket": "إغلاق التذكرة",
+      "noTickets": "لا توجد تذاكر",
+      "ticketDetails": "تفاصيل التذكرة والردود",
+      "slaDue": "استحقاق SLA",
+      "noReplies": "لا توجد ردود بعد",
+      "internalNote": "ملاحظة داخلية",
+      "reply": "رد",
+      "addInternalNotePlaceholder": "أضف ملاحظة داخلية...",
+      "typeReplyPlaceholder": "اكتب ردك...",
+      "addNote": "إضافة ملاحظة",
+      "sendReply": "إرسال الحد",
+      "updated": "تم التحديث",
+      "updateSuccess": "تم تحديث التذكرة بنجاح",
+      "sent": "تم الإرسال",
+      "sendSuccess": "تم إرسال الرد بنجاح",
+      "overdue": "متأخر",
+      "categories": {
+        "technical": "تقني",
+        "billing": "الفواتير",
+        "course_content": "محتوى الدورة",
+        "account": "الحساب",
+        "refund": "استرداد",
+        "certificate": "الشهادة",
+        "other": "أخرى"
+      },
+      "priorities": {
+        "low": "منخفض",
+        "medium": "متوسط",
+        "high": "عالي",
+        "urgent": "عاجل"
+      },
+      "statuses": {
+        "open": "مفتوح",
+        "in_progress": "قيد المعالجة",
+        "waiting_response": "بانتظار الرد",
+        "resolved": "تم الحل",
+        "closed": "مغلق"
+      }
+    },
     "discussions": "النقاشات"
   },
   "errors": {
@@ -459,6 +970,7 @@
     "terms": "شروط الخدمة",
     "contact": "اتصل بنا",
     "rights": "جميع الحقوق محفوظة.",
+    "vatNumber": "الرقم الضريبي: 311508395300003",
     "location": "جدة، المملكة العربية السعودية"
   },
   "legal": {
@@ -472,8 +984,39 @@
     "terms": {
       "title": "شروط الخدمة",
       "subtitle": "يرجى قراءة هذه الشروط بعناية قبل استخدام منصتنا وخدماتنا.",
+      "welcome": "مرحباً بك في بايكرز. باستخدام منصتنا، فإنك توافق على الالتزام بهذه الشروط والأحكام. يرجى قراءتها بعناية قبل استخدام خدماتنا.",
       "questions": "لديك أسئلة حول شروطنا؟",
-      "contactUs": "تواصل مع فريق الدعم للتوضيح."
+      "contactUs": "تواصل مع فريق الدعم للتوضيح.",
+      "sections": {
+        "registration": {
+          "title": "تسجيل الحساب",
+          "content": "للوصول إلى دوراتنا، يجب عليك التسجيل للحصول على حساب. توافق على تقديم معلومات دقيقة وكاملة أثناء التسجيل والحفاظ على تحديث معلومات حسابك. أنت مسؤول عن الحفاظ على سرية بيانات اعتماد حسابك."
+        },
+        "payments": {
+          "title": "المدفوعات والاسترداد",
+          "content": "يتم عرض رسوم الدورة بوضوح وقت الشراء. يجب دفع المبلغ كاملاً قبل الوصول إلى المحتوى المدفوع. يمكن النظر في طلبات الاسترداد خلال 14 يوماً من الشراء إذا لم تكن قد أكملت أكثر من 30% من محتوى الدورة."
+        },
+        "intellectual": {
+          "title": "الملكية الفكرية",
+          "content": "جميع محتويات الدورة، بما في ذلك مقاطع الفيديو والنصوص والصور والمواد، مملوكة لـ BIKERZ أو منشئي المحتوى لدينا. لا يجوز لك نسخ أو توزيع أو تعديل أو إنشاء أعمال مشتقة من محتوانا دون إذن كتابي صريح."
+        },
+        "prohibited": {
+          "title": "الأنشطة المحظورة",
+          "content": "توافق على عدم: مشاركة حسابك مع الآخرين، استخدام أدوات آلية للوصول إلى خدماتنا، محاولة تجاوز إجراءاتنا الأمنية، نشر محتوى ضار أو مسيء، أو استخدام منصتنا لأي أنشطة غير قانونية."
+        },
+        "disclaimer": {
+          "title": "إخلاء المسؤولية",
+          "content": "توفر دوراتنا محتوى تعليمياً حول ركوب الدراجات النارية. لسنا مسؤولين عن أي إصابات أو حوادث أو أضرار قد تحدث أثناء الركوب. مارس السلامة دائماً واتبع قوانين المرور المحلية."
+        },
+        "governing": {
+          "title": "القانون الحاكم",
+          "content": "تخضع هذه الشروط لقوانين المملكة العربية السعودية. سيتم حل أي نزاعات من خلال المحاكم المختصة في جدة، المملكة العربية السعودية."
+        },
+        "changes": {
+          "title": "التغييرات على الشروط",
+          "content": "نحتفظ بالحق في تعديل هذه الشروط في أي وقت. سنخطرك بالتغييرات المهمة عبر البريد الإلكتروني أو من خلال منصتنا. استمرارك في استخدام خدماتنا بعد التغييرات يعني قبولك للشروط الجديدة."
+        }
+      }
     }
   },
   "contact": {
@@ -492,7 +1035,10 @@
       "subject": "الموضوع",
       "message": "الرسالة",
       "submit": "إرسال الطلب",
-      "loginRequired": "يجب تسجيل الدخول لإرسال تذكرة دعم. هذا يتيح لك تتبع طلبك في لوحة التحكم."
+      "loginRequired": "يجب تسجيل الدخول لإرسال تذكرة دعم. هذا يتيح لك تتبع طلبك في لوحة التحكم.",
+      "categoryPlaceholder": "اختر الفئة",
+      "subjectPlaceholder": "موضوع رسالتك",
+      "messagePlaceholder": "اكتب رسالتك هنا..."
     },
     "success": {
       "title": "تم إرسال الطلب!",
@@ -500,12 +1046,17 @@
       "ticketNumber": "رقم تذكرتك",
       "checkDashboard": "يمكنك تتبع حالة طلبك في لوحة التحكم.",
       "submitAnother": "إرسال طلب آخر"
-    }
+    },
+    "requestSubmitted": "تم إرسال طلبك بنجاح!",
+    "failedToSubmit": "فشل في إرسال الطلب",
+    "loginToSubmit": "يرجى تسجيل الدخول لإرسال طلب الدعم",
+    "fillAllRequired": "يرجى ملء جميع الحقول المطلوبة"
   },
   "notFound": {
     "title": "404",
-    "subtitle": "عفواً! الصفحة غير موجودة",
-    "returnHome": "العودة للرئيسية"
+    "subtitle": "عذراً! الصفحة غير موجودة",
+    "description": "الصفحة التي تبحث عنها قد تم نقلها أو حذفها.",
+    "backHome": "العودة للرئيسية"
   },
   "gamification": {
     "xp": "نقاط الخبرة",
@@ -517,7 +1068,86 @@
     "leaderboard": "قائمة المتصدرين",
     "achievements": "الإنجازات",
     "points": "نقاط",
-    "rank": "الترتيب"
+    "rank": "الترتيب",
+    "dailyChallenges": {
+      "comingSoon": "التحديات اليومية قادمة قريباً!",
+      "title": "التحديات اليومية",
+      "claimReward": "استلم المكافأة",
+      "rewardClaimed": "تم استلام المكافأة"
+    },
+    "rapidFireChallenge": {
+      "completeTitle": "تحدي النار السريع!",
+      "scoreLabel": "النتيجة",
+      "bestStreakLabel": "أفضل سلسلة",
+      "close": "إغلاق",
+      "tryAgain": "أعد المحاولة",
+      "title": "تحدي النار السريع",
+      "scorePrefix": "النتيجة:"
+    },
+    "lessonCompleteModal": {
+      "perfect": "🌟 أداء مثالي!",
+      "greatJob": "🎉 أحسنت!",
+      "lessonCompleted": "أكملت الدرس",
+      "dayStreak": "يوم سلسلة",
+      "multiplier": "مضاعف x{{multiplier}}",
+      "nextLesson": "الدرس التالي",
+      "redoForBetterScore": "أعد النشاط للتحسين",
+      "close": "إغلاق"
+    },
+    "microQuiz": {
+      "excellent": "ممتاز! 🎉",
+      "tryAgain": "حاول مرة أخرى",
+      "close": "إغلاق",
+      "retry": "أعد المحاولة"
+    },
+    "badgeDisplay": {
+      "earned": "حصلت عليها",
+      "lockedNotYet": "🔒 لم تفتح بعد"
+    }
+  },
+  "landing": {
+    "featuredCourses": {
+      "mostPopular": "الأكثر طلباً",
+      "title": "دوراتنا التدريبية",
+      "subtitle": "اختر الدورة المناسبة لمستواك وابدأ رحلتك اليوم",
+      "viewAllCourses": "عرض جميع الدورات"
+    },
+    "promoOfferBanner": {
+      "specialOffer": "عرض خاص",
+      "discount": {
+        "percentage": "خصم {{value}}%",
+        "fixed": "خصم {{value}} ر.س"
+      },
+      "descriptionFallback": "استخدم الكود أدناه واحصل على خصم فوري عند التسجيل!",
+      "toasts": {
+        "copied": "تم نسخ الكود!",
+        "copyFailed": "فشل النسخ"
+      }
+    },
+    "discountUrgencyBanner": {
+      "discountLabel": "خصم",
+      "enroll": "سجّل"
+    }
+  },
+  "course": {
+    "purchaseEncouragementModal": {
+      "title": "أعجبك المحتوى؟ 🎉",
+      "subtitle": "لقد أنهيت المقاطع المجانية! اشترِ الكورس الآن لمتابعة تعلمك واكتشاف المزيد",
+      "vatIncluded": "السعر شامل الضريبة",
+      "buyNow": "اشترك الآن",
+      "notNow": "ليس الآن"
+    },
+    "enrollmentCelebration": {
+      "congrats": "🎉 مبروك!",
+      "enrolledSuccess": "تم تسجيلك بنجاح",
+      "courseLabel": "الدورة",
+      "startLearningNow": "ابدأ التعلم الآن",
+      "journeyStarts": "رحلتك في عالم الدراجات تبدأ الآن 🏍️"
+    },
+    "nextLessonCountdown": {
+      "upNext": "الدرس التالي",
+      "now": "الآن"
+    }
   },
   "quiz": {
     "question": "السؤال",
@@ -556,9 +1186,9 @@
   },
   "time": {
     "justNow": "الآن",
-    "minutesAgo": "منذ {{count}} دقائق",
-    "hoursAgo": "منذ {{count}} ساعات",
-    "daysAgo": "منذ {{count}} أيام",
+    "minutesAgo": "منذ {{count}} دقيقة",
+    "hoursAgo": "منذ {{count}} ساعة",
+    "daysAgo": "منذ يوم",
     "weeksAgo": "منذ {{count}} أسابيع",
     "monthsAgo": "منذ {{count}} أشهر"
   },
@@ -566,5 +1196,19 @@
     "noData": "لا توجد بيانات متاحة",
     "noResults": "لا توجد نتائج",
     "noItems": "لا توجد عناصر للعرض"
+  },
+  "socialProof": {
+    "purchased": "{{name}} {{flag}} اشترى {{course}}"
+  },
+  "scenario": {
+    "wellDone": "أحسنت!",
+    "safeDecisionsMade": "اخترت القرارات الآمنة في {{safe}} من {{total}} مواقف",
+    "noWorries": "لا بأس! التعلم من السيناريوهات يساعدك على اتخاذ قرارات أفضل على الطريق.",
+    "practiceAgain": "تدرب مرة أخرى",
+    "scenarioOf": "السيناريو {{current}} من {{total}}",
+    "safetyTraining": "تدريب السلامة",
+    "whatToDo": "ماذا ستفعل؟",
+    "nextScenario": "السيناريو التالي",
+    "finish": "إنهاء"
   }
 }

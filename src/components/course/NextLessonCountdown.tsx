@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SkipForward, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 
 interface NextLessonCountdownProps {
   nextLessonTitle: string;
@@ -16,6 +17,7 @@ const NextLessonCountdown: React.FC<NextLessonCountdownProps> = ({
   onDismiss,
 }) => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
@@ -58,7 +60,7 @@ const NextLessonCountdown: React.FC<NextLessonCountdownProps> = ({
 
         <div className="flex-1 min-w-0">
           <p className="text-xs text-muted-foreground">
-            {isRTL ? 'الدرس التالي' : 'Up next'}
+            {t('course.nextLessonCountdown.upNext')}
           </p>
           <p className="text-sm font-semibold text-foreground truncate">
             {nextLessonTitle}
@@ -72,7 +74,7 @@ const NextLessonCountdown: React.FC<NextLessonCountdownProps> = ({
             className="gap-1.5"
           >
             <SkipForward className="w-4 h-4" />
-            {isRTL ? 'الآن' : 'Now'}
+            {t('course.nextLessonCountdown.now')}
           </Button>
           <Button
             size="icon"
