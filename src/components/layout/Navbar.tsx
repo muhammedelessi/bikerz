@@ -188,7 +188,8 @@ const Navbar: React.FC = () => {
                   alt={logoAlt}
                   width={96}
                   height={96}
-                  loading="lazy"
+                  loading="eager"
+                  decoding="async"
                   className="h-12 sm:h-16 md:h-20 lg:h-24 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]"
                 />
               </picture>
@@ -295,7 +296,8 @@ const Navbar: React.FC = () => {
                         alt={logoAlt}
                         width={40}
                         height={40}
-                        loading="lazy"
+                        loading="eager"
+                        decoding="async"
                         className="h-10 w-auto object-contain"
                       />
                     </picture>

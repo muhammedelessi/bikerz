@@ -21,7 +21,15 @@ const CourseRow: React.FC<{ course: EnrolledCourseItem; isRTL: boolean }> = ({ c
     >
       <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
         {course.thumbnail_url ? (
-          <img src={course.thumbnail_url} alt={title} className="w-full h-full object-cover" loading="lazy" />
+          <img
+            src={course.thumbnail_url}
+            alt={title}
+            width={96}
+            height={96}
+            className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <BookOpen className="w-5 h-5 text-muted-foreground" />
@@ -59,7 +67,15 @@ const AvailableCourseRow: React.FC<{ course: AvailableCourseItem; isRTL: boolean
     >
       <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
         {course.thumbnail_url ? (
-          <img src={course.thumbnail_url} alt={title} className="w-full h-full object-cover" loading="lazy" />
+          <img
+            src={course.thumbnail_url}
+            alt={title}
+            width={96}
+            height={96}
+            className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <BookOpen className="w-5 h-5 text-muted-foreground" />

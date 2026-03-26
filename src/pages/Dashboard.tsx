@@ -11,7 +11,7 @@ import { fetchEnrollmentsWithLiveProgress } from '@/lib/enrollmentProgress';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import LanguageToggle from '@/components/common/LanguageToggle';
-import ProfileCompletionReminder from '@/components/profile/ProfileCompletionReminder';
+import ProfileCompletionReminder from '@/components/ui/profile/ProfileCompletionReminder';
 import {
   BookOpen,
   Play,
@@ -268,7 +268,8 @@ const Dashboard: React.FC = () => {
                   src={bikerzLogo}
                   alt="BIKERZ"
                   className="h-10 sm:h-12 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
-                  loading="lazy"
+                  loading={sidebarOpen ? 'eager' : 'lazy'}
+                  decoding="async"
                 />
               </picture>
             </Link>
@@ -458,8 +459,11 @@ const Dashboard: React.FC = () => {
                                 <img
                                   src={course.thumbnail_url}
                                   alt={title}
+                                  width={1280}
+                                  height={720}
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                   loading="lazy"
+                                  decoding="async"
                                 />
                               </picture>
                             ) : (

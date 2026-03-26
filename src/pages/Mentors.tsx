@@ -157,6 +157,7 @@ const Mentors: React.FC = () => {
                           alt={mentor.profile?.full_name || 'Mentor'}
                           className="w-full h-full object-cover opacity-80"
                           loading="lazy"
+                          decoding="async"
                         />
                       </picture>
                       <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />

@@ -92,6 +92,7 @@ const CommunitySection: React.FC = () => {
             alt="Group of motorcycle riders"
             className="w-full h-full object-cover"
             loading="lazy"
+            decoding="async"
           />
         </picture>
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-background/80" />

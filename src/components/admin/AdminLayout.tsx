@@ -110,7 +110,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <Link to="/admin" className="flex items-center gap-2">
             <picture>
               <source srcSet={bikerzLogo} type="image/webp" />
-              <img src={bikerzLogo} alt="BIKERZ" className="h-8 sm:h-10"  loading="lazy" />
+              <img
+                src={bikerzLogo}
+                alt="BIKERZ"
+                className="h-8 sm:h-10"
+                loading="eager"
+                decoding="async"
+              />
             </picture>
             </Link>
           )}
@@ -118,7 +124,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <Link to="/admin" className="mx-auto">
             <picture>
               <source srcSet={bikerzLogo} type="image/webp" />
-              <img src={bikerzLogo} alt="BIKERZ" className="h-8"  loading="lazy" />
+              <img
+                src={bikerzLogo}
+                alt="BIKERZ"
+                className="h-8"
+                loading="eager"
+                decoding="async"
+              />
             </picture>
             </Link>
           )}

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import LanguageToggle from '@/components/common/LanguageToggle';
-import ProfileCompletionWizard from '@/components/profile/ProfileCompletionWizard';
+import ProfileCompletionWizard from '@/components/ui/profile/ProfileCompletionWizard';
 import { useAuthPageContent } from '@/hooks/useAuthPageContent';
 import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle, User, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -179,8 +179,12 @@ const Signup: React.FC = () => {
           <img
             src={heroImage}
             alt="Motorcycle riders community"
+            width={1600}
+            height={900}
             className="absolute inset-0 w-full h-full object-cover"
-            loading="lazy"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
           />
         </picture>
         <div className="absolute inset-0 bg-gradient-to-l from-background via-background/50 to-transparent" />
@@ -204,7 +208,8 @@ const Signup: React.FC = () => {
                   src={bikerzLogo}
                   alt="BIKERZ"
                   className="h-10 sm:h-12 lg:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
-                  loading="lazy"
+                  loading="eager"
+                  decoding="async"
                 />
               </picture>
             </Link>
@@ -342,6 +347,7 @@ const Signup: React.FC = () => {
             alt=""
             className="w-full h-full object-cover"
             loading="lazy"
+            decoding="async"
           />
         </picture>
       </div>

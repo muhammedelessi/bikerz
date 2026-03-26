@@ -153,6 +153,21 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const meta = CURRENCY_META[currencyCode];
   const isSAR = currencyCode === 'SAR';
 
+  // Keep currency synced with cached detected country (avoids stale sessionStorage mismatches).
+  useEffect(() => {
+    if (!detectedCountry) return;
+    const upper = detectedCountry.toUpperCase();
+    const mapped = COUNTRY_TO_CURRENCY[upper];
+    if (mapped && mapped !== currencyCode) {
+      setCurrencyCodeState(mapped);
+      try {
+        sessionStorage.setItem(CURRENCY_CACHE_KEY, mapped);
+      } catch {
+        // Ignore restricted-storage environments on iOS
+      }
+    }
+  }, [detectedCountry, currencyCode]);
+
   // ── Fetch country-specific prices ──
   useEffect(() => {
     const loadCountryPrices = async () => {
@@ -240,11 +255,8 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch {
       savedCurrency = null;
     }
-
-    if (savedCurrency && savedCurrency in CURRENCY_META) {
-      setIsDetecting(false);
-      return;
-    }
+    const hasSavedCurrency = !!(savedCurrency && savedCurrency in CURRENCY_META);
+    if (hasSavedCurrency) setIsDetecting(false);
 
     const detectLocation = async () => {
       try {
@@ -268,7 +280,9 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           const detected = country ? COUNTRY_TO_CURRENCY[country] : undefined;
           if (detected) {
-            setCurrencyCodeState(detected);
+            // Always sync currency with the latest detected country.
+            // This avoids stale sessionStorage values when a user changes location/country.
+            setCurrencyCodeState(prev => (prev === detected ? prev : detected));
             try {
               sessionStorage.setItem(CURRENCY_CACHE_KEY, detected);
             } catch {
@@ -276,7 +290,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
           } else {
             // Non-Arab country → USD
-            setCurrencyCodeState('USD');
+            setCurrencyCodeState(prev => (prev === 'USD' ? prev : 'USD'));
             try {
               sessionStorage.setItem(CURRENCY_CACHE_KEY, 'USD');
             } catch {
@@ -285,7 +299,33 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
         }
       } catch {
+        // If geolocation fetch fails, use a small timezone-based fallback.
+        // This helps cases where users are in Palestine but the IP lookup is blocked.
+        try {
+          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone?.toUpperCase() || "";
+          const isPalestineTz =
+            tz.includes("GAZA") ||
+            tz.includes("HEBRON") ||
+            tz.includes("JERUSALEM");
+
+          if (isPalestineTz) {
+            setDetectedCountry("PS");
+            setCurrencyCodeState("ILS");
+            try {
+              sessionStorage.setItem(COUNTRY_CACHE_KEY, "PS");
+              sessionStorage.setItem(CURRENCY_CACHE_KEY, "ILS");
+            } catch {
+              // Ignore restricted-storage environments on iOS
+            }
+            return;
+          }
+        } catch {
+          // Ignore timezone detection failures
+        }
+
         // Default SAR
+        setDetectedCountry(null);
+        setCurrencyCodeState("SAR");
       } finally {
         setIsDetecting(false);
       }
@@ -341,11 +381,15 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const entry = getCountryPriceEntry(courseId);
       if (entry) {
         // Country-specific pricing: use original_price and country discount, add VAT
-        const ccy = (entry.currency in CURRENCY_META ? entry.currency : currencyCode) as CurrencyCode;
-        const origWithVat = Math.ceil(entry.original_price * 1.15);
+        // Display currency should follow the user's detected currency (country -> currency mapping),
+        // not the DB currency value (which may be inconsistent across environments).
+        const ccy = currencyCode;
+        // Requirement: show "before discount" price WITHOUT VAT.
+        // Final price stays VAT-inclusive (this is what Tap charges).
+        const origNoVat = Math.ceil(entry.original_price);
         const finalWithVat = Math.ceil(entry.price * 1.15);
         return {
-          originalPrice: origWithVat,
+          originalPrice: origNoVat,
           discountPct: entry.discount_percentage,
           finalPrice: finalWithVat,
           currency: ccy,
@@ -357,7 +401,8 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const dPct = courseDiscountPct > 0 ? courseDiscountPct : 0;
       const finalBeforeVat = dPct > 0 ? Math.ceil(convertedBase * (1 - dPct / 100)) : convertedBase;
       return {
-        originalPrice: Math.ceil(convertedBase * 1.15),
+        // Show "before discount" price WITHOUT VAT.
+        originalPrice: convertedBase,
         discountPct: dPct,
         finalPrice: Math.ceil(finalBeforeVat * 1.15),
         currency: currencyCode,
@@ -370,8 +415,8 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const getCourseCurrency = useCallback(
     (courseId: string): CurrencyCode => {
       const entry = getCountryPriceEntry(courseId);
-      if (entry && entry.currency in CURRENCY_META) return entry.currency as CurrencyCode;
-      return currencyCode;
+      // Keep currency aligned with the user's detected currency.
+      return entry ? currencyCode : currencyCode;
     },
     [getCountryPriceEntry, currencyCode]
   );

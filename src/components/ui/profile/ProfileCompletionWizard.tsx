@@ -270,7 +270,15 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
               <div className="relative">
                 <div className="w-24 h-24 rounded-full bg-muted border-2 border-dashed border-primary/50 flex items-center justify-center overflow-hidden">
                   {avatarPreview ? (
-                    <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover"  loading="lazy" />
+                    <img
+                      src={avatarPreview}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                      width={96}
+                      height={96}
+                    />
                   ) : (
                     <Camera className="w-8 h-8 text-muted-foreground" />
                   )}

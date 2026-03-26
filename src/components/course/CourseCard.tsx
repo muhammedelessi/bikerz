@@ -6,9 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import heroImage from "@/assets/hero-rider.webp";
-import DiscountCountdown from "@/components/common/DiscountCountdown";
 
 export interface CourseCardProps {
   course: {
@@ -36,6 +34,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   const { t } = useTranslation();
   const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+  const locale = isRTL ? "ar" : "en";
 
   const title = isRTL && course.title_ar ? course.title_ar : course.title;
   const desc = isRTL && course.description_ar ? course.description_ar : course.description;
@@ -43,6 +42,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   const effectiveDiscount = isDiscountExpired ? 0 : (course.discount_percentage || 0);
   const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
   const sym = getCurrencySymbol(priceInfo.currency, isRTL);
+  const formatAmount = (value: number) =>
+    new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
   const rating = course.base_rating || 0;
   const reviewCount = course.base_review_count || 0;
   const isEnrolled = !!enrollment;
@@ -66,7 +67,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
       transition={{ duration: 0.6, delay: index * 0.15, ease: [0.16, 1, 0.3, 1] }}
     >
       <Link to={`/courses/${course.id}`} className="block h-full">
-        <div className="group relative h-full rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-primary/50 hover:shadow-[0_8px_40px_hsl(var(--primary)/0.15)]">
+        <div className="group relative h-full rounded-2xl p-[1px] bg-gradient-to-br from-primary/15 via-border/30 to-transparent transition-all duration-500 hover:from-primary/25 hover:via-primary/10">
+          <div className="relative h-full rounded-2xl border border-border/60 bg-card/85 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-primary/40 hover:shadow-[0_8px_40px_hsl(var(--primary)/0.15)]">
           {/* Enrolled indicator */}
           {isCompleted ? (
             <div className="absolute top-3 start-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-600/90 backdrop-blur-sm text-white text-xs font-semibold">
@@ -81,15 +83,20 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
 
           {/* Image Container */}
           <div className="relative aspect-[16/9] overflow-hidden">
-            <picture>
-              <source srcSet={course.thumbnail_url || heroImage} type="image/webp" />
-              <img
-                src={course.thumbnail_url || heroImage}
-                alt={title}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                loading="lazy"
-              />
-            </picture>
+            <div className="absolute inset-0 p-2">
+              <picture>
+                <source srcSet={course.thumbnail_url || heroImage} type="image/webp" />
+                <img
+                  src={course.thumbnail_url || heroImage}
+                  alt={title}
+                  width={1280}
+                  height={720}
+                  className="w-full h-full object-cover rounded-xl transition-transform duration-700 group-hover:scale-105"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </picture>
+            </div>
             <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-r from-card/20 via-transparent to-card/20" />
 
@@ -132,53 +139,44 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
           </div>
 
           {/* Content */}
-          <div className="p-5 sm:p-6 flex flex-col gap-4">
+          <div className="p-4 sm:p-5 flex flex-col gap-3">
             <div>
               <h3 className="text-lg sm:text-xl font-bold text-foreground mb-1.5 group-hover:text-primary transition-colors duration-300 line-clamp-1">
                 {title}
               </h3>
-              <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">{desc}</p>
             </div>
-
-            {/* Enrollment progress */}
-            {isEnrolled && enrollment && (
-              <div>
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <span className="text-muted-foreground">
-                    {t("dashboard.progress")}
-                  </span>
-                  <span className={`font-semibold ${isCompleted ? 'text-green-600 dark:text-green-400' : 'text-primary'}`}>
-                    {isCompleted ? t("courseLearn.completed") : `${enrollment.progress_percentage}%`}
-                  </span>
-                </div>
-                <Progress
-                  value={isCompleted ? 100 : enrollment.progress_percentage}
-                  className={`h-1.5 ${isCompleted ? '[&>div]:bg-green-500' : ''}`}
-                />
-              </div>
-            )}
 
             {/* Divider */}
             <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
             {/* Price row — hidden when completed */}
             {!isCompleted && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-primary">
-                    {priceInfo.finalPrice}
-                  </span>
-                  <span className="text-sm font-semibold text-primary/70">
-                    {sym}
-                  </span>
-                  {priceInfo.discountPct > 0 && (
-                    <span className="text-sm text-muted-foreground line-through ms-1">
-                      {priceInfo.originalPrice} {sym}
+              <div className="flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl leading-none font-black text-primary tabular-nums whitespace-nowrap" dir="ltr">
+                      {formatAmount(priceInfo.finalPrice)}
                     </span>
+                    <span className="text-sm font-bold text-primary/75 whitespace-nowrap" dir="ltr">
+                      {sym}
+                    </span>
+                  </div>
+                  {priceInfo.discountPct > 0 && (
+                    <div className="mt-1 flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground line-through tabular-nums whitespace-nowrap" dir="ltr">
+                        {formatAmount(priceInfo.originalPrice)} {sym}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-bold">
+                        -{priceInfo.discountPct}%
+                      </span>
+                    </div>
                   )}
                 </div>
-                {priceInfo.discountPct > 0 && course.discount_expires_at && (
-                  <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
+
+                {priceInfo.discountPct > 0 && (
+                  <div className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-xs font-bold whitespace-nowrap">
+                    {t("courses.courseCard.discountBadge", { pct: priceInfo.discountPct })}
+                  </div>
                 )}
               </div>
             )}
@@ -223,15 +221,17 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
                     </>
                   ) : (
                     <>
-                      {isRTL
-                        ? t("courses.courseCard.subscribeNow", { price: priceInfo.finalPrice, currency: sym })
-                        : t("courses.courseCard.subscribeNow", { price: priceInfo.finalPrice, currency: sym })}
+                      {t("courses.courseCard.subscribeNow", {
+                        price: formatAmount(priceInfo.finalPrice),
+                        currency: sym,
+                      })}
                       <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
                     </>
                   )}
                 </span>
               </Button>
             )}
+          </div>
           </div>
         </div>
       </Link>

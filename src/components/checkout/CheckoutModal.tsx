@@ -271,7 +271,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           <div className="flex items-center gap-3 mt-3">
             <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
               {course.thumbnail_url ? (
-                <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" loading="lazy" />
+                <img
+                  src={course.thumbnail_url}
+                  alt={course.title}
+                  width={96}
+                  height={96}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
                 <div className="w-full h-full bg-primary/20 flex items-center justify-center">
                   <CreditCard className="w-5 h-5 text-primary" />

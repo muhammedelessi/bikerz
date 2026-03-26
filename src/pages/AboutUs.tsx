@@ -102,7 +102,8 @@ const AboutUs: React.FC = () => {
               src={bgImage}
               alt="Motorcycle riders"
               className="w-full h-full object-cover opacity-30"
-              loading="lazy"
+              loading="eager"
+              decoding="async"
             />
           </picture>
           <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />

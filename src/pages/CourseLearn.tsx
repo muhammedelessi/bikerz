@@ -138,6 +138,7 @@ const CourseLearn: React.FC = () => {
   const lessonProgressRef = React.useRef<LessonProgress[]>([]);
   const initialTimeRef = React.useRef<number>(0);
   const videoContainerRef = React.useRef<HTMLDivElement>(null);
+  const mainScrollRef = React.useRef<HTMLElement | null>(null);
 
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ChevronLeft : ChevronRight;
@@ -536,6 +537,14 @@ const CourseLearn: React.FC = () => {
     }
   }, [chapters, urlLessonId, currentLessonId, id, navigate]);
 
+  // Improve UX on lesson change: scroll main content to top
+  useEffect(() => {
+    if (!currentLessonId) return;
+    const el = mainScrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentLessonId, showTest]);
+
   // Current lesson
   const currentLesson = chapters
     .flatMap(ch => ch.lessons)
@@ -718,6 +727,202 @@ const CourseLearn: React.FC = () => {
     );
   }
 
+  const sidebarContent = (
+    <ScrollArea className="h-full">
+      <div className="p-3 sm:p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-sm sm:text-base text-foreground">
+            {t('courses.courseContent')}
+          </h2>
+          <span className="text-xs sm:text-sm text-muted-foreground">
+            {completedLessons}/{totalLessons}
+          </span>
+        </div>
+
+        {/* Quiz Progress Indicator */}
+        {totalQuizzes > 0 && (
+          <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border/50">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-primary" />
+                <span className="text-xs sm:text-sm font-medium text-foreground">
+                  {t('courseLearn.quizProgress')}
+                </span>
+              </div>
+              <span className={`text-xs sm:text-sm font-bold ${passedQuizzes === totalQuizzes ? 'text-primary' : 'text-muted-foreground'}`}>
+                {passedQuizzes}/{totalQuizzes}
+              </span>
+            </div>
+            <Progress 
+              value={totalQuizzes > 0 ? (passedQuizzes / totalQuizzes) * 100 : 0} 
+              className="h-2" 
+            />
+            {passedQuizzes === totalQuizzes && totalQuizzes > 0 && (
+              <p className="text-xs text-primary mt-2 font-medium">
+                {t('courseLearn.allQuizzesCompleted')}
+              </p>
+            )}
+          </div>
+        )}
+
+        <Accordion type="multiple" defaultValue={chapters.map(c => c.id)} className="space-y-2">
+          {chapters.map((chapter, chapterIndex) => (
+            <AccordionItem
+              key={chapter.id}
+              value={chapter.id}
+              className="border border-border/50 rounded-lg overflow-hidden"
+            >
+              <AccordionTrigger className="px-3 sm:px-4 py-3 hover:no-underline hover:bg-muted/30 text-xs sm:text-sm">
+                <div className="flex items-center gap-2 sm:gap-3 text-start min-w-0">
+                  <span className={`flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                    isChapterComplete(chapter) 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {isChapterComplete(chapter) ? (
+                      <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                    ) : (
+                      chapterIndex + 1
+                    )}
+                  </span>
+                  <span className="font-medium text-foreground break-words line-clamp-2">
+                    {isRTL && chapter.title_ar ? chapter.title_ar : chapter.title}
+                  </span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-0 pb-0">
+                <div className="border-t border-border/50">
+                  {chapter.lessons.map((lesson) => {
+                    const locked = isLessonLocked(lesson, chapter);
+                    const completed = isLessonCompleted(lesson.id);
+                    const isActive = lesson.id === currentLessonId;
+
+                    return (
+                      <button
+                        key={lesson.id}
+                        disabled={locked}
+                        onClick={() => !locked && goToLesson(lesson.id)}
+                        className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 text-start text-xs sm:text-sm transition-colors touch-target ${
+                          isActive 
+                            ? 'bg-primary/10 border-s-2 border-primary' 
+                            : locked 
+                              ? 'opacity-50 cursor-not-allowed' 
+                              : 'hover:bg-muted/50 active:bg-muted/70'
+                        }`}
+                      >
+                        <div className="flex-shrink-0">
+                          {locked ? (
+                            <Lock className="w-4 h-4 text-muted-foreground" />
+                          ) : completed ? (
+                            <CheckCircle2 className="w-4 h-4 text-primary" />
+                          ) : isActive ? (
+                            <Play className="w-4 h-4 text-primary" />
+                          ) : (
+                            <Video className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </div>
+                        <span className={`flex-1 break-words line-clamp-2 ${isActive ? 'text-primary font-medium' : 'text-foreground'}`}>
+                          {isRTL && lesson.title_ar ? lesson.title_ar : lesson.title}
+                        </span>
+                        {lesson.duration_minutes && (
+                          <span className="text-xs text-muted-foreground flex-shrink-0">
+                            {lesson.duration_minutes}m
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                  
+                  {/* Chapter Test */}
+                  {chapter.test && (() => {
+                    const testPassed = isTestPassed(chapter.test.id);
+                    const canAccess = canAccessTest(chapter, chapterIndex);
+                    const lastScore = getLastTestScore(chapter.test.id);
+                    const hasFailed = hasAttemptedTest(chapter.test.id) && !testPassed;
+                    const requiredQuizName = !canAccess ? getRequiredQuizName(chapterIndex) : null;
+
+                    const testButton = (
+                      <button
+                        onClick={() => canAccess && setShowTest(chapter.id)}
+                        disabled={!canAccess}
+                        className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 text-start text-xs sm:text-sm transition-colors border-t border-border/30 touch-target ${
+                          !canAccess
+                            ? 'opacity-50 cursor-not-allowed'
+                            : showTest === chapter.id
+                              ? 'bg-primary/10 border-s-2 border-primary'
+                              : hasFailed
+                                ? 'hover:bg-destructive/10 active:bg-destructive/20'
+                                : 'hover:bg-muted/50 active:bg-muted/70'
+                        }`}
+                      >
+                        <div className="flex-shrink-0">
+                          {testPassed ? (
+                            <Trophy className="w-4 h-4 text-primary" />
+                          ) : hasFailed ? (
+                            <ClipboardList className="w-4 h-4 text-destructive" />
+                          ) : !canAccess ? (
+                            <Lock className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <ClipboardList className="w-4 h-4 text-primary" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className={`block truncate ${
+                            showTest === chapter.id ? 'text-primary font-medium' : 
+                            hasFailed ? 'text-destructive' : 'text-foreground'
+                          }`}>
+                            {isRTL && chapter.test.title_ar ? chapter.test.title_ar : chapter.test.title}
+                          </span>
+                          {hasFailed && lastScore !== null && (
+                            <span className="text-xs text-destructive/80">
+                              {t('courseLearn.lastScoreRetry', { score: lastScore })}
+                            </span>
+                          )}
+                          {!canAccess && requiredQuizName && (
+                            <span className="text-xs text-muted-foreground block mt-0.5">
+                                {t('courseLearn.passFirst', { name: requiredQuizName })}
+                            </span>
+                          )}
+                        </div>
+                        {testPassed ? (
+                          <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+                        ) : hasFailed && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/20 text-destructive flex-shrink-0">
+                            {t('courseLearn.retry')}
+                          </span>
+                        )}
+                      </button>
+                    );
+
+                    // Wrap locked quizzes in a tooltip for additional context
+                    if (!canAccess && requiredQuizName) {
+                      return (
+                        <TooltipProvider key={chapter.test.id}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              {testButton}
+                            </TooltipTrigger>
+                            <TooltipContent side={isRTL ? 'left' : 'right'} className="max-w-[250px]">
+                              <p className="text-sm">
+                                  {t('courseLearn.mustPassToUnlock', { name: requiredQuizName })}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      );
+                    }
+
+                    return testButton;
+                  })()}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </div>
+    </ScrollArea>
+  );
+
   return (
     <div 
       className="min-h-screen min-h-[100svh] bg-background flex flex-col select-none"
@@ -855,7 +1060,13 @@ const CourseLearn: React.FC = () => {
           <Link to="/courses" className="flex items-center gap-2 flex-shrink-0">
             <picture>
               <source srcSet={bikerzLogo} type="image/webp" />
-              <img src={bikerzLogo} alt="BIKERZ" className="h-8 sm:h-10"  loading="lazy" />
+              <img
+                src={bikerzLogo}
+                alt="BIKERZ"
+                className="h-8 sm:h-10"
+                loading="eager"
+                decoding="async"
+              />
             </picture>
           </Link>
           
@@ -886,7 +1097,7 @@ const CourseLearn: React.FC = () => {
       {/* Spacer for fixed header */}
       <div className="h-14 sm:h-16 flex-shrink-0" />
 
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex flex-1 overflow-hidden relative lg:grid lg:grid-cols-[minmax(0,1fr)_20rem]">
         {/* Mobile Overlay */}
         {sidebarOpen && (
           <div
@@ -896,7 +1107,7 @@ const CourseLearn: React.FC = () => {
         )}
 
         {/* Main Content - scrolls independently, leaves space for fixed sidebar on desktop */}
-        <main className={`flex-1 overflow-auto ${isRTL ? 'lg:me-80' : 'lg:me-80'}`}>
+        <main ref={(node) => { mainScrollRef.current = node; }} className="flex-1 overflow-auto">
           <AnimatePresence mode="wait">
             {showTest && testChapter?.test ? (
               <motion.div
@@ -906,16 +1117,18 @@ const CourseLearn: React.FC = () => {
                 exit={{ opacity: 0 }}
                 className="p-4 sm:p-6 lg:p-8"
               >
-                <ChapterTest
-                  testId={testChapter.test.id}
-                  chapterTitle={isRTL && testChapter.title_ar ? testChapter.title_ar : testChapter.title}
-                  onComplete={() => {
-                    setShowTest(null);
-                    queryClient.invalidateQueries({ queryKey: ['test-attempts'] });
-                    toast.success(t('courseLearn.testCompleted'));
-                  }}
-                  onBack={() => setShowTest(null)}
-                />
+                <div className="mx-auto w-full max-w-5xl">
+                  <ChapterTest
+                    testId={testChapter.test.id}
+                    chapterTitle={isRTL && testChapter.title_ar ? testChapter.title_ar : testChapter.title}
+                    onComplete={() => {
+                      setShowTest(null);
+                      queryClient.invalidateQueries({ queryKey: ['test-attempts'] });
+                      toast.success(t('courseLearn.testCompleted'));
+                    }}
+                    onBack={() => setShowTest(null)}
+                  />
+                </div>
               </motion.div>
             ) : (
               <motion.div
@@ -924,9 +1137,10 @@ const CourseLearn: React.FC = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                {/* Video Player - Compact size */}
-                {currentLesson?.video_url && (
-                  <div className="relative bg-black w-full aspect-video">
+                <div className="mx-auto w-full max-w-5xl">
+                  {/* Video Player */}
+                  {currentLesson?.video_url && (
+                    <div className="relative bg-black w-full aspect-video sm:rounded-2xl overflow-hidden sm:mt-6 sm:mx-6 lg:mx-8">
                     {/* Next Lesson Countdown - overlay on video */}
                     <AnimatePresence>
                       {showNextCountdown && nextLesson && (
@@ -976,10 +1190,10 @@ const CourseLearn: React.FC = () => {
                       </div>
                     )}
                   </div>
-                )}
+                  )}
 
-                {/* Lesson Content */}
-                <div className="p-4 sm:p-6 lg:p-8 safe-area-bottom">
+                  {/* Lesson Content */}
+                  <div className="p-4 sm:p-6 lg:p-8 safe-area-bottom">
                   {/* Lesson Title & Chapter */}
                   <div className="flex flex-col gap-4 mb-6">
                     <div className="min-w-0">
@@ -1192,211 +1406,66 @@ const CourseLearn: React.FC = () => {
                       lessonTitle={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
                     />
                   )}
+                  </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Mobile sticky navigation (faster lesson switching) */}
+          {!showTest && (
+            <div className="sm:hidden sticky bottom-0 z-20 border-t border-border bg-background/90 backdrop-blur-xl safe-area-bottom">
+              <div className="px-3 py-3 flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="h-11 flex-1"
+                  disabled={!prevLesson}
+                  onClick={() => prevLesson && goToLesson(prevLesson.id)}
+                >
+                  <BackIcon className="w-4 h-4 me-2" />
+                  <span className="truncate">{t('courses.prevLesson')}</span>
+                </Button>
+
+                {nextLesson ? (() => {
+                  const nextChapter = chapters.find(ch => ch.lessons.some(l => l.id === nextLesson.id));
+                  const nextLocked = nextChapter ? isLessonLocked(nextLesson, nextChapter) : false;
+                  return (
+                    <Button
+                      className="h-11 flex-1"
+                      variant={nextLocked ? 'outline' : 'default'}
+                      disabled={nextLocked}
+                      onClick={() => !nextLocked && goToLesson(nextLesson.id)}
+                    >
+                      {nextLocked ? <Lock className="w-4 h-4 me-2" /> : null}
+                      <span className="truncate">{nextLocked ? t('courseLearn.nextLessonLocked') : t('courses.nextLesson')}</span>
+                      {!nextLocked ? <ForwardIcon className="w-4 h-4 ms-2" /> : null}
+                    </Button>
+                  );
+                })() : (
+                  <Button className="h-11 flex-1" disabled>
+                    <Trophy className="w-4 h-4 me-2" />
+                    <span className="truncate">{t('courseLearn.courseComplete')}</span>
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </main>
 
-        {/* Sidebar - Fixed on desktop like Udemy, slide-in drawer on mobile */}
+        {/* Desktop Sidebar - Udemy-like (always visible) */}
+        <aside className="hidden lg:block border-s border-border bg-card">
+          <div className="sticky top-16 h-[calc(100svh-4rem)]">
+            {sidebarContent}
+          </div>
+        </aside>
+
+        {/* Mobile Sidebar - slide-in drawer */}
         <aside
-          className={`fixed top-14 sm:top-16 bottom-0 w-[300px] sm:w-80 max-w-[85vw] bg-card border-s border-border transform transition-transform duration-300 ease-out z-50 lg:z-40 ${
-            sidebarOpen ? 'translate-x-0' : isRTL ? '-translate-x-full lg:translate-x-0' : 'translate-x-full lg:translate-x-0'
+          className={`fixed top-14 sm:top-16 bottom-0 w-[300px] sm:w-80 max-w-[85vw] bg-card border-s border-border transform transition-transform duration-300 ease-out z-50 lg:hidden ${
+            sidebarOpen ? 'translate-x-0' : isRTL ? '-translate-x-full' : 'translate-x-full'
           } ${isRTL ? 'left-0' : 'right-0'}`}
         >
-          <ScrollArea className="h-full">
-            <div className="p-3 sm:p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-semibold text-sm sm:text-base text-foreground">
-                  {t('courses.courseContent')}
-                </h2>
-                <span className="text-xs sm:text-sm text-muted-foreground">
-                  {completedLessons}/{totalLessons}
-                </span>
-              </div>
-
-              {/* Quiz Progress Indicator */}
-              {totalQuizzes > 0 && (
-                <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border/50">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-primary" />
-                      <span className="text-xs sm:text-sm font-medium text-foreground">
-                        {t('courseLearn.quizProgress')}
-                      </span>
-                    </div>
-                    <span className={`text-xs sm:text-sm font-bold ${passedQuizzes === totalQuizzes ? 'text-primary' : 'text-muted-foreground'}`}>
-                      {passedQuizzes}/{totalQuizzes}
-                    </span>
-                  </div>
-                  <Progress 
-                    value={totalQuizzes > 0 ? (passedQuizzes / totalQuizzes) * 100 : 0} 
-                    className="h-2" 
-                  />
-                  {passedQuizzes === totalQuizzes && totalQuizzes > 0 && (
-                    <p className="text-xs text-primary mt-2 font-medium">
-                      {t('courseLearn.allQuizzesCompleted')}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <Accordion type="multiple" defaultValue={chapters.map(c => c.id)} className="space-y-2">
-                {chapters.map((chapter, chapterIndex) => (
-                  <AccordionItem
-                    key={chapter.id}
-                    value={chapter.id}
-                    className="border border-border/50 rounded-lg overflow-hidden"
-                  >
-                    <AccordionTrigger className="px-3 sm:px-4 py-3 hover:no-underline hover:bg-muted/30 text-xs sm:text-sm">
-                      <div className="flex items-center gap-2 sm:gap-3 text-start min-w-0">
-                        <span className={`flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                          isChapterComplete(chapter) 
-                            ? 'bg-primary text-primary-foreground' 
-                            : 'bg-muted text-muted-foreground'
-                        }`}>
-                          {isChapterComplete(chapter) ? (
-                            <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                          ) : (
-                            chapterIndex + 1
-                          )}
-                        </span>
-                        <span className="font-medium text-foreground break-words line-clamp-2">
-                          {isRTL && chapter.title_ar ? chapter.title_ar : chapter.title}
-                        </span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-0 pb-0">
-                      <div className="border-t border-border/50">
-                        {chapter.lessons.map((lesson) => {
-                          const locked = isLessonLocked(lesson, chapter);
-                          const completed = isLessonCompleted(lesson.id);
-                          const isActive = lesson.id === currentLessonId;
-
-                          return (
-                            <button
-                              key={lesson.id}
-                              disabled={locked}
-                              onClick={() => !locked && goToLesson(lesson.id)}
-                              className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 text-start text-xs sm:text-sm transition-colors touch-target ${
-                                isActive 
-                                  ? 'bg-primary/10 border-s-2 border-primary' 
-                                  : locked 
-                                    ? 'opacity-50 cursor-not-allowed' 
-                                    : 'hover:bg-muted/50 active:bg-muted/70'
-                              }`}
-                            >
-                              <div className="flex-shrink-0">
-                                {locked ? (
-                                  <Lock className="w-4 h-4 text-muted-foreground" />
-                                ) : completed ? (
-                                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                                ) : isActive ? (
-                                  <Play className="w-4 h-4 text-primary" />
-                                ) : (
-                                  <Video className="w-4 h-4 text-muted-foreground" />
-                                )}
-                              </div>
-                              <span className={`flex-1 break-words line-clamp-2 ${isActive ? 'text-primary font-medium' : 'text-foreground'}`}>
-                                {isRTL && lesson.title_ar ? lesson.title_ar : lesson.title}
-                              </span>
-                              {lesson.duration_minutes && (
-                                <span className="text-xs text-muted-foreground flex-shrink-0">
-                                  {lesson.duration_minutes}m
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                        
-                        {/* Chapter Test */}
-                        {chapter.test && (() => {
-                          const testPassed = isTestPassed(chapter.test.id);
-                          const canAccess = canAccessTest(chapter, chapterIndex);
-                          const lastScore = getLastTestScore(chapter.test.id);
-                          const hasFailed = hasAttemptedTest(chapter.test.id) && !testPassed;
-                          const requiredQuizName = !canAccess ? getRequiredQuizName(chapterIndex) : null;
-
-                          const testButton = (
-                            <button
-                              onClick={() => canAccess && setShowTest(chapter.id)}
-                              disabled={!canAccess}
-                              className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 text-start text-xs sm:text-sm transition-colors border-t border-border/30 touch-target ${
-                                !canAccess
-                                  ? 'opacity-50 cursor-not-allowed'
-                                  : showTest === chapter.id
-                                    ? 'bg-primary/10 border-s-2 border-primary'
-                                    : hasFailed
-                                      ? 'hover:bg-destructive/10 active:bg-destructive/20'
-                                      : 'hover:bg-muted/50 active:bg-muted/70'
-                              }`}
-                            >
-                              <div className="flex-shrink-0">
-                                {testPassed ? (
-                                  <Trophy className="w-4 h-4 text-primary" />
-                                ) : hasFailed ? (
-                                  <ClipboardList className="w-4 h-4 text-destructive" />
-                                ) : !canAccess ? (
-                                  <Lock className="w-4 h-4 text-muted-foreground" />
-                                ) : (
-                                  <ClipboardList className="w-4 h-4 text-primary" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <span className={`block truncate ${
-                                  showTest === chapter.id ? 'text-primary font-medium' : 
-                                  hasFailed ? 'text-destructive' : 'text-foreground'
-                                }`}>
-                                  {isRTL && chapter.test.title_ar ? chapter.test.title_ar : chapter.test.title}
-                                </span>
-                                {hasFailed && lastScore !== null && (
-                                  <span className="text-xs text-destructive/80">
-                                    {t('courseLearn.lastScoreRetry', { score: lastScore })}
-                                  </span>
-                                )}
-                                {!canAccess && requiredQuizName && (
-                                  <span className="text-xs text-muted-foreground block mt-0.5">
-                                      {t('courseLearn.passFirst', { name: requiredQuizName })}
-                                  </span>
-                                )}
-                              </div>
-                              {testPassed ? (
-                                <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
-                              ) : hasFailed && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/20 text-destructive flex-shrink-0">
-                                  {t('courseLearn.retry')}
-                                </span>
-                              )}
-                            </button>
-                          );
-
-                          // Wrap locked quizzes in a tooltip for additional context
-                          if (!canAccess && requiredQuizName) {
-                            return (
-                              <TooltipProvider key={chapter.test.id}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    {testButton}
-                                  </TooltipTrigger>
-                                  <TooltipContent side={isRTL ? 'left' : 'right'} className="max-w-[250px]">
-                                    <p className="text-sm">
-                                        {t('courseLearn.mustPassToUnlock', { name: requiredQuizName })}
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            );
-                          }
-
-                          return testButton;
-                        })()}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </div>
-          </ScrollArea>
+          {sidebarContent}
         </aside>
       </div>
 

@@ -786,8 +786,12 @@ const AdminCourses: React.FC = () => {
                   <img
                     src={formData.thumbnail_url}
                     alt="Course thumbnail"
+                    width={1280}
+                    height={720}
                     className="w-full h-full object-cover"
-                   loading="lazy" />
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <Button
                     type="button"
                     variant="destructive"

@@ -349,7 +349,8 @@ const PaymentSuccess: React.FC = () => {
                   src={bikerLogo}
                   alt="BIKERZ"
                   className="h-10 sm:h-12 lg:h-16 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-                  loading="lazy"
+                  loading="eager"
+                  decoding="async"
                 />
               </picture>
             </Link>

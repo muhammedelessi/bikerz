@@ -142,7 +142,8 @@ const Login: React.FC = () => {
                   src={bikerzLogo}
                   alt="BIKERZ"
                   className="h-10 sm:h-12 lg:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
-                  loading="lazy"
+                  loading="eager"
+                  decoding="async"
                 />
               </picture>
             </Link>
@@ -330,7 +331,13 @@ const Login: React.FC = () => {
       <div className="lg:hidden absolute inset-0 -z-10 opacity-10">
         <picture>
           <source srcSet={heroImage} type="image/webp" />
-          <img src={heroImage} alt="" className="w-full h-full object-cover" loading="lazy" />
+          <img
+            src={heroImage}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
         </picture>
       </div>
     </div>

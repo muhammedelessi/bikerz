@@ -530,8 +530,12 @@ const CourseDetail: React.FC = () => {
                       <img
                         src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
                         alt={t('courseDetail.videoThumbnail')}
+                        width={1280}
+                        height={720}
                         className="w-full h-full object-cover"
-                        loading="lazy"
+                        loading="eager"
+                        fetchPriority="high"
+                        decoding="async"
                       />
                     </picture>
                     <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
@@ -552,7 +556,15 @@ const CourseDetail: React.FC = () => {
               <div className="relative w-full">
                 <picture>
                   <source srcSet={course.thumbnail_url} type="image/webp" />
-                  <img src={course.thumbnail_url} alt={courseTitle} className="w-full aspect-video object-cover"  loading="lazy" />
+                  <img
+                    src={course.thumbnail_url}
+                    alt={courseTitle}
+                    width={1280}
+                    height={720}
+                    className="w-full aspect-video object-cover"
+                    loading="eager"
+                    decoding="async"
+                  />
                 </picture>
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60" />
               </div>
@@ -592,8 +604,12 @@ const CourseDetail: React.FC = () => {
                               <img
                                 src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
                                 alt={t('courseDetail.videoThumbnail')}
+                                width={1280}
+                                height={720}
                                 className="w-full h-full object-cover"
-                                loading="lazy"
+                                loading="eager"
+                                fetchPriority="high"
+                                decoding="async"
                               />
                             </picture>
                             <div className="absolute inset-0" />
@@ -614,7 +630,15 @@ const CourseDetail: React.FC = () => {
                       <div className="relative rounded-2xl overflow-hidden">
                         <picture>
                           <source srcSet={course.thumbnail_url} type="image/webp" />
-                          <img src={course.thumbnail_url} alt={courseTitle} className="w-full aspect-video object-cover"  loading="lazy" />
+                          <img
+                            src={course.thumbnail_url}
+                            alt={courseTitle}
+                            width={1280}
+                            height={720}
+                            className="w-full aspect-video object-cover"
+                            loading="eager"
+                            decoding="async"
+                          />
                         </picture>
                       </div>
                     ) : null}

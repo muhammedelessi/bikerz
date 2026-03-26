@@ -122,6 +122,7 @@ const Footer: React.FC = () => {
                   src={bikerzLogo}
                   alt="BIKERZ"
                   loading="lazy"
+                  decoding="async"
                   className="h-12 sm:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
                 />
               </picture>
