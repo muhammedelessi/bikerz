@@ -568,7 +568,30 @@ const CourseDetail: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <main>
+      {/* Breadcrumbs */}
+      <nav className="page-container py-3">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/">{isRTL ? 'الرئيسية' : 'Home'}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/courses">{isRTL ? 'الدورات' : 'Courses'}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage className="truncate max-w-[200px] sm:max-w-none">{courseTitle}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </nav>
+
+
         {/* Hero Section */}
         <section className="relative overflow-hidden">
           {/* Mobile: stacked video on top */}
