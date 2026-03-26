@@ -13,6 +13,14 @@ import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import {
   Play,
   Clock,
   BookOpen,
@@ -35,6 +43,7 @@ import {
   ClipboardList,
   Infinity,
   MonitorPlay,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.webp';
@@ -48,6 +57,8 @@ import StarRating from '@/components/course/StarRating';
 import { useDiscountCountdown } from '@/hooks/useDiscountCountdown';
 import DiscountCountdown from '@/components/common/DiscountCountdown';
 import DiscountUrgencyBanner from '@/components/landing/DiscountUrgencyBanner';
+import CourseCard from '@/components/course/CourseCard';
+import { fetchEnrollmentsWithLiveProgress, type EnrollmentWithProgress } from '@/lib/enrollmentProgress';
 
 
 interface Lesson {
@@ -247,7 +258,60 @@ const CourseDetail: React.FC = () => {
     enabled: !!id && !!user,
   });
 
-  // Meta Pixel: ViewContent event
+  // Fetch related courses ("You Might Also Like")
+  const { data: relatedCourses = [] } = useQuery({
+    queryKey: ['related-courses', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('courses')
+        .select(`
+          id, title, title_ar, description, description_ar,
+          thumbnail_url, difficulty_level, price, is_published,
+          discount_percentage, discount_expires_at,
+          base_rating, base_review_count,
+          chapters (
+            id, is_published,
+            lessons ( id, duration_minutes, is_published )
+          )
+        `)
+        .eq('is_published', true)
+        .neq('id', id!)
+        .order('created_at', { ascending: true })
+        .limit(4);
+      if (error) throw error;
+      return (data || []).map((c: any) => {
+        let lessonCount = 0;
+        let totalMinutes = 0;
+        (c.chapters || []).forEach((ch: any) => {
+          if (ch.is_published) {
+            (ch.lessons || []).forEach((l: any) => {
+              if (l.is_published) {
+                lessonCount++;
+                totalMinutes += l.duration_minutes || 0;
+              }
+            });
+          }
+        });
+        return { ...c, lessonCount, totalMinutes };
+      });
+    },
+    enabled: !!id,
+  });
+
+  // Fetch enrollments for related courses
+  const { data: relatedEnrollments = [] } = useQuery({
+    queryKey: ['related-enrollments', user?.id, id],
+    queryFn: async () => {
+      if (!user) return [];
+      return (await fetchEnrollmentsWithLiveProgress(user.id)) as EnrollmentWithProgress[];
+    },
+    enabled: !!user,
+  });
+
+  const getRelatedEnrollment = (courseId: string) =>
+    relatedEnrollments.find(e => e.course_id === courseId);
+
+
   useEffect(() => {
     if (course && id) {
       trackViewContent({
@@ -503,6 +567,29 @@ const CourseDetail: React.FC = () => {
           </motion.header>
         )}
       </AnimatePresence>
+
+      {/* Breadcrumbs */}
+      <nav className="page-container py-3">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/">{isRTL ? 'الرئيسية' : 'Home'}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/courses">{isRTL ? 'الدورات' : 'Courses'}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage className="truncate max-w-[200px] sm:max-w-none">{courseTitle}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </nav>
 
       <main>
         {/* Hero Section */}
@@ -1190,9 +1277,50 @@ const CourseDetail: React.FC = () => {
 
         {/* Reviews Section */}
         <CourseReviews courseId={id!} isEnrolled={isEnrolled} />
+
+        {/* You Might Also Like Section */}
+        {relatedCourses.length > 0 && (
+          <section className="section-container">
+            <div className="flex items-center justify-between mb-6 sm:mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                {isRTL ? 'قد يعجبك أيضاً' : 'You Might Also Like'}
+              </h2>
+              <Button variant="outline" size="sm" className="text-xs" asChild>
+                <Link to="/courses">
+                  <Eye className="w-3.5 h-3.5 me-1.5" />
+                  {isRTL ? 'عرض الكل' : 'View All'}
+                </Link>
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-7">
+              {relatedCourses.slice(0, 4).map((rc: any, idx: number) => (
+                <CourseCard
+                  key={rc.id}
+                  course={rc}
+                  index={idx}
+                  enrollment={getRelatedEnrollment(rc.id)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
 
       <Footer />
+      </div>
+
+      {/* Persistent "View All Courses" button — mobile only */}
+      <div className="fixed bottom-20 end-4 z-50 lg:hidden">
+        <Button
+          size="sm"
+          className="h-10 px-4 text-xs font-bold rounded-full shadow-lg"
+          asChild
+        >
+          <Link to="/courses">
+            <BookOpen className="w-3.5 h-3.5 me-1.5" />
+            {isRTL ? 'كل الدورات' : 'All Courses'}
+          </Link>
+        </Button>
       </div>
 
       {/* Checkout Modal */}
