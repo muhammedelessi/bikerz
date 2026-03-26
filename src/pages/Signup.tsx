@@ -170,7 +170,7 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen min-h-[100dvh] flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
+    <div className="min-h-screen min-h-[100dvh] w-full overflow-x-hidden flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
       <SEOHead title="Sign Up" description="Create your BIKERZ Academy account and start learning motorcycle riding from expert instructors today." canonical="/signup" />
       {/* Image Section - Hidden on mobile */}
       <div className="hidden lg:block flex-1 relative">
@@ -192,12 +192,12 @@ const Signup: React.FC = () => {
       </div>
 
       {/* Form Section */}
-      <div className="flex-1 flex items-start lg:items-center justify-center p-4 sm:p-6 lg:p-8 bg-background safe-area-inset">
+      <div className="flex-1 flex items-start lg:items-center justify-center p-4 sm:p-6 lg:p-8 pb-8 sm:pb-6 bg-background safe-area-inset">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
+          className="w-full max-w-md mx-auto"
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-6 sm:mb-8">
@@ -217,7 +217,7 @@ const Signup: React.FC = () => {
           </div>
 
           {/* Form Card */}
-          <div className="card-premium p-5 sm:p-6 lg:p-8">
+          <div className="card-premium p-4 sm:p-6 lg:p-8 overflow-visible">
             <div className="text-center mb-6 sm:mb-8">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
                 {title}
@@ -266,7 +266,7 @@ const Signup: React.FC = () => {
 
             <form
               onSubmit={handleSubmit}
-              className="space-y-4 sm:space-y-5"
+              className="space-y-4 sm:space-y-5 pb-1"
               onFocusCapture={(e) => {
                 const el = e.target as HTMLElement | null;
                 if (!el) return;

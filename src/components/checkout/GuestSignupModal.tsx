@@ -557,12 +557,16 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     ? (isRTL ? 'تسجيل الدخول للمتابعة' : 'Login to continue')
     : (isRTL ? 'أنشئ حسابك للمتابعة' : 'Create your account to continue');
 
+  const mobileDrawerHeight = isIOS && keyboardOffset > 0
+    ? `calc(100dvh - ${keyboardOffset}px)`
+    : '100dvh';
+
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent
-          className="bg-card border-border h-[100dvh] max-h-[100dvh] overflow-hidden"
-          style={{ height: '100dvh', maxHeight: '100dvh' }}
+          className="bg-card border-border h-[100svh] max-h-[100svh] overflow-hidden"
+          style={{ height: mobileDrawerHeight, maxHeight: mobileDrawerHeight }}
         >
           <DrawerHeader className="pb-1 pt-2 flex-shrink-0">
             <DrawerTitle className="text-base font-bold text-center">
@@ -571,7 +575,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
             {headerContent}
           </DrawerHeader>
           <div
-            className="overflow-y-auto pb-safe overscroll-contain flex-1"
+            className="overflow-y-auto pb-safe overscroll-contain flex-1 min-h-0"
             style={{
               overflowY: 'auto',
               WebkitOverflowScrolling: 'touch',

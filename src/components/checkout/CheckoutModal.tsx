@@ -69,6 +69,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const formatLocal = useCallback((amount: number) => `${amount} ${currencyLabel}`, [currencyLabel]);
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('info');
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const isIOS = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent);
 
   // Price info
   const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
@@ -108,6 +110,30 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (!open) return;
     promo.autoApplySavedCoupon();
   }, [open]);
+
+  // iOS keyboard-safe viewport for mobile checkout
+  useEffect(() => {
+    if (!open || !isIOS || typeof window === 'undefined' || !window.visualViewport) {
+      setKeyboardOffset(0);
+      return;
+    }
+
+    const viewport = window.visualViewport;
+    const updateKeyboardOffset = () => {
+      const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      setKeyboardOffset(offset);
+    };
+
+    updateKeyboardOffset();
+    viewport.addEventListener('resize', updateKeyboardOffset);
+    viewport.addEventListener('scroll', updateKeyboardOffset);
+
+    return () => {
+      viewport.removeEventListener('resize', updateKeyboardOffset);
+      viewport.removeEventListener('scroll', updateKeyboardOffset);
+      setKeyboardOffset(0);
+    };
+  }, [open, isIOS]);
 
   // Meta Pixel: InitiateCheckout
   useEffect(() => {
@@ -255,10 +281,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   const isStatusOverlay = paymentStatus === 'verifying' || paymentStatus === 'succeeded' || paymentStatus === 'failed';
+  const modalHeight = isIOS && keyboardOffset > 0 ? `calc(100dvh - ${keyboardOffset}px)` : '100dvh';
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[520px] w-full max-w-full h-[100dvh] sm:h-auto max-h-[100dvh] sm:max-h-[92vh] bg-card border-0 sm:border-2 sm:border-border shadow-2xl p-0 overflow-hidden flex flex-col !rounded-none sm:!rounded-lg !left-0 !top-0 !translate-x-0 !translate-y-0 sm:!left-[50%] sm:!top-[50%] sm:!-translate-x-1/2 sm:!-translate-y-1/2 gap-0">
+      <DialogContent
+        className="sm:max-w-[520px] w-full max-w-full h-[100svh] sm:h-auto max-h-[100svh] sm:max-h-[92vh] bg-card border-0 sm:border-2 sm:border-border shadow-2xl p-0 overflow-hidden flex flex-col !rounded-none sm:!rounded-lg !left-0 !top-0 !translate-x-0 !translate-y-0 sm:!left-[50%] sm:!top-[50%] sm:!-translate-x-1/2 sm:!-translate-y-1/2 gap-0"
+        style={!isStatusOverlay ? { height: modalHeight, maxHeight: modalHeight } : undefined}
+      >
         {/* Header */}
         <div className="bg-muted/30 p-4 sm:p-5 border-b-2 border-border flex-shrink-0">
           <DialogHeader>
