@@ -98,7 +98,10 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     const viewport = window.visualViewport;
 
     const updateHeight = () => {
-      setVisualViewportHeight(viewport.height);
+      // Use requestAnimationFrame for smoother updates on iOS
+      requestAnimationFrame(() => {
+        setVisualViewportHeight(viewport.height);
+      });
     };
 
     updateHeight();
