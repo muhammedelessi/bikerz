@@ -170,7 +170,7 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen min-h-[100svh] flex flex-col lg:flex-row">
+    <div className="min-h-screen min-h-[100dvh] flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
       <SEOHead title="Sign Up" description="Create your BIKERZ Academy account and start learning motorcycle riding from expert instructors today." canonical="/signup" />
       {/* Image Section - Hidden on mobile */}
       <div className="hidden lg:block flex-1 relative">
@@ -192,7 +192,7 @@ const Signup: React.FC = () => {
       </div>
 
       {/* Form Section */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-background safe-area-inset">
+      <div className="flex-1 flex items-start lg:items-center justify-center p-4 sm:p-6 lg:p-8 bg-background safe-area-inset">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -264,7 +264,18 @@ const Signup: React.FC = () => {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-4 sm:space-y-5"
+              onFocusCapture={(e) => {
+                const el = e.target as HTMLElement | null;
+                if (!el) return;
+                // iOS: ensure focused input stays visible above keyboard
+                window.setTimeout(() => {
+                  el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+                }, 50);
+              }}
+            >
               <div className="relative">
                 <User className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
                 <Input
