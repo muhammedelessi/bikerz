@@ -169,17 +169,22 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                {/* Price block */}
+              <div className="space-y-2">
+                {/* Price display — not enrolled */}
                 {!isEnrolled && (
-                  <div className="flex flex-col leading-none">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-black text-primary">{priceInfo.finalPrice}</span>
-                      <span className="text-[10px] font-bold text-primary/70">{sym}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {hasDiscount && (
+                        <span className="text-xs text-muted-foreground line-through">
+                          {priceInfo.originalPrice} {sym}
+                        </span>
+                      )}
+                      <span className="text-xl font-black text-primary">{priceInfo.finalPrice}</span>
+                      <span className="text-[11px] font-semibold text-primary/70">{sym}</span>
                     </div>
                     {hasDiscount && (
-                      <span className="text-[10px] text-muted-foreground line-through">
-                        {priceInfo.originalPrice} {sym}
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-destructive/10 text-destructive text-[10px] font-bold">
+                        {isRTL ? `وفّر ${priceInfo.discountPct}%` : `Save ${priceInfo.discountPct}%`}
                       </span>
                     )}
                   </div>
@@ -189,12 +194,12 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
                 <Button
                   variant="default"
                   size="sm"
-                  className={`h-8 text-xs font-bold group/btn ${isEnrolled ? "w-full" : "flex-1"}`}
+                  className="w-full h-9 text-xs font-bold group/btn"
                 >
                   <span className="flex items-center gap-1.5">
                     {isEnrolled
-                      ? (isRTL ? "أكمل التعلم" : "Continue")
-                      : (isRTL ? "اشترك الآن" : "Enroll Now")}
+                      ? (isRTL ? "أكمل التعلم" : "Continue Learning")
+                      : (isRTL ? `اشترك الآن – ${priceInfo.finalPrice} ${sym}` : `Enroll Now – ${priceInfo.finalPrice} ${sym}`)}
                     <Arrow className="w-3 h-3 transition-transform group-hover/btn:translate-x-0.5 rtl:group-hover/btn:-translate-x-0.5" />
                   </span>
                 </Button>
