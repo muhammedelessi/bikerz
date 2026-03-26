@@ -258,7 +258,60 @@ const CourseDetail: React.FC = () => {
     enabled: !!id && !!user,
   });
 
-  // Meta Pixel: ViewContent event
+  // Fetch related courses ("You Might Also Like")
+  const { data: relatedCourses = [] } = useQuery({
+    queryKey: ['related-courses', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('courses')
+        .select(`
+          id, title, title_ar, description, description_ar,
+          thumbnail_url, difficulty_level, price, is_published,
+          discount_percentage, discount_expires_at,
+          base_rating, base_review_count,
+          chapters (
+            id, is_published,
+            lessons ( id, duration_minutes, is_published )
+          )
+        `)
+        .eq('is_published', true)
+        .neq('id', id!)
+        .order('created_at', { ascending: true })
+        .limit(4);
+      if (error) throw error;
+      return (data || []).map((c: any) => {
+        let lessonCount = 0;
+        let totalMinutes = 0;
+        (c.chapters || []).forEach((ch: any) => {
+          if (ch.is_published) {
+            (ch.lessons || []).forEach((l: any) => {
+              if (l.is_published) {
+                lessonCount++;
+                totalMinutes += l.duration_minutes || 0;
+              }
+            });
+          }
+        });
+        return { ...c, lessonCount, totalMinutes };
+      });
+    },
+    enabled: !!id,
+  });
+
+  // Fetch enrollments for related courses
+  const { data: relatedEnrollments = [] } = useQuery({
+    queryKey: ['related-enrollments', user?.id, id],
+    queryFn: async () => {
+      if (!user) return [];
+      return (await fetchEnrollmentsWithLiveProgress(user.id)) as EnrollmentWithProgress[];
+    },
+    enabled: !!user,
+  });
+
+  const getRelatedEnrollment = (courseId: string) =>
+    relatedEnrollments.find(e => e.course_id === courseId);
+
+
   useEffect(() => {
     if (course && id) {
       trackViewContent({
