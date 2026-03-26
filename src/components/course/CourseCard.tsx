@@ -168,9 +168,6 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
                     </span>
                   )}
                 </div>
-                {priceInfo.discountPct > 0 && course.discount_expires_at && (
-                  <DiscountCountdown expiresAt={course.discount_expires_at} isRTL={isRTL} />
-                )}
               </div>
             )}
 
