@@ -13,15 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { AlertCircle, Eye, EyeOff, User, Mail, Lock } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, User, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 const GoogleIcon = () => (
@@ -553,34 +547,39 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     ? (isRTL ? 'تسجيل الدخول للمتابعة' : 'Login to continue')
     : (isRTL ? 'أنشئ حسابك للمتابعة' : 'Create your account to continue');
 
-  const drawerHeight = visualViewportHeight != null
-    ? `${visualViewportHeight}px`
-    : '100dvh';
+  if (!open) return null;
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent
-          className="bg-card border-border overflow-hidden flex flex-col"
-          style={{ height: drawerHeight, maxHeight: drawerHeight, transition: 'height 0.15s ease' }}
-        >
-          <DrawerHeader className="pb-1 pt-2 flex-shrink-0">
-            <DrawerTitle className="text-base font-bold text-center">
-              {titleText}
-            </DrawerTitle>
-            {headerContent}
-          </DrawerHeader>
-          <div
-            className="overflow-y-auto overscroll-contain flex-1 min-h-0"
-            style={{
-              WebkitOverflowScrolling: 'touch',
-              paddingBottom: `calc(env(safe-area-inset-bottom) + 24px)`,
-            }}
+      <div className="fixed inset-0 z-50 bg-background flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="text-muted-foreground hover:text-foreground transition-colors p-1"
           >
-            {formContent}
-          </div>
-        </DrawerContent>
-      </Drawer>
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-base font-bold text-foreground text-center flex-1">
+            {titleText}
+          </h1>
+          <div className="w-7" />
+        </div>
+        {headerContent && (
+          <div className="px-4 pt-2 flex-shrink-0">{headerContent}</div>
+        )}
+        {/* Scrollable content */}
+        <div
+          className="overflow-y-auto overscroll-contain flex-1 min-h-0"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            paddingBottom: `calc(env(safe-area-inset-bottom) + 24px)`,
+          }}
+        >
+          {formContent}
+        </div>
+      </div>
     );
   }
 
