@@ -7,7 +7,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import heroImage from "@/assets/hero-rider.webp";
-import DiscountCountdown from "@/components/common/DiscountCountdown";
+
 
 export interface CourseCardProps {
   course: {
