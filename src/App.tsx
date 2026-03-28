@@ -12,7 +12,15 @@ import ScrollToTop from "@/components/common/ScrollToTop";
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
 import React, { Suspense, lazy, useEffect, useState } from "react";
 
-const SocialProofNotification = lazy(() => import("@/components/common/SocialProofNotification"));
+const lazyRetry = (importFn: () => Promise<any>, retries = 3, delay = 1000): Promise<any> =>
+  importFn().catch((err: Error) => {
+    if (retries <= 0) throw err;
+    return new Promise((resolve) => setTimeout(resolve, delay)).then(() =>
+      lazyRetry(importFn, retries - 1, delay)
+    );
+  });
+
+const SocialProofNotification = lazy(() => lazyRetry(() => import("@/components/common/SocialProofNotification")));
 
 // Critical routes - loaded eagerly (above-the-fold / high-traffic)
 import Index from "./pages/Index";
