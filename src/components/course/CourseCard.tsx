@@ -114,7 +114,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
                     if (hasPreviewVideo) {
                       e.preventDefault();
                       e.stopPropagation();
-                      setVideoPlaying(true);
+                      onPlayVideo?.(course.id);
                     }
                   }}
                   aria-label={t("courseDetail.playIntroVideo")}
