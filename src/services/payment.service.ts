@@ -43,6 +43,7 @@ export async function createCharge(
       payment_method: config.paymentMethod || 'card',
       detected_country: detectedCountry || null,
       device_info: parseDeviceInfo(),
+      token_id: config.tokenId || null,
     },
   });
 
