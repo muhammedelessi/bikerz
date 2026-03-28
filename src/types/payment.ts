@@ -10,6 +10,9 @@ export interface TapPaymentConfig {
   couponId?: string;
   paymentMethod?: PaymentMethod;
   tokenId?: string;
+  amount?: number;
+  courseName?: string;
+  isRTL?: boolean;
 }
 
 export interface CheckoutCourse {
