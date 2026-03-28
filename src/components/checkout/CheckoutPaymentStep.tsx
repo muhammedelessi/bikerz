@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   CreditCard, Gift, Shield, Check, Lock,
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { ApplePayIcon, GooglePayIcon, VisaIcon, MastercardIcon } from '@/components/checkout/PaymentMethodIcons';
 import { PHONE_COUNTRIES } from '@/data/phoneCountryCodes';
+import TapCardElement from '@/components/checkout/TapCardElement';
 import type { PaymentStatus, AppliedCoupon } from '@/types/payment';
 
 interface CheckoutPaymentStepProps {
@@ -42,7 +43,8 @@ interface CheckoutPaymentStepProps {
   paymentStatus: PaymentStatus;
   guestSigningUp: boolean;
   isPaymentReady: boolean;
-  onSubmitPayment: () => void;
+  onSubmitPayment: (tokenId: string) => void;
+  onCardError?: (error: string) => void;
 }
 
 const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(({
@@ -52,11 +54,32 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(({
   fullName, phone, phonePrefix,
   isOtherCountry, isOtherCity, countryManual, country, cityManual, city,
   courseTitle, courseTitleAr,
-  paymentStatus, guestSigningUp, isPaymentReady, onSubmitPayment,
+  paymentStatus, guestSigningUp, isPaymentReady, onSubmitPayment, onCardError,
 }) => {
   const effectiveCountry = isOtherCountry ? countryManual : country;
   const effectiveCity = isOtherCity ? cityManual : city;
   const totalWithVat = discountedPrice;
+  const cardContainerRef = useRef<HTMLDivElement>(null);
+  const [cardReady, setCardReady] = React.useState(false);
+  const [tokenizing, setTokenizing] = React.useState(false);
+
+  const handleTokenized = useCallback((tokenId: string) => {
+    setTokenizing(false);
+    onSubmitPayment(tokenId);
+  }, [onSubmitPayment]);
+
+  const handleCardError = useCallback((error: string) => {
+    setTokenizing(false);
+    onCardError?.(error);
+  }, [onCardError]);
+
+  const handlePayClick = useCallback(() => {
+    const el = document.getElementById('tap-element-container') as any;
+    if (el?.__tokenize) {
+      setTokenizing(true);
+      el.__tokenize();
+    }
+  }, []);
 
   return (
     <motion.div
@@ -66,22 +89,31 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(({
       exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
       className="space-y-5"
     >
-      {/* Accepted Payment Methods */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <CreditCard className="w-4 h-4 text-primary" />
-          <h4 className="font-semibold text-foreground text-sm">
-            {isRTL ? 'طرق الدفع المتاحة' : 'Accepted Payment Methods'}
-          </h4>
+      {/* Embedded Card Form */}
+      {discountedPrice > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-primary" />
+            <h4 className="font-semibold text-foreground text-sm">
+              {isRTL ? 'بيانات البطاقة' : 'Card Details'}
+            </h4>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            {[VisaIcon, MastercardIcon, ApplePayIcon, GooglePayIcon].map((Icon, i) => (
+              <div key={i} className="flex items-center px-2.5 py-1.5 rounded-md border border-border bg-muted/20">
+                <Icon className="h-4 w-auto" />
+              </div>
+            ))}
+          </div>
+          <TapCardElement
+            onTokenized={handleTokenized}
+            onError={handleCardError}
+            onReady={() => setCardReady(true)}
+            disabled={paymentStatus === 'processing' || tokenizing}
+            isRTL={isRTL}
+          />
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {[VisaIcon, MastercardIcon, ApplePayIcon, GooglePayIcon].map((Icon, i) => (
-            <div key={i} className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
-              <Icon className="h-5 w-auto" />
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
 
       {/* Promo Code */}
       <div className="space-y-2">
@@ -193,18 +225,18 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(({
         <Button
           className="w-full h-12 rounded-xl text-base font-bold shadow-glow hover:shadow-glow-lg transition-all duration-300"
           variant="cta"
-          onClick={onSubmitPayment}
-          disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady}
+          onClick={handlePayClick}
+          disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady || !cardReady || tokenizing}
         >
           {guestSigningUp ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin me-2" />
               <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
             </>
-          ) : paymentStatus === 'processing' ? (
+          ) : paymentStatus === 'processing' || tokenizing ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin me-2" />
-              <span>{isRTL ? 'جاري التحويل لصفحة الدفع...' : 'Redirecting to payment...'}</span>
+              <span>{isRTL ? 'جاري معالجة الدفع...' : 'Processing payment...'}</span>
             </>
           ) : (
             <>
