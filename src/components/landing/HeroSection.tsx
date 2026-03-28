@@ -250,28 +250,16 @@ const HeroSection: React.FC = () => {
                 transition={fade(0.6, 0.65)}
                 className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full sm:w-auto mb-6 sm:mb-8"
               >
-                <Link to="/signup" className="w-full sm:w-auto">
+                <Link to="/courses" className="w-full sm:w-auto">
                   <Button
-                    variant="heroOutline"
+                    variant="hero"
                     size="lg"
-                    className="group w-full sm:w-auto min-h-[48px] sm:min-h-[52px] text-sm sm:text-base border-sand/30 text-sand hover:bg-sand/10 backdrop-blur-sm"
+                    className="group w-full sm:w-auto min-h-[48px] sm:min-h-[52px] text-sm sm:text-base shadow-[0_4px_32px_hsl(var(--primary)/0.5)] hover:shadow-[0_6px_40px_hsl(var(--primary)/0.6)] transition-shadow"
                   >
-                    {ctaText}
-                    <Arrow className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5" />
+                    {secondaryCta}
                   </Button>
                 </Link>
-              </m.div>
-
-              {/* Trust badges */}
-              <m.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={fade(0.5, 0.85)}
-                className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-5"
-              >
-                {trustBadges.map((badge, i) => (
-                  <TrustBadge key={i} icon={badge.icon} label={badge.label} />
-                ))}
               </m.div>
             </div>
           </div>
