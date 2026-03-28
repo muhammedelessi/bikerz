@@ -266,6 +266,92 @@ const HeroSection: React.FC = () => {
         </div>
 
         {/* ═══ Stats Bar (bottom, full-width) ═══ */}
+        {showStats && (
+          <m.div
+            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={fade(0.7, 0.9)}
+            className="relative z-10 w-full"
+          >
+            {/* خط التوهج العلوي البرتقالي من كودك */}
+            <div
+              className="absolute inset-x-0 top-0 h-px"
+              style={{ background: "linear-gradient(90deg, transparent, hsl(18 78% 45% / 0.5), transparent)" }}
+            />
+
+            <div
+              className="backdrop-blur-2xl border-t border-border/40"
+              style={{ background: "linear-gradient(180deg, hsl(180 3% 8% / 0.85) 0%, hsl(180 3% 11% / 0.95) 100%)" }}
+            >
+              <div className="max-w-[1200px] mx-auto px-4 py-6 md:py-8">
+                {/* الجريد: 2 أعمدة على الجوال و 4 على الكمبيوتر */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-y-10 gap-x-6">
+                  {displayStats.map((stat, i) => {
+                    // ✅ الحل هنا: تعيين الأيقونة لمتغير يبدأ بحرف كبير
+                    const Icon = stat.icon;
+
+                    return (
+                      <m.div
+                        key={stat.key}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 1.0 + i * 0.1, duration: 0.4 }}
+                        // الترتيب: أيقونة ثم نصوص (flex-row)
+                        className="group relative flex items-center justify-start md:justify-center gap-4 px-3"
+                      >
+                        {/* الدائرة المحيطة بالأيقونة (تشبه الصورة المرفقة) */}
+                        <div
+                          className="flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center border transition-all duration-300 group-hover:scale-105"
+                          style={{
+                            // خلفية برتقالية داكنة جداً كما في صورتك
+                            backgroundColor: "hsl(18 78% 45% / 0.08)",
+                            // حدود برتقالية رفيعة جداً
+                            borderColor: "hsl(18 78% 45% / 0.25)",
+                          }}
+                        >
+                          {/* رندر الأيقونة هنا باستخدام المتغير الذي يبدأ بحرف كبير */}
+                          {Icon && <Icon size={28} style={{ color: "hsl(18 78% 45%)" }} />}
+                        </div>
+
+                        {/* النصوص بجانب الأيقونة */}
+                        <div className="flex flex-col text-right">
+                          <span
+                            className="text-2xl sm:text-3xl font-black tabular-nums leading-none tracking-tight"
+                            style={{
+                              color: "hsl(18 78% 45%)", // اللون البرتقالي الأساسي
+                              textShadow: "0 0 15px hsl(18 78% 45% / 0.25)",
+                            }}
+                          >
+                            {stat.value}
+                          </span>
+                          <span className="text-[12px] sm:text-[13px] font-medium mt-1 text-muted-foreground transition-colors group-hover:text-foreground/80">
+                            {stat.label}
+                          </span>
+                        </div>
+
+                        {/* فاصل عمودي يظهر فقط في الشاشات الكبيرة */}
+                        {i < displayStats.length - 1 && (
+                          <div
+                            className="hidden md:block absolute end-0 top-1/2 -translate-y-1/2 w-px h-12 opacity-30"
+                            style={{
+                              background: "linear-gradient(180deg, transparent, hsl(18 78% 45%), transparent)",
+                            }}
+                          />
+                        )}
+                      </m.div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* خط التوهج السفلي الأخضر من كودك */}
+            <div
+              className="absolute inset-x-0 bottom-0 h-px"
+              style={{ background: "linear-gradient(90deg, transparent, hsl(163 47% 20% / 0.3), transparent)" }}
+            />
+          </m.div>
+        )}
 
         {/* Bottom fade */}
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none z-[5]" />
