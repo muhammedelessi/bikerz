@@ -141,12 +141,6 @@ const HeroSection: React.FC = () => {
     <LazyMotion features={domAnimation} strict>
       <section className="relative min-h-[90svh] lg:min-h-[85svh] flex flex-col overflow-hidden">
         {/* ═══ Background & Overlays ═══ */}
-        <div className="absolute inset-0">
-          <img src={heroImage} alt="Hero" className="w-full h-full object-cover object-center" fetchPriority="high" />
-          <div className="absolute inset-0 bg-near-black/60" />
-          <div className="absolute inset-0 bg-gradient-to-t from-near-black via-near-black/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-near-black/90 via-near-black/20 to-transparent" />
-        </div>
 
         {/* ═══ الزينة التقنية (سد الفراغ الأحمر) ═══ */}
         <FloatingDecorIcons />
