@@ -4,7 +4,7 @@ import { LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ArrowLeft, Play } from "lucide-react";
+import { ArrowRight, ArrowLeft, Play, ShieldCheck, CreditCard, Award } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,12 +17,15 @@ type HeroLandingContent = HeroContent & {
   stats_members_value?: string | number;
   stats_lessons_value?: string | number;
   stats_success_value?: string | number;
+  stats_courses_value?: string | number;
   stats_members_en?: string;
   stats_members_ar?: string;
   stats_lessons_en?: string;
   stats_lessons_ar?: string;
   stats_success_en?: string;
   stats_success_ar?: string;
+  stats_courses_en?: string;
+  stats_courses_ar?: string;
   show_stats?: boolean | string;
   show_badge?: string | boolean;
   defaultHeroImage?: string;
@@ -34,28 +37,38 @@ function formatCount(count: number) {
 }
 
 async function fetchHeroStats() {
-  const [profilesRes, lessonsRes, enrollmentsRes] = await Promise.all([
+  const [profilesRes, lessonsRes, enrollmentsRes, coursesRes] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("lessons").select("*", { count: "exact", head: true }).eq("is_published", true),
     supabase.from("course_enrollments").select("progress_percentage"),
+    supabase.from("courses").select("*", { count: "exact", head: true }).eq("is_published", true),
   ]);
   const usersCount = profilesRes.count ?? 0;
   const lessonsCount = lessonsRes.count ?? 0;
+  const coursesCount = coursesRes.count ?? 0;
   const enrollmentStats = enrollmentsRes.data ?? [];
   const successfulEnrollments = enrollmentStats.filter((e) => (e.progress_percentage ?? 0) >= 70).length;
   const successRate =
     enrollmentStats.length > 0 ? Math.round((successfulEnrollments / enrollmentStats.length) * 100) : 0;
-  return { members: usersCount, lessons: lessonsCount, successRate };
+  return { members: usersCount, lessons: lessonsCount, successRate, courses: coursesCount };
 }
 
-/* ── Stat card sub-component ── */
-const StatCard: React.FC<{ value: string; label: string }> = ({ value, label }) => (
-  <div className="text-center px-3 sm:px-5">
+/* ── Trust badge ── */
+const TrustBadge: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, label }) => (
+  <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-foreground/50 font-medium uppercase tracking-wider">
+    {icon}
+    <span>{label}</span>
+  </div>
+);
+
+/* ── Stat item ── */
+const StatItem: React.FC<{ value: string; label: string }> = ({ value, label }) => (
+  <div className="text-center">
     <AnimatedCounter
       value={value}
-      className="text-2xl sm:text-3xl md:text-4xl font-black text-primary drop-shadow-[0_0_12px_hsl(var(--primary)/0.4)]"
+      className="text-xl sm:text-2xl lg:text-3xl font-black text-primary-foreground"
     />
-    <div className="text-[10px] sm:text-xs text-foreground/50 mt-1 uppercase tracking-[0.15em] font-semibold">
+    <div className="text-[9px] sm:text-[10px] text-primary-foreground/60 mt-0.5 uppercase tracking-[0.15em] font-semibold">
       {label}
     </div>
   </div>
@@ -84,37 +97,19 @@ const HeroSection: React.FC = () => {
     enabled: needsLiveStats,
   });
 
-  const membersValue = content?.stats_members_value
-    ? String(content.stats_members_value)
-    : formatCount(stats?.members ?? 0);
-  const lessonsValue = content?.stats_lessons_value
-    ? String(content.stats_lessons_value)
-    : formatCount(stats?.lessons ?? 0);
-  const successValue = content?.stats_success_value
-    ? `${content.stats_success_value}%`
-    : stats?.successRate
-      ? `${stats.successRate}%`
-      : "0%";
+  const membersValue = content?.stats_members_value ? String(content.stats_members_value) : formatCount(stats?.members ?? 0);
+  const lessonsValue = content?.stats_lessons_value ? String(content.stats_lessons_value) : formatCount(stats?.lessons ?? 0);
+  const successValue = content?.stats_success_value ? `${content.stats_success_value}%` : stats?.successRate ? `${stats.successRate}%` : "0%";
+  const coursesValue = content?.stats_courses_value ? String(content.stats_courses_value) : formatCount(stats?.courses ?? 0);
 
   const displayStats = useMemo(
     () => [
-      {
-        key: "members",
-        value: membersValue,
-        label: isRTL ? content?.stats_members_ar || "عضو" : content?.stats_members_en || "Members",
-      },
-      {
-        key: "lessons",
-        value: lessonsValue,
-        label: isRTL ? content?.stats_lessons_ar || "درس" : content?.stats_lessons_en || "Lessons",
-      },
-      {
-        key: "success",
-        value: successValue,
-        label: isRTL ? content?.stats_success_ar || "نجاح" : content?.stats_success_en || "Success",
-      },
+      { key: "members", value: membersValue, label: isRTL ? content?.stats_members_ar || "عضو" : content?.stats_members_en || "Members" },
+      { key: "success", value: successValue, label: isRTL ? content?.stats_success_ar || "نسبة النجاح" : content?.stats_success_en || "Success" },
+      { key: "lessons", value: lessonsValue, label: isRTL ? content?.stats_lessons_ar || "درس" : content?.stats_lessons_en || "Lessons" },
+      { key: "courses", value: coursesValue, label: isRTL ? content?.stats_courses_ar || "دورة" : content?.stats_courses_en || "Courses" },
     ],
-    [membersValue, lessonsValue, successValue, isRTL, content],
+    [membersValue, lessonsValue, successValue, coursesValue, isRTL, content],
   );
 
   const getText = (enKey: keyof HeroContent, arKey: keyof HeroContent, fallbackEn: string, fallbackAr: string) => {
@@ -126,16 +121,26 @@ const HeroSection: React.FC = () => {
   const subtitle = getText("subtitle_en", "subtitle_ar", t("hero.subtitle", { lng: "en" }), t("hero.subtitle", { lng: "ar" }));
   const ctaText = getText("cta_en", "cta_ar", t("hero.cta", { lng: "en" }), t("hero.cta", { lng: "ar" }));
   const secondaryCta = getText("secondary_cta_en", "secondary_cta_ar", t("hero.secondaryCta", { lng: "en" }), t("hero.secondaryCta", { lng: "ar" }));
-
   const heroImage = content?.defaultHeroImage ?? defaultHeroImage;
 
-  const fade = (duration: number, delay = 0) =>
-    prefersReducedMotion ? { duration: 0 } : { duration, delay };
+  const fade = (dur: number, delay = 0) => (prefersReducedMotion ? { duration: 0 } : { duration: dur, delay });
+
+  const trustBadges = isRTL
+    ? [
+        { icon: <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />, label: "مدربون معتمدون" },
+        { icon: <CreditCard className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />, label: "دفع آمن" },
+        { icon: <Award className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />, label: "شهادات معتمدة" },
+      ]
+    : [
+        { icon: <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />, label: "Verified Instructors" },
+        { icon: <CreditCard className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />, label: "Secure Payment" },
+        { icon: <Award className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />, label: "Certified Courses" },
+      ];
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <section className="relative min-h-[85svh] flex flex-col items-center justify-center overflow-hidden">
-        {/* ── Background layers ── */}
+      <section className="relative min-h-[90svh] lg:min-h-[85svh] flex flex-col">
+        {/* ═══ Background ═══ */}
         <div className="absolute inset-0">
           <img
             src={heroImage}
@@ -144,123 +149,141 @@ const HeroSection: React.FC = () => {
             height={1080}
             fetchPriority="high"
             decoding="async"
-            className="w-full h-full object-cover object-center scale-105"
+            className="w-full h-full object-cover object-center"
             loading="eager"
           />
-          {/* Dark cinematic overlays */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/40" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-background/80" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,hsl(var(--background))_100%)]" />
+          {/* Cinematic overlays */}
+          <div className="absolute inset-0 bg-near-black/60" />
+          <div className="absolute inset-0 bg-gradient-to-t from-near-black via-near-black/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-near-black/90 via-near-black/40 to-transparent lg:via-transparent lg:to-near-black/20" />
+          {/* Orange accent glow — bottom left */}
+          <div className="absolute bottom-0 left-0 w-[60%] h-[40%] bg-[radial-gradient(ellipse_at_bottom_left,hsl(var(--primary)/0.15),transparent_70%)] pointer-events-none" />
         </div>
 
-        {/* Grain texture */}
+        {/* Grain */}
         <div
-          className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay"
+          className="absolute inset-0 opacity-[0.04] pointer-events-none mix-blend-overlay"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
           }}
         />
 
-        {/* Glow orb */}
+        {/* ═══ Floating Discount Banner (top) ═══ */}
         <m.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.12 }}
-          transition={fade(2, 0.5)}
-          className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[350px] rounded-full blur-[100px] pointer-events-none"
-          style={{ background: "hsl(var(--primary) / 0.5)" }}
-        />
+          initial={{ opacity: 0, y: prefersReducedMotion ? 0 : -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={fade(0.5, 0.1)}
+          className="relative z-20 pt-3 sm:pt-4 px-4"
+        >
+          <DiscountUrgencyBanner floating />
+        </m.div>
 
-        {/* ── Main content ── */}
-        <div className="relative z-10 section-container text-center px-4 flex flex-col items-center gap-5 sm:gap-6 pt-8 sm:pt-10">
-          {/* Floating discount badge */}
-          <m.div
-            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={fade(0.6, 0.2)}
-            className="w-full"
-          >
-            <DiscountUrgencyBanner floating />
-          </m.div>
+        {/* ═══ Main Content ═══ */}
+        <div className="relative z-10 flex-1 flex items-center">
+          <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 py-8 lg:py-0">
+            {/* Desktop: split layout (content left). Mobile: centered stack */}
+            <div className="flex flex-col items-center text-center lg:items-start lg:text-start lg:max-w-[55%]">
 
-          {/* Title with gradient */}
-          {contentLoading ? (
-            <Skeleton className="h-16 w-3/4 mx-auto" />
-          ) : (
-            <m.h1
-              initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={fade(0.8, 0.35)}
-              className="max-w-5xl mx-auto text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight bg-gradient-to-r from-primary via-sand to-primary bg-clip-text text-transparent drop-shadow-lg"
-            >
-              {title}
-            </m.h1>
-          )}
+              {/* Title */}
+              {contentLoading ? (
+                <Skeleton className="h-14 sm:h-20 w-[85%] mb-4" />
+              ) : (
+                <m.h1
+                  initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 28 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={fade(0.8, 0.25)}
+                  className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] xl:text-6xl font-black leading-[1.1] tracking-tight mb-4 sm:mb-5"
+                  style={{
+                    background: "linear-gradient(135deg, hsl(var(--primary-foreground)) 0%, hsl(var(--primary)) 50%, hsl(var(--sand)) 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  {title}
+                </m.h1>
+              )}
 
-          {/* Subtitle */}
-          {contentLoading ? (
-            <Skeleton className="h-8 w-2/3 mx-auto" />
-          ) : (
-            <m.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={fade(0.7, 0.55)}
-              className="mx-auto max-w-xl text-sm sm:text-base md:text-lg text-foreground/70 leading-relaxed"
-            >
-              {subtitle}
-            </m.p>
-          )}
+              {/* Subtitle */}
+              {contentLoading ? (
+                <Skeleton className="h-6 w-[70%] mb-6" />
+              ) : (
+                <m.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={fade(0.7, 0.5)}
+                  className="text-sm sm:text-base lg:text-lg text-sand/80 leading-relaxed max-w-lg mb-6 sm:mb-8"
+                >
+                  {subtitle}
+                </m.p>
+              )}
 
-          {/* CTAs */}
-          <m.div
-            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={fade(0.6, 0.65)}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-1 px-4 sm:px-0"
-          >
-            <Link to="/courses" className="w-full sm:w-auto">
-              <Button
-                variant="hero"
-                size="lg"
-                className="group w-full sm:w-auto min-h-[44px] sm:min-h-[52px] text-sm sm:text-base shadow-[0_4px_24px_hsl(var(--primary)/0.4)]"
+              {/* CTAs */}
+              <m.div
+                initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={fade(0.6, 0.65)}
+                className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full sm:w-auto mb-6 sm:mb-8"
               >
-                <Play className="w-4 h-4 sm:w-5 sm:h-5" />
-                {secondaryCta}
-              </Button>
-            </Link>
-            <Link to="/signup" className="w-full sm:w-auto">
-              <Button
-                variant="heroOutline"
-                size="lg"
-                className="group w-full sm:w-auto min-h-[44px] sm:min-h-[52px] text-sm sm:text-base backdrop-blur-sm"
-              >
-                {ctaText}
-                <Arrow className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
-              </Button>
-            </Link>
-          </m.div>
+                <Link to="/courses" className="w-full sm:w-auto">
+                  <Button
+                    variant="hero"
+                    size="lg"
+                    className="group w-full sm:w-auto min-h-[48px] sm:min-h-[52px] text-sm sm:text-base shadow-[0_4px_32px_hsl(var(--primary)/0.5)] hover:shadow-[0_6px_40px_hsl(var(--primary)/0.6)] transition-shadow"
+                  >
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5" />
+                    {secondaryCta}
+                  </Button>
+                </Link>
+                <Link to="/signup" className="w-full sm:w-auto">
+                  <Button
+                    variant="heroOutline"
+                    size="lg"
+                    className="group w-full sm:w-auto min-h-[48px] sm:min-h-[52px] text-sm sm:text-base border-sand/30 text-sand hover:bg-sand/10 backdrop-blur-sm"
+                  >
+                    {ctaText}
+                    <Arrow className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
+                  </Button>
+                </Link>
+              </m.div>
 
-          {/* Stats row */}
-          {showStats && (
-            <m.div
-              initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={fade(0.7, 0.85)}
-              className="flex items-center justify-center gap-4 sm:gap-8 pt-4 sm:pt-6"
-            >
-              {displayStats.map((stat, index) => (
-                <React.Fragment key={stat.key}>
-                  {index > 0 && (
-                    <div className="w-px h-10 bg-gradient-to-b from-transparent via-border to-transparent" />
-                  )}
-                  <StatCard value={stat.value} label={stat.label} />
-                </React.Fragment>
-              ))}
-            </m.div>
-          )}
+              {/* Trust badges */}
+              <m.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={fade(0.5, 0.85)}
+                className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-5"
+              >
+                {trustBadges.map((badge, i) => (
+                  <TrustBadge key={i} icon={badge.icon} label={badge.label} />
+                ))}
+              </m.div>
+            </div>
+          </div>
         </div>
 
+        {/* ═══ Stats Bar (bottom, full-width) ═══ */}
+        {showStats && (
+          <m.div
+            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={fade(0.7, 0.9)}
+            className="relative z-10"
+          >
+            <div className="bg-primary/10 backdrop-blur-lg border-t border-primary/20">
+              <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-3 sm:py-4">
+                <div className="grid grid-cols-4 gap-2 sm:gap-4">
+                  {displayStats.map((stat) => (
+                    <StatItem key={stat.key} value={stat.value} label={stat.label} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </m.div>
+        )}
+
         {/* Bottom fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none z-[5]" />
 
         {/* Scroll indicator */}
         {!prefersReducedMotion && (
@@ -268,15 +291,15 @@ const HeroSection: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.6 }}
-            className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 hidden sm:block"
+            className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 hidden lg:block z-10"
           >
             <m.div
               animate={{ y: [0, 8, 0] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="w-5 h-9 rounded-full border border-muted-foreground/20 flex items-start justify-center p-1.5"
+              className="w-5 h-9 rounded-full border border-sand/20 flex items-start justify-center p-1.5"
             >
               <m.div
-                animate={{ opacity: [0.5, 1, 0.5] }}
+                animate={{ opacity: [0.4, 1, 0.4] }}
                 transition={{ duration: 2, repeat: Infinity }}
                 className="w-1 h-2.5 rounded-full bg-primary/60"
               />
