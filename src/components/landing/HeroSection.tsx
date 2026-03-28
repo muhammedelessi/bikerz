@@ -174,17 +174,7 @@ const HeroSection: React.FC = () => {
     <LazyMotion features={domAnimation} strict>
       <section className="relative min-h-[90svh] lg:min-h-[85svh] flex flex-col">
         {/* ═══ Background ═══ */}
-        <div className="absolute inset-0">
-          <img
-            src={heroImage}
-            alt="Motorcycle rider on desert highway"
-            width={1920}
-            height={1080}
-            fetchPriority="high"
-            decoding="async"
-            className="w-full h-full object-cover object-center"
-            loading="eager"
-          />
+
           {/* Cinematic overlays */}
           <div className="absolute inset-0 bg-near-black/60" />
           <div className="absolute inset-0 bg-gradient-to-t from-near-black via-near-black/50 to-transparent" />
