@@ -370,7 +370,19 @@ const CourseDetail: React.FC = () => {
   const isEnrolled = !!enrollment;
   const isLoading = courseLoading || chaptersLoading;
 
-  // Dynamic estimated completion time
+  // Auto-open checkout when navigated with ?checkout=true
+  useEffect(() => {
+    if (searchParams.get('checkout') === 'true' && course && !isEnrolled) {
+      if (user) {
+        setShowCheckout(true);
+      } else {
+        setShowGuestSignup(true);
+      }
+      searchParams.delete('checkout');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, course, user, isEnrolled, setSearchParams]);
+
   const totalDurationMinutes = useMemo(() => 
     chapters.reduce((acc, ch) => 
       acc + ch.lessons.reduce((la, l) => la + (l.duration_minutes || 5), 0), 0
