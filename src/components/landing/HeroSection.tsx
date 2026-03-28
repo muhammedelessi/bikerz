@@ -224,10 +224,6 @@ const HeroSection: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={fade(0.8, 0.25)}
                   className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] xl:text-6xl font-black leading-[1.1] tracking-tight mb-4 sm:mb-5"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, hsl(var(--primary-foreground)) 0%, hsl(var(--primary)) 50%, hsl(var(--sand)) 100%)",
-                  }}
                 >
                   {title}
                 </m.h1>
