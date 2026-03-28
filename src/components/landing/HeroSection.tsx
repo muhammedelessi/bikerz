@@ -267,63 +267,54 @@ const HeroSection: React.FC = () => {
 
         {/* ═══ Stats Bar (bottom, full-width) ═══ */}
         {showStats && (
-      import { motion as m } from "framer-motion";
+          <m.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="relative z-10 w-full overflow-hidden"
+          >
+            {/* الخلفية المتصلة المتدرجة (بناءً على ألوان الصورة المرفقة) */}
+            <div
+              className="w-full py-6 md:py-8"
+              style={{
+                background: "linear-gradient(90deg, #1db299 0%, #39cabb 50%, #57e099 100%)",
+                boxShadow: "0 10px 30px -10px rgba(29, 178, 153, 0.3)",
+              }}
+            >
+              <div className="max-w-[1200px] mx-auto px-4">
+                {/* الجريد: 2 أعمدة في الجوال (grid-cols-2) و 4 في الشاشات الكبيرة (md:grid-cols-4) */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4">
+                  {displayStats.map((stat, i) => (
+                    <m.div
+                      key={stat.key}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.5 + i * 0.1 }}
+                      className="flex items-center justify-start md:justify-center gap-3 px-2"
+                    >
+                      {/* الدائرة التي تحتوي على الأيقونة */}
+                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                        {/* هنا تضع الأيقونة الخاصة بك */}
+                        {stat.icon ? (
+                          <stat.icon className="w-6 h-6 text-white" />
+                        ) : (
+                          <div className="w-6 h-6 bg-white/50 rounded-full" />
+                        )}
+                      </div>
 
-// لنفترض أن displayStats تحتوي على icon لكل عنصر
-const StatsSection = () => {
-  return (
-    <m.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, delay: 0.2 }}
-      className="relative z-10 w-full overflow-hidden"
-    >
-      {/* الخلفية المتصلة المتدرجة (بناءً على ألوان الصورة المرفقة) */}
-      <div 
-        className="w-full py-6 md:py-8"
-        style={{ 
-          background: "linear-gradient(90deg, #1db299 0%, #39cabb 50%, #57e099 100%)",
-          boxShadow: "0 10px 30px -10px rgba(29, 178, 153, 0.3)"
-        }}
-      >
-        <div className="max-w-[1200px] mx-auto px-4">
-          {/* الجريد: 2 أعمدة في الجوال (grid-cols-2) و 4 في الشاشات الكبيرة (md:grid-cols-4) */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4">
-            {displayStats.map((stat, i) => (
-              <m.div
-                key={stat.key}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5 + i * 0.1 }}
-                className="flex items-center justify-start md:justify-center gap-3 px-2"
-              >
-                {/* الدائرة التي تحتوي على الأيقونة */}
-                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                  {/* هنا تضع الأيقونة الخاصة بك */}
-                  {stat.icon ? (
-                    <stat.icon className="w-6 h-6 text-white" />
-                  ) : (
-                    <div className="w-6 h-6 bg-white/50 rounded-full" /> 
-                  )}
+                      {/* النصوص: القيمة والعنوان بجانب بعضهما عمودياً */}
+                      <div className="flex flex-col text-white">
+                        <span className="text-lg md:text-xl font-bold leading-tight">{stat.value}</span>
+                        <span className="text-[12px] md:text-[14px] font-medium opacity-90 leading-tight">
+                          {stat.label}
+                        </span>
+                      </div>
+                    </m.div>
+                  ))}
                 </div>
-
-                {/* النصوص: القيمة والعنوان بجانب بعضهما عمودياً */}
-                <div className="flex flex-col text-white">
-                  <span className="text-lg md:text-xl font-bold leading-tight">
-                    {stat.value}
-                  </span>
-                  <span className="text-[12px] md:text-[14px] font-medium opacity-90 leading-tight">
-                    {stat.label}
-                  </span>
-                </div>
-              </m.div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </m.div>
-  );
-};
+              </div>
+            </div>
+          </m.div>
         )}
 
         {/* Bottom fade */}
