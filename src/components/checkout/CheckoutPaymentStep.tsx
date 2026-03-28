@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   CreditCard, Gift, Shield, Check, Lock,
@@ -39,6 +39,7 @@ interface CheckoutPaymentStepProps {
   paymentStatus: PaymentStatus;
   guestSigningUp: boolean;
   isPaymentReady: boolean;
+  iframeUrl: string | null;
   onSubmitPayment: () => void;
 }
 
@@ -49,11 +50,42 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(({
   fullName, phone, phonePrefix,
   isOtherCountry, isOtherCity, countryManual, country, cityManual, city,
   courseTitle, courseTitleAr,
-  paymentStatus, guestSigningUp, isPaymentReady, onSubmitPayment,
+  paymentStatus, guestSigningUp, isPaymentReady, iframeUrl, onSubmitPayment,
 }) => {
   const effectiveCountry = isOtherCountry ? countryManual : country;
   const effectiveCity = isOtherCity ? cityManual : city;
   const totalWithVat = discountedPrice;
+
+  // If iframe URL is provided, show embedded payment page
+  if (iframeUrl) {
+    return (
+      <motion.div
+        key="payment-iframe"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col items-center gap-3"
+      >
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+          <span>{isRTL ? 'أكمل الدفع أدناه' : 'Complete payment below'}</span>
+        </div>
+        <div className="w-full rounded-xl overflow-hidden border border-border bg-background" style={{ minHeight: 420 }}>
+          <iframe
+            src={iframeUrl}
+            className="w-full border-0"
+            style={{ height: 420, minHeight: 420 }}
+            allow="payment"
+            title="Tap Payment"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"
+          />
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Lock className="w-3.5 h-3.5 text-primary" />
+          <span>🔒 {isRTL ? 'مُؤمّن بواسطة Tap Payments' : 'Secured by Tap Payments'}</span>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -201,7 +233,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(({
           ) : paymentStatus === 'processing' ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin me-2" />
-              <span>{isRTL ? 'جاري فتح صفحة الدفع...' : 'Opening payment...'}</span>
+              <span>{isRTL ? 'جاري تجهيز الدفع...' : 'Preparing payment...'}</span>
             </>
           ) : (
             <>

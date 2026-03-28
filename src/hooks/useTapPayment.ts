@@ -1,36 +1,15 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { verifyChargeOnce } from '@/services/payment.service';
+import { createCharge, verifyChargeOnce } from '@/services/payment.service';
 import type { PaymentStatus, TapPaymentConfig } from '@/types/payment';
 
 export type { PaymentMethod, PaymentStatus, TapPaymentConfig } from '@/types/payment';
 
-declare global {
-  interface Window {
-    GoSell: any;
-  }
-}
-
-let goSellLoadPromise: Promise<void> | null = null;
-
-function loadGoSellSdk(): Promise<void> {
-  if (goSellLoadPromise) return goSellLoadPromise;
-  if (window.GoSell) return Promise.resolve();
-  goSellLoadPromise = new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://goSellSDK.b-cdn.net/v2.0.0/js/gosell.js';
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load payment SDK'));
-    document.head.appendChild(script);
-  });
-  return goSellLoadPromise;
-}
-
 interface UseTapPaymentReturn {
   status: PaymentStatus;
   error: string | null;
+  iframeUrl: string | null;
   submitPayment: (config: TapPaymentConfig) => Promise<void>;
   reset: () => void;
 }
@@ -39,10 +18,10 @@ export function useTapPayment(): UseTapPaymentReturn {
   const { detectedCountry } = useCurrency();
   const [status, setStatus] = useState<PaymentStatus>('idle');
   const [error, setError] = useState<string | null>(null);
-  const publicKeyRef = useRef<string | null>(null);
+  const [iframeUrl, setIframeUrl] = useState<string | null>(null);
   const statusRef = useRef<PaymentStatus>('idle');
+  const chargeIdRef = useRef<string | null>(null);
 
-  // Keep statusRef in sync
   const updateStatus = useCallback((s: PaymentStatus) => {
     statusRef.current = s;
     setStatus(s);
@@ -80,6 +59,24 @@ export function useTapPayment(): UseTapPaymentReturn {
     }
   }, [updateStatus]);
 
+  // Listen for postMessage from iframe (3DS callback)
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'TAP_3DS_COMPLETE') {
+        const tapId = event.data.tap_id;
+        setIframeUrl(null);
+        if (tapId) {
+          verifyCharge(tapId);
+        } else {
+          setError('Payment response missing. Please try again.');
+          updateStatus('failed');
+        }
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [verifyCharge, updateStatus]);
+
   const submitPayment = useCallback(async (config: TapPaymentConfig) => {
     const { data: { session: currentSession } } = await supabase.auth.getSession();
     if (!currentSession?.access_token) {
@@ -89,117 +86,42 @@ export function useTapPayment(): UseTapPaymentReturn {
 
     updateStatus('processing');
     setError(null);
+    setIframeUrl(null);
 
     try {
-      // Load GoSell SDK
-      await loadGoSellSdk();
+      const data = await createCharge(
+        config,
+        currentSession.access_token,
+        currentSession.user.id,
+        detectedCountry,
+      );
 
-      // Fetch public key if not cached
-      if (!publicKeyRef.current) {
-        const { data, error: configErr } = await supabase.functions.invoke('tap-config');
-        if (configErr || !data?.public_key) {
-          throw new Error('Payment configuration unavailable');
-        }
-        publicKeyRef.current = data.public_key;
+      if (data.status === 'succeeded') {
+        updateStatus('succeeded');
+        return;
       }
 
-      const nameParts = (config.customerName || 'Customer').split(' ');
-      const firstName = nameParts[0];
-      const lastName = nameParts.slice(1).join(' ') || '';
-      const phoneNum = (config.customerPhone || '').replace(/^(\+?966|0)/, '');
-      const courseName = config.courseName || 'Course';
-      const finalAmount = config.amount || 0;
-      const isRTL = config.isRTL || false;
-
-      window.GoSell.config({
-        gateway: {
-          publicKey: publicKeyRef.current,
-          language: isRTL ? 'ar' : 'en',
-          supportedCurrencies: 'all',
-          supportedPaymentMethods: 'all',
-          notifications: 'standard',
-          callback: (response: any) => {
-            console.log('[GoSell] callback:', response);
-            const chargeId = response?.callback?.id || response?.id;
-            const chargeStatus = (response?.callback?.status || response?.status || '').toUpperCase();
-
-            if (chargeStatus === 'CAPTURED') {
-              verifyCharge(chargeId);
-            } else if (chargeStatus === 'FAILED' || chargeStatus === 'DECLINED') {
-              setError('Payment was declined. Please try again.');
-              updateStatus('failed');
-            } else if (chargeId) {
-              verifyCharge(chargeId);
-            } else {
-              setError('Unexpected payment response');
-              updateStatus('failed');
-            }
-          },
-          onClose: () => {
-            // Only reset if still processing (user closed LightBox without completing)
-            if (statusRef.current === 'processing') {
-              updateStatus('idle');
-            }
-          },
-        },
-        customer: {
-          first_name: firstName,
-          last_name: lastName,
-          email: config.customerEmail,
-          phone: { country_code: '966', number: phoneNum },
-        },
-        order: {
-          amount: finalAmount,
-          currency: config.currency || 'SAR',
-          items: [{
-            id: config.courseId,
-            name: courseName,
-            description: courseName,
-            quantity: 1,
-            amount_per_unit: finalAmount,
-            total_amount: finalAmount,
-          }],
-          shipping: null,
-          taxes: null,
-        },
-        transaction: {
-          mode: 'charge',
-          charge: {
-            saveCard: false,
-            threeDSecure: true,
-            description: courseName,
-            statement_descriptor: 'BIKERZ',
-            reference: {
-              transaction: `TXN-${config.courseId}-${Date.now()}`,
-              order: `ORD-${currentSession.user.id}-${Date.now()}`,
-            },
-            metadata: {
-              user_id: currentSession.user.id,
-              course_id: config.courseId,
-              coupon_id: config.couponId || null,
-              email: config.customerEmail,
-              detected_country: detectedCountry || null,
-            },
-            receipt: { email: true, sms: false },
-            redirect: {
-              url: `${window.location.origin}/payment-success?course=${config.courseId}`,
-            },
-          },
-        },
-      });
-
-      window.GoSell.openLightBox();
+      if (data.redirect_url) {
+        chargeIdRef.current = data.charge_id;
+        setIframeUrl(data.redirect_url);
+        // Status stays 'processing' — iframe is shown
+      } else {
+        setError('Payment gateway did not return a payment page.');
+        updateStatus('failed');
+      }
     } catch (err: any) {
-      console.error('[GoSell] Payment error:', err);
+      console.error('[TapPayment] error:', err);
       setError(err.message || 'Payment failed. Please try again.');
       updateStatus('failed');
     }
-  }, [detectedCountry, verifyCharge, updateStatus]);
+  }, [detectedCountry, updateStatus]);
 
   const reset = useCallback(() => {
     updateStatus('idle');
     setError(null);
+    setIframeUrl(null);
+    chargeIdRef.current = null;
   }, [updateStatus]);
 
-  return { status, error, submitPayment, reset };
+  return { status, error, iframeUrl, submitPayment, reset };
 }
