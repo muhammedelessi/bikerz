@@ -128,19 +128,19 @@ const HeroSection: React.FC = () => {
     <LazyMotion features={domAnimation} strict>
       <section className="relative flex flex-col bg-background">
         {/* Main Content — side-by-side on desktop, stacked on mobile */}
-        <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 lg:py-12 flex flex-col lg:flex-row items-start gap-6 lg:gap-8">
-          {/* Ad Slider — top on mobile, right/left on desktop */}
+        <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 md:py-12 flex flex-col md:flex-row items-start gap-6 md:gap-8">
+          {/* Ad Slider — top on mobile, right/left on tablet+ */}
           <m.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={anim(0.6, 0.2)}
-            className={`w-full lg:w-[320px] xl:w-[360px] shrink-0 order-1 lg:order-none`}
+            className={`w-full md:w-[280px] lg:w-[320px] xl:w-[360px] shrink-0 order-1 md:order-none`}
           >
             <HeroAdSlider />
           </m.div>
 
           {/* Hero text content */}
-          <div className="flex-1 flex items-center order-2 lg:order-none w-full">
+          <div className="flex-1 flex items-center order-2 md:order-none w-full">
             <div className="w-full">
               <div className={`max-w-2xl ${isRTL ? "mr-0 ml-auto text-right" : "ml-0 mr-auto text-left"}`}>
                 {/* Badge */}
