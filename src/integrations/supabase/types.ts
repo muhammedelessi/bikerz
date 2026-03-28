@@ -848,6 +848,54 @@ export type Database = {
           },
         ]
       }
+      hero_slides: {
+        Row: {
+          created_at: string
+          cta_link: string | null
+          cta_text_ar: string | null
+          cta_text_en: string | null
+          headline_ar: string | null
+          headline_en: string | null
+          id: string
+          image_url: string
+          is_published: boolean
+          position: number
+          subtitle_ar: string | null
+          subtitle_en: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cta_link?: string | null
+          cta_text_ar?: string | null
+          cta_text_en?: string | null
+          headline_ar?: string | null
+          headline_en?: string | null
+          id?: string
+          image_url: string
+          is_published?: boolean
+          position?: number
+          subtitle_ar?: string | null
+          subtitle_en?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cta_link?: string | null
+          cta_text_ar?: string | null
+          cta_text_en?: string | null
+          headline_ar?: string | null
+          headline_en?: string | null
+          id?: string
+          image_url?: string
+          is_published?: boolean
+          position?: number
+          subtitle_ar?: string | null
+          subtitle_en?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       infrastructure_metrics: {
         Row: {
           id: string
