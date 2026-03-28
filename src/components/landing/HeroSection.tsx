@@ -4,7 +4,7 @@ import { LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ArrowLeft, Play, ShieldCheck, CreditCard, Award } from "lucide-react";
+import { ArrowRight, ArrowLeft, Play, ShieldCheck, CreditCard, Award, Users, Trophy, BookOpen, GraduationCap } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,10 +62,13 @@ const TrustBadge: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, 
 );
 
 /* ── Stat item ── */
-const StatItem: React.FC<{ value: string; label: string }> = ({ value, label }) => (
-  <div className="text-center">
-    <AnimatedCounter value={value} className="text-xl sm:text-2xl lg:text-3xl font-black text-primary-foreground" />
-    <div className="text-[9px] sm:text-[10px] text-primary-foreground/60 mt-0.5 uppercase tracking-[0.15em] font-semibold">
+const StatItem: React.FC<{ value: string; label: string; icon: React.ReactNode }> = ({ value, label, icon }) => (
+  <div className="flex flex-col items-center gap-1 sm:gap-2 group">
+    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/40 group-hover:scale-110 transition-all duration-300">
+      {icon}
+    </div>
+    <AnimatedCounter value={value} className="text-lg sm:text-2xl lg:text-3xl font-black text-primary-foreground" />
+    <div className="text-[8px] sm:text-[10px] text-primary-foreground/50 uppercase tracking-[0.15em] font-semibold leading-tight text-center">
       {label}
     </div>
   </div>
@@ -115,21 +118,25 @@ const HeroSection: React.FC = () => {
         key: "members",
         value: membersValue,
         label: isRTL ? content?.stats_members_ar || "عضو" : content?.stats_members_en || "Members",
+        icon: <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />,
       },
       {
         key: "success",
         value: successValue,
         label: isRTL ? content?.stats_success_ar || "نسبة النجاح" : content?.stats_success_en || "Success",
+        icon: <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />,
       },
       {
         key: "lessons",
         value: lessonsValue,
         label: isRTL ? content?.stats_lessons_ar || "درس" : content?.stats_lessons_en || "Lessons",
+        icon: <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />,
       },
       {
         key: "courses",
         value: coursesValue,
         label: isRTL ? content?.stats_courses_ar || "دورة" : content?.stats_courses_en || "Courses",
+        icon: <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />,
       },
     ],
     [membersValue, lessonsValue, successValue, coursesValue, isRTL, content],
@@ -273,11 +280,11 @@ const HeroSection: React.FC = () => {
             transition={fade(0.7, 0.9)}
             className="relative z-10"
           >
-            <div className="bg-primary/10 backdrop-blur-lg border-t border-primary/20">
-              <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-3 sm:py-4">
-                <div className="grid grid-cols-4 gap-2 sm:gap-4">
+            <div className="bg-background/30 backdrop-blur-xl border-t border-primary/15">
+              <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-6">
+                <div className="grid grid-cols-4 gap-3 sm:gap-6">
                   {displayStats.map((stat) => (
-                    <StatItem key={stat.key} value={stat.value} label={stat.label} />
+                    <StatItem key={stat.key} value={stat.value} label={stat.label} icon={stat.icon} />
                   ))}
                 </div>
               </div>
