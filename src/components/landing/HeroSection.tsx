@@ -12,7 +12,7 @@ import defaultHeroImage from "@/assets/hero-rider.webp";
 import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
 import { Skeleton } from "@/components/ui/skeleton";
 import DiscountUrgencyBanner from "@/components/landing/DiscountUrgencyBanner";
-
+import { Users, GraduationCap, PlayCircle, BookOpen } from "lucide-react"; // تأكد من الاستيراد
 type HeroLandingContent = HeroContent & {
   stats_members_value?: string | number;
   stats_lessons_value?: string | number;
