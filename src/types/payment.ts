@@ -9,6 +9,7 @@ export interface TapPaymentConfig {
   customerPhone?: string;
   couponId?: string;
   paymentMethod?: PaymentMethod;
+  tokenId?: string;
 }
 
 export interface CheckoutCourse {
