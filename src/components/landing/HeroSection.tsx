@@ -7,7 +7,7 @@ import { Play, Users, GraduationCap, PlayCircle, BookOpen } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import defaultHeroImage from "@/assets/hero-rider.webp";
+
 import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
 import HeroAdSlider from "@/components/landing/HeroAdSlider";
 
@@ -115,7 +115,7 @@ const HeroSection: React.FC = () => {
 
   const anim = (dur: number, delay = 0) => (prefersReducedMotion ? { duration: 0 } : { duration: dur, delay });
 
-  const heroImage = content?.defaultHeroImage ?? defaultHeroImage;
+  
   const title = isRTL ? content?.title_ar || "لنقد بثقة" : content?.title_en || "Ride with Confidence";
   const subtitle = isRTL
     ? content?.subtitle_ar || "انطلق في رحلتك مع أفضل مدربي الدراجات النارية"
