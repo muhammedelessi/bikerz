@@ -54,9 +54,6 @@ import PaymentMethodIcons from '@/components/checkout/PaymentMethodIcons';
 import { trackViewContent } from '@/utils/metaPixel';
 import CourseReviews from '@/components/course/CourseReviews';
 import StarRating from '@/components/course/StarRating';
-import { useDiscountCountdown } from '@/hooks/useDiscountCountdown';
-import DiscountCountdown from '@/components/common/DiscountCountdown';
-import DiscountUrgencyBanner from '@/components/landing/DiscountUrgencyBanner';
 import CourseCard from '@/components/course/CourseCard';
 import { fetchEnrollmentsWithLiveProgress, type EnrollmentWithProgress } from '@/lib/enrollmentProgress';
 
@@ -360,9 +357,10 @@ const CourseDetail: React.FC = () => {
     },
   });
 
-  // Discount countdown
-  const discountCountdown = useDiscountCountdown((course as any)?.discount_expires_at);
-  const effectiveDiscount = discountCountdown.isExpired ? 0 : (course?.discount_percentage || 0);
+  // Effective discount (check if expired)
+  const discountExpiresAt = (course as any)?.discount_expires_at;
+  const isDiscountExpired = discountExpiresAt ? new Date(discountExpiresAt).getTime() <= Date.now() : false;
+  const effectiveDiscount = isDiscountExpired ? 0 : (course?.discount_percentage || 0);
 
   // Calculations
   const totalLessons = chapters.reduce((acc, ch) => acc + ch.lessons.length, 0);
@@ -501,7 +499,7 @@ const CourseDetail: React.FC = () => {
       />
       <Navbar />
       <div className="pt-[var(--navbar-h)]">
-      <DiscountUrgencyBanner courseId={id} />
+      
 
       {/* Sticky Header — appears on scroll */}
       <AnimatePresence>
