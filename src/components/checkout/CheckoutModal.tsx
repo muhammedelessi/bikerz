@@ -59,7 +59,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const {
     status: paymentStatus,
     error: paymentError,
-    iframeUrl,
     submitPayment,
     reset: resetPayment,
   } = useTapPayment();
