@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Eye, Upload, Loader2, Image as ImageIcon, GripVertical } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 interface HeroAd {
@@ -144,6 +145,18 @@ const AdminAds: React.FC = () => {
     },
   });
 
+  const { data: courses = [] } = useQuery({
+    queryKey: ['admin-courses-list'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('id, title, title_ar')
+        .order('title');
+      if (error) throw error;
+      return data as { id: string; title: string; title_ar: string | null }[];
+    },
+  });
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (editingId) {
@@ -240,8 +253,19 @@ const AdminAds: React.FC = () => {
                     <Input value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Summer Sale Ad" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>{isRTL ? 'رابط الهدف' : 'Target URL'}</Label>
-                    <Input value={form.target_url} onChange={(e) => setForm(f => ({ ...f, target_url: e.target.value }))} placeholder="/courses" />
+                    <Label>{isRTL ? 'الكورس المستهدف' : 'Target Course'}</Label>
+                    <Select value={form.target_url} onValueChange={(v) => setForm(f => ({ ...f, target_url: v }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={isRTL ? 'اختر كورس' : 'Select a course'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courses.map((c) => (
+                          <SelectItem key={c.id} value={`/courses/${c.id}`}>
+                            {isRTL ? (c.title_ar || c.title) : c.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
