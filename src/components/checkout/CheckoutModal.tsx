@@ -442,7 +442,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   paymentStatus={paymentStatus}
                   guestSigningUp={guestSigningUp}
                   isPaymentReady={isPaymentReady}
-                  onSubmitPayment={handleSubmitPayment}
+                  onSubmitPayment={(tokenId: string) => handleSubmitPayment(tokenId)}
+                  onCardError={(err) => toast.error(err)}
                 />
               )}
             </AnimatePresence>
