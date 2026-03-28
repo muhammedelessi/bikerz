@@ -480,7 +480,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <Button
                   className="flex-1"
                   variant="cta"
-                  onClick={handleSubmitPayment}
+                  onClick={() => handleSubmitPayment()}
                   disabled={paymentStatus === 'processing' || !isPaymentReady}
                 >
                   {paymentStatus === 'processing' ? (
