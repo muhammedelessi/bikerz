@@ -53,20 +53,20 @@ const StatCard: React.FC<{
   reducedMotion: boolean | null;
 }> = ({ value, label, icon: Icon, index, reducedMotion }) => (
   <m.div
-    initial={reducedMotion ? {} : { opacity: 0, y: 24 }}
+    initial={reducedMotion ? {} : { opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay: 1 + index * 0.12 }}
-    className="relative group"
+    transition={{ duration: 0.4, delay: 1 + index * 0.1 }}
+    className="flex items-center gap-3 group"
   >
-    <div className="flex flex-col items-center gap-2 px-4 py-5 sm:py-6 rounded-2xl bg-card/40 backdrop-blur-md border border-border/30 hover:border-primary/40 hover:bg-card/60 transition-all duration-400">
-      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
-        <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-      </div>
+    <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors duration-300">
+      <Icon className="w-4 h-4 text-primary" />
+    </div>
+    <div className="flex flex-col">
       <AnimatedCounter
         value={value}
-        className="text-xl sm:text-2xl lg:text-3xl font-black text-primary-foreground leading-none"
+        className="text-lg sm:text-xl font-bold text-primary-foreground leading-none"
       />
-      <span className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-widest font-medium">
+      <span className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-wider font-medium mt-0.5">
         {label}
       </span>
     </div>
@@ -242,12 +242,11 @@ const HeroSection: React.FC = () => {
           </div>
         </div>
 
-        {/* ── Stats Bar ── */}
+        {/* ── Compact Stats Strip ── */}
         {showStats && (
-          <div className="relative z-10 w-full">
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-            <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <div className="relative z-10 w-full pb-5 sm:pb-6">
+            <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
+              <div className="inline-flex flex-wrap gap-6 sm:gap-8 md:gap-10 px-5 py-3 rounded-xl bg-card/30 backdrop-blur-sm border border-border/20">
                 {displayStats.map((stat, i) => (
                   <StatCard
                     key={stat.key}
