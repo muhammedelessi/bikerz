@@ -286,7 +286,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   const isStatusOverlay = paymentStatus === 'verifying' || paymentStatus === 'succeeded' || paymentStatus === 'failed';
-  const isIframeShowing = !!iframeUrl && paymentStatus === 'processing';
+  
   const modalHeight = isIOS && keyboardOffset > 0 ? `calc(100dvh - ${keyboardOffset}px)` : '100dvh';
 
   return (
@@ -447,7 +447,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   paymentStatus={paymentStatus}
                   guestSigningUp={guestSigningUp}
                   isPaymentReady={isPaymentReady}
-                  iframeUrl={iframeUrl}
+                  
                   onSubmitPayment={handleSubmitPayment}
                 />
               )}
