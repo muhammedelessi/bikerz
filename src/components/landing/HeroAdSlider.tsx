@@ -124,13 +124,13 @@ const HeroAdSlider: React.FC = () => {
                   className="w-full h-auto block"
                   loading="lazy"
                 />
-                <div className="absolute inset-x-0 bottom-0 p-3 flex justify-center bg-gradient-to-t from-black/50 to-transparent">
+                <div className={cn("absolute bottom-2 p-2", isRTL ? "left-2" : "right-2")}>
                   <a
                     href={slide.target_url}
-                    className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-lg hover:bg-primary/90 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium shadow-md hover:bg-secondary/80 transition-colors"
                   >
                     {isRTL ? "اكتشف المزيد" : "Learn More"}
-                    <ChevronRight className={cn("w-4 h-4", isRTL && "rotate-180")} />
+                    <ChevronRight className={cn("w-3.5 h-3.5", isRTL && "rotate-180")} />
                   </a>
                 </div>
               </div>
