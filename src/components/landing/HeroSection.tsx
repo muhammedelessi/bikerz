@@ -267,82 +267,63 @@ const HeroSection: React.FC = () => {
 
         {/* ═══ Stats Bar (bottom, full-width) ═══ */}
         {showStats && (
-          <m.div
-            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={fade(0.7, 0.9)}
-            className="relative z-10 w-full"
-          >
-            <div
-              className="relative overflow-hidden"
-              style={{
-                background: "linear-gradient(135deg, hsl(168 60% 32%) 0%, hsl(162 55% 26%) 50%, hsl(155 50% 22%) 100%)",
-              }}
-            >
-              {/* Subtle pattern overlay */}
-              <div
-                className="absolute inset-0 opacity-[0.04]"
-                style={{
-                  backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
-                  backgroundSize: "24px 24px",
-                }}
-              />
+      import { motion as m } from "framer-motion";
 
-              <div className="relative max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-5">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-2">
-                  {displayStats.map((stat, i) => (
-                    <m.div
-                      key={stat.key}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.9 + i * 0.1, duration: 0.4 }}
-                      className="relative flex items-center gap-3 px-3 py-2 group cursor-default"
-                    >
-                      {/* Vertical divider — only between items on desktop */}
-                      {i < displayStats.length - 1 && (
-                        <div
-                          className="absolute end-0 top-1/2 -translate-y-1/2 w-px h-10 hidden sm:block"
-                          style={{ background: "hsl(160 40% 55% / 0.35)" }}
-                        />
-                      )}
-
-                      {/* Icon circle */}
-                      <div
-                        className="flex-shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
-                        style={{
-                          background: "hsl(160 40% 20% / 0.5)",
-                          border: "1.5px solid hsl(160 50% 55% / 0.35)",
-                          boxShadow: "0 0 0 4px hsl(160 50% 55% / 0.08)",
-                        }}
-                      >
-                        {/* Replace with your icon component */}
-                        <stat.Icon className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: "hsl(155 70% 75%)" }} />
-                      </div>
-
-                      {/* Text */}
-                      <div className="flex flex-col gap-0.5 min-w-0">
-                        <span
-                          className="text-lg sm:text-xl font-black tabular-nums leading-none tracking-tight"
-                          style={{
-                            color: "hsl(0 0% 100%)",
-                            textShadow: "0 1px 8px hsl(160 60% 20% / 0.6)",
-                          }}
-                        >
-                          {stat.value}
-                        </span>
-                        <span
-                          className="text-[11px] sm:text-[12px] font-semibold leading-tight truncate"
-                          style={{ color: "hsl(155 50% 78%)" }}
-                        >
-                          {stat.label}
-                        </span>
-                      </div>
-                    </m.div>
-                  ))}
+// لنفترض أن displayStats تحتوي على icon لكل عنصر
+const StatsSection = () => {
+  return (
+    <m.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, delay: 0.2 }}
+      className="relative z-10 w-full overflow-hidden"
+    >
+      {/* الخلفية المتصلة المتدرجة (بناءً على ألوان الصورة المرفقة) */}
+      <div 
+        className="w-full py-6 md:py-8"
+        style={{ 
+          background: "linear-gradient(90deg, #1db299 0%, #39cabb 50%, #57e099 100%)",
+          boxShadow: "0 10px 30px -10px rgba(29, 178, 153, 0.3)"
+        }}
+      >
+        <div className="max-w-[1200px] mx-auto px-4">
+          {/* الجريد: 2 أعمدة في الجوال (grid-cols-2) و 4 في الشاشات الكبيرة (md:grid-cols-4) */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4">
+            {displayStats.map((stat, i) => (
+              <m.div
+                key={stat.key}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 + i * 0.1 }}
+                className="flex items-center justify-start md:justify-center gap-3 px-2"
+              >
+                {/* الدائرة التي تحتوي على الأيقونة */}
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                  {/* هنا تضع الأيقونة الخاصة بك */}
+                  {stat.icon ? (
+                    <stat.icon className="w-6 h-6 text-white" />
+                  ) : (
+                    <div className="w-6 h-6 bg-white/50 rounded-full" /> 
+                  )}
                 </div>
-              </div>
-            </div>
-          </m.div>
+
+                {/* النصوص: القيمة والعنوان بجانب بعضهما عمودياً */}
+                <div className="flex flex-col text-white">
+                  <span className="text-lg md:text-xl font-bold leading-tight">
+                    {stat.value}
+                  </span>
+                  <span className="text-[12px] md:text-[14px] font-medium opacity-90 leading-tight">
+                    {stat.label}
+                  </span>
+                </div>
+              </m.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </m.div>
+  );
+};
         )}
 
         {/* Bottom fade */}
