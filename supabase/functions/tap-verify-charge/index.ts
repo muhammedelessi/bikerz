@@ -125,9 +125,80 @@ Deno.serve(async (req) => {
     const { data: dbCharge } = await dbQuery.maybeSingle();
 
     if (!dbCharge) {
-      console.warn("Charge not found in DB:", charge_id, "userId:", userId);
+      // GoSell LightBox flow: charge created client-side, no pre-existing DB record.
+      // Create one from the Tap API response metadata.
+      const meta = (tapCharge.metadata || {}) as Record<string, any>;
+      const chargeUserId = meta.user_id || userId;
+      const chargeCourseId = meta.course_id || null;
+
+      if (!chargeUserId) {
+        console.warn("Cannot create DB record: no user_id in charge metadata or auth");
+        return new Response(
+          JSON.stringify({ status, charge_id, warning: "no_user_context" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { error: insertErr } = await adminClient.from("tap_charges").insert({
+        user_id: chargeUserId,
+        course_id: chargeCourseId,
+        charge_id: charge_id,
+        amount: tapCharge.amount || 0,
+        currency: tapCharge.currency || "SAR",
+        status,
+        customer_name: [tapCharge.customer?.first_name, tapCharge.customer?.last_name].filter(Boolean).join(" ") || null,
+        customer_email: tapCharge.customer?.email || null,
+        customer_phone: tapCharge.customer?.phone?.number ? `+${tapCharge.customer.phone.country_code || "966"}${tapCharge.customer.phone.number}` : null,
+        idempotency_key: tapCharge.reference?.transaction || `gosell_${charge_id}`,
+        tap_response: sanitizeTapResponse(tapCharge),
+        payment_method: tapCharge.source?.payment_method || "card",
+        card_brand: tapCharge.source?.payment_type || null,
+        card_last_four: tapCharge.source?.payment?.last_four || null,
+        metadata: {
+          ...meta,
+          gosell_flow: true,
+        },
+      });
+
+      if (insertErr) {
+        console.error("Failed to create DB record for GoSell charge:", insertErr.message);
+      }
+
+      // Enroll on success
+      if (status === "succeeded" && chargeCourseId) {
+        const { error: enrollError } = await adminClient
+          .from("course_enrollments")
+          .insert({ user_id: chargeUserId, course_id: chargeCourseId });
+        if (enrollError && !enrollError.message.includes("duplicate")) {
+          console.error("Enrollment error:", enrollError.message);
+        }
+
+        await adminClient.from("revenue_analytics").insert({
+          user_id: chargeUserId,
+          course_id: chargeCourseId,
+          event_type: "payment",
+          amount: tapCharge.amount || 0,
+          currency: tapCharge.currency || "SAR",
+        });
+
+        // Increment coupon if applicable
+        const couponId = meta.coupon_id as string | null;
+        if (couponId) {
+          await adminClient.rpc("increment_coupon_usage", {
+            p_coupon_id: couponId,
+            p_user_id: chargeUserId,
+            p_course_id: chargeCourseId,
+            p_order_id: charge_id,
+            p_charge_id: charge_id,
+            p_discount_amount: 0,
+            p_original_amount: tapCharge.amount || 0,
+            p_final_amount: tapCharge.amount || 0,
+          });
+        }
+      }
+
       return new Response(
-        JSON.stringify({ status, charge_id, warning: "charge_not_found" }),
+        JSON.stringify({ status, charge_id }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
