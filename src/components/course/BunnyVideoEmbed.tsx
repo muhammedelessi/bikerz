@@ -128,7 +128,6 @@ const fetchLibraryId = async (videoId: string): Promise<string | null> => {
   }
 
   try {
-    const { supabase } = await import("@/integrations/supabase/client");
     const { data } = await supabase.functions.invoke("bunny-stream", {
       body: { action: "get-playback-url", videoId },
     });
@@ -331,7 +330,6 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
 
     const b = behaviorRef.current;
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -389,7 +387,6 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
 
     const loadExisting = async () => {
       try {
-        const { supabase } = await import("@/integrations/supabase/client");
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
