@@ -128,18 +128,6 @@ const CourseDetail: React.FC = () => {
   const ctaCardRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Auto-open checkout when navigated with ?checkout=true
-  useEffect(() => {
-    if (searchParams.get('checkout') === 'true' && course && !isEnrolled) {
-      if (user) {
-        setShowCheckout(true);
-      } else {
-        setShowGuestSignup(true);
-      }
-      searchParams.delete('checkout');
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [searchParams, course, user, isEnrolled]);
 
   // Payment callback now handled by /payment-success/:courseId page
 
