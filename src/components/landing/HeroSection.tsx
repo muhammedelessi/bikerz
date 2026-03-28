@@ -4,7 +4,7 @@ import { LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ArrowLeft, Play, ShieldCheck, CreditCard, Award } from "lucide-react";
+import { ArrowRight, ArrowLeft, Play, ShieldCheck, CreditCard, Award, Users, Trophy, BookOpen, GraduationCap } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
