@@ -64,10 +64,7 @@ const TrustBadge: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, 
 /* ── Stat item ── */
 const StatItem: React.FC<{ value: string; label: string }> = ({ value, label }) => (
   <div className="text-center">
-    <AnimatedCounter
-      value={value}
-      className="text-xl sm:text-2xl lg:text-3xl font-black text-primary-foreground"
-    />
+    <AnimatedCounter value={value} className="text-xl sm:text-2xl lg:text-3xl font-black text-primary-foreground" />
     <div className="text-[9px] sm:text-[10px] text-primary-foreground/60 mt-0.5 uppercase tracking-[0.15em] font-semibold">
       {label}
     </div>
@@ -97,17 +94,43 @@ const HeroSection: React.FC = () => {
     enabled: needsLiveStats,
   });
 
-  const membersValue = content?.stats_members_value ? String(content.stats_members_value) : formatCount(stats?.members ?? 0);
-  const lessonsValue = content?.stats_lessons_value ? String(content.stats_lessons_value) : formatCount(stats?.lessons ?? 0);
-  const successValue = content?.stats_success_value ? `${content.stats_success_value}%` : stats?.successRate ? `${stats.successRate}%` : "0%";
-  const coursesValue = content?.stats_courses_value ? String(content.stats_courses_value) : formatCount(stats?.courses ?? 0);
+  const membersValue = content?.stats_members_value
+    ? String(content.stats_members_value)
+    : formatCount(stats?.members ?? 0);
+  const lessonsValue = content?.stats_lessons_value
+    ? String(content.stats_lessons_value)
+    : formatCount(stats?.lessons ?? 0);
+  const successValue = content?.stats_success_value
+    ? `${content.stats_success_value}%`
+    : stats?.successRate
+      ? `${stats.successRate}%`
+      : "0%";
+  const coursesValue = content?.stats_courses_value
+    ? String(content.stats_courses_value)
+    : formatCount(stats?.courses ?? 0);
 
   const displayStats = useMemo(
     () => [
-      { key: "members", value: membersValue, label: isRTL ? content?.stats_members_ar || "عضو" : content?.stats_members_en || "Members" },
-      { key: "success", value: successValue, label: isRTL ? content?.stats_success_ar || "نسبة النجاح" : content?.stats_success_en || "Success" },
-      { key: "lessons", value: lessonsValue, label: isRTL ? content?.stats_lessons_ar || "درس" : content?.stats_lessons_en || "Lessons" },
-      { key: "courses", value: coursesValue, label: isRTL ? content?.stats_courses_ar || "دورة" : content?.stats_courses_en || "Courses" },
+      {
+        key: "members",
+        value: membersValue,
+        label: isRTL ? content?.stats_members_ar || "عضو" : content?.stats_members_en || "Members",
+      },
+      {
+        key: "success",
+        value: successValue,
+        label: isRTL ? content?.stats_success_ar || "نسبة النجاح" : content?.stats_success_en || "Success",
+      },
+      {
+        key: "lessons",
+        value: lessonsValue,
+        label: isRTL ? content?.stats_lessons_ar || "درس" : content?.stats_lessons_en || "Lessons",
+      },
+      {
+        key: "courses",
+        value: coursesValue,
+        label: isRTL ? content?.stats_courses_ar || "دورة" : content?.stats_courses_en || "Courses",
+      },
     ],
     [membersValue, lessonsValue, successValue, coursesValue, isRTL, content],
   );
@@ -118,9 +141,19 @@ const HeroSection: React.FC = () => {
   };
 
   const title = getText("title_en", "title_ar", t("hero.title", { lng: "en" }), t("hero.title", { lng: "ar" }));
-  const subtitle = getText("subtitle_en", "subtitle_ar", t("hero.subtitle", { lng: "en" }), t("hero.subtitle", { lng: "ar" }));
+  const subtitle = getText(
+    "subtitle_en",
+    "subtitle_ar",
+    t("hero.subtitle", { lng: "en" }),
+    t("hero.subtitle", { lng: "ar" }),
+  );
   const ctaText = getText("cta_en", "cta_ar", t("hero.cta", { lng: "en" }), t("hero.cta", { lng: "ar" }));
-  const secondaryCta = getText("secondary_cta_en", "secondary_cta_ar", t("hero.secondaryCta", { lng: "en" }), t("hero.secondaryCta", { lng: "ar" }));
+  const secondaryCta = getText(
+    "secondary_cta_en",
+    "secondary_cta_ar",
+    t("hero.secondaryCta", { lng: "en" }),
+    t("hero.secondaryCta", { lng: "ar" }),
+  );
   const heroImage = content?.defaultHeroImage ?? defaultHeroImage;
 
   const fade = (dur: number, delay = 0) => (prefersReducedMotion ? { duration: 0 } : { duration: dur, delay });
@@ -183,18 +216,17 @@ const HeroSection: React.FC = () => {
           <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 py-8 lg:py-0">
             {/* Desktop: split layout (content left). Mobile: centered stack */}
             <div className="flex flex-col items-center text-center lg:items-start lg:text-start lg:max-w-[55%]">
-
               {/* Title */}
               {contentLoading ? (
                 <Skeleton className="h-14 sm:h-20 w-[85%] mb-4" />
               ) : (
                 <m.h1
-                  initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 28 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={fade(0.8, 0.25)}
                   className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] xl:text-6xl font-black leading-[1.1] tracking-tight mb-4 sm:mb-5"
                   style={{
-                    background: "linear-gradient(135deg, hsl(var(--primary-foreground)) 0%, hsl(var(--primary)) 50%, hsl(var(--sand)) 100%)",
+                    background:
+                      "linear-gradient(135deg, hsl(var(--primary-foreground)) 0%, hsl(var(--primary)) 50%, hsl(var(--sand)) 100%)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
