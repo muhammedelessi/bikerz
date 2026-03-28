@@ -59,6 +59,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const {
     status: paymentStatus,
     error: paymentError,
+    iframeUrl,
     submitPayment,
     reset: resetPayment,
   } = useTapPayment();
@@ -286,6 +287,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   const isStatusOverlay = paymentStatus === 'verifying' || paymentStatus === 'succeeded' || paymentStatus === 'failed';
+  const isIframeShowing = !!iframeUrl && paymentStatus === 'processing';
   const modalHeight = isIOS && keyboardOffset > 0 ? `calc(100dvh - ${keyboardOffset}px)` : '100dvh';
 
   return (
@@ -446,6 +448,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   paymentStatus={paymentStatus}
                   guestSigningUp={guestSigningUp}
                   isPaymentReady={isPaymentReady}
+                  iframeUrl={iframeUrl}
                   onSubmitPayment={handleSubmitPayment}
                 />
               )}
@@ -454,7 +457,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         </div>
 
         {/* Footer */}
-        {!isStatusOverlay && (
+        {!isStatusOverlay && !isIframeShowing && (
           <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-5 border-t-2 border-border flex-shrink-0 space-y-2">
             <div className="flex gap-2">
               {currentStep !== 'info' && (
