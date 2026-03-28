@@ -217,7 +217,7 @@ const HeroSection: React.FC = () => {
             transition={fade(0.7, 0.9)}
             className="relative z-10 w-full"
           >
-            <div className="backdrop-blur-xl border-t border-white/5 bg-near-black/80">
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
               <div className="max-w-[1200px] mx-auto px-4 py-8 md:py-10">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                   {displayStats.map((stat, i) => {
