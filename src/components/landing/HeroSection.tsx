@@ -54,14 +54,14 @@ const StatCard: React.FC<{
     initial={reducedMotion ? {} : { opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.4, delay: 1 + index * 0.1 }}
-    className="flex items-center gap-3 group"
+    className="flex flex-col items-center md:flex-row md:items-center gap-1 md:gap-3 group"
   >
-    <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors duration-300">
-      <Icon className="w-4 h-4 text-primary" />
+    <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors duration-300">
+      <Icon className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
     </div>
-    <div className="flex flex-col">
-      <AnimatedCounter value={value} className="text-lg sm:text-xl font-bold text-primary-foreground leading-none" />
-      <span className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-wider font-medium mt-0.5">
+    <div className="flex flex-col items-center md:items-start">
+      <AnimatedCounter value={value} className="text-sm md:text-xl font-bold text-primary-foreground leading-none" />
+      <span className="text-[8px] md:text-[10px] text-muted-foreground uppercase tracking-wider font-medium mt-0.5">
         {label}
       </span>
     </div>
@@ -200,7 +200,7 @@ const HeroSection: React.FC = () => {
             {/* Stats Strip — inside content column */}
             {showStats && (
               <div className="mt-6 sm:mt-8 flex justify-center md:justify-start">
-                <div className="inline-flex flex-wrap justify-center md:justify-start gap-3 sm:gap-6 md:gap-8 px-3 sm:px-4 py-3 rounded-xl bg-card/30 backdrop-blur-sm border border-border/20">
+                <div className="flex flex-nowrap justify-between md:inline-flex md:flex-wrap md:justify-start gap-2 sm:gap-6 md:gap-8 px-3 sm:px-4 py-3 rounded-xl bg-card/30 backdrop-blur-sm border border-border/20 w-full md:w-auto">
                   {displayStats.map((stat, i) => (
                     <StatCard
                       key={stat.key}
