@@ -140,7 +140,7 @@ const HeroSection: React.FC = () => {
           </m.div>
 
           {/* Hero text content */}
-          <div className="flex-1 flex items-center order-2 md:order-none w-full">
+          <div className="flex-1 flex flex-col order-2 md:order-none w-full">
             <div className="w-full">
               <div className={`max-w-2xl ${isRTL ? "mr-0 ml-auto text-right" : "ml-0 mr-auto text-left"}`}>
                 {/* Badge */}
@@ -196,28 +196,25 @@ const HeroSection: React.FC = () => {
                 </m.div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Stats Strip */}
-        {showStats && (
-          <div className="relative z-10 w-full pb-5 sm:pb-6">
-            <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-              <div className="inline-flex flex-wrap gap-6 sm:gap-8 md:gap-10 px-5 py-3 rounded-xl bg-card/30 backdrop-blur-sm border border-border/20">
-                {displayStats.map((stat, i) => (
-                  <StatCard
-                    key={stat.key}
-                    value={stat.value}
-                    label={stat.label}
-                    icon={stat.icon}
-                    index={i}
-                    reducedMotion={prefersReducedMotion}
-                  />
-                ))}
+            {/* Stats Strip — inside content column */}
+            {showStats && (
+              <div className="mt-6 sm:mt-8">
+                <div className="inline-flex flex-wrap gap-4 sm:gap-6 md:gap-8 px-4 py-3 rounded-xl bg-card/30 backdrop-blur-sm border border-border/20">
+                  {displayStats.map((stat, i) => (
+                    <StatCard
+                      key={stat.key}
+                      value={stat.value}
+                      label={stat.label}
+                      icon={stat.icon}
+                      index={i}
+                      reducedMotion={prefersReducedMotion}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
-        )}
       </section>
     </LazyMotion>
   );
