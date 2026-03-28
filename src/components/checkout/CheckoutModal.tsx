@@ -176,7 +176,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (currentStep === 'payment') setCurrentStep('info');
   }, [currentStep]);
 
-  const handleSubmitPayment = useCallback(async (tokenId?: string) => {
+  const handleSubmitPayment = useCallback(async () => {
     if (!isPaymentReady) return;
     onPaymentStarted?.();
 
@@ -252,6 +252,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       silent: true,
     });
 
+    const courseDisplayName = isRTL && course.title_ar ? course.title_ar : course.title;
+
     await submitPayment({
       courseId: course.id,
       currency: 'SAR',
@@ -260,7 +262,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       couponId: promo.appliedCoupon?.coupon_id,
       customerPhone: form.fullPhone,
       paymentMethod: 'card',
-      tokenId: tokenId || undefined,
+      amount: discountedPrice,
+      courseName: courseDisplayName,
+      isRTL,
     });
   }, [
     isPaymentReady, user, form, promo, course, basePrice, discountedPrice,
