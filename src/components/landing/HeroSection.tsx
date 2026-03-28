@@ -250,16 +250,6 @@ const HeroSection: React.FC = () => {
                 transition={fade(0.6, 0.65)}
                 className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full sm:w-auto mb-6 sm:mb-8"
               >
-                <Link to="/courses" className="w-full sm:w-auto">
-                  <Button
-                    variant="hero"
-                    size="lg"
-                    className="group w-full sm:w-auto min-h-[48px] sm:min-h-[52px] text-sm sm:text-base shadow-[0_4px_32px_hsl(var(--primary)/0.5)] hover:shadow-[0_6px_40px_hsl(var(--primary)/0.6)] transition-shadow"
-                  >
-                    <Play className="w-4 h-4 sm:w-5 sm:h-5" />
-                    {secondaryCta}
-                  </Button>
-                </Link>
                 <Link to="/signup" className="w-full sm:w-auto">
                   <Button
                     variant="heroOutline"
