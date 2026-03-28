@@ -108,28 +108,31 @@ const HeroSection: React.FC = () => {
   const coursesValue = content?.stats_courses_value
     ? String(content.stats_courses_value)
     : formatCount(stats?.courses ?? 0);
-
   const displayStats = useMemo(
     () => [
       {
         key: "members",
         value: membersValue,
         label: isRTL ? content?.stats_members_ar || "عضو" : content?.stats_members_en || "Members",
+        icon: Users, // أضفنا الأيقونة هنا
       },
       {
         key: "success",
         value: successValue,
         label: isRTL ? content?.stats_success_ar || "نسبة النجاح" : content?.stats_success_en || "Success",
+        icon: GraduationCap,
       },
       {
         key: "lessons",
         value: lessonsValue,
         label: isRTL ? content?.stats_lessons_ar || "درس" : content?.stats_lessons_en || "Lessons",
+        icon: PlayCircle,
       },
       {
         key: "courses",
         value: coursesValue,
         label: isRTL ? content?.stats_courses_ar || "دورة" : content?.stats_courses_en || "Courses",
+        icon: BookOpen,
       },
     ],
     [membersValue, lessonsValue, successValue, coursesValue, isRTL, content],
