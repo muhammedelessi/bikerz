@@ -117,15 +117,22 @@ const HeroAdSlider: React.FC = () => {
         <div ref={emblaRef} className="overflow-hidden">
           <div className="flex">
             {slides.map((slide) => (
-              <div key={slide.id} className="flex-[0_0_100%] min-w-0">
-                <a href={slide.target_url} className="block">
-                  <img
-                    src={slide.image_url}
-                    alt=""
-                    className="w-full h-auto block"
-                    loading="lazy"
-                  />
-                </a>
+              <div key={slide.id} className="flex-[0_0_100%] min-w-0 relative group/slide">
+                <img
+                  src={slide.image_url}
+                  alt=""
+                  className="w-full h-auto block"
+                  loading="lazy"
+                />
+                <div className="absolute inset-x-0 bottom-0 p-3 flex justify-center bg-gradient-to-t from-black/50 to-transparent">
+                  <a
+                    href={slide.target_url}
+                    className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-lg hover:bg-primary/90 transition-colors"
+                  >
+                    {isRTL ? "اكتشف المزيد" : "Learn More"}
+                    <ChevronRight className={cn("w-4 h-4", isRTL && "rotate-180")} />
+                  </a>
+                </div>
               </div>
             ))}
           </div>
