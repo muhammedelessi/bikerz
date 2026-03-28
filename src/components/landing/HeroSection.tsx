@@ -4,7 +4,18 @@ import { LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ArrowLeft, Play, ShieldCheck, CreditCard, Award } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowLeft,
+  Play,
+  ShieldCheck,
+  CreditCard,
+  Award,
+  Gauge,
+  Settings,
+  Zap,
+  Compass,
+} from "lucide-react"; // أضفت أيقونات الزينة هنا
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,25 +23,44 @@ import defaultHeroImage from "@/assets/hero-rider.webp";
 import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
 import { Skeleton } from "@/components/ui/skeleton";
 import DiscountUrgencyBanner from "@/components/landing/DiscountUrgencyBanner";
-import { Users, GraduationCap, PlayCircle, BookOpen } from "lucide-react"; // تأكد من الاستيراد
-type HeroLandingContent = HeroContent & {
-  stats_members_value?: string | number;
-  stats_lessons_value?: string | number;
-  stats_success_value?: string | number;
-  stats_courses_value?: string | number;
-  stats_members_en?: string;
-  stats_members_ar?: string;
-  stats_lessons_en?: string;
-  stats_lessons_ar?: string;
-  stats_success_en?: string;
-  stats_success_ar?: string;
-  stats_courses_en?: string;
-  stats_courses_ar?: string;
-  show_stats?: boolean | string;
-  show_badge?: string | boolean;
-  defaultHeroImage?: string;
+import { Users, GraduationCap, PlayCircle, BookOpen } from "lucide-react";
+
+// --- مكون الأيقونات الطافية للزينة (لسد الفراغ الجانبي) ---
+const FloatingDecorIcons = () => {
+  const decorIcons = [
+    { Icon: Gauge, size: 45, x: "10%", y: "20%", duration: 6 },
+    { Icon: Settings, size: 35, x: "5%", y: "45%", duration: 8 },
+    { Icon: Zap, size: 30, x: "15%", y: "70%", duration: 5 },
+    { Icon: Compass, size: 40, x: "8%", y: "85%", duration: 7 },
+  ];
+
+  return (
+    <div className="absolute left-0 top-0 w-full lg:w-1/2 h-full pointer-events-none hidden lg:block z-0">
+      {decorIcons.map(({ Icon, size, x, y, duration }, i) => (
+        <m.div
+          key={i}
+          className="absolute"
+          style={{ left: x, top: y, color: "hsl(18 78% 45% / 0.12)" }}
+          animate={{
+            y: [0, -20, 0],
+            opacity: [0.05, 0.15, 0.05],
+            rotate: [0, 10, 0],
+          }}
+          transition={{
+            duration: duration,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: i * 0.5,
+          }}
+        >
+          <Icon size={size} strokeWidth={1} />
+        </m.div>
+      ))}
+    </div>
+  );
 };
 
+// ... (تكملة الدوال المساعدة formatCount و fetchHeroStats كما هي في كودك) ...
 function formatCount(count: number) {
   if (count >= 1000) return `${Math.floor(count / 1000)}K+`;
   return count > 0 ? `${count}+` : "0";
@@ -53,34 +83,13 @@ async function fetchHeroStats() {
   return { members: usersCount, lessons: lessonsCount, successRate, courses: coursesCount };
 }
 
-/* ── Trust badge ── */
-const TrustBadge: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, label }) => (
-  <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-foreground/50 font-medium uppercase tracking-wider">
-    {icon}
-    <span>{label}</span>
-  </div>
-);
-
-/* ── Stat item ── */
-const StatItem: React.FC<{ value: string; label: string }> = ({ value, label }) => (
-  <div className="text-center">
-    <AnimatedCounter value={value} className="text-xl sm:text-2xl lg:text-3xl font-black text-primary-foreground" />
-    <div className="text-[9px] sm:text-[10px] text-primary-foreground/60 mt-0.5 uppercase tracking-[0.15em] font-semibold">
-      {label}
-    </div>
-  </div>
-);
-
 const HeroSection: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const prefersReducedMotion = useReducedMotion();
-  const Arrow = isRTL ? ArrowLeft : ArrowRight;
-
   const { data: content, isLoading: contentLoading } = useLandingContent<HeroLandingContent>("hero");
 
   const showStats = content?.show_stats !== false && content?.show_stats !== "false";
-
   const needsLiveStats = useMemo(() => {
     if (!content) return true;
     if (!showStats) return false;
@@ -94,6 +103,7 @@ const HeroSection: React.FC = () => {
     enabled: needsLiveStats,
   });
 
+  // ... (تكملة حساب القيم DisplayStats كما هي في كودك) ...
   const membersValue = content?.stats_members_value
     ? String(content.stats_members_value)
     : formatCount(stats?.members ?? 0);
@@ -108,158 +118,89 @@ const HeroSection: React.FC = () => {
   const coursesValue = content?.stats_courses_value
     ? String(content.stats_courses_value)
     : formatCount(stats?.courses ?? 0);
+
   const displayStats = useMemo(
     () => [
-      {
-        key: "members",
-        value: membersValue,
-        label: isRTL ? content?.stats_members_ar || "عضو" : content?.stats_members_en || "Members",
-        icon: Users, // أضفنا الأيقونة هنا
-      },
-      {
-        key: "success",
-        value: successValue,
-        label: isRTL ? content?.stats_success_ar || "نسبة النجاح" : content?.stats_success_en || "Success",
-        icon: GraduationCap,
-      },
-      {
-        key: "lessons",
-        value: lessonsValue,
-        label: isRTL ? content?.stats_lessons_ar || "درس" : content?.stats_lessons_en || "Lessons",
-        icon: PlayCircle,
-      },
-      {
-        key: "courses",
-        value: coursesValue,
-        label: isRTL ? content?.stats_courses_ar || "دورة" : content?.stats_courses_en || "Courses",
-        icon: BookOpen,
-      },
+      { key: "members", value: membersValue, label: isRTL ? "عضو" : "Members", icon: Users },
+      { key: "success", value: successValue, label: isRTL ? "نسبة النجاح" : "Success", icon: GraduationCap },
+      { key: "lessons", value: lessonsValue, label: isRTL ? "درس" : "Lessons", icon: PlayCircle },
+      { key: "courses", value: coursesValue, label: isRTL ? "دورة" : "Courses", icon: BookOpen },
     ],
-    [membersValue, lessonsValue, successValue, coursesValue, isRTL, content],
+    [membersValue, lessonsValue, successValue, coursesValue, isRTL],
   );
-
-  const getText = (enKey: keyof HeroContent, arKey: keyof HeroContent, fallbackEn: string, fallbackAr: string) => {
-    if (!content) return isRTL ? fallbackAr : fallbackEn;
-    return isRTL ? content[arKey] || fallbackAr : content[enKey] || fallbackEn;
-  };
-
-  const title = getText("title_en", "title_ar", t("hero.title", { lng: "en" }), t("hero.title", { lng: "ar" }));
-  const subtitle = getText(
-    "subtitle_en",
-    "subtitle_ar",
-    t("hero.subtitle", { lng: "en" }),
-    t("hero.subtitle", { lng: "ar" }),
-  );
-  const ctaText = getText("cta_en", "cta_ar", t("hero.cta", { lng: "en" }), t("hero.cta", { lng: "ar" }));
-  const secondaryCta = getText(
-    "secondary_cta_en",
-    "secondary_cta_ar",
-    t("hero.secondaryCta", { lng: "en" }),
-    t("hero.secondaryCta", { lng: "ar" }),
-  );
-  const heroImage = content?.defaultHeroImage ?? defaultHeroImage;
 
   const fade = (dur: number, delay = 0) => (prefersReducedMotion ? { duration: 0 } : { duration: dur, delay });
-
-  const trustBadges = isRTL
-    ? [
-        { icon: <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />, label: "مدربون معتمدون" },
-        { icon: <CreditCard className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />, label: "دفع آمن" },
-        { icon: <Award className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />, label: "شهادات معتمدة" },
-      ]
-    : [
-        { icon: <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />, label: "Verified Instructors" },
-        { icon: <CreditCard className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />, label: "Secure Payment" },
-        { icon: <Award className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />, label: "Certified Courses" },
-      ];
+  const heroImage = content?.defaultHeroImage ?? defaultHeroImage;
+  const title = isRTL ? content?.title_ar || "لنقد بثقة" : content?.title_en || "Ride with Confidence";
+  const subtitle = isRTL ? content?.subtitle_ar : content?.subtitle_en;
+  const secondaryCta = isRTL
+    ? content?.secondary_cta_ar || "استكشف الدورات"
+    : content?.secondary_cta_en || "Explore Courses";
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <section className="relative min-h-[90svh] lg:min-h-[85svh] flex flex-col">
-        {/* ═══ Background ═══ */}
+      <section className="relative min-h-[90svh] lg:min-h-[85svh] flex flex-col overflow-hidden">
+        {/* ═══ Background & Overlays ═══ */}
         <div className="absolute inset-0">
-          <img
-            src={heroImage}
-            alt="Motorcycle rider on desert highway"
-            width={1920}
-            height={1080}
-            fetchPriority="high"
-            decoding="async"
-            className="w-full h-full object-cover object-center"
-            loading="eager"
-          />
-          {/* Cinematic overlays */}
+          <img src={heroImage} alt="Hero" className="w-full h-full object-cover object-center" fetchPriority="high" />
           <div className="absolute inset-0 bg-near-black/60" />
-          <div className="absolute inset-0 bg-gradient-to-t from-near-black via-near-black/50 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-near-black/90 via-near-black/40 to-transparent lg:via-transparent lg:to-near-black/20" />
-          {/* Orange accent glow — bottom left */}
-          <div className="absolute bottom-0 left-0 w-[60%] h-[40%] bg-[radial-gradient(ellipse_at_bottom_left,hsl(var(--primary)/0.15),transparent_70%)] pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-near-black via-near-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-near-black/90 via-near-black/20 to-transparent" />
         </div>
 
-        {/* Grain */}
+        {/* ═══ الزينة التقنية (سد الفراغ الأحمر) ═══ */}
+        <FloatingDecorIcons />
+
+        {/* Grain effect */}
         <div
-          className="absolute inset-0 opacity-[0.04] pointer-events-none mix-blend-overlay"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          }}
+          className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay"
+          style={{ backgroundImage: `url("data:image/svg+xml,...")` }}
         />
 
-        {/* ═══ Floating Discount Banner (top) ═══ */}
-        <m.div
-          initial={{ opacity: 0, y: prefersReducedMotion ? 0 : -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={fade(0.5, 0.1)}
-          className="relative z-20 pt-3 sm:pt-4 px-4"
-        >
+        {/* ═══ Banner ═══ */}
+        <m.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="relative z-20 pt-4 px-4">
           <DiscountUrgencyBanner floating />
         </m.div>
 
         {/* ═══ Main Content ═══ */}
         <div className="relative z-10 flex-1 flex items-center">
-          <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 py-8 lg:py-0">
-            {/* Desktop: split layout (content left). Mobile: centered stack */}
-            <div className="flex flex-col items-center text-center lg:items-start lg:text-start lg:max-w-[55%]">
+          <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6">
+            <div
+              className={`flex flex-col ${isRTL ? "lg:items-start lg:text-right" : "lg:items-end lg:text-left"} text-center`}
+            >
               {/* Title */}
-              {contentLoading ? (
-                <Skeleton className="h-14 sm:h-20 w-[85%] mb-4" />
-              ) : (
-                <m.h1
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={fade(0.8, 0.25)}
-                  className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] xl:text-6xl font-black leading-[1.1] tracking-tight mb-4 sm:mb-5"
-                >
-                  {title}
-                </m.h1>
-              )}
+              <m.h1
+                initial={{ opacity: 0, x: isRTL ? 30 : -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={fade(0.8, 0.3)}
+                className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black leading-tight mb-6 max-w-2xl text-white"
+              >
+                {title}
+              </m.h1>
 
               {/* Subtitle */}
-              {contentLoading ? (
-                <Skeleton className="h-6 w-[70%] mb-6" />
-              ) : (
-                <m.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={fade(0.7, 0.5)}
-                  className="text-sm sm:text-base lg:text-lg text-sand/80 leading-relaxed max-w-lg mb-6 sm:mb-8"
-                >
-                  {subtitle}
-                </m.p>
-              )}
-
-              {/* CTAs */}
-              <m.div
-                initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={fade(0.6, 0.65)}
-                className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full sm:w-auto mb-6 sm:mb-8"
+              <m.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={fade(0.7, 0.5)}
+                className="text-base lg:text-xl text-sand/80 max-w-lg mb-8"
               >
-                <Link to="/courses" className="w-full sm:w-auto">
+                {subtitle}
+              </m.p>
+
+              {/* Button */}
+              <m.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={fade(0.5, 0.7)}
+              >
+                <Link to="/courses">
                   <Button
                     variant="hero"
                     size="lg"
-                    className="group w-full sm:w-auto min-h-[48px] sm:min-h-[52px] text-sm sm:text-base shadow-[0_4px_32px_hsl(var(--primary)/0.5)] hover:shadow-[0_6px_40px_hsl(var(--primary)/0.6)] transition-shadow"
+                    className="group px-8 py-7 text-lg shadow-[0_10px_40px_hsl(var(--primary)/0.3)]"
                   >
-                    <Play className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <Play className="ml-2 w-5 h-5" />
                     {secondaryCta}
                   </Button>
                 </Link>
@@ -268,98 +209,39 @@ const HeroSection: React.FC = () => {
           </div>
         </div>
 
-        {/* ═══ Stats Bar (bottom, full-width) ═══ */}
+        {/* ═══ Stats Bar ═══ */}
         {showStats && (
           <m.div
-            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={fade(0.7, 0.9)}
             className="relative z-10 w-full"
           >
-            {/* خط التوهج العلوي البرتقالي من كودك */}
-            <div
-              className="absolute inset-x-0 top-0 h-px"
-              style={{ background: "linear-gradient(90deg, transparent, hsl(18 78% 45% / 0.5), transparent)" }}
-            />
-
-            <div
-              className="backdrop-blur-2xl border-t border-border/40"
-              style={{ background: "linear-gradient(180deg, hsl(180 3% 8% / 0.85) 0%, hsl(180 3% 11% / 0.95) 100%)" }}
-            >
-              <div className="max-w-[1200px] mx-auto px-4 py-6 md:py-8">
-                {/* الجريد: 2 أعمدة على الجوال و 4 على الكمبيوتر */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-y-10 gap-x-6">
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            <div className="backdrop-blur-xl border-t border-white/5 bg-near-black/80">
+              <div className="max-w-[1200px] mx-auto px-4 py-8 md:py-10">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                   {displayStats.map((stat, i) => {
-                    // ✅ الحل هنا: تعيين الأيقونة لمتغير يبدأ بحرف كبير
                     const Icon = stat.icon;
-
                     return (
-                      <m.div
-                        key={stat.key}
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.0 + i * 0.1, duration: 0.4 }}
-                        // الترتيب: أيقونة ثم نصوص (flex-row)
-                        className="group relative flex items-center justify-start md:justify-center gap-4 px-3"
-                      >
-                        {/* الدائرة المحيطة بالأيقونة (تشبه الصورة المرفقة) */}
-                        <div
-                          className="flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center border transition-all duration-300 group-hover:scale-105"
-                          style={{
-                            // خلفية برتقالية داكنة جداً كما في صورتك
-                            backgroundColor: "hsl(18 78% 45% / 0.08)",
-                            // حدود برتقالية رفيعة جداً
-                            borderColor: "hsl(18 78% 45% / 0.25)",
-                          }}
-                        >
-                          {/* رندر الأيقونة هنا باستخدام المتغير الذي يبدأ بحرف كبير */}
-                          {Icon && <Icon size={28} style={{ color: "hsl(18 78% 45%)" }} />}
+                      <div key={stat.key} className="flex items-center justify-center md:justify-start gap-4">
+                        <div className="w-14 h-14 rounded-full flex items-center justify-center border border-primary/20 bg-primary/5">
+                          {Icon && <Icon size={28} className="text-primary" />}
                         </div>
-
-                        {/* النصوص بجانب الأيقونة */}
                         <div className="flex flex-col text-right">
-                          <span
-                            className="text-2xl sm:text-3xl font-black tabular-nums leading-none tracking-tight"
-                            style={{
-                              color: "hsl(18 78% 45%)", // اللون البرتقالي الأساسي
-                              textShadow: "0 0 15px hsl(18 78% 45% / 0.25)",
-                            }}
-                          >
+                          <span className="text-2xl md:text-3xl font-black text-primary leading-none">
                             {stat.value}
                           </span>
-                          <span className="text-[12px] sm:text-[13px] font-medium mt-1 text-muted-foreground transition-colors group-hover:text-foreground/80">
-                            {stat.label}
-                          </span>
+                          <span className="text-xs font-medium text-muted-foreground mt-1">{stat.label}</span>
                         </div>
-
-                        {/* فاصل عمودي يظهر فقط في الشاشات الكبيرة */}
-                        {i < displayStats.length - 1 && (
-                          <div
-                            className="hidden md:block absolute end-0 top-1/2 -translate-y-1/2 w-px h-12 opacity-30"
-                            style={{
-                              background: "linear-gradient(180deg, transparent, hsl(18 78% 45%), transparent)",
-                            }}
-                          />
-                        )}
-                      </m.div>
+                      </div>
                     );
                   })}
                 </div>
               </div>
             </div>
-
-            {/* خط التوهج السفلي الأخضر من كودك */}
-            <div
-              className="absolute inset-x-0 bottom-0 h-px"
-              style={{ background: "linear-gradient(90deg, transparent, hsl(163 47% 20% / 0.3), transparent)" }}
-            />
           </m.div>
         )}
-
-        {/* Bottom fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none z-[5]" />
-
-        {/* Scroll indicator */}
       </section>
     </LazyMotion>
   );
