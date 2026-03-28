@@ -268,53 +268,39 @@ const HeroSection: React.FC = () => {
         {/* ═══ Stats Bar (bottom, full-width) ═══ */}
         {showStats && (
           <m.div
-            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 30 }}
+            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={fade(0.7, 0.9)}
             className="relative z-10 w-full"
           >
-            {/* Top glow line */}
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-500/60 to-transparent" />
-
-            {/* Glass background */}
-            <div className="relative bg-gradient-to-b from-black/60 to-black/40 backdrop-blur-2xl">
-              {/* Subtle orange glow center */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/5 to-transparent pointer-events-none" />
-
-              <div className="max-w-[1200px] mx-auto px-4 sm:px-8 py-5 sm:py-6">
-                <div className="grid grid-cols-4">
+            <div className="bg-black/70 backdrop-blur-xl border-t border-orange-500/20">
+              <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-5">
+                <div className="grid grid-cols-4 divide-x divide-orange-500/10 rtl:divide-x-reverse">
                   {displayStats.map((stat, i) => (
-                    <div key={stat.key} className="relative flex flex-col items-center gap-1.5 px-3 py-2 group">
-                      {/* Vertical divider */}
-                      {i < displayStats.length - 1 && (
-                        <div className="absolute end-0 top-1/2 -translate-y-1/2 w-px h-10 bg-gradient-to-b from-transparent via-white/20 to-transparent" />
-                      )}
-
-                      {/* Hover bg */}
-                      <div className="absolute inset-1 rounded-xl bg-orange-500/0 group-hover:bg-orange-500/5 transition-all duration-500" />
-
+                    <m.div
+                      key={stat.key}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.8 + i * 0.1 }}
+                      className="flex flex-col items-center gap-1 px-4 py-1 group cursor-default"
+                    >
                       {/* Value */}
-                      <div className="relative flex items-baseline gap-0.5">
-                        <span className="text-2xl sm:text-3xl font-black bg-gradient-to-b from-orange-300 to-orange-500 bg-clip-text text-transparent tabular-nums leading-none tracking-tight drop-shadow-[0_0_12px_rgba(249,115,22,0.4)]">
-                          {stat.value}
-                        </span>
-                      </div>
+                      <span className="text-2xl sm:text-3xl font-black text-orange-500 tabular-nums leading-none tracking-tight group-hover:text-orange-400 transition-colors duration-300">
+                        {stat.value}
+                      </span>
 
                       {/* Label */}
-                      <span className="relative text-[10px] sm:text-[11px] font-semibold text-white/40 uppercase tracking-[0.15em] leading-tight text-center group-hover:text-white/70 transition-colors duration-300">
+                      <span className="text-[10px] sm:text-xs font-medium text-white/50 uppercase tracking-widest leading-tight text-center group-hover:text-white/80 transition-colors duration-300">
                         {stat.label}
                       </span>
 
-                      {/* Bottom indicator */}
-                      <div className="relative w-0 group-hover:w-8 h-px bg-orange-400/60 transition-all duration-500 rounded-full" />
-                    </div>
+                      {/* Bottom bar */}
+                      <span className="block h-0.5 w-0 group-hover:w-8 bg-orange-500 rounded-full transition-all duration-300" />
+                    </m.div>
                   ))}
                 </div>
               </div>
             </div>
-
-            {/* Bottom glow line */}
-            <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
           </m.div>
         )}
 
