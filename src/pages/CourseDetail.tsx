@@ -114,6 +114,7 @@ const CourseDetail: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ArrowLeft : ArrowRight;
   const [showCheckout, setShowCheckout] = useState(false);

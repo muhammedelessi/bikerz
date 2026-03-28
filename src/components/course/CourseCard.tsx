@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { Play, Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Play, Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy, Eye, ShoppingCart } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTranslation } from "react-i18next";
@@ -38,6 +38,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
+  const navigate = useNavigate();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const locale = isRTL ? "ar" : "en";
   const videoPlaying = activeVideoId === course.id;
@@ -68,17 +69,27 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
 
   const thumbnailSrc = course.preview_video_thumbnail || course.thumbnail_url || heroImage;
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on buttons or video area
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('a') || target.closest('[data-video-area]')) return;
+    navigate(`/courses/${course.id}`);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.6, delay: index * 0.15, ease: [0.16, 1, 0.3, 1] }}
     >
-      <div className="group relative h-full rounded-2xl p-[1px] bg-gradient-to-br from-primary/15 via-border/30 to-transparent transition-all duration-500 hover:from-primary/25 hover:via-primary/10">
+      <div
+        className="group relative h-full rounded-2xl p-[1px] bg-gradient-to-br from-primary/15 via-border/30 to-transparent transition-all duration-500 hover:from-primary/25 hover:via-primary/10 cursor-pointer"
+        onClick={handleCardClick}
+      >
         <div className="relative h-full rounded-2xl border border-border/60 bg-card/85 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-primary/40 hover:shadow-[0_8px_40px_hsl(var(--primary)/0.15)]">
 
           {/* Video / Thumbnail Area */}
-          <div className="relative aspect-video overflow-hidden">
+          <div className="relative aspect-video overflow-hidden" data-video-area>
             {videoPlaying && hasPreviewVideo ? (
               <div className="w-full h-full">
                 <BunnyVideoEmbed
@@ -140,15 +151,12 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
           {/* Content */}
           <div className="p-4 sm:p-5 flex flex-col gap-3">
             {/* Title */}
-            <Link to={`/courses/${course.id}`} className="block">
-              <h3 className="text-lg sm:text-xl font-bold text-foreground mb-0 hover:text-primary transition-colors duration-300 line-clamp-1">
-                {title}
-              </h3>
-            </Link>
+            <h3 className="text-lg sm:text-xl font-bold text-foreground mb-0 group-hover:text-primary transition-colors duration-300 line-clamp-1">
+              {title}
+            </h3>
 
-            {/* Metadata + Badges (moved from floating on image to below title) */}
+            {/* Metadata + Badges */}
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              {/* Enrolled / Completed badge */}
               {isCompleted ? (
                 <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-600/15 text-green-600 dark:text-green-400 font-semibold">
                   <Trophy className="w-3 h-3" />
@@ -212,57 +220,80 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
             )}
 
             {/* CTA Buttons */}
-            <Link to={`/courses/${course.id}`} className="block">
-              {isCompleted ? (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="default"
-                    className="flex-1 h-11 text-sm font-bold bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Trophy className="w-4 h-4" />
-                      {t("courses.courseCard.completedWithCheck")}
-                    </span>
-                  </Button>
-                  {!hasReviewed && (
-                    <Button
-                      variant="outline"
-                      className="h-11 px-4 text-sm font-bold border-yellow-500/50 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/10"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.location.href = `/courses/${course.id}#reviews`;
-                      }}
-                    >
-                      <Star className="w-4 h-4 me-1.5 fill-yellow-500 text-yellow-500" />
-                      {t("courses.courseCard.rate")}
-                    </Button>
-                  )}
-                </div>
-              ) : (
+            {isCompleted ? (
+              <div className="flex items-center gap-2">
                 <Button
                   variant="default"
-                  className="w-full h-11 text-sm font-bold group/btn relative overflow-hidden"
+                  className="flex-1 h-11 text-sm font-bold bg-green-600 hover:bg-green-700 text-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/courses/${course.id}`);
+                  }}
                 >
-                  <span className="relative z-10 flex items-center gap-2">
-                    {isEnrolled ? (
-                      <>
-                        {t("courses.courseCard.continueLearning")}
-                        <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
-                      </>
-                    ) : (
-                      <>
-                        {t("courses.courseCard.subscribeNow", {
-                          price: formatAmount(priceInfo.finalPrice),
-                          currency: sym,
-                        })}
-                        <Arrow className="w-4 h-4 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1" />
-                      </>
-                    )}
+                  <span className="flex items-center gap-2">
+                    <Trophy className="w-4 h-4" />
+                    {t("courses.courseCard.completedWithCheck")}
                   </span>
                 </Button>
-              )}
-            </Link>
+                {!hasReviewed && (
+                  <Button
+                    variant="outline"
+                    className="h-11 px-4 text-sm font-bold border-yellow-500/50 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/courses/${course.id}#reviews`);
+                    }}
+                  >
+                    <Star className="w-4 h-4 me-1.5 fill-yellow-500 text-yellow-500" />
+                    {t("courses.courseCard.rate")}
+                  </Button>
+                )}
+              </div>
+            ) : isEnrolled ? (
+              <Button
+                variant="default"
+                className="w-full h-11 text-sm font-bold"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/courses/${course.id}`);
+                }}
+              >
+                <span className="flex items-center gap-2">
+                  {t("courses.courseCard.continueLearning")}
+                  <Arrow className="w-4 h-4" />
+                </span>
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="default"
+                  className="flex-1 h-11 text-sm font-bold group/btn relative overflow-hidden"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/courses/${course.id}?checkout=true`);
+                  }}
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    <ShoppingCart className="w-4 h-4" />
+                    {t("courses.courseCard.subscribeNow", {
+                      price: formatAmount(priceInfo.finalPrice),
+                      currency: sym,
+                    })}
+                  </span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-11 px-4 text-sm font-bold"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/courses/${course.id}`);
+                  }}
+                >
+                  <Eye className="w-4 h-4 me-1.5" />
+                  {t("courseDetail.viewCourse")}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
