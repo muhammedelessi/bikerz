@@ -9,9 +9,8 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import defaultHeroImage from "@/assets/hero-rider.webp";
 import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
-import DiscountUrgencyBanner from "@/components/landing/DiscountUrgencyBanner";
+import HeroAdSlider from "@/components/landing/HeroAdSlider";
 
-// Extended hero content with CMS stats overrides
 interface HeroLandingContent extends HeroContent {
   defaultHeroImage?: string;
   show_stats?: boolean | string;
@@ -44,7 +43,6 @@ async function fetchHeroStats() {
   return { members: usersCount, lessons: lessonsCount, successRate, courses: coursesCount };
 }
 
-/* ── Stat Card ── */
 const StatCard: React.FC<{
   value: string;
   label: string;
@@ -129,7 +127,11 @@ const HeroSection: React.FC = () => {
   return (
     <LazyMotion features={domAnimation} strict>
       <section className="relative min-h-[92svh] flex flex-col overflow-hidden">
-        {/* ── Background Layers ── */}
+        {/* Background image */}
+        <div className="absolute inset-0">
+          <img src={heroImage} alt="" className="w-full h-full object-cover" aria-hidden="true" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        </div>
 
         {/* Grain texture */}
         <div
@@ -139,74 +141,79 @@ const HeroSection: React.FC = () => {
           }}
         />
 
-        {/* ── 
-        <m.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative z-20 pt-3 px-4"
-        >
-          <DiscountUrgencyBanner floating />
-        </m.div> ── */}
-        {/* ── Main Content ── */}
-        <div className="relative z-10 flex-1 flex items-center">
-          <div className="w-full max-w-[1200px] mx-auto px-6">
-            <div className={`max-w-2xl ${isRTL ? "mr-0 ml-auto text-right" : "ml-0 mr-auto text-left"}`}>
-              {/* Badge */}
-              <m.div
-                initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={anim(0.6, 0.2)}
-                className="mb-5"
-              >
-                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                  {isRTL ? "أكاديمية بايكرز" : "BIKERZ Academy"}
-                </span>
-              </m.div>
+        {/* Main Content — side-by-side on desktop, stacked on mobile */}
+        <div className="relative z-10 flex-1 flex flex-col lg:flex-row items-center">
+          {/* Ad Slider — top on mobile, right/left on desktop */}
+          <m.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={anim(0.6, 0.2)}
+            className={`w-full lg:w-[340px] xl:w-[380px] shrink-0 px-4 pt-4 lg:pt-0 lg:px-0 order-1 lg:order-none ${isRTL ? "lg:pl-6" : "lg:pr-6"}`}
+          >
+            <HeroAdSlider />
+          </m.div>
 
-              {/* Title */}
-              <m.h1
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={anim(0.7, 0.35)}
-                className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08] mb-5 text-primary-foreground"
-              >
-                {title}
-              </m.h1>
+          {/* Hero text content */}
+          <div className="flex-1 flex items-center order-2 lg:order-none w-full">
+            <div className="w-full max-w-[1200px] mx-auto px-6 py-8 lg:py-0">
+              <div className={`max-w-2xl ${isRTL ? "mr-0 ml-auto text-right" : "ml-0 mr-auto text-left"}`}>
+                {/* Badge */}
+                <m.div
+                  initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={anim(0.6, 0.3)}
+                  className="mb-5"
+                >
+                  <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    {isRTL ? "أكاديمية بايكرز" : "BIKERZ Academy"}
+                  </span>
+                </m.div>
 
-              {/* Subtitle */}
-              <m.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={anim(0.6, 0.55)}
-                className="text-base sm:text-lg lg:text-xl text-foreground/70 leading-relaxed mb-8 max-w-lg"
-              >
-                {subtitle}
-              </m.p>
+                {/* Title */}
+                <m.h1
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={anim(0.7, 0.4)}
+                  className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08] mb-5 text-primary-foreground"
+                >
+                  {title}
+                </m.h1>
 
-              {/* CTA */}
-              <m.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={anim(0.5, 0.7)}
-                className="flex flex-wrap gap-4"
-              >
-                <Link to="/courses">
-                  <Button
-                    variant="hero"
-                    size="lg"
-                    className="group gap-3 px-8 py-6 text-base sm:text-lg shadow-[0_8px_32px_hsl(var(--primary)/0.35)]"
-                  >
-                    <Play className="w-5 h-5 transition-transform group-hover:scale-110" />
-                    {ctaText}
-                  </Button>
-                </Link>
-              </m.div>
+                {/* Subtitle */}
+                <m.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={anim(0.6, 0.6)}
+                  className="text-base sm:text-lg lg:text-xl text-foreground/70 leading-relaxed mb-8 max-w-lg"
+                >
+                  {subtitle}
+                </m.p>
+
+                {/* CTA */}
+                <m.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={anim(0.5, 0.75)}
+                  className="flex flex-wrap gap-4"
+                >
+                  <Link to="/courses">
+                    <Button
+                      variant="hero"
+                      size="lg"
+                      className="group gap-3 px-8 py-6 text-base sm:text-lg shadow-[0_8px_32px_hsl(var(--primary)/0.35)]"
+                    >
+                      <Play className="w-5 h-5 transition-transform group-hover:scale-110" />
+                      {ctaText}
+                    </Button>
+                  </Link>
+                </m.div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* ── Compact Stats Strip ── */}
+        {/* Stats Strip */}
         {showStats && (
           <div className="relative z-10 w-full pb-5 sm:pb-6">
             <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
