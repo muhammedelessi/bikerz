@@ -267,97 +267,81 @@ const HeroSection: React.FC = () => {
 
         {/* ═══ Stats Bar (bottom, full-width) ═══ */}
         {showStats && (
-بناءً على الكود الذي أرسلته، سأقوم بإعادة هيكلة التصميم ليتطابق مع الصورة (أيقونة داخل دائرة بجانبها النص) مع الحفاظ على نظام ألوان HSL الخاص بك وتوزيع العناصر $2 \times 2$ على الجوال.استخدمت أيقونات من مكتبة lucide-react كونها الأكثر شيوعاً وتوافقاً مع React/Flutter web:JavaScriptimport { motion as m } from "framer-motion";
-import { BookOpen, Users, Award, Users2 } from "lucide-react"; // أيقونات متعارف عليها
+          <m.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.9 }}
+            className="relative z-10 w-full"
+          >
+            {/* Glow العلوي من كودك الأصلي */}
+            <div
+              className="absolute inset-x-0 top-0 h-px"
+              style={{ background: "linear-gradient(90deg, transparent, hsl(18 78% 45% / 0.5), transparent)" }}
+            />
 
-const StatsSection = () => {
-  // البيانات مع الأيقونات المتعارف عليها
-  const displayStats = [
-    { key: "courses", value: "3200", label: "Online Courses", icon: BookOpen },
-    { key: "instructors", value: "Top", label: "Instructors", icon: Users },
-    { key: "certs", value: "Online", label: "Certifications", icon: Award },
-    { key: "members", value: "6,000", label: "Membership", icon: Users2 },
-  ];
+            <div
+              className="backdrop-blur-2xl border-t border-border/40"
+              style={{ background: "linear-gradient(180deg, hsl(180 3% 8% / 0.85) 0%, hsl(180 3% 11% / 0.95) 100%)" }}
+            >
+              <div className="max-w-[1200px] mx-auto px-4 py-8">
+                {/* توزيع الشبكة: 2 أعمدة للجوال و 4 للكمبيوتر */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-y-8 gap-x-4">
+                  {displayStats.map((stat, i) => (
+                    <m.div
+                      key={stat.key}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.9 + i * 0.1, duration: 0.4 }}
+                      className="group relative flex items-center justify-start md:justify-center gap-4 px-2"
+                    >
+                      {/* الدائرة المحيطة بالأيقونة - باستخدام الـ primary orange من كودك */}
+                      <div
+                        className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center border transition-all duration-300 group-hover:scale-110"
+                        style={{
+                          backgroundColor: "hsl(18 78% 45% / 0.1)",
+                          borderColor: "hsl(18 78% 45% / 0.3)",
+                        }}
+                      >
+                        <stat.icon size={24} style={{ color: "hsl(18 78% 45%)" }} />
+                      </div>
 
-  return (
-    <m.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, delay: 0.9 }}
-      className="relative z-10 w-full"
-    >
-      {/* Glow العلوي من كودك الأصلي */}
-      <div
-        className="absolute inset-x-0 top-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, hsl(18 78% 45% / 0.5), transparent)" }}
-      />
+                      {/* النصوص بجانب الأيقونة */}
+                      <div className="flex flex-col">
+                        <span
+                          className="text-xl sm:text-2xl font-black tabular-nums leading-none tracking-tight"
+                          style={{
+                            color: "hsl(18 78% 45%)", // اللون البرتقالي الأساسي
+                            textShadow: "0 0 15px hsl(18 78% 45% / 0.2)",
+                          }}
+                        >
+                          {stat.value}
+                        </span>
+                        <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest leading-tight mt-1 text-muted-foreground group-hover:text-foreground/80 transition-colors">
+                          {stat.label}
+                        </span>
+                      </div>
 
-      <div
-        className="backdrop-blur-2xl border-t border-border/40"
-        style={{ background: "linear-gradient(180deg, hsl(180 3% 8% / 0.85) 0%, hsl(180 3% 11% / 0.95) 100%)" }}
-      >
-        <div className="max-w-[1200px] mx-auto px-4 py-8">
-          {/* توزيع الشبكة: 2 أعمدة للجوال و 4 للكمبيوتر */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-y-8 gap-x-4">
-            {displayStats.map((stat, i) => (
-              <m.div
-                key={stat.key}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.9 + i * 0.1, duration: 0.4 }}
-                className="group relative flex items-center justify-start md:justify-center gap-4 px-2"
-              >
-                {/* الدائرة المحيطة بالأيقونة - باستخدام الـ primary orange من كودك */}
-                <div 
-                  className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center border transition-all duration-300 group-hover:scale-110"
-                  style={{ 
-                    backgroundColor: "hsl(18 78% 45% / 0.1)", 
-                    borderColor: "hsl(18 78% 45% / 0.3)" 
-                  }}
-                >
-                  <stat.icon 
-                    size={24} 
-                    style={{ color: "hsl(18 78% 45%)" }} 
-                  />
+                      {/* الفاصل العمودي (يختفي في الجوال عند العنصر الثاني والرابع) */}
+                      {i < displayStats.length - 1 && (
+                        <div
+                          className="hidden md:block absolute end-0 top-1/2 -translate-y-1/2 w-px h-10"
+                          style={{
+                            background: "linear-gradient(180deg, transparent, hsl(180 3% 25%), transparent)",
+                          }}
+                        />
+                      )}
+                    </m.div>
+                  ))}
                 </div>
+              </div>
+            </div>
 
-                {/* النصوص بجانب الأيقونة */}
-                <div className="flex flex-col">
-                  <span
-                    className="text-xl sm:text-2xl font-black tabular-nums leading-none tracking-tight"
-                    style={{
-                      color: "hsl(18 78% 45%)", // اللون البرتقالي الأساسي
-                      textShadow: "0 0 15px hsl(18 78% 45% / 0.2)",
-                    }}
-                  >
-                    {stat.value}
-                  </span>
-                  <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest leading-tight mt-1 text-muted-foreground group-hover:text-foreground/80 transition-colors">
-                    {stat.label}
-                  </span>
-                </div>
-
-                {/* الفاصل العمودي (يختفي في الجوال عند العنصر الثاني والرابع) */}
-                {i < displayStats.length - 1 && (
-                  <div
-                    className="hidden md:block absolute end-0 top-1/2 -translate-y-1/2 w-px h-10"
-                    style={{
-                      background: "linear-gradient(180deg, transparent, hsl(180 3% 25%), transparent)",
-                    }}
-                  />
-                )}
-              </m.div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Glow السفلي الأخضر من كودك الأصلي */}
-      <div
-        className="absolute inset-x-0 bottom-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, hsl(163 47% 20% / 0.3), transparent)" }}
-      />
-    </m.div>
+            {/* Glow السفلي الأخضر من كودك الأصلي */}
+            <div
+              className="absolute inset-x-0 bottom-0 h-px"
+              style={{ background: "linear-gradient(90deg, transparent, hsl(163 47% 20% / 0.3), transparent)" }}
+            />
+          </m.div>
         )}
 
         {/* Bottom fade */}
