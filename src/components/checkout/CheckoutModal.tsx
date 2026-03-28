@@ -456,7 +456,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         </div>
 
         {/* Footer */}
-        {!isStatusOverlay && !isIframeShowing && (
+        {!isStatusOverlay && (
           <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-5 border-t-2 border-border flex-shrink-0 space-y-2">
             <div className="flex gap-2">
               {currentStep !== 'info' && (
