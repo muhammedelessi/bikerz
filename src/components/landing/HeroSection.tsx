@@ -178,7 +178,7 @@ const HeroSection: React.FC = () => {
         {/* ── Main Content ── */}
         <div className="relative z-10 flex-1 flex items-center">
           <div className="w-full max-w-[1200px] mx-auto px-6">
-            <div className={`max-w-2xl text-center mx-auto lg:text-left ${isRTL ? "lg:mr-0 lg:ml-auto" : "lg:ml-0 lg:mr-auto"}`}>
+            <div className={`max-w-2xl ${isRTL ? "mr-0 ml-auto text-right" : "ml-0 mr-auto text-left"}`}>
               {/* Badge */}
               <m.div
                 initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
