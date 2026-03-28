@@ -279,26 +279,6 @@ const HeroSection: React.FC = () => {
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none z-[5]" />
 
         {/* Scroll indicator */}
-        {!prefersReducedMotion && (
-          <m.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.6 }}
-            className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 hidden lg:block z-10"
-          >
-            <m.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="w-5 h-9 rounded-full border border-sand/20 flex items-start justify-center p-1.5"
-            >
-              <m.div
-                animate={{ opacity: [0.4, 1, 0.4] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="w-1 h-2.5 rounded-full bg-primary/60"
-              />
-            </m.div>
-          </m.div>
-        )}
       </section>
     </LazyMotion>
   );
