@@ -10,13 +10,12 @@ import SEOHead from "@/components/common/SEOHead";
 import { useLanguage } from "@/contexts/LanguageContext"; // استيراد سياق اللغة
 
 const Index: React.FC = () => {
-  const { isRTL, currentLanguage } = useLanguage();
+  const { isRTL, language } = useLanguage();
 
-  // تحديث خصائص الـ HTML الأساسية لضمان توافق المتصفح والخطوط
   useEffect(() => {
     document.documentElement.dir = isRTL ? "rtl" : "ltr";
-    document.documentElement.lang = currentLanguage;
-  }, [isRTL, currentLanguage]);
+    document.documentElement.lang = language;
+  }, [isRTL, language]);
 
   return (
     <div
