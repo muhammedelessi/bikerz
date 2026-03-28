@@ -27,6 +27,7 @@ const Courses: React.FC = () => {
           thumbnail_url, difficulty_level, price, is_published,
           discount_percentage, discount_expires_at,
           base_rating, base_review_count,
+          preview_video_url, preview_video_thumbnail,
           chapters (
             id, is_published,
             lessons ( id, duration_minutes, is_published )
