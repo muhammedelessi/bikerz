@@ -119,15 +119,12 @@ const HeroAdSlider: React.FC = () => {
             {slides.map((slide) => (
               <div key={slide.id} className="flex-[0_0_100%] min-w-0">
                 <a href={slide.target_url} className="block">
-                  {/* 16:9 on mobile, 9:16 on desktop */}
-                  <div className="relative aspect-video lg:aspect-[9/16]">
-                    <img
-                      src={slide.image_url}
-                      alt=""
-                      className="absolute inset-0 w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
+                  <img
+                    src={slide.image_url}
+                    alt=""
+                    className="w-full h-auto block"
+                    loading="lazy"
+                  />
                 </a>
               </div>
             ))}
