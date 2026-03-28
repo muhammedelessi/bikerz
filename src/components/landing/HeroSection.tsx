@@ -137,10 +137,8 @@ const HeroSection: React.FC = () => {
             className="w-full h-full object-cover object-center"
             fetchPriority="high"
           />
-          {/* Dark cinematic overlay */}
-          <div className="absolute inset-0 bg-near-black/65" />
           {/* Bottom gradient fade */}
-          <div className="absolute inset-0 bg-gradient-to-t from-near-black via-near-black/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-near-black via-near-black/40 to-transparent" />
           {/* Side vignette */}
           <div
             className="absolute inset-0"
