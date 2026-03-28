@@ -273,34 +273,74 @@ const HeroSection: React.FC = () => {
             transition={fade(0.7, 0.9)}
             className="relative z-10 w-full"
           >
-            <div className="bg-black/70 backdrop-blur-xl border-t border-orange-500/20">
-              <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-5">
-                <div className="grid grid-cols-4 divide-x divide-orange-500/10 rtl:divide-x-reverse">
+            {/* Top glow — primary orange */}
+            <div
+              className="absolute inset-x-0 top-0 h-px"
+              style={{ background: "linear-gradient(90deg, transparent, hsl(18 78% 45% / 0.5), transparent)" }}
+            />
+
+            <div
+              className="backdrop-blur-2xl border-t border-border/40"
+              style={{ background: "linear-gradient(180deg, hsl(180 3% 8% / 0.85) 0%, hsl(180 3% 11% / 0.95) 100%)" }}
+            >
+              <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-6">
+                <div className="grid grid-cols-4">
                   {displayStats.map((stat, i) => (
                     <m.div
                       key={stat.key}
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.8 + i * 0.1 }}
-                      className="flex flex-col items-center gap-1 px-4 py-1 group cursor-default"
+                      transition={{ delay: 0.9 + i * 0.1, duration: 0.4 }}
+                      className="relative flex flex-col items-center gap-1.5 px-3 py-2 group cursor-default"
                     >
+                      {/* Vertical divider */}
+                      {i < displayStats.length - 1 && (
+                        <div
+                          className="absolute end-0 top-1/2 -translate-y-1/2 w-px h-8"
+                          style={{
+                            background: "linear-gradient(180deg, transparent, hsl(var(--border)), transparent)",
+                          }}
+                        />
+                      )}
+
+                      {/* Hover glow bg */}
+                      <div
+                        className="absolute inset-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                        style={{ background: "hsl(18 78% 45% / 0.06)" }}
+                      />
+
                       {/* Value */}
-                      <span className="text-2xl sm:text-3xl font-black text-orange-500 tabular-nums leading-none tracking-tight group-hover:text-orange-400 transition-colors duration-300">
+                      <span
+                        className="relative text-2xl sm:text-3xl font-black tabular-nums leading-none tracking-tight transition-all duration-300"
+                        style={{
+                          color: "hsl(var(--primary))",
+                          textShadow: "0 0 20px hsl(18 78% 45% / 0.35)",
+                        }}
+                      >
                         {stat.value}
                       </span>
 
                       {/* Label */}
-                      <span className="text-[10px] sm:text-xs font-medium text-white/50 uppercase tracking-widest leading-tight text-center group-hover:text-white/80 transition-colors duration-300">
+                      <span className="relative text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest leading-tight text-center transition-colors duration-300 text-muted-foreground group-hover:text-foreground/70">
                         {stat.label}
                       </span>
 
-                      {/* Bottom bar */}
-                      <span className="block h-0.5 w-0 group-hover:w-8 bg-orange-500 rounded-full transition-all duration-300" />
+                      {/* Animated bottom bar */}
+                      <span
+                        className="relative block h-px w-0 group-hover:w-6 rounded-full transition-all duration-500"
+                        style={{ background: "hsl(var(--primary))" }}
+                      />
                     </m.div>
                   ))}
                 </div>
               </div>
             </div>
+
+            {/* Bottom glow — deep green accent */}
+            <div
+              className="absolute inset-x-0 bottom-0 h-px"
+              style={{ background: "linear-gradient(90deg, transparent, hsl(163 47% 20% / 0.3), transparent)" }}
+            />
           </m.div>
         )}
 
