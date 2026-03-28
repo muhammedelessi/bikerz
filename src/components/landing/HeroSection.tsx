@@ -181,7 +181,7 @@ const HeroSection: React.FC = () => {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={anim(0.5, 0.75)}
-                  className="flex flex-wrap gap-4"
+                  className="flex flex-wrap gap-4 justify-center md:justify-start"
                 >
                   <Link to="/courses">
                     <Button
@@ -199,8 +199,8 @@ const HeroSection: React.FC = () => {
 
             {/* Stats Strip — inside content column */}
             {showStats && (
-              <div className="mt-6 sm:mt-8">
-                <div className="inline-flex flex-wrap gap-4 sm:gap-6 md:gap-8 px-4 py-3 rounded-xl bg-card/30 backdrop-blur-sm border border-border/20">
+              <div className="mt-6 sm:mt-8 flex justify-center md:justify-start">
+                <div className="inline-flex flex-wrap justify-center md:justify-start gap-3 sm:gap-6 md:gap-8 px-3 sm:px-4 py-3 rounded-xl bg-card/30 backdrop-blur-sm border border-border/20">
                   {displayStats.map((stat, i) => (
                     <StatCard
                       key={stat.key}
