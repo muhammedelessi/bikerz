@@ -227,7 +227,6 @@ const HeroSection: React.FC = () => {
                   style={{
                     background:
                       "linear-gradient(135deg, hsl(var(--primary-foreground)) 0%, hsl(var(--primary)) 50%, hsl(var(--sand)) 100%)",
-                    WebkitBackgroundClip: "text",
                   }}
                 >
                   {title}
