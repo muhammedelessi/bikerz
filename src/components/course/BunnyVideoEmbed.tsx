@@ -562,6 +562,18 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
   useEffect(() => {
     if (!embedUrl || !iframeRef.current) return;
 
+    if (isPreview) {
+      iframeLoadFallbackRef.current = setTimeout(() => {
+        if (!playerReadyRef.current) {
+          setIsLoading(false);
+        }
+      }, 4000);
+
+      return () => {
+        clearTimers();
+      };
+    }
+
     let cancelled = false;
     let player: PlayerJsInstance | null = null;
 
@@ -683,16 +695,22 @@ const BunnyVideoEmbed: React.FC<BunnyVideoEmbedProps> = ({
       clearTimers();
       teardown?.();
     };
-  }, [embedUrl, initialTime, updatePlaybackState, fireOnEnded, clearTimers]);
+  }, [embedUrl, initialTime, updatePlaybackState, fireOnEnded, clearTimers, isPreview]);
 
   const handleIframeLoad = useCallback(() => {
+    if (isPreview) {
+      playerReadyRef.current = true;
+      setIsLoading(false);
+      return;
+    }
+
     setTimeout(() => {
       if (!playerReadyRef.current) {
         console.warn("[BunnyVideoEmbed] iframe loaded but Player.js not ready – clearing spinner");
         setIsLoading(false);
       }
     }, 3000);
-  }, []);
+  }, [isPreview]);
 
   const handleRetry = useCallback(() => {
     endedCalledRef.current = false;
