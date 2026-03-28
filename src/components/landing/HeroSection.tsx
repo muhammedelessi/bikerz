@@ -62,10 +62,7 @@ const StatCard: React.FC<{
       <Icon className="w-4 h-4 text-primary" />
     </div>
     <div className="flex flex-col">
-      <AnimatedCounter
-        value={value}
-        className="text-lg sm:text-xl font-bold text-primary-foreground leading-none"
-      />
+      <AnimatedCounter value={value} className="text-lg sm:text-xl font-bold text-primary-foreground leading-none" />
       <span className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-wider font-medium mt-0.5">
         {label}
       </span>
@@ -118,8 +115,7 @@ const HeroSection: React.FC = () => {
     [membersValue, lessonsValue, successValue, coursesValue, isRTL],
   );
 
-  const anim = (dur: number, delay = 0) =>
-    prefersReducedMotion ? { duration: 0 } : { duration: dur, delay };
+  const anim = (dur: number, delay = 0) => (prefersReducedMotion ? { duration: 0 } : { duration: dur, delay });
 
   const heroImage = content?.defaultHeroImage ?? defaultHeroImage;
   const title = isRTL ? content?.title_ar || "لنقد بثقة" : content?.title_en || "Ride with Confidence";
@@ -145,15 +141,7 @@ const HeroSection: React.FC = () => {
           <div className="absolute inset-0 bg-near-black/65" />
           {/* Bottom gradient fade */}
           <div className="absolute inset-0 bg-gradient-to-t from-near-black via-near-black/30 to-transparent" />
-          {/* Side vignette */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background: isRTL
-                ? "linear-gradient(to left, hsl(180 3% 11% / 0.85), transparent 60%)"
-                : "linear-gradient(to right, hsl(180 3% 11% / 0.85), transparent 60%)",
-            }}
-          />
+
           {/* Primary accent glow */}
           <div
             className="absolute w-[600px] h-[600px] rounded-full opacity-[0.07] blur-[120px]"
@@ -174,11 +162,7 @@ const HeroSection: React.FC = () => {
         />
 
         {/* ── Discount Banner ── */}
-        <m.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative z-20 pt-3 px-4"
-        >
+        <m.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="relative z-20 pt-3 px-4">
           <DiscountUrgencyBanner floating />
         </m.div>
 
@@ -186,7 +170,6 @@ const HeroSection: React.FC = () => {
         <div className="relative z-10 flex-1 flex items-center">
           <div className="w-full max-w-[1200px] mx-auto px-6">
             <div className={`max-w-2xl ${isRTL ? "mr-0 ml-auto text-right" : "ml-0 mr-auto text-left"}`}>
-
               {/* Badge */}
               <m.div
                 initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
