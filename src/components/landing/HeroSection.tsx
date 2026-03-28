@@ -257,7 +257,12 @@ const HeroSection: React.FC = () => {
 
         {/* ═══ Stats Bar (bottom, full-width) ═══ */}
         {showStats && (
-          <m.div animate={{ opacity: 1, y: 0 }} transition={fade(0.7, 0.9)} className="relative z-10">
+          <m.div
+            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={fade(0.7, 0.9)}
+            className="relative z-10"
+          >
             <div className="bg-primary/10 backdrop-blur-lg border-t border-primary/20">
               <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-3 sm:py-4">
                 <div className="grid grid-cols-4 gap-2 sm:gap-4">
@@ -269,11 +274,6 @@ const HeroSection: React.FC = () => {
             </div>
           </m.div>
         )}
-
-        {/* Bottom fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none z-[5]" />
-
-        {/* Scroll indicator */}
       </section>
     </LazyMotion>
   );
