@@ -447,6 +447,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   paymentStatus={paymentStatus}
                   guestSigningUp={guestSigningUp}
                   isPaymentReady={isPaymentReady}
+                  iframeUrl={iframeUrl}
                   onSubmitPayment={handleSubmitPayment}
                 />
               )}
