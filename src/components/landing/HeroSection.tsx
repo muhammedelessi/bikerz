@@ -62,10 +62,13 @@ const TrustBadge: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, 
 );
 
 /* ── Stat item ── */
-const StatItem: React.FC<{ value: string; label: string }> = ({ value, label }) => (
-  <div className="text-center">
-    <AnimatedCounter value={value} className="text-xl sm:text-2xl lg:text-3xl font-black text-primary-foreground" />
-    <div className="text-[9px] sm:text-[10px] text-primary-foreground/60 mt-0.5 uppercase tracking-[0.15em] font-semibold">
+const StatItem: React.FC<{ value: string; label: string; icon: React.ReactNode }> = ({ value, label, icon }) => (
+  <div className="flex flex-col items-center gap-1.5 group">
+    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center group-hover:bg-primary/25 group-hover:border-primary/40 transition-all duration-300">
+      {icon}
+    </div>
+    <AnimatedCounter value={value} className="text-lg sm:text-xl lg:text-2xl font-black text-primary-foreground" />
+    <div className="text-[8px] sm:text-[10px] text-primary-foreground/50 uppercase tracking-[0.15em] font-semibold leading-tight text-center">
       {label}
     </div>
   </div>
