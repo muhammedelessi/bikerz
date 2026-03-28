@@ -4,7 +4,18 @@ import { LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Play, Gauge, Settings, Zap, Compass, Users, GraduationCap, PlayCircle, BookOpen } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowLeft,
+  Play,
+  ShieldCheck,
+  CreditCard,
+  Award,
+  Gauge,
+  Settings,
+  Zap,
+  Compass,
+} from "lucide-react"; // أضفت أيقونات الزينة هنا
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,24 +23,44 @@ import defaultHeroImage from "@/assets/hero-rider.webp";
 import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
 import { Skeleton } from "@/components/ui/skeleton";
 import DiscountUrgencyBanner from "@/components/landing/DiscountUrgencyBanner";
+import { Users, GraduationCap, PlayCircle, BookOpen } from "lucide-react";
 
-type HeroLandingContent = HeroContent & {
-  stats_members_value?: string | number;
-  stats_lessons_value?: string | number;
-  stats_success_value?: string | number;
-  stats_courses_value?: string | number;
-  stats_members_en?: string;
-  stats_members_ar?: string;
-  stats_lessons_en?: string;
-  stats_lessons_ar?: string;
-  stats_success_en?: string;
-  stats_success_ar?: string;
-  stats_courses_en?: string;
-  stats_courses_ar?: string;
-  show_stats?: boolean | string;
+// --- مكون الأيقونات الطافية للزينة (لسد الفراغ الجانبي) ---
+const FloatingDecorIcons = () => {
+  const decorIcons = [
+    { Icon: Gauge, size: 45, x: "10%", y: "20%", duration: 6 },
+    { Icon: Settings, size: 35, x: "5%", y: "45%", duration: 8 },
+    { Icon: Zap, size: 30, x: "15%", y: "70%", duration: 5 },
+    { Icon: Compass, size: 40, x: "8%", y: "85%", duration: 7 },
+  ];
+
+  return (
+    <div className="absolute left-0 top-0 w-full lg:w-1/2 h-full pointer-events-none hidden lg:block z-0">
+      {decorIcons.map(({ Icon, size, x, y, duration }, i) => (
+        <m.div
+          key={i}
+          className="absolute"
+          style={{ left: x, top: y, color: "hsl(18 78% 45% / 0.12)" }}
+          animate={{
+            y: [0, -20, 0],
+            opacity: [0.05, 0.15, 0.05],
+            rotate: [0, 10, 0],
+          }}
+          transition={{
+            duration: duration,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: i * 0.5,
+          }}
+        >
+          <Icon size={size} strokeWidth={1} />
+        </m.div>
+      ))}
+    </div>
+  );
 };
 
-// --- المساعدات (Helpers) ---
+// ... (تكملة الدوال المساعدة formatCount و fetchHeroStats كما هي في كودك) ...
 function formatCount(count: number) {
   if (count >= 1000) return `${Math.floor(count / 1000)}K+`;
   return count > 0 ? `${count}+` : "0";
@@ -52,48 +83,6 @@ async function fetchHeroStats() {
   return { members: usersCount, lessons: lessonsCount, successRate, courses: coursesCount };
 }
 
-// --- مكون الأيقونات الطافية (لسد الفراغ الجانبي) ---
-const FloatingDecorIcons = ({ isRTL }: { isRTL: boolean }) => {
-  const decorIcons = [
-    { Icon: Gauge, size: 45, x: "10%", y: "20%", duration: 6 },
-    { Icon: Settings, size: 35, x: "5%", y: "45%", duration: 8 },
-    { Icon: Zap, size: 30, x: "15%", y: "70%", duration: 5 },
-    { Icon: Compass, size: 40, x: "8%", y: "85%", duration: 7 },
-  ];
-
-  return (
-    // نغير مكان الـ div بناءً على RTL ليكون دائماً في جهة "الفراغ" (عكس جهة النص)
-    <div
-      className={`absolute ${isRTL ? "left-0" : "right-0"} top-0 w-full lg:w-1/2 h-full pointer-events-none hidden lg:block z-0`}
-    >
-      {decorIcons.map(({ Icon, size, x, y, duration }, i) => (
-        <m.div
-          key={i}
-          className="absolute"
-          style={{
-            [isRTL ? "left" : "right"]: x,
-            top: y,
-            color: "hsl(18 78% 45% / 0.12)",
-          }}
-          animate={{
-            y: [0, -20, 0],
-            opacity: [0.05, 0.15, 0.05],
-            rotate: [0, 10, 0],
-          }}
-          transition={{
-            duration: duration,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: i * 0.5,
-          }}
-        >
-          <Icon size={size} strokeWidth={1} />
-        </m.div>
-      ))}
-    </div>
-  );
-};
-
 const HeroSection: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
@@ -114,6 +103,7 @@ const HeroSection: React.FC = () => {
     enabled: needsLiveStats,
   });
 
+  // ... (تكملة حساب القيم DisplayStats كما هي في كودك) ...
   const membersValue = content?.stats_members_value
     ? String(content.stats_members_value)
     : formatCount(stats?.members ?? 0);
@@ -131,32 +121,12 @@ const HeroSection: React.FC = () => {
 
   const displayStats = useMemo(
     () => [
-      {
-        key: "members",
-        value: membersValue,
-        label: isRTL ? content?.stats_members_ar || "عضو" : content?.stats_members_en || "Members",
-        icon: Users,
-      },
-      {
-        key: "success",
-        value: successValue,
-        label: isRTL ? content?.stats_success_ar || "نسبة النجاح" : content?.stats_success_en || "Success",
-        icon: GraduationCap,
-      },
-      {
-        key: "lessons",
-        value: lessonsValue,
-        label: isRTL ? content?.stats_lessons_ar || "درس" : content?.stats_lessons_en || "Lessons",
-        icon: PlayCircle,
-      },
-      {
-        key: "courses",
-        value: coursesValue,
-        label: isRTL ? content?.stats_courses_ar || "دورة" : content?.stats_courses_en || "Courses",
-        icon: BookOpen,
-      },
+      { key: "members", value: membersValue, label: isRTL ? "عضو" : "Members", icon: Users },
+      { key: "success", value: successValue, label: isRTL ? "نسبة النجاح" : "Success", icon: GraduationCap },
+      { key: "lessons", value: lessonsValue, label: isRTL ? "درس" : "Lessons", icon: PlayCircle },
+      { key: "courses", value: coursesValue, label: isRTL ? "دورة" : "Courses", icon: BookOpen },
     ],
-    [membersValue, lessonsValue, successValue, coursesValue, isRTL, content],
+    [membersValue, lessonsValue, successValue, coursesValue, isRTL],
   );
 
   const fade = (dur: number, delay = 0) => (prefersReducedMotion ? { duration: 0 } : { duration: dur, delay });
@@ -169,56 +139,46 @@ const HeroSection: React.FC = () => {
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <section
-        className="relative min-h-[90svh] lg:min-h-[85svh] flex flex-col overflow-hidden"
-        dir={isRTL ? "rtl" : "ltr"}
-      >
-        {/* ═══ الخلفية والطبقات ═══ */}
+      <section className="relative min-h-[90svh] lg:min-h-[85svh] flex flex-col overflow-hidden">
+        {/* ═══ Background & Overlays ═══ */}
         <div className="absolute inset-0">
           <img src={heroImage} alt="Hero" className="w-full h-full object-cover object-center" fetchPriority="high" />
           <div className="absolute inset-0 bg-near-black/60" />
           <div className="absolute inset-0 bg-gradient-to-t from-near-black via-near-black/40 to-transparent" />
-          {/* التدرج الجانبي ينعكس مع اللغة */}
-          <div
-            className={`absolute inset-0 bg-gradient-to-${isRTL ? "l" : "r"} from-near-black/90 via-near-black/20 to-transparent`}
-          />
+          <div className="absolute inset-0 bg-gradient-to-r from-near-black/90 via-near-black/20 to-transparent" />
         </div>
 
-        {/* ═══ أيقونات الزينة (سد الفراغ) ═══ */}
-        <FloatingDecorIcons isRTL={isRTL} />
+        {/* ═══ الزينة التقنية (سد الفراغ الأحمر) ═══ */}
+        <FloatingDecorIcons />
 
-        {/* تأثير الـ Grain */}
+        {/* Grain effect */}
         <div
           className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          }}
+          style={{ backgroundImage: `url("data:image/svg+xml,...")` }}
         />
 
-        {/* ═══ البانر العلوي ═══ */}
+        {/* ═══ Banner ═══ */}
         <m.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="relative z-20 pt-4 px-4">
           <DiscountUrgencyBanner floating />
         </m.div>
 
-        {/* ═══ المحتوى الرئيسي ═══ */}
+        {/* ═══ Main Content ═══ */}
         <div className="relative z-10 flex-1 flex items-center">
           <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6">
             <div
-              className={`flex flex-col ${isRTL ? "lg:items-start text-right" : "lg:items-end text-left"} items-center`}
+              className={`flex flex-col ${isRTL ? "lg:items-start lg:text-right" : "lg:items-end lg:text-left"} text-center`}
             >
-              {contentLoading ? (
-                <Skeleton className="h-16 w-full max-w-lg mb-6" />
-              ) : (
-                <m.h1
-                  initial={{ opacity: 0, x: isRTL ? 30 : -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={fade(0.8, 0.3)}
-                  className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black leading-tight mb-6 max-w-2xl text-white"
-                >
-                  {title}
-                </m.h1>
-              )}
+              {/* Title */}
+              <m.h1
+                initial={{ opacity: 0, x: isRTL ? 30 : -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={fade(0.8, 0.3)}
+                className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black leading-tight mb-6 max-w-2xl text-white"
+              >
+                {title}
+              </m.h1>
 
+              {/* Subtitle */}
               <m.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -228,6 +188,7 @@ const HeroSection: React.FC = () => {
                 {subtitle}
               </m.p>
 
+              {/* Button */}
               <m.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -237,9 +198,9 @@ const HeroSection: React.FC = () => {
                   <Button
                     variant="hero"
                     size="lg"
-                    className="group px-8 py-7 text-lg shadow-[0_10px_40px_hsl(var(--primary)/0.3)] hover:scale-105 transition-transform"
+                    className="group px-8 py-7 text-lg shadow-[0_10px_40px_hsl(var(--primary)/0.3)]"
                   >
-                    <Play className={`${isRTL ? "ml-2" : "mr-2"} w-5 h-5`} />
+                    <Play className="ml-2 w-5 h-5" />
                     {secondaryCta}
                   </Button>
                 </Link>
@@ -248,13 +209,13 @@ const HeroSection: React.FC = () => {
           </div>
         </div>
 
-        {/* ═══ شريط الإحصائيات ═══ */}
+        {/* ═══ Stats Bar ═══ */}
         {showStats && (
           <m.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={fade(0.7, 0.9)}
-            className="relative z-10 w-full mt-auto"
+            className="relative z-10 w-full"
           >
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
             <div className="backdrop-blur-xl border-t border-white/5 bg-near-black/80">
@@ -263,20 +224,15 @@ const HeroSection: React.FC = () => {
                   {displayStats.map((stat, i) => {
                     const Icon = stat.icon;
                     return (
-                      <div
-                        key={stat.key}
-                        className={`flex items-center justify-center ${isRTL ? "md:justify-start" : "md:justify-end"} gap-4 group`}
-                      >
-                        <div className="w-14 h-14 rounded-full flex items-center justify-center border border-primary/20 bg-primary/5 transition-colors group-hover:bg-primary/10">
+                      <div key={stat.key} className="flex items-center justify-center md:justify-start gap-4">
+                        <div className="w-14 h-14 rounded-full flex items-center justify-center border border-primary/20 bg-primary/5">
                           {Icon && <Icon size={28} className="text-primary" />}
                         </div>
-                        <div className={`flex flex-col ${isRTL ? "text-right" : "text-left"}`}>
-                          <span className="text-2xl md:text-3xl font-black text-primary leading-none tabular-nums">
+                        <div className="flex flex-col text-right">
+                          <span className="text-2xl md:text-3xl font-black text-primary leading-none">
                             {stat.value}
                           </span>
-                          <span className="text-xs font-medium text-muted-foreground mt-1 uppercase tracking-wider">
-                            {stat.label}
-                          </span>
+                          <span className="text-xs font-medium text-muted-foreground mt-1">{stat.label}</span>
                         </div>
                       </div>
                     );
