@@ -7,11 +7,10 @@ import { Play, Users, GraduationCap, PlayCircle, BookOpen } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import defaultHeroImage from "@/assets/hero-rider.webp";
-import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
-import DiscountUrgencyBanner from "@/components/landing/DiscountUrgencyBanner";
 
-// Extended hero content with CMS stats overrides
+import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
+import HeroAdSlider from "@/components/landing/HeroAdSlider";
+
 interface HeroLandingContent extends HeroContent {
   defaultHeroImage?: string;
   show_stats?: boolean | string;
@@ -44,7 +43,6 @@ async function fetchHeroStats() {
   return { members: usersCount, lessons: lessonsCount, successRate, courses: coursesCount };
 }
 
-/* ── Stat Card ── */
 const StatCard: React.FC<{
   value: string;
   label: string;
@@ -56,14 +54,14 @@ const StatCard: React.FC<{
     initial={reducedMotion ? {} : { opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.4, delay: 1 + index * 0.1 }}
-    className="flex items-center gap-3 group"
+    className="flex flex-col items-center gap-1.5 md:flex-row md:gap-3 group min-w-0 flex-1 md:flex-none"
   >
-    <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors duration-300">
-      <Icon className="w-4 h-4 text-primary" />
+    <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors duration-300">
+      <Icon className="w-3 h-3 md:w-4 md:h-4 text-primary" />
     </div>
-    <div className="flex flex-col">
-      <AnimatedCounter value={value} className="text-lg sm:text-xl font-bold text-primary-foreground leading-none" />
-      <span className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-wider font-medium mt-0.5">
+    <div className="flex flex-col items-center md:items-start">
+      <AnimatedCounter value={value} className="text-xs md:text-xl font-bold text-primary-foreground leading-none" />
+      <span className="text-[7px] md:text-[10px] text-muted-foreground uppercase tracking-wider font-medium mt-0.5 whitespace-nowrap">
         {label}
       </span>
     </div>
@@ -117,7 +115,7 @@ const HeroSection: React.FC = () => {
 
   const anim = (dur: number, delay = 0) => (prefersReducedMotion ? { duration: 0 } : { duration: dur, delay });
 
-  const heroImage = content?.defaultHeroImage ?? defaultHeroImage;
+  
   const title = isRTL ? content?.title_ar || "لنقد بثقة" : content?.title_en || "Ride with Confidence";
   const subtitle = isRTL
     ? content?.subtitle_ar || "انطلق في رحلتك مع أفضل مدربي الدراجات النارية"
@@ -128,90 +126,96 @@ const HeroSection: React.FC = () => {
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <section className="relative min-h-[92svh] flex flex-col overflow-hidden">
-        {/* ── Background Layers ── */}
+      <section className="relative flex flex-col bg-background">
+        {/* Main Content — side-by-side on desktop, stacked on mobile */}
+        <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 md:py-12 flex flex-col md:flex-row items-start gap-6 md:gap-8">
+          {/* Ad Slider — top on mobile, right/left on tablet+ */}
+          <m.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={anim(0.6, 0.2)}
+            className={`w-full md:w-[280px] lg:w-[320px] xl:w-[360px] shrink-0 order-1 md:order-none`}
+          >
+            <HeroAdSlider />
+          </m.div>
 
-        {/* Grain texture */}
-        <div
-          className="absolute inset-0 opacity-[0.025] pointer-events-none mix-blend-overlay"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='f'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='0.5'/%3E%3C/svg%3E")`,
-          }}
-        />
+          {/* Hero text content */}
+          <div className="flex-1 flex flex-col order-2 md:order-none w-full">
+            <div className="w-full">
+              <div className={`max-w-2xl text-center md:text-start ${isRTL ? "mx-auto md:mr-0 md:ml-auto" : "mx-auto md:ml-0 md:mr-auto"}`}>
+                {/* Badge */}
+                <m.div
+                  initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={anim(0.6, 0.3)}
+                  className="mb-5"
+                >
+                  <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    {isRTL ? "أكاديمية بايكرز" : "BIKERZ Academy"}
+                  </span>
+                </m.div>
 
-        {/* ── 
-        <m.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative z-20 pt-3 px-4"
-        >
-          <DiscountUrgencyBanner floating />
-        </m.div> ── */}
-        {/* ── Main Content ── */}
-        <div className="relative z-10 flex-1 flex items-center">
-          <div className="w-full max-w-[1200px] mx-auto px-6">
-            <div className={`max-w-2xl ${isRTL ? "mr-0 ml-auto text-right" : "ml-0 mr-auto text-left"}`}>
-              {/* Title */}
-              <m.h1
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={anim(0.7, 0.35)}
-                className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08] mb-5 text-primary-foreground"
-              >
-                {title}
-              </m.h1>
+                {/* Title */}
+                <m.h1
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={anim(0.7, 0.4)}
+                  className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08] mb-5 text-primary-foreground"
+                >
+                  {title}
+                </m.h1>
 
-              {/* Subtitle */}
-              <m.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={anim(0.6, 0.55)}
-                className="text-base sm:text-lg lg:text-xl text-foreground/70 leading-relaxed mb-8 max-w-lg"
-              >
-                {subtitle}
-              </m.p>
+                {/* Subtitle */}
+                <m.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={anim(0.6, 0.6)}
+                  className="text-base sm:text-lg lg:text-xl text-foreground/70 leading-relaxed mb-8 max-w-lg"
+                >
+                  {subtitle}
+                </m.p>
 
-              {/* CTA */}
-              <m.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={anim(0.5, 0.7)}
-                className="flex flex-wrap gap-4"
-              >
-                <Link to="/courses">
-                  <Button
-                    variant="hero"
-                    size="lg"
-                    className="group gap-3 px-8 py-6 text-base sm:text-lg shadow-[0_8px_32px_hsl(var(--primary)/0.35)]"
-                  >
-                    <Play className="w-5 h-5 transition-transform group-hover:scale-110" />
-                    {ctaText}
-                  </Button>
-                </Link>
-              </m.div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Compact Stats Strip ── */}
-        {showStats && (
-          <div className="relative z-10 w-full pb-5 sm:pb-6">
-            <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-              <div className="inline-flex flex-wrap gap-6 sm:gap-8 md:gap-10 px-5 py-3 rounded-xl bg-card/30 backdrop-blur-sm border border-border/20">
-                {displayStats.map((stat, i) => (
-                  <StatCard
-                    key={stat.key}
-                    value={stat.value}
-                    label={stat.label}
-                    icon={stat.icon}
-                    index={i}
-                    reducedMotion={prefersReducedMotion}
-                  />
-                ))}
+                {/* CTA */}
+                <m.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={anim(0.5, 0.75)}
+                  className="flex flex-wrap gap-4 justify-center md:justify-start"
+                >
+                  <Link to="/courses">
+                    <Button
+                      variant="hero"
+                      size="lg"
+                      className="group gap-3 px-8 py-6 text-base sm:text-lg shadow-[0_8px_32px_hsl(var(--primary)/0.35)]"
+                    >
+                      <Play className="w-5 h-5 transition-transform group-hover:scale-110" />
+                      {ctaText}
+                    </Button>
+                  </Link>
+                </m.div>
               </div>
             </div>
+
+            {/* Stats Strip — inside content column */}
+            {showStats && (
+              <div className="mt-6 sm:mt-8 flex justify-center md:justify-start">
+                <div className="flex flex-nowrap justify-between md:inline-flex md:flex-wrap md:justify-start gap-2 sm:gap-6 md:gap-8 px-3 sm:px-4 py-3 rounded-xl bg-card/30 backdrop-blur-sm border border-border/20 w-full md:w-auto">
+                  {displayStats.map((stat, i) => (
+                    <StatCard
+                      key={stat.key}
+                      value={stat.value}
+                      label={stat.label}
+                      icon={stat.icon}
+                      index={i}
+                      reducedMotion={prefersReducedMotion}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </section>
     </LazyMotion>
   );
