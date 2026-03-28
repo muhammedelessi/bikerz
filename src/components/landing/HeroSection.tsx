@@ -273,74 +273,75 @@ const HeroSection: React.FC = () => {
             transition={fade(0.7, 0.9)}
             className="relative z-10 w-full"
           >
-            {/* Top glow — primary orange */}
             <div
-              className="absolute inset-x-0 top-0 h-px"
-              style={{ background: "linear-gradient(90deg, transparent, hsl(18 78% 45% / 0.5), transparent)" }}
-            />
-
-            <div
-              className="backdrop-blur-2xl border-t border-border/40"
-              style={{ background: "linear-gradient(180deg, hsl(180 3% 8% / 0.85) 0%, hsl(180 3% 11% / 0.95) 100%)" }}
+              className="relative overflow-hidden"
+              style={{
+                background: "linear-gradient(135deg, hsl(168 60% 32%) 0%, hsl(162 55% 26%) 50%, hsl(155 50% 22%) 100%)",
+              }}
             >
-              <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-6">
-                <div className="grid grid-cols-4">
+              {/* Subtle pattern overlay */}
+              <div
+                className="absolute inset-0 opacity-[0.04]"
+                style={{
+                  backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
+                  backgroundSize: "24px 24px",
+                }}
+              />
+
+              <div className="relative max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-5 gap-x-2">
                   {displayStats.map((stat, i) => (
                     <m.div
                       key={stat.key}
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.9 + i * 0.1, duration: 0.4 }}
-                      className="relative flex flex-col items-center gap-1.5 px-3 py-2 group cursor-default"
+                      className="relative flex items-center gap-3 px-3 py-2 group cursor-default"
                     >
-                      {/* Vertical divider */}
+                      {/* Vertical divider — only between items on desktop */}
                       {i < displayStats.length - 1 && (
                         <div
-                          className="absolute end-0 top-1/2 -translate-y-1/2 w-px h-8"
-                          style={{
-                            background: "linear-gradient(180deg, transparent, hsl(var(--border)), transparent)",
-                          }}
+                          className="absolute end-0 top-1/2 -translate-y-1/2 w-px h-10 hidden sm:block"
+                          style={{ background: "hsl(160 40% 55% / 0.35)" }}
                         />
                       )}
 
-                      {/* Hover glow bg */}
+                      {/* Icon circle */}
                       <div
-                        className="absolute inset-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                        style={{ background: "hsl(18 78% 45% / 0.06)" }}
-                      />
-
-                      {/* Value */}
-                      <span
-                        className="relative text-2xl sm:text-3xl font-black tabular-nums leading-none tracking-tight transition-all duration-300"
+                        className="flex-shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
                         style={{
-                          color: "hsl(var(--primary))",
-                          textShadow: "0 0 20px hsl(18 78% 45% / 0.35)",
+                          background: "hsl(160 40% 20% / 0.5)",
+                          border: "1.5px solid hsl(160 50% 55% / 0.35)",
+                          boxShadow: "0 0 0 4px hsl(160 50% 55% / 0.08)",
                         }}
                       >
-                        {stat.value}
-                      </span>
+                        {/* Replace with your icon component */}
+                        <stat.Icon className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: "hsl(155 70% 75%)" }} />
+                      </div>
 
-                      {/* Label */}
-                      <span className="relative text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest leading-tight text-center transition-colors duration-300 text-muted-foreground group-hover:text-foreground/70">
-                        {stat.label}
-                      </span>
-
-                      {/* Animated bottom bar */}
-                      <span
-                        className="relative block h-px w-0 group-hover:w-6 rounded-full transition-all duration-500"
-                        style={{ background: "hsl(var(--primary))" }}
-                      />
+                      {/* Text */}
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <span
+                          className="text-lg sm:text-xl font-black tabular-nums leading-none tracking-tight"
+                          style={{
+                            color: "hsl(0 0% 100%)",
+                            textShadow: "0 1px 8px hsl(160 60% 20% / 0.6)",
+                          }}
+                        >
+                          {stat.value}
+                        </span>
+                        <span
+                          className="text-[11px] sm:text-[12px] font-semibold leading-tight truncate"
+                          style={{ color: "hsl(155 50% 78%)" }}
+                        >
+                          {stat.label}
+                        </span>
+                      </div>
                     </m.div>
                   ))}
                 </div>
               </div>
             </div>
-
-            {/* Bottom glow — deep green accent */}
-            <div
-              className="absolute inset-x-0 bottom-0 h-px"
-              style={{ background: "linear-gradient(90deg, transparent, hsl(163 47% 20% / 0.3), transparent)" }}
-            />
           </m.div>
         )}
 
