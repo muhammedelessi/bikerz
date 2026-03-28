@@ -268,18 +268,31 @@ const HeroSection: React.FC = () => {
         {/* ═══ Stats Bar (bottom, full-width) ═══ */}
         {showStats && (
           <m.div
-            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }}
+            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={fade(0.7, 0.9)}
-            className="relative z-10"
+            className="relative z-10 w-full"
           >
-            <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-3 sm:py-4">
-              <div className="grid grid-cols-4 gap-2 sm:gap-4">
-                {displayStats.map((stat) => (
-                  <StatItem key={stat.key} value={stat.value} label={stat.label} />
-                ))}
+            {/* Top glow border */}
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-400/40 to-transparent" />
+
+            <div className="bg-black/50 backdrop-blur-2xl">
+              <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-5">
+                <div className="grid grid-cols-4 gap-2 sm:gap-6">
+                  {displayStats.map((stat, i) => (
+                    <div key={stat.key} className="relative">
+                      {i < displayStats.length - 1 && (
+                        <span className="absolute end-0 top-1/2 -translate-y-1/2 h-8 w-px bg-white/10" />
+                      )}
+                      <StatItem value={stat.value} label={stat.label} />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
+
+            {/* Bottom glow border */}
+            <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
           </m.div>
         )}
 
