@@ -71,6 +71,7 @@ export function useTapPayment(): UseTapPaymentReturn {
       if (data?.status === 'succeeded') {
         setStatus('succeeded');
       } else if (data?.redirect_url) {
+        // 3DS redirect needed even in token flow
         const inIframe = window.top !== window.self;
         if (inIframe) {
           window.open(data.redirect_url, '_blank');
