@@ -35,6 +35,7 @@ import {
   MessagesSquare,
   HelpCircle,
   Tag,
+  Megaphone,
 } from 'lucide-react';
 import bikerzLogo from '@/assets/bikerz-logo.webp';
 
@@ -58,6 +59,7 @@ interface NavItem {
   { icon: Tag, labelKey: 'coupons', href: '/admin/coupons' },
   { icon: BarChart3, labelKey: 'analytics', href: '/admin/analytics' },
   { icon: FileText, labelKey: 'content', href: '/admin/content' },
+  { icon: Megaphone, labelKey: 'ads', href: '/admin/ads' },
   { icon: MessagesSquare, labelKey: 'discussions', href: '/admin/discussions' },
   { icon: MessageSquare, labelKey: 'support', href: '/admin/support' },
   { icon: Shield, labelKey: 'roles', href: '/admin/roles' },
