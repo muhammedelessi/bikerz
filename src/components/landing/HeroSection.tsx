@@ -142,7 +142,7 @@ const HeroSection: React.FC = () => {
           {/* Hero text content */}
           <div className="flex-1 flex flex-col order-2 md:order-none w-full">
             <div className="w-full">
-              <div className={`max-w-2xl ${isRTL ? "mr-0 ml-auto text-right" : "ml-0 mr-auto text-left"}`}>
+              <div className={`max-w-2xl text-center md:text-start ${isRTL ? "mx-auto md:mr-0 md:ml-auto" : "mx-auto md:ml-0 md:mr-auto"}`}>
                 {/* Badge */}
                 <m.div
                   initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
