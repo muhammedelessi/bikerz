@@ -13,15 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { AlertCircle, Eye, EyeOff, User, Mail, Lock } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, User, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 const GoogleIcon = () => (
@@ -58,6 +52,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const isIOS = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const isAndroid = typeof navigator !== 'undefined' && /Android/.test(navigator.userAgent);
 
   const [mode, setMode] = useState<'signup' | 'login'>('signup');
   const [name, setName] = useState('');
@@ -67,7 +62,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const [visualViewportHeight, setVisualViewportHeight] = useState<number | null>(null);
   const [isGoogleUser, setIsGoogleUser] = useState(false);
   const [emailChecked, setEmailChecked] = useState(false);
 
@@ -89,28 +84,27 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   }, [open, isMobile]);
 
   useEffect(() => {
-    if (!open || !isIOS || typeof window === 'undefined' || !window.visualViewport) {
-      setKeyboardOffset(0);
+    if (!open || typeof window === 'undefined' || !window.visualViewport) {
+      setVisualViewportHeight(null);
       return;
     }
 
     const viewport = window.visualViewport;
 
-    const updateKeyboardOffset = () => {
-      const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
-      setKeyboardOffset(offset);
+    const updateHeight = () => {
+      setVisualViewportHeight(viewport.height);
     };
 
-    updateKeyboardOffset();
-    viewport.addEventListener('resize', updateKeyboardOffset);
-    viewport.addEventListener('scroll', updateKeyboardOffset);
+    updateHeight();
+    viewport.addEventListener('resize', updateHeight);
+    viewport.addEventListener('scroll', updateHeight);
 
     return () => {
-      viewport.removeEventListener('resize', updateKeyboardOffset);
-      viewport.removeEventListener('scroll', updateKeyboardOffset);
-      setKeyboardOffset(0);
+      viewport.removeEventListener('resize', updateHeight);
+      viewport.removeEventListener('scroll', updateHeight);
+      setVisualViewportHeight(null);
     };
-  }, [open, isIOS]);
+  }, [open]);
 
   const saveProfileAndSync = async (userId: string, fullName: string, userEmail: string) => {
     try {
@@ -249,14 +243,10 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   };
 
   const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    if (!isIOS) return;
     const input = e.target;
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       input.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-      setTimeout(() => {
-        input.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-      }, 250);
-    });
+    }, 300);
   };
 
   const checkProviders = async (emailValue: string) => {
@@ -557,36 +547,39 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     ? (isRTL ? 'تسجيل الدخول للمتابعة' : 'Login to continue')
     : (isRTL ? 'أنشئ حسابك للمتابعة' : 'Create your account to continue');
 
-  const mobileDrawerHeight = isIOS && keyboardOffset > 0
-    ? `calc(100dvh - ${keyboardOffset}px)`
-    : '100dvh';
+  if (!open) return null;
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent
-          className="bg-card border-border h-[100svh] max-h-[100svh] overflow-hidden"
-          style={{ height: mobileDrawerHeight, maxHeight: mobileDrawerHeight }}
-        >
-          <DrawerHeader className="pb-1 pt-2 flex-shrink-0">
-            <DrawerTitle className="text-base font-bold text-center">
-              {titleText}
-            </DrawerTitle>
-            {headerContent}
-          </DrawerHeader>
-          <div
-            className="overflow-y-auto pb-safe overscroll-contain flex-1 min-h-0"
-            style={{
-              overflowY: 'auto',
-              WebkitOverflowScrolling: 'touch',
-              scrollPaddingBottom: `${keyboardOffset + 24}px`,
-              paddingBottom: `calc(env(safe-area-inset-bottom) + ${keyboardOffset + 24}px)`,
-            }}
+      <div className="fixed inset-0 z-50 bg-background flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="text-muted-foreground hover:text-foreground transition-colors p-1"
           >
-            {formContent}
-          </div>
-        </DrawerContent>
-      </Drawer>
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-base font-bold text-foreground text-center flex-1">
+            {titleText}
+          </h1>
+          <div className="w-7" />
+        </div>
+        {headerContent && (
+          <div className="px-4 pt-2 flex-shrink-0">{headerContent}</div>
+        )}
+        {/* Scrollable content */}
+        <div
+          className="overflow-y-auto overscroll-contain flex-1 min-h-0"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            paddingBottom: `calc(env(safe-area-inset-bottom) + 24px)`,
+          }}
+        >
+          {formContent}
+        </div>
+      </div>
     );
   }
 

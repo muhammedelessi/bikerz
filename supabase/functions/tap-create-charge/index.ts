@@ -244,7 +244,7 @@ Deno.serve(async (req) => {
 
     // Add VAT on top of the pre-tax price (15% for SAR)
     const vatRate = 0.15;
-    const finalAmount = Math.round(priceBeforeTax * (1 + vatRate));
+    const finalAmount = Math.ceil(priceBeforeTax * (1 + vatRate));
 
     console.log(
       "Server-authoritative pricing:",
