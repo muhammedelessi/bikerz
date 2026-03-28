@@ -130,34 +130,6 @@ const HeroSection: React.FC = () => {
     <LazyMotion features={domAnimation} strict>
       <section className="relative min-h-[92svh] flex flex-col overflow-hidden">
         {/* ── Background Layers ── */}
-        <div className="absolute inset-0">
-          <img
-            src={heroImage}
-            alt="Hero background"
-            className="w-full h-full object-cover object-center"
-            fetchPriority="high"
-          />
-          {/* Bottom gradient fade */}
-          <div className="absolute inset-0 bg-gradient-to-t from-near-black via-near-black/40 to-transparent" />
-          {/* Side vignette */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background: isRTL
-                ? "linear-gradient(to left, hsl(180 3% 11% / 0.85), transparent 60%)"
-                : "linear-gradient(to right, hsl(180 3% 11% / 0.85), transparent 60%)",
-            }}
-          />
-          {/* Primary accent glow */}
-          <div
-            className="absolute w-[600px] h-[600px] rounded-full opacity-[0.07] blur-[120px]"
-            style={{
-              background: "radial-gradient(circle, hsl(18 78% 45%), transparent 70%)",
-              bottom: "-10%",
-              ...(isRTL ? { right: "10%" } : { left: "10%" }),
-            }}
-          />
-        </div>
 
         {/* Grain texture */}
         <div
