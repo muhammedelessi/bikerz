@@ -150,6 +150,15 @@ const HeroSection: React.FC = () => {
                 : "linear-gradient(to right, hsl(180 3% 11% / 0.85), transparent 60%)",
             }}
           />
+          {/* Primary accent glow */}
+          <div
+            className="absolute w-[600px] h-[600px] rounded-full opacity-[0.07] blur-[120px]"
+            style={{
+              background: "radial-gradient(circle, hsl(18 78% 45%), transparent 70%)",
+              bottom: "-10%",
+              ...(isRTL ? { right: "10%" } : { left: "10%" }),
+            }}
+          />
         </div>
 
         {/* Grain texture */}
@@ -160,11 +169,14 @@ const HeroSection: React.FC = () => {
           }}
         />
 
-        {/* ── Discount Banner ── */}
-        <m.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="relative z-20 pt-3 px-4">
+        {/* ── 
+        <m.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-20 pt-3 px-4"
+        >
           <DiscountUrgencyBanner floating />
-        </m.div>
-
+        </m.div> ── */}
         {/* ── Main Content ── */}
         <div className="relative z-10 flex-1 flex items-center">
           <div className="w-full max-w-[1200px] mx-auto px-6">
