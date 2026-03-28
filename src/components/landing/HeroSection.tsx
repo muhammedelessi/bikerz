@@ -128,33 +128,24 @@ const HeroSection: React.FC = () => {
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <section className="relative min-h-[92svh] flex flex-col overflow-hidden">
-        {/* ── Background Layers ── */}
+      <section className="relative min-h-[85svh] sm:min-h-[92svh] flex flex-col overflow-hidden">
+        {/* ── Background ── */}
         <div className="absolute inset-0">
           <img
             src={heroImage}
             alt="Hero background"
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-cover object-[center_30%] sm:object-center"
             fetchPriority="high"
           />
           {/* Bottom gradient fade */}
-          <div className="absolute inset-0 bg-gradient-to-t from-near-black via-near-black/40 to-transparent" />
-          {/* Side vignette */}
+          <div className="absolute inset-0 bg-gradient-to-t from-near-black via-near-black/60 sm:via-near-black/40 to-near-black/30 sm:to-transparent" />
+          {/* Side vignette — hidden on mobile for centered layout */}
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 hidden sm:block"
             style={{
               background: isRTL
                 ? "linear-gradient(to left, hsl(180 3% 11% / 0.85), transparent 60%)"
                 : "linear-gradient(to right, hsl(180 3% 11% / 0.85), transparent 60%)",
-            }}
-          />
-          {/* Primary accent glow */}
-          <div
-            className="absolute w-[600px] h-[600px] rounded-full opacity-[0.07] blur-[120px]"
-            style={{
-              background: "radial-gradient(circle, hsl(18 78% 45%), transparent 70%)",
-              bottom: "-10%",
-              ...(isRTL ? { right: "10%" } : { left: "10%" }),
             }}
           />
         </div>
@@ -167,26 +158,18 @@ const HeroSection: React.FC = () => {
           }}
         />
 
-        {/* ── 
-        <m.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative z-20 pt-3 px-4"
-        >
-          <DiscountUrgencyBanner floating />
-        </m.div> ── */}
         {/* ── Main Content ── */}
-        <div className="relative z-10 flex-1 flex items-center">
-          <div className="w-full max-w-[1200px] mx-auto px-6">
-            <div className={`max-w-2xl ${isRTL ? "mr-0 ml-auto text-right" : "ml-0 mr-auto text-left"}`}>
+        <div className="relative z-10 flex-1 flex items-end sm:items-center pb-6 sm:pb-0">
+          <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6">
+            <div className={`max-w-2xl text-center mx-auto sm:text-${isRTL ? "right" : "left"} ${isRTL ? "sm:mr-0 sm:ml-auto" : "sm:ml-0 sm:mr-auto"}`}>
               {/* Badge */}
               <m.div
-                initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={anim(0.6, 0.2)}
-                className="mb-5"
+                className="mb-4 sm:mb-5"
               >
-                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
+                <span className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-semibold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                   {isRTL ? "أكاديمية بايكرز" : "BIKERZ Academy"}
                 </span>
@@ -197,7 +180,7 @@ const HeroSection: React.FC = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={anim(0.7, 0.35)}
-                className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08] mb-5 text-primary-foreground"
+                className="text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.1] mb-3 sm:mb-5 text-primary-foreground"
               >
                 {title}
               </m.h1>
@@ -207,7 +190,7 @@ const HeroSection: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={anim(0.6, 0.55)}
-                className="text-base sm:text-lg lg:text-xl text-foreground/70 leading-relaxed mb-8 max-w-lg"
+                className="text-sm sm:text-lg lg:text-xl text-foreground/70 leading-relaxed mb-6 sm:mb-8 max-w-md mx-auto sm:mx-0"
               >
                 {subtitle}
               </m.p>
@@ -217,15 +200,15 @@ const HeroSection: React.FC = () => {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={anim(0.5, 0.7)}
-                className="flex flex-wrap gap-4"
+                className="flex justify-center sm:justify-start flex-wrap gap-4"
               >
                 <Link to="/courses">
                   <Button
                     variant="hero"
                     size="lg"
-                    className="group gap-3 px-8 py-6 text-base sm:text-lg shadow-[0_8px_32px_hsl(var(--primary)/0.35)]"
+                    className="group gap-3 px-6 sm:px-8 py-5 sm:py-6 text-sm sm:text-lg shadow-[0_8px_32px_hsl(var(--primary)/0.35)]"
                   >
-                    <Play className="w-5 h-5 transition-transform group-hover:scale-110" />
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
                     {ctaText}
                   </Button>
                 </Link>
@@ -236,9 +219,9 @@ const HeroSection: React.FC = () => {
 
         {/* ── Compact Stats Strip ── */}
         {showStats && (
-          <div className="relative z-10 w-full pb-5 sm:pb-6">
-            <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-              <div className="inline-flex flex-wrap gap-6 sm:gap-8 md:gap-10 px-5 py-3 rounded-xl bg-card/30 backdrop-blur-sm border border-border/20">
+          <div className="relative z-10 w-full pb-4 sm:pb-6">
+            <div className="max-w-[1200px] mx-auto px-4 sm:px-6 flex justify-center sm:justify-start">
+              <div className="grid grid-cols-2 sm:inline-flex sm:flex-wrap gap-3 sm:gap-8 md:gap-10 px-4 sm:px-5 py-3 rounded-xl bg-card/30 backdrop-blur-sm border border-border/20">
                 {displayStats.map((stat, i) => (
                   <StatCard
                     key={stat.key}
