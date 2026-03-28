@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Play, Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy } from "lucide-react";
@@ -30,15 +30,17 @@ export interface CourseCardProps {
   index?: number;
   inView?: boolean;
   enrollment?: { progress_percentage: number; completed_at?: string | null; has_reviewed?: boolean } | null;
+  activeVideoId?: string | null;
+  onPlayVideo?: (courseId: string) => void;
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = true, enrollment }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = true, enrollment, activeVideoId, onPlayVideo }) => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const locale = isRTL ? "ar" : "en";
-  const [videoPlaying, setVideoPlaying] = useState(false);
+  const videoPlaying = activeVideoId === course.id;
 
   const title = isRTL && course.title_ar ? course.title_ar : course.title;
   const isDiscountExpired = course.discount_expires_at && new Date(course.discount_expires_at).getTime() <= Date.now();
@@ -112,7 +114,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
                     if (hasPreviewVideo) {
                       e.preventDefault();
                       e.stopPropagation();
-                      setVideoPlaying(true);
+                      onPlayVideo?.(course.id);
                     }
                   }}
                   aria-label={t("courseDetail.playIntroVideo")}
