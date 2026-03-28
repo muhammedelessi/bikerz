@@ -54,14 +54,14 @@ const StatCard: React.FC<{
     initial={reducedMotion ? {} : { opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.4, delay: 1 + index * 0.1 }}
-    className="flex flex-col items-center md:flex-row md:items-center gap-1 md:gap-3 group"
+    className="flex flex-col items-center gap-1.5 md:flex-row md:gap-3 group min-w-0 flex-1 md:flex-none"
   >
-    <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors duration-300">
-      <Icon className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
+    <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors duration-300">
+      <Icon className="w-3 h-3 md:w-4 md:h-4 text-primary" />
     </div>
     <div className="flex flex-col items-center md:items-start">
-      <AnimatedCounter value={value} className="text-sm md:text-xl font-bold text-primary-foreground leading-none" />
-      <span className="text-[8px] md:text-[10px] text-muted-foreground uppercase tracking-wider font-medium mt-0.5">
+      <AnimatedCounter value={value} className="text-xs md:text-xl font-bold text-primary-foreground leading-none" />
+      <span className="text-[7px] md:text-[10px] text-muted-foreground uppercase tracking-wider font-medium mt-0.5 whitespace-nowrap">
         {label}
       </span>
     </div>
