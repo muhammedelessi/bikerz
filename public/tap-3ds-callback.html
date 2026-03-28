@@ -13,9 +13,19 @@
   var params = new URLSearchParams(window.location.search);
   var tapId = params.get('tap_id') || '';
   var courseId = params.get('course') || '';
-  if(window.parent && window.parent !== window){
-    window.parent.postMessage({type:'TAP_3DS_COMPLETE',tap_id:tapId,course_id:courseId},'*');
-  } else {
+  var msg = {type:'TAP_3DS_COMPLETE', tap_id:tapId, course_id:courseId};
+
+  // If opened as popup, notify opener
+  if(window.opener && !window.opener.closed){
+    window.opener.postMessage(msg,'*');
+    setTimeout(function(){ window.close(); }, 1500);
+  }
+  // If inside iframe, notify parent
+  else if(window.parent && window.parent !== window){
+    window.parent.postMessage(msg,'*');
+  }
+  // Standalone fallback
+  else {
     window.location.href='/payment-success?course='+encodeURIComponent(courseId)+'&tap_id='+encodeURIComponent(tapId);
   }
 })();

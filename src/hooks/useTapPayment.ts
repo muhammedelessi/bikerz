@@ -9,7 +9,6 @@ export type { PaymentMethod, PaymentStatus, TapPaymentConfig } from '@/types/pay
 interface UseTapPaymentReturn {
   status: PaymentStatus;
   error: string | null;
-  iframeUrl: string | null;
   submitPayment: (config: TapPaymentConfig) => Promise<void>;
   reset: () => void;
 }
@@ -18,35 +17,38 @@ export function useTapPayment(): UseTapPaymentReturn {
   const { detectedCountry } = useCurrency();
   const [status, setStatus] = useState<PaymentStatus>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [iframeUrl, setIframeUrl] = useState<string | null>(null);
   const statusRef = useRef<PaymentStatus>('idle');
-  const chargeIdRef = useRef<string | null>(null);
+  const popupRef = useRef<Window | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const updateStatus = useCallback((s: PaymentStatus) => {
     statusRef.current = s;
     setStatus(s);
   }, []);
 
+  const clearPoll = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
   const verifyCharge = useCallback(async (chargeId: string) => {
     updateStatus('verifying');
     try {
       const data = await verifyChargeOnce(chargeId);
-
       if (data?.status === 'succeeded') {
         updateStatus('succeeded');
         return;
       }
-
       if (data?.status === 'failed' || data?.status === 'cancelled') {
         setError('Payment was declined. Please try again.');
         updateStatus('failed');
         return;
       }
-
-      // Retry once after delay
+      // Retry once
       await new Promise(r => setTimeout(r, 3000));
       const d2 = await verifyChargeOnce(chargeId);
-
       if (d2?.status === 'succeeded') {
         updateStatus('succeeded');
       } else {
@@ -59,12 +61,16 @@ export function useTapPayment(): UseTapPaymentReturn {
     }
   }, [updateStatus]);
 
-  // Listen for postMessage from iframe (3DS callback)
+  // Listen for postMessage from popup (3DS callback)
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       if (event.data?.type === 'TAP_3DS_COMPLETE') {
+        clearPoll();
         const tapId = event.data.tap_id;
-        setIframeUrl(null);
+        if (popupRef.current && !popupRef.current.closed) {
+          popupRef.current.close();
+        }
+        popupRef.current = null;
         if (tapId) {
           verifyCharge(tapId);
         } else {
@@ -75,7 +81,12 @@ export function useTapPayment(): UseTapPaymentReturn {
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [verifyCharge, updateStatus]);
+  }, [verifyCharge, updateStatus, clearPoll]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => clearPoll();
+  }, [clearPoll]);
 
   const submitPayment = useCallback(async (config: TapPaymentConfig) => {
     const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -86,7 +97,6 @@ export function useTapPayment(): UseTapPaymentReturn {
 
     updateStatus('processing');
     setError(null);
-    setIframeUrl(null);
 
     try {
       const data = await createCharge(
@@ -102,9 +112,37 @@ export function useTapPayment(): UseTapPaymentReturn {
       }
 
       if (data.redirect_url) {
-        chargeIdRef.current = data.charge_id;
-        setIframeUrl(data.redirect_url);
-        // Status stays 'processing' — iframe is shown
+        // Open popup for payment
+        const w = 500;
+        const h = 650;
+        const left = window.screenX + (window.outerWidth - w) / 2;
+        const top = window.screenY + (window.outerHeight - h) / 2;
+        const popup = window.open(
+          data.redirect_url,
+          'TapPayment',
+          `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`,
+        );
+
+        if (!popup || popup.closed) {
+          // Popup blocked — fallback to redirect
+          window.location.href = data.redirect_url;
+          return;
+        }
+
+        popupRef.current = popup;
+
+        // Poll for popup close (user closed without completing)
+        pollRef.current = setInterval(() => {
+          if (popupRef.current && popupRef.current.closed) {
+            clearPoll();
+            popupRef.current = null;
+            if (statusRef.current === 'processing') {
+              // User closed popup without completing
+              setError(config.isRTL ? 'تم إغلاق نافذة الدفع' : 'Payment window was closed');
+              updateStatus('failed');
+            }
+          }
+        }, 500);
       } else {
         setError('Payment gateway did not return a payment page.');
         updateStatus('failed');
@@ -114,14 +152,17 @@ export function useTapPayment(): UseTapPaymentReturn {
       setError(err.message || 'Payment failed. Please try again.');
       updateStatus('failed');
     }
-  }, [detectedCountry, updateStatus]);
+  }, [detectedCountry, updateStatus, clearPoll]);
 
   const reset = useCallback(() => {
+    clearPoll();
+    if (popupRef.current && !popupRef.current.closed) {
+      popupRef.current.close();
+    }
+    popupRef.current = null;
     updateStatus('idle');
     setError(null);
-    setIframeUrl(null);
-    chargeIdRef.current = null;
-  }, [updateStatus]);
+  }, [updateStatus, clearPoll]);
 
-  return { status, error, iframeUrl, submitPayment, reset };
+  return { status, error, submitPayment, reset };
 }
