@@ -274,7 +274,7 @@ const HeroSection: React.FC = () => {
               <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-3 sm:py-4">
                 <div className="grid grid-cols-4 gap-2 sm:gap-4">
                   {displayStats.map((stat) => (
-                    <StatItem key={stat.key} value={stat.value} label={stat.label} />
+                    <StatItem key={stat.key} value={stat.value} label={stat.label} icon={stat.icon} />
                   ))}
                 </div>
               </div>
