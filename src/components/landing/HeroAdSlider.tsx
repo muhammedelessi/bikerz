@@ -5,31 +5,39 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import adPlaceholder1 from "@/assets/ad-placeholder-1.jpg";
 import adPlaceholder2 from "@/assets/ad-placeholder-2.jpg";
 import adPlaceholder3 from "@/assets/ad-placeholder-3.jpg";
 
-interface SlideData {
+interface HeroAdRow {
   id: string;
-  image_url: string;
-  headline_en: string | null;
-  headline_ar: string | null;
-  subtitle_en: string | null;
-  subtitle_ar: string | null;
-  cta_text_en: string | null;
-  cta_text_ar: string | null;
-  cta_link: string | null;
+  title: string;
+  target_url: string;
+  is_active: boolean;
+  position: number;
+  image_desktop_en: string | null;
+  image_desktop_ar: string | null;
+  image_mobile_en: string | null;
+  image_mobile_ar: string | null;
 }
 
-const FALLBACK_SLIDES: SlideData[] = [
-  { id: "1", image_url: adPlaceholder1, headline_en: "Learn to Ride", headline_ar: "تعلم القيادة", subtitle_en: "Professional motorcycle courses", subtitle_ar: "دورات دراجات نارية احترافية", cta_text_en: "Enroll Now", cta_text_ar: "سجل الآن", cta_link: "/courses" },
-  { id: "2", image_url: adPlaceholder2, headline_en: "Gear Up", headline_ar: "جهّز معداتك", subtitle_en: "Safety first, always", subtitle_ar: "السلامة أولاً دائماً", cta_text_en: "Learn More", cta_text_ar: "اعرف المزيد", cta_link: "/courses" },
-  { id: "3", image_url: adPlaceholder3, headline_en: "Join the Ride", headline_ar: "انضم للرحلة", subtitle_en: "Be part of our community", subtitle_ar: "كن جزءاً من مجتمعنا", cta_text_en: "Join Us", cta_text_ar: "انضم إلينا", cta_link: "/courses" },
+interface ResolvedSlide {
+  id: string;
+  image_url: string;
+  target_url: string;
+}
+
+const FALLBACK_SLIDES: ResolvedSlide[] = [
+  { id: "f1", image_url: adPlaceholder1, target_url: "/courses" },
+  { id: "f2", image_url: adPlaceholder2, target_url: "/courses" },
+  { id: "f3", image_url: adPlaceholder3, target_url: "/courses" },
 ];
 
 const HeroAdSlider: React.FC = () => {
   const { isRTL } = useLanguage();
+  const isMobile = useIsMobile();
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -38,21 +46,46 @@ const HeroAdSlider: React.FC = () => {
     align: "center",
   });
 
-  const { data: dbSlides } = useQuery({
-    queryKey: ["hero-slides"],
+  // Fetch ads from hero_ads table
+  const { data: dbAds } = useQuery({
+    queryKey: ["hero-ads-public"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("hero_slides")
+        .from("hero_ads")
         .select("*")
-        .eq("is_published", true)
+        .eq("is_active", true)
         .order("position", { ascending: true });
       if (error) throw error;
-      return data as SlideData[];
+      return data as HeroAdRow[];
     },
     staleTime: 5 * 60 * 1000,
   });
 
-  const slides = dbSlides && dbSlides.length > 0 ? dbSlides : FALLBACK_SLIDES;
+  // Resolve correct image based on language + device
+  const slides: ResolvedSlide[] = React.useMemo(() => {
+    if (!dbAds || dbAds.length === 0) return FALLBACK_SLIDES;
+
+    return dbAds
+      .map((ad) => {
+        let imageUrl: string | null = null;
+
+        if (isMobile) {
+          imageUrl = isRTL ? ad.image_mobile_ar : ad.image_mobile_en;
+          // Fallback: try other mobile, then desktop
+          if (!imageUrl) imageUrl = isRTL ? ad.image_mobile_en : ad.image_mobile_ar;
+          if (!imageUrl) imageUrl = isRTL ? ad.image_desktop_ar : ad.image_desktop_en;
+        } else {
+          imageUrl = isRTL ? ad.image_desktop_ar : ad.image_desktop_en;
+          // Fallback: try other desktop, then mobile
+          if (!imageUrl) imageUrl = isRTL ? ad.image_desktop_en : ad.image_desktop_ar;
+          if (!imageUrl) imageUrl = isRTL ? ad.image_mobile_ar : ad.image_mobile_en;
+        }
+
+        if (!imageUrl) return null;
+        return { id: ad.id, image_url: imageUrl, target_url: ad.target_url };
+      })
+      .filter(Boolean) as ResolvedSlide[];
+  }, [dbAds, isMobile, isRTL]);
 
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
@@ -71,58 +104,31 @@ const HeroAdSlider: React.FC = () => {
 
   // Auto-play
   useEffect(() => {
-    if (!emblaApi) return;
+    if (!emblaApi || slides.length <= 1) return;
     const interval = setInterval(() => emblaApi.scrollNext(), 5000);
     return () => clearInterval(interval);
-  }, [emblaApi]);
+  }, [emblaApi, slides.length]);
+
+  if (slides.length === 0) return null;
 
   return (
     <div className="relative group w-full">
-      {/* Container with responsive aspect ratio */}
       <div className="relative overflow-hidden rounded-2xl border border-border/30 shadow-2xl bg-card/20 backdrop-blur-sm">
         <div ref={emblaRef} className="overflow-hidden">
           <div className="flex">
             {slides.map((slide) => (
               <div key={slide.id} className="flex-[0_0_100%] min-w-0">
-                {/* 16:9 on mobile, 9:16 on desktop */}
-                <div className="relative aspect-video lg:aspect-[9/16]">
-                  <img
-                    src={slide.image_url}
-                    alt={isRTL ? (slide.headline_ar || "") : (slide.headline_en || "")}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                  {/* Overlay gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
-
-                  {/* Content overlay */}
-                  {(slide.headline_en || slide.cta_link) && (
-                    <div className={cn(
-                      "absolute bottom-0 inset-x-0 p-4 sm:p-5 flex flex-col gap-1.5",
-                      isRTL ? "text-right" : "text-left"
-                    )}>
-                      {(slide.headline_en || slide.headline_ar) && (
-                        <h3 className="text-sm sm:text-base font-bold text-primary-foreground leading-tight line-clamp-2">
-                          {isRTL ? slide.headline_ar : slide.headline_en}
-                        </h3>
-                      )}
-                      {(slide.subtitle_en || slide.subtitle_ar) && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {isRTL ? slide.subtitle_ar : slide.subtitle_en}
-                        </p>
-                      )}
-                      {slide.cta_link && (
-                        <a
-                          href={slide.cta_link}
-                          className="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-primary hover:text-primary/80 transition-colors w-fit"
-                        >
-                          {isRTL ? slide.cta_text_ar : slide.cta_text_en}
-                          <ChevronRight className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <a href={slide.target_url} className="block">
+                  {/* 16:9 on mobile, 9:16 on desktop */}
+                  <div className="relative aspect-video lg:aspect-[9/16]">
+                    <img
+                      src={slide.image_url}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                </a>
               </div>
             ))}
           </div>

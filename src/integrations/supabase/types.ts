@@ -848,6 +848,48 @@ export type Database = {
           },
         ]
       }
+      hero_ads: {
+        Row: {
+          created_at: string
+          id: string
+          image_desktop_ar: string | null
+          image_desktop_en: string | null
+          image_mobile_ar: string | null
+          image_mobile_en: string | null
+          is_active: boolean
+          position: number
+          target_url: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_desktop_ar?: string | null
+          image_desktop_en?: string | null
+          image_mobile_ar?: string | null
+          image_mobile_en?: string | null
+          is_active?: boolean
+          position?: number
+          target_url?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_desktop_ar?: string | null
+          image_desktop_en?: string | null
+          image_mobile_ar?: string | null
+          image_mobile_en?: string | null
+          is_active?: boolean
+          position?: number
+          target_url?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hero_slides: {
         Row: {
           created_at: string
