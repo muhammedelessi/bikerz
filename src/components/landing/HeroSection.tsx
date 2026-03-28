@@ -268,30 +268,52 @@ const HeroSection: React.FC = () => {
         {/* ═══ Stats Bar (bottom, full-width) ═══ */}
         {showStats && (
           <m.div
-            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 24 }}
+            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={fade(0.7, 0.9)}
             className="relative z-10 w-full"
           >
-            {/* Top glow border */}
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-400/40 to-transparent" />
+            {/* Top glow line */}
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-500/60 to-transparent" />
 
-            <div className="bg-black/50 backdrop-blur-2xl">
-              <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-5">
-                <div className="grid grid-cols-4 gap-2 sm:gap-6">
+            {/* Glass background */}
+            <div className="relative bg-gradient-to-b from-black/60 to-black/40 backdrop-blur-2xl">
+              {/* Subtle orange glow center */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/5 to-transparent pointer-events-none" />
+
+              <div className="max-w-[1200px] mx-auto px-4 sm:px-8 py-5 sm:py-6">
+                <div className="grid grid-cols-4">
                   {displayStats.map((stat, i) => (
-                    <div key={stat.key} className="relative">
+                    <div key={stat.key} className="relative flex flex-col items-center gap-1.5 px-3 py-2 group">
+                      {/* Vertical divider */}
                       {i < displayStats.length - 1 && (
-                        <span className="absolute end-0 top-1/2 -translate-y-1/2 h-8 w-px bg-white/10" />
+                        <div className="absolute end-0 top-1/2 -translate-y-1/2 w-px h-10 bg-gradient-to-b from-transparent via-white/20 to-transparent" />
                       )}
-                      <StatItem value={stat.value} label={stat.label} />
+
+                      {/* Hover bg */}
+                      <div className="absolute inset-1 rounded-xl bg-orange-500/0 group-hover:bg-orange-500/5 transition-all duration-500" />
+
+                      {/* Value */}
+                      <div className="relative flex items-baseline gap-0.5">
+                        <span className="text-2xl sm:text-3xl font-black bg-gradient-to-b from-orange-300 to-orange-500 bg-clip-text text-transparent tabular-nums leading-none tracking-tight drop-shadow-[0_0_12px_rgba(249,115,22,0.4)]">
+                          {stat.value}
+                        </span>
+                      </div>
+
+                      {/* Label */}
+                      <span className="relative text-[10px] sm:text-[11px] font-semibold text-white/40 uppercase tracking-[0.15em] leading-tight text-center group-hover:text-white/70 transition-colors duration-300">
+                        {stat.label}
+                      </span>
+
+                      {/* Bottom indicator */}
+                      <div className="relative w-0 group-hover:w-8 h-px bg-orange-400/60 transition-all duration-500 rounded-full" />
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Bottom glow border */}
+            {/* Bottom glow line */}
             <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
           </m.div>
         )}
