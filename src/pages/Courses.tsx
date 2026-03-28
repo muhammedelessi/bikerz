@@ -16,6 +16,8 @@ const Courses: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const handlePlayVideo = useCallback((id: string) => setActiveVideoId(prev => prev === id ? null : id), []);
 
   const { data: courses = [], isLoading } = useQuery({
     queryKey: ['courses-with-stats'],
@@ -122,6 +124,8 @@ const Courses: React.FC = () => {
                   course={course}
                   index={index}
                   enrollment={getEnrollment(course.id)}
+                  activeVideoId={activeVideoId}
+                  onPlayVideo={handlePlayVideo}
                 />
               ))}
             </div>

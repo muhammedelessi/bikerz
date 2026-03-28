@@ -19,6 +19,8 @@ const FeaturedCoursesSection: React.FC = () => {
   const { user } = useAuth();
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const handlePlayVideo = useCallback((id: string) => setActiveVideoId(prev => prev === id ? null : id), []);
 
   const { data: courses = [], isLoading } = useQuery({
     queryKey: ["featured-courses"],
@@ -115,7 +117,7 @@ const FeaturedCoursesSection: React.FC = () => {
                 <Skeleton key={i} className="aspect-[4/3] rounded-2xl" />
               ))
             : courses.map((course: any, index: number) => (
-                <CourseCard key={course.id} course={course} index={index} inView={inView} enrollment={getEnrollment(course.id)} />
+                <CourseCard key={course.id} course={course} index={index} inView={inView} enrollment={getEnrollment(course.id)} activeVideoId={activeVideoId} onPlayVideo={handlePlayVideo} />
               ))}
         </div>
 
