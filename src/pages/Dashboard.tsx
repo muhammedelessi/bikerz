@@ -30,7 +30,9 @@ import {
   Loader2,
   CheckCircle2,
 } from 'lucide-react';
-import bikerzLogo from '@/assets/bikerz-logo.webp';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface EnrolledCourse {
   id: string;
