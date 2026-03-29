@@ -86,7 +86,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
         className="group relative h-full rounded-2xl p-[1px] bg-gradient-to-br from-primary/15 via-border/30 to-transparent transition-all duration-500 hover:from-primary/25 hover:via-primary/10 cursor-pointer"
         onClick={handleCardClick}
       >
-        <div className="relative h-full rounded-2xl border border-border/60 bg-card/85 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-primary/40 hover:shadow-[0_8px_40px_hsl(var(--primary)/0.15)]">
+        <div className="relative h-full rounded-2xl border border-border/60 bg-card/85 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-primary/40">
 
           {/* Video / Thumbnail Area */}
           <div className="relative aspect-video overflow-hidden" data-video-area>
@@ -138,12 +138,6 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
                   </motion.div>
                 </button>
 
-                {/* Discount badge */}
-                {priceInfo.discountPct > 0 && (
-                  <div className="absolute top-3 end-3 z-10 px-3 py-1.5 rounded-lg bg-destructive/90 backdrop-blur-sm text-destructive-foreground text-xs font-bold shadow-lg">
-                    {t("courses.courseCard.discountBadge", { pct: priceInfo.discountPct })}
-                  </div>
-                )}
               </>
             )}
           </div>
