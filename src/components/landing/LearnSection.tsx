@@ -51,7 +51,8 @@ const LearnSection: React.FC = () => {
             </>
           ) : (
             <>
-              <h2 className="section-title text-foreground mb-3 sm:mb-4">{title}</h2>
+              <div className="section-header-accent" />
+              <h2 className="section-title text-foreground mb-2 sm:mb-3">{title}</h2>
               <p className="section-subtitle">{subtitle}</p>
             </>
           )}

@@ -115,9 +115,10 @@ const WhySection: React.FC = () => {
             </>
           ) : (
             <>
+              <div className="section-header-accent" />
               <h2 className="section-title text-foreground mb-2 sm:mb-3">{title}</h2>
               {subtitle && (
-                <p className="section-subtitle max-w-lg mx-auto">{subtitle}</p>
+                <p className="section-subtitle">{subtitle}</p>
               )}
             </>
           )}

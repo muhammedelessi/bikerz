@@ -123,9 +123,12 @@ const FeaturedCoursesSection: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="flex items-center justify-between mb-6 sm:mb-8"
         >
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
-            {isRTL ? "دوراتنا الأكثر مبيعاً" : "Our Best-Selling Courses"}
-          </h2>
+          <div>
+            <div className="w-10 h-1 rounded-full bg-primary mb-3" />
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-foreground tracking-tight">
+              {isRTL ? "دوراتنا الأكثر مبيعاً" : "Our Best-Selling Courses"}
+            </h2>
+          </div>
           <Link
             to="/courses"
             className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors shrink-0"
