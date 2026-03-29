@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import AnimatedCounter from '@/components/common/AnimatedCounter';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -6,10 +6,23 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import heroBackground from '@/assets/hero-rider.webp';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useLandingContent, CommunityContent } from '@/hooks/useLandingContent';
+import { useLandingContent, CommunityContent, HeroContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
 import { Users, GraduationCap, PlayCircle, BookOpen } from 'lucide-react';
+
+interface HeroLandingContent extends HeroContent {
+  show_stats?: boolean | string;
+  stats_members_value?: string | number;
+  stats_lessons_value?: string | number;
+  stats_success_value?: string | number;
+  stats_courses_value?: string | number;
+}
+
+function formatCount(count: number) {
+  if (count >= 1000) return `${Math.floor(count / 1000)}K+`;
+  return count > 0 ? `${count}+` : '0';
+}
 
 const CommunitySection: React.FC = () => {
   const { isRTL } = useLanguage();
@@ -17,10 +30,15 @@ const CommunitySection: React.FC = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
   const { data: content, isLoading: contentLoading } = useLandingContent<CommunityContent>('community');
+  const { data: heroContent } = useLandingContent<HeroLandingContent>('hero');
 
-  // Fetch real stats from database (same as hero)
+  const needsLiveStats = useMemo(() => {
+    if (!heroContent) return true;
+    return !heroContent.stats_members_value || !heroContent.stats_lessons_value || !heroContent.stats_success_value;
+  }, [heroContent]);
+
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['community-stats'],
+    queryKey: ['hero-stats'],
     queryFn: async () => {
       const [profilesRes, lessonsRes, enrollmentsRes, coursesRes] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
@@ -43,23 +61,32 @@ const CommunitySection: React.FC = () => {
       };
     },
     staleTime: 5 * 60 * 1000,
+    enabled: needsLiveStats,
   });
 
-  const formatCount = (count: number) => {
-    if (count >= 1000) return `${Math.floor(count / 1000)}K+`;
-    return count > 0 ? `${count}+` : '0';
-  };
+  const membersValue = heroContent?.stats_members_value
+    ? String(heroContent.stats_members_value)
+    : formatCount(stats?.members ?? 0);
+  const lessonsValue = heroContent?.stats_lessons_value
+    ? String(heroContent.stats_lessons_value)
+    : formatCount(stats?.lessons ?? 0);
+  const successValue = heroContent?.stats_success_value
+    ? `${heroContent.stats_success_value}%`
+    : stats?.successRate ? `${stats.successRate}%` : '0%';
+  const coursesValue = heroContent?.stats_courses_value
+    ? String(heroContent.stats_courses_value)
+    : formatCount(stats?.courses ?? 0);
+
+  const displayStats = [
+    { value: membersValue, label: isRTL ? 'عضو' : 'Members', icon: Users },
+    { value: successValue, label: isRTL ? 'نسبة النجاح' : 'Success', icon: GraduationCap },
+    { value: lessonsValue, label: isRTL ? 'درس' : 'Lessons', icon: PlayCircle },
+    { value: coursesValue, label: isRTL ? 'دورة' : 'Courses', icon: BookOpen },
+  ];
 
   const title = isRTL ? (content?.title_ar || t('community.title')) : (content?.title_en || t('community.title'));
   const subtitle = isRTL ? (content?.subtitle_ar || '') : (content?.subtitle_en || '');
   const communityImage = (content as any)?.background_image || heroBackground;
-
-  const displayStats = [
-    { value: formatCount(stats?.members ?? 0), label: isRTL ? 'عضو' : 'Members', icon: Users },
-    { value: stats?.successRate ? `${stats.successRate}%` : '0%', label: isRTL ? 'نسبة النجاح' : 'Success', icon: GraduationCap },
-    { value: formatCount(stats?.lessons ?? 0), label: isRTL ? 'درس' : 'Lessons', icon: PlayCircle },
-    { value: formatCount(stats?.courses ?? 0), label: isRTL ? 'دورة' : 'Courses', icon: BookOpen },
-  ];
 
   const isLoading = contentLoading || statsLoading;
 
