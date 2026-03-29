@@ -21,9 +21,18 @@ const iconMap: Record<string, LucideIcon> = {
   Gift, Medal, Flag, Compass, Mountain, Sun, Moon, Wind,
 };
 
+const stepAccents = [
+  'from-primary/80 to-primary/40',
+  'from-accent-orange/80 to-accent-orange/40',
+  'from-deep-green/80 to-deep-green/40',
+  'from-primary/80 to-accent-orange/40',
+  'from-accent-orange/80 to-deep-green/40',
+  'from-deep-green/80 to-primary/40',
+];
+
 const JourneySection: React.FC = () => {
   const { isRTL } = useLanguage();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
 
   const { data: content, isLoading } = useLandingContent<JourneyContent>('journey');
 
@@ -32,26 +41,17 @@ const JourneySection: React.FC = () => {
   const steps = content?.steps || [];
 
   return (
-    <section ref={ref} className="relative py-6 sm:py-10 bg-gradient-to-b from-background via-secondary/10 to-background overflow-hidden">
-      {/* Road Pattern Background */}
-      <div className="absolute inset-0 opacity-5 hidden md:block">
-        <div className="absolute w-4 h-full bg-gradient-to-b from-transparent via-muted-foreground to-transparent" style={{ insetInlineStart: '50%', transform: isRTL ? 'translateX(50%)' : 'translateX(-50%)' }} />
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-8 bg-muted-foreground"
-            style={{ top: `${i * 5 + 5}%`, insetInlineStart: '50%', transform: isRTL ? 'translateX(50%)' : 'translateX(-50%)' }}
-          />
-        ))}
-      </div>
+    <section ref={ref} className="relative py-6 sm:py-10 overflow-hidden">
+      {/* Subtle background accent */}
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-secondary/5 to-background" />
 
       <div className="section-container relative z-10">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-6 sm:mb-10"
+          transition={{ duration: 0.5 }}
+          className="text-center mb-8 sm:mb-12"
         >
           {isLoading ? (
             <>
@@ -60,91 +60,152 @@ const JourneySection: React.FC = () => {
             </>
           ) : (
             <>
-              <h2 className="section-title text-foreground mb-3 sm:mb-4">{title}</h2>
-              <p className="section-subtitle">{subtitle}</p>
+              <h2 className="section-title text-foreground mb-3">{title}</h2>
+              <p className="section-subtitle max-w-lg mx-auto">{subtitle}</p>
             </>
           )}
         </motion.div>
 
-        {/* Journey Steps */}
-        <div className="relative max-w-4xl mx-auto">
-          {/* Vertical Line */}
-          <div className={`absolute top-0 bottom-0 w-0.5 sm:w-px ${isRTL ? 'right-6 sm:right-8 lg:right-1/2 lg:translate-x-1/2' : 'left-6 sm:left-8 lg:left-1/2 lg:-translate-x-1/2'}`}>
-            <motion.div
-              initial={{ height: 0 }}
-              animate={inView ? { height: '100%' } : {}}
-              transition={{ duration: 1.5, ease: 'easeOut' }}
-              className="w-full bg-gradient-to-b from-primary via-secondary to-primary/30"
-            />
+        {/* Steps */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-40 rounded-2xl" />
+            ))}
           </div>
+        ) : (
+          <>
+            {/* Mobile: Vertical timeline */}
+            <div className="lg:hidden relative max-w-md mx-auto">
+              {/* Timeline line */}
+              <div className={`absolute top-0 bottom-0 w-0.5 ${isRTL ? 'right-[19px]' : 'left-[19px]'}`}>
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={inView ? { height: '100%' } : {}}
+                  transition={{ duration: 1.2, ease: 'easeOut' }}
+                  className="w-full bg-gradient-to-b from-primary via-accent-orange/60 to-primary/20 rounded-full"
+                />
+              </div>
 
-          <div className="space-y-8">
-            {isLoading ? (
-              Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="flex items-start gap-4 sm:gap-6">
-                  <Skeleton className="w-12 h-12 rounded-xl flex-shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-6 w-32" />
-                    <Skeleton className="h-4 w-full" />
-                  </div>
-                </div>
-              ))
-            ) : (
-              steps.map((step, index) => {
-                const IconComponent = iconMap[step.icon] || Shield;
-                const stepTitle = isRTL ? step.title_ar : step.title_en;
-                const stepDesc = isRTL ? step.description_ar : step.description_en;
+              <div className="space-y-5">
+                {steps.map((step, index) => {
+                  const IconComponent = iconMap[step.icon] || Shield;
+                  const stepTitle = isRTL ? step.title_ar : step.title_en;
+                  const stepDesc = isRTL ? step.description_ar : step.description_en;
+                  const accent = stepAccents[index % stepAccents.length];
 
-                return (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
-                    animate={inView ? { opacity: 1, x: 0 } : {}}
-                    transition={{ duration: 0.6, delay: 0.3 + index * 0.15 }}
-                    className="relative"
-                  >
-                    {/* Mobile & Tablet Layout */}
-                    <div className="flex lg:hidden items-start gap-4 sm:gap-6">
+                  return (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: isRTL ? 16 : -16 }}
+                      animate={inView ? { opacity: 1, x: 0 } : {}}
+                      transition={{ duration: 0.5, delay: 0.15 + index * 0.12 }}
+                      className="relative flex items-start gap-4"
+                    >
+                      {/* Step number circle */}
                       <div className="relative z-10 flex-shrink-0">
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-card border-2 border-primary/50 flex items-center justify-center shadow-glow">
-                          <IconComponent className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${accent} flex items-center justify-center shadow-md`}>
+                          <IconComponent className="w-5 h-5 text-primary-foreground" />
                         </div>
                       </div>
-                      <div className="flex-1 pt-1">
-                        <h3 className="text-lg sm:text-xl font-bold text-foreground mb-1.5 sm:mb-2">{stepTitle}</h3>
-                        <p className="text-sm sm:text-base text-muted-foreground">{stepDesc}</p>
-                      </div>
-                    </div>
 
-                    {/* Desktop: Alternating layout */}
-                    <div className={`hidden lg:flex items-center gap-8 ${index % 2 === 0 ? '' : 'flex-row-reverse'}`}>
-                      <div className={`flex-1 ${index % 2 === 0 ? 'text-end' : 'text-start'}`}>
-                        <motion.div
-                          whileHover={{ scale: 1.02 }}
-                          className="inline-block p-6 rounded-2xl bg-card/50 border border-border/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300"
-                        >
-                          <h3 className="text-xl font-bold text-foreground mb-2">{stepTitle}</h3>
-                          <p className="text-muted-foreground max-w-xs">{stepDesc}</p>
-                        </motion.div>
+                      {/* Content card */}
+                      <div className="flex-1 pb-1">
+                        <div className="p-3.5 rounded-xl bg-card/80 border border-border/50 backdrop-blur-sm">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-[11px] font-bold text-primary/70 tracking-wider uppercase">
+                              {isRTL ? `الخطوة ${index + 1}` : `Step ${index + 1}`}
+                            </span>
+                          </div>
+                          <h3 className="text-base font-bold text-foreground mb-1">{stepTitle}</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">{stepDesc}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Desktop: Alternating zigzag cards */}
+            <div className="hidden lg:block relative max-w-5xl mx-auto">
+              {/* Center timeline */}
+              <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-0.5">
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={inView ? { height: '100%' } : {}}
+                  transition={{ duration: 1.5, ease: 'easeOut' }}
+                  className="w-full bg-gradient-to-b from-primary via-accent-orange/50 to-primary/20 rounded-full"
+                />
+              </div>
+
+              <div className="space-y-6">
+                {steps.map((step, index) => {
+                  const IconComponent = iconMap[step.icon] || Shield;
+                  const stepTitle = isRTL ? step.title_ar : step.title_en;
+                  const stepDesc = isRTL ? step.description_ar : step.description_en;
+                  const isLeft = isRTL ? index % 2 !== 0 : index % 2 === 0;
+                  const accent = stepAccents[index % stepAccents.length];
+
+                  return (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={inView ? { opacity: 1, y: 0 } : {}}
+                      transition={{ duration: 0.5, delay: 0.2 + index * 0.12 }}
+                      className="relative flex items-center"
+                    >
+                      {/* Left side */}
+                      <div className={`flex-1 ${isLeft ? 'pe-10' : ''}`}>
+                        {isLeft && (
+                          <motion.div
+                            whileHover={{ y: -4 }}
+                            transition={{ type: 'spring', stiffness: 300 }}
+                            className={`ms-auto max-w-sm p-5 rounded-2xl bg-card/60 border border-border/40 backdrop-blur-sm hover:border-primary/30 hover:bg-card/80 transition-all duration-300 group ${isRTL ? 'text-start' : 'text-end'}`}
+                          >
+                            <span className="text-[11px] font-bold text-primary/60 tracking-widest uppercase">
+                              {isRTL ? `الخطوة ${index + 1}` : `Step ${index + 1}`}
+                            </span>
+                            <h3 className="text-lg font-bold text-foreground mt-1 mb-2 group-hover:text-primary transition-colors">{stepTitle}</h3>
+                            <p className="text-sm text-muted-foreground leading-relaxed">{stepDesc}</p>
+                          </motion.div>
+                        )}
                       </div>
 
+                      {/* Center icon node */}
                       <div className="relative z-10 flex-shrink-0">
                         <motion.div
-                          whileHover={{ scale: 1.1, rotate: 10 }}
-                          className="w-16 h-16 rounded-2xl bg-card border-2 border-primary/50 flex items-center justify-center shadow-glow transition-all duration-300"
+                          whileHover={{ scale: 1.15 }}
+                          transition={{ type: 'spring', stiffness: 400 }}
+                          className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${accent} flex items-center justify-center shadow-lg ring-4 ring-background`}
                         >
-                          <IconComponent className="w-8 h-8 text-primary" />
+                          <IconComponent className="w-7 h-7 text-primary-foreground" />
                         </motion.div>
                       </div>
 
-                      <div className="flex-1" />
-                    </div>
-                  </motion.div>
-                );
-              })
-            )}
-          </div>
-        </div>
+                      {/* Right side */}
+                      <div className={`flex-1 ${!isLeft ? 'ps-10' : ''}`}>
+                        {!isLeft && (
+                          <motion.div
+                            whileHover={{ y: -4 }}
+                            transition={{ type: 'spring', stiffness: 300 }}
+                            className="max-w-sm p-5 rounded-2xl bg-card/60 border border-border/40 backdrop-blur-sm hover:border-primary/30 hover:bg-card/80 transition-all duration-300 group text-start"
+                          >
+                            <span className="text-[11px] font-bold text-primary/60 tracking-widest uppercase">
+                              {isRTL ? `الخطوة ${index + 1}` : `Step ${index + 1}`}
+                            </span>
+                            <h3 className="text-lg font-bold text-foreground mt-1 mb-2 group-hover:text-primary transition-colors">{stepTitle}</h3>
+                            <p className="text-sm text-muted-foreground leading-relaxed">{stepDesc}</p>
+                          </motion.div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </section>
   );
