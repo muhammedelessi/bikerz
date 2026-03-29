@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Instagram, Youtube, Facebook, Linkedin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import bikerzLogo from '@/assets/bikerz-logo.webp';
+import zatcaLogo from '@/assets/zatca-logo.png';
 
 // Custom X (Twitter) icon
 const XIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -204,13 +205,30 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-8 sm:mt-10 lg:mt-12 pt-6 sm:pt-8 border-t border-border/30 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-start">
-          <p className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} BIKERZ. {t('footer.rights')}
-          </p>
-          <p className="text-muted-foreground text-xs">
-            {t('footer.vatNumber')}
-          </p>
+        {/* VAT / ZATCA Section */}
+        <div className="mt-8 sm:mt-10 lg:mt-12 pt-6 sm:pt-8 border-t border-border/30">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-6">
+            <img
+              src={zatcaLogo}
+              alt="ZATCA - هيئة الزكاة والضريبة والجمارك"
+              loading="lazy"
+              className="h-10 sm:h-12 w-auto object-contain"
+            />
+            <div className="flex flex-col items-center sm:items-start gap-0.5">
+              <span className="text-muted-foreground text-xs">
+                الرقم الضريبي | VAT Number
+              </span>
+              <span className="text-foreground font-bold text-sm sm:text-base tracking-widest" dir="ltr">
+                311508395300003
+              </span>
+            </div>
+          </div>
+
+          <div className="border-t border-border/20 pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-start">
+            <p className="text-muted-foreground text-sm">
+              © {new Date().getFullYear()} BIKERZ. {t('footer.rights')}
+            </p>
+          </div>
         </div>
       </div>
     </footer>
