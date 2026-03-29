@@ -30,7 +30,7 @@ const imageMap: Record<number, string | undefined> = {
 
 const WhySection: React.FC = () => {
   const { isRTL } = useLanguage();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -45,14 +45,12 @@ const WhySection: React.FC = () => {
     setActiveIndex((prev) => (prev + 1) % cards.length);
   }, [cards.length]);
 
-  // Auto-play on mobile
   useEffect(() => {
     if (isPaused || cards.length <= 1) return;
     const interval = setInterval(next, 3500);
     return () => clearInterval(interval);
   }, [isPaused, next, cards.length]);
 
-  // Swipe handling
   const [touchStart, setTouchStart] = useState<number | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -76,20 +74,6 @@ const WhySection: React.FC = () => {
     setTimeout(() => setIsPaused(false), 2000);
   };
 
-  const slideVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? (isRTL ? -80 : 80) : (isRTL ? 80 : -80),
-      opacity: 0,
-      scale: 0.95,
-    }),
-    center: { x: 0, opacity: 1, scale: 1 },
-    exit: (direction: number) => ({
-      x: direction > 0 ? (isRTL ? 80 : -80) : (isRTL ? -80 : 80),
-      opacity: 0,
-      scale: 0.95,
-    }),
-  };
-
   const [direction, setDirection] = useState(1);
 
   const goToSlide = (index: number) => {
@@ -99,70 +83,19 @@ const WhySection: React.FC = () => {
     setTimeout(() => setIsPaused(false), 3000);
   };
 
-  // Update direction on auto-advance
   useEffect(() => {
     setDirection(1);
   }, [activeIndex]);
 
-  const renderCard = (card: typeof cards[0], index: number) => {
-    const IconComponent = iconMap[card.icon] || Shield;
-    const cardTitle = isRTL ? card.title_ar : card.title_en;
-    const cardDesc = isRTL ? card.description_ar : card.description_en;
-
-    return (
-      <div className="relative z-10 flex flex-col items-center text-center gap-4 px-2">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-          <IconComponent className="w-8 h-8 text-primary-foreground" />
-        </div>
-        <div>
-          <h3 className="text-lg font-bold text-foreground mb-2">{cardTitle}</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">{cardDesc}</p>
-        </div>
-      </div>
-    );
-  };
-
-  const renderDesktopCard = (card: typeof cards[0], index: number) => {
-    const IconComponent = iconMap[card.icon] || Shield;
-    const cardTitle = isRTL ? card.title_ar : card.title_en;
-    const cardDesc = isRTL ? card.description_ar : card.description_en;
-
-    return (
-      <motion.div
-        key={index}
-        initial={{ opacity: 0, y: 40 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.6, delay: index * 0.1 }}
-        className="group interactive-card"
-      >
-        <div className="relative z-10 flex items-start gap-4 sm:gap-5">
-          <div className="flex-shrink-0">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-glow">
-              <IconComponent className="w-7 h-7 text-primary-foreground" />
-            </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
-              {cardTitle}
-            </h3>
-            <p className="text-base text-muted-foreground leading-relaxed">
-              {cardDesc}
-            </p>
-          </div>
-        </div>
-      </motion.div>
-    );
-  };
-
   return (
-    <section ref={ref} className="relative py-6 sm:py-10 overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5 hidden sm:block">
+    <section ref={ref} className="relative py-8 sm:py-14 overflow-hidden">
+      {/* Subtle background accent */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: `radial-gradient(circle at 20% 50%, hsl(var(--primary)) 0%, transparent 50%),
-                             radial-gradient(circle at 80% 50%, hsl(var(--secondary)) 0%, transparent 50%)`,
+            backgroundImage: `radial-gradient(ellipse at 30% 50%, hsl(var(--primary)) 0%, transparent 60%),
+                             radial-gradient(ellipse at 70% 50%, hsl(var(--secondary)) 0%, transparent 60%)`,
           }}
         />
       </div>
@@ -170,10 +103,10 @@ const WhySection: React.FC = () => {
       <div className="section-container relative z-10">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-6 sm:mb-10"
+          transition={{ duration: 0.5 }}
+          className="text-center mb-8 sm:mb-12"
         >
           {isLoading ? (
             <>
@@ -182,71 +115,124 @@ const WhySection: React.FC = () => {
             </>
           ) : (
             <>
-              <h2 className="section-title text-foreground mb-3 sm:mb-4">{title}</h2>
-              <p className="section-subtitle">{subtitle}</p>
+              <h2 className="section-title text-foreground mb-2 sm:mb-3">{title}</h2>
+              {subtitle && (
+                <p className="section-subtitle max-w-lg mx-auto">{subtitle}</p>
+              )}
             </>
           )}
         </motion.div>
 
-        {/* Mobile: Auto-sliding carousel */}
+        {/* ─── Mobile: Stacked carousel card ─── */}
         <div className="sm:hidden">
           {isLoading ? (
-            <Skeleton className="h-40 rounded-xl" />
+            <Skeleton className="h-44 rounded-2xl" />
           ) : cards.length > 0 ? (
-            <div>
+            <div className="space-y-5">
               <div
-                className="relative overflow-hidden rounded-2xl bg-card/50 border border-border/30 backdrop-blur-sm p-6 min-h-[180px] flex items-center justify-center"
+                className="relative overflow-hidden rounded-2xl border border-border/20 bg-card/60 backdrop-blur-md min-h-[200px] flex items-center justify-center"
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
               >
+                {/* Progress bar at top */}
+                <div className="absolute top-0 inset-x-0 h-0.5 bg-border/10">
+                  <motion.div
+                    key={activeIndex}
+                    className="h-full bg-primary rounded-full"
+                    initial={{ width: '0%' }}
+                    animate={{ width: '100%' }}
+                    transition={{ duration: 3.5, ease: 'linear' }}
+                  />
+                </div>
+
                 <AnimatePresence mode="wait" custom={direction}>
                   <motion.div
                     key={activeIndex}
-                    custom={direction}
-                    variants={slideVariants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={{ duration: 0.35, ease: 'easeInOut' }}
-                    className="w-full"
+                    initial={{ opacity: 0, x: direction > 0 ? (isRTL ? -60 : 60) : (isRTL ? 60 : -60) }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: direction > 0 ? (isRTL ? 60 : -60) : (isRTL ? -60 : 60) }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    className="w-full px-5 py-8"
                   >
-                    {renderCard(cards[activeIndex], activeIndex)}
+                    {(() => {
+                      const card = cards[activeIndex];
+                      const IconComponent = iconMap[card.icon] || Shield;
+                      const cardTitle = isRTL ? card.title_ar : card.title_en;
+                      const cardDesc = isRTL ? card.description_ar : card.description_en;
+                      return (
+                        <div className="flex flex-col items-center text-center gap-3">
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-[0_0_24px_hsl(var(--primary)/0.25)]">
+                            <IconComponent className="w-7 h-7 text-primary-foreground" />
+                          </div>
+                          <h3 className="text-base font-bold text-foreground leading-snug">{cardTitle}</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed max-w-[260px]">{cardDesc}</p>
+                        </div>
+                      );
+                    })()}
                   </motion.div>
                 </AnimatePresence>
               </div>
 
-              {/* Dots indicator */}
-              <div className="flex justify-center gap-2 mt-4">
+              {/* Dot indicators */}
+              <div className="flex justify-center items-center gap-1.5">
                 {cards.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => goToSlide(i)}
-                    className={`h-2 rounded-full transition-all duration-300 ${
+                    className={`rounded-full transition-all duration-300 ${
                       i === activeIndex
-                        ? 'w-6 bg-primary'
-                        : 'w-2 bg-muted-foreground/30'
+                        ? 'w-5 h-1.5 bg-primary'
+                        : 'w-1.5 h-1.5 bg-muted-foreground/25 hover:bg-muted-foreground/40'
                     }`}
                     aria-label={`Go to slide ${i + 1}`}
                   />
                 ))}
               </div>
-
-              {/* Counter */}
-              <p className="text-center text-xs text-muted-foreground mt-2">
-                {activeIndex + 1} / {cards.length}
-              </p>
             </div>
           ) : null}
         </div>
 
-        {/* Desktop: Grid */}
-        <div className="hidden sm:grid sm:grid-cols-2 gap-6">
+        {/* ─── Desktop: Bento-style grid ─── */}
+        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
           {isLoading ? (
-            Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="h-32 rounded-xl" />
+            Array.from({ length: 6 }).map((_, index) => (
+              <Skeleton key={index} className="h-40 rounded-2xl" />
             ))
           ) : (
-            cards.map((card, index) => renderDesktopCard(card, index))
+            cards.map((card, index) => {
+              const IconComponent = iconMap[card.icon] || Shield;
+              const cardTitle = isRTL ? card.title_ar : card.title_en;
+              const cardDesc = isRTL ? card.description_ar : card.description_en;
+
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={inView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ duration: 0.5, delay: index * 0.08 }}
+                  className="group relative rounded-2xl border border-border/20 bg-card/40 backdrop-blur-sm p-5 lg:p-6 hover:border-primary/30 hover:bg-card/70 transition-all duration-300"
+                >
+                  {/* Hover glow */}
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                    style={{ background: 'radial-gradient(circle at 50% 0%, hsl(var(--primary) / 0.06) 0%, transparent 70%)' }}
+                  />
+                  
+                  <div className="relative z-10 flex items-start gap-4">
+                    <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center shadow-[0_0_16px_hsl(var(--primary)/0.2)] group-hover:shadow-[0_0_24px_hsl(var(--primary)/0.35)] transition-shadow duration-300">
+                      <IconComponent className="w-5 h-5 text-primary-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-bold text-foreground mb-1.5 group-hover:text-primary transition-colors duration-300">
+                        {cardTitle}
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {cardDesc}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })
           )}
         </div>
       </div>
