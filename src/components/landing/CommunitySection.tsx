@@ -80,6 +80,15 @@ const CommunitySection: React.FC = () => {
     { value: coursesValue, label: isRTL ? 'دورة' : 'Courses', icon: BookOpen },
   ];
 
+  const formatCount = (count: number) => {
+    if (count >= 1000) return `${Math.floor(count / 1000)}K+`;
+    return count > 0 ? `${count}+` : '0';
+  };
+
+  const title = isRTL ? (content?.title_ar || t('community.title')) : (content?.title_en || t('community.title'));
+  const subtitle = isRTL ? (content?.subtitle_ar || '') : (content?.subtitle_en || '');
+  const communityImage = (content as any)?.background_image || heroBackground;
+
   const isLoading = contentLoading || statsLoading;
 
   return (
