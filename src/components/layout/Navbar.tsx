@@ -134,7 +134,7 @@ const Navbar: React.FC = () => {
         ref={navRef}
         className={`fixed top-0 left-0 right-0 z-50 safe-area-top transition-all duration-500 ${
           isScrolled || isMobileMenuOpen
-            ? 'bg-background/95 backdrop-blur-md shadow-[0_2px_20px_hsl(0_0%_0%/0.4)] border-b border-border/30'
+            ? 'bg-background/95 backdrop-blur-md shadow-md border-b border-border/30'
             : isHome
               ? 'bg-transparent'
               : 'bg-background/80 backdrop-blur-sm'
