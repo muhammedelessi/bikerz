@@ -128,7 +128,7 @@ const HeroSection: React.FC = () => {
     <LazyMotion features={domAnimation} strict>
       <section className="relative flex flex-col bg-background">
         {/* Main Content — side-by-side on desktop, stacked on mobile */}
-        <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 md:py-12 flex flex-col md:flex-row items-start gap-6 md:gap-8">
+        <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-4 sm:py-6 md:py-10 flex flex-col md:flex-row items-start gap-4 md:gap-8">
           {/* Ad Slider — top on mobile, right/left on tablet+ */}
           <m.div
             initial={{ opacity: 0, y: -20 }}
@@ -148,7 +148,7 @@ const HeroSection: React.FC = () => {
                   initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={anim(0.6, 0.3)}
-                  className="mb-5"
+                  className="mb-3"
                 >
                   <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
@@ -161,7 +161,7 @@ const HeroSection: React.FC = () => {
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={anim(0.7, 0.4)}
-                  className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08] mb-5 text-foreground"
+                  className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08] mb-3 text-foreground"
                 >
                   {title}
                 </m.h1>
@@ -171,7 +171,7 @@ const HeroSection: React.FC = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={anim(0.6, 0.6)}
-                  className="text-base sm:text-lg lg:text-xl text-foreground/70 leading-relaxed mb-8 max-w-lg"
+                  className="text-base sm:text-lg lg:text-xl text-foreground/70 leading-relaxed mb-5 max-w-lg"
                 >
                   {subtitle}
                 </m.p>
@@ -199,7 +199,7 @@ const HeroSection: React.FC = () => {
 
             {/* Stats Strip — inside content column */}
             {showStats && (
-              <div className="mt-6 sm:mt-8 flex justify-center md:justify-start">
+              <div className="mt-4 sm:mt-6 flex justify-center md:justify-start">
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 md:inline-flex md:flex-wrap md:justify-start md:gap-8 px-3 sm:px-4 py-3 sm:py-4 rounded-xl bg-card/30 backdrop-blur-sm border border-border/20 w-full md:w-auto">
                   {displayStats.map((stat, i) => (
                     <StatCard
