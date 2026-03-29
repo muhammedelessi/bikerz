@@ -113,7 +113,7 @@ const HeroAdSlider: React.FC = () => {
 
   return (
     <div className="relative group w-full">
-      <div className="relative overflow-hidden rounded-2xl border border-border/30 shadow-2xl bg-card/20 backdrop-blur-sm">
+      <div className="relative overflow-hidden rounded-2xl border border-border/30 bg-card/20 backdrop-blur-sm">
         <div ref={emblaRef} className="overflow-hidden">
           <div className="flex">
             {slides.map((slide) => (
