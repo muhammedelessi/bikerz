@@ -126,11 +126,8 @@ const Footer: React.FC = () => {
                   alt="BIKERZ"
                   loading="lazy"
                   decoding="async"
-                  loading="lazy"
-                  decoding="async"
                   className="h-12 sm:h-14 w-auto object-contain"
                 />
-              </picture>
             </Link>
             <p className="text-muted-foreground text-sm max-w-xs">
               {tagline}
