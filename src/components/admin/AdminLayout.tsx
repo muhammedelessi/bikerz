@@ -37,7 +37,9 @@ import {
   Tag,
   Megaphone,
 } from 'lucide-react';
-import bikerzLogo from '@/assets/bikerz-logo.webp';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
