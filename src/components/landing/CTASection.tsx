@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import { useLandingContent, CTAContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
-import heroBackground from '@/assets/hero-rider.webp';
+
 
 const CTASection: React.FC = () => {
   const { isRTL } = useLanguage();
@@ -29,18 +29,7 @@ const CTASection: React.FC = () => {
   ];
 
   return (
-    <section ref={ref} className="relative py-16 sm:py-20 lg:py-24 overflow-hidden">
-      {/* Background image */}
-      <div className="absolute inset-0">
-        <img
-          src={heroBackground}
-          alt=""
-          className="w-full h-full object-cover"
-          loading="lazy"
-          decoding="async"
-        />
-        <div className="absolute inset-0 bg-black/75" />
-      </div>
+    <section ref={ref} className="relative py-16 sm:py-20 lg:py-24 overflow-hidden bg-background">
 
       <div className="section-container relative z-10">
         <div className="max-w-2xl mx-auto text-center">
@@ -60,7 +49,7 @@ const CTASection: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight mb-4"
+              className="text-3xl sm:text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight mb-4"
             >
               {title}
             </motion.h2>
@@ -74,7 +63,7 @@ const CTASection: React.FC = () => {
               initial={{ opacity: 0, y: 16 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-base sm:text-lg text-white/60 mb-8 sm:mb-10 max-w-lg mx-auto leading-relaxed"
+              className="text-base sm:text-lg text-muted-foreground mb-8 sm:mb-10 max-w-lg mx-auto leading-relaxed"
             >
               {subtitle}
             </motion.p>
@@ -97,7 +86,7 @@ const CTASection: React.FC = () => {
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full sm:w-auto gap-2.5 px-8 py-6 text-base border-white/20 text-white bg-white/5 hover:bg-white/10 hover:border-white/30"
+                className="w-full sm:w-auto gap-2.5 px-8 py-6 text-base border-border text-foreground bg-card/50 hover:bg-card hover:border-primary/30"
               >
                 {isRTL ? 'تصفح الدورات' : 'Browse Courses'}
                 <Arrow className="w-4 h-4 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
@@ -115,10 +104,10 @@ const CTASection: React.FC = () => {
             {features.map((feature, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/8 border border-white/10 backdrop-blur-sm"
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 border border-border/50 backdrop-blur-sm"
               >
                 <feature.icon className="w-4 h-4 text-primary" />
-                <span className="text-xs sm:text-sm font-medium text-white/80">{feature.text}</span>
+                <span className="text-xs sm:text-sm font-medium text-muted-foreground">{feature.text}</span>
               </div>
             ))}
           </motion.div>
