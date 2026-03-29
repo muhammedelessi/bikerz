@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, LogOut, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LanguageToggle from '@/components/common/LanguageToggle';
+import ThemeToggle from '@/components/ThemeToggle';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -197,6 +198,7 @@ const Navbar: React.FC = () => {
 
             {/* Right Side */}
             <div className="flex items-center gap-2 sm:gap-3 relative z-10">
+              <ThemeToggle />
               {showLanguageToggle && <LanguageToggle />}
 
               <div className="hidden lg:flex items-center gap-2">
@@ -351,12 +353,18 @@ const Navbar: React.FC = () => {
                   </div>
 
                   {/* Language Toggle in drawer */}
-                  {showLanguageToggle && (
-                    <div className="mt-4 px-4 py-3 rounded-xl bg-muted/20 flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">{t('common.language', 'Language')}</span>
-                      <LanguageToggle />
+                  <div className="mt-4 space-y-2">
+                    {showLanguageToggle && (
+                      <div className="px-4 py-3 rounded-xl bg-muted/20 flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">{t('common.language', 'Language')}</span>
+                        <LanguageToggle />
+                      </div>
+                    )}
+                    <div className="px-4 py-3 rounded-xl bg-muted/20 flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">{isRTL ? 'الوضع' : 'Theme'}</span>
+                      <ThemeToggle />
                     </div>
-                  )}
+                  </div>
                 </nav>
 
                 {/* Footer Auth */}
