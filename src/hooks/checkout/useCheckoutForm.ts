@@ -171,13 +171,18 @@ export function useCheckoutForm(open: boolean) {
     if (user?.email) setEmail(user.email);
     if (profile?.phone) {
       let rawPhone = profile.phone;
+      let matchedPc: typeof PHONE_COUNTRIES[number] | null = null;
       for (const pc of PHONE_COUNTRIES) {
         if (rawPhone.startsWith(pc.prefix)) {
+          matchedPc = pc;
           rawPhone = rawPhone.slice(pc.prefix.length);
           break;
         }
       }
       setPhone(rawPhone);
+      if (matchedPc) {
+        setPhonePrefix(matchedPc.prefix + '_' + matchedPc.code);
+      }
     }
   }, [profile, user, open]);
 
