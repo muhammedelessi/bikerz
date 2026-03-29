@@ -161,7 +161,7 @@ const WhySection: React.FC = () => {
                       const cardDesc = isRTL ? card.description_ar : card.description_en;
                       return (
                         <div className="flex flex-col items-center text-center gap-3">
-                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-[0_0_24px_hsl(var(--primary)/0.25)]">
+                          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center">
                             <IconComponent className="w-7 h-7 text-primary-foreground" />
                           </div>
                           <h3 className="text-base font-bold text-foreground leading-snug">{cardTitle}</h3>
@@ -218,7 +218,7 @@ const WhySection: React.FC = () => {
                   />
                   
                   <div className="relative z-10 flex items-start gap-4">
-                    <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center shadow-[0_0_16px_hsl(var(--primary)/0.2)] group-hover:shadow-[0_0_24px_hsl(var(--primary)/0.35)] transition-shadow duration-300">
+                    <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-primary flex items-center justify-center group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-shadow duration-300">
                       <IconComponent className="w-5 h-5 text-primary-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">

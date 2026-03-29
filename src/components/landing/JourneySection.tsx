@@ -104,7 +104,7 @@ const JourneySection: React.FC = () => {
                     >
                       {/* Step number circle */}
                       <div className="relative z-10 flex-shrink-0">
-                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${accent} flex items-center justify-center shadow-md`}>
+                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-md">
                           <IconComponent className="w-5 h-5 text-primary-foreground" />
                         </div>
                       </div>
@@ -177,7 +177,7 @@ const JourneySection: React.FC = () => {
                         <motion.div
                           whileHover={{ scale: 1.15 }}
                           transition={{ type: 'spring', stiffness: 400 }}
-                          className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${accent} flex items-center justify-center shadow-lg ring-4 ring-background`}
+                          className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg ring-4 ring-background"
                         >
                           <IconComponent className="w-7 h-7 text-primary-foreground" />
                         </motion.div>
