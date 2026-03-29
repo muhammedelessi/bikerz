@@ -60,8 +60,9 @@ const JourneySection: React.FC = () => {
             </>
           ) : (
             <>
-              <h2 className="section-title text-foreground mb-3">{title}</h2>
-              <p className="section-subtitle max-w-lg mx-auto">{subtitle}</p>
+              <div className="section-header-accent" />
+              <h2 className="section-title text-foreground mb-2 sm:mb-3">{title}</h2>
+              <p className="section-subtitle">{subtitle}</p>
             </>
           )}
         </motion.div>

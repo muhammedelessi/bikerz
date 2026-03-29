@@ -96,8 +96,9 @@ const CommunitySection: React.FC = () => {
               </>
             ) : (
               <>
-                <h2 className="section-title text-white mb-3 sm:mb-4">{title}</h2>
-                <p className="text-base sm:text-lg text-white/70">{subtitle}</p>
+                <div className="w-10 h-1 rounded-full bg-primary mx-auto mb-3 sm:mb-4" />
+                <h2 className="section-title text-white mb-2 sm:mb-3">{title}</h2>
+                <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-xl mx-auto">{subtitle}</p>
               </>
             )}
           </motion.div>
