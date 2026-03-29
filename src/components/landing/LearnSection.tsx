@@ -78,8 +78,8 @@ const LearnSection: React.FC = () => {
                   className="group p-4 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl bg-card/60 border border-border/30 backdrop-blur-sm hover:border-primary/40 hover:bg-card/80 transition-all duration-300 cursor-pointer"
                 >
                   <div className="flex flex-col sm:flex-row items-center sm:items-center gap-3 sm:gap-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-secondary to-secondary/60 flex items-center justify-center flex-shrink-0 group-hover:from-primary group-hover:to-primary/60 transition-all duration-300">
-                      <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-secondary-foreground group-hover:text-primary-foreground transition-colors" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-primary flex items-center justify-center flex-shrink-0 transition-all duration-300">
+                      <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-primary-foreground transition-colors" />
                     </div>
                     <span className="text-sm sm:text-base font-medium text-foreground text-center sm:text-start group-hover:text-primary transition-colors">
                       {skillText}

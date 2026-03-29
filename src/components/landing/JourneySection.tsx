@@ -104,7 +104,7 @@ const JourneySection: React.FC = () => {
                     >
                       {/* Step number circle */}
                       <div className="relative z-10 flex-shrink-0">
-                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${accent} flex items-center justify-center shadow-md`}>
+                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-md">
                           <IconComponent className="w-5 h-5 text-primary-foreground" />
                         </div>
                       </div>
