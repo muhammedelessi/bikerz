@@ -89,9 +89,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
         <div className="relative h-full rounded-2xl border border-border/60 bg-card/85 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-primary/40">
 
           {/* Video / Thumbnail Area */}
-          <div className="relative aspect-video overflow-hidden" data-video-area>
+          <div className="relative aspect-video overflow-hidden w-full" data-video-area>
             {videoPlaying && hasPreviewVideo ? (
-              <div className="w-full h-full">
+              <div className="absolute inset-0">
                 <BunnyVideoEmbed
                   videoUrl={course.preview_video_url!}
                   title={title}
