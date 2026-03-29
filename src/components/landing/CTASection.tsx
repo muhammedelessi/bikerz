@@ -2,17 +2,18 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Play, Shield, Clock, Award } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import { useLandingContent, CTAContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
+import heroBackground from '@/assets/hero-rider.webp';
 
 const CTASection: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   const { data: content, isLoading } = useLandingContent<CTAContent>('cta');
@@ -20,104 +21,108 @@ const CTASection: React.FC = () => {
   const title = isRTL ? (content?.title_ar || t('cta.title')) : (content?.title_en || t('cta.title'));
   const subtitle = isRTL ? (content?.subtitle_ar || '') : (content?.subtitle_en || '');
   const buttonText = isRTL ? (content?.button_ar || t('cta.button')) : (content?.button_en || t('cta.button'));
-  const trustBadges = content?.trust_badges || [];
+
+  const features = [
+    { icon: Shield, text: isRTL ? 'تعلم آمن ومضمون' : 'Safe & Certified' },
+    { icon: Clock, text: isRTL ? 'تعلم بوقتك' : 'Learn at Your Pace' },
+    { icon: Award, text: isRTL ? 'شهادة معتمدة' : 'Get Certified' },
+  ];
 
   return (
-    <section ref={ref} className="relative py-4 sm:py-8 overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/20 to-primary/10" />
-      
-      {/* Animated Glow */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{ duration: 4, repeat: Infinity }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[400px] lg:w-[600px] h-[300px] sm:h-[400px] lg:h-[600px] rounded-full bg-primary/20 blur-3xl"
+    <section ref={ref} className="relative py-16 sm:py-20 lg:py-24 overflow-hidden">
+      {/* Background image */}
+      <div className="absolute inset-0">
+        <img
+          src={heroBackground}
+          alt=""
+          className="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
         />
+        <div className="absolute inset-0 bg-black/75" />
       </div>
 
       <div className="section-container relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="max-w-3xl mx-auto text-center px-4"
-        >
-          {/* Icon */}
+        <div className="max-w-2xl mx-auto text-center">
+          {/* Accent line */}
           <motion.div
-            initial={{ scale: 0 }}
-            animate={inView ? { scale: 1 } : {}}
-            transition={{ duration: 0.5, type: 'spring' }}
-            className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl sm:rounded-2xl bg-primary/20 border border-primary/30 mb-6 sm:mb-8"
-          >
-            <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-primary" />
-          </motion.div>
+            initial={{ width: 0 }}
+            animate={inView ? { width: 40 } : {}}
+            transition={{ duration: 0.5 }}
+            className="h-1 rounded-full bg-primary mx-auto mb-6"
+          />
 
           {/* Title */}
           {isLoading ? (
-            <Skeleton className="h-12 w-64 mx-auto mb-6" />
+            <Skeleton className="h-12 w-72 mx-auto mb-4" />
           ) : (
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6">
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight mb-4"
+            >
               {title}
-            </h2>
+            </motion.h2>
           )}
 
           {/* Subtitle */}
           {isLoading ? (
-            <Skeleton className="h-6 w-96 mx-auto mb-10" />
+            <Skeleton className="h-6 w-96 mx-auto mb-8" />
           ) : (
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground mb-8 sm:mb-10 max-w-xl mx-auto">
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="text-base sm:text-lg text-white/60 mb-8 sm:mb-10 max-w-lg mx-auto leading-relaxed"
+            >
               {subtitle}
-            </p>
+            </motion.p>
           )}
 
-          {/* CTA Button */}
-          <Link to="/signup" className="inline-block w-full sm:w-auto">
-            <Button variant="hero" size="xl" className="group w-full sm:w-auto min-h-[52px]">
-              {buttonText}
-              <Arrow className="w-5 h-5 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
-            </Button>
-          </Link>
+          {/* CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-10 sm:mb-12"
+          >
+            <Link to="/signup" className="w-full sm:w-auto">
+              <Button variant="hero" size="lg" className="group w-full sm:w-auto gap-2.5 px-8 py-6 text-base">
+                <Play className="w-5 h-5 transition-transform group-hover:scale-110" />
+                {buttonText}
+              </Button>
+            </Link>
+            <Link to="/courses" className="w-full sm:w-auto">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto gap-2.5 px-8 py-6 text-base border-white/20 text-white bg-white/5 hover:bg-white/10 hover:border-white/30"
+              >
+                {isRTL ? 'تصفح الدورات' : 'Browse Courses'}
+                <Arrow className="w-4 h-4 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
+              </Button>
+            </Link>
+          </motion.div>
 
-          {/* Trust Badges */}
+          {/* Feature pills */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={inView ? { opacity: 1 } : {}}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="mt-8 sm:mt-10 lg:mt-12 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-6 text-sm text-muted-foreground"
+            transition={{ duration: 0.5, delay: 0.45 }}
+            className="flex flex-wrap items-center justify-center gap-3 sm:gap-4"
           >
-            {isLoading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-5 w-24" />
-              ))
-            ) : trustBadges.length > 0 ? (
-              trustBadges.map((badge, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  {isRTL ? badge.text_ar : badge.text_en}
-                </div>
-              ))
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  {t('cta.trustBadges.startFree')}
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  {t('cta.trustBadges.noCreditCard')}
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  {t('cta.trustBadges.cancelAnytime')}
-                </div>
-              </>
-            )}
+            {features.map((feature, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/8 border border-white/10 backdrop-blur-sm"
+              >
+                <feature.icon className="w-4 h-4 text-primary" />
+                <span className="text-xs sm:text-sm font-medium text-white/80">{feature.text}</span>
+              </div>
+            ))}
           </motion.div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
