@@ -177,7 +177,7 @@ const JourneySection: React.FC = () => {
                         <motion.div
                           whileHover={{ scale: 1.15 }}
                           transition={{ type: 'spring', stiffness: 400 }}
-                          className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${accent} flex items-center justify-center shadow-lg ring-4 ring-background`}
+                          className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg ring-4 ring-background"
                         >
                           <IconComponent className="w-7 h-7 text-primary-foreground" />
                         </motion.div>
