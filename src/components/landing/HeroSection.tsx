@@ -187,7 +187,7 @@ const HeroSection: React.FC = () => {
                     <Button
                       variant="hero"
                       size="lg"
-                      className="group gap-3 px-8 py-6 text-base sm:text-lg shadow-[0_8px_32px_hsl(var(--primary)/0.35)]"
+                      className="group gap-3 px-8 py-6 text-base sm:text-lg"
                     >
                       <Play className="w-5 h-5 transition-transform group-hover:scale-110" />
                       {ctaText}
