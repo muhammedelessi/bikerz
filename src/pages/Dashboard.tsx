@@ -432,7 +432,7 @@ const Dashboard: React.FC = () => {
                 </Link>
               </div>
             ) : (
-              <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {enrolledCourses.map((enrollment, index) => {
                   const course = enrollment.course as EnrolledCourse['course'];
                   const title = isRTL && course.title_ar ? course.title_ar : course.title;
@@ -446,80 +446,103 @@ const Dashboard: React.FC = () => {
                   return (
                     <motion.div
                       key={enrollment.id}
-                      initial={{ opacity: 0, y: 16 }}
+                      initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.35, delay: 0.15 + index * 0.08 }}
+                      transition={{ duration: 0.4, delay: 0.2 + index * 0.1 }}
                     >
-                      <Link to={enrollment.nextLesson ? `/courses/${course.id}/lessons/${enrollment.nextLesson.id}` : `/courses/${course.id}/learn`} className="block">
-                        <div className="group card-premium flex flex-row items-stretch transition-all duration-300 hover:border-primary/40 hover:shadow-lg active:scale-[0.995] overflow-hidden">
-                          {/* Thumbnail */}
-                          <div className="relative w-28 sm:w-36 md:w-44 flex-shrink-0 overflow-hidden bg-muted">
+                      <Link to={enrollment.nextLesson ? `/courses/${course.id}/lessons/${enrollment.nextLesson.id}` : `/courses/${course.id}/learn`} className="block h-full">
+                        <div className="group card-premium flex flex-col h-full transition-all duration-300 hover:border-primary/40 hover:shadow-lg active:scale-[0.99] overflow-hidden">
+                          {/* Thumbnail with overlay */}
+                          <div className="relative aspect-video w-full overflow-hidden bg-muted">
                             {course.thumbnail_url ? (
-                              <img
-                                src={course.thumbnail_url}
-                                alt={title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                loading="lazy"
-                                decoding="async"
-                              />
+                              <picture>
+                                <source srcSet={course.thumbnail_url} type="image/webp" />
+                                <img
+                                  src={course.thumbnail_url}
+                                  alt={title}
+                                  width={1280}
+                                  height={720}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              </picture>
                             ) : (
                               <div className="w-full h-full flex items-center justify-center bg-muted">
-                                <BookOpen className="w-8 h-8 text-muted-foreground" />
+                                <BookOpen className="w-10 h-10 text-muted-foreground" />
                               </div>
                             )}
                             {/* Play overlay */}
                             <div className="absolute inset-0 bg-background/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              <div className="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center shadow-lg">
-                                <Play className="w-4 h-4 text-primary-foreground ms-0.5" />
+                              <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center shadow-lg">
+                                <Play className="w-5 h-5 text-primary-foreground ms-0.5" />
                               </div>
                             </div>
+                            {/* Completion badge */}
+                            {isCompleted && (
+                              <div className="absolute top-2 end-2 bg-green-500/90 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                {t('dashboard.completed')}
+                              </div>
+                            )}
+                            {/* Progress percentage circle */}
+                            {!isCompleted && (
+                              <div className="absolute top-2 end-2 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center shadow border border-border">
+                                <span className="text-xs font-bold text-primary">{enrollment.progress_percentage}%</span>
+                              </div>
+                            )}
                           </div>
 
                           {/* Content */}
-                          <div className="flex-1 flex flex-col justify-between p-3 sm:p-4 gap-2 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <h3 className="font-bold text-sm sm:text-base text-foreground line-clamp-1 group-hover:text-primary transition-colors leading-snug">
-                                {title}
-                              </h3>
-                              {isCompleted ? (
-                                <span className="flex-shrink-0 bg-green-500/15 text-green-600 dark:text-green-400 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                                  <CheckCircle2 className="w-3 h-3" />
-                                  {t('dashboard.completed')}
-                                </span>
-                              ) : (
-                                <span className="flex-shrink-0 text-xs font-bold text-primary">
-                                  {enrollment.progress_percentage}%
-                                </span>
-                              )}
+                          <div className="flex-1 flex flex-col p-4 gap-3">
+                            <h3 className="font-bold text-sm sm:text-base text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
+                              {title}
+                            </h3>
+
+                            {/* Lesson count */}
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <BookOpen className="w-3.5 h-3.5" />
+                              <span>
+                                {enrollment.completedLessons}/{enrollment.totalLessons} {t('courses.lesson')}
+                              </span>
                             </div>
+
+                            {/* Next lesson hint */}
+                            {nextLessonTitle && !isCompleted && (
+                              <div className="flex items-start gap-2 bg-muted/50 rounded-lg p-2.5 mt-auto">
+                                <Play className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">
+                                    {t('dashboard.upNext')}
+                                  </p>
+                                  <p className="text-xs text-foreground font-medium line-clamp-1">{nextLessonTitle}</p>
+                                </div>
+                              </div>
+                            )}
+
+                            {isCompleted && (
+                              <div className="flex items-center gap-2 bg-green-500/10 rounded-lg p-2.5 mt-auto">
+                                <Trophy className="w-4 h-4 text-green-500" />
+                                <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                                  {t('dashboard.courseCompletedWellDone')}
+                                </span>
+                              </div>
+                            )}
 
                             {/* Progress bar */}
-                            <div className="progress-track h-1.5 rounded-full">
-                              <div
-                                className={`h-full rounded-full transition-all duration-700 ${isCompleted ? 'bg-green-500' : 'progress-fill'}`}
-                                style={{ width: `${enrollment.progress_percentage}%` }}
-                              />
-                            </div>
-
-                            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1.5">
-                                <BookOpen className="w-3 h-3" />
-                                <span>{enrollment.completedLessons}/{enrollment.totalLessons} {t('courses.lesson')}</span>
+                            <div className="space-y-1.5">
+                              <div className="progress-track h-2 rounded-full">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-700 ${isCompleted ? 'bg-green-500' : 'progress-fill'}`}
+                                  style={{ width: `${enrollment.progress_percentage}%` }}
+                                />
                               </div>
-
-                              {nextLessonTitle && !isCompleted && (
-                                <div className="flex items-center gap-1 text-primary truncate max-w-[50%]">
-                                  <Play className="w-3 h-3 flex-shrink-0" />
-                                  <span className="truncate text-[11px] font-medium">{nextLessonTitle}</span>
-                                </div>
-                              )}
-
-                              {isCompleted && (
-                                <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                                  <Trophy className="w-3 h-3" />
-                                  <span className="text-[11px] font-medium">{t('dashboard.courseCompletedWellDone')}</span>
-                                </div>
-                              )}
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-muted-foreground">{t('dashboard.progress')}</span>
+                                <span className={`font-semibold ${isCompleted ? 'text-green-500' : 'text-primary'}`}>
+                                  {enrollment.progress_percentage}%
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
