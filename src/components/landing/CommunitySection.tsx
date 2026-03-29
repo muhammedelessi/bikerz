@@ -19,6 +19,11 @@ interface HeroLandingContent extends HeroContent {
   stats_courses_value?: string | number;
 }
 
+function formatCount(count: number) {
+  if (count >= 1000) return `${Math.floor(count / 1000)}K+`;
+  return count > 0 ? `${count}+` : '0';
+}
+
 const CommunitySection: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
@@ -32,7 +37,6 @@ const CommunitySection: React.FC = () => {
     return !heroContent.stats_members_value || !heroContent.stats_lessons_value || !heroContent.stats_success_value;
   }, [heroContent]);
 
-  // Fetch real stats from database (same as hero)
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['hero-stats'],
     queryFn: async () => {
@@ -79,11 +83,6 @@ const CommunitySection: React.FC = () => {
     { value: lessonsValue, label: isRTL ? 'درس' : 'Lessons', icon: PlayCircle },
     { value: coursesValue, label: isRTL ? 'دورة' : 'Courses', icon: BookOpen },
   ];
-
-  const formatCount = (count: number) => {
-    if (count >= 1000) return `${Math.floor(count / 1000)}K+`;
-    return count > 0 ? `${count}+` : '0';
-  };
 
   const title = isRTL ? (content?.title_ar || t('community.title')) : (content?.title_en || t('community.title'));
   const subtitle = isRTL ? (content?.subtitle_ar || '') : (content?.subtitle_en || '');
