@@ -16,8 +16,8 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         // Custom variants for the platform
-        cta: "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-bold shadow-glow hover:shadow-glow-lg hover:scale-105 transition-all duration-300",
-        hero: "bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground font-bold text-lg px-8 py-6 shadow-glow hover:shadow-glow-lg hover:scale-105 transition-all duration-300 rounded-xl",
+        cta: "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-bold hover:scale-105 transition-all duration-300",
+        hero: "bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground font-bold text-lg px-8 py-6 hover:scale-105 transition-all duration-300 rounded-xl",
         heroOutline: "border-2 border-sand/50 text-sand bg-transparent hover:bg-sand/10 hover:border-sand font-bold text-lg px-8 py-6 transition-all duration-300 rounded-xl",
         nav: "text-muted-foreground hover:text-foreground bg-transparent transition-colors duration-300",
         navActive: "text-foreground bg-accent/20 font-medium transition-colors duration-300",
