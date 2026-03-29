@@ -16,7 +16,9 @@ import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle, User, Mail, Lock } fro
 import { toast } from 'sonner';
 import defaultHeroImage from '@/assets/community-ride.webp';
 import SEOHead from '@/components/common/SEOHead';
-import bikerzLogo from '@/assets/bikerz-logo.webp';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
+import { useTheme } from '@/components/ThemeProvider';
 
 const GoogleIcon = () => (
   <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
@@ -202,16 +204,13 @@ const Signup: React.FC = () => {
           {/* Header */}
           <div className="flex items-center justify-between mb-6 sm:mb-8">
             <Link to="/" className="flex items-center">
-              <picture>
-                <source srcSet={bikerzLogo} type="image/webp" />
-                <img
-                  src={bikerzLogo}
-                  alt="BIKERZ"
-                  className="h-10 sm:h-12 lg:h-14 w-auto object-contain"
-                  loading="eager"
-                  decoding="async"
-                />
-              </picture>
+              <img
+                src={theme === 'light' ? logoDark : logoLight}
+                alt="BIKERZ"
+                className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
+                loading="eager"
+                decoding="async"
+              />
             </Link>
             <LanguageToggle />
           </div>
