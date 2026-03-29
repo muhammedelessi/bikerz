@@ -7,7 +7,7 @@ import JourneySection from "@/components/landing/JourneySection";
 import FeaturedCoursesSection from "@/components/landing/FeaturedCoursesSection";
 import LearnSection from "@/components/landing/LearnSection";
 import CommunitySection from "@/components/landing/CommunitySection";
-import TrustBar from "@/components/landing/TrustBar";
+
 import CTASection from "@/components/landing/CTASection";
 import SEOHead from "@/components/common/SEOHead";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -36,7 +36,6 @@ const Index: React.FC = () => {
       <div className="pt-[var(--navbar-h)]">
         <main>
           <HeroSection />
-          <TrustBar />
           <FeaturedCoursesSection />
           <WhySection />
           <LearnSection />
