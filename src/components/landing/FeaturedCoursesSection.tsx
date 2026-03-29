@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +20,32 @@ const FeaturedCoursesSection: React.FC = () => {
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const handlePlayVideo = useCallback((id: string) => setActiveVideoId(prev => prev === id ? null : id), []);
+
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeftRef = useRef(0);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+    isDragging.current = true;
+    slider.style.cursor = 'grabbing';
+    startX.current = e.pageX - slider.offsetLeft;
+    scrollLeftRef.current = slider.scrollLeft;
+  }, []);
+
+  const onMouseUp = useCallback(() => {
+    isDragging.current = false;
+    if (sliderRef.current) sliderRef.current.style.cursor = 'grab';
+  }, []);
+
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging.current || !sliderRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - sliderRef.current.offsetLeft;
+    sliderRef.current.scrollLeft = scrollLeftRef.current - (x - startX.current) * 1.5;
+  }, []);
 
   const { data: courses = [], isLoading } = useQuery({
     queryKey: ["featured-courses"],
@@ -103,12 +129,17 @@ const FeaturedCoursesSection: React.FC = () => {
 
         {/* Horizontal swipeable slider */}
         <div
-          className="featured-slider flex gap-4 sm:gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2"
+          ref={sliderRef}
+          className="featured-slider flex gap-4 sm:gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 cursor-grab select-none"
           style={{
             WebkitOverflowScrolling: 'touch',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
           }}
+          onMouseDown={onMouseDown}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
+          onMouseMove={onMouseMove}
         >
           <style>{`
             .featured-slider::-webkit-scrollbar { display: none; }
@@ -117,7 +148,7 @@ const FeaturedCoursesSection: React.FC = () => {
             ? Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={i}
-                  className="snap-start shrink-0 w-[calc(100%-40px)] sm:w-[calc(50%-40px)]"
+                  className="snap-start shrink-0 w-[calc(75%-20px)] sm:w-[calc(45%-20px)] lg:w-[calc(33%-20px)]"
                 >
                   <Skeleton className="aspect-[4/3] rounded-2xl" />
                 </div>
@@ -125,7 +156,7 @@ const FeaturedCoursesSection: React.FC = () => {
             : courses.map((course: any, index: number) => (
                 <div
                   key={course.id}
-                  className="snap-start shrink-0 w-[calc(100%-40px)] sm:w-[calc(50%-40px)]"
+                  className="snap-start shrink-0 w-[calc(75%-20px)] sm:w-[calc(45%-20px)] lg:w-[calc(33%-20px)]"
                 >
                   <CourseCard
                     course={course}
