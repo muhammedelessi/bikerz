@@ -48,6 +48,8 @@ interface FooterContent {
 const Footer: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
+  const { theme } = useTheme();
+  const footerLogo = theme === 'light' ? logoDark : logoLight;
 
   // Fetch footer content from database
   const { data: footerContent } = useQuery({
@@ -119,11 +121,11 @@ const Footer: React.FC = () => {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="inline-block">
-              <picture>
-                <source srcSet={bikerzLogo} type="image/webp" />
                 <img
-                  src={bikerzLogo}
+                  src={footerLogo}
                   alt="BIKERZ"
+                  loading="lazy"
+                  decoding="async"
                   loading="lazy"
                   decoding="async"
                   className="h-12 sm:h-14 w-auto object-contain"
