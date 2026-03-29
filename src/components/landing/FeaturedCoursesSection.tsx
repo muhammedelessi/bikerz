@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +20,40 @@ const FeaturedCoursesSection: React.FC = () => {
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const handlePlayVideo = useCallback((id: string) => setActiveVideoId(prev => prev === id ? null : id), []);
+  const sliderRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+    let isDown = false;
+    let startX = 0;
+    let scrollLeftPos = 0;
+
+    const onMouseDown = (e: MouseEvent) => {
+      isDown = true;
+      startX = e.pageX - slider.offsetLeft;
+      scrollLeftPos = slider.scrollLeft;
+    };
+    const onMouseLeave = () => { isDown = false; };
+    const onMouseUp = () => { isDown = false; };
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - slider.offsetLeft;
+      slider.scrollLeft = scrollLeftPos - (x - startX) * 1.5;
+    };
+
+    slider.addEventListener('mousedown', onMouseDown);
+    slider.addEventListener('mouseleave', onMouseLeave);
+    slider.addEventListener('mouseup', onMouseUp);
+    slider.addEventListener('mousemove', onMouseMove);
+    return () => {
+      slider.removeEventListener('mousedown', onMouseDown);
+      slider.removeEventListener('mouseleave', onMouseLeave);
+      slider.removeEventListener('mouseup', onMouseUp);
+      slider.removeEventListener('mousemove', onMouseMove);
+    };
+  }, []);
 
   const { data: courses = [], isLoading } = useQuery({
     queryKey: ["featured-courses"],
@@ -103,7 +137,8 @@ const FeaturedCoursesSection: React.FC = () => {
 
         {/* Horizontal swipeable slider */}
         <div
-          className="featured-slider flex gap-4 sm:gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2"
+          ref={sliderRef}
+          className="featured-slider flex gap-4 sm:gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 cursor-grab active:cursor-grabbing select-none"
           style={{
             WebkitOverflowScrolling: 'touch',
             scrollbarWidth: 'none',
