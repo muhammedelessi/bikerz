@@ -273,7 +273,6 @@ const Dashboard: React.FC = () => {
                   loading={sidebarOpen ? 'eager' : 'lazy'}
                   decoding="async"
                 />
-              </picture>
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
