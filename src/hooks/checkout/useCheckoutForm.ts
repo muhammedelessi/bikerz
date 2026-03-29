@@ -110,7 +110,7 @@ export function useCheckoutForm(open: boolean) {
 
   const fullPhone = getFullPhone();
   const rawPhoneTrimmed = phone.trim();
-  const isPhoneValid = true;
+  const isPhoneValid = rawPhoneTrimmed.length > 0;
   const hasNamePrefilled = !!(profile?.full_name && profile.full_name.trim().length >= 3);
 
   const isInfoValid = fullName.trim().length >= 3
@@ -128,7 +128,9 @@ export function useCheckoutForm(open: boolean) {
     if (!email.trim() || !emailRegex.test(email)) {
       newErrors.email = t('checkout.validation.validEmailRequired');
     }
-    // Phone validation removed - phone is optional
+    if (!rawPhoneTrimmed) {
+      newErrors.phone = t('checkout.validation.phoneRequired', 'Phone number is required');
+    }
     const c = (isOtherCity || isOtherCountry) ? cityManual.trim() : city.trim();
     if (!c) {
       newErrors.city = t('checkout.validation.cityRequired');
