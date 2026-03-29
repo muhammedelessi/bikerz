@@ -31,6 +31,7 @@ const GoogleIcon = () => (
 
 const Signup: React.FC = () => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const { isRTL } = useLanguage();
   const { signUp } = useAuth();
   const navigate = useNavigate();

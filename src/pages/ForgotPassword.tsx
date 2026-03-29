@@ -15,6 +15,7 @@ import SEOHead from '@/components/common/SEOHead';
 
 const ForgotPassword: React.FC = () => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const { isRTL } = useLanguage();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   

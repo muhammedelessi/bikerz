@@ -20,6 +20,7 @@ import SEOHead from "@/components/common/SEOHead";
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const { isRTL } = useLanguage();
   const { signIn } = useAuth();
   const navigate = useNavigate();
