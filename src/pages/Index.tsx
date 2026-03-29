@@ -6,8 +6,9 @@ import WhySection from "@/components/landing/WhySection";
 import JourneySection from "@/components/landing/JourneySection";
 import FeaturedCoursesSection from "@/components/landing/FeaturedCoursesSection";
 import CTASection from "@/components/landing/CTASection";
+import SectionDivider from "@/components/landing/SectionDivider";
 import SEOHead from "@/components/common/SEOHead";
-import { useLanguage } from "@/contexts/LanguageContext"; // استيراد سياق اللغة
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Index: React.FC = () => {
   const { isRTL, language } = useLanguage();
@@ -20,7 +21,6 @@ const Index: React.FC = () => {
   return (
     <div
       className="min-h-screen bg-background transition-all duration-300"
-      // إضافة dir هنا تضمن أن جميع المكونات الفرعية (Tailwind logic) تعمل بـ RTL
       dir={isRTL ? "rtl" : "ltr"}
     >
       <SEOHead
@@ -33,11 +33,14 @@ const Index: React.FC = () => {
 
       <div className="pt-[var(--navbar-h)]">
         <main>
-          {/* المكونات ستعتمد الآن على اتجاه الـ dir الممرر للحاوية أو الـ Context الداخلي */}
           <HeroSection />
+          <SectionDivider />
           <FeaturedCoursesSection />
+          <SectionDivider />
           <WhySection />
+          <SectionDivider />
           <JourneySection />
+          <SectionDivider />
           <CTASection />
         </main>
         <Footer />
