@@ -83,7 +83,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
       transition={{ duration: 0.6, delay: index * 0.15, ease: [0.16, 1, 0.3, 1] }}
     >
       <div
-        className="group relative h-full rounded-2xl p-[1px] bg-gradient-to-br from-primary/15 via-border/30 to-transparent transition-all duration-500 hover:from-primary/25 hover:via-primary/10 cursor-pointer"
+        className="group relative h-full rounded-2xl p-[1px] transition-all duration-500 cursor-pointer"
         onClick={handleCardClick}
       >
         <div className="relative h-full rounded-2xl border border-border/60 bg-card/85 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-primary/40">
