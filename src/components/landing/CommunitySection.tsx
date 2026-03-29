@@ -25,10 +25,16 @@ const CommunitySection: React.FC = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
   const { data: content, isLoading: contentLoading } = useLandingContent<CommunityContent>('community');
+  const { data: heroContent } = useLandingContent<HeroLandingContent>('hero');
+
+  const needsLiveStats = useMemo(() => {
+    if (!heroContent) return true;
+    return !heroContent.stats_members_value || !heroContent.stats_lessons_value || !heroContent.stats_success_value;
+  }, [heroContent]);
 
   // Fetch real stats from database (same as hero)
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['community-stats'],
+    queryKey: ['hero-stats'],
     queryFn: async () => {
       const [profilesRes, lessonsRes, enrollmentsRes, coursesRes] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
@@ -51,22 +57,27 @@ const CommunitySection: React.FC = () => {
       };
     },
     staleTime: 5 * 60 * 1000,
+    enabled: needsLiveStats,
   });
 
-  const formatCount = (count: number) => {
-    if (count >= 1000) return `${Math.floor(count / 1000)}K+`;
-    return count > 0 ? `${count}+` : '0';
-  };
-
-  const title = isRTL ? (content?.title_ar || t('community.title')) : (content?.title_en || t('community.title'));
-  const subtitle = isRTL ? (content?.subtitle_ar || '') : (content?.subtitle_en || '');
-  const communityImage = (content as any)?.background_image || heroBackground;
+  const membersValue = heroContent?.stats_members_value
+    ? String(heroContent.stats_members_value)
+    : formatCount(stats?.members ?? 0);
+  const lessonsValue = heroContent?.stats_lessons_value
+    ? String(heroContent.stats_lessons_value)
+    : formatCount(stats?.lessons ?? 0);
+  const successValue = heroContent?.stats_success_value
+    ? `${heroContent.stats_success_value}%`
+    : stats?.successRate ? `${stats.successRate}%` : '0%';
+  const coursesValue = heroContent?.stats_courses_value
+    ? String(heroContent.stats_courses_value)
+    : formatCount(stats?.courses ?? 0);
 
   const displayStats = [
-    { value: formatCount(stats?.members ?? 0), label: isRTL ? 'عضو' : 'Members', icon: Users },
-    { value: stats?.successRate ? `${stats.successRate}%` : '0%', label: isRTL ? 'نسبة النجاح' : 'Success', icon: GraduationCap },
-    { value: formatCount(stats?.lessons ?? 0), label: isRTL ? 'درس' : 'Lessons', icon: PlayCircle },
-    { value: formatCount(stats?.courses ?? 0), label: isRTL ? 'دورة' : 'Courses', icon: BookOpen },
+    { value: membersValue, label: isRTL ? 'عضو' : 'Members', icon: Users },
+    { value: successValue, label: isRTL ? 'نسبة النجاح' : 'Success', icon: GraduationCap },
+    { value: lessonsValue, label: isRTL ? 'درس' : 'Lessons', icon: PlayCircle },
+    { value: coursesValue, label: isRTL ? 'دورة' : 'Courses', icon: BookOpen },
   ];
 
   const isLoading = contentLoading || statsLoading;
