@@ -3,11 +3,10 @@ import AnimatedCounter from "@/components/common/AnimatedCounter";
 import { LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Play, Users, GraduationCap, PlayCircle, BookOpen, ArrowRight, ArrowLeft } from "lucide-react";
+import { Play, Users, GraduationCap, PlayCircle, BookOpen } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import heroImage from "@/assets/hero-rider.webp";
 
 import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
 import HeroAdSlider from "@/components/landing/HeroAdSlider";
@@ -44,11 +43,35 @@ async function fetchHeroStats() {
   return { members: usersCount, lessons: lessonsCount, successRate, courses: coursesCount };
 }
 
+const StatCard: React.FC<{
+  value: string;
+  label: string;
+  icon: React.ElementType;
+  index: number;
+  reducedMotion: boolean | null;
+}> = ({ value, label, icon: Icon, index, reducedMotion }) => (
+  <m.div
+    initial={reducedMotion ? {} : { opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4, delay: 1 + index * 0.1 }}
+    className="flex items-center gap-2.5 sm:gap-3 md:flex-row md:gap-3 group min-w-0"
+  >
+    <div className="w-9 h-9 md:w-9 md:h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors duration-300">
+      <Icon className="w-4 h-4 text-primary" />
+    </div>
+    <div className="flex flex-col">
+      <AnimatedCounter value={value} className="text-base sm:text-lg md:text-xl font-bold text-foreground leading-none" />
+      <span className="text-[10px] sm:text-[11px] md:text-xs text-muted-foreground uppercase tracking-wider font-medium mt-0.5 whitespace-nowrap">
+        {label}
+      </span>
+    </div>
+  </m.div>
+);
+
 const HeroSection: React.FC = () => {
   const { isRTL } = useLanguage();
   const prefersReducedMotion = useReducedMotion();
   const { data: content } = useLandingContent<HeroLandingContent>("hero");
-  const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   const showStats = content?.show_stats !== false && content?.show_stats !== "false";
 
@@ -92,6 +115,7 @@ const HeroSection: React.FC = () => {
 
   const anim = (dur: number, delay = 0) => (prefersReducedMotion ? { duration: 0 } : { duration: dur, delay });
 
+  
   const title = isRTL ? content?.title_ar || "لنقد بثقة" : content?.title_en || "Ride with Confidence";
   const subtitle = isRTL
     ? content?.subtitle_ar || "انطلق في رحلتك مع أفضل مدربي الدراجات النارية"
@@ -102,36 +126,31 @@ const HeroSection: React.FC = () => {
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <section className="relative overflow-hidden">
-        {/* Background image with overlay */}
-        <div className="absolute inset-0">
-          <img
-            src={heroImage}
-            alt=""
-            className="w-full h-full object-cover"
-            loading="eager"
-            decoding="async"
-          />
-          <div className="absolute inset-0 bg-black/60" />
-          {/* Bottom fade into background */}
-          <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-background to-transparent" />
-        </div>
+      <section className="relative flex flex-col bg-background">
+        {/* Main Content — side-by-side on desktop, stacked on mobile */}
+        <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-4 sm:py-6 md:py-10 flex flex-col md:flex-row items-start gap-4 md:gap-8">
+          {/* Ad Slider — top on mobile, right/left on tablet+ */}
+          <m.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={anim(0.6, 0.2)}
+            className={`w-full md:w-[280px] lg:w-[320px] xl:w-[360px] shrink-0 order-1 md:order-none`}
+          >
+            <HeroAdSlider />
+          </m.div>
 
-        <div className="relative z-10">
-          {/* Main hero content */}
-          <div className="max-w-[1200px] mx-auto w-full px-4 sm:px-6 pt-10 sm:pt-14 md:pt-20 pb-6 sm:pb-8 md:pb-12">
-            <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
-              
-              {/* Text content */}
-              <div className="flex-1 text-center lg:text-start w-full">
+          {/* Hero text content */}
+          <div className="flex-1 flex flex-col order-2 md:order-none w-full">
+            <div className="w-full">
+              <div className={`max-w-2xl text-center md:text-start ${isRTL ? "mx-auto md:mr-0 md:ml-auto" : "mx-auto md:ml-0 md:mr-auto"}`}>
                 {/* Badge */}
                 <m.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={anim(0.5, 0.2)}
-                  className="mb-4 sm:mb-5"
+                  initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={anim(0.6, 0.3)}
+                  className="mb-3"
                 >
-                  <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary/20 text-primary border border-primary/30 backdrop-blur-sm">
+                  <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                     {isRTL ? "أكاديمية بايكرز" : "BIKERZ Academy"}
                   </span>
@@ -139,94 +158,62 @@ const HeroSection: React.FC = () => {
 
                 {/* Title */}
                 <m.h1
-                  initial={{ opacity: 0, y: 24 }}
+                  initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={anim(0.6, 0.35)}
-                  className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.05] tracking-tight mb-4 sm:mb-5 text-white"
+                  transition={anim(0.7, 0.4)}
+                  className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08] mb-3 text-foreground"
                 >
                   {title}
                 </m.h1>
 
                 {/* Subtitle */}
                 <m.p
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={anim(0.5, 0.5)}
-                  className={`text-base sm:text-lg lg:text-xl text-white/70 leading-relaxed mb-6 sm:mb-8 max-w-lg ${isRTL ? 'mx-auto lg:mr-0 lg:ml-auto' : 'mx-auto lg:ml-0'}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={anim(0.6, 0.6)}
+                  className="text-base sm:text-lg lg:text-xl text-foreground/70 leading-relaxed mb-5 max-w-lg"
                 >
                   {subtitle}
                 </m.p>
 
-                {/* CTA Buttons */}
+                {/* CTA */}
                 <m.div
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={anim(0.5, 0.65)}
-                  className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
+                  transition={anim(0.5, 0.75)}
+                  className="flex flex-wrap gap-4 justify-center md:justify-start"
                 >
                   <Link to="/courses">
                     <Button
                       variant="hero"
                       size="lg"
-                      className="group gap-3 px-8 py-6 text-base sm:text-lg w-full sm:w-auto"
+                      className="group gap-3 px-8 py-6 text-base sm:text-lg"
                     >
                       <Play className="w-5 h-5 transition-transform group-hover:scale-110" />
                       {ctaText}
                     </Button>
                   </Link>
-                  <Link to="/signup">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="gap-2.5 px-8 py-6 text-base border-white/20 text-white bg-white/5 hover:bg-white/10 hover:border-white/30 rounded-xl w-full sm:w-auto"
-                    >
-                      {isRTL ? "سجّل الآن" : "Sign Up Free"}
-                      <Arrow className="w-4 h-4" />
-                    </Button>
-                  </Link>
                 </m.div>
-
-                {/* Stats row */}
-                {showStats && (
-                  <m.div
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={anim(0.5, 0.85)}
-                    className="mt-8 sm:mt-10"
-                  >
-                    <div className="grid grid-cols-4 gap-2 sm:gap-0 sm:inline-flex sm:divide-x sm:divide-white/10 sm:rtl:divide-x-reverse px-2 sm:px-0">
-                      {displayStats.map((stat, i) => {
-                        const Icon = stat.icon;
-                        return (
-                          <div key={stat.key} className="flex flex-col items-center sm:px-5 first:ps-0 last:pe-0">
-                            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center mb-1.5">
-                              <Icon className="w-4 h-4 text-primary" />
-                            </div>
-                            <AnimatedCounter
-                              value={stat.value}
-                              className="text-lg sm:text-xl font-black text-white leading-none"
-                            />
-                            <span className="text-[10px] sm:text-xs text-white/50 uppercase tracking-wider font-medium mt-1">
-                              {stat.label}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </m.div>
-                )}
               </div>
-
-              {/* Ad Slider — right on desktop, below on mobile */}
-              <m.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={anim(0.6, 0.4)}
-                className="w-full sm:w-[340px] lg:w-[320px] xl:w-[360px] shrink-0"
-              >
-                <HeroAdSlider />
-              </m.div>
             </div>
+
+            {/* Stats Strip — inside content column */}
+            {showStats && (
+              <div className="mt-4 sm:mt-6 flex justify-center md:justify-start">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:inline-flex md:flex-wrap md:justify-start md:gap-8 px-3 sm:px-4 py-3 sm:py-4 rounded-xl bg-card/30 backdrop-blur-sm border border-border/20 w-full md:w-auto">
+                  {displayStats.map((stat, i) => (
+                    <StatCard
+                      key={stat.key}
+                      value={stat.value}
+                      label={stat.label}
+                      icon={stat.icon}
+                      index={i}
+                      reducedMotion={prefersReducedMotion}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
