@@ -134,7 +134,7 @@ const Navbar: React.FC = () => {
         ref={navRef}
         className={`fixed top-0 left-0 right-0 z-50 safe-area-top transition-all duration-500 ${
           isScrolled || isMobileMenuOpen
-            ? 'bg-background/95 backdrop-blur-md shadow-[0_2px_20px_hsl(0_0%_0%/0.4)] border-b border-border/30'
+            ? 'bg-background/95 backdrop-blur-md shadow-md border-b border-border/30'
             : isHome
               ? 'bg-transparent'
               : 'bg-background/80 backdrop-blur-sm'
@@ -163,9 +163,7 @@ const Navbar: React.FC = () => {
                 const className = `relative px-4 py-2 text-sm font-medium transition-colors duration-300 ${
                   active
                     ? 'text-primary'
-                    : isScrolled || !isHome
-                      ? 'text-foreground/80 hover:text-primary'
-                      : 'text-primary-foreground/80 hover:text-primary-foreground'
+                    : 'text-foreground/80 hover:text-primary'
                 }`;
 
                 const content = (
@@ -205,9 +203,7 @@ const Navbar: React.FC = () => {
                 {user ? (
                   <>
                     <Link to="/dashboard">
-                      <Button variant="ghost" size="sm" className={`gap-2 ${
-                        !isScrolled && isHome ? 'text-primary-foreground hover:bg-primary-foreground/10' : ''
-                      }`}>
+                      <Button variant="ghost" size="sm" className="gap-2">
                         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
                           <span className="text-xs font-bold text-primary-foreground">
                             {profile?.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
@@ -223,7 +219,6 @@ const Navbar: React.FC = () => {
                       size="icon"
                       onClick={handleSignOut}
                       title={t('common.logout')}
-                      className={!isScrolled && isHome ? 'text-primary-foreground hover:bg-primary-foreground/10' : ''}
                     >
                       <LogOut className="w-4 h-4" />
                     </Button>
@@ -232,9 +227,7 @@ const Navbar: React.FC = () => {
                   <>
                     {loginButton.is_visible && (
                       <Link to={loginButton.link}>
-                        <Button variant="ghost" size="sm" className={`text-sm ${
-                          !isScrolled && isHome ? 'text-primary-foreground hover:bg-primary-foreground/10' : ''
-                        }`}>
+                        <Button variant="ghost" size="sm" className="text-sm">
                           {isRTL ? loginButton.text_ar : loginButton.text_en}
                         </Button>
                       </Link>
@@ -256,11 +249,7 @@ const Navbar: React.FC = () => {
               {/* Hamburger */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className={`lg:hidden p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors ${
-                  !isScrolled && isHome && !isMobileMenuOpen
-                    ? 'text-primary-foreground hover:bg-primary-foreground/10'
-                    : 'text-foreground hover:bg-muted/50'
-                }`}
+                className={`lg:hidden p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors text-foreground hover:bg-muted/50`}
                 aria-label="Toggle menu"
                 aria-expanded={isMobileMenuOpen}
               >
