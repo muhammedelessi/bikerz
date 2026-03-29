@@ -8,11 +8,14 @@ import { Label } from '@/components/ui/label';
 import { ArrowRight, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import bikerzLogo from '@/assets/bikerz-logo.webp';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
+import { useTheme } from '@/components/ThemeProvider';
 import SEOHead from '@/components/common/SEOHead';
 
 const ForgotPassword: React.FC = () => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const { isRTL } = useLanguage();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   
@@ -56,16 +59,13 @@ const ForgotPassword: React.FC = () => {
       <header className="py-4 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link to="/">
-            <picture>
-              <source srcSet={bikerzLogo} type="image/webp" />
-              <img
-                src={bikerzLogo}
-                alt="BIKERZ"
-                className="h-10 sm:h-12 lg:h-14 w-auto object-contain"
-                loading="eager"
-                decoding="async"
-              />
-            </picture>
+            <img
+              src={theme === 'light' ? logoDark : logoLight}
+              alt="BIKERZ"
+              className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
+              loading="eager"
+              decoding="async"
+            />
           </Link>
         </div>
       </header>
