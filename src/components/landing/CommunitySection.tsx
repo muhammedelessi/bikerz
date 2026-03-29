@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import AnimatedCounter from '@/components/common/AnimatedCounter';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -6,10 +6,18 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import heroBackground from '@/assets/hero-rider.webp';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useLandingContent, CommunityContent } from '@/hooks/useLandingContent';
+import { useLandingContent, CommunityContent, HeroContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
 import { Users, GraduationCap, PlayCircle, BookOpen } from 'lucide-react';
+
+interface HeroLandingContent extends HeroContent {
+  show_stats?: boolean | string;
+  stats_members_value?: string | number;
+  stats_lessons_value?: string | number;
+  stats_success_value?: string | number;
+  stats_courses_value?: string | number;
+}
 
 const CommunitySection: React.FC = () => {
   const { isRTL } = useLanguage();
