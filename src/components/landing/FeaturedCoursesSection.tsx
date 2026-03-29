@@ -111,7 +111,7 @@ const FeaturedCoursesSection: React.FC = () => {
   if (!isLoading && courses.length === 0) return null;
 
   return (
-    <section ref={ref} className="relative py-6 sm:py-10 overflow-hidden">
+    <section ref={ref} className="relative py-4 sm:py-8 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-card/40 to-background" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,hsl(var(--primary)/0.08),transparent)]" />
 
