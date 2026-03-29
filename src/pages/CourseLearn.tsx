@@ -39,7 +39,9 @@ import {
   Trophy,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import bikerzLogo from '@/assets/bikerz-logo.webp';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
+import { useTheme } from '@/components/ThemeProvider';
 import ChapterTest from '@/components/course/ChapterTest';
 import VideoPlayer from '@/components/course/VideoPlayer';
 import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';
@@ -123,6 +125,8 @@ const CourseLearn: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const themeLogo = theme === 'light' ? logoDark : logoLight;
   const queryClient = useQueryClient();
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -947,9 +951,9 @@ const CourseLearn: React.FC = () => {
             >
               {/* Logo */}
               <motion.img
-                src={bikerzLogo}
+                src={themeLogo}
                 alt="Bikerz"
-                className="h-12 sm:h-14 mx-auto"
+                className="h-6 sm:h-7 mx-auto"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
@@ -1058,16 +1062,13 @@ const CourseLearn: React.FC = () => {
           </Button>
           
           <Link to="/courses" className="flex items-center gap-2 flex-shrink-0">
-            <picture>
-              <source srcSet={bikerzLogo} type="image/webp" />
               <img
-                src={bikerzLogo}
+                src={themeLogo}
                 alt="BIKERZ"
-                className="h-8 sm:h-10"
+                className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
                 loading="eager"
                 decoding="async"
               />
-            </picture>
           </Link>
           
           <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground min-w-0">
