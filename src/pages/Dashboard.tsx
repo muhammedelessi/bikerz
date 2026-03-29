@@ -66,6 +66,8 @@ const Dashboard: React.FC = () => {
   const { user, profile, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { theme } = useTheme();
+  const themeLogo = theme === 'light' ? logoDark : logoLight;
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
 
   // Fetch enrolled courses with live progress
@@ -264,12 +266,10 @@ const Dashboard: React.FC = () => {
           {/* Logo */}
           <div className="p-4 sm:p-6 border-b border-border flex items-center justify-between">
             <Link to="/" className="flex items-center">
-              <picture>
-                <source srcSet={bikerzLogo} type="image/webp" />
                 <img
-                  src={bikerzLogo}
+                  src={themeLogo}
                   alt="BIKERZ"
-                  className="h-10 sm:h-12 w-auto object-contain"
+                  className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
                   loading={sidebarOpen ? 'eager' : 'lazy'}
                   decoding="async"
                 />
