@@ -37,7 +37,9 @@ import {
   Tag,
   Megaphone,
 } from 'lucide-react';
-import bikerzLogo from '@/assets/bikerz-logo.webp';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -69,6 +71,8 @@ interface NavItem {
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
+  const { theme } = useTheme();
+  const themeLogo = theme === 'light' ? logoDark : logoLight;
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -110,30 +114,24 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           {!sidebarCollapsed && (
             <Link to="/admin" className="flex items-center gap-2">
-            <picture>
-              <source srcSet={bikerzLogo} type="image/webp" />
               <img
-                src={bikerzLogo}
+                src={themeLogo}
                 alt="BIKERZ"
-                className="h-8 sm:h-10"
+                className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
                 loading="eager"
                 decoding="async"
               />
-            </picture>
             </Link>
           )}
           {sidebarCollapsed && (
             <Link to="/admin" className="mx-auto">
-            <picture>
-              <source srcSet={bikerzLogo} type="image/webp" />
               <img
-                src={bikerzLogo}
+                src={themeLogo}
                 alt="BIKERZ"
-                className="h-8"
+                className="h-6 w-auto object-contain"
                 loading="eager"
                 decoding="async"
               />
-            </picture>
             </Link>
           )}
           <Button

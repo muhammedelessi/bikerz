@@ -26,7 +26,9 @@ import {
   Settings,
   User,
 } from 'lucide-react';
-import bikerzLogo from '@/assets/bikerz-logo.webp';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
+import { useTheme } from '@/components/ThemeProvider';
 import { useState, useEffect } from 'react';
 
 const Profile: React.FC = () => {
@@ -46,6 +48,8 @@ const Profile: React.FC = () => {
     uploadAvatar,
   } = useUserProfile();
 
+  const { theme } = useTheme();
+  const themeLogo = theme === 'light' ? logoDark : logoLight;
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
 
   // Lock body scroll when sidebar is open on mobile
@@ -106,16 +110,13 @@ const Profile: React.FC = () => {
           {/* Logo */}
           <div className="p-4 sm:p-6 border-b border-border flex items-center justify-between">
             <Link to="/" className="flex items-center">
-              <picture>
-                <source srcSet={bikerzLogo} type="image/webp" />
-                <img
-                  src={bikerzLogo}
-                  alt="BIKERZ"
-                  className="h-10 sm:h-12 w-auto object-contain"
-                  loading={sidebarOpen ? 'eager' : 'lazy'}
-                  decoding="async"
-                />
-              </picture>
+              <img
+                src={themeLogo}
+                alt="BIKERZ"
+                className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
+                loading={sidebarOpen ? 'eager' : 'lazy'}
+                decoding="async"
+              />
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
