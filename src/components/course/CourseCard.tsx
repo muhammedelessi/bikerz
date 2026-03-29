@@ -258,35 +258,22 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
                 </span>
               </Button>
             ) : (
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <Button
-                  variant="default"
-                  className="flex-1 min-h-[44px] h-11 text-sm sm:text-sm text-[14px] font-bold group/btn relative overflow-hidden"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/courses/${course.id}?checkout=true`);
-                  }}
-                >
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    <ShoppingCart className="w-4 h-4" />
-                    {t("courses.courseCard.subscribeNow", {
-                      price: formatAmount(priceInfo.finalPrice),
-                      currency: sym,
-                    })}
-                  </span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="min-h-[44px] h-11 px-4 text-sm sm:text-sm text-[14px] font-bold w-full sm:w-auto"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/courses/${course.id}`);
-                  }}
-                >
-                  <Eye className="w-4 h-4 me-1.5" />
-                  {t("courseDetail.viewCourse")}
-                </Button>
-              </div>
+              <Button
+                variant="default"
+                className="w-full min-h-[44px] h-11 text-sm text-[14px] font-bold group/btn relative overflow-hidden"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/courses/${course.id}?checkout=true`);
+                }}
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <ShoppingCart className="w-4 h-4" />
+                  {t("courses.courseCard.subscribeNow", {
+                    price: formatAmount(priceInfo.finalPrice),
+                    currency: sym,
+                  })}
+                </span>
+              </Button>
             )}
           </div>
         </div>
