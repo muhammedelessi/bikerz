@@ -155,7 +155,7 @@ const Navbar: React.FC = () => {
                 height={80}
                 loading="eager"
                 decoding="async"
-                className="h-12 sm:h-14 lg:h-16 w-auto object-contain"
+                className="h-9 sm:h-10 lg:h-11 w-auto object-contain"
               />
             </Link>
 
@@ -291,7 +291,7 @@ const Navbar: React.FC = () => {
                     <img
                       src={logoUrl}
                       alt={logoAlt}
-                      className="h-10 w-auto object-contain"
+                      className="h-9 w-auto object-contain"
                       loading="eager"
                     />
                   </Link>
