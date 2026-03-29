@@ -5,7 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Instagram, Youtube, Facebook, Linkedin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import bikerzLogo from '@/assets/bikerz-logo.webp';
+import { useTheme } from '@/components/ThemeProvider';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 import zatcaLogo from '@/assets/zatca-logo.png';
 
 // Custom X (Twitter) icon
@@ -46,6 +48,8 @@ interface FooterContent {
 const Footer: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
+  const { theme } = useTheme();
+  const footerLogo = theme === 'light' ? logoDark : logoLight;
 
   // Fetch footer content from database
   const { data: footerContent } = useQuery({
@@ -117,16 +121,13 @@ const Footer: React.FC = () => {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="inline-block">
-              <picture>
-                <source srcSet={bikerzLogo} type="image/webp" />
                 <img
-                  src={bikerzLogo}
+                  src={footerLogo}
                   alt="BIKERZ"
                   loading="lazy"
                   decoding="async"
                   className="h-12 sm:h-14 w-auto object-contain"
                 />
-              </picture>
             </Link>
             <p className="text-muted-foreground text-sm max-w-xs">
               {tagline}

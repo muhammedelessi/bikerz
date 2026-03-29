@@ -10,7 +10,9 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import bikerzLogo from '@/assets/bikerz-logo.webp';
+import { useTheme } from '@/components/ThemeProvider';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 
 interface MenuItem {
   id: string;
@@ -45,6 +47,7 @@ interface HeaderContent {
 const Navbar: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
+  const { theme } = useTheme();
   const { user, profile, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -123,7 +126,8 @@ const Navbar: React.FC = () => {
   };
 
   const showLanguageToggle = headerContent?.show_language_toggle !== false;
-  const logoUrl = headerContent?.logo_url || bikerzLogo;
+  const themeLogo = theme === 'light' ? logoDark : logoLight;
+  const logoUrl = headerContent?.logo_url || themeLogo;
   const logoAlt = (isRTL ? headerContent?.logo_alt_ar : headerContent?.logo_alt_en) || t('common.bikerz');
   const isActive = (path: string) => location.pathname === path;
   const isHome = location.pathname === '/';
