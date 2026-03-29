@@ -39,7 +39,9 @@ import {
   Trophy,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import bikerzLogo from '@/assets/bikerz-logo.webp';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
+import { useTheme } from '@/components/ThemeProvider';
 import ChapterTest from '@/components/course/ChapterTest';
 import VideoPlayer from '@/components/course/VideoPlayer';
 import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';
