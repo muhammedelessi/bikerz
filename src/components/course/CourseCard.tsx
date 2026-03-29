@@ -115,7 +115,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
                     />
                   </picture>
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
+                
 
                 {/* Play button */}
                 <button
