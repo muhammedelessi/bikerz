@@ -3,7 +3,7 @@ import AnimatedCounter from '@/components/common/AnimatedCounter';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { useLanguage } from '@/contexts/LanguageContext';
-import defaultCommunityImage from '@/assets/community-ride.webp';
+import heroBackground from '@/assets/hero-rider.webp';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLandingContent, CommunityContent } from '@/hooks/useLandingContent';
@@ -52,7 +52,7 @@ const CommunitySection: React.FC = () => {
 
   const title = isRTL ? (content?.title_ar || t('community.title')) : (content?.title_en || t('community.title'));
   const subtitle = isRTL ? (content?.subtitle_ar || '') : (content?.subtitle_en || '');
-  const communityImage = (content as any)?.background_image || defaultCommunityImage;
+  const communityImage = (content as any)?.background_image || heroBackground;
 
   const displayStats = [
     { value: formatCount(stats?.members ?? 0), label: isRTL ? 'عضو' : 'Members', icon: Users },
