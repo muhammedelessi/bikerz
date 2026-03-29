@@ -13,8 +13,10 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     try {
-      const saved = localStorage.getItem('bikerz-theme') as Theme;
-      return saved === 'light' ? 'light' : 'dark';
+      const saved = localStorage.getItem('bikerz-theme') as Theme | null;
+      if (saved === 'light' || saved === 'dark') return saved;
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      return prefersDark ? 'dark' : 'light';
     } catch {
       return 'dark';
     }
@@ -29,16 +31,29 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.classList.add('dark');
       root.classList.remove('light');
     }
-
-    try {
-      localStorage.setItem('bikerz-theme', theme);
-    } catch {
-      // Ignore storage failures on restricted iOS browsers
-    }
   }, [theme]);
 
-  const setTheme = (t: Theme) => setThemeState(t);
-  const toggleTheme = () => setThemeState(prev => prev === 'dark' ? 'light' : 'dark');
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => {
+      try {
+        if (!localStorage.getItem('bikerz-theme')) {
+          setThemeState(e.matches ? 'dark' : 'light');
+        }
+      } catch { /* ignore */ }
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const setTheme = (t: Theme) => {
+    setThemeState(t);
+    try { localStorage.setItem('bikerz-theme', t); } catch { /* ignore */ }
+  };
+  const toggleTheme = () => {
+    const next: Theme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+  };
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
