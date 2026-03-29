@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLandingContent, CommunityContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
+import { Users, GraduationCap, PlayCircle, BookOpen } from 'lucide-react';
 
 const CommunitySection: React.FC = () => {
   const { isRTL } = useLanguage();
@@ -17,43 +18,36 @@ const CommunitySection: React.FC = () => {
 
   const { data: content, isLoading: contentLoading } = useLandingContent<CommunityContent>('community');
 
-  // Fetch real stats from database
+  // Fetch real stats from database (same as hero)
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['community-stats'],
     queryFn: async () => {
-      const [
-        { count: totalMembers },
-        { count: lessonsCount },
-        activeLearnersResult,
-        successRateResult,
-      ] = await Promise.all([
+      const [profilesRes, lessonsRes, enrollmentsRes, coursesRes] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('lessons').select('*', { count: 'exact', head: true }).eq('is_published', true),
-        supabase.from('course_enrollments').select('user_id', { count: 'exact', head: true }).gt('progress_percentage', 0),
         supabase.from('course_enrollments').select('progress_percentage'),
+        supabase.from('courses').select('*', { count: 'exact', head: true }).eq('is_published', true),
       ]);
 
-      const enrollments = successRateResult.data || [];
-      const completed = enrollments.filter(e => e.progress_percentage >= 70).length;
-      const successRate = enrollments.length > 0 
-        ? Math.round((completed / enrollments.length) * 100)
+      const enrollmentStats = enrollmentsRes.data ?? [];
+      const completed = enrollmentStats.filter(e => (e.progress_percentage ?? 0) >= 70).length;
+      const successRate = enrollmentStats.length > 0 
+        ? Math.round((completed / enrollmentStats.length) * 100)
         : 0;
 
       return {
-        members: totalMembers || 0,
-        activeLearners: activeLearnersResult.count || 0,
+        members: profilesRes.count ?? 0,
+        lessons: lessonsRes.count ?? 0,
         successRate,
-        lessons: lessonsCount || 0,
+        courses: coursesRes.count ?? 0,
       };
     },
     staleTime: 5 * 60 * 1000,
   });
 
-  const formatCount = (count: number, suffix = '+') => {
-    if (count >= 1000) {
-      return `${(count / 1000).toFixed(count >= 10000 ? 0 : 1)}K${suffix}`;
-    }
-    return `${count}${suffix}`;
+  const formatCount = (count: number) => {
+    if (count >= 1000) return `${Math.floor(count / 1000)}K+`;
+    return count > 0 ? `${count}+` : '0';
   };
 
   const title = isRTL ? (content?.title_ar || t('community.title')) : (content?.title_en || t('community.title'));
@@ -61,29 +55,17 @@ const CommunitySection: React.FC = () => {
   const communityImage = (content as any)?.background_image || defaultCommunityImage;
 
   const displayStats = [
-    { 
-      value: formatCount(stats?.members || 0), 
-      label: t('community.stat1.label')
-    },
-    { 
-      value: formatCount(stats?.activeLearners || 0), 
-      label: t('community.stat2.label')
-    },
-    { 
-      value: stats?.successRate ? `${stats.successRate}%` : '0%', 
-      label: t('community.stat3.label')
-    },
-    { 
-      value: formatCount(stats?.lessons || 0), 
-      label: t('community.stat4.label')
-    },
+    { value: formatCount(stats?.members ?? 0), label: isRTL ? 'عضو' : 'Members', icon: Users },
+    { value: stats?.successRate ? `${stats.successRate}%` : '0%', label: isRTL ? 'نسبة النجاح' : 'Success', icon: GraduationCap },
+    { value: formatCount(stats?.lessons ?? 0), label: isRTL ? 'درس' : 'Lessons', icon: PlayCircle },
+    { value: formatCount(stats?.courses ?? 0), label: isRTL ? 'دورة' : 'Courses', icon: BookOpen },
   ];
 
   const isLoading = contentLoading || statsLoading;
 
   return (
     <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden">
-      {/* Background Image with Overlay */}
+      {/* Background Image with Black Overlay */}
       <div className="absolute inset-0">
         <picture>
           <source srcSet={communityImage} type="image/webp" />
@@ -95,7 +77,7 @@ const CommunitySection: React.FC = () => {
             decoding="async"
           />
         </picture>
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-background/80" />
+        <div className="absolute inset-0 bg-black/70" />
       </div>
 
       <div className="section-container relative z-10">
@@ -114,40 +96,46 @@ const CommunitySection: React.FC = () => {
               </>
             ) : (
               <>
-                <h2 className="section-title text-foreground mb-3 sm:mb-4">{title}</h2>
-                <p className="section-subtitle">{subtitle}</p>
+                <h2 className="section-title text-white mb-3 sm:mb-4">{title}</h2>
+                <p className="text-base sm:text-lg text-white/70">{subtitle}</p>
               </>
             )}
           </motion.div>
 
-          {/* Stats Grid */}
+          {/* Stats Grid — same layout & icons as hero */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-            {displayStats.map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={inView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-                className="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-card/60 border border-border/30 backdrop-blur-sm text-center"
-              >
-                {isLoading ? (
-                  <>
-                    <Skeleton className="h-8 w-16 mx-auto mb-2" />
-                    <Skeleton className="h-4 w-20 mx-auto" />
-                  </>
-                ) : (
-                  <>
-                    <AnimatedCounter
-                      value={stat.value}
-                      className="text-2xl sm:text-3xl lg:text-4xl font-black text-primary mb-1 block"
-                    />
-                    <div className="text-xs sm:text-sm text-muted-foreground">
-                      {stat.label}
-                    </div>
-                  </>
-                )}
-              </motion.div>
-            ))}
+            {displayStats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={inView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
+                  className="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-white/10 border border-white/10 backdrop-blur-sm text-center"
+                >
+                  {isLoading ? (
+                    <>
+                      <Skeleton className="h-8 w-16 mx-auto mb-2" />
+                      <Skeleton className="h-4 w-20 mx-auto" />
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
+                        <Icon className="w-5 h-5 text-primary" />
+                      </div>
+                      <AnimatedCounter
+                        value={stat.value}
+                        className="text-2xl sm:text-3xl lg:text-4xl font-black text-white mb-1 block"
+                      />
+                      <div className="text-xs sm:text-sm text-white/60 uppercase tracking-wider font-medium">
+                        {stat.label}
+                      </div>
+                    </>
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </div>
