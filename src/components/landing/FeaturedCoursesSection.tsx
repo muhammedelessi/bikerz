@@ -103,7 +103,7 @@ const FeaturedCoursesSection: React.FC = () => {
 
         {/* Horizontal swipeable slider */}
         <div
-          className="flex gap-4 sm:gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2"
+          className="featured-slider flex gap-4 sm:gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2"
           style={{
             WebkitOverflowScrolling: 'touch',
             scrollbarWidth: 'none',
