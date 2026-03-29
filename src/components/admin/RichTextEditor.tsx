@@ -54,7 +54,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm prose-invert max-w-none focus:outline-none min-h-[80px] px-3 py-2 text-sm',
+        class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[80px] px-3 py-2 text-sm',
         dir: dir || 'ltr',
       },
     },

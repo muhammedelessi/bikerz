@@ -207,7 +207,7 @@ const Signup: React.FC = () => {
                 <img
                   src={bikerzLogo}
                   alt="BIKERZ"
-                  className="h-10 sm:h-12 lg:h-14 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+                  className="h-10 sm:h-12 lg:h-14 w-auto object-contain"
                   loading="eager"
                   decoding="async"
                 />

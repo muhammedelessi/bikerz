@@ -1242,7 +1242,7 @@ const CourseLearn: React.FC = () => {
                   {/* Description */}
                   {currentLesson?.description && (
                     <div 
-                      className="prose prose-invert max-w-none mb-6 sm:mb-8 text-sm sm:text-base text-muted-foreground"
+                      className="prose dark:prose-invert max-w-none mb-6 sm:mb-8 text-sm sm:text-base text-muted-foreground"
                       dangerouslySetInnerHTML={{ 
                         __html: isRTL && currentLesson.description_ar 
                           ? currentLesson.description_ar 
