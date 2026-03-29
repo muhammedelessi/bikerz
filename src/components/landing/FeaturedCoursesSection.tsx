@@ -3,11 +3,10 @@ import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { ArrowRight, ArrowLeft, Zap } from "lucide-react";
+import { ArrowRight, ArrowLeft } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import CourseCard from "@/components/course/CourseCard";
 import { fetchEnrollmentsWithLiveProgress } from "@/lib/enrollmentProgress";
@@ -17,7 +16,7 @@ const FeaturedCoursesSection: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const handlePlayVideo = useCallback((id: string) => setActiveVideoId(prev => prev === id ? null : id), []);
@@ -83,58 +82,62 @@ const FeaturedCoursesSection: React.FC = () => {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,hsl(var(--primary)/0.08),transparent)]" />
 
       <div className="section-container relative z-10">
-        {/* Section Header */}
+        {/* Header: title left, view all right */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="text-center mb-10 sm:mb-14"
+          className="flex items-center justify-between mb-6 sm:mb-8"
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={inView ? { opacity: 1, scale: 1 } : {}}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5 mb-5"
-          >
-            <Zap className="w-3.5 h-3.5 text-primary" />
-            <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-              {t("landing.featuredCourses.mostPopular")}
-            </span>
-          </motion.div>
-
-          <h2 className="section-title text-foreground mb-3 sm:mb-4">
-            {t("landing.featuredCourses.title")}
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+            {isRTL ? "دوراتنا الأكثر مبيعاً" : "Our Best-Selling Courses"}
           </h2>
-          <p className="section-subtitle max-w-xl mx-auto">
-            {t("landing.featuredCourses.subtitle")}
-          </p>
-        </motion.div>
-
-        {/* Course Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-7">
-          {isLoading
-            ? Array.from({ length: 2 }).map((_, i) => (
-                <Skeleton key={i} className="aspect-[4/3] rounded-2xl" />
-              ))
-            : courses.map((course: any, index: number) => (
-                <CourseCard key={course.id} course={course} index={index} inView={inView} enrollment={getEnrollment(course.id)} activeVideoId={activeVideoId} onPlayVideo={handlePlayVideo} />
-              ))}
-        </div>
-
-        {/* View all button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="text-center mt-10 sm:mt-14"
-        >
-          <Link to="/courses">
-            <Button variant="outline" size="lg" className="group border-primary/30 hover:border-primary/60 hover:bg-primary/5">
-              {t("landing.featuredCourses.viewAllCourses")}
-              <Arrow className="w-4 h-4 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
-            </Button>
+          <Link
+            to="/courses"
+            className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors shrink-0"
+          >
+            {isRTL ? "عرض الكل" : "View All"}
+            <Arrow className="w-4 h-4" />
           </Link>
         </motion.div>
+
+        {/* Horizontal swipeable slider */}
+        <div
+          className="featured-slider flex gap-4 sm:gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }}
+        >
+          <style>{`
+            .featured-slider::-webkit-scrollbar { display: none; }
+          `}</style>
+          {isLoading
+            ? Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="snap-start shrink-0 w-[calc(100%-40px)] sm:w-[calc(50%-40px)]"
+                >
+                  <Skeleton className="aspect-[4/3] rounded-2xl" />
+                </div>
+              ))
+            : courses.map((course: any, index: number) => (
+                <div
+                  key={course.id}
+                  className="snap-start shrink-0 w-[calc(100%-40px)] sm:w-[calc(50%-40px)]"
+                >
+                  <CourseCard
+                    course={course}
+                    index={index}
+                    inView={inView}
+                    enrollment={getEnrollment(course.id)}
+                    activeVideoId={activeVideoId}
+                    onPlayVideo={handlePlayVideo}
+                  />
+                </div>
+              ))}
+        </div>
       </div>
     </section>
   );
