@@ -60,7 +60,7 @@ const StatCard: React.FC<{
       <Icon className="w-4 h-4 text-primary" />
     </div>
     <div className="flex flex-col">
-      <AnimatedCounter value={value} className="text-base sm:text-lg md:text-xl font-bold text-primary-foreground leading-none" />
+      <AnimatedCounter value={value} className="text-base sm:text-lg md:text-xl font-bold text-foreground leading-none" />
       <span className="text-[10px] sm:text-[11px] md:text-xs text-muted-foreground uppercase tracking-wider font-medium mt-0.5 whitespace-nowrap">
         {label}
       </span>
@@ -161,7 +161,7 @@ const HeroSection: React.FC = () => {
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={anim(0.7, 0.4)}
-                  className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08] mb-5 text-primary-foreground"
+                  className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08] mb-5 text-foreground"
                 >
                   {title}
                 </m.h1>

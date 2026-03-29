@@ -139,7 +139,7 @@ const AboutUs: React.FC = () => {
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6 text-center">
               {isRTL ? (d.story_title_ar || t('aboutUs.story.title')) : (d.story_title_en || t('aboutUs.story.title'))}
             </h2>
-            <div className="prose prose-lg prose-invert mx-auto text-center">
+            <div className="prose prose-lg dark:prose-invert mx-auto text-center">
               <p className="text-muted-foreground leading-relaxed">
                 {isRTL ? (d.story_p1_ar || t('aboutUs.story.paragraph1')) : (d.story_p1_en || t('aboutUs.story.paragraph1'))}
               </p>
