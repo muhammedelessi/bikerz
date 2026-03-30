@@ -499,6 +499,28 @@ const JoinCommunity: React.FC = () => {
               {submitting ? t("Submitting...", "جاري الإرسال...") : t("Join Now", "انضم الآن")}
             </Button>
 
+            {/* Duplicate detected — WhatsApp suggestion */}
+            {duplicateFound && (
+              <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 rounded-lg border border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-700 p-4 space-y-3 text-center">
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200 leading-relaxed">
+                  {t(
+                    "It looks like you're already registered in the Bikerz community! 🎉\nIf you need help or have a question, contact us directly on WhatsApp",
+                    "يبدو أنك مسجل مسبقاً في مجتمع بايكرز! 🎉\nإذا كنت بحاجة إلى مساعدة أو لديك استفسار،\nتواصل معنا مباشرة على واتساب"
+                  )}
+                </p>
+                <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer" className="block">
+                  <Button
+                    type="button"
+                    className="w-full gap-2 text-white hover:text-white border-0 hover:opacity-90"
+                    style={{ backgroundColor: "#25D366" }}
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    {t("💬 Contact us on WhatsApp", "💬 تواصل معنا على واتساب")}
+                  </Button>
+                </a>
+              </div>
+            )}
+
             {/* WhatsApp CTA */}
             <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer" className="block">
               <Button
