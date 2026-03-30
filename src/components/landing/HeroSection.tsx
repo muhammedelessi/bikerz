@@ -182,26 +182,26 @@ const HeroSection: React.FC = () => {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={anim(0.5, 0.75)}
-                  className="flex flex-wrap gap-4 justify-center md:justify-start"
+                  className="flex flex-row gap-3 sm:gap-4 justify-center md:justify-start"
                 >
-                  <Link to="/courses">
+                  <Link to="/courses" className="flex-1 sm:flex-none">
                     <Button
                       variant="hero"
                       size="lg"
-                      className="group gap-3 px-8 py-6 text-base sm:text-lg"
+                      className="w-full group gap-2 sm:gap-3 px-4 sm:px-8 py-6 text-sm sm:text-lg"
                     >
-                      <Play className="w-5 h-5 transition-transform group-hover:scale-110" />
+                      <Play className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
                       {ctaText}
                     </Button>
                   </Link>
-                  <Link to="/join-community">
+                  <Link to="/join-community" className="flex-1 sm:flex-none">
                     <Button
                       variant="outline"
                       size="lg"
-                      className="group gap-3 px-8 py-6 text-base sm:text-lg border-primary/30 hover:bg-primary/10"
+                      className="w-full group gap-2 sm:gap-3 px-4 sm:px-8 py-6 text-sm sm:text-lg border-primary/30 hover:bg-primary/10"
                     >
-                      <Users className="w-5 h-5 transition-transform group-hover:scale-110" />
-                      {isRTL ? "انضم لمجتمع بايكرز" : "Join the Bikerz Community"}
+                      <Users className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
+                      {isRTL ? "انضم للمجتمع" : "Join Community"}
                     </Button>
                   </Link>
                 </m.div>

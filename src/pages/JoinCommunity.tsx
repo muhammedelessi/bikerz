@@ -217,7 +217,6 @@ const JoinCommunity: React.FC = () => {
         <div className="max-w-lg mx-auto">
           {/* Header */}
           <div className="text-center mb-8 space-y-4">
-            <img src={logo} alt="BIKERZ" className="h-10 sm:h-12 mx-auto object-contain" />
             <div className="flex items-center justify-center gap-2">
               <Users className="w-5 h-5 text-primary" />
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
