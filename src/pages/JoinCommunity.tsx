@@ -268,7 +268,7 @@ const JoinCommunity: React.FC = () => {
                       setErrors((p) => ({ ...p, phone: undefined }));
                     }}
                     placeholder="5XXXXXXXX"
-                    className={`pl-9 ${errors.phone ? "border-destructive" : ""}`}
+                    className={`pl-9 text-left ${errors.phone ? "border-destructive" : ""}`}
                     dir="ltr"
                   />
                 </div>
@@ -284,8 +284,8 @@ const JoinCommunity: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
-                  placeholder={t("Email Address", "البريد الإلكتروني")}
-                  className={`pl-9 ${errors.email ? "border-destructive" : ""}`}
+                  placeholder="email@example.com"
+                  className={`pl-9 text-left ${errors.email ? "border-destructive" : ""}`}
                   dir="ltr"
                 />
               </div>
