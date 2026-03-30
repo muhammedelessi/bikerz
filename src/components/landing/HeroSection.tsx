@@ -4,6 +4,7 @@ import { LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Play, Users, GraduationCap, PlayCircle, BookOpen } from "lucide-react";
+// Users icon is used for both stats and CTA
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -191,6 +192,16 @@ const HeroSection: React.FC = () => {
                     >
                       <Play className="w-5 h-5 transition-transform group-hover:scale-110" />
                       {ctaText}
+                    </Button>
+                  </Link>
+                  <Link to="/join-community">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="group gap-3 px-8 py-6 text-base sm:text-lg border-primary/30 hover:bg-primary/10"
+                    >
+                      <Users className="w-5 h-5 transition-transform group-hover:scale-110" />
+                      {isRTL ? "انضم لمجتمع بايكرز" : "Join the Bikerz Community"}
                     </Button>
                   </Link>
                 </m.div>
