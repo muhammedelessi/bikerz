@@ -95,6 +95,24 @@ const JoinCommunity: React.FC = () => {
         considering_purchase: hasMotorcycle === "no" ? consideringPurchase : null,
       } as any);
       if (error) throw error;
+
+      // Fire webhook via edge function (non-blocking)
+      try {
+        await supabase.functions.invoke("community-webhook", {
+          body: {
+            full_name: fullName.trim(),
+            phone: phone.trim(),
+            email: email.trim().toLowerCase(),
+            country: isRTL ? (selectedCountry?.ar || "") : (selectedCountry?.en || ""),
+            city: city.trim(),
+            has_motorcycle: hasMotorcycle === "yes",
+            considering_purchase: hasMotorcycle === "no" ? consideringPurchase : null,
+          },
+        });
+      } catch (_) {
+        // Webhook failure is non-blocking
+      }
+
       setSubmitted(true);
     } catch (err: any) {
       toast({
