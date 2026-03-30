@@ -10,6 +10,8 @@ import { useLandingContent, CommunityContent, HeroContent } from '@/hooks/useLan
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
 import { Users, GraduationCap, PlayCircle, BookOpen } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 interface HeroLandingContent extends HeroContent {
   show_stats?: boolean | string;
