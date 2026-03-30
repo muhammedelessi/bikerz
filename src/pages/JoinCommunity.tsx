@@ -213,7 +213,7 @@ const JoinCommunity: React.FC = () => {
         description={t("Join the growing community of riders", "انضم لمجتمع الدراجين المتنامي")}
       />
       <Navbar />
-      <div className="min-h-[80dvh] bg-background py-8 sm:py-12 px-4" dir={isRTL ? "rtl" : "ltr"}>
+      <div className="min-h-[80dvh] bg-background pt-[var(--navbar-h,64px)] pb-8 sm:pb-12 px-4" dir={isRTL ? "rtl" : "ltr"}>
         <div className="max-w-lg mx-auto">
           {/* Header */}
           <div className="text-center mb-8 space-y-4">
