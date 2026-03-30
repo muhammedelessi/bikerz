@@ -7,7 +7,10 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES, type CountryEntry } from "@/data/countryCityData";
-import { Check, ChevronDown, Search, MessageCircle, Users } from "lucide-react";
+import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
+import SearchableDropdown from "@/components/checkout/SearchableDropdown";
+import type { DropdownOption } from "@/components/checkout/SearchableDropdown";
+import { Check, ChevronDown, Search, MessageCircle, Users, AlertCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
@@ -18,6 +21,16 @@ import SEOHead from "@/components/common/SEOHead";
 
 const WHATSAPP_NUMBER = "PHONE_NUMBER"; // Replace with real number
 
+const FieldError: React.FC<{ message?: string }> = ({ message }) => {
+  if (!message) return null;
+  return (
+    <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+      <AlertCircle className="w-3 h-3" />
+      {message}
+    </p>
+  );
+};
+
 const JoinCommunity: React.FC = () => {
   const { isRTL } = useLanguage();
   const { theme } = useTheme();
@@ -25,6 +38,7 @@ const JoinCommunity: React.FC = () => {
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [phonePrefix, setPhonePrefix] = useState("");
   const [email, setEmail] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<CountryEntry | null>(null);
   const [city, setCity] = useState("");
@@ -40,6 +54,16 @@ const JoinCommunity: React.FC = () => {
   // City dropdown state
   const [cityOpen, setCityOpen] = useState(false);
   const [citySearch, setCitySearch] = useState("");
+
+  // Phone prefix options (same as checkout)
+  const phonePrefixOptions: DropdownOption[] = useMemo(
+    () =>
+      PHONE_COUNTRIES.map((pc) => ({
+        value: `${pc.prefix}_${pc.code}`,
+        label: `${pc.prefix} ${pc.en}`,
+      })),
+    []
+  );
 
   const filteredCountries = useMemo(() => {
     if (!countrySearch.trim()) return COUNTRIES;
@@ -65,17 +89,24 @@ const JoinCommunity: React.FC = () => {
   const isOtherCountry = selectedCountry?.code === "OTHER";
   const hasCities = cities.length > 0 && !isOtherCountry;
 
+  // Build full phone number from prefix + raw
+  const getFullPhone = (): string => {
+    const prefix = phonePrefix ? phonePrefix.split("_")[0] : "";
+    return `${prefix}${phone}`.trim();
+  };
+
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!fullName.trim()) newErrors.fullName = isRTL ? "الاسم مطلوب" : "Full name is required";
-    if (!phone.trim()) newErrors.phone = isRTL ? "رقم الهاتف مطلوب" : "Phone number is required";
-    if (!email.trim() || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))
-      newErrors.email = isRTL ? "بريد إلكتروني صالح مطلوب" : "Valid email is required";
-    if (!selectedCountry) newErrors.country = isRTL ? "الدولة مطلوبة" : "Country is required";
-    if (!city.trim()) newErrors.city = isRTL ? "المدينة مطلوبة" : "City is required";
-    if (!hasMotorcycle) newErrors.hasMotorcycle = isRTL ? "هذا الحقل مطلوب" : "This field is required";
+    if (!fullName.trim()) newErrors.fullName = "Full name is required";
+    if (!phonePrefix) newErrors.phone = "Country code is required";
+    else if (!phone.trim()) newErrors.phone = "Phone number is required";
+    if (!email.trim()) newErrors.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = "Valid email is required";
+    if (!selectedCountry) newErrors.country = "Country is required";
+    if (!city.trim()) newErrors.city = "City is required";
+    if (!hasMotorcycle) newErrors.hasMotorcycle = "This field is required";
     if (hasMotorcycle === "no" && !consideringPurchase)
-      newErrors.consideringPurchase = isRTL ? "هذا الحقل مطلوب" : "This field is required";
+      newErrors.consideringPurchase = "This field is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -84,12 +115,16 @@ const JoinCommunity: React.FC = () => {
     e.preventDefault();
     if (!validate()) return;
     setSubmitting(true);
+
+    const fullPhone = getFullPhone();
+    const countryName = selectedCountry?.en || "";
+
     try {
       const { error } = await supabase.from("community_members" as any).insert({
         full_name: fullName.trim(),
-        phone: phone.trim(),
+        phone: fullPhone,
         email: email.trim().toLowerCase(),
-        country: isRTL ? (selectedCountry?.ar || "") : (selectedCountry?.en || ""),
+        country: countryName,
         city: city.trim(),
         has_motorcycle: hasMotorcycle === "yes",
         considering_purchase: hasMotorcycle === "no" ? consideringPurchase : null,
@@ -101,9 +136,9 @@ const JoinCommunity: React.FC = () => {
         await supabase.functions.invoke("community-webhook", {
           body: {
             full_name: fullName.trim(),
-            phone: phone.trim(),
+            phone: fullPhone,
             email: email.trim().toLowerCase(),
-            country: isRTL ? (selectedCountry?.ar || "") : (selectedCountry?.en || ""),
+            country: countryName,
             city: city.trim(),
             has_motorcycle: hasMotorcycle === "yes",
             considering_purchase: hasMotorcycle === "no" ? consideringPurchase : null,
@@ -116,8 +151,8 @@ const JoinCommunity: React.FC = () => {
       setSubmitted(true);
     } catch (err: any) {
       toast({
-        title: isRTL ? "خطأ" : "Error",
-        description: err.message || (isRTL ? "حدث خطأ، حاول مرة أخرى" : "Something went wrong. Please try again."),
+        title: "Error",
+        description: err.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -135,12 +170,10 @@ const JoinCommunity: React.FC = () => {
               <Check className="w-8 h-8 text-primary" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              {isRTL ? "🎉 مرحباً بك في مجتمع بايكرز!" : "🎉 Welcome to the Bikerz Community!"}
+              🎉 Welcome to the Bikerz Community!
             </h1>
             <p className="text-muted-foreground">
-              {isRTL
-                ? "تم تسجيلك بنجاح. سنتواصل معك قريباً!"
-                : "You've been registered successfully. We'll be in touch soon!"}
+              You've been registered successfully. We'll be in touch soon!
             </p>
             <div className="flex flex-col gap-3">
               <a
@@ -150,12 +183,12 @@ const JoinCommunity: React.FC = () => {
               >
                 <Button className="w-full gap-2 text-white" style={{ backgroundColor: "#25D366" }}>
                   <MessageCircle className="w-5 h-5" />
-                  {isRTL ? "تواصل معنا على واتساب" : "Contact us on WhatsApp"}
+                  Contact us on WhatsApp
                 </Button>
               </a>
               <Link to="/">
                 <Button variant="outline" className="w-full">
-                  {isRTL ? "العودة للرئيسية" : "Back to Home"}
+                  Back to Home
                 </Button>
               </Link>
             </div>
@@ -169,11 +202,12 @@ const JoinCommunity: React.FC = () => {
   return (
     <>
       <SEOHead
-        title={isRTL ? "انضم لمجتمع بايكرز" : "Join Bikerz Community"}
-        description={isRTL ? "انضم لمجتمع الدراجين المتنامي" : "Join the growing community of riders"}
+        title="Join Bikerz Community"
+        description="Join the growing community of riders across the region"
       />
       <Navbar />
-      <div className="min-h-[80dvh] bg-background py-8 sm:py-12 px-4" dir={isRTL ? "rtl" : "ltr"}>
+      {/* Force LTR for the entire form area */}
+      <div className="min-h-[80dvh] bg-background py-8 sm:py-12 px-4" dir="ltr">
         <div className="max-w-lg mx-auto">
           {/* Header */}
           <div className="text-center mb-8 space-y-4">
@@ -181,71 +215,83 @@ const JoinCommunity: React.FC = () => {
             <div className="flex items-center justify-center gap-2">
               <Users className="w-5 h-5 text-primary" />
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-                {isRTL ? "انضم لمجتمع بايكرز" : "Join the Bikerz Community"}
+                Join the Bikerz Community
               </h1>
             </div>
             <p className="text-muted-foreground text-sm sm:text-base max-w-sm mx-auto">
-              {isRTL
-                ? "كن جزءاً من مجتمع متنامي من الدراجين في المنطقة"
-                : "Be part of a growing community of riders across the region"}
+              Be part of a growing community of riders across the region
             </p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5 bg-card border border-border rounded-xl p-5 sm:p-8">
             {/* Full Name */}
-            <div className="space-y-2">
-              <Label htmlFor="fullName">{isRTL ? "الاسم الكامل" : "Full Name"} *</Label>
+            <div className="space-y-1">
+              <Label htmlFor="fullName">Full Name *</Label>
               <Input
                 id="fullName"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder={isRTL ? "أدخل اسمك الكامل" : "Enter your full name"}
+                onChange={(e) => { setFullName(e.target.value); setErrors((prev) => ({ ...prev, fullName: undefined })); }}
+                placeholder="Enter your full name"
               />
-              {errors.fullName && <p className="text-xs text-destructive">{errors.fullName}</p>}
+              <FieldError message={errors.fullName} />
             </div>
 
-            {/* Phone */}
-            <div className="space-y-2">
-              <Label htmlFor="phone">{isRTL ? "رقم الهاتف" : "Phone Number"} *</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder={isRTL ? "أدخل رقم هاتفك" : "Enter your phone number"}
-                dir="ltr"
-              />
-              {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
+            {/* Phone — same pattern as checkout */}
+            <div className="space-y-1">
+              <Label>Phone Number *</Label>
+              <div className="flex gap-2" dir="ltr">
+                <div className="flex-shrink-0 w-[110px]">
+                  <SearchableDropdown
+                    options={phonePrefixOptions}
+                    value={phonePrefix}
+                    onChange={(val) => { setPhonePrefix(val); setErrors((prev) => ({ ...prev, phone: undefined })); }}
+                    placeholder="+---"
+                    searchPlaceholder="Search..."
+                    hasError={!!errors.phone}
+                    dir="ltr"
+                  />
+                </div>
+                <Input
+                  value={phone}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, "");
+                    setPhone(val);
+                    setErrors((prev) => ({ ...prev, phone: undefined }));
+                  }}
+                  placeholder="5XXXXXXXX"
+                  className={`flex-1 ${errors.phone ? "border-destructive" : ""}`}
+                  dir="ltr"
+                />
+              </div>
+              <FieldError message={errors.phone} />
             </div>
 
             {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="email">{isRTL ? "البريد الإلكتروني" : "Email Address"} *</Label>
+            <div className="space-y-1">
+              <Label htmlFor="email">Email Address *</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={isRTL ? "أدخل بريدك الإلكتروني" : "Enter your email"}
+                onChange={(e) => { setEmail(e.target.value); setErrors((prev) => ({ ...prev, email: undefined })); }}
+                placeholder="Enter your email"
                 dir="ltr"
               />
-              {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+              <FieldError message={errors.email} />
             </div>
 
             {/* Country */}
-            <div className="space-y-2">
-              <Label>{isRTL ? "الدولة" : "Country"} *</Label>
+            <div className="space-y-1">
+              <Label>Country *</Label>
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => { setCountryOpen(!countryOpen); setCityOpen(false); }}
-                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className={`flex h-10 w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${errors.country ? "border-destructive" : "border-input"}`}
                 >
                   <span className={selectedCountry ? "text-foreground" : "text-muted-foreground"}>
-                    {selectedCountry
-                      ? (isRTL ? selectedCountry.ar : selectedCountry.en)
-                      : (isRTL ? "اختر الدولة" : "Select country")}
+                    {selectedCountry ? selectedCountry.en : "Select country"}
                   </span>
                   <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 </button>
@@ -253,10 +299,10 @@ const JoinCommunity: React.FC = () => {
                   <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-lg max-h-60 overflow-hidden">
                     <div className="p-2 border-b border-border">
                       <div className="relative">
-                        <Search className="absolute start-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
-                          className="w-full ps-8 pe-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
-                          placeholder={isRTL ? "بحث..." : "Search..."}
+                          className="w-full pl-8 pr-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+                          placeholder="Search..."
                           value={countrySearch}
                           onChange={(e) => setCountrySearch(e.target.value)}
                           autoFocus
@@ -268,7 +314,7 @@ const JoinCommunity: React.FC = () => {
                         <button
                           key={c.code}
                           type="button"
-                          className={`w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors ${
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${
                             selectedCountry?.code === c.code ? "bg-accent text-accent-foreground" : ""
                           }`}
                           onClick={() => {
@@ -276,30 +322,31 @@ const JoinCommunity: React.FC = () => {
                             setCity("");
                             setCountryOpen(false);
                             setCountrySearch("");
+                            setErrors((prev) => ({ ...prev, country: undefined }));
                           }}
                         >
-                          {isRTL ? c.ar : c.en}
+                          {c.en}
                         </button>
                       ))}
                     </div>
                   </div>
                 )}
               </div>
-              {errors.country && <p className="text-xs text-destructive">{errors.country}</p>}
+              <FieldError message={errors.country} />
             </div>
 
             {/* City */}
-            <div className="space-y-2">
-              <Label>{isRTL ? "المدينة" : "City"} *</Label>
+            <div className="space-y-1">
+              <Label>City *</Label>
               {hasCities ? (
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => { setCityOpen(!cityOpen); setCountryOpen(false); }}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className={`flex h-10 w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${errors.city ? "border-destructive" : "border-input"}`}
                   >
                     <span className={city ? "text-foreground" : "text-muted-foreground"}>
-                      {city || (isRTL ? "اختر المدينة" : "Select city")}
+                      {city || "Select city"}
                     </span>
                     <ChevronDown className="w-4 h-4 text-muted-foreground" />
                   </button>
@@ -307,10 +354,10 @@ const JoinCommunity: React.FC = () => {
                     <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-lg max-h-60 overflow-hidden">
                       <div className="p-2 border-b border-border">
                         <div className="relative">
-                          <Search className="absolute start-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                           <input
-                            className="w-full ps-8 pe-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
-                            placeholder={isRTL ? "بحث..." : "Search..."}
+                            className="w-full pl-8 pr-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+                            placeholder="Search..."
                             value={citySearch}
                             onChange={(e) => setCitySearch(e.target.value)}
                             autoFocus
@@ -322,31 +369,31 @@ const JoinCommunity: React.FC = () => {
                           <button
                             key={c.en}
                             type="button"
-                            className={`w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors ${
-                              city === (isRTL ? c.ar : c.en) ? "bg-accent text-accent-foreground" : ""
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${
+                              city === c.en ? "bg-accent text-accent-foreground" : ""
                             }`}
                             onClick={() => {
-                              setCity(isRTL ? c.ar : c.en);
+                              setCity(c.en);
                               setCityOpen(false);
                               setCitySearch("");
+                              setErrors((prev) => ({ ...prev, city: undefined }));
                             }}
                           >
-                            {isRTL ? c.ar : c.en}
+                            {c.en}
                           </button>
                         ))}
                         {/* Other option */}
                         <button
                           type="button"
-                          className="w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors text-muted-foreground"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors text-muted-foreground"
                           onClick={() => {
                             setCity("");
                             setCityOpen(false);
                             setCitySearch("");
-                            // Switch to text input by clearing cities context
                             setSelectedCountry({ ...selectedCountry!, cities: [] });
                           }}
                         >
-                          {isRTL ? "أخرى" : "Other"}
+                          Other
                         </button>
                       </div>
                     </div>
@@ -355,56 +402,55 @@ const JoinCommunity: React.FC = () => {
               ) : (
                 <Input
                   value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder={isRTL ? "أدخل اسم المدينة" : "Enter city name"}
+                  onChange={(e) => { setCity(e.target.value); setErrors((prev) => ({ ...prev, city: undefined })); }}
+                  placeholder="Enter city name"
+                  className={errors.city ? "border-destructive" : ""}
                 />
               )}
-              {errors.city && <p className="text-xs text-destructive">{errors.city}</p>}
+              <FieldError message={errors.city} />
             </div>
 
             {/* Has Motorcycle */}
             <div className="space-y-3">
-              <Label>{isRTL ? "هل تمتلك دراجة نارية؟" : "Do you own a motorcycle?"} *</Label>
-              <RadioGroup value={hasMotorcycle} onValueChange={(v) => { setHasMotorcycle(v); if (v === "yes") setConsideringPurchase(""); }}>
+              <Label>Do you own a motorcycle? *</Label>
+              <RadioGroup value={hasMotorcycle} onValueChange={(v) => { setHasMotorcycle(v); if (v === "yes") setConsideringPurchase(""); setErrors((prev) => ({ ...prev, hasMotorcycle: undefined })); }}>
                 <div className="flex items-center gap-3">
                   <RadioGroupItem value="yes" id="moto-yes" />
-                  <Label htmlFor="moto-yes" className="cursor-pointer font-normal">{isRTL ? "نعم" : "Yes"}</Label>
+                  <Label htmlFor="moto-yes" className="cursor-pointer font-normal">Yes</Label>
                 </div>
                 <div className="flex items-center gap-3">
                   <RadioGroupItem value="no" id="moto-no" />
-                  <Label htmlFor="moto-no" className="cursor-pointer font-normal">{isRTL ? "لا" : "No"}</Label>
+                  <Label htmlFor="moto-no" className="cursor-pointer font-normal">No</Label>
                 </div>
               </RadioGroup>
-              {errors.hasMotorcycle && <p className="text-xs text-destructive">{errors.hasMotorcycle}</p>}
+              <FieldError message={errors.hasMotorcycle} />
             </div>
 
             {/* Considering Purchase (shown when no motorcycle) */}
             {hasMotorcycle === "no" && (
-              <div className="space-y-3 ps-4 border-s-2 border-primary/30">
-                <Label>{isRTL ? "هل تفكر في شراء واحدة؟" : "Are you thinking about buying one?"} *</Label>
-                <RadioGroup value={consideringPurchase} onValueChange={setConsideringPurchase}>
+              <div className="space-y-3 pl-4 border-l-2 border-primary/30">
+                <Label>Are you thinking about buying one? *</Label>
+                <RadioGroup value={consideringPurchase} onValueChange={(v) => { setConsideringPurchase(v); setErrors((prev) => ({ ...prev, consideringPurchase: undefined })); }}>
                   <div className="flex items-center gap-3">
                     <RadioGroupItem value="yes" id="buy-yes" />
-                    <Label htmlFor="buy-yes" className="cursor-pointer font-normal">{isRTL ? "نعم" : "Yes"}</Label>
+                    <Label htmlFor="buy-yes" className="cursor-pointer font-normal">Yes</Label>
                   </div>
                   <div className="flex items-center gap-3">
                     <RadioGroupItem value="no" id="buy-no" />
-                    <Label htmlFor="buy-no" className="cursor-pointer font-normal">{isRTL ? "لا" : "No"}</Label>
+                    <Label htmlFor="buy-no" className="cursor-pointer font-normal">No</Label>
                   </div>
                   <div className="flex items-center gap-3">
                     <RadioGroupItem value="maybe" id="buy-maybe" />
-                    <Label htmlFor="buy-maybe" className="cursor-pointer font-normal">{isRTL ? "ربما" : "Maybe"}</Label>
+                    <Label htmlFor="buy-maybe" className="cursor-pointer font-normal">Maybe</Label>
                   </div>
                 </RadioGroup>
-                {errors.consideringPurchase && <p className="text-xs text-destructive">{errors.consideringPurchase}</p>}
+                <FieldError message={errors.consideringPurchase} />
               </div>
             )}
 
             {/* Submit */}
             <Button type="submit" className="w-full" size="lg" disabled={submitting}>
-              {submitting
-                ? (isRTL ? "جاري الإرسال..." : "Submitting...")
-                : (isRTL ? "انضم الآن" : "Join Now")}
+              {submitting ? "Submitting..." : "Join Now"}
             </Button>
 
             {/* WhatsApp CTA */}
@@ -421,7 +467,7 @@ const JoinCommunity: React.FC = () => {
                 style={{ backgroundColor: "#25D366" }}
               >
                 <MessageCircle className="w-5 h-5" />
-                {isRTL ? "تواصل معنا على واتساب" : "Contact us on WhatsApp"}
+                Contact us on WhatsApp
               </Button>
             </a>
           </form>
