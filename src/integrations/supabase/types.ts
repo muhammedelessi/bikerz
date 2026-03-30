@@ -357,6 +357,42 @@ export type Database = {
           },
         ]
       }
+      community_members: {
+        Row: {
+          city: string
+          considering_purchase: string | null
+          country: string
+          created_at: string
+          email: string
+          full_name: string
+          has_motorcycle: boolean
+          id: string
+          phone: string
+        }
+        Insert: {
+          city: string
+          considering_purchase?: string | null
+          country: string
+          created_at?: string
+          email: string
+          full_name: string
+          has_motorcycle?: boolean
+          id?: string
+          phone: string
+        }
+        Update: {
+          city?: string
+          considering_purchase?: string | null
+          country?: string
+          created_at?: string
+          email?: string
+          full_name?: string
+          has_motorcycle?: boolean
+          id?: string
+          phone?: string
+        }
+        Relationships: []
+      }
       coupon_rate_limits: {
         Row: {
           attempt_count: number
