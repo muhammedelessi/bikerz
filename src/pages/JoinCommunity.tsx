@@ -69,6 +69,7 @@ const JoinCommunity: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [duplicateFound, setDuplicateFound] = useState(false);
 
   const [countryOpen, setCountryOpen] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
@@ -126,13 +127,47 @@ const JoinCommunity: React.FC = () => {
     ev.preventDefault();
     if (!validate()) return;
     setSubmitting(true);
+    setDuplicateFound(false);
     const fullPhone = getFullPhone();
     const countryName = isRTL ? (selectedCountry?.ar || "") : (selectedCountry?.en || "");
     try {
+      // Duplicate check
+      const emailLower = email.trim().toLowerCase();
+      const { data: byEmail } = await supabase
+        .from("community_members" as any)
+        .select("id")
+        .eq("email", emailLower)
+        .limit(1) as any;
+      const { data: byPhone } = await supabase
+        .from("community_members" as any)
+        .select("id")
+        .eq("phone", fullPhone)
+        .limit(1) as any;
+
+      const dupErrors: Record<string, string> = {};
+      if (byEmail && byEmail.length > 0) {
+        dupErrors.email = t(
+          "This email is already registered in the community",
+          "هذا البريد الإلكتروني مسجل مسبقاً في المجتمع"
+        );
+      }
+      if (byPhone && byPhone.length > 0) {
+        dupErrors.phone = t(
+          "This phone number is already registered in the community",
+          "رقم الهاتف هذا مسجل مسبقاً في المجتمع"
+        );
+      }
+      if (Object.keys(dupErrors).length > 0) {
+        setErrors((prev) => ({ ...prev, ...dupErrors }));
+        setDuplicateFound(true);
+        setSubmitting(false);
+        return;
+      }
+
       const { error } = await supabase.from("community_members" as any).insert({
         full_name: fullName.trim(),
         phone: fullPhone,
-        email: email.trim().toLowerCase(),
+        email: emailLower,
         country: countryName,
         city: city.trim(),
         has_motorcycle: hasMotorcycle === "yes",
@@ -144,7 +179,7 @@ const JoinCommunity: React.FC = () => {
           body: {
             full_name: fullName.trim(),
             phone: fullPhone,
-            email: email.trim().toLowerCase(),
+            email: emailLower,
             country: countryName,
             city: city.trim(),
             has_motorcycle: hasMotorcycle === "yes",
@@ -463,6 +498,28 @@ const JoinCommunity: React.FC = () => {
             <Button type="submit" className="w-full" size="lg" disabled={submitting}>
               {submitting ? t("Submitting...", "جاري الإرسال...") : t("Join Now", "انضم الآن")}
             </Button>
+
+            {/* Duplicate detected — WhatsApp suggestion */}
+            {duplicateFound && (
+              <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 rounded-lg border border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-700 p-4 space-y-3 text-center">
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200 leading-relaxed">
+                  {t(
+                    "It looks like you're already registered in the Bikerz community! 🎉\nIf you need help or have a question, contact us directly on WhatsApp",
+                    "يبدو أنك مسجل مسبقاً في مجتمع بايكرز! 🎉\nإذا كنت بحاجة إلى مساعدة أو لديك استفسار،\nتواصل معنا مباشرة على واتساب"
+                  )}
+                </p>
+                <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer" className="block">
+                  <Button
+                    type="button"
+                    className="w-full gap-2 text-white hover:text-white border-0 hover:opacity-90"
+                    style={{ backgroundColor: "#25D366" }}
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    {t("💬 Contact us on WhatsApp", "💬 تواصل معنا على واتساب")}
+                  </Button>
+                </a>
+              </div>
+            )}
 
             {/* WhatsApp CTA */}
             <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer" className="block">
