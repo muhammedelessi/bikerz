@@ -22,7 +22,7 @@ import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
 import SEOHead from "@/components/common/SEOHead";
 
-const WHATSAPP_NUMBER = "PHONE_NUMBER";
+const WHATSAPP_NUMBER = "966562562368";
 
 const FieldError: React.FC<{ message?: string }> = ({ message }) => {
   if (!message) return null;
