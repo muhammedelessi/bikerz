@@ -167,6 +167,20 @@ const CommunitySection: React.FC = () => {
               );
             })}
           </div>
+
+          {/* CTA Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.6 }}
+            className="mt-10"
+          >
+            <Link to="/join-community">
+              <Button variant="cta" size="lg" className="rounded-xl px-8 py-3 text-base">
+                {isRTL ? 'انضم لمجتمع بايكرز' : 'Join Bikerz Community'}
+              </Button>
+            </Link>
+          </motion.div>
         </div>
       </div>
     </section>
