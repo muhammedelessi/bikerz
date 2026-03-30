@@ -63,8 +63,8 @@
     "all": "الكل",
     "none": "لا شيء",
     "other": "أخرى",
-    "dataSubmitted": "\u2705 تم إرسال البيانات بنجاح",
-    "dataFailed": "\u274c فشل في إرسال البيانات",
+    "dataSubmitted": "✅ تم إرسال البيانات بنجاح",
+    "dataFailed": "❌ فشل في إرسال البيانات",
     "darkMode": "الوضع النهاري",
     "discountCountdown": {
       "endsIn": "ينتهي خلال:",
@@ -465,7 +465,7 @@
     "profilePhoto": "الصورة الشخصية",
     "experienceYears": "سنوات الخبرة",
     "experienceLevelDesc": "مستوى الخبرة يُحسب تلقائياً بناءً على تقدمك في التعلم",
-    "completeForBetterExperience": "\ud83d\udc64 أكمل ملفك الشخصي لتجربة أفضل!",
+    "completeForBetterExperience": "👤 أكمل ملفك الشخصي لتجربة أفضل!",
     "addDetailsForBetterExperience": "أضف بياناتك لتحسين تجربة التعلم الخاصة بك",
     "locked": "مغلق",
     "achievementsMotivation": "الإنجازات للتحفيز داخل المنصة فقط"
@@ -495,7 +495,7 @@
     "claimDiscountCoupon": "احصل على كوبون الخصم",
     "complete": "إكمال",
     "completeProfile": "إكمال الملف الشخصي",
-    "profileCompleteSuccess": "\ud83c\udf89 رائع! ملفك الشخصي مكتمل",
+    "profileCompleteSuccess": "🎉 رائع! ملفك الشخصي مكتمل",
     "step": "الخطوة",
     "next": "التالي",
     "previous": "السابق",
@@ -873,7 +873,9 @@
       "users": "المستخدمين",
       "coupons": "الكوبونات",
       "discussions": "النقاشات",
-      "support": "الدعم"
+      "support": "الدعم",
+      "ads": "الإعلانات",
+      "community": "المجتمع"
     },
     "support": {
       "title": "تذاكر الدعم",

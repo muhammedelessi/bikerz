@@ -41,6 +41,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Profile = lazy(() => import("./pages/Profile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+const JoinCommunity = lazy(() => import("./pages/JoinCommunity"));
 
 // Admin Pages - lazy loaded
 const AdminHome = lazy(() => import("./pages/admin/AdminHome"));
@@ -60,6 +61,7 @@ const AdminCourseReviews = lazy(() => import("./pages/admin/AdminCourseReviews")
 const AdminCourseStudents = lazy(() => import("./pages/admin/AdminCourseStudents"));
 const AdminStudentDetail = lazy(() => import("./pages/admin/AdminStudentDetail"));
 const AdminAds = lazy(() => import("./pages/admin/AdminAds"));
+const AdminCommunity = lazy(() => import("./pages/admin/AdminCommunity"));
 
 const queryClient = new QueryClient();
 
@@ -146,6 +148,7 @@ const AppRoutes = () => (
         <Route path="/courses/:id/lessons/:lessonId" element={<CourseLearn />} />
         <Route path="/mentors" element={<Mentors />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
+        <Route path="/join-community" element={<JoinCommunity />} />
 
         {/* Protected Routes */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -170,6 +173,7 @@ const AppRoutes = () => (
         <Route path="/admin/courses/:id/students" element={<AdminRoute><AdminCourseStudents /></AdminRoute>} />
         <Route path="/admin/courses/:id/students/:userId" element={<AdminRoute><AdminStudentDetail /></AdminRoute>} />
         <Route path="/admin/ads" element={<AdminRoute><AdminAds /></AdminRoute>} />
+        <Route path="/admin/community" element={<AdminRoute><AdminCommunity /></AdminRoute>} />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />

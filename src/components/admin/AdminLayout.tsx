@@ -36,6 +36,7 @@ import {
   HelpCircle,
   Tag,
   Megaphone,
+  Bike,
 } from 'lucide-react';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
@@ -62,6 +63,7 @@ interface NavItem {
   { icon: BarChart3, labelKey: 'analytics', href: '/admin/analytics' },
   { icon: FileText, labelKey: 'content', href: '/admin/content' },
   { icon: Megaphone, labelKey: 'ads', href: '/admin/ads' },
+  { icon: Bike, labelKey: 'community', href: '/admin/community' },
   { icon: MessagesSquare, labelKey: 'discussions', href: '/admin/discussions' },
   { icon: MessageSquare, labelKey: 'support', href: '/admin/support' },
   { icon: Shield, labelKey: 'roles', href: '/admin/roles' },

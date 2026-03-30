@@ -63,8 +63,8 @@
     "all": "All",
     "none": "None",
     "other": "Other",
-    "dataSubmitted": "\u2705 Data submitted successfully",
-    "dataFailed": "\u274c Failed to submit data",
+    "dataSubmitted": "✅ Data submitted successfully",
+    "dataFailed": "❌ Failed to submit data",
     "darkMode": "Dark Mode",
     "discountCountdown": {
       "endsIn": "Ends in:",
@@ -466,7 +466,7 @@
     "profilePhoto": "Profile Photo",
     "experienceYears": "Experience Years",
     "experienceLevelDesc": "Experience level is automatically calculated based on your learning progress",
-    "completeForBetterExperience": "\ud83d\udc64 Complete your profile for a better experience!",
+    "completeForBetterExperience": "👤 Complete your profile for a better experience!",
     "addDetailsForBetterExperience": "Add your details for a personalized learning experience",
     "locked": "Locked",
     "achievementsMotivation": "Achievements are for in-platform motivation only"
@@ -497,7 +497,7 @@
     "claimDiscountCoupon": "Claim Discount Coupon",
     "complete": "Complete",
     "completeProfile": "Complete Profile",
-    "profileCompleteSuccess": "\ud83c\udf89 Awesome! Profile Complete",
+    "profileCompleteSuccess": "🎉 Awesome! Profile Complete",
     "step": "Step",
     "next": "Next",
     "previous": "Previous",
@@ -878,7 +878,9 @@
       "users": "Users",
       "coupons": "Coupons",
       "discussions": "Discussions",
-      "support": "Support"
+      "support": "Support",
+      "ads": "Ads",
+      "community": "Community"
     },
     "support": {
       "title": "Support Tickets",
