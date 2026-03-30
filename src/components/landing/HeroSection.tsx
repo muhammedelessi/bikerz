@@ -198,7 +198,7 @@ const HeroSection: React.FC = () => {
                     <Button
                       variant="heroOutline"
                       size="lg"
-                      className="w-full group gap-2 sm:gap-3 px-4 sm:px-8 py-6 text-sm sm:text-lg"
+                      className="w-full group gap-2 sm:gap-3 px-4 sm:px-8 py-6 text-sm sm:text-lg border-primary/50 text-primary hover:bg-primary/10 hover:border-primary"
                     >
                       <Users className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
                       {isRTL ? "انضم لمجتمع بايكرز" : "Join Bikerz Community"}
