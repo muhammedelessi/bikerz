@@ -176,7 +176,7 @@ const CommunitySection: React.FC = () => {
             className="mt-10"
           >
             <Link to="/join-community">
-              <Button variant="cta" size="lg" className="rounded-xl px-8 py-3 text-base">
+              <Button size="lg" className="rounded-full px-10 py-4 text-base font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 hover:scale-105 transition-all duration-300">
                 {isRTL ? 'انضم لمجتمع بايكرز' : 'Join Bikerz Community'}
               </Button>
             </Link>
