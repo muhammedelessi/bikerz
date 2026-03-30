@@ -276,161 +276,164 @@ const JoinCommunity: React.FC = () => {
               <FieldError message={errors.phone} />
             </div>
 
-            {/* Email — icon inside */}
+            {/* Email — icon inside, always LTR */}
             <div className="space-y-1">
-              <div className="relative">
-                <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <div className="relative" dir="ltr">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 <Input
                   type="email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
                   placeholder={t("Email Address", "البريد الإلكتروني")}
-                  className={`ps-9 ${errors.email ? "border-destructive" : ""}`}
+                  className={`pl-9 ${errors.email ? "border-destructive" : ""}`}
                   dir="ltr"
                 />
               </div>
               <FieldError message={errors.email} />
             </div>
 
-            {/* Country — icon + custom dropdown */}
-            <div className="space-y-1">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => { setCountryOpen(!countryOpen); setCityOpen(false); }}
-                  className={`flex h-10 w-full items-center rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${errors.country ? "border-destructive" : "border-input"}`}
-                >
-                  <Globe className="w-4 h-4 text-muted-foreground me-2 flex-shrink-0" />
-                  <span className={`flex-1 text-start ${selectedCountry ? "text-foreground" : "text-muted-foreground"}`}>
-                    {selectedCountry ? (isRTL ? selectedCountry.ar : selectedCountry.en) : t("Country", "الدولة")}
-                  </span>
-                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                </button>
-                {countryOpen && (
-                  <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-lg max-h-60 overflow-hidden">
-                    <div className="p-2 border-b border-border">
-                      <div className="relative">
-                        <Search className="absolute start-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
-                          className="w-full ps-8 pe-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
-                          placeholder={t("Search...", "بحث...")}
-                          value={countrySearch}
-                          onChange={(e) => setCountrySearch(e.target.value)}
-                          autoFocus
-                        />
-                      </div>
-                    </div>
-                    <div className="max-h-48 overflow-y-auto">
-                      {filteredCountries.map((c) => (
-                        <button
-                          key={c.code}
-                          type="button"
-                          className={`w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors ${selectedCountry?.code === c.code ? "bg-accent text-accent-foreground" : ""}`}
-                          onClick={() => {
-                            setSelectedCountry(c);
-                            setCity("");
-                            setCountryOpen(false);
-                            setCountrySearch("");
-                            setErrors((p) => ({ ...p, country: undefined }));
-                          }}
-                        >
-                          {isRTL ? c.ar : c.en}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <FieldError message={errors.country} />
-            </div>
-
-            {/* City — icon + dropdown or text */}
-            <div className="space-y-1">
-              {hasCities ? (
+            {/* Country & City — horizontal row */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Country */}
+              <div className="space-y-1">
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() => { setCityOpen(!cityOpen); setCountryOpen(false); }}
-                    className={`flex h-10 w-full items-center rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${errors.city ? "border-destructive" : "border-input"}`}
+                    onClick={() => { setCountryOpen(!countryOpen); setCityOpen(false); }}
+                    className={`flex h-10 w-full items-center rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${errors.country ? "border-destructive" : "border-input"}`}
                   >
-                    <MapPin className="w-4 h-4 text-muted-foreground me-2 flex-shrink-0" />
-                    <span className={`flex-1 text-start ${city ? "text-foreground" : "text-muted-foreground"}`}>
-                      {city || t("City", "المدينة")}
+                    <Globe className="w-4 h-4 text-muted-foreground me-2 flex-shrink-0" />
+                    <span className={`flex-1 text-start truncate ${selectedCountry ? "text-foreground" : "text-muted-foreground"}`}>
+                      {selectedCountry ? (isRTL ? selectedCountry.ar : selectedCountry.en) : t("Country", "الدولة")}
                     </span>
                     <ChevronDown className="w-4 h-4 text-muted-foreground" />
                   </button>
-                  {cityOpen && (
-                    <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-lg max-h-60 overflow-hidden">
+                  {countryOpen && (
+                    <div className="absolute z-50 mt-1 w-full min-w-[200px] rounded-md border border-border bg-popover shadow-lg max-h-60 overflow-hidden">
                       <div className="p-2 border-b border-border">
                         <div className="relative">
                           <Search className="absolute start-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                           <input
                             className="w-full ps-8 pe-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
                             placeholder={t("Search...", "بحث...")}
-                            value={citySearch}
-                            onChange={(e) => setCitySearch(e.target.value)}
+                            value={countrySearch}
+                            onChange={(e) => setCountrySearch(e.target.value)}
                             autoFocus
                           />
                         </div>
                       </div>
                       <div className="max-h-48 overflow-y-auto">
-                        {filteredCities.map((c) => (
+                        {filteredCountries.map((c) => (
                           <button
-                            key={c.en}
+                            key={c.code}
                             type="button"
-                            className={`w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors ${city === (isRTL ? c.ar : c.en) ? "bg-accent text-accent-foreground" : ""}`}
+                            className={`w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors ${selectedCountry?.code === c.code ? "bg-accent text-accent-foreground" : ""}`}
                             onClick={() => {
-                              setCity(isRTL ? c.ar : c.en);
-                              setCityOpen(false);
-                              setCitySearch("");
-                              setErrors((p) => ({ ...p, city: undefined }));
+                              setSelectedCountry(c);
+                              setCity("");
+                              setCountryOpen(false);
+                              setCountrySearch("");
+                              setErrors((p) => ({ ...p, country: undefined }));
                             }}
                           >
                             {isRTL ? c.ar : c.en}
                           </button>
                         ))}
-                        <button
-                          type="button"
-                          className="w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors text-muted-foreground"
-                          onClick={() => {
-                            setCity("");
-                            setCityOpen(false);
-                            setCitySearch("");
-                            setSelectedCountry({ ...selectedCountry!, cities: [] });
-                          }}
-                        >
-                          {t("Other", "أخرى")}
-                        </button>
                       </div>
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="relative">
-                  <MapPin className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                  <Input
-                    value={city}
-                    onChange={(e) => { setCity(e.target.value); setErrors((p) => ({ ...p, city: undefined })); }}
-                    placeholder={t("City", "المدينة")}
-                    className={`ps-9 ${errors.city ? "border-destructive" : ""}`}
-                  />
-                </div>
-              )}
-              <FieldError message={errors.city} />
+                <FieldError message={errors.country} />
+              </div>
+
+              {/* City */}
+              <div className="space-y-1">
+                {hasCities ? (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => { setCityOpen(!cityOpen); setCountryOpen(false); }}
+                      className={`flex h-10 w-full items-center rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${errors.city ? "border-destructive" : "border-input"}`}
+                    >
+                      <MapPin className="w-4 h-4 text-muted-foreground me-2 flex-shrink-0" />
+                      <span className={`flex-1 text-start truncate ${city ? "text-foreground" : "text-muted-foreground"}`}>
+                        {city || t("City", "المدينة")}
+                      </span>
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                    {cityOpen && (
+                      <div className="absolute z-50 mt-1 w-full min-w-[200px] rounded-md border border-border bg-popover shadow-lg max-h-60 overflow-hidden">
+                        <div className="p-2 border-b border-border">
+                          <div className="relative">
+                            <Search className="absolute start-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <input
+                              className="w-full ps-8 pe-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+                              placeholder={t("Search...", "بحث...")}
+                              value={citySearch}
+                              onChange={(e) => setCitySearch(e.target.value)}
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto">
+                          {filteredCities.map((c) => (
+                            <button
+                              key={c.en}
+                              type="button"
+                              className={`w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors ${city === (isRTL ? c.ar : c.en) ? "bg-accent text-accent-foreground" : ""}`}
+                              onClick={() => {
+                                setCity(isRTL ? c.ar : c.en);
+                                setCityOpen(false);
+                                setCitySearch("");
+                                setErrors((p) => ({ ...p, city: undefined }));
+                              }}
+                            >
+                              {isRTL ? c.ar : c.en}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            className="w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors text-muted-foreground"
+                            onClick={() => {
+                              setCity("");
+                              setCityOpen(false);
+                              setCitySearch("");
+                              setSelectedCountry({ ...selectedCountry!, cities: [] });
+                            }}
+                          >
+                            {t("Other", "أخرى")}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <MapPin className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    <Input
+                      value={city}
+                      onChange={(e) => { setCity(e.target.value); setErrors((p) => ({ ...p, city: undefined })); }}
+                      placeholder={t("City", "المدينة")}
+                      className={`ps-9 ${errors.city ? "border-destructive" : ""}`}
+                    />
+                  </div>
+                )}
+                <FieldError message={errors.city} />
+              </div>
             </div>
 
             {/* Has Motorcycle — toggle chips */}
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                 <Bike className="w-4 h-4 text-primary" />
-                {t("Do you own a motorcycle?", "هل تمتلك دراجة نارية؟")}
+                {t("Do you currently own a motorcycle?", "هل تمتلك دراجة نارية حالياً؟")}
               </div>
               <div className="flex gap-2">
                 <ToggleChip selected={hasMotorcycle === "yes"} onClick={() => toggleMotorcycle("yes")}>
-                  {t("Yes", "نعم")}
+                  {t("Yes, I do", "نعم، أمتلك")}
                 </ToggleChip>
                 <ToggleChip selected={hasMotorcycle === "no"} onClick={() => toggleMotorcycle("no")}>
-                  {t("No", "لا")}
+                  {t("Not yet", "ليس بعد")}
                 </ToggleChip>
               </div>
               <FieldError message={errors.hasMotorcycle} />
@@ -440,17 +443,17 @@ const JoinCommunity: React.FC = () => {
             {hasMotorcycle === "no" && (
               <div className="space-y-2 ps-4 border-s-2 border-primary/30">
                 <div className="text-sm font-medium text-foreground">
-                  {t("Are you thinking about buying one?", "هل تفكر في شراء واحدة؟")}
+                  {t("Are you planning to buy a motorcycle?", "هل تخطط لشراء دراجة نارية؟")}
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <ToggleChip selected={consideringPurchase === "yes"} onClick={() => toggleConsidering("yes")}>
-                    {t("Yes", "نعم")}
+                    {t("Yes, soon", "نعم، قريباً")}
                   </ToggleChip>
                   <ToggleChip selected={consideringPurchase === "no"} onClick={() => toggleConsidering("no")}>
-                    {t("No", "لا")}
+                    {t("No plans", "لا أخطط")}
                   </ToggleChip>
                   <ToggleChip selected={consideringPurchase === "maybe"} onClick={() => toggleConsidering("maybe")}>
-                    {t("Maybe", "ربما")}
+                    {t("Maybe later", "ربما لاحقاً")}
                   </ToggleChip>
                 </div>
                 <FieldError message={errors.consideringPurchase} />
