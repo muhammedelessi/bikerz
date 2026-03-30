@@ -127,13 +127,47 @@ const JoinCommunity: React.FC = () => {
     ev.preventDefault();
     if (!validate()) return;
     setSubmitting(true);
+    setDuplicateFound(false);
     const fullPhone = getFullPhone();
     const countryName = isRTL ? (selectedCountry?.ar || "") : (selectedCountry?.en || "");
     try {
+      // Duplicate check
+      const emailLower = email.trim().toLowerCase();
+      const { data: byEmail } = await supabase
+        .from("community_members" as any)
+        .select("id")
+        .eq("email", emailLower)
+        .limit(1) as any;
+      const { data: byPhone } = await supabase
+        .from("community_members" as any)
+        .select("id")
+        .eq("phone", fullPhone)
+        .limit(1) as any;
+
+      const dupErrors: Record<string, string> = {};
+      if (byEmail && byEmail.length > 0) {
+        dupErrors.email = t(
+          "This email is already registered in the community",
+          "هذا البريد الإلكتروني مسجل مسبقاً في المجتمع"
+        );
+      }
+      if (byPhone && byPhone.length > 0) {
+        dupErrors.phone = t(
+          "This phone number is already registered in the community",
+          "رقم الهاتف هذا مسجل مسبقاً في المجتمع"
+        );
+      }
+      if (Object.keys(dupErrors).length > 0) {
+        setErrors((prev) => ({ ...prev, ...dupErrors }));
+        setDuplicateFound(true);
+        setSubmitting(false);
+        return;
+      }
+
       const { error } = await supabase.from("community_members" as any).insert({
         full_name: fullName.trim(),
         phone: fullPhone,
-        email: email.trim().toLowerCase(),
+        email: emailLower,
         country: countryName,
         city: city.trim(),
         has_motorcycle: hasMotorcycle === "yes",
@@ -145,7 +179,7 @@ const JoinCommunity: React.FC = () => {
           body: {
             full_name: fullName.trim(),
             phone: fullPhone,
-            email: email.trim().toLowerCase(),
+            email: emailLower,
             country: countryName,
             city: city.trim(),
             has_motorcycle: hasMotorcycle === "yes",
