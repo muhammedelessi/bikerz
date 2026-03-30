@@ -245,9 +245,9 @@ const JoinCommunity: React.FC = () => {
               <FieldError message={errors.fullName} />
             </div>
 
-            {/* Phone — prefix dropdown + input, icon-driven */}
+            {/* Phone — prefix dropdown + input */}
             <div className="space-y-1">
-              <div className="flex gap-2" dir="ltr">
+              <div className={`flex gap-2 ${isRTL ? "flex-row-reverse" : ""}`} dir="ltr">
                 <div className="flex-shrink-0 w-[110px]">
                   <SearchableDropdown
                     options={phonePrefixOptions}
@@ -260,33 +260,33 @@ const JoinCommunity: React.FC = () => {
                   />
                 </div>
                 <div className="relative flex-1">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <Phone className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none ${isRTL ? "right-3" : "left-3"}`} />
                   <Input
                     value={phone}
                     onChange={(e) => {
                       setPhone(e.target.value.replace(/[^0-9]/g, ""));
                       setErrors((p) => ({ ...p, phone: undefined }));
                     }}
-                    placeholder="5XXXXXXXX"
-                    className={`pl-9 text-left ${errors.phone ? "border-destructive" : ""}`}
-                    dir="ltr"
+                    placeholder={t("Phone Number", "رقم الهاتف")}
+                    className={`${isRTL ? "pr-9 text-right" : "pl-9 text-left"} ${errors.phone ? "border-destructive" : ""}`}
+                    dir={isRTL ? "rtl" : "ltr"}
                   />
                 </div>
               </div>
               <FieldError message={errors.phone} />
             </div>
 
-            {/* Email — icon inside, always LTR */}
+            {/* Email — icon inside, supports RTL */}
             <div className="space-y-1">
-              <div className="relative" dir="ltr">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <div className="relative">
+                <Mail className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none ${isRTL ? "right-3" : "left-3"}`} />
                 <Input
                   type="email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
-                  placeholder="email@example.com"
-                  className={`pl-9 text-left ${errors.email ? "border-destructive" : ""}`}
-                  dir="ltr"
+                  placeholder={t("Email Address", "البريد الإلكتروني")}
+                  className={`${isRTL ? "pr-9 text-right" : "pl-9 text-left"} ${errors.email ? "border-destructive" : ""}`}
+                  dir={isRTL ? "rtl" : "ltr"}
                 />
               </div>
               <FieldError message={errors.email} />
