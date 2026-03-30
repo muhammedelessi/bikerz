@@ -276,16 +276,16 @@ const JoinCommunity: React.FC = () => {
               <FieldError message={errors.phone} />
             </div>
 
-            {/* Email — icon inside */}
+            {/* Email — icon inside, always LTR */}
             <div className="space-y-1">
-              <div className="relative">
-                <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <div className="relative" dir="ltr">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 <Input
                   type="email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
                   placeholder={t("Email Address", "البريد الإلكتروني")}
-                  className={`ps-9 ${errors.email ? "border-destructive" : ""}`}
+                  className={`pl-9 ${errors.email ? "border-destructive" : ""}`}
                   dir="ltr"
                 />
               </div>
@@ -423,14 +423,14 @@ const JoinCommunity: React.FC = () => {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                 <Bike className="w-4 h-4 text-primary" />
-                {t("Do you own a motorcycle?", "هل تمتلك دراجة نارية؟")}
+                {t("Do you currently own a motorcycle?", "هل تمتلك دراجة نارية حالياً؟")}
               </div>
               <div className="flex gap-2">
                 <ToggleChip selected={hasMotorcycle === "yes"} onClick={() => toggleMotorcycle("yes")}>
-                  {t("Yes", "نعم")}
+                  {t("Yes, I do", "نعم، أمتلك")}
                 </ToggleChip>
                 <ToggleChip selected={hasMotorcycle === "no"} onClick={() => toggleMotorcycle("no")}>
-                  {t("No", "لا")}
+                  {t("Not yet", "ليس بعد")}
                 </ToggleChip>
               </div>
               <FieldError message={errors.hasMotorcycle} />
@@ -440,17 +440,17 @@ const JoinCommunity: React.FC = () => {
             {hasMotorcycle === "no" && (
               <div className="space-y-2 ps-4 border-s-2 border-primary/30">
                 <div className="text-sm font-medium text-foreground">
-                  {t("Are you thinking about buying one?", "هل تفكر في شراء واحدة؟")}
+                  {t("Are you planning to buy a motorcycle?", "هل تخطط لشراء دراجة نارية؟")}
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <ToggleChip selected={consideringPurchase === "yes"} onClick={() => toggleConsidering("yes")}>
-                    {t("Yes", "نعم")}
+                    {t("Yes, soon", "نعم، قريباً")}
                   </ToggleChip>
                   <ToggleChip selected={consideringPurchase === "no"} onClick={() => toggleConsidering("no")}>
-                    {t("No", "لا")}
+                    {t("No plans", "لا أخطط")}
                   </ToggleChip>
                   <ToggleChip selected={consideringPurchase === "maybe"} onClick={() => toggleConsidering("maybe")}>
-                    {t("Maybe", "ربما")}
+                    {t("Maybe later", "ربما لاحقاً")}
                   </ToggleChip>
                 </div>
                 <FieldError message={errors.consideringPurchase} />
