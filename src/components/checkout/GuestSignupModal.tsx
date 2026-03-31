@@ -390,9 +390,8 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
           <Input
             type="email"
             value={email}
-            onChange={(e) => { setEmail(e.target.value); setEmailChecked(false); setIsGoogleUser(false); }}
-            onBlur={() => checkProviders(email)}
-            onFocus={handleInputFocus}
+          onChange={(e) => setEmail(e.target.value)}
+          onFocus={handleInputFocus}
             placeholder={emailLabel}
             required
             className="form-input h-10 sm:h-11 text-sm sm:text-base ps-10"
