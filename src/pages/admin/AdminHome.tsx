@@ -17,6 +17,9 @@ import {
   Clock,
   Activity,
   AlertTriangle,
+  Dumbbell,
+  UserCheck,
+  Star,
 } from 'lucide-react';
 import {
   LineChart,
@@ -62,6 +65,23 @@ const AdminHome: React.FC = () => {
         supabase.from('manual_payments').select('amount, status').eq('status', 'approved'),
         supabase.from('tap_charges').select('amount, status').in('status', ['CAPTURED', 'captured', 'APPROVED', 'approved', 'processing']),
       ]);
+
+      // Fetch training stats
+      const [
+        { count: totalTrainers },
+        { count: totalTrainings },
+        { count: totalTrainingStudents },
+        { data: trainerReviewsData },
+      ] = await Promise.all([
+        supabase.from('trainers').select('*', { count: 'exact', head: true }),
+        supabase.from('trainings').select('*', { count: 'exact', head: true }),
+        supabase.from('training_students').select('*', { count: 'exact', head: true }),
+        supabase.from('trainer_reviews').select('rating'),
+      ]);
+
+      const avgTrainerRating = trainerReviewsData && trainerReviewsData.length > 0
+        ? (trainerReviewsData.reduce((a, r) => a + r.rating, 0) / trainerReviewsData.length).toFixed(1)
+        : '0';
 
       // Calculate completion rate
       const completedEnrollments = (enrollmentsData || []).filter(e => e.completed_at !== null).length;
@@ -117,6 +137,10 @@ const AdminHome: React.FC = () => {
           paused: pausedEnrollments > 0 ? pausedEnrollments : 0,
           new: newEnrollments > 0 ? newEnrollments : 0,
         },
+        totalTrainers: totalTrainers || 0,
+        totalTrainings: totalTrainings || 0,
+        totalTrainingStudents: totalTrainingStudents || 0,
+        avgTrainerRating,
       };
     },
   });
@@ -283,11 +307,39 @@ const AdminHome: React.FC = () => {
       bgColor: 'bg-purple-500/10',
     },
     {
-      title: t('admin.dashboard.totalRevenue'),
+      title: isRTL ? 'إجمالي الإيرادات' : t('admin.dashboard.totalRevenue'),
       value: `${t('common.currency_sar')} ${stats?.totalRevenue?.toLocaleString() || 0}`,
       icon: DollarSign,
       color: 'text-amber-500',
       bgColor: 'bg-amber-500/10',
+    },
+    {
+      title: isRTL ? 'المدربون' : 'Trainers',
+      value: stats?.totalTrainers || 0,
+      icon: UserCheck,
+      color: 'text-teal-500',
+      bgColor: 'bg-teal-500/10',
+    },
+    {
+      title: isRTL ? 'التدريبات' : 'Trainings',
+      value: stats?.totalTrainings || 0,
+      icon: Dumbbell,
+      color: 'text-indigo-500',
+      bgColor: 'bg-indigo-500/10',
+    },
+    {
+      title: isRTL ? 'طلاب التدريب' : 'Training Students',
+      value: stats?.totalTrainingStudents || 0,
+      icon: GraduationCap,
+      color: 'text-pink-500',
+      bgColor: 'bg-pink-500/10',
+    },
+    {
+      title: isRTL ? 'متوسط التقييم' : 'Avg Rating',
+      value: stats?.avgTrainerRating || '0',
+      icon: Star,
+      color: 'text-orange-500',
+      bgColor: 'bg-orange-500/10',
     },
   ];
 

@@ -880,7 +880,11 @@
       "discussions": "Discussions",
       "support": "Support",
       "ads": "Ads",
-      "community": "Community"
+      "community": "Community",
+      "trainings": "Trainings",
+      "trainers": "Trainers",
+      "trainingStudents": "Training Students",
+      "trainerReviews": "Trainer Reviews"
     },
     "support": {
       "title": "Support Tickets",

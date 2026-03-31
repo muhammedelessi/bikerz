@@ -1902,6 +1902,218 @@ export type Database = {
           },
         ]
       }
+      trainer_courses: {
+        Row: {
+          available_schedule: Json | null
+          created_at: string
+          duration_hours: number
+          id: string
+          location: string
+          price: number
+          trainer_id: string
+          training_id: string
+        }
+        Insert: {
+          available_schedule?: Json | null
+          created_at?: string
+          duration_hours?: number
+          id?: string
+          location?: string
+          price?: number
+          trainer_id: string
+          training_id: string
+        }
+        Update: {
+          available_schedule?: Json | null
+          created_at?: string
+          duration_hours?: number
+          id?: string
+          location?: string
+          price?: number
+          trainer_id?: string
+          training_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_courses_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_courses_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trainer_reviews: {
+        Row: {
+          comment: string
+          created_at: string
+          id: string
+          rating: number
+          student_name: string
+          trainer_id: string
+        }
+        Insert: {
+          comment?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          student_name?: string
+          trainer_id: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          student_name?: string
+          trainer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_reviews_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trainers: {
+        Row: {
+          bike_type: string
+          bio_ar: string
+          bio_en: string
+          city: string
+          country: string
+          created_at: string
+          id: string
+          name_ar: string
+          name_en: string
+          photo_url: string | null
+          services: string[] | null
+          status: Database["public"]["Enums"]["trainer_status"]
+          years_of_experience: number
+        }
+        Insert: {
+          bike_type?: string
+          bio_ar?: string
+          bio_en?: string
+          city?: string
+          country?: string
+          created_at?: string
+          id?: string
+          name_ar?: string
+          name_en?: string
+          photo_url?: string | null
+          services?: string[] | null
+          status?: Database["public"]["Enums"]["trainer_status"]
+          years_of_experience?: number
+        }
+        Update: {
+          bike_type?: string
+          bio_ar?: string
+          bio_en?: string
+          city?: string
+          country?: string
+          created_at?: string
+          id?: string
+          name_ar?: string
+          name_en?: string
+          photo_url?: string | null
+          services?: string[] | null
+          status?: Database["public"]["Enums"]["trainer_status"]
+          years_of_experience?: number
+        }
+        Relationships: []
+      }
+      training_students: {
+        Row: {
+          email: string
+          enrolled_at: string
+          full_name: string
+          id: string
+          phone: string
+          trainer_id: string
+          training_id: string
+        }
+        Insert: {
+          email?: string
+          enrolled_at?: string
+          full_name?: string
+          id?: string
+          phone?: string
+          trainer_id: string
+          training_id: string
+        }
+        Update: {
+          email?: string
+          enrolled_at?: string
+          full_name?: string
+          id?: string
+          phone?: string
+          trainer_id?: string
+          training_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_students_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_students_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trainings: {
+        Row: {
+          created_at: string
+          description_ar: string
+          description_en: string
+          id: string
+          level: Database["public"]["Enums"]["training_level"]
+          name_ar: string
+          name_en: string
+          status: Database["public"]["Enums"]["training_status"]
+          type: Database["public"]["Enums"]["training_type"]
+        }
+        Insert: {
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          id?: string
+          level?: Database["public"]["Enums"]["training_level"]
+          name_ar?: string
+          name_en?: string
+          status?: Database["public"]["Enums"]["training_status"]
+          type?: Database["public"]["Enums"]["training_type"]
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          id?: string
+          level?: Database["public"]["Enums"]["training_level"]
+          name_ar?: string
+          name_en?: string
+          status?: Database["public"]["Enums"]["training_status"]
+          type?: Database["public"]["Enums"]["training_type"]
+        }
+        Relationships: []
+      }
       user_activity_attempts: {
         Row: {
           activity_id: string
@@ -2999,6 +3211,10 @@ export type Database = {
         | "waiting_response"
         | "resolved"
         | "closed"
+      trainer_status: "active" | "inactive"
+      training_level: "beginner" | "intermediate" | "advanced"
+      training_status: "active" | "archived"
+      training_type: "theory" | "practical"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3152,6 +3368,10 @@ export const Constants = {
         "resolved",
         "closed",
       ],
+      trainer_status: ["active", "inactive"],
+      training_level: ["beginner", "intermediate", "advanced"],
+      training_status: ["active", "archived"],
+      training_type: ["theory", "practical"],
     },
   },
 } as const

@@ -875,7 +875,11 @@
       "discussions": "النقاشات",
       "support": "الدعم",
       "ads": "الإعلانات",
-      "community": "المجتمع"
+      "community": "المجتمع",
+      "trainings": "التدريبات",
+      "trainers": "المدربون",
+      "trainingStudents": "طلاب التدريب",
+      "trainerReviews": "تقييمات المدربين"
     },
     "support": {
       "title": "تذاكر الدعم",
