@@ -562,7 +562,7 @@ const CourseDetail: React.FC = () => {
                       </Button>
                     )
                   ) : (
-                    <Button size="sm" className="btn-cta h-9 text-sm hidden lg:inline-flex" onClick={() => user ? setShowCheckout(true) : setShowGuestSignup(true)}>
+                    <Button size="sm" className="btn-cta h-9 text-sm hidden lg:inline-flex" onClick={() => user ? setShowCheckout(true) : navigate(`/signup?returnTo=${encodeURIComponent(`/courses/${id}?checkout=true`)}`)}>
                       {(() => {
                         const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                         const sym = getCurrencySymbol(info.currency, isRTL);
