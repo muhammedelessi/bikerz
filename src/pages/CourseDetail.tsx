@@ -48,7 +48,7 @@ import {
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.webp';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
-import GuestSignupModal from '@/components/checkout/GuestSignupModal';
+
 import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';
 import PaymentMethodIcons from '@/components/checkout/PaymentMethodIcons';
 import { trackViewContent } from '@/utils/metaPixel';
@@ -118,7 +118,7 @@ const CourseDetail: React.FC = () => {
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ArrowLeft : ArrowRight;
   const [showCheckout, setShowCheckout] = useState(false);
-  const [showGuestSignup, setShowGuestSignup] = useState(false);
+  
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
@@ -376,7 +376,7 @@ const CourseDetail: React.FC = () => {
       if (user) {
         setShowCheckout(true);
       } else {
-        setShowGuestSignup(true);
+        navigate(`/signup?returnTo=${encodeURIComponent(`/courses/${id}?checkout=true`)}`);
       }
       searchParams.delete('checkout');
       setSearchParams(searchParams, { replace: true });
@@ -562,7 +562,7 @@ const CourseDetail: React.FC = () => {
                       </Button>
                     )
                   ) : (
-                    <Button size="sm" className="btn-cta h-9 text-sm hidden lg:inline-flex" onClick={() => user ? setShowCheckout(true) : setShowGuestSignup(true)}>
+                    <Button size="sm" className="btn-cta h-9 text-sm hidden lg:inline-flex" onClick={() => user ? setShowCheckout(true) : navigate(`/signup?returnTo=${encodeURIComponent(`/courses/${id}?checkout=true`)}`)}>
                       {(() => {
                         const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                         const sym = getCurrencySymbol(info.currency, isRTL);
@@ -986,7 +986,7 @@ const CourseDetail: React.FC = () => {
                       ) : (
                         <Button
                           className="w-full btn-cta h-12 text-base"
-                          onClick={() => setShowGuestSignup(true)}
+                          onClick={() => navigate(`/signup?returnTo=${encodeURIComponent(`/courses/${id}?checkout=true`)}`)}
                         >
                           <Zap className="w-5 h-5 me-2" />
                           {(() => {
@@ -1354,12 +1354,6 @@ const CourseDetail: React.FC = () => {
             }}
             onPaymentStarted={() => setIsPaymentProcessing(true)}
           />
-          <GuestSignupModal
-            open={showGuestSignup}
-            onOpenChange={setShowGuestSignup}
-            course={{ id: course.id, title: course.title, title_ar: course.title_ar, price: course.price }}
-            onAuthenticated={() => setShowCheckout(true)}
-          />
         </>
       )}
 
@@ -1370,7 +1364,7 @@ const CourseDetail: React.FC = () => {
 
       {/* Sticky Bottom Bar — mobile only, hidden when enrolled */}
       <AnimatePresence>
-        {showStickyBottom && !isEnrolled && !showCheckout && !showGuestSignup && !isPaymentProcessing && course && (
+        {showStickyBottom && !isEnrolled && !showCheckout && !isPaymentProcessing && course && (
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -1420,7 +1414,7 @@ const CourseDetail: React.FC = () => {
               ) : (
                 <Button
                   className="btn-cta h-11 text-sm px-6 flex-shrink-0"
-                  onClick={() => user ? setShowCheckout(true) : setShowGuestSignup(true)}
+                  onClick={() => user ? setShowCheckout(true) : navigate(`/signup?returnTo=${encodeURIComponent(`/courses/${id}?checkout=true`)}`)}
                 >
                   <ShoppingCart className="w-4 h-4 me-1.5" />
                   {(() => {

@@ -267,6 +267,12 @@ const Signup: React.FC = () => {
 
     toast.success(t('auth.signup.success'));
     setIsLoading(false);
+
+    // If coming from checkout, skip profile wizard and redirect directly
+    if (returnTo) {
+      navigate(returnTo);
+      return;
+    }
     setShowProfileWizard(true);
   };
 
