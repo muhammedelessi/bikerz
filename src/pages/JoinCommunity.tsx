@@ -82,21 +82,23 @@ const JoinCommunity: React.FC = () => {
     []
   );
 
-  const filteredCountries = useMemo(() => {
-    if (!countrySearch.trim()) return COUNTRIES;
-    const q = countrySearch.toLowerCase();
-    return COUNTRIES.filter((c) => c.en.toLowerCase().includes(q) || c.ar.includes(q));
-  }, [countrySearch]);
+  const OTHER_VALUE = '__other__';
 
-  const cities = useMemo(() => selectedCountry?.cities || [], [selectedCountry]);
+  const countryOptions: DropdownOption[] = useMemo(() => [
+    ...COUNTRIES.map(c => ({ value: c.code, label: isRTL ? c.ar : c.en })),
+    { value: OTHER_VALUE, label: isRTL ? 'أخرى' : 'Other' },
+  ], [isRTL]);
 
-  const filteredCities = useMemo(() => {
-    if (!citySearch.trim()) return cities;
-    const q = citySearch.toLowerCase();
-    return cities.filter((c) => c.en.toLowerCase().includes(q) || c.ar.includes(q));
-  }, [cities, citySearch]);
+  const cityOptions: DropdownOption[] = useMemo(() => {
+    if (!selectedCountry || selectedCountry.code === OTHER_VALUE) return [];
+    return [
+      ...selectedCountry.cities.map(c => ({ value: isRTL ? c.ar : c.en, label: isRTL ? c.ar : c.en })),
+      { value: OTHER_VALUE, label: isRTL ? 'أخرى' : 'Other' },
+    ];
+  }, [selectedCountry, isRTL]);
 
-  const hasCities = cities.length > 0 && selectedCountry?.code !== "OTHER";
+  const isOtherCountry = selectedCountry?.code === OTHER_VALUE;
+  const isOtherCity = city === OTHER_VALUE;
 
   const getFullPhone = (): string => {
     const prefix = phonePrefix ? phonePrefix.split("_")[0] : "";
