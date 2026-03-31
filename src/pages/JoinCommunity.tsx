@@ -71,6 +71,31 @@ const JoinCommunity: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [duplicateFound, setDuplicateFound] = useState(false);
 
+  // Auto-detect country & phone prefix by user location
+  useEffect(() => {
+    const detect = async () => {
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        if (!res.ok) return;
+        const data = await res.json();
+        const cc = data.country_code;
+        const phoneMatch = PHONE_COUNTRIES.find(c => c.code === cc);
+        if (phoneMatch) setPhonePrefix(`${phoneMatch.prefix}_${phoneMatch.code}`);
+        const countryMatch = COUNTRIES.find(c => c.code === cc);
+        if (countryMatch) {
+          setSelectedCountry(countryMatch);
+          if (data.city) {
+            const cityMatch = countryMatch.cities.find(
+              c => c.en.toLowerCase() === data.city.toLowerCase()
+            );
+            if (cityMatch) setCity(isRTL ? cityMatch.ar : cityMatch.en);
+          }
+        }
+      } catch {}
+    };
+    detect();
+  }, []);
+
   const [countryOpen, setCountryOpen] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
   const [cityOpen, setCityOpen] = useState(false);
