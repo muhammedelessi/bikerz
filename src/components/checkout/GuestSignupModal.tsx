@@ -61,7 +61,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  
   const [error, setError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
