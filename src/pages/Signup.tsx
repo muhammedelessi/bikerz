@@ -459,11 +459,16 @@ const Signup: React.FC = () => {
                     <Input
                       type="text"
                       value={customCountry}
-                      onChange={(e) => setCustomCountry(e.target.value)}
+                      onChange={(e) => { setCustomCountry(e.target.value); setCountryError(null); }}
                       placeholder={isRTL ? 'اسم الدولة' : 'Country name'}
-                      required
-                      className="form-input h-11 sm:h-12 text-sm"
+                      className={`form-input h-11 sm:h-12 text-sm ${countryError ? 'border-destructive' : ''}`}
                     />
+                  )}
+                  {countryError && (
+                    <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {countryError}
+                    </p>
                   )}
                 </div>
 
