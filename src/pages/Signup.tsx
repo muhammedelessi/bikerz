@@ -52,7 +52,11 @@ const Signup: React.FC = () => {
   const [customCity, setCustomCity] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [countryError, setCountryError] = useState<string | null>(null);
+  const [cityError, setCityError] = useState<string | null>(null);
   const [showProfileWizard, setShowProfileWizard] = useState(false);
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
@@ -204,21 +208,42 @@ const Signup: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setNameError(null);
+    setEmailError(null);
     setPhoneError(null);
+    setCountryError(null);
+    setCityError(null);
 
-    if (!validatePhone(phone)) return;
+    let hasError = false;
 
-    // Validate country/city
+    if (!name.trim()) {
+      setNameError(isRTL ? 'يرجى إدخال الاسم' : 'Please enter your name');
+      hasError = true;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim()) {
+      setEmailError(isRTL ? 'يرجى إدخال البريد الإلكتروني' : 'Please enter your email');
+      hasError = true;
+    } else if (!emailRegex.test(email.trim())) {
+      setEmailError(isRTL ? 'البريد الإلكتروني غير صالح' : 'Invalid email address');
+      hasError = true;
+    }
+
+    if (!validatePhone(phone)) hasError = true;
+
     const finalCountry = getCountryName();
     const finalCity = getCityName();
     if (!finalCountry) {
-      setError(isRTL ? 'يرجى اختيار أو إدخال الدولة' : 'Please select or enter your country');
-      return;
+      setCountryError(isRTL ? 'يرجى اختيار أو إدخال الدولة' : 'Please select or enter your country');
+      hasError = true;
     }
     if (!finalCity) {
-      setError(isRTL ? 'يرجى اختيار أو إدخال المدينة' : 'Please select or enter your city');
-      return;
+      setCityError(isRTL ? 'يرجى اختيار أو إدخال المدينة' : 'Please select or enter your city');
+      hasError = true;
     }
+
+    if (hasError) return;
 
     setIsLoading(true);
 
@@ -326,31 +351,45 @@ const Signup: React.FC = () => {
               }}
             >
               {/* Name */}
-              <div className="relative">
-                <User className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                <Input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={nameLabel}
-                  required
-                  className="form-input h-11 sm:h-12 text-base ps-10"
-                />
+              <div className="space-y-1">
+                <div className="relative">
+                  <User className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => { setName(e.target.value); setNameError(null); }}
+                    placeholder={nameLabel}
+                    className={`form-input h-11 sm:h-12 text-base ps-10 ${nameError ? 'border-destructive' : ''}`}
+                  />
+                </div>
+                {nameError && (
+                  <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {nameError}
+                  </p>
+                )}
               </div>
 
               {/* Email */}
-              <div className="relative">
-                <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={emailLabel}
-                  required
-                  className="form-input h-11 sm:h-12 text-base ps-10"
-                />
+              <div className="space-y-1">
+                <div className="relative">
+                  <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
+                    placeholder={emailLabel}
+                    className={`form-input h-11 sm:h-12 text-base ps-10 ${emailError ? 'border-destructive' : ''}`}
+                  />
+                </div>
+                {emailError && (
+                  <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {emailError}
+                  </p>
+                )}
               </div>
 
               {/* Phone with country code */}
@@ -406,10 +445,13 @@ const Signup: React.FC = () => {
                           setCountry(val);
                           setCity('');
                           setCustomCity('');
+                          setCountryError(null);
+                          setCityError(null);
                           if (val !== OTHER_VALUE) setCustomCountry('');
                         }}
                         placeholder={isRTL ? 'الدولة' : 'Country'}
                         searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
+                        hasError={!!countryError}
                       />
                     </div>
                   </div>
@@ -417,11 +459,16 @@ const Signup: React.FC = () => {
                     <Input
                       type="text"
                       value={customCountry}
-                      onChange={(e) => setCustomCountry(e.target.value)}
+                      onChange={(e) => { setCustomCountry(e.target.value); setCountryError(null); }}
                       placeholder={isRTL ? 'اسم الدولة' : 'Country name'}
-                      required
-                      className="form-input h-11 sm:h-12 text-sm"
+                      className={`form-input h-11 sm:h-12 text-sm ${countryError ? 'border-destructive' : ''}`}
                     />
+                  )}
+                  {countryError && (
+                    <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {countryError}
+                    </p>
                   )}
                 </div>
 
@@ -433,10 +480,9 @@ const Signup: React.FC = () => {
                       <Input
                         type="text"
                         value={customCity}
-                        onChange={(e) => setCustomCity(e.target.value)}
+                        onChange={(e) => { setCustomCity(e.target.value); setCityError(null); }}
                         placeholder={isRTL ? 'المدينة' : 'City'}
-                        required
-                        className="form-input h-11 sm:h-12 text-sm ps-9"
+                        className={`form-input h-11 sm:h-12 text-sm ps-9 ${cityError ? 'border-destructive' : ''}`}
                       />
                     ) : (
                       <div className="ps-9">
@@ -445,10 +491,12 @@ const Signup: React.FC = () => {
                           value={city}
                           onChange={(val) => {
                             setCity(val);
+                            setCityError(null);
                             if (val !== OTHER_VALUE) setCustomCity('');
                           }}
                           placeholder={isRTL ? 'المدينة' : 'City'}
                           searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
+                          hasError={!!cityError}
                         />
                       </div>
                     )}
@@ -457,11 +505,16 @@ const Signup: React.FC = () => {
                     <Input
                       type="text"
                       value={customCity}
-                      onChange={(e) => setCustomCity(e.target.value)}
+                      onChange={(e) => { setCustomCity(e.target.value); setCityError(null); }}
                       placeholder={isRTL ? 'اسم المدينة' : 'City name'}
-                      required
-                      className="form-input h-11 sm:h-12 text-sm"
+                      className={`form-input h-11 sm:h-12 text-sm ${cityError ? 'border-destructive' : ''}`}
                     />
+                  )}
+                  {cityError && (
+                    <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {cityError}
+                    </p>
                   )}
                 </div>
               </div>
