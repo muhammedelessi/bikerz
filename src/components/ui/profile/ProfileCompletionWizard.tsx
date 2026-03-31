@@ -17,7 +17,6 @@ import {
   ChevronRight, 
   ChevronLeft,
   X,
-  Gift,
   Sparkles,
   Camera,
   Check
@@ -69,7 +68,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
   const [noBike, setNoBike] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [couponCopied, setCouponCopied] = useState(false);
+  
 
   // Pre-fill with existing data if available
   useEffect(() => {
@@ -196,7 +195,6 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
       localStorage.removeItem('profile_completion_skipped');
       localStorage.removeItem('profile_completion_skip_time');
       localStorage.setItem('profile_completed', 'true');
-      localStorage.setItem('profile_coupon_code', 'PROFILE10');
       
       // Sync contact to GHL CRM
       syncContact({
@@ -223,8 +221,8 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
         activity_type: 'profile_completed',
         title: 'Profile completed',
         title_ar: 'تم إكمال الملف الشخصي',
-        description: 'Earned 10% discount reward',
-        description_ar: 'حصل على خصم 10%',
+        description: 'Profile completed successfully',
+        description_ar: 'تم إكمال الملف الشخصي بنجاح',
       });
       
       toast.success(t('profileCompletion.profileComplete'));
@@ -240,10 +238,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
 
   const navigate = useNavigate();
 
-  const handleClaimCoupon = () => {
-    navigator.clipboard.writeText('PROFILE10');
-    localStorage.setItem('profile_coupon_code', 'PROFILE10');
-    toast.success(t('profileCompletion.couponCopiedBrowse'));
+  const handleDone = () => {
     onOpenChange(false);
     navigate('/courses');
   };
@@ -451,51 +446,8 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
             </h3>
             
             <p className="text-muted-foreground mb-6">
-                {t('profileCompletion.couponDescription')}
+                {t('profileCompletion.profileCompleteMessage')}
             </p>
-
-            <div className="w-full p-4 rounded-lg bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Gift className="w-5 h-5 text-primary" />
-                <span className="font-bold text-lg text-primary">
-                  {t('profileCompletion.discountOff')}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-center gap-2 mt-3">
-                <code className="px-4 py-2 bg-background border-2 border-dashed border-primary/50 rounded-lg text-lg font-mono font-bold tracking-widest text-foreground">
-                  PROFILE10
-                </code>
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-3 gap-2"
-                onClick={() => {
-                  navigator.clipboard.writeText('PROFILE10');
-                  setCouponCopied(true);
-                  toast.success(t('profileCompletion.couponCopied'));
-                  setTimeout(() => setCouponCopied(false), 2000);
-                }}
-              >
-                {couponCopied ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    {t('profileCompletion.copied')}
-                  </>
-                ) : (
-                  <>
-                    <Gift className="w-4 h-4" />
-                    {t('profileCompletion.copyCoupon')}
-                  </>
-                )}
-              </Button>
-              
-              <p className="text-xs text-muted-foreground mt-3">
-                {t('profileCompletion.useCouponAtCheckout')}
-              </p>
-            </div>
           </motion.div>
         );
         
@@ -575,19 +527,19 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <>
-                {t('profileCompletion.completeAndGetDiscount')}
-                <Gift className="w-4 h-4" />
+                {t('profileCompletion.completeProfile')}
+                <ChevronNext className="w-4 h-4" />
               </>
             )}
           </Button>
         ) : (
           <Button 
-            onClick={handleClaimCoupon}
+            onClick={handleDone}
             className="bg-gradient-to-r from-primary to-accent w-full text-sm"
             size={isMobile ? "sm" : "default"}
           >
-            <Gift className="w-4 h-4" />
-            {t('profileCompletion.claimDiscountCoupon')}
+            <Check className="w-4 h-4" />
+            {t('profileCompletion.browseCourses')}
           </Button>
         )}
       </div>
