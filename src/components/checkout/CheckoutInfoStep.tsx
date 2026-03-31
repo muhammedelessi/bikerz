@@ -1,7 +1,7 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
-  User, Mail, MapPin, Pencil, AlertCircle,
+  User, Mail, MapPin, Pencil, AlertCircle, Info,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
