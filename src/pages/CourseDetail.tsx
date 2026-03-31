@@ -376,7 +376,7 @@ const CourseDetail: React.FC = () => {
       if (user) {
         setShowCheckout(true);
       } else {
-        setShowGuestSignup(true);
+        navigate(`/signup?returnTo=${encodeURIComponent(`/courses/${id}?checkout=true`)}`);
       }
       searchParams.delete('checkout');
       setSearchParams(searchParams, { replace: true });
