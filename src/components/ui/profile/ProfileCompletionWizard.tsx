@@ -17,7 +17,6 @@ import {
   ChevronRight, 
   ChevronLeft,
   X,
-  Gift,
   Sparkles,
   Camera,
   Check
