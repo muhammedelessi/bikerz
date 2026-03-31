@@ -44,25 +44,8 @@ export function useCheckoutPromo(courseId: string, basePrice: number) {
   }, [promoCode, promoLoading, courseId, basePrice, t]);
 
   const autoApplySavedCoupon = useCallback(async () => {
-    const savedCoupon = localStorage.getItem('profile_coupon_code');
-    if (savedCoupon && !promoApplied && !promoCode) {
-      setPromoCode(savedCoupon);
-      setPromoLoading(true);
-      try {
-        const { data, error } = await validateCoupon(savedCoupon, courseId, basePrice);
-        if (!error && data?.valid) {
-          setPromoApplied(true);
-          setAppliedCoupon(data);
-          toast.success(t('checkout.couponAutoApplied'));
-          localStorage.removeItem('profile_coupon_code');
-        }
-      } catch {
-        // Silently fail
-      } finally {
-        setPromoLoading(false);
-      }
-    }
-  }, [promoApplied, promoCode, courseId, basePrice, isRTL]);
+    // No-op: auto-apply coupon feature removed
+  }, []);
 
   const clearPromo = useCallback(() => {
     setPromoCode('');

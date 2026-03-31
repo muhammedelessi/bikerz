@@ -528,19 +528,19 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <>
-                {t('profileCompletion.completeAndGetDiscount')}
-                <Gift className="w-4 h-4" />
+                {t('profileCompletion.completeProfile')}
+                <ChevronNext className="w-4 h-4" />
               </>
             )}
           </Button>
         ) : (
           <Button 
-            onClick={handleClaimCoupon}
+            onClick={handleDone}
             className="bg-gradient-to-r from-primary to-accent w-full text-sm"
             size={isMobile ? "sm" : "default"}
           >
-            <Gift className="w-4 h-4" />
-            {t('profileCompletion.claimDiscountCoupon')}
+            <Check className="w-4 h-4" />
+            {t('profileCompletion.browseCourses')}
           </Button>
         )}
       </div>
