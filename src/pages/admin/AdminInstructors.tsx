@@ -120,7 +120,7 @@ const AdminInstructors = () => {
               {isRTL ? 'إدارة المدربين وتتبع أدائهم' : 'Manage instructors and track their performance'}
             </p>
           </div>
-          <Button>
+          <Button onClick={() => setShowAddDialog(true)}>
             <UserPlus className="w-4 h-4 me-2" />
             {isRTL ? 'إضافة مدرب' : 'Add Instructor'}
           </Button>
