@@ -198,6 +198,7 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <ScrollToTop />
+                <WhatsAppFloatingButton />
                 <DeferredSocialProof />
                 <AppRoutes />
               </BrowserRouter>
