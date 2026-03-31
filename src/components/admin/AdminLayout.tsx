@@ -37,6 +37,10 @@ import {
   Tag,
   Megaphone,
   Bike,
+  Dumbbell,
+  UserCheck,
+  GraduationCap as GraduationCapIcon,
+  StarIcon,
 } from 'lucide-react';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
