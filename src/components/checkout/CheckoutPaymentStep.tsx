@@ -76,13 +76,13 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(({
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {[
-            { Icon: VisaIcon, bg: 'bg-white' },
-            { Icon: MastercardIcon, bg: 'bg-white' },
-            { Icon: MadaIcon, bg: 'bg-white' },
-            { Icon: ApplePayIcon, bg: 'bg-black text-white' },
-          ].map(({ Icon, bg }, i) => (
-            <div key={i} className={`flex items-center justify-center h-8 w-14 rounded-lg border border-border ${bg}`}>
-              <Icon className="h-4 w-auto" />
+            { Icon: VisaIcon, bg: 'bg-white', padding: 'p-1.5' },
+            { Icon: MastercardIcon, bg: 'bg-white', padding: 'p-1' },
+            { Icon: MadaIcon, bg: 'bg-white', padding: 'p-1' },
+            { Icon: ApplePayIcon, bg: 'bg-black', padding: 'p-1.5', invert: true },
+          ].map(({ Icon, bg, padding, invert }, i) => (
+            <div key={i} className={`flex items-center justify-center h-8 w-14 rounded-lg border border-border ${bg} ${padding}`}>
+              <Icon className={`h-full w-auto ${invert ? 'invert' : ''}`} />
             </div>
           ))}
         </div>
