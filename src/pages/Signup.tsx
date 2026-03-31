@@ -392,75 +392,78 @@ const Signup: React.FC = () => {
                 )}
               </div>
 
-              {/* Country */}
-              <div className="space-y-1">
-                <div className="relative">
-                  <MapPin className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
-                  <div className="ps-10">
-                    <SearchableDropdown
-                      options={countryOptions}
-                      value={country}
-                      onChange={(val) => {
-                        setCountry(val);
-                        setCity('');
-                        setCustomCity('');
-                        if (val !== OTHER_VALUE) setCustomCountry('');
-                      }}
-                      placeholder={isRTL ? 'اختر الدولة' : 'Select country'}
-                      searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
-                    />
+              {/* Country & City - Horizontal */}
+              <div className="flex gap-2">
+                {/* Country */}
+                <div className="flex-1 space-y-1">
+                  <div className="relative">
+                    <MapPin className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
+                    <div className="ps-9">
+                      <SearchableDropdown
+                        options={countryOptions}
+                        value={country}
+                        onChange={(val) => {
+                          setCountry(val);
+                          setCity('');
+                          setCustomCity('');
+                          if (val !== OTHER_VALUE) setCustomCountry('');
+                        }}
+                        placeholder={isRTL ? 'الدولة' : 'Country'}
+                        searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
+                      />
+                    </div>
                   </div>
+                  {isOtherCountry && (
+                    <Input
+                      type="text"
+                      value={customCountry}
+                      onChange={(e) => setCustomCountry(e.target.value)}
+                      placeholder={isRTL ? 'اسم الدولة' : 'Country name'}
+                      required
+                      className="form-input h-11 sm:h-12 text-sm"
+                    />
+                  )}
                 </div>
-                {isOtherCountry && (
-                  <Input
-                    type="text"
-                    value={customCountry}
-                    onChange={(e) => setCustomCountry(e.target.value)}
-                    placeholder={isRTL ? 'أدخل اسم الدولة' : 'Enter country name'}
-                    required
-                    className="form-input h-11 sm:h-12 text-base mt-2"
-                  />
-                )}
-              </div>
 
-              {/* City */}
-              <div className="space-y-1">
-                <div className="relative">
-                  <Building2 className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
-                  {isOtherCountry ? (
+                {/* City */}
+                <div className="flex-1 space-y-1">
+                  <div className="relative">
+                    <Building2 className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
+                    {isOtherCountry ? (
+                      <Input
+                        type="text"
+                        value={customCity}
+                        onChange={(e) => setCustomCity(e.target.value)}
+                        placeholder={isRTL ? 'المدينة' : 'City'}
+                        required
+                        className="form-input h-11 sm:h-12 text-sm ps-9"
+                      />
+                    ) : (
+                      <div className="ps-9">
+                        <SearchableDropdown
+                          options={cityOptions}
+                          value={city}
+                          onChange={(val) => {
+                            setCity(val);
+                            if (val !== OTHER_VALUE) setCustomCity('');
+                          }}
+                          placeholder={isRTL ? 'المدينة' : 'City'}
+                          searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {!isOtherCountry && isOtherCity && (
                     <Input
                       type="text"
                       value={customCity}
                       onChange={(e) => setCustomCity(e.target.value)}
-                      placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
+                      placeholder={isRTL ? 'اسم المدينة' : 'City name'}
                       required
-                      className="form-input h-11 sm:h-12 text-base ps-10"
+                      className="form-input h-11 sm:h-12 text-sm"
                     />
-                  ) : (
-                    <div className="ps-10">
-                      <SearchableDropdown
-                        options={cityOptions}
-                        value={city}
-                        onChange={(val) => {
-                          setCity(val);
-                          if (val !== OTHER_VALUE) setCustomCity('');
-                        }}
-                        placeholder={isRTL ? 'اختر المدينة' : 'Select city'}
-                        searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
-                      />
-                    </div>
                   )}
                 </div>
-                {!isOtherCountry && isOtherCity && (
-                  <Input
-                    type="text"
-                    value={customCity}
-                    onChange={(e) => setCustomCity(e.target.value)}
-                    placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
-                    required
-                    className="form-input h-11 sm:h-12 text-base mt-2"
-                  />
-                )}
               </div>
 
               <Button
