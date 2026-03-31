@@ -351,17 +351,24 @@ const Signup: React.FC = () => {
               }}
             >
               {/* Name */}
-              <div className="relative">
-                <User className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                <Input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={nameLabel}
-                  required
-                  className="form-input h-11 sm:h-12 text-base ps-10"
-                />
+              <div className="space-y-1">
+                <div className="relative">
+                  <User className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => { setName(e.target.value); setNameError(null); }}
+                    placeholder={nameLabel}
+                    className={`form-input h-11 sm:h-12 text-base ps-10 ${nameError ? 'border-destructive' : ''}`}
+                  />
+                </div>
+                {nameError && (
+                  <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {nameError}
+                  </p>
+                )}
               </div>
 
               {/* Email */}
