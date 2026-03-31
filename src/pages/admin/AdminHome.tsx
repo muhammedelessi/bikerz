@@ -137,6 +137,10 @@ const AdminHome: React.FC = () => {
           paused: pausedEnrollments > 0 ? pausedEnrollments : 0,
           new: newEnrollments > 0 ? newEnrollments : 0,
         },
+        totalTrainers: totalTrainers || 0,
+        totalTrainings: totalTrainings || 0,
+        totalTrainingStudents: totalTrainingStudents || 0,
+        avgTrainerRating,
       };
     },
   });
