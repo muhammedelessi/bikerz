@@ -71,6 +71,10 @@ interface NavItem {
   { icon: MessagesSquare, labelKey: 'discussions', href: '/admin/discussions' },
   { icon: MessageSquare, labelKey: 'support', href: '/admin/support' },
   { icon: Shield, labelKey: 'roles', href: '/admin/roles' },
+  { icon: Dumbbell, labelKey: 'trainings', href: '/admin/trainings' },
+  { icon: UserCheck, labelKey: 'trainers', href: '/admin/trainers' },
+  { icon: GraduationCapIcon, labelKey: 'trainingStudents', href: '/admin/training-students' },
+  { icon: StarIcon, labelKey: 'trainerReviews', href: '/admin/trainer-reviews' },
   { icon: Settings, labelKey: 'settings', href: '/admin/settings' },
 ];
 

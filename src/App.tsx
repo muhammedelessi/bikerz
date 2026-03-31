@@ -179,6 +179,10 @@ const AppRoutes = () => (
         <Route path="/admin/courses/:id/students/:userId" element={<AdminRoute><AdminStudentDetail /></AdminRoute>} />
         <Route path="/admin/ads" element={<AdminRoute><AdminAds /></AdminRoute>} />
         <Route path="/admin/community" element={<AdminRoute><AdminCommunity /></AdminRoute>} />
+        <Route path="/admin/trainings" element={<AdminRoute><AdminTrainings /></AdminRoute>} />
+        <Route path="/admin/trainers" element={<AdminRoute><AdminTrainers /></AdminRoute>} />
+        <Route path="/admin/training-students" element={<AdminRoute><AdminTrainingStudents /></AdminRoute>} />
+        <Route path="/admin/trainer-reviews" element={<AdminRoute><AdminTrainerReviews /></AdminRoute>} />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
