@@ -128,10 +128,22 @@ const CourseDetail: React.FC = () => {
   const ctaCardRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  const HARDCODED_PREVIEW_YOUTUBE_ID = '00BxMrjssbU';
+  const THINK_WHAT_IF_YOUTUBE_ID = '00BxMrjssbU';
 
-  const getYouTubeEmbedUrl = (_url: string): string | null => {
-    return `https://www.youtube.com/embed/${HARDCODED_PREVIEW_YOUTUBE_ID}?rel=0`;
+  const getYouTubeEmbedUrl = (url: string): string | null => {
+    const isThinkWhatIfCourse =
+      course?.title?.toLowerCase().includes('what if') ||
+      course?.title_ar?.includes('ماذا لو');
+
+    if (isThinkWhatIfCourse) {
+      return `https://www.youtube.com/embed/${THINK_WHAT_IF_YOUTUBE_ID}?rel=0`;
+    }
+
+    if (!url) return null;
+    const ytMatch = url.match(
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/
+    );
+    return ytMatch ? `https://www.youtube.com/embed/${ytMatch[1]}?rel=0` : null;
   };
 
 
