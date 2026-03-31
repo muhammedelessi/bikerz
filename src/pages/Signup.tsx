@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import LanguageToggle from '@/components/common/LanguageToggle';
 import ProfileCompletionWizard from '@/components/ui/profile/ProfileCompletionWizard';
 import { useAuthPageContent } from '@/hooks/useAuthPageContent';
-import { ArrowRight, ArrowLeft, AlertCircle, User, Mail, Phone, Globe, MapPin, ChevronDown, Search } from 'lucide-react';
+import { ArrowRight, ArrowLeft, AlertCircle, User, Mail, Phone, Globe, MapPin, ChevronDown, Search, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import defaultHeroImage from '@/assets/community-ride.webp';
 import SEOHead from '@/components/common/SEOHead';
