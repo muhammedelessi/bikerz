@@ -349,6 +349,13 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     }
   };
 
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const input = e.target;
+    setTimeout(() => {
+      input.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    }, 300);
+  };
+
   const loginFormContent = (
     <div className="p-5 sm:p-6 space-y-4">
       {error && (
