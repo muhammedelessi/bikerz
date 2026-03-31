@@ -130,9 +130,11 @@ const CourseDetail: React.FC = () => {
 
   const getYouTubeEmbedUrl = (url: string): string | null => {
     if (!url) return null;
+    console.log('[YouTube Debug] preview_video_url:', url);
     const ytMatch = url.match(
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/
     );
+    console.log('[YouTube Debug] ytMatch result:', ytMatch);
     return ytMatch ? `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0` : null;
   };
 
