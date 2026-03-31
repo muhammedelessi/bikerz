@@ -1414,7 +1414,7 @@ const CourseDetail: React.FC = () => {
               ) : (
                 <Button
                   className="btn-cta h-11 text-sm px-6 flex-shrink-0"
-                  onClick={() => user ? setShowCheckout(true) : setShowGuestSignup(true)}
+                  onClick={() => user ? setShowCheckout(true) : navigate(`/signup?returnTo=${encodeURIComponent(`/courses/${id}?checkout=true`)}`)}
                 >
                   <ShoppingCart className="w-4 h-4 me-1.5" />
                   {(() => {
