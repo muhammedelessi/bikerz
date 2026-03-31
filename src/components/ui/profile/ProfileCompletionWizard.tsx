@@ -222,8 +222,8 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
         activity_type: 'profile_completed',
         title: 'Profile completed',
         title_ar: 'تم إكمال الملف الشخصي',
-        description: 'Earned 10% discount reward',
-        description_ar: 'حصل على خصم 10%',
+        description: 'Profile completed successfully',
+        description_ar: 'تم إكمال الملف الشخصي بنجاح',
       });
       
       toast.success(t('profileCompletion.profileComplete'));
