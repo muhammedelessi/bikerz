@@ -76,11 +76,18 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(({
           </h4>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {[VisaIcon, MastercardIcon, ApplePayIcon].map((Icon, i) => (
-            <div key={i} className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
-              <Icon className="h-5 w-auto" />
-            </div>
-          ))}
+          <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
+            <VisaIcon className="h-5 w-auto" />
+          </div>
+          <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
+            <MastercardIcon className="h-5 w-auto" />
+          </div>
+          <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
+            <MadaIcon className="h-6 w-auto" />
+          </div>
+          <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-black text-white">
+            <ApplePayIcon className="h-5 w-auto" />
+          </div>
         </div>
       </div>
 
