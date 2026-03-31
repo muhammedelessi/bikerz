@@ -353,14 +353,14 @@ const Signup: React.FC = () => {
               {/* Name */}
               <div className="space-y-1">
                 <div className="relative">
-                  <User className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                  <User className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                   <Input
                     id="name"
                     type="text"
                     value={name}
                     onChange={(e) => { setName(e.target.value); setNameError(null); }}
                     placeholder={nameLabel}
-                    className={`form-input h-11 sm:h-12 text-base ps-10 ${nameError ? 'border-destructive' : ''}`}
+                    className={`ps-9 ${nameError ? 'border-destructive' : ''}`}
                   />
                 </div>
                 {nameError && (
@@ -374,14 +374,14 @@ const Signup: React.FC = () => {
               {/* Email */}
               <div className="space-y-1">
                 <div className="relative">
-                  <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                  <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                   <Input
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
                     placeholder={emailLabel}
-                    className={`form-input h-11 sm:h-12 text-base ps-10 ${emailError ? 'border-destructive' : ''}`}
+                    className={`ps-9 ${emailError ? 'border-destructive' : ''}`}
                   />
                 </div>
                 {emailError && (
@@ -395,7 +395,7 @@ const Signup: React.FC = () => {
               {/* Phone with country code */}
               <div className="space-y-1">
                 <div className="flex gap-2" dir="ltr">
-                  <div className="flex-shrink-0 w-[120px]">
+                  <div className="flex-shrink-0 w-[110px]">
                     <SearchableDropdown
                       options={phonePrefixOptions}
                       value={phonePrefix}
@@ -417,8 +417,7 @@ const Signup: React.FC = () => {
                         setPhoneError(null);
                       }}
                       placeholder="5XXXXXXXX"
-                      required
-                      className={`form-input h-11 sm:h-12 text-base ps-9 ${phoneError ? 'border-destructive' : ''}`}
+                      className={`ps-9 ${phoneError ? 'border-destructive' : ''}`}
                       dir="ltr"
                     />
                   </div>
