@@ -393,21 +393,22 @@ const Signup: React.FC = () => {
                 )}
               </div>
 
-              {/* Phone with country code */}
+              {/* Phone — prefix dropdown + input */}
               <div className="space-y-1">
-                <div className="flex gap-2" dir="ltr">
+                <div className={`flex gap-2 ${isRTL ? "flex-row-reverse" : ""}`} dir="ltr">
                   <div className="flex-shrink-0 w-[110px]">
                     <SearchableDropdown
                       options={phonePrefixOptions}
                       value={phonePrefix}
-                      onChange={(val) => setPhonePrefix(val)}
+                      onChange={(val) => { setPhonePrefix(val); setPhoneError(null); }}
                       placeholder="+---"
                       searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
+                      hasError={!!phoneError}
                       dir="ltr"
                     />
                   </div>
                   <div className="relative flex-1">
-                    <Phone className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    <Phone className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none ${isRTL ? "right-3" : "left-3"}`} />
                     <Input
                       id="phone"
                       type="tel"
@@ -417,9 +418,9 @@ const Signup: React.FC = () => {
                         setPhone(val);
                         setPhoneError(null);
                       }}
-                      placeholder="5XXXXXXXX"
-                      className={`ps-9 ${phoneError ? 'border-destructive' : ''}`}
-                      dir="ltr"
+                      placeholder={isRTL ? 'رقم الهاتف' : 'Phone Number'}
+                      className={`${isRTL ? "pr-9 text-right" : "pl-9 text-left"} ${phoneError ? 'border-destructive' : ''}`}
+                      dir={isRTL ? "rtl" : "ltr"}
                     />
                   </div>
                 </div>
@@ -431,29 +432,73 @@ const Signup: React.FC = () => {
                 )}
               </div>
 
-              {/* Country & City - Horizontal */}
+              {/* Country & City — horizontal row */}
               <div className="grid grid-cols-2 gap-3">
                 {/* Country */}
-                <div className="flex-1 space-y-1">
+                <div className="space-y-1">
                   <div className="relative">
-                    <MapPin className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
-                    <div className="ps-9">
-                      <SearchableDropdown
-                        options={countryOptions}
-                        value={country}
-                        onChange={(val) => {
-                          setCountry(val);
-                          setCity('');
-                          setCustomCity('');
-                          setCountryError(null);
-                          setCityError(null);
-                          if (val !== OTHER_VALUE) setCustomCountry('');
-                        }}
-                        placeholder={isRTL ? 'الدولة' : 'Country'}
-                        searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
-                        hasError={!!countryError}
-                      />
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setCountryOpen(!countryOpen); setCityOpen(false); }}
+                      className={`flex h-10 w-full items-center rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${countryError ? "border-destructive" : "border-input"}`}
+                    >
+                      <Globe className="w-4 h-4 text-muted-foreground me-2 flex-shrink-0" />
+                      <span className={`flex-1 text-start truncate ${selectedCountryEntry ? "text-foreground" : "text-muted-foreground"}`}>
+                        {selectedCountryEntry ? (isRTL ? selectedCountryEntry.ar : selectedCountryEntry.en) : (isRTL ? 'الدولة' : 'Country')}
+                      </span>
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                    {countryOpen && (
+                      <div className="absolute z-50 mt-1 w-full min-w-[200px] rounded-md border border-border bg-popover shadow-lg max-h-60 overflow-hidden">
+                        <div className="p-2 border-b border-border">
+                          <div className="relative">
+                            <Search className="absolute start-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <input
+                              className="w-full ps-8 pe-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+                              placeholder={isRTL ? 'بحث...' : 'Search...'}
+                              value={countrySearch}
+                              onChange={(e) => setCountrySearch(e.target.value)}
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto">
+                          {filteredCountries.map((c) => (
+                            <button
+                              key={c.code}
+                              type="button"
+                              className={`w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors ${country === c.code ? "bg-accent text-accent-foreground" : ""}`}
+                              onClick={() => {
+                                setCountry(c.code);
+                                setCity('');
+                                setCustomCity('');
+                                setCountryOpen(false);
+                                setCountrySearch('');
+                                setCountryError(null);
+                                setCityError(null);
+                                setCustomCountry('');
+                              }}
+                            >
+                              {isRTL ? c.ar : c.en}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            className={`w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors text-muted-foreground ${country === OTHER_VALUE ? "bg-accent text-accent-foreground" : ""}`}
+                            onClick={() => {
+                              setCountry(OTHER_VALUE);
+                              setCity('');
+                              setCustomCity('');
+                              setCountryOpen(false);
+                              setCountrySearch('');
+                              setCountryError(null);
+                            }}
+                          >
+                            {isRTL ? OTHER_OPTION.ar : OTHER_OPTION.en}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   {isOtherCountry && (
                     <Input
@@ -473,34 +518,80 @@ const Signup: React.FC = () => {
                 </div>
 
                 {/* City */}
-                <div className="flex-1 space-y-1">
-                  <div className="relative">
-                    <Building2 className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
-                    {isOtherCountry ? (
+                <div className="space-y-1">
+                  {hasCities ? (
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => { setCityOpen(!cityOpen); setCountryOpen(false); }}
+                        className={`flex h-10 w-full items-center rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${cityError ? "border-destructive" : "border-input"}`}
+                      >
+                        <MapPin className="w-4 h-4 text-muted-foreground me-2 flex-shrink-0" />
+                        <span className={`flex-1 text-start truncate ${city && city !== OTHER_VALUE ? "text-foreground" : "text-muted-foreground"}`}>
+                          {city && city !== OTHER_VALUE ? city : (isRTL ? 'المدينة' : 'City')}
+                        </span>
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                      </button>
+                      {cityOpen && (
+                        <div className="absolute z-50 mt-1 w-full min-w-[200px] rounded-md border border-border bg-popover shadow-lg max-h-60 overflow-hidden">
+                          <div className="p-2 border-b border-border">
+                            <div className="relative">
+                              <Search className="absolute start-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                              <input
+                                className="w-full ps-8 pe-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+                                placeholder={isRTL ? 'بحث...' : 'Search...'}
+                                value={citySearch}
+                                onChange={(e) => setCitySearch(e.target.value)}
+                                autoFocus
+                              />
+                            </div>
+                          </div>
+                          <div className="max-h-48 overflow-y-auto">
+                            {filteredCities.map((c) => (
+                              <button
+                                key={c.en}
+                                type="button"
+                                className={`w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors ${city === (isRTL ? c.ar : c.en) ? "bg-accent text-accent-foreground" : ""}`}
+                                onClick={() => {
+                                  setCity(isRTL ? c.ar : c.en);
+                                  setCityOpen(false);
+                                  setCitySearch('');
+                                  setCityError(null);
+                                }}
+                              >
+                                {isRTL ? c.ar : c.en}
+                              </button>
+                            ))}
+                            <button
+                              type="button"
+                              className="w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors text-muted-foreground"
+                              onClick={() => {
+                                setCity(OTHER_VALUE);
+                                setCityOpen(false);
+                                setCitySearch('');
+                              }}
+                            >
+                              {isRTL ? OTHER_OPTION.ar : OTHER_OPTION.en}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <MapPin className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                       <Input
-                        type="text"
-                        value={customCity}
-                        onChange={(e) => { setCustomCity(e.target.value); setCityError(null); }}
+                        value={isOtherCountry ? customCity : city}
+                        onChange={(e) => {
+                          if (isOtherCountry) { setCustomCity(e.target.value); }
+                          else { setCity(e.target.value); }
+                          setCityError(null);
+                        }}
                         placeholder={isRTL ? 'المدينة' : 'City'}
-                        className={`ps-9 text-sm ${cityError ? 'border-destructive' : ''}`}
+                        className={`ps-9 ${cityError ? "border-destructive" : ""}`}
                       />
-                    ) : (
-                      <div className="ps-9">
-                        <SearchableDropdown
-                          options={cityOptions}
-                          value={city}
-                          onChange={(val) => {
-                            setCity(val);
-                            setCityError(null);
-                            if (val !== OTHER_VALUE) setCustomCity('');
-                          }}
-                          placeholder={isRTL ? 'المدينة' : 'City'}
-                          searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
-                          hasError={!!cityError}
-                        />
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   {!isOtherCountry && isOtherCity && (
                     <Input
                       type="text"
