@@ -431,7 +431,7 @@ const Signup: React.FC = () => {
               </div>
 
               {/* Country & City - Horizontal */}
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 {/* Country */}
                 <div className="flex-1 space-y-1">
                   <div className="relative">
@@ -460,7 +460,7 @@ const Signup: React.FC = () => {
                       value={customCountry}
                       onChange={(e) => { setCustomCountry(e.target.value); setCountryError(null); }}
                       placeholder={isRTL ? 'اسم الدولة' : 'Country name'}
-                      className={`form-input h-11 sm:h-12 text-sm ${countryError ? 'border-destructive' : ''}`}
+                      className={`text-sm ${countryError ? 'border-destructive' : ''}`}
                     />
                   )}
                   {countryError && (
@@ -481,7 +481,7 @@ const Signup: React.FC = () => {
                         value={customCity}
                         onChange={(e) => { setCustomCity(e.target.value); setCityError(null); }}
                         placeholder={isRTL ? 'المدينة' : 'City'}
-                        className={`form-input h-11 sm:h-12 text-sm ps-9 ${cityError ? 'border-destructive' : ''}`}
+                        className={`ps-9 text-sm ${cityError ? 'border-destructive' : ''}`}
                       />
                     ) : (
                       <div className="ps-9">
@@ -506,7 +506,7 @@ const Signup: React.FC = () => {
                       value={customCity}
                       onChange={(e) => { setCustomCity(e.target.value); setCityError(null); }}
                       placeholder={isRTL ? 'اسم المدينة' : 'City name'}
-                      className={`form-input h-11 sm:h-12 text-sm ${cityError ? 'border-destructive' : ''}`}
+                      className={`text-sm ${cityError ? 'border-destructive' : ''}`}
                     />
                   )}
                   {cityError && (
@@ -520,7 +520,7 @@ const Signup: React.FC = () => {
 
               <Button
                 variant="cta"
-                className="w-full h-11 sm:h-12 text-base"
+                className="w-full"
                 disabled={isLoading}
               >
                 {isLoading ? (
