@@ -447,51 +447,8 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
             </h3>
             
             <p className="text-muted-foreground mb-6">
-                {t('profileCompletion.couponDescription')}
+                {t('profileCompletion.profileCompleteMessage')}
             </p>
-
-            <div className="w-full p-4 rounded-lg bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Gift className="w-5 h-5 text-primary" />
-                <span className="font-bold text-lg text-primary">
-                  {t('profileCompletion.discountOff')}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-center gap-2 mt-3">
-                <code className="px-4 py-2 bg-background border-2 border-dashed border-primary/50 rounded-lg text-lg font-mono font-bold tracking-widest text-foreground">
-                  PROFILE10
-                </code>
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-3 gap-2"
-                onClick={() => {
-                  navigator.clipboard.writeText('PROFILE10');
-                  setCouponCopied(true);
-                  toast.success(t('profileCompletion.couponCopied'));
-                  setTimeout(() => setCouponCopied(false), 2000);
-                }}
-              >
-                {couponCopied ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    {t('profileCompletion.copied')}
-                  </>
-                ) : (
-                  <>
-                    <Gift className="w-4 h-4" />
-                    {t('profileCompletion.copyCoupon')}
-                  </>
-                )}
-              </Button>
-              
-              <p className="text-xs text-muted-foreground mt-3">
-                {t('profileCompletion.useCouponAtCheckout')}
-              </p>
-            </div>
           </motion.div>
         );
         
