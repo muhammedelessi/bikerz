@@ -17,6 +17,9 @@ import {
   Clock,
   Activity,
   AlertTriangle,
+  Dumbbell,
+  UserCheck,
+  Star,
 } from 'lucide-react';
 import {
   LineChart,
