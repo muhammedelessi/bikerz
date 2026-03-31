@@ -6,7 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import BunnyVideoEmbed from "@/components/course/BunnyVideoEmbed";
+
 import heroImage from "@/assets/hero-rider.webp";
 
 export interface CourseCardProps {
