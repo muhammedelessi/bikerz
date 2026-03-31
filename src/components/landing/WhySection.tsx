@@ -194,7 +194,7 @@ const WhySection: React.FC = () => {
         </div>
 
         {/* ─── Desktop: Bento-style grid ─── */}
-        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
+        <div className="hidden sm:grid sm:grid-cols-2 gap-4 lg:gap-5">
           {isLoading ? (
             Array.from({ length: 6 }).map((_, index) => (
               <Skeleton key={index} className="h-40 rounded-2xl" />
