@@ -117,26 +117,21 @@ const Signup: React.FC = () => {
     [isRTL]
   );
 
-  const countryOptions = useMemo(() => [
-    ...COUNTRIES.map(c => ({
-      value: c.code,
-      label: isRTL ? c.ar : c.en,
-    })),
-    { value: OTHER_VALUE, label: isRTL ? OTHER_OPTION.ar : OTHER_OPTION.en },
-  ], [isRTL]);
+  const filteredCountries = useMemo(() => {
+    if (!countrySearch.trim()) return COUNTRIES;
+    const q = countrySearch.toLowerCase();
+    return COUNTRIES.filter(c => c.en.toLowerCase().includes(q) || c.ar.includes(q));
+  }, [countrySearch]);
 
-  const cityOptions = useMemo(() => {
-    if (!selectedCountryEntry) return [];
-    return [
-      ...selectedCountryEntry.cities.map(c => ({
-        value: isRTL ? c.ar : c.en,
-        label: isRTL ? c.ar : c.en,
-      })),
-      { value: OTHER_VALUE, label: isRTL ? OTHER_OPTION.ar : OTHER_OPTION.en },
-    ];
-  }, [selectedCountryEntry, isRTL]);
+  const cities = useMemo(() => selectedCountryEntry?.cities || [], [selectedCountryEntry]);
 
-  const cms = authContent?.signup || {};
+  const filteredCities = useMemo(() => {
+    if (!citySearch.trim()) return cities;
+    const q = citySearch.toLowerCase();
+    return cities.filter(c => c.en.toLowerCase().includes(q) || c.ar.includes(q));
+  }, [cities, citySearch]);
+
+  const hasCities = cities.length > 0 && !isOtherCountry;
   const heroImage = cms.image || defaultHeroImage;
   const title = (isRTL ? cms.title_ar : cms.title_en) || t('auth.signup.title');
   const subtitle = (isRTL ? cms.subtitle_ar : cms.subtitle_en) || t('auth.signup.subtitle');
