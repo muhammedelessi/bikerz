@@ -3,43 +3,50 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from 'react-i18next';
 
 const ApplePayIcon = ({ className = 'h-5 w-auto' }: { className?: string }) => (
-  <svg viewBox="0 0 50 20" className={className} style={{ direction: 'ltr' }}>
-    <path d="M9.6 3.8c-.6.7-1.5 1.3-2.4 1.2-.1-1 .4-2 .9-2.6C8.7 1.7 9.7 1.1 10.5 1c.1 1-.3 2-.9 2.8zm.9 1.4c-1.3-.1-2.5.8-3.1.8-.7 0-1.7-.7-2.8-.7-1.4 0-2.8.8-3.5 2.1-1.5 2.6-.4 6.5 1.1 8.6.7 1 1.6 2.2 2.8 2.1 1.1 0 1.5-.7 2.8-.7 1.3 0 1.7.7 2.8.7 1.2 0 2-1 2.7-2.1.9-1.2 1.2-2.4 1.2-2.5 0 0-2.4-1-2.4-3.7 0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8l-.2-.3z" fill="currentColor" />
-    <text x="18" y="14.5" fontSize="11" fontWeight="600" fontFamily="system-ui, -apple-system, sans-serif" fill="currentColor">Pay</text>
-  </svg>
-);
-
-const GooglePayIcon = ({ className = 'h-5 w-auto' }: { className?: string }) => (
-  <svg viewBox="0 0 56 20" className={className} style={{ direction: 'ltr' }}>
-    <text x="1" y="15" fontSize="12" fontWeight="500" fontFamily="system-ui, sans-serif">
-      <tspan fill="#4285F4">G</tspan>
-      <tspan fill="#EA4335">o</tspan>
-      <tspan fill="#FBBC05">o</tspan>
-      <tspan fill="#4285F4">g</tspan>
-      <tspan fill="#34A853">l</tspan>
-      <tspan fill="#EA4335">e</tspan>
-    </text>
-    <text x="33" y="15" fontSize="12" fontWeight="500" fontFamily="system-ui, sans-serif" fill="currentColor">Pay</text>
+  <svg viewBox="0 0 165.52 105.97" className={className} style={{ direction: 'ltr' }}>
+    <path d="M150.7 0H14.82A89.5 89.5 0 0 0 0 0v106h165.52V0h-14.82z" fill="#000" />
+    <path d="M150.7 0H14.82C6.64 0 0 6.64 0 14.82v76.33c0 8.18 6.64 14.82 14.82 14.82H150.7c8.18 0 14.82-6.64 14.82-14.82V14.82C165.52 6.64 158.88 0 150.7 0z" fill="#000" />
+    <path d="M150.7 2.13c7 0 12.69 5.69 12.69 12.69v76.33c0 7-5.69 12.69-12.69 12.69H14.82c-7 0-12.69-5.69-12.69-12.69V14.82C2.13 7.82 7.82 2.13 14.82 2.13H150.7" fill="#000" />
+    <path d="M43.08 34.54c2.14-2.67 3.59-6.36 3.19-10.05-3.09.13-6.83 2.06-9.04 4.66-1.98 2.29-3.72 5.96-3.25 9.48 3.45.27 6.97-1.75 9.1-4.09zm3.16 2.08c-5.03-.3-9.31 2.86-11.7 2.86-2.39 0-6.08-2.71-10.01-2.64-5.15.08-9.9 3-12.55 7.61-5.35 9.28-1.45 23.04 3.84 30.6 2.54 3.72 5.58 7.86 9.58 7.71 3.84-.15 5.28-2.49 9.9-2.49 4.63 0 5.91 2.49 9.98 2.41 4.14-.07 6.72-3.76 9.26-7.49 2.88-4.29 4.07-8.44 4.14-8.66-.08-.08-7.93-3.04-8.01-12.09-.07-7.57 6.18-11.2 6.47-11.42-3.54-5.22-9.04-5.8-10.98-5.95l.08.55z" fill="#fff" />
+    <path d="M78.72 27.56c11.47 0 19.44 7.91 19.44 19.41 0 11.56-8.11 19.51-19.72 19.51H66.4v20.2h-9.12V27.56h21.44zm-12.32 31.3h8.96c7.98 0 12.53-4.3 12.53-11.86 0-7.56-4.55-11.83-12.49-11.83h-9v23.69zm34.82 17.71c0-7.56 5.79-12.19 16.03-12.76l11.8-.67v-3.33c0-4.83-3.26-7.73-8.69-7.73-5.15 0-8.37 2.52-9.13 6.4h-8.37c.43-8.19 7.13-14.23 17.78-14.23 10.44 0 17.14 5.54 17.14 14.16v29.67h-8.44v-7.09h-.18c-2.49 4.72-7.91 7.66-13.56 7.66-8.44 0-14.38-5.22-14.38-12.08zm27.83-3.62v-3.4l-10.62.64c-5.29.36-8.3 2.74-8.3 6.5 0 3.84 3.12 6.36 7.88 6.36 6.18 0 11.04-4.26 11.04-10.1zm16.93 21.22v-7.27c.64.14 2.1.14 2.81.14 4.01 0 6.18-1.69 7.52-6.04l.82-2.63-15.6-43.28h9.51l10.87 35.16h.14l10.87-35.16h9.3l-16.17 45.23c-3.69 10.37-7.95 13.7-16.87 13.7-.71 0-2.56-.07-3.2-.14v.29z" fill="#fff" />
   </svg>
 );
 
 const VisaIcon = ({ light = false, className = 'h-4 w-auto' }: { light?: boolean; className?: string }) => (
-  <svg viewBox="0 0 48 16" className={className} style={{ direction: 'ltr' }}>
-    <text x="0" y="13" fontSize="14" fontWeight="700" fontFamily="system-ui, sans-serif" fill={light ? '#FFFFFF' : '#1A1F71'} letterSpacing="-0.5">VISA</text>
+  <svg viewBox="0 0 780 500" className={className} style={{ direction: 'ltr' }}>
+    <path d="M293.2 348.73l33.36-195.76h53.34l-33.38 195.76H293.2zm246.11-191.54c-10.57-3.97-27.14-8.22-47.83-8.22-52.73 0-89.87 26.6-90.14 64.67-.27 28.16 26.48 43.86 46.71 53.23 20.76 9.58 27.73 15.71 27.63 24.27-.14 13.11-16.56 19.1-31.89 19.1-21.33 0-32.65-2.96-50.14-10.26l-6.87-3.11-7.49 43.93c12.44 5.47 35.47 10.2 59.39 10.45 56.08 0 92.5-26.29 92.84-66.95.17-22.3-14.01-39.27-44.78-53.28-18.64-9.07-30.06-15.12-29.95-24.29 0-8.14 9.67-16.83 30.55-16.83 17.45-.27 30.1 3.53 39.95 7.51l4.78 2.26 7.24-42.48zm138.28-4.22h-41.23c-12.77 0-22.33 3.49-27.94 16.26l-79.29 179.5h56.06s9.16-24.14 11.23-29.45l68.33.08c1.6 6.86 6.49 29.37 6.49 29.37h49.54l-43.19-195.76zm-65.85 126.41c4.41-11.28 21.26-54.71 21.26-54.71-.31.52 4.38-11.33 7.07-18.69l3.6 16.88s10.22 46.73 12.36 56.52h-44.29zM249.85 152.97L197.54 281l-5.57-27.07c-9.72-31.28-39.99-65.18-73.87-82.12l47.81 171.08 56.46-.06 84.02-189.86h-56.54z" fill="#1A1F71" />
+    <path d="M146.92 152.97H60.88l-.68 4.07c66.94 16.22 111.23 55.37 129.61 102.42L171.9 169.5c-3.2-12.28-12.49-16.16-24.98-16.53z" fill="#F2AE14" />
   </svg>
 );
 
 const MastercardIcon = ({ className = 'h-5 w-auto' }: { className?: string }) => (
-  <svg viewBox="0 0 32 20" className={className}>
-    <circle cx="10" cy="10" r="9" fill="#EB001B" />
-    <circle cx="22" cy="10" r="9" fill="#F79E1B" />
-    <path d="M16 3.2a9 9 0 0 1 0 13.6 9 9 0 0 1 0-13.6z" fill="#FF5F00" />
+  <svg viewBox="0 0 780 500" className={className}>
+    <rect width="780" height="500" rx="40" fill="transparent" />
+    <circle cx="312" cy="250" r="170" fill="#EB001B" />
+    <circle cx="468" cy="250" r="170" fill="#F79E1B" />
+    <path d="M390 113.4a169.7 169.7 0 0 1 62 136.6A169.7 169.7 0 0 1 390 386.6 169.7 169.7 0 0 1 328 250a169.7 169.7 0 0 1 62-136.6z" fill="#FF5F00" />
   </svg>
 );
 
 const MadaIcon = ({ className = 'h-5 w-auto' }: { className?: string }) => (
-  <svg viewBox="0 0 48 20" className={className} style={{ direction: 'ltr' }}>
-    <text x="0" y="15" fontSize="13" fontWeight="700" fontFamily="system-ui, sans-serif" fill="#003B71" letterSpacing="0.5">mada</text>
+  <svg viewBox="0 0 780 500" className={className} style={{ direction: 'ltr' }}>
+    <rect width="780" height="500" rx="40" fill="#fff" />
+    <path d="M414.85 281.93v-48.38h20.03c15.18 0 24.37 8.15 24.37 24.16 0 16.09-9.19 24.22-24.37 24.22h-20.03zm-31.73 27.09h51.76c33.65 0 56.1-19.67 56.1-51.31 0-31.52-22.45-51.47-56.1-51.47h-51.76v102.78zm-50.73-75.32c-15.54 0-27.28 10.72-27.28 24.06 0 13.38 11.74 24.15 27.28 24.15 15.5 0 27.24-10.77 27.24-24.15 0-13.34-11.74-24.06-27.24-24.06zm0-27.46c32.36 0 58.97 22.17 58.97 51.52 0 29.36-26.61 51.61-58.97 51.61-32.4 0-59.01-22.25-59.01-51.61 0-29.35 26.61-51.52 59.01-51.52zm-99.9.37v102.41h31.73v-39.89h.46l35.4 39.89h40.05l-44.27-48.14 40.88-54.27h-38.43l-33.63 48.14h-.46v-48.14h-31.73z" fill="#003B71" />
+    <path d="M553.23 233.55v-27.31h31.73v102.78h-31.73v-48.38" fill="#003B71" />
+    <path d="M553.23 206.24h31.73v27.31h-31.73z" fill="#01A54E" />
+  </svg>
+);
+
+const GooglePayIcon = ({ className = 'h-5 w-auto' }: { className?: string }) => (
+  <svg viewBox="0 0 780 500" className={className} style={{ direction: 'ltr' }}>
+    <rect width="780" height="500" rx="40" fill="#fff" />
+    <path d="M392.13 250.28v48.15h-15.47V148.73h41.01c10.44 0 19.34 3.44 26.62 10.32a33.7 33.7 0 0 1 10.91 25.36c0 10.32-3.64 18.86-10.91 25.64-7.18 6.78-16.08 10.13-26.62 10.13h-25.54v.1zm0-80.44v64.52h25.93c6.29 0 11.7-2.36 16.08-6.97 4.48-4.62 6.78-10.13 6.78-16.42 0-6.19-2.3-11.6-6.78-16.22-4.38-4.72-9.79-6.97-16.08-6.97h-25.93v2.06z" fill="#3C4043" />
+    <path d="M484.36 204.59c11.41 0 20.42 3.44 27 10.23 6.58 6.78 9.89 16.03 9.89 27.79v56.02h-14.78v-12.57h-.69c-6.38 9.93-14.88 14.88-25.44 14.88-9.05 0-16.61-2.65-22.8-8.07-6.19-5.41-9.26-12.09-9.26-20.03 0-8.46 3.24-15.18 9.65-20.22 6.48-5.02 15.08-7.47 25.93-7.47 9.26 0 16.91 1.68 22.9 5.12v-3.54c0-5.41-2.16-10.03-6.48-13.66-4.33-3.64-9.26-5.51-14.88-5.51-8.56 0-15.37 3.64-20.42 10.81l-13.66-8.56c7.47-10.62 18.59-15.97 33.04-15.97v6.75zm-20.13 73.71c0 4.13 1.87 7.57 5.51 10.32 3.64 2.76 7.87 4.13 12.57 4.13 6.88 0 12.87-2.56 17.98-7.67 5.12-5.12 7.67-10.91 7.67-17.49-4.92-3.93-11.7-5.9-20.42-5.9-6.29 0-11.6 1.58-15.87 4.62-4.23 3.15-6.38 6.88-7.44 11.99z" fill="#3C4043" />
+    <path d="M609.43 206.93l-51.49 118.43h-15.87l19.15-41.11-33.92-77.32H543l24.96 60.26h.39l24.27-60.26h16.81z" fill="#3C4043" />
+    <path d="M288.83 237.62c0-4.52-.39-8.85-1.09-13.08h-63.07v24.76h36.17c-1.58 8.36-6.29 15.47-13.37 20.22v16.81h21.63c12.67-11.6 19.93-28.81 19.73-48.71z" fill="#4285F4" />
+    <path d="M224.67 302.28c18.1 0 33.24-5.99 44.35-16.22l-21.63-16.81c-6 4.03-13.66 6.39-22.72 6.39-17.49 0-32.26-11.8-37.57-27.69h-22.31v17.3c11.01 21.83 33.63 37.03 59.88 37.03z" fill="#34A853" />
+    <path d="M187.1 247.95a46.89 46.89 0 0 1 0-30.04v-17.3h-22.31a78.28 78.28 0 0 0 0 64.64l22.31-17.3z" fill="#FBBC04" />
+    <path d="M224.67 190.22c9.85 0 18.69 3.44 25.64 10.03l19.24-19.24c-11.6-10.81-26.82-17.49-44.88-17.49-26.25 0-48.87 15.18-59.88 37.03l22.31 17.3c5.31-15.87 20.08-27.63 37.57-27.63z" fill="#EA4335" />
   </svg>
 );
 
@@ -60,14 +67,14 @@ const PaymentMethodIcons: React.FC<PaymentMethodIconsProps> = ({ className = '',
         </p>
       )}
       <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center h-8 px-3 rounded-md bg-white/90 border border-white/20">
-          <VisaIcon />
+        <div className="flex items-center justify-center h-8 px-2 rounded-md bg-white border border-border/40 shadow-sm">
+          <VisaIcon className="h-5 w-auto" />
         </div>
-        <div className="flex items-center justify-center h-8 px-2 rounded-md bg-white/90 border border-white/20">
-          <MastercardIcon />
+        <div className="flex items-center justify-center h-8 px-2 rounded-md bg-white border border-border/40 shadow-sm">
+          <MastercardIcon className="h-5 w-auto" />
         </div>
-        <div className="flex items-center justify-center h-8 px-2 rounded-md bg-black border border-white/20 text-white">
-          <ApplePayIcon />
+        <div className="flex items-center justify-center h-8 px-2 rounded-md bg-black border border-border/40 shadow-sm text-white">
+          <ApplePayIcon className="h-5 w-auto" />
         </div>
       </div>
     </div>
