@@ -1,3 +1,4 @@
+// Payment step component
 import React, { memo, useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
