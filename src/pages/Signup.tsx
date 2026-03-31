@@ -59,6 +59,7 @@ const Signup: React.FC = () => {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [countryError, setCountryError] = useState<string | null>(null);
   const [cityError, setCityError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [showProfileWizard, setShowProfileWizard] = useState(false);
   const [countryOpen, setCountryOpen] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
