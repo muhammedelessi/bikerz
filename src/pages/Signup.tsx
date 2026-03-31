@@ -480,10 +480,9 @@ const Signup: React.FC = () => {
                       <Input
                         type="text"
                         value={customCity}
-                        onChange={(e) => setCustomCity(e.target.value)}
+                        onChange={(e) => { setCustomCity(e.target.value); setCityError(null); }}
                         placeholder={isRTL ? 'المدينة' : 'City'}
-                        required
-                        className="form-input h-11 sm:h-12 text-sm ps-9"
+                        className={`form-input h-11 sm:h-12 text-sm ps-9 ${cityError ? 'border-destructive' : ''}`}
                       />
                     ) : (
                       <div className="ps-9">
@@ -492,10 +491,12 @@ const Signup: React.FC = () => {
                           value={city}
                           onChange={(val) => {
                             setCity(val);
+                            setCityError(null);
                             if (val !== OTHER_VALUE) setCustomCity('');
                           }}
                           placeholder={isRTL ? 'المدينة' : 'City'}
                           searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
+                          hasError={!!cityError}
                         />
                       </div>
                     )}
@@ -504,11 +505,16 @@ const Signup: React.FC = () => {
                     <Input
                       type="text"
                       value={customCity}
-                      onChange={(e) => setCustomCity(e.target.value)}
+                      onChange={(e) => { setCustomCity(e.target.value); setCityError(null); }}
                       placeholder={isRTL ? 'اسم المدينة' : 'City name'}
-                      required
-                      className="form-input h-11 sm:h-12 text-sm"
+                      className={`form-input h-11 sm:h-12 text-sm ${cityError ? 'border-destructive' : ''}`}
                     />
+                  )}
+                  {cityError && (
+                    <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {cityError}
+                    </p>
                   )}
                 </div>
               </div>
