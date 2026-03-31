@@ -55,7 +55,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   const isEnrolled = !!enrollment;
   const isCompleted = isEnrolled && (enrollment.progress_percentage >= 100 || !!enrollment.completed_at);
   const hasReviewed = enrollment?.has_reviewed ?? false;
-  const hasPreviewVideo = !!course.preview_video_url;
+  
 
   const formatDuration = (minutes: number) => {
     if (!minutes) return t("courses.courseCard.duration0");
