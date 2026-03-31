@@ -1,4 +1,3 @@
-// Payment step component
 import React, { memo, useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -9,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { MadaIcon, ApplePayIcon, MastercardIcon, VisaIcon } from '@/components/checkout/PaymentMethodIcons';
+import { ApplePayIcon, VisaIcon, MastercardIcon } from '@/components/checkout/PaymentMethodIcons';
 import { PHONE_COUNTRIES } from '@/data/phoneCountryCodes';
 import type { PaymentStatus, AppliedCoupon } from '@/types/payment';
 
@@ -76,18 +75,11 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(({
           </h4>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-white">
-            <MadaIcon className="h-6 w-auto" />
-          </div>
-          <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-black text-white">
-            <ApplePayIcon className="h-5 w-auto" />
-          </div>
-          <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-white">
-            <MastercardIcon className="h-6 w-auto" />
-          </div>
-          <div className="flex items-center px-3 py-2 rounded-lg border border-border bg-white">
-            <VisaIcon className="h-5 w-auto" />
-          </div>
+          {[VisaIcon, MastercardIcon, ApplePayIcon].map((Icon, i) => (
+            <div key={i} className="flex items-center px-3 py-2 rounded-lg border border-border bg-muted/20">
+              <Icon className="h-5 w-auto" />
+            </div>
+          ))}
         </div>
       </div>
 
