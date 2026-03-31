@@ -9,6 +9,7 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
 import ScrollToTop from "@/components/common/ScrollToTop";
+import WhatsAppFloatingButton from "@/components/common/WhatsAppFloatingButton";
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
 import React, { Suspense, lazy, useEffect, useState } from "react";
 
@@ -197,6 +198,7 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <ScrollToTop />
+                <WhatsAppFloatingButton />
                 <DeferredSocialProof />
                 <AppRoutes />
               </BrowserRouter>

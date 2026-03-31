@@ -247,12 +247,6 @@ const JoinCommunity: React.FC = () => {
               {t("You've been registered successfully. We'll be in touch soon!", "تم تسجيلك بنجاح. سنتواصل معك قريباً!")}
             </p>
             <div className="flex flex-col gap-3">
-              <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer">
-                <Button className="w-full gap-2 text-white" style={{ backgroundColor: "#25D366" }}>
-                  <MessageCircle className="w-5 h-5" />
-                  {t("Contact us on WhatsApp", "تواصل معنا على واتساب")}
-                </Button>
-              </a>
               <Link to="/">
                 <Button variant="outline" className="w-full">
                   {t("Back to Home", "العودة للرئيسية")}
