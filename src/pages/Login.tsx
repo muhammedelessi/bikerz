@@ -131,17 +131,24 @@ const Login: React.FC = () => {
                 }, 50);
               }}
             >
-              <div className="relative">
-                <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t("auth.login.email")}
-                  required
-                  className="form-input h-11 sm:h-12 text-base ps-10"
-                />
+              <div className="space-y-1">
+                <div className="relative">
+                  <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
+                    placeholder={t("auth.login.email")}
+                    className={`form-input h-11 sm:h-12 text-base ps-10 ${emailError ? 'border-destructive' : ''}`}
+                  />
+                </div>
+                {emailError && (
+                  <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {emailError}
+                  </p>
+                )}
               </div>
 
               <div className="relative">
