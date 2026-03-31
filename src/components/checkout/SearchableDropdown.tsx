@@ -106,7 +106,7 @@ var SearchableDropdown: React.FC<SearchableDropdownProps> = function (props) {
   }, [isOpen, value]);
 
   return (
-    <div ref={containerRef} className="relative w-full" dir={dir}>
+    <div ref={containerRef} className="relative w-full" dir={dir || undefined}>
       {/* Trigger */}
       <button
         type="button"
