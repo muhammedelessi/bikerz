@@ -26,7 +26,7 @@ var SearchableDropdown: React.FC<SearchableDropdownProps> = function (props) {
   var searchPlaceholder = props.searchPlaceholder;
   var hasError = props.hasError || false;
   var disabled = props.disabled || false;
-  var dir = props.dir || 'ltr';
+  var dir = props.dir;
 
   var _open = useState(false);
   var isOpen = _open[0];
