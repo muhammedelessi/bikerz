@@ -398,46 +398,38 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
           />
         </div>
 
-        {emailChecked && isGoogleUser ? (
-          <p className="text-sm text-muted-foreground text-center">
-            {isRTL ? 'هذا الحساب مسجل عبر جوجل. استخدم زر جوجل أعلاه.' : 'This account was created with Google. Use the Google button above.'}
-          </p>
-        ) : (
-          <>
-            <div className="relative">
-              <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-              <Input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onFocus={handleInputFocus}
-                placeholder={passwordLabel}
-                required
-                className="form-input h-10 sm:h-11 text-sm sm:text-base ps-10 pe-12"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
+        <div className="relative">
+          <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+          <Input
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onFocus={handleInputFocus}
+            placeholder={passwordLabel}
+            required
+            className="form-input h-10 sm:h-11 text-sm sm:text-base ps-10 pe-12"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
 
-            <Button
-              type="submit"
-              className="w-full btn-cta h-11 text-base mt-1"
-              disabled={loading || isGoogleLoading}
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-              ) : (
-                isRTL ? 'تسجيل الدخول والمتابعة' : 'Login & Continue to Payment'
-              )}
-            </Button>
-          </>
-        )}
+        <Button
+          type="submit"
+          className="w-full btn-cta h-11 text-base mt-1"
+          disabled={loading}
+        >
+          {loading ? (
+            <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+          ) : (
+            isRTL ? 'تسجيل الدخول والمتابعة' : 'Login & Continue to Payment'
+          )}
+        </Button>
 
         <p className="text-sm text-center text-muted-foreground">
           {isRTL ? 'ليس لديك حساب؟' : "Don't have an account?"}{' '}
