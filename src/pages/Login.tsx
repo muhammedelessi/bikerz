@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -8,13 +8,16 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import LanguageToggle from "@/components/common/LanguageToggle";
 import { useAuthPageContent } from "@/hooks/useAuthPageContent";
-import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle, Phone, Lock } from "lucide-react";
 import { toast } from "sonner";
 import defaultHeroImage from "@/assets/hero-rider.webp";
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 import { useTheme } from '@/components/ThemeProvider';
 import SEOHead from "@/components/common/SEOHead";
+import SearchableDropdown from "@/components/checkout/SearchableDropdown";
+import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
@@ -26,13 +29,40 @@ const Login: React.FC = () => {
   const returnTo = searchParams.get("returnTo");
   const { data: authContent } = useAuthPageContent();
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [phonePrefix, setPhonePrefix] = useState("+966_SA");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [emailError, setEmailError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+
+  // Auto-detect country code by user location
+  useEffect(() => {
+    const detectCountry = async () => {
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        if (!res.ok) return;
+        const data = await res.json();
+        const match = PHONE_COUNTRIES.find(c => c.code === data.country_code);
+        if (match) {
+          setPhonePrefix(`${match.prefix}_${match.code}`);
+        }
+      } catch {
+        // fallback to SA
+      }
+    };
+    detectCountry();
+  }, []);
+
+  const phonePrefixOptions = useMemo(() =>
+    PHONE_COUNTRIES.map(c => ({
+      value: `${c.prefix}_${c.code}`,
+      label: `${c.prefix} ${isRTL ? c.ar : c.en}`,
+    })),
+    [isRTL]
+  );
 
   const cms = authContent?.login || {};
   const heroImage = cms.image || defaultHeroImage;
@@ -43,27 +73,51 @@ const Login: React.FC = () => {
   const noAccountText = (isRTL ? cms.no_account_ar : cms.no_account_en) || t("auth.login.noAccount");
   const signupLinkText = (isRTL ? cms.signup_link_ar : cms.signup_link_en) || t("auth.login.signupLink");
 
+  const getFullPhone = () => {
+    const prefix = phonePrefix.split('_')[0];
+    return `${prefix}${phone.replace(/[^0-9]/g, '')}`;
+  };
+
+  const validatePhone = (phoneValue: string): boolean => {
+    const digitsOnly = phoneValue.replace(/[^0-9]/g, '');
+    if (digitsOnly.length < 7) {
+      setPhoneError(isRTL ? 'رقم الهاتف قصير جداً (7 أرقام على الأقل)' : 'Phone number too short (min 7 digits)');
+      return false;
+    }
+    if (digitsOnly.length > 15) {
+      setPhoneError(isRTL ? 'رقم الهاتف طويل جداً (15 رقم كحد أقصى)' : 'Phone number too long (max 15 digits)');
+      return false;
+    }
+    setPhoneError(null);
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setEmailError(null);
+    setPhoneError(null);
     setPasswordError(null);
 
     let hasError = false;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email.trim()) {
-      setEmailError(isRTL ? 'يرجى إدخال البريد الإلكتروني' : 'Please enter your email');
-      hasError = true;
-    } else if (!emailRegex.test(email.trim())) {
-      setEmailError(isRTL ? 'البريد الإلكتروني غير صالح' : 'Invalid email address');
-      hasError = true;
-    }
+    if (!validatePhone(phone)) hasError = true;
     if (!password) {
       setPasswordError(isRTL ? 'يرجى إدخال كلمة المرور' : 'Please enter your password');
       hasError = true;
     }
     if (hasError) return;
+
     setIsLoading(true);
+
+    // Look up email by phone number using security definer function
+    const fullPhone = getFullPhone();
+    const { data: email, error: lookupError } = await supabase
+      .rpc('get_email_by_phone', { p_phone: fullPhone });
+
+    if (lookupError || !email) {
+      setError(isRTL ? 'رقم الهاتف غير مسجل' : 'Phone number not registered');
+      setIsLoading(false);
+      return;
+    }
 
     const { error } = await signIn(email, password);
 
@@ -75,6 +129,7 @@ const Login: React.FC = () => {
 
     toast.success(t("auth.login.success"));
     navigate(returnTo || "/dashboard");
+    setIsLoading(false);
   };
 
   return (
@@ -131,22 +186,40 @@ const Login: React.FC = () => {
                 }, 50);
               }}
             >
+              {/* Phone with country code */}
               <div className="space-y-1">
-                <div className="relative">
-                  <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
-                    placeholder={t("auth.login.email")}
-                    className={`form-input h-11 sm:h-12 text-base ps-10 ${emailError ? 'border-destructive' : ''}`}
-                  />
+                <div className="flex gap-2" dir="ltr">
+                  <div className="flex-shrink-0 w-[120px]">
+                    <SearchableDropdown
+                      options={phonePrefixOptions}
+                      value={phonePrefix}
+                      onChange={(val) => setPhonePrefix(val)}
+                      placeholder="+---"
+                      searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
+                      dir="ltr"
+                    />
+                  </div>
+                  <div className="relative flex-1">
+                    <Phone className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        setPhone(val);
+                        setPhoneError(null);
+                      }}
+                      placeholder="5XXXXXXXX"
+                      className={`form-input h-11 sm:h-12 text-base ps-9 ${phoneError ? 'border-destructive' : ''}`}
+                      dir="ltr"
+                    />
+                  </div>
                 </div>
-                {emailError && (
+                {phoneError && (
                   <p className="text-xs text-destructive flex items-center gap-1 mt-1">
                     <AlertCircle className="w-3 h-3" />
-                    {emailError}
+                    {phoneError}
                   </p>
                 )}
               </div>
