@@ -181,7 +181,7 @@ const AdminTrainings: React.FC = () => {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>{isRTL ? 'النوع' : 'Type'}</Label>
-                <Select value={form.type} onValueChange={v => setForm(f => ({...f, type: v}))}>
+                <Select value={form.type} onValueChange={v => setForm(f => ({...f, type: v as typeof f.type}))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="theory">{isRTL ? 'نظري' : 'Theory'}</SelectItem>
