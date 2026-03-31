@@ -1,7 +1,7 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
-  User, Mail, MapPin, Pencil, AlertCircle,
+  User, Mail, MapPin, Pencil, AlertCircle, Info,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -68,6 +68,16 @@ const CheckoutInfoStep: React.FC<CheckoutInfoStepProps> = memo(({
   cityManual, setCityManual, handleCountryChange, handleCityChange, city,
   errors, setErrors,
 }) => {
+  const missingFields = useMemo(() => {
+    const missing: string[] = [];
+    if (!phone.trim()) missing.push(isRTL ? 'رقم الهاتف' : 'Phone number');
+    const effectiveCountry = isOtherCountry ? countryManual.trim() : (cityOptions.length > 0 ? 'set' : '');
+    if (!effectiveCountry && !isOtherCountry && !cityOptions.length) missing.push(isRTL ? 'الدولة' : 'Country');
+    const effectiveCity = (isOtherCity || isOtherCountry) ? cityManual.trim() : city.trim();
+    if (!effectiveCity) missing.push(isRTL ? 'المدينة' : 'City');
+    return missing;
+  }, [phone, city, cityManual, isOtherCity, isOtherCountry, countryManual, cityOptions.length, isRTL]);
+
   return (
     <motion.div
       key="info"
@@ -76,6 +86,19 @@ const CheckoutInfoStep: React.FC<CheckoutInfoStepProps> = memo(({
       exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
       className="space-y-4"
     >
+      {/* Missing fields warning */}
+      {user && missingFields.length > 0 && (
+        <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+          <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-amber-700 dark:text-amber-300">
+            <p className="font-semibold mb-0.5">
+              {isRTL ? 'يرجى إكمال البيانات التالية للمتابعة:' : 'Please complete the following to continue:'}
+            </p>
+            <p>{missingFields.join(isRTL ? '، ' : ', ')}</p>
+          </div>
+        </div>
+      )}
+
       {/* Personal Information Section */}
       <div className="flex items-center gap-2 mb-1">
         <User className="w-4 h-4 text-primary" />
