@@ -191,7 +191,7 @@ const AdminTrainings: React.FC = () => {
               </div>
               <div className="space-y-2">
                 <Label>{isRTL ? 'المستوى' : 'Level'}</Label>
-                <Select value={form.level} onValueChange={v => setForm(f => ({...f, level: v}))}>
+                <Select value={form.level} onValueChange={v => setForm(f => ({...f, level: v as typeof f.level}))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="beginner">{isRTL ? 'مبتدئ' : 'Beginner'}</SelectItem>

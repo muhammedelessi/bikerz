@@ -171,7 +171,7 @@ const AdminTrainers: React.FC = () => {
 
   const openEdit = async (t: Trainer) => {
     setEditingTrainer(t);
-    setForm({ name_ar: t.name_ar, name_en: t.name_en, bio_ar: t.bio_ar, bio_en: t.bio_en, country: t.country, city: t.city, bike_type: t.bike_type, years_of_experience: t.years_of_experience, services: t.services || [], status: t.status, photo_url: t.photo_url });
+    setForm({ name_ar: t.name_ar, name_en: t.name_en, bio_ar: t.bio_ar, bio_en: t.bio_en, country: t.country, city: t.city, bike_type: t.bike_type, years_of_experience: t.years_of_experience, services: t.services || [], status: t.status as 'active' | 'inactive', photo_url: t.photo_url });
     setPhotoFile(null);
     setPhotoPreview(t.photo_url);
     // Load assigned trainings
