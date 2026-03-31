@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import AddInstructorDialog from '@/components/admin/AddInstructorDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -38,6 +39,7 @@ import {
 const AdminInstructors = () => {
   const { isRTL } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const { data: instructors, isLoading } = useQuery({
     queryKey: ['admin-instructors'],
@@ -118,7 +120,7 @@ const AdminInstructors = () => {
               {isRTL ? 'إدارة المدربين وتتبع أدائهم' : 'Manage instructors and track their performance'}
             </p>
           </div>
-          <Button>
+          <Button onClick={() => setShowAddDialog(true)}>
             <UserPlus className="w-4 h-4 me-2" />
             {isRTL ? 'إضافة مدرب' : 'Add Instructor'}
           </Button>
@@ -257,6 +259,8 @@ const AdminInstructors = () => {
           </CardContent>
         </Card>
       </div>
+
+      <AddInstructorDialog open={showAddDialog} onOpenChange={setShowAddDialog} />
     </AdminLayout>
   );
 };
