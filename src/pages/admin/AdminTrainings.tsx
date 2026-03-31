@@ -101,7 +101,7 @@ const AdminTrainings: React.FC = () => {
 
   const openEdit = (t: Training) => {
     setEditingTraining(t);
-    setForm({ name_ar: t.name_ar, name_en: t.name_en, type: t.type, description_ar: t.description_ar, description_en: t.description_en, level: t.level, status: t.status });
+    setForm({ name_ar: t.name_ar, name_en: t.name_en, type: t.type as typeof form.type, description_ar: t.description_ar, description_en: t.description_en, level: t.level as typeof form.level, status: t.status as typeof form.status });
     setDialogOpen(true);
   };
 
