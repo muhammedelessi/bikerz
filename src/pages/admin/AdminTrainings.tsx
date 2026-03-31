@@ -3,20 +3,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle } from 'lucide-react';
 import BilingualInput from '@/components/admin/content/BilingualInput';
 
 interface Training {
@@ -34,7 +32,7 @@ interface Training {
 const AdminTrainings: React.FC = () => {
   const { isRTL } = useLanguage();
   const queryClient = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingTraining, setEditingTraining] = useState<Training | null>(null);
   const [form, setForm] = useState({
@@ -74,7 +72,7 @@ const AdminTrainings: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trainings'] });
-      setDialogOpen(false);
+      setSheetOpen(false);
       toast.success(isRTL ? 'تم الحفظ بنجاح' : 'Saved successfully');
     },
     onError: () => toast.error(isRTL ? 'حدث خطأ' : 'An error occurred'),
@@ -96,22 +94,32 @@ const AdminTrainings: React.FC = () => {
   const openAdd = () => {
     setEditingTraining(null);
     setForm({ name_ar: '', name_en: '', type: 'theory', description_ar: '', description_en: '', level: 'beginner', status: 'active' });
-    setDialogOpen(true);
+    setSheetOpen(true);
   };
 
   const openEdit = (t: Training) => {
     setEditingTraining(t);
     setForm({ name_ar: t.name_ar, name_en: t.name_en, type: t.type as typeof form.type, description_ar: t.description_ar, description_en: t.description_en, level: t.level as typeof form.level, status: t.status as typeof form.status });
-    setDialogOpen(true);
+    setSheetOpen(true);
   };
 
   const handleSave = () => {
     saveMutation.mutate({ ...form, id: editingTraining?.id });
   };
 
-  const levelBadge = (level: string) => {
-    const colors: Record<string, string> = { beginner: 'bg-green-500/10 text-green-600', intermediate: 'bg-amber-500/10 text-amber-600', advanced: 'bg-red-500/10 text-red-600' };
-    return <Badge variant="outline" className={colors[level] || ''}>{isRTL ? { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم' }[level] : level}</Badge>;
+  const levelBadgeClasses: Record<string, string> = {
+    beginner: 'bg-blue-500/15 text-blue-500 border-blue-500/30',
+    intermediate: 'bg-amber-500/15 text-amber-500 border-amber-500/30',
+    advanced: 'bg-red-500/15 text-red-500 border-red-500/30',
+  };
+
+  const levelLabel = (level: string) => isRTL
+    ? { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم' }[level] || level
+    : level.charAt(0).toUpperCase() + level.slice(1);
+
+  const typeBadgeClasses: Record<string, string> = {
+    theory: 'bg-purple-500/15 text-purple-500 border-purple-500/30',
+    practical: 'bg-orange-500/15 text-orange-500 border-orange-500/30',
   };
 
   return (
@@ -120,48 +128,84 @@ const AdminTrainings: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">{isRTL ? 'إدارة التدريبات' : 'Trainings Management'}</h1>
-            <p className="text-muted-foreground">{isRTL ? 'إدارة جميع التدريبات المتاحة' : 'Manage all available trainings'}</p>
+            <p className="text-sm text-muted-foreground">{isRTL ? 'إدارة جميع التدريبات المتاحة' : 'Manage all available trainings'}</p>
           </div>
-          <Button onClick={openAdd}><Plus className="w-4 h-4 me-2" />{isRTL ? 'إضافة تدريب' : 'Add Training'}</Button>
+          <Button onClick={openAdd} size="sm"><Plus className="w-4 h-4 me-2" />{isRTL ? 'إضافة تدريب' : 'Add Training'}</Button>
         </div>
 
         <Card>
           <CardContent className="p-0">
             {isLoading ? (
-              <div className="p-6 space-y-4">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full" />)}</div>
+              <div className="p-6 space-y-3">
+                {[1,2,3].map(i => (
+                  <div key={i} className="flex items-center gap-4">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-6 w-20 rounded-full" />
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                  </div>
+                ))}
+              </div>
+            ) : trainings?.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 px-4">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <BookOpen className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-1">{isRTL ? 'لا توجد تدريبات بعد' : 'No trainings yet'}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{isRTL ? 'ابدأ بإضافة أول تدريب' : 'Get started by adding your first training'}</p>
+                <Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 me-2" />{isRTL ? 'إضافة تدريب' : 'Add Training'}</Button>
+              </div>
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>{isRTL ? 'الاسم (عربي)' : 'Name (AR)'}</TableHead>
-                    <TableHead>{isRTL ? 'الاسم (إنجليزي)' : 'Name (EN)'}</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead>{isRTL ? 'الاسم' : 'Name'}</TableHead>
                     <TableHead>{isRTL ? 'النوع' : 'Type'}</TableHead>
                     <TableHead>{isRTL ? 'المستوى' : 'Level'}</TableHead>
                     <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
                     <TableHead>{isRTL ? 'المدربين' : 'Trainers'}</TableHead>
-                    <TableHead>{isRTL ? 'إجراءات' : 'Actions'}</TableHead>
+                    <TableHead className="w-[100px]">{isRTL ? 'إجراءات' : 'Actions'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {trainings?.map(t => (
-                    <TableRow key={t.id}>
-                      <TableCell dir="rtl">{t.name_ar}</TableCell>
-                      <TableCell dir="ltr">{t.name_en}</TableCell>
-                      <TableCell><Badge variant="secondary">{t.type === 'theory' ? (isRTL ? 'نظري' : 'Theory') : (isRTL ? 'عملي' : 'Practical')}</Badge></TableCell>
-                      <TableCell>{levelBadge(t.level)}</TableCell>
-                      <TableCell><Badge variant={t.status === 'active' ? 'default' : 'secondary'}>{t.status === 'active' ? (isRTL ? 'نشط' : 'Active') : (isRTL ? 'مؤرشف' : 'Archived')}</Badge></TableCell>
-                      <TableCell><div className="flex items-center gap-1"><Users className="w-4 h-4" />{trainerCounts?.[t.id] || 0}</div></TableCell>
+                    <TableRow key={t.id} className="group">
                       <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil className="w-4 h-4" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => setDeleteId(t.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                        <div className="font-medium">{isRTL ? t.name_ar : t.name_en}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{isRTL ? t.name_en : t.name_ar}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={typeBadgeClasses[t.type] || ''}>
+                          {t.type === 'theory' ? (isRTL ? 'نظري' : 'Theory') : (isRTL ? 'عملي' : 'Practical')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={levelBadgeClasses[t.level] || ''}>
+                          {levelLabel(t.level)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {t.status === 'active' ? (
+                          <Badge className="bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500/20">{isRTL ? 'نشط' : 'Active'}</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground">{isRTL ? 'مؤرشف' : 'Archived'}</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span className="text-sm">{trainerCounts?.[t.id] || 0}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(t)}><Pencil className="w-3.5 h-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeleteId(t.id)}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>
                   ))}
-                  {trainings?.length === 0 && (
-                    <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">{isRTL ? 'لا توجد تدريبات' : 'No trainings found'}</TableCell></TableRow>
-                  )}
                 </TableBody>
               </Table>
             )}
@@ -169,60 +213,86 @@ const AdminTrainings: React.FC = () => {
         </Card>
       </div>
 
-      {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingTraining ? (isRTL ? 'تعديل تدريب' : 'Edit Training') : (isRTL ? 'إضافة تدريب' : 'Add Training')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <BilingualInput labelEn="Name" labelAr="الاسم" valueEn={form.name_en} valueAr={form.name_ar} onChangeEn={v => setForm(f => ({...f, name_en: v}))} onChangeAr={v => setForm(f => ({...f, name_ar: v}))} placeholderEn="Training name" placeholderAr="اسم التدريب" />
-            <BilingualInput labelEn="Description" labelAr="الوصف" valueEn={form.description_en} valueAr={form.description_ar} onChangeEn={v => setForm(f => ({...f, description_en: v}))} onChangeAr={v => setForm(f => ({...f, description_ar: v}))} isTextarea rows={3} />
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>{isRTL ? 'النوع' : 'Type'}</Label>
-                <Select value={form.type} onValueChange={v => setForm(f => ({...f, type: v as typeof f.type}))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="theory">{isRTL ? 'نظري' : 'Theory'}</SelectItem>
-                    <SelectItem value="practical">{isRTL ? 'عملي' : 'Practical'}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>{isRTL ? 'المستوى' : 'Level'}</Label>
-                <Select value={form.level} onValueChange={v => setForm(f => ({...f, level: v as typeof f.level}))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="beginner">{isRTL ? 'مبتدئ' : 'Beginner'}</SelectItem>
-                    <SelectItem value="intermediate">{isRTL ? 'متوسط' : 'Intermediate'}</SelectItem>
-                    <SelectItem value="advanced">{isRTL ? 'متقدم' : 'Advanced'}</SelectItem>
-                  </SelectContent>
-                </Select>
+      {/* Add/Edit Sheet */}
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent side={isRTL ? 'left' : 'right'} className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{editingTraining ? (isRTL ? 'تعديل تدريب' : 'Edit Training') : (isRTL ? 'إضافة تدريب' : 'Add Training')}</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-6 mt-6">
+            {/* Names */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'المعلومات الأساسية' : 'Basic Info'}</h3>
+              <BilingualInput labelEn="Name" labelAr="الاسم" valueEn={form.name_en} valueAr={form.name_ar} onChangeEn={v => setForm(f => ({...f, name_en: v}))} onChangeAr={v => setForm(f => ({...f, name_ar: v}))} placeholderEn="Training name" placeholderAr="اسم التدريب" />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'الوصف' : 'Description'}</h3>
+              <BilingualInput labelEn="Description" labelAr="الوصف" valueEn={form.description_en} valueAr={form.description_ar} onChangeEn={v => setForm(f => ({...f, description_en: v}))} onChangeAr={v => setForm(f => ({...f, description_ar: v}))} isTextarea rows={3} />
+            </div>
+
+            {/* Type & Level */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'التصنيف' : 'Classification'}</h3>
+              <div className="grid gap-4 grid-cols-2">
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'النوع' : 'Type'}</Label>
+                  <Select value={form.type} onValueChange={v => setForm(f => ({...f, type: v as typeof f.type}))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="theory">{isRTL ? 'نظري' : 'Theory'}</SelectItem>
+                      <SelectItem value="practical">{isRTL ? 'عملي' : 'Practical'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'المستوى' : 'Level'}</Label>
+                  <Select value={form.level} onValueChange={v => setForm(f => ({...f, level: v as typeof f.level}))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beginner">{isRTL ? 'مبتدئ' : 'Beginner'}</SelectItem>
+                      <SelectItem value="intermediate">{isRTL ? 'متوسط' : 'Intermediate'}</SelectItem>
+                      <SelectItem value="advanced">{isRTL ? 'متقدم' : 'Advanced'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Label>{isRTL ? 'نشط' : 'Active'}</Label>
+
+            {/* Status */}
+            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+              <div>
+                <Label className="text-sm font-medium">{isRTL ? 'الحالة' : 'Status'}</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">{isRTL ? 'تفعيل أو تعطيل هذا التدريب' : 'Enable or disable this training'}</p>
+              </div>
               <Switch checked={form.status === 'active'} onCheckedChange={v => setForm(f => ({...f, status: v ? 'active' : 'archived'}))} />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
-            <Button onClick={handleSave} disabled={saveMutation.isPending}>{saveMutation.isPending ? '...' : (isRTL ? 'حفظ' : 'Save')}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <SheetFooter className="mt-6 gap-2">
+            <Button variant="outline" onClick={() => setSheetOpen(false)} className="flex-1">{isRTL ? 'إلغاء' : 'Cancel'}</Button>
+            <Button onClick={handleSave} disabled={saveMutation.isPending} className="flex-1">{saveMutation.isPending ? '...' : (isRTL ? 'حفظ' : 'Save')}</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* Delete Confirm */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{isRTL ? 'تأكيد الحذف' : 'Confirm Delete'}</AlertDialogTitle>
-            <AlertDialogDescription>{isRTL ? 'هل أنت متأكد من حذف هذا التدريب؟' : 'Are you sure you want to delete this training?'}</AlertDialogDescription>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+              </div>
+              <div>
+                <AlertDialogTitle>{isRTL ? 'تأكيد الحذف' : 'Confirm Delete'}</AlertDialogTitle>
+                <AlertDialogDescription className="mt-1">{isRTL ? 'هل أنت متأكد من حذف هذا التدريب؟ لا يمكن التراجع عن هذا الإجراء.' : 'Are you sure you want to delete this training? This action cannot be undone.'}</AlertDialogDescription>
+              </div>
+            </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)} className="bg-destructive text-destructive-foreground">{isRTL ? 'حذف' : 'Delete'}</AlertDialogAction>
+            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{isRTL ? 'حذف' : 'Delete'}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
