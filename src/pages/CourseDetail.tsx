@@ -701,10 +701,11 @@ const CourseDetail: React.FC = () => {
                             <iframe
                               width="100%"
                               height="100%"
-                              src="https://www.youtube.com/embed/VIDEO_ID"
+                              src="https://www.youtube.com/embed/VIDEO_ID?autoplay=1"
                               frameBorder="0"
+                              allow="autoplay; encrypted-media"
                               allowFullScreen
-                              style={{ display: 'block' }}
+                              style={{ display: 'block', pointerEvents: 'auto' }}
                             />
                             {/* BunnyVideoEmbed - temporarily disabled
                             <BunnyVideoEmbed
