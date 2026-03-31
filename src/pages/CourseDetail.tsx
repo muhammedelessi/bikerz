@@ -48,7 +48,7 @@ import {
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.webp';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
-import GuestSignupModal from '@/components/checkout/GuestSignupModal';
+
 import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';
 import PaymentMethodIcons from '@/components/checkout/PaymentMethodIcons';
 import { trackViewContent } from '@/utils/metaPixel';
