@@ -135,16 +135,13 @@ const AdminUsers: React.FC = () => {
 
       if (enrollError) throw enrollError;
 
-      // Fetch emails from tap_charges (most recent per user)
-      const { data: charges } = await supabase
-        .from('tap_charges')
-        .select('user_id, customer_email')
-        .not('customer_email', 'is', null);
+      // Fetch emails from auth via secure function
+      const { data: emailRows } = await supabase.rpc('get_all_user_emails');
 
       const emailMap = new Map<string, string>();
-      (charges || []).forEach((c: any) => {
-        if (c.customer_email && !emailMap.has(c.user_id)) {
-          emailMap.set(c.user_id, c.customer_email);
+      (emailRows || []).forEach((row: any) => {
+        if (row.email) {
+          emailMap.set(row.user_id, row.email);
         }
       });
 

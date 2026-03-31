@@ -2892,6 +2892,13 @@ export type Database = {
       }
       award_badge_secure: { Args: { p_badge_id: string }; Returns: Json }
       check_google_provider: { Args: { p_email: string }; Returns: boolean }
+      get_all_user_emails: {
+        Args: never
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
       get_auth_providers: { Args: { p_email: string }; Returns: Json }
       get_email_by_phone: { Args: { p_phone: string }; Returns: string }
       get_user_course_statuses: {
