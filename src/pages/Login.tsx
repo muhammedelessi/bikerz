@@ -108,40 +108,27 @@ const Login: React.FC = () => {
 
     setIsLoading(true);
 
-    // Look up email by phone number
+    // Look up email by phone number using security definer function
     const fullPhone = getFullPhone();
-    const { data: profileData, error: lookupError } = await supabase
-      .from('profiles')
-      .select('user_id')
-      .eq('phone', fullPhone)
-      .maybeSingle();
+    const { data: email, error: lookupError } = await supabase
+      .rpc('get_email_by_phone', { p_phone: fullPhone });
 
-    if (lookupError || !profileData) {
+    if (lookupError || !email) {
       setError(isRTL ? 'رقم الهاتف غير مسجل' : 'Phone number not registered');
       setIsLoading(false);
       return;
     }
 
-    // Get user email from auth via a lookup in profiles -> we need the email
-    // We'll use a different approach: get email from auth.users via edge function or profile
-    // Actually, let's look up the user's email from the auth system
-    const { data: userData } = await supabase.rpc('get_auth_providers', { p_email: '' }).maybeSingle();
-    
-    // Alternative: look up email directly - we need to find the user's email
-    // Let's query using the admin API via an edge function, or store email in profiles
-    // For now, let's use supabase auth admin - but we can't from client
-    // Best approach: lookup email from auth.users using user_id via a DB function
-    
-    // Simpler approach: find email by looking up user metadata
-    const { data: authUser } = await supabase.auth.admin?.getUserById(profileData.user_id) || { data: null };
-    
-    // Since we can't use admin API from client, let's create a simpler approach
-    // We'll need to store email in profiles or use an edge function
-    // For now, let's use the profiles table - but it doesn't have email
-    // Let's look it up via a different method
+    const { error } = await signIn(email, password);
 
-    // Actually, the cleanest approach is to query auth.users email via a security definer function
-    setError(isRTL ? 'بيانات الدخول غير صحيحة' : 'Invalid credentials');
+    if (error) {
+      setError(t("auth.login.invalidCredentials"));
+      setIsLoading(false);
+      return;
+    }
+
+    toast.success(t("auth.login.success"));
+    navigate(returnTo || "/dashboard");
     setIsLoading(false);
   };
 
