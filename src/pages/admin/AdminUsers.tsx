@@ -409,38 +409,54 @@ const AdminUsers: React.FC = () => {
                       {format(new Date(user.created_at), 'dd/MM/yyyy')}
                     </TableCell>
                     <TableCell className="text-end">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
-                          <DropdownMenuLabel>{t('admin.users.actions')}</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => openUserDetail(user)}>
-                            <Eye className="w-4 h-4 me-2" />
-                            {t('admin.users.viewDetails')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openRoleDialog(user)}>
-                            <Shield className="w-4 h-4 me-2" />
-                            {t('admin.users.manageRoles')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Mail className="w-4 h-4 me-2" />
-                            {t('admin.users.sendEmail')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <MessageSquare className="w-4 h-4 me-2" />
-                            {t('admin.users.addNote')}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
-                            <UserX className="w-4 h-4 me-2" />
-                            {t('admin.users.suspendUser')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center justify-end gap-1">
+                        {user.phone && (
+                          <a
+                            href={`https://wa.me/${user.phone.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={isRTL ? 'تواصل عبر واتساب' : 'Contact on WhatsApp'}
+                          >
+                            <Button variant="ghost" size="icon" className="text-[#25D366] hover:text-[#25D366] hover:bg-[#25D366]/10">
+                              <svg viewBox="0 0 32 32" className="w-5 h-5" fill="currentColor">
+                                <path d="M16.004 0h-.008C7.174 0 0 7.176 0 16.004c0 3.5 1.132 6.744 3.058 9.378L1.058 31.14l5.962-1.966c2.518 1.656 5.518 2.622 8.734 2.622h.008c8.822 0 15.996-7.18 15.996-16.008C31.758 7.176 24.826 0 16.004 0zm9.466 22.616c-.396 1.116-2.328 2.076-3.21 2.21-.882.132-2.004.188-3.234-.204a29.48 29.48 0 01-2.928-1.082c-5.152-2.228-8.516-7.45-8.776-7.798-.258-.348-2.112-2.812-2.112-5.364 0-2.554 1.336-3.808 1.812-4.33.476-.52 1.04-.65 1.386-.65.346 0 .694.004 1 .018.32.014.75-.122 1.172.894.432 1.04 1.466 3.578 1.594 3.836.128.26.214.562.042.906-.172.346-.258.562-.516.866-.258.304-.542.678-.774.91-.258.26-.528.542-.228 1.062.302.52 1.338 2.21 2.874 3.58 1.974 1.76 3.638 2.306 4.158 2.566.52.258.826.216 1.128-.13.304-.346 1.3-1.518 1.646-2.04.346-.52.694-.432 1.172-.258.476.172 3.022 1.424 3.542 1.684.52.258.866.39.994.606.128.214.128 1.244-.268 2.36z" />
+                              </svg>
+                            </Button>
+                          </a>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
+                            <DropdownMenuLabel>{t('admin.users.actions')}</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => openUserDetail(user)}>
+                              <Eye className="w-4 h-4 me-2" />
+                              {t('admin.users.viewDetails')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openRoleDialog(user)}>
+                              <Shield className="w-4 h-4 me-2" />
+                              {t('admin.users.manageRoles')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Mail className="w-4 h-4 me-2" />
+                              {t('admin.users.sendEmail')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <MessageSquare className="w-4 h-4 me-2" />
+                              {t('admin.users.addNote')}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive">
+                              <UserX className="w-4 h-4 me-2" />
+                              {t('admin.users.suspendUser')}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
