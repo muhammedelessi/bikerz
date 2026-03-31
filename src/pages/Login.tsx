@@ -46,6 +46,23 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setEmailError(null);
+    setPasswordError(null);
+
+    let hasError = false;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim()) {
+      setEmailError(isRTL ? 'يرجى إدخال البريد الإلكتروني' : 'Please enter your email');
+      hasError = true;
+    } else if (!emailRegex.test(email.trim())) {
+      setEmailError(isRTL ? 'البريد الإلكتروني غير صالح' : 'Invalid email address');
+      hasError = true;
+    }
+    if (!password) {
+      setPasswordError(isRTL ? 'يرجى إدخال كلمة المرور' : 'Please enter your password');
+      hasError = true;
+    }
+    if (hasError) return;
     setIsLoading(true);
 
     const { error } = await signIn(email, password);
