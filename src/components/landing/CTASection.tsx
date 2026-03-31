@@ -25,7 +25,6 @@ const CTASection: React.FC = () => {
   const features = [
     { icon: Shield, text: isRTL ? 'تعلم آمن ومضمون' : 'Safe & Certified' },
     { icon: Clock, text: isRTL ? 'تعلم بوقتك' : 'Learn at Your Pace' },
-    { icon: Award, text: isRTL ? 'شهادة معتمدة' : 'Get Certified' },
   ];
 
   return (
