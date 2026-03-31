@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import LanguageToggle from '@/components/common/LanguageToggle';
 import ProfileCompletionWizard from '@/components/ui/profile/ProfileCompletionWizard';
 import { useAuthPageContent } from '@/hooks/useAuthPageContent';
-import { ArrowRight, ArrowLeft, AlertCircle, User, Mail, Phone, Globe, MapPin, ChevronDown, Search } from 'lucide-react';
+import { ArrowRight, ArrowLeft, AlertCircle, User, Mail, Phone, Globe, MapPin, ChevronDown, Search, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import defaultHeroImage from '@/assets/community-ride.webp';
 import SEOHead from '@/components/common/SEOHead';
@@ -22,14 +22,6 @@ import SearchableDropdown from '@/components/checkout/SearchableDropdown';
 import { PHONE_COUNTRIES } from '@/data/phoneCountryCodes';
 import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
 
-const generateRandomPassword = () => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
-  let password = '';
-  for (let i = 0; i < 24; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return password;
-};
 
 const OTHER_VALUE = '__other__';
 
@@ -50,6 +42,8 @@ const Signup: React.FC = () => {
   const [city, setCity] = useState('');
   const [customCountry, setCustomCountry] = useState('');
   const [customCity, setCustomCity] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -57,6 +51,7 @@ const Signup: React.FC = () => {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [countryError, setCountryError] = useState<string | null>(null);
   const [cityError, setCityError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [showProfileWizard, setShowProfileWizard] = useState(false);
   const [countryOpen, setCountryOpen] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
@@ -233,6 +228,11 @@ const Signup: React.FC = () => {
 
     if (!validatePhone(phone)) hasError = true;
 
+    if (!/^\d{6}$/.test(password)) {
+      setPasswordError(isRTL ? 'كلمة المرور يجب أن تتكون من 6 أرقام' : 'Password must be exactly 6 digits');
+      hasError = true;
+    }
+
     const finalCountry = getCountryName();
     const finalCity = getCityName();
     if (!finalCountry) {
@@ -248,8 +248,7 @@ const Signup: React.FC = () => {
 
     setIsLoading(true);
 
-    const randomPassword = generateRandomPassword();
-    const { error } = await signUp(email, randomPassword, name);
+    const { error } = await signUp(email, password, name);
 
     if (error) {
       setError(error.message);
@@ -428,6 +427,44 @@ const Signup: React.FC = () => {
                   <p className="text-xs text-destructive flex items-center gap-1 mt-1">
                     <AlertCircle className="w-3 h-3" />
                     {phoneError}
+                  </p>
+                )}
+              </div>
+
+              {/* Password — 6 digits */}
+              <div className="space-y-1">
+                <div className="relative">
+                  <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={password}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setPassword(val);
+                      setPasswordError(null);
+                    }}
+                    placeholder={isRTL ? 'كلمة المرور (6 أرقام)' : 'Password (6 digits)'}
+                    className={`ps-9 pe-10 ${passwordError ? 'border-destructive' : ''}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {passwordError ? (
+                  <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {passwordError}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isRTL ? 'يجب أن تتكون من 6 أرقام — ستستخدمها لتسجيل الدخول لاحقاً' : 'Must be 6 digits — you will use it to log in later'}
                   </p>
                 )}
               </div>
