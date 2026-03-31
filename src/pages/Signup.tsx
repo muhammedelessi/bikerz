@@ -58,6 +58,10 @@ const Signup: React.FC = () => {
   const [countryError, setCountryError] = useState<string | null>(null);
   const [cityError, setCityError] = useState<string | null>(null);
   const [showProfileWizard, setShowProfileWizard] = useState(false);
+  const [countryOpen, setCountryOpen] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
+  const [cityOpen, setCityOpen] = useState(false);
+  const [citySearch, setCitySearch] = useState('');
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const { sendFormData } = useGHLFormWebhook();
