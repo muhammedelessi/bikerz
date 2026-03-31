@@ -52,7 +52,11 @@ const Signup: React.FC = () => {
   const [customCity, setCustomCity] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [countryError, setCountryError] = useState<string | null>(null);
+  const [cityError, setCityError] = useState<string | null>(null);
   const [showProfileWizard, setShowProfileWizard] = useState(false);
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
