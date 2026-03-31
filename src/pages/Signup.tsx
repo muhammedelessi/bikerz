@@ -208,21 +208,42 @@ const Signup: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setNameError(null);
+    setEmailError(null);
     setPhoneError(null);
+    setCountryError(null);
+    setCityError(null);
 
-    if (!validatePhone(phone)) return;
+    let hasError = false;
 
-    // Validate country/city
+    if (!name.trim()) {
+      setNameError(isRTL ? 'يرجى إدخال الاسم' : 'Please enter your name');
+      hasError = true;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim()) {
+      setEmailError(isRTL ? 'يرجى إدخال البريد الإلكتروني' : 'Please enter your email');
+      hasError = true;
+    } else if (!emailRegex.test(email.trim())) {
+      setEmailError(isRTL ? 'البريد الإلكتروني غير صالح' : 'Invalid email address');
+      hasError = true;
+    }
+
+    if (!validatePhone(phone)) hasError = true;
+
     const finalCountry = getCountryName();
     const finalCity = getCityName();
     if (!finalCountry) {
-      setError(isRTL ? 'يرجى اختيار أو إدخال الدولة' : 'Please select or enter your country');
-      return;
+      setCountryError(isRTL ? 'يرجى اختيار أو إدخال الدولة' : 'Please select or enter your country');
+      hasError = true;
     }
     if (!finalCity) {
-      setError(isRTL ? 'يرجى اختيار أو إدخال المدينة' : 'Please select or enter your city');
-      return;
+      setCityError(isRTL ? 'يرجى اختيار أو إدخال المدينة' : 'Please select or enter your city');
+      hasError = true;
     }
+
+    if (hasError) return;
 
     setIsLoading(true);
 
