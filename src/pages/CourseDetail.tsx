@@ -706,12 +706,28 @@ const CourseDetail: React.FC = () => {
                   {/* Desktop Video — inline in left column */}
                   <div className="hidden md:block">
                     {course.preview_video_url ? (
-                      <div className="rounded-2xl overflow-hidden">
-                        {previewVideoPlaying ? (
+                      (() => {
+                        const ytEmbedUrl = getYouTubeEmbedUrl(course.preview_video_url);
+                        if (ytEmbedUrl) {
+                          return (
+                            <div className="aspect-video w-full rounded-2xl overflow-hidden">
+                              <iframe
+                                width="100%"
+                                height="100%"
+                                src={ytEmbedUrl}
+                                frameBorder="0"
+                                allow="autoplay; encrypted-media"
+                                allowFullScreen
+                                style={{ display: 'block' }}
+                              />
+                            </div>
+                          );
+                        }
+                        return previewVideoPlaying ? (
                           <div className="aspect-video w-full">
                             <BunnyVideoEmbed
                               videoUrl={course.preview_video_url}
-                               title={t('courseDetail.courseIntroduction')}
+                              title={t('courseDetail.courseIntroduction')}
                               isPreview
                             />
                           </div>
@@ -746,8 +762,8 @@ const CourseDetail: React.FC = () => {
                               </span>
                             </div>
                           </button>
-                        )}
-                      </div>
+                        );
+                      })()
                     ) : course.thumbnail_url ? (
                       <div className="relative rounded-2xl overflow-hidden">
                         <picture>
