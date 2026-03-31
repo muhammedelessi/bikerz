@@ -136,10 +136,9 @@
 
   #root {
     min-height: 100dvh;
-    padding-top: env(safe-area-inset-top, 0px);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     transition: min-height 0.3s ease, padding-bottom 0.3s ease;
   }
 
