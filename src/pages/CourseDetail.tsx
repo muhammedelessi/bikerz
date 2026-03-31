@@ -611,23 +611,11 @@ const CourseDetail: React.FC = () => {
               <div className="w-full">
                 {previewVideoPlaying ? (
                   <div className="aspect-video w-full">
-                    {/* YouTube - temporary */}
-                    <iframe
-                      width="100%"
-                      height="100%"
-                      src="https://www.youtube.com/embed/VIDEO_ID?autoplay=1"
-                      frameBorder="0"
-                      allow="autoplay; encrypted-media"
-                      allowFullScreen
-                      style={{ display: 'block', pointerEvents: 'auto' }}
-                    />
-                    {/* BunnyVideoEmbed - temporarily disabled
                     <BunnyVideoEmbed
                       videoUrl={course.preview_video_url}
                       title={t('courseDetail.courseIntroduction')}
                       isPreview
                     />
-                    */}
                   </div>
                 ) : (
                   <button
@@ -697,23 +685,11 @@ const CourseDetail: React.FC = () => {
                       <div className="rounded-2xl overflow-hidden">
                         {previewVideoPlaying ? (
                           <div className="aspect-video w-full">
-                            {/* YouTube - temporary */}
-                            <iframe
-                              width="100%"
-                              height="100%"
-                              src="https://www.youtube.com/embed/VIDEO_ID?autoplay=1"
-                              frameBorder="0"
-                              allow="autoplay; encrypted-media"
-                              allowFullScreen
-                              style={{ display: 'block', pointerEvents: 'auto' }}
-                            />
-                            {/* BunnyVideoEmbed - temporarily disabled
                             <BunnyVideoEmbed
                               videoUrl={course.preview_video_url}
-                              title={t('courseDetail.courseIntroduction')}
+                               title={t('courseDetail.courseIntroduction')}
                               isPreview
                             />
-                            */}
                           </div>
                         ) : (
                           <button
