@@ -239,10 +239,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
 
   const navigate = useNavigate();
 
-  const handleClaimCoupon = () => {
-    navigator.clipboard.writeText('PROFILE10');
-    localStorage.setItem('profile_coupon_code', 'PROFILE10');
-    toast.success(t('profileCompletion.couponCopiedBrowse'));
+  const handleDone = () => {
     onOpenChange(false);
     navigate('/courses');
   };
