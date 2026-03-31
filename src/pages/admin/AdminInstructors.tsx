@@ -259,6 +259,8 @@ const AdminInstructors = () => {
           </CardContent>
         </Card>
       </div>
+
+      <AddInstructorDialog open={showAddDialog} onOpenChange={setShowAddDialog} />
     </AdminLayout>
   );
 };
