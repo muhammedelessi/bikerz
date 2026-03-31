@@ -327,11 +327,6 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     e.preventDefault();
     setError(null);
 
-    if (emailChecked && isGoogleUser) {
-      setError(isRTL ? 'هذا الحساب مسجل عبر جوجل. استخدم زر جوجل لتسجيل الدخول.' : 'This account was created with Google. Please use the Google button to sign in.');
-      return;
-    }
-
     setLoading(true);
     try {
       const { data, error: loginError } = await (supabase.auth as any).signInWithPassword({
@@ -340,12 +335,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
       });
 
       if (loginError) {
-        if (!emailChecked) await checkProviders(email);
-        if (isGoogleUser) {
-          setError(isRTL ? 'هذا الحساب مسجل عبر جوجل. استخدم زر جوجل لتسجيل الدخول.' : 'This account was created with Google. Please use the Google button to sign in.');
-        } else {
-          setError(isRTL ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Invalid email or password');
-        }
+        setError(isRTL ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Invalid email or password');
         return;
       }
 
