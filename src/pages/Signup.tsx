@@ -439,6 +439,44 @@ const Signup: React.FC = () => {
                 )}
               </div>
 
+              {/* Password — 6 digits */}
+              <div className="space-y-1">
+                <div className="relative">
+                  <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={password}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setPassword(val);
+                      setPasswordError(null);
+                    }}
+                    placeholder={isRTL ? 'كلمة المرور (6 أرقام)' : 'Password (6 digits)'}
+                    className={`ps-9 pe-10 ${passwordError ? 'border-destructive' : ''}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {passwordError ? (
+                  <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {passwordError}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isRTL ? 'يجب أن تتكون من 6 أرقام — ستستخدمها لتسجيل الدخول لاحقاً' : 'Must be 6 digits — you will use it to log in later'}
+                  </p>
+                )}
+              </div>
+
               {/* Country & City — horizontal row */}
               <div className="grid grid-cols-2 gap-3">
                 {/* Country */}
