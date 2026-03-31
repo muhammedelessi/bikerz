@@ -445,10 +445,13 @@ const Signup: React.FC = () => {
                           setCountry(val);
                           setCity('');
                           setCustomCity('');
+                          setCountryError(null);
+                          setCityError(null);
                           if (val !== OTHER_VALUE) setCustomCountry('');
                         }}
                         placeholder={isRTL ? 'الدولة' : 'Country'}
                         searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
+                        hasError={!!countryError}
                       />
                     </div>
                   </div>
