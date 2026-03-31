@@ -71,10 +71,7 @@ const JoinCommunity: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [duplicateFound, setDuplicateFound] = useState(false);
 
-  const [countryOpen, setCountryOpen] = useState(false);
-  const [countrySearch, setCountrySearch] = useState("");
-  const [cityOpen, setCityOpen] = useState(false);
-  const [citySearch, setCitySearch] = useState("");
+  const [customCity, setCustomCity] = useState("");
 
   const phonePrefixOptions: DropdownOption[] = useMemo(
     () =>
