@@ -41,7 +41,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   const navigate = useNavigate();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const locale = isRTL ? "ar" : "en";
-  const videoPlaying = activeVideoId === course.id;
+  
 
   const title = isRTL && course.title_ar ? course.title_ar : course.title;
   const isDiscountExpired = course.discount_expires_at && new Date(course.discount_expires_at).getTime() <= Date.now();
