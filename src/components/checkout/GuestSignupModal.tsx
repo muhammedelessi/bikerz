@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
 import { useAuthPageContent } from '@/hooks/useAuthPageContent';
 import { useNavigate } from 'react-router-dom';
