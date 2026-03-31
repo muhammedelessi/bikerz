@@ -696,11 +696,22 @@ const CourseDetail: React.FC = () => {
                       <div className="rounded-2xl overflow-hidden">
                         {previewVideoPlaying ? (
                           <div className="aspect-video w-full">
+                            {/* YouTube - temporary */}
+                            <iframe
+                              width="100%"
+                              height="100%"
+                              src="https://www.youtube.com/embed/VIDEO_ID"
+                              frameBorder="0"
+                              allowFullScreen
+                              style={{ display: 'block' }}
+                            />
+                            {/* BunnyVideoEmbed - temporarily disabled
                             <BunnyVideoEmbed
                               videoUrl={course.preview_video_url}
-                               title={t('courseDetail.courseIntroduction')}
+                              title={t('courseDetail.courseIntroduction')}
                               isPreview
                             />
+                            */}
                           </div>
                         ) : (
                           <button
