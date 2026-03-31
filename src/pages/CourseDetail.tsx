@@ -128,14 +128,10 @@ const CourseDetail: React.FC = () => {
   const ctaCardRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  const getYouTubeEmbedUrl = (url: string): string | null => {
-    if (!url) return null;
-    console.log('[YouTube Debug] preview_video_url:', url);
-    const ytMatch = url.match(
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/
-    );
-    console.log('[YouTube Debug] ytMatch result:', ytMatch);
-    return ytMatch ? `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0` : null;
+  const HARDCODED_PREVIEW_YOUTUBE_ID = '00BxMrjssbU';
+
+  const getYouTubeEmbedUrl = (_url: string): string | null => {
+    return `https://www.youtube.com/embed/${HARDCODED_PREVIEW_YOUTUBE_ID}?rel=0`;
   };
 
 
