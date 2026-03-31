@@ -454,31 +454,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
         </div>
       )}
 
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full h-10 sm:h-11 text-sm sm:text-base gap-3 border-border"
-        onClick={handleGoogleSignIn}
-        disabled={isGoogleLoading || loading}
-      >
-        {isGoogleLoading ? (
-          <div className="w-5 h-5 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
-        ) : (
-          <>
-            <GoogleIcon />
-            {isRTL ? 'التسجيل بحساب جوجل' : 'Sign up with Google'}
-          </>
-        )}
-      </Button>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-2 text-muted-foreground">{isRTL ? 'أو' : 'or'}</span>
-        </div>
-      </div>
 
       <form onSubmit={handleSubmit} className="space-y-3.5">
         {/* Name */}
