@@ -69,7 +69,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
   const [noBike, setNoBike] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [couponCopied, setCouponCopied] = useState(false);
+  
 
   // Pre-fill with existing data if available
   useEffect(() => {
