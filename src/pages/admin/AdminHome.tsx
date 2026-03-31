@@ -307,11 +307,39 @@ const AdminHome: React.FC = () => {
       bgColor: 'bg-purple-500/10',
     },
     {
-      title: t('admin.dashboard.totalRevenue'),
+      title: isRTL ? 'إجمالي الإيرادات' : t('admin.dashboard.totalRevenue'),
       value: `${t('common.currency_sar')} ${stats?.totalRevenue?.toLocaleString() || 0}`,
       icon: DollarSign,
       color: 'text-amber-500',
       bgColor: 'bg-amber-500/10',
+    },
+    {
+      title: isRTL ? 'المدربون' : 'Trainers',
+      value: stats?.totalTrainers || 0,
+      icon: UserCheck,
+      color: 'text-teal-500',
+      bgColor: 'bg-teal-500/10',
+    },
+    {
+      title: isRTL ? 'التدريبات' : 'Trainings',
+      value: stats?.totalTrainings || 0,
+      icon: Dumbbell,
+      color: 'text-indigo-500',
+      bgColor: 'bg-indigo-500/10',
+    },
+    {
+      title: isRTL ? 'طلاب التدريب' : 'Training Students',
+      value: stats?.totalTrainingStudents || 0,
+      icon: GraduationCap,
+      color: 'text-pink-500',
+      bgColor: 'bg-pink-500/10',
+    },
+    {
+      title: isRTL ? 'متوسط التقييم' : 'Avg Rating',
+      value: stats?.avgTrainerRating || '0',
+      icon: Star,
+      color: 'text-orange-500',
+      bgColor: 'bg-orange-500/10',
     },
   ];
 
