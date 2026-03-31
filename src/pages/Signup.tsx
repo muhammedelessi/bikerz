@@ -256,8 +256,7 @@ const Signup: React.FC = () => {
 
     setIsLoading(true);
 
-    const randomPassword = generateRandomPassword();
-    const { error } = await signUp(email, randomPassword, name);
+    const { error } = await signUp(email, password, name);
 
     if (error) {
       setError(error.message);
