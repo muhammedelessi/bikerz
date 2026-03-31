@@ -340,29 +340,26 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           <div className="mt-4 space-y-2">
             <div className="flex justify-between text-xs text-muted-foreground">
               {CHECKOUT_STEPS_DISPLAY.map((step, i) => (
-                const stepIndex = CHECKOUT_STEPS_DISPLAY.indexOf(step);
-                return (
-                  <span
-                    key={step}
-                    className={`flex items-center gap-1 ${
-                      stepIndex <= currentStepIndex ? 'text-primary font-medium' : ''
-                    }`}
-                  >
-                    {stepIndex < currentStepIndex ? (
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                    ) : stepIndex === currentStepIndex ? (
-                      <span className="w-3.5 h-3.5 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">
-                        {stepIndex + 1}
-                      </span>
-                    ) : (
-                      <span className="w-3.5 h-3.5 rounded-full border border-muted-foreground/30 text-[10px] flex items-center justify-center">
-                        {stepIndex + 1}
-                      </span>
-                    )}
-                    {isRTL ? stepLabels[step].ar : stepLabels[step].en}
-                  </span>
-                );
-              })}
+                <span
+                  key={step}
+                  className={`flex items-center gap-1 ${
+                    i <= currentStepIndex ? 'text-primary font-medium' : ''
+                  }`}
+                >
+                  {i < currentStepIndex ? (
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  ) : i === currentStepIndex ? (
+                    <span className="w-3.5 h-3.5 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">
+                      {i + 1}
+                    </span>
+                  ) : (
+                    <span className="w-3.5 h-3.5 rounded-full border border-muted-foreground/30 text-[10px] flex items-center justify-center">
+                      {i + 1}
+                    </span>
+                  )}
+                  {isRTL ? stepLabels[step].ar : stepLabels[step].en}
+                </span>
+              ))}
             </div>
             <Progress
               value={progressPercent}
