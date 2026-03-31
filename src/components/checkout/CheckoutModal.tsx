@@ -93,16 +93,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const BackArrowIcon = isRTL ? ArrowRight : ArrowLeft;
   const isPaymentReady = form.isInfoValid;
 
-  // Pre-fill and auto-advance on open
+  // Pre-fill billing data on open (never auto-advance)
   useEffect(() => {
     if (!open || !user) return;
-    const run = async () => {
-      const shouldAutoAdvance = await form.prefillAndAutoAdvance();
-      if (shouldAutoAdvance) {
-        setCurrentStep('payment');
-      }
-    };
-    run();
+    form.prefillAndAutoAdvance();
   }, [open, user]);
 
   // Auto-apply saved coupon
