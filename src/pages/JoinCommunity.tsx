@@ -128,7 +128,8 @@ const JoinCommunity: React.FC = () => {
     setSubmitting(true);
     setDuplicateFound(false);
     const fullPhone = getFullPhone();
-    const countryName = isRTL ? (selectedCountry?.ar || "") : (selectedCountry?.en || "");
+    const countryName = isOtherCountry ? customCity : (isRTL ? (selectedCountry?.ar || "") : (selectedCountry?.en || ""));
+    const cityName = (isOtherCity || isOtherCountry) ? customCity : city;
     try {
       // Duplicate check
       const emailLower = email.trim().toLowerCase();
