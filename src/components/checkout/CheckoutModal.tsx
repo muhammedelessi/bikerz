@@ -339,7 +339,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {/* Step indicator */}
           <div className="mt-4 space-y-2">
             <div className="flex justify-between text-xs text-muted-foreground">
-              {(isRTL ? [...CHECKOUT_STEPS_DISPLAY].reverse() : CHECKOUT_STEPS_DISPLAY).map((step) => {
+              {CHECKOUT_STEPS_DISPLAY.map((step, i) => (
                 const stepIndex = CHECKOUT_STEPS_DISPLAY.indexOf(step);
                 return (
                   <span
