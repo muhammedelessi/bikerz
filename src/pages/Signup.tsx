@@ -22,14 +22,6 @@ import SearchableDropdown from '@/components/checkout/SearchableDropdown';
 import { PHONE_COUNTRIES } from '@/data/phoneCountryCodes';
 import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
 
-const generateRandomPassword = () => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
-  let password = '';
-  for (let i = 0; i < 24; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return password;
-};
 
 const OTHER_VALUE = '__other__';
 
