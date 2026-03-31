@@ -39,6 +39,7 @@ import {
 const AdminInstructors = () => {
   const { isRTL } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const { data: instructors, isLoading } = useQuery({
     queryKey: ['admin-instructors'],
