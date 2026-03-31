@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
 import { useAuthPageContent } from '@/hooks/useAuthPageContent';
 import { useNavigate } from 'react-router-dom';
@@ -23,14 +22,7 @@ import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
 
 const OTHER_VALUE = '__other__';
 
-const GoogleIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
-    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-  </svg>
-);
+
 
 interface GuestSignupModalProps {
   open: boolean;
@@ -69,7 +61,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  
   const [error, setError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -78,8 +70,6 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
   const [cityError, setCityError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [visualViewportHeight, setVisualViewportHeight] = useState<number | null>(null);
-  const [isGoogleUser, setIsGoogleUser] = useState(false);
-  const [emailChecked, setEmailChecked] = useState(false);
   const [countryOpen, setCountryOpen] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
   const [cityOpen, setCityOpen] = useState(false);
@@ -332,89 +322,10 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setError(null);
-    setIsGoogleLoading(true);
-
-    try {
-      const result = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: window.location.origin,
-      });
-
-      if (result.redirected) return;
-
-      if (result.error) {
-        setError(result.error.message || (isRTL ? 'فشل تسجيل الدخول بجوجل' : 'Google sign-in failed'));
-        setIsGoogleLoading(false);
-        return;
-      }
-
-      const { data: { user } } = await (supabase.auth as any).getUser();
-      if (!user) {
-        setError(isRTL ? 'فشل في الحصول على بيانات المستخدم' : 'Failed to get user data');
-        setIsGoogleLoading(false);
-        return;
-      }
-
-      const googleName = user.user_metadata?.full_name || user.user_metadata?.name || '';
-      const googleAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture || '';
-
-      try {
-        const updateData: Record<string, any> = {};
-        if (googleName) updateData.full_name = googleName;
-        if (googleAvatar) updateData.avatar_url = googleAvatar;
-        if (Object.keys(updateData).length > 0) {
-          await supabase.from('profiles').update(updateData).eq('user_id', user.id);
-        }
-      } catch (e) {
-        console.error('Failed to update profile with Google data:', e);
-      }
-
-      await saveProfileAndSync(user.id, googleName, user.email || '');
-
-      toast.success(isRTL ? 'تم التسجيل بنجاح!' : 'Signed up successfully!');
-      setIsGoogleLoading(false);
-      onOpenChange(false);
-      onAuthenticated();
-    } catch (err: any) {
-      console.error('Google sign-in error:', err);
-      setError(err?.message || (isRTL ? 'فشل تسجيل الدخول بجوجل' : 'Google sign-in failed'));
-      setIsGoogleLoading(false);
-    }
-  };
-
-  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    const input = e.target;
-    setTimeout(() => {
-      input.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-    }, 300);
-  };
-
-  const checkProviders = async (emailValue: string) => {
-    if (!emailValue || !emailValue.includes('@')) {
-      setIsGoogleUser(false);
-      setEmailChecked(false);
-      return;
-    }
-    try {
-      const { data } = await supabase.rpc('get_auth_providers' as any, { p_email: emailValue });
-      const result = data as { has_email: boolean; has_google: boolean; exists: boolean } | null;
-      setIsGoogleUser(!!result?.has_google && !result?.has_email);
-      setEmailChecked(true);
-    } catch {
-      setIsGoogleUser(false);
-      setEmailChecked(true);
-    }
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (emailChecked && isGoogleUser) {
-      setError(isRTL ? 'هذا الحساب مسجل عبر جوجل. استخدم زر جوجل لتسجيل الدخول.' : 'This account was created with Google. Please use the Google button to sign in.');
-      return;
-    }
 
     setLoading(true);
     try {
@@ -424,12 +335,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
       });
 
       if (loginError) {
-        if (!emailChecked) await checkProviders(email);
-        if (isGoogleUser) {
-          setError(isRTL ? 'هذا الحساب مسجل عبر جوجل. استخدم زر جوجل لتسجيل الدخول.' : 'This account was created with Google. Please use the Google button to sign in.');
-        } else {
-          setError(isRTL ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Invalid email or password');
-        }
+        setError(isRTL ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Invalid email or password');
         return;
       }
 
@@ -443,6 +349,13 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
     }
   };
 
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const input = e.target;
+    setTimeout(() => {
+      input.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    }, 300);
+  };
+
   const loginFormContent = (
     <div className="p-5 sm:p-6 space-y-4">
       {error && (
@@ -452,31 +365,6 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
         </div>
       )}
 
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full h-10 sm:h-11 text-sm sm:text-base gap-3 border-border"
-        onClick={handleGoogleSignIn}
-        disabled={isGoogleLoading || loading}
-      >
-        {isGoogleLoading ? (
-          <div className="w-5 h-5 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
-        ) : (
-          <>
-            <GoogleIcon />
-            {isRTL ? 'تسجيل الدخول بجوجل' : 'Sign in with Google'}
-          </>
-        )}
-      </Button>
-
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-2 text-muted-foreground">{isRTL ? 'أو' : 'or'}</span>
-        </div>
-      </div>
 
       <form onSubmit={handleLogin} className="space-y-3.5">
         <div className="relative">
@@ -484,55 +372,46 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
           <Input
             type="email"
             value={email}
-            onChange={(e) => { setEmail(e.target.value); setEmailChecked(false); setIsGoogleUser(false); }}
-            onBlur={() => checkProviders(email)}
-            onFocus={handleInputFocus}
+          onChange={(e) => setEmail(e.target.value)}
+          onFocus={handleInputFocus}
             placeholder={emailLabel}
             required
             className="form-input h-10 sm:h-11 text-sm sm:text-base ps-10"
           />
         </div>
 
-        {emailChecked && isGoogleUser ? (
-          <p className="text-sm text-muted-foreground text-center">
-            {isRTL ? 'هذا الحساب مسجل عبر جوجل. استخدم زر جوجل أعلاه.' : 'This account was created with Google. Use the Google button above.'}
-          </p>
-        ) : (
-          <>
-            <div className="relative">
-              <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-              <Input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onFocus={handleInputFocus}
-                placeholder={passwordLabel}
-                required
-                className="form-input h-10 sm:h-11 text-sm sm:text-base ps-10 pe-12"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
+        <div className="relative">
+          <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+          <Input
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onFocus={handleInputFocus}
+            placeholder={passwordLabel}
+            required
+            className="form-input h-10 sm:h-11 text-sm sm:text-base ps-10 pe-12"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
 
-            <Button
-              type="submit"
-              className="w-full btn-cta h-11 text-base mt-1"
-              disabled={loading || isGoogleLoading}
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-              ) : (
-                isRTL ? 'تسجيل الدخول والمتابعة' : 'Login & Continue to Payment'
-              )}
-            </Button>
-          </>
-        )}
+        <Button
+          type="submit"
+          className="w-full btn-cta h-11 text-base mt-1"
+          disabled={loading}
+        >
+          {loading ? (
+            <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+          ) : (
+            isRTL ? 'تسجيل الدخول والمتابعة' : 'Login & Continue to Payment'
+          )}
+        </Button>
 
         <p className="text-sm text-center text-muted-foreground">
           {isRTL ? 'ليس لديك حساب؟' : "Don't have an account?"}{' '}
@@ -557,31 +436,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
         </div>
       )}
 
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full h-10 sm:h-11 text-sm sm:text-base gap-3 border-border"
-        onClick={handleGoogleSignIn}
-        disabled={isGoogleLoading || loading}
-      >
-        {isGoogleLoading ? (
-          <div className="w-5 h-5 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
-        ) : (
-          <>
-            <GoogleIcon />
-            {isRTL ? 'التسجيل بحساب جوجل' : 'Sign up with Google'}
-          </>
-        )}
-      </Button>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-2 text-muted-foreground">{isRTL ? 'أو' : 'or'}</span>
-        </div>
-      </div>
 
       <form onSubmit={handleSubmit} className="space-y-3.5">
         {/* Name */}
@@ -886,7 +741,7 @@ const GuestSignupModal: React.FC<GuestSignupModalProps> = ({
         <Button
           type="submit"
           className="w-full btn-cta h-11 text-base mt-1"
-          disabled={loading || isGoogleLoading}
+          disabled={loading}
         >
           {loading ? (
             <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
