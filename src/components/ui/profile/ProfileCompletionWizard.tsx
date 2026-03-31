@@ -196,7 +196,6 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
       localStorage.removeItem('profile_completion_skipped');
       localStorage.removeItem('profile_completion_skip_time');
       localStorage.setItem('profile_completed', 'true');
-      localStorage.setItem('profile_coupon_code', 'PROFILE10');
       
       // Sync contact to GHL CRM
       syncContact({
