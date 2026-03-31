@@ -132,6 +132,8 @@ const Signup: React.FC = () => {
   }, [cities, citySearch]);
 
   const hasCities = cities.length > 0 && !isOtherCountry;
+
+  const cms = authContent?.signup || {};
   const heroImage = cms.image || defaultHeroImage;
   const title = (isRTL ? cms.title_ar : cms.title_en) || t('auth.signup.title');
   const subtitle = (isRTL ? cms.subtitle_ar : cms.subtitle_en) || t('auth.signup.subtitle');
