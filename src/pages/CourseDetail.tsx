@@ -686,7 +686,7 @@ const CourseDetail: React.FC = () => {
                         {previewVideoPlaying ? (
                           <div className="aspect-video w-full">
                             <BunnyVideoEmbed
-                              videoUrl={course.preview_video_url}
+                              videoUrl={https://youtu.be/00BxMrjssbU?si=UVQwRJeWWl4igGl-}
                                title={t('courseDetail.courseIntroduction')}
                               isPreview
                             />
