@@ -128,6 +128,14 @@ const CourseDetail: React.FC = () => {
   const ctaCardRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
+  const getYouTubeEmbedUrl = (url: string): string | null => {
+    if (!url) return null;
+    const ytMatch = url.match(
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/
+    );
+    return ytMatch ? `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0` : null;
+  };
+
 
   // Payment callback now handled by /payment-success/:courseId page
 
