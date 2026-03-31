@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import paymentMethodsImg from '@/assets/payment-methods.png';
+import { MadaIcon, ApplePayIcon, MastercardIcon, VisaIcon } from '@/components/checkout/PaymentMethodIcons';
 import { PHONE_COUNTRIES } from '@/data/phoneCountryCodes';
 import type { PaymentStatus, AppliedCoupon } from '@/types/payment';
 
