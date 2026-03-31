@@ -70,9 +70,6 @@ const PaymentMethodIcons: React.FC<PaymentMethodIconsProps> = ({ className = '',
         <div className="flex items-center justify-center h-8 px-2 rounded-md bg-white border border-border/40 shadow-sm">
           <MastercardIcon className="h-5 w-auto" />
         </div>
-        <div className="flex items-center justify-center h-8 px-2 rounded-md bg-black border border-border/40 shadow-sm text-white">
-          <ApplePayIcon className="h-5 w-auto" />
-        </div>
       </div>
     </div>
   );
