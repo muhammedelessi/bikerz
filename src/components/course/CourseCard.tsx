@@ -1,12 +1,12 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { Play, Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy, Eye, ShoppingCart } from "lucide-react";
+import { Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy, ShoppingCart } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import BunnyVideoEmbed from "@/components/course/BunnyVideoEmbed";
+
 import heroImage from "@/assets/hero-rider.webp";
 
 export interface CourseCardProps {
@@ -41,7 +41,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   const navigate = useNavigate();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const locale = isRTL ? "ar" : "en";
-  const videoPlaying = activeVideoId === course.id;
+  
 
   const title = isRTL && course.title_ar ? course.title_ar : course.title;
   const isDiscountExpired = course.discount_expires_at && new Date(course.discount_expires_at).getTime() <= Date.now();
@@ -55,7 +55,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   const isEnrolled = !!enrollment;
   const isCompleted = isEnrolled && (enrollment.progress_percentage >= 100 || !!enrollment.completed_at);
   const hasReviewed = enrollment?.has_reviewed ?? false;
-  const hasPreviewVideo = !!course.preview_video_url;
+  
 
   const formatDuration = (minutes: number) => {
     if (!minutes) return t("courses.courseCard.duration0");
@@ -89,57 +89,18 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
         <div className="relative h-full rounded-2xl border border-border/60 bg-card/85 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-primary/40">
 
           {/* Video / Thumbnail Area */}
-          <div className="relative aspect-video overflow-hidden w-full" data-video-area>
-            {videoPlaying && hasPreviewVideo ? (
-              <div className="absolute inset-0">
-                <BunnyVideoEmbed
-                  videoUrl={course.preview_video_url!}
-                  title={title}
-                  isPreview
-                  autoPlay
-                />
-              </div>
-            ) : (
-              <>
-                <div className="absolute inset-0 p-2">
-                  <picture>
-                    <source srcSet={thumbnailSrc} type="image/webp" />
-                    <img
-                      src={thumbnailSrc}
-                      alt={title}
-                      width={1280}
-                      height={720}
-                      className="w-full h-full object-cover rounded-xl transition-transform duration-700 group-hover:scale-105"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </picture>
-                </div>
-                
-
-                {/* Play button */}
-                <button
-                  type="button"
-                  className="absolute inset-0 flex items-center justify-center z-10 cursor-pointer"
-                  onClick={(e) => {
-                    if (hasPreviewVideo) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onPlayVideo?.(course.id);
-                    }
-                  }}
-                  aria-label={t("courseDetail.playIntroVideo")}
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/90 backdrop-blur-md flex items-center justify-center shadow-[0_0_30px_hsl(var(--primary)/0.4)] opacity-80 group-hover:opacity-100 transition-all duration-300"
-                  >
-                    <Play className="w-6 h-6 sm:w-7 sm:h-7 text-primary-foreground ms-0.5" />
-                  </motion.div>
-                </button>
-
-              </>
-            )}
+          <div className="relative aspect-video overflow-hidden w-full">
+            <div className="absolute inset-0 p-2">
+              <img
+                src={thumbnailSrc}
+                alt={title}
+                width={1280}
+                height={720}
+                className="w-full h-full object-cover rounded-xl transition-transform duration-700 group-hover:scale-105"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
           </div>
 
           {/* Content */}
