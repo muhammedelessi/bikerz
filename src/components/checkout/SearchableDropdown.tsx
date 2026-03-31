@@ -167,7 +167,7 @@ var SearchableDropdown: React.FC<SearchableDropdownProps> = function (props) {
           >
             {filtered.length === 0 ? (
               <div className="px-3 py-3 text-sm text-muted-foreground text-center">
-                {dir === 'rtl' ? 'لا توجد نتائج' : 'No results'}
+                {document.documentElement.dir === 'rtl' || dir === 'rtl' ? 'لا توجد نتائج' : 'No results'}
               </div>
             ) : (
               filtered.map(function (opt) {
