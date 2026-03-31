@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import LanguageToggle from '@/components/common/LanguageToggle';
 import ProfileCompletionWizard from '@/components/ui/profile/ProfileCompletionWizard';
 import { useAuthPageContent } from '@/hooks/useAuthPageContent';
-import { ArrowRight, ArrowLeft, AlertCircle, User, Mail, Phone } from 'lucide-react';
+import { ArrowRight, ArrowLeft, AlertCircle, User, Mail, Phone, MapPin, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import defaultHeroImage from '@/assets/community-ride.webp';
 import SEOHead from '@/components/common/SEOHead';
@@ -20,6 +20,7 @@ import logoLight from '@/assets/logo-light.png';
 import { useTheme } from '@/components/ThemeProvider';
 import SearchableDropdown from '@/components/checkout/SearchableDropdown';
 import { PHONE_COUNTRIES } from '@/data/phoneCountryCodes';
+import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
 
 const generateRandomPassword = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
@@ -29,6 +30,8 @@ const generateRandomPassword = () => {
   }
   return password;
 };
+
+const OTHER_VALUE = '__other__';
 
 const Signup: React.FC = () => {
   const { t } = useTranslation();
@@ -43,6 +46,10 @@ const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [phonePrefix, setPhonePrefix] = useState('+966_SA');
+  const [country, setCountry] = useState('SA');
+  const [city, setCity] = useState('');
+  const [customCountry, setCustomCountry] = useState('');
+  const [customCity, setCustomCity] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
@@ -50,6 +57,14 @@ const Signup: React.FC = () => {
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const { sendFormData } = useGHLFormWebhook();
+
+  const isOtherCountry = country === OTHER_VALUE;
+  const isOtherCity = city === OTHER_VALUE;
+
+  const selectedCountryEntry = useMemo(
+    () => COUNTRIES.find(c => c.code === country),
+    [country]
+  );
 
   // Auto-detect country code by user location
   useEffect(() => {
@@ -59,9 +74,25 @@ const Signup: React.FC = () => {
         if (!res.ok) return;
         const data = await res.json();
         const countryCode = data.country_code;
-        const match = PHONE_COUNTRIES.find(c => c.code === countryCode);
-        if (match) {
-          setPhonePrefix(`${match.prefix}_${match.code}`);
+        const phoneMatch = PHONE_COUNTRIES.find(c => c.code === countryCode);
+        if (phoneMatch) {
+          setPhonePrefix(`${phoneMatch.prefix}_${phoneMatch.code}`);
+        }
+        const countryMatch = COUNTRIES.find(c => c.code === countryCode);
+        if (countryMatch) {
+          setCountry(countryCode);
+        } else {
+          setCountry(OTHER_VALUE);
+          setCustomCountry(data.country_name || '');
+        }
+        // Try to auto-set city
+        if (data.city && countryMatch) {
+          const cityMatch = countryMatch.cities.find(
+            c => c.en.toLowerCase() === data.city.toLowerCase()
+          );
+          if (cityMatch) {
+            setCity(isRTL ? cityMatch.ar : cityMatch.en);
+          }
         }
       } catch {
         // fallback to SA
@@ -77,6 +108,25 @@ const Signup: React.FC = () => {
     })),
     [isRTL]
   );
+
+  const countryOptions = useMemo(() => [
+    ...COUNTRIES.map(c => ({
+      value: c.code,
+      label: isRTL ? c.ar : c.en,
+    })),
+    { value: OTHER_VALUE, label: isRTL ? OTHER_OPTION.ar : OTHER_OPTION.en },
+  ], [isRTL]);
+
+  const cityOptions = useMemo(() => {
+    if (!selectedCountryEntry) return [];
+    return [
+      ...selectedCountryEntry.cities.map(c => ({
+        value: isRTL ? c.ar : c.en,
+        label: isRTL ? c.ar : c.en,
+      })),
+      { value: OTHER_VALUE, label: isRTL ? OTHER_OPTION.ar : OTHER_OPTION.en },
+    ];
+  }, [selectedCountryEntry, isRTL]);
 
   const cms = authContent?.signup || {};
   const heroImage = cms.image || defaultHeroImage;
@@ -107,19 +157,32 @@ const Signup: React.FC = () => {
     return `${prefix}${phone.replace(/[^0-9]/g, '')}`;
   };
 
+  const getCountryName = () => {
+    if (isOtherCountry) return customCountry.trim();
+    return selectedCountryEntry ? (isRTL ? selectedCountryEntry.ar : selectedCountryEntry.en) : '';
+  };
+
+  const getCityName = () => {
+    if (isOtherCity || isOtherCountry) return customCity.trim();
+    return city;
+  };
+
   const saveProfileAndSync = async (userId: string, fullName: string, userEmail: string) => {
-    // Save phone to profile
     try {
-      await supabase.from('profiles').update({ phone: getFullPhone() }).eq('user_id', userId);
+      await supabase.from('profiles').update({
+        phone: getFullPhone(),
+        country: getCountryName(),
+        city: getCityName(),
+      }).eq('user_id', userId);
     } catch (e) {
-      console.error('Failed to save phone to profile:', e);
+      console.error('Failed to save profile:', e);
     }
 
     try {
       await supabase.functions.invoke('ghl-sync', {
         body: {
           action: 'create_or_update_contact',
-          data: { full_name: fullName, email: userEmail, phone: getFullPhone() },
+          data: { full_name: fullName, email: userEmail, phone: getFullPhone(), country: getCountryName(), city: getCityName() },
         },
       });
     } catch (syncErr) {
@@ -129,6 +192,8 @@ const Signup: React.FC = () => {
     sendFormData({
       full_name: fullName,
       email: userEmail,
+      country: getCountryName(),
+      city: getCityName(),
       orderStatus: 'not purchased',
       courses: '[]',
       totalPurchased: 0,
@@ -143,9 +208,20 @@ const Signup: React.FC = () => {
 
     if (!validatePhone(phone)) return;
 
+    // Validate country/city
+    const finalCountry = getCountryName();
+    const finalCity = getCityName();
+    if (!finalCountry) {
+      setError(isRTL ? 'يرجى اختيار أو إدخال الدولة' : 'Please select or enter your country');
+      return;
+    }
+    if (!finalCity) {
+      setError(isRTL ? 'يرجى اختيار أو إدخال المدينة' : 'Please select or enter your city');
+      return;
+    }
+
     setIsLoading(true);
 
-    // Generate a random password since we don't ask the user for one
     const randomPassword = generateRandomPassword();
     const { error } = await signUp(email, randomPassword, name);
 
@@ -313,6 +389,77 @@ const Signup: React.FC = () => {
                     <AlertCircle className="w-3 h-3" />
                     {phoneError}
                   </p>
+                )}
+              </div>
+
+              {/* Country */}
+              <div className="space-y-1">
+                <div className="relative">
+                  <MapPin className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
+                  <div className="ps-10">
+                    <SearchableDropdown
+                      options={countryOptions}
+                      value={country}
+                      onChange={(val) => {
+                        setCountry(val);
+                        setCity('');
+                        setCustomCity('');
+                        if (val !== OTHER_VALUE) setCustomCountry('');
+                      }}
+                      placeholder={isRTL ? 'اختر الدولة' : 'Select country'}
+                      searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
+                    />
+                  </div>
+                </div>
+                {isOtherCountry && (
+                  <Input
+                    type="text"
+                    value={customCountry}
+                    onChange={(e) => setCustomCountry(e.target.value)}
+                    placeholder={isRTL ? 'أدخل اسم الدولة' : 'Enter country name'}
+                    required
+                    className="form-input h-11 sm:h-12 text-base mt-2"
+                  />
+                )}
+              </div>
+
+              {/* City */}
+              <div className="space-y-1">
+                <div className="relative">
+                  <Building2 className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
+                  {isOtherCountry ? (
+                    <Input
+                      type="text"
+                      value={customCity}
+                      onChange={(e) => setCustomCity(e.target.value)}
+                      placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
+                      required
+                      className="form-input h-11 sm:h-12 text-base ps-10"
+                    />
+                  ) : (
+                    <div className="ps-10">
+                      <SearchableDropdown
+                        options={cityOptions}
+                        value={city}
+                        onChange={(val) => {
+                          setCity(val);
+                          if (val !== OTHER_VALUE) setCustomCity('');
+                        }}
+                        placeholder={isRTL ? 'اختر المدينة' : 'Select city'}
+                        searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
+                      />
+                    </div>
+                  )}
+                </div>
+                {!isOtherCountry && isOtherCity && (
+                  <Input
+                    type="text"
+                    value={customCity}
+                    onChange={(e) => setCustomCity(e.target.value)}
+                    placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
+                    required
+                    className="form-input h-11 sm:h-12 text-base mt-2"
+                  />
                 )}
               </div>
 
