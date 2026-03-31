@@ -7,6 +7,8 @@ import JourneySection from "@/components/landing/JourneySection";
 import FeaturedCoursesSection from "@/components/landing/FeaturedCoursesSection";
 import LearnSection from "@/components/landing/LearnSection";
 import CommunitySection from "@/components/landing/CommunitySection";
+import TrainingsSection from "@/components/landing/TrainingsSection";
+import TrainersSection from "@/components/landing/TrainersSection";
 
 import CTASection from "@/components/landing/CTASection";
 import SEOHead from "@/components/common/SEOHead";
