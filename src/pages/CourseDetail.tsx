@@ -1354,12 +1354,6 @@ const CourseDetail: React.FC = () => {
             }}
             onPaymentStarted={() => setIsPaymentProcessing(true)}
           />
-          <GuestSignupModal
-            open={showGuestSignup}
-            onOpenChange={setShowGuestSignup}
-            course={{ id: course.id, title: course.title, title_ar: course.title_ar, price: course.price }}
-            onAuthenticated={() => setShowCheckout(true)}
-          />
         </>
       )}
 
