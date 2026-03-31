@@ -71,7 +71,10 @@ const JoinCommunity: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [duplicateFound, setDuplicateFound] = useState(false);
 
-  const [customCity, setCustomCity] = useState("");
+  const [countryOpen, setCountryOpen] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
+  const [cityOpen, setCityOpen] = useState(false);
+  const [citySearch, setCitySearch] = useState("");
 
   const phonePrefixOptions: DropdownOption[] = useMemo(
     () =>
@@ -82,23 +85,21 @@ const JoinCommunity: React.FC = () => {
     []
   );
 
-  const OTHER_VALUE = '__other__';
+  const filteredCountries = useMemo(() => {
+    if (!countrySearch.trim()) return COUNTRIES;
+    const q = countrySearch.toLowerCase();
+    return COUNTRIES.filter((c) => c.en.toLowerCase().includes(q) || c.ar.includes(q));
+  }, [countrySearch]);
 
-  const countryOptions: DropdownOption[] = useMemo(() => [
-    ...COUNTRIES.map(c => ({ value: c.code, label: isRTL ? c.ar : c.en })),
-    { value: OTHER_VALUE, label: isRTL ? 'أخرى' : 'Other' },
-  ], [isRTL]);
+  const cities = useMemo(() => selectedCountry?.cities || [], [selectedCountry]);
 
-  const cityOptions: DropdownOption[] = useMemo(() => {
-    if (!selectedCountry || selectedCountry.code === OTHER_VALUE) return [];
-    return [
-      ...selectedCountry.cities.map(c => ({ value: isRTL ? c.ar : c.en, label: isRTL ? c.ar : c.en })),
-      { value: OTHER_VALUE, label: isRTL ? 'أخرى' : 'Other' },
-    ];
-  }, [selectedCountry, isRTL]);
+  const filteredCities = useMemo(() => {
+    if (!citySearch.trim()) return cities;
+    const q = citySearch.toLowerCase();
+    return cities.filter((c) => c.en.toLowerCase().includes(q) || c.ar.includes(q));
+  }, [cities, citySearch]);
 
-  const isOtherCountry = selectedCountry?.code === OTHER_VALUE;
-  const isOtherCity = city === OTHER_VALUE;
+  const hasCities = cities.length > 0 && selectedCountry?.code !== "OTHER";
 
   const getFullPhone = (): string => {
     const prefix = phonePrefix ? phonePrefix.split("_")[0] : "";
@@ -128,8 +129,7 @@ const JoinCommunity: React.FC = () => {
     setSubmitting(true);
     setDuplicateFound(false);
     const fullPhone = getFullPhone();
-    const countryName = isOtherCountry ? customCity : (isRTL ? (selectedCountry?.ar || "") : (selectedCountry?.en || ""));
-    const cityName = (isOtherCity || isOtherCountry) ? customCity : city;
+    const countryName = isRTL ? (selectedCountry?.ar || "") : (selectedCountry?.en || "");
     try {
       // Duplicate check
       const emailLower = email.trim().toLowerCase();
