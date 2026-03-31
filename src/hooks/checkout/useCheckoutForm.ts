@@ -187,6 +187,23 @@ export function useCheckoutForm(open: boolean) {
     if (data.country) setCountry(data.country);
     if (data.postal_code) setPostalCode(data.postal_code);
 
+    // Pre-fill phone from DB if not already set from profile
+    if (data.phone && !phone) {
+      let rawPhone = data.phone;
+      let matchedPc: typeof PHONE_COUNTRIES[number] | null = null;
+      for (const pc of PHONE_COUNTRIES) {
+        if (rawPhone.startsWith(pc.prefix)) {
+          matchedPc = pc;
+          rawPhone = rawPhone.slice(pc.prefix.length);
+          break;
+        }
+      }
+      setPhone(rawPhone);
+      if (matchedPc) {
+        setPhonePrefix(matchedPc.prefix + '_' + matchedPc.code);
+      }
+    }
+
     if (data.country) {
       const matched = COUNTRIES.find(c => c.en === data.country || c.ar === data.country);
       if (matched) {
@@ -217,7 +234,7 @@ export function useCheckoutForm(open: boolean) {
     const hasBilling = data.city && data.country;
 
     return !!(hasProfile && hasBilling);
-  }, [user, profile]);
+  }, [user, profile, phone]);
 
   const saveProfileData = useCallback(async (userId?: string) => {
     const targetUserId = userId || user?.id;
