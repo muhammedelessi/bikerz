@@ -30,6 +30,8 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   const cms = authContent?.login || {};
