@@ -338,7 +338,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           {/* Step indicator */}
           <div className="mt-4 space-y-2">
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="flex justify-between text-xs text-muted-foreground" dir="ltr">
               {CHECKOUT_STEPS_DISPLAY.map((step, i) => (
                 <span
                   key={step}
@@ -361,7 +361,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </span>
               ))}
             </div>
-            <Progress value={progressPercent} className="h-1.5" />
+            <Progress value={progressPercent} className="h-1.5" dir="ltr" />
           </div>
         </div>
 
