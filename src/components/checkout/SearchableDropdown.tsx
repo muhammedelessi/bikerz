@@ -26,7 +26,7 @@ var SearchableDropdown: React.FC<SearchableDropdownProps> = function (props) {
   var searchPlaceholder = props.searchPlaceholder;
   var hasError = props.hasError || false;
   var disabled = props.disabled || false;
-  var dir = props.dir || 'ltr';
+  var dir = props.dir;
 
   var _open = useState(false);
   var isOpen = _open[0];
@@ -106,7 +106,7 @@ var SearchableDropdown: React.FC<SearchableDropdownProps> = function (props) {
   }, [isOpen, value]);
 
   return (
-    <div ref={containerRef} className="relative w-full" dir={dir}>
+    <div ref={containerRef} className="relative w-full" dir={dir || undefined}>
       {/* Trigger */}
       <button
         type="button"
@@ -142,7 +142,7 @@ var SearchableDropdown: React.FC<SearchableDropdownProps> = function (props) {
               onChange={function (e) { setSearch(e.target.value); }}
               placeholder={searchPlaceholder}
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground min-w-0"
-              dir={dir}
+              dir={dir || undefined}
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"
@@ -167,7 +167,7 @@ var SearchableDropdown: React.FC<SearchableDropdownProps> = function (props) {
           >
             {filtered.length === 0 ? (
               <div className="px-3 py-3 text-sm text-muted-foreground text-center">
-                {dir === 'rtl' ? 'لا توجد نتائج' : 'No results'}
+                {document.documentElement.dir === 'rtl' || dir === 'rtl' ? 'لا توجد نتائج' : 'No results'}
               </div>
             ) : (
               filtered.map(function (opt) {
