@@ -616,8 +616,24 @@ const CourseDetail: React.FC = () => {
           {/* Mobile: stacked video on top */}
           <div className="md:hidden">
             {course.preview_video_url ? (
-              <div className="w-full">
-                {previewVideoPlaying ? (
+              (() => {
+                const ytEmbedUrl = getYouTubeEmbedUrl(course.preview_video_url);
+                if (ytEmbedUrl) {
+                  return (
+                    <div className="aspect-video w-full rounded-2xl overflow-hidden">
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        src={ytEmbedUrl}
+                        frameBorder="0"
+                        allow="autoplay; encrypted-media"
+                        allowFullScreen
+                        style={{ display: 'block' }}
+                      />
+                    </div>
+                  );
+                }
+                return previewVideoPlaying ? (
                   <div className="aspect-video w-full">
                     <BunnyVideoEmbed
                       videoUrl={course.preview_video_url}
@@ -656,8 +672,8 @@ const CourseDetail: React.FC = () => {
                       </span>
                     </div>
                   </button>
-                )}
-              </div>
+                );
+              })()
             ) : course.thumbnail_url ? (
               <div className="relative w-full">
                 <picture>
