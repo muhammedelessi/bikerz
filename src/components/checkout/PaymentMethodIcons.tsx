@@ -40,16 +40,16 @@ const PaymentMethodIcons: React.FC<PaymentMethodIconsProps> = ({ className = '',
         </p>
       )}
       <div className="flex items-center gap-2">
-        <div className="flex items-center justify-center h-8 w-14 rounded-md bg-white border border-gray-200 p-1.5">
+        <div className="flex items-center justify-center h-10 w-16 rounded-md bg-white border border-gray-200 p-1.5">
           <VisaIcon className="h-full w-auto" />
         </div>
-        <div className="flex items-center justify-center h-8 w-14 rounded-md bg-white border border-gray-200 p-1">
+        <div className="flex items-center justify-center h-10 w-16 rounded-md bg-white border border-gray-200 p-1">
           <MastercardIcon className="h-full w-auto" />
         </div>
-        <div className="flex items-center justify-center h-8 w-14 rounded-md bg-white border border-gray-200 p-1">
+        <div className="flex items-center justify-center h-10 w-16 rounded-md bg-white border border-gray-200 p-1">
           <MadaIcon className="h-full w-auto" />
         </div>
-        <div className="flex items-center justify-center h-8 w-14 rounded-md bg-black border border-gray-200 p-1.5">
+        <div className="flex items-center justify-center h-10 w-16 rounded-md bg-black border border-gray-200 p-1.5">
           <ApplePayIcon className="h-full w-auto invert" />
         </div>
       </div>
