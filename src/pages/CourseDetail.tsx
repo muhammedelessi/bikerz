@@ -986,7 +986,7 @@ const CourseDetail: React.FC = () => {
                       ) : (
                         <Button
                           className="w-full btn-cta h-12 text-base"
-                          onClick={() => setShowGuestSignup(true)}
+                          onClick={() => navigate(`/signup?returnTo=${encodeURIComponent(`/courses/${id}?checkout=true`)}`)}
                         >
                           <Zap className="w-5 h-5 me-2" />
                           {(() => {
