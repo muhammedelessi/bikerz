@@ -55,7 +55,7 @@ const AdminTrainers: React.FC = () => {
   const [serviceInput, setServiceInput] = useState('');
   const [assignedTrainings, setAssignedTrainings] = useState<TrainerCourse[]>([]);
 
-  const defaultForm = { name_ar: '', name_en: '', bio_ar: '', bio_en: '', country: '', city: '', bike_type: '', years_of_experience: 0, services: [] as string[], status: 'active', photo_url: null as string | null };
+  const defaultForm = { name_ar: '', name_en: '', bio_ar: '', bio_en: '', country: '', city: '', bike_type: '', years_of_experience: 0, services: [] as string[], status: 'active' as 'active' | 'inactive', photo_url: null as string | null };
   const [form, setForm] = useState(defaultForm);
 
   const { data: trainers, isLoading } = useQuery({
