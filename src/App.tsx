@@ -63,6 +63,10 @@ const AdminCourseStudents = lazy(() => import("./pages/admin/AdminCourseStudents
 const AdminStudentDetail = lazy(() => import("./pages/admin/AdminStudentDetail"));
 const AdminAds = lazy(() => import("./pages/admin/AdminAds"));
 const AdminCommunity = lazy(() => import("./pages/admin/AdminCommunity"));
+const AdminTrainings = lazy(() => import("./pages/admin/AdminTrainings"));
+const AdminTrainers = lazy(() => import("./pages/admin/AdminTrainers"));
+const AdminTrainingStudents = lazy(() => import("./pages/admin/AdminTrainingStudents"));
+const AdminTrainerReviews = lazy(() => import("./pages/admin/AdminTrainerReviews"));
 
 const queryClient = new QueryClient();
 
