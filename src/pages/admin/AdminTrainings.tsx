@@ -26,6 +26,7 @@ interface Training {
   level: string;
   status: string;
   created_at: string;
+  background_image: string | null;
 }
 
 const AdminTrainings: React.FC = () => {
@@ -34,6 +35,10 @@ const AdminTrainings: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingTraining, setEditingTraining] = useState<Training | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     name_ar: '', name_en: '', type: 'theory' as 'theory' | 'practical', description_ar: '', description_en: '', level: 'beginner' as 'beginner' | 'intermediate' | 'advanced', status: 'active' as 'active' | 'archived',
   });
