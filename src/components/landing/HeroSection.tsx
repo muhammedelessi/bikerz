@@ -61,7 +61,7 @@ const StatCard: React.FC<{
       <Icon className="w-4 h-4 text-primary" />
     </div>
     <div className="flex flex-col">
-      <AnimatedCounter value={value} className="text-base sm:text-lg md:text-xl font-bold text-foreground leading-none" />
+      <AnimatedCounter value={value} className="text-base sm:text-lg md:text-xl font-bold text-white leading-none" />
       <span className="text-[10px] sm:text-[11px] md:text-xs text-muted-foreground uppercase tracking-wider font-medium mt-0.5 whitespace-nowrap">
         {label}
       </span>
