@@ -572,9 +572,10 @@ const AdminTrainers: React.FC = () => {
                   })()}
                 </div>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2"><Label>{isRTL ? 'نوع الدراجة' : 'Bike Type'}</Label><Input value={form.bike_type} onChange={e => setForm(f => ({ ...f, bike_type: e.target.value }))} /></div>
                 <div className="space-y-2"><Label>{isRTL ? 'سنوات الخبرة' : 'Years of Experience'}</Label><Input type="number" value={form.years_of_experience} onChange={e => setForm(f => ({ ...f, years_of_experience: parseInt(e.target.value) || 0 }))} /></div>
+                <div className="space-y-2"><Label>{isRTL ? 'نسبة الربح (%)' : 'Profit Ratio (%)'}</Label><Input type="number" min={0} max={100} value={form.profit_ratio} onChange={e => setForm(f => ({ ...f, profit_ratio: parseFloat(e.target.value) || 0 }))} /></div>
               </div>
 
               {/* Status */}
