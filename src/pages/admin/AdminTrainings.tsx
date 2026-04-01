@@ -64,22 +64,23 @@ const AdminTrainings: React.FC = () => {
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (data: typeof form & { id?: string }) => {
+    mutationFn: async (data: typeof form & { id?: string; background_image?: string | null }) => {
       const { id, ...rest } = data;
       if (id) {
-        const { error } = await supabase.from('trainings').update(rest).eq('id', id);
+        const { error } = await supabase.from('trainings').update(rest as any).eq('id', id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('trainings').insert(rest);
+        const { error } = await supabase.from('trainings').insert(rest as any);
         if (error) throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trainings'] });
       setFormOpen(false);
+      setUploadingImage(false);
       toast.success(isRTL ? 'تم الحفظ بنجاح' : 'Saved successfully');
     },
-    onError: () => toast.error(isRTL ? 'حدث خطأ' : 'An error occurred'),
+    onError: () => { setUploadingImage(false); toast.error(isRTL ? 'حدث خطأ' : 'An error occurred'); },
   });
 
   const deleteMutation = useMutation({
