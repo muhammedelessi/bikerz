@@ -219,13 +219,15 @@ const Navbar: React.FC = () => {
                         </span>
                       </Button>
                     </Link>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title={t('common.logout')}
-                    >
-                      <LogOut className="w-4 h-4" />
-                    </Button>
+                    <LogoutConfirmDialog onConfirm={handleSignOut}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title={t('common.logout')}
+                      >
+                        <LogOut className="w-4 h-4" />
+                      </Button>
+                    </LogoutConfirmDialog>
                   </>
                 ) : (
                   <>
