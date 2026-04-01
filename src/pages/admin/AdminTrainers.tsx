@@ -425,6 +425,7 @@ const AdminTrainers: React.FC = () => {
     setPhotoFile(null);
     setPhotoPreview(null);
     setAssignedTrainings([]);
+    setTrainingServiceInputs({});
     setFormOpen(true);
   };
 
