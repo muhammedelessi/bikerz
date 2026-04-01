@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Star, Upload, X, ChevronDown, ChevronUp, ArrowLeft, ArrowRight, Users, MessageSquare, Bike, MapPin, Clock, AlertTriangle } from 'lucide-react';
 import BilingualInput from '@/components/admin/content/BilingualInput';
+import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
 import { format } from 'date-fns';
 
 interface Trainer {
@@ -310,6 +311,7 @@ const AdminTrainers: React.FC = () => {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [serviceInput, setServiceInput] = useState('');
   const [trainingServiceInputs, setTrainingServiceInputs] = useState<Record<string, string>>({});
+  const [isOtherCity, setIsOtherCity] = useState(false);
   const [assignedTrainings, setAssignedTrainings] = useState<TrainerCourse[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [addStudentTrainerId, setAddStudentTrainerId] = useState<string | null>(null);
@@ -426,6 +428,7 @@ const AdminTrainers: React.FC = () => {
     setPhotoPreview(null);
     setAssignedTrainings([]);
     setTrainingServiceInputs({});
+    setIsOtherCity(false);
     setFormOpen(true);
   };
 
@@ -436,6 +439,10 @@ const AdminTrainers: React.FC = () => {
     setPhotoPreview(t.photo_url);
     const { data } = await supabase.from('trainer_courses').select('training_id, price, duration_hours, location, available_schedule, services').eq('trainer_id', t.id);
     setAssignedTrainings((data || []).map(d => ({ training_id: d.training_id, price: Number(d.price), duration_hours: Number(d.duration_hours), location: d.location, available_schedule: d.available_schedule, services: (d as any).services || [] })));
+    // Check if stored city is in the country's city list
+    const countryEntry = COUNTRIES.find(c => c.code === t.country);
+    const cityInList = countryEntry?.cities.some(c => c.en === t.city);
+    setIsOtherCity(!!countryEntry && !cityInList && !!t.city);
     setFormOpen(true);
   };
 
@@ -515,8 +522,54 @@ const AdminTrainers: React.FC = () => {
             <CardContent className="p-6 space-y-5">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'الموقع والتخصص' : 'Location & Specialization'}</h3>
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2"><Label>{isRTL ? 'الدولة' : 'Country'}</Label><Input value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} /></div>
-                <div className="space-y-2"><Label>{isRTL ? 'المدينة' : 'City'}</Label><Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} /></div>
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'الدولة' : 'Country'}</Label>
+                  <Select value={form.country} onValueChange={v => setForm(f => ({ ...f, country: v, city: '' }))}>
+                    <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} /></SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map(c => (
+                        <SelectItem key={c.code} value={c.code}>{isRTL ? c.ar : c.en}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'المدينة' : 'City'}</Label>
+                  {(() => {
+                    const selectedCountry = COUNTRIES.find(c => c.code === form.country);
+                    const cities = selectedCountry ? [...selectedCountry.cities, OTHER_OPTION] : [];
+                    if (!selectedCountry) {
+                      return <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'} />;
+                    }
+                    const cityInList = cities.some(c => c.en === form.city);
+                    return (
+                      <div className="space-y-2">
+                        <Select
+                          value={cityInList ? form.city : (isOtherCity ? 'Other' : '')}
+                          onValueChange={v => {
+                            if (v === 'Other') {
+                              setIsOtherCity(true);
+                              setForm(f => ({ ...f, city: '' }));
+                            } else {
+                              setIsOtherCity(false);
+                              setForm(f => ({ ...f, city: v }));
+                            }
+                          }}
+                        >
+                          <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} /></SelectTrigger>
+                          <SelectContent>
+                            {cities.map(c => (
+                              <SelectItem key={c.en} value={c.en}>{isRTL ? c.ar : c.en}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {isOtherCity && (
+                          <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'} />
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2"><Label>{isRTL ? 'نوع الدراجة' : 'Bike Type'}</Label><Input value={form.bike_type} onChange={e => setForm(f => ({ ...f, bike_type: e.target.value }))} /></div>
