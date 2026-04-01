@@ -75,16 +75,20 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
 
       return (reviewsData || []).map((r, idx) => {
         let displayName: string;
+        let avatarUrl: string | null = null;
         if (r.is_fake) {
           displayName = r.fake_name || (isRTL ? 'متدرب' : 'Rider');
-        } else if (r.user_id && profilesMap[r.user_id]) {
-          displayName = profilesMap[r.user_id];
+        } else if (r.user_id && profilesMap[r.user_id]?.name) {
+          displayName = profilesMap[r.user_id].name;
+          avatarUrl = profilesMap[r.user_id].avatar;
         } else {
-          // Meaningful anonymous label using a hash of user_id for consistency
           const shortId = r.user_id ? r.user_id.slice(0, 4).toUpperCase() : String(idx + 1);
           displayName = isRTL ? `متدرب #${shortId}` : `Rider #${shortId}`;
+          if (r.user_id && profilesMap[r.user_id]) {
+            avatarUrl = profilesMap[r.user_id].avatar;
+          }
         }
-        return { ...r, displayName };
+        return { ...r, displayName, avatarUrl };
       });
     },
   });
