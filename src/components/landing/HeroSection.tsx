@@ -55,17 +55,17 @@ const StatCard: React.FC<{
   reducedMotion: boolean | null;
 }> = ({ value, label, icon: Icon, index, reducedMotion }) => (
   <m.div
-    initial={reducedMotion ? {} : { opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.4, delay: 1 + index * 0.1 }}
-    className="flex items-center gap-2.5 sm:gap-3 md:flex-row md:gap-3 group min-w-0"
+    initial={reducedMotion ? {} : { opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ duration: 0.5, delay: 1 + index * 0.12, type: "spring", stiffness: 200 }}
+    className="flex flex-col items-center gap-2 group min-w-[70px] sm:min-w-[90px]"
   >
-    <div className="w-9 h-9 md:w-9 md:h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors duration-300">
-      <Icon className="w-4 h-4 text-primary" />
+    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 group-hover:bg-primary/30 group-hover:scale-110 transition-all duration-300 shadow-[0_0_15px_hsl(var(--primary)/0.15)]">
+      <Icon className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-primary" />
     </div>
-    <div className="flex flex-col">
-      <AnimatedCounter value={value} className="text-base sm:text-lg md:text-xl font-bold text-white leading-none" />
-      <span className="text-[10px] sm:text-[11px] md:text-xs text-white/60 uppercase tracking-wider font-medium mt-0.5 whitespace-nowrap">
+    <div className="flex flex-col items-center">
+      <AnimatedCounter value={value} className="text-lg sm:text-xl md:text-2xl font-black text-white leading-none tracking-tight" />
+      <span className="text-[9px] sm:text-[10px] md:text-xs text-primary/80 uppercase tracking-widest font-semibold mt-1 whitespace-nowrap">
         {label}
       </span>
     </div>
@@ -288,7 +288,7 @@ const HeroSection: React.FC = () => {
               transition={anim(0.5, 0.9)}
               className="mt-8 sm:mt-10"
             >
-              <div className="inline-flex flex-wrap justify-center gap-6 sm:gap-8 px-5 sm:px-6 py-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+              <div className="grid grid-cols-4 gap-4 sm:gap-8 px-4 sm:px-8 py-5 sm:py-6 rounded-2xl bg-black/30 backdrop-blur-md border border-primary/15 shadow-[0_0_30px_hsl(var(--primary)/0.08)]">
                 {displayStats.map((stat, i) => (
                   <StatCard
                     key={stat.key}
