@@ -127,8 +127,18 @@ const HeroSection: React.FC = () => {
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <section className="relative flex flex-col bg-gradient-to-b from-primary/5 via-background to-background">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,hsl(var(--primary)/0.1),transparent)]" />
+      <section className="relative flex flex-col overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src={heroRiderBg}
+            alt=""
+            className="w-full h-full object-cover"
+            fetchPriority="high"
+            decoding="async"
+          />
+          <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background" />
+        </div>
 
         <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 md:py-16 flex flex-col items-center text-center">
           {/* Badge */}
