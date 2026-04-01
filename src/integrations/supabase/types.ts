@@ -2083,6 +2083,7 @@ export type Database = {
       }
       trainings: {
         Row: {
+          background_image: string | null
           created_at: string
           description_ar: string
           description_en: string
@@ -2094,6 +2095,7 @@ export type Database = {
           type: Database["public"]["Enums"]["training_type"]
         }
         Insert: {
+          background_image?: string | null
           created_at?: string
           description_ar?: string
           description_en?: string
@@ -2105,6 +2107,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["training_type"]
         }
         Update: {
+          background_image?: string | null
           created_at?: string
           description_ar?: string
           description_en?: string
