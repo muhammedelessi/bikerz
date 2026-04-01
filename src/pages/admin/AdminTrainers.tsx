@@ -533,10 +533,24 @@ const AdminTrainers: React.FC = () => {
                   {(() => {
                     const selectedCountry = COUNTRIES.find(c => c.code === form.country);
                     const cities = selectedCountry ? [...selectedCountry.cities, OTHER_OPTION] : [];
-                    const isOtherCity = form.city && !cities.some(c => c.en === form.city);
-                    return cities.length > 0 ? (
+                    if (!selectedCountry) {
+                      return <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'} />;
+                    }
+                    const cityInList = cities.some(c => c.en === form.city);
+                    return (
                       <div className="space-y-2">
-                        <Select value={isOtherCity ? 'Other' : form.city} onValueChange={v => setForm(f => ({ ...f, city: v === 'Other' ? '' : v }))}>
+                        <Select
+                          value={cityInList ? form.city : (isOtherCity ? 'Other' : '')}
+                          onValueChange={v => {
+                            if (v === 'Other') {
+                              setIsOtherCity(true);
+                              setForm(f => ({ ...f, city: '' }));
+                            } else {
+                              setIsOtherCity(false);
+                              setForm(f => ({ ...f, city: v }));
+                            }
+                          }}
+                        >
                           <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} /></SelectTrigger>
                           <SelectContent>
                             {cities.map(c => (
@@ -544,13 +558,10 @@ const AdminTrainers: React.FC = () => {
                             ))}
                           </SelectContent>
                         </Select>
-                        {(form.city === '' && isOtherCity) || (form.city === '') && cities.some(c => c.en === 'Other') ? null : null}
-                        {isOtherCity || (form.city === '' && COUNTRIES.find(c => c.code === form.country)) ? (
+                        {isOtherCity && (
                           <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'} />
-                        ) : null}
+                        )}
                       </div>
-                    ) : (
-                      <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'} />
                     );
                   })()}
                 </div>
