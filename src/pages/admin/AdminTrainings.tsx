@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, X } from 'lucide-react';
 import BilingualInput from '@/components/admin/content/BilingualInput';
 
 interface Training {
@@ -26,6 +26,7 @@ interface Training {
   level: string;
   status: string;
   created_at: string;
+  background_image: string | null;
 }
 
 const AdminTrainings: React.FC = () => {
@@ -34,6 +35,10 @@ const AdminTrainings: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingTraining, setEditingTraining] = useState<Training | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     name_ar: '', name_en: '', type: 'theory' as 'theory' | 'practical', description_ar: '', description_en: '', level: 'beginner' as 'beginner' | 'intermediate' | 'advanced', status: 'active' as 'active' | 'archived',
   });
@@ -59,22 +64,23 @@ const AdminTrainings: React.FC = () => {
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (data: typeof form & { id?: string }) => {
+    mutationFn: async (data: typeof form & { id?: string; background_image?: string | null }) => {
       const { id, ...rest } = data;
       if (id) {
-        const { error } = await supabase.from('trainings').update(rest).eq('id', id);
+        const { error } = await supabase.from('trainings').update(rest as any).eq('id', id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('trainings').insert(rest);
+        const { error } = await supabase.from('trainings').insert(rest as any);
         if (error) throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trainings'] });
       setFormOpen(false);
+      setUploadingImage(false);
       toast.success(isRTL ? 'تم الحفظ بنجاح' : 'Saved successfully');
     },
-    onError: () => toast.error(isRTL ? 'حدث خطأ' : 'An error occurred'),
+    onError: () => { setUploadingImage(false); toast.error(isRTL ? 'حدث خطأ' : 'An error occurred'); },
   });
 
   const deleteMutation = useMutation({
@@ -93,17 +99,45 @@ const AdminTrainings: React.FC = () => {
   const openAdd = () => {
     setEditingTraining(null);
     setForm({ name_ar: '', name_en: '', type: 'theory', description_ar: '', description_en: '', level: 'beginner', status: 'active' });
+    setImageFile(null);
+    setImagePreview(null);
     setFormOpen(true);
   };
 
   const openEdit = (t: Training) => {
     setEditingTraining(t);
     setForm({ name_ar: t.name_ar, name_en: t.name_en, type: t.type as typeof form.type, description_ar: t.description_ar, description_en: t.description_en, level: t.level as typeof form.level, status: t.status as typeof form.status });
+    setImageFile(null);
+    setImagePreview(t.background_image || null);
     setFormOpen(true);
   };
 
-  const handleSave = () => {
-    saveMutation.mutate({ ...form, id: editingTraining?.id });
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return imagePreview;
+    const ext = imageFile.name.split('.').pop();
+    const path = `training-bg-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('training-images').upload(path, imageFile, { upsert: true });
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from('training-images').getPublicUrl(path);
+    return urlData.publicUrl;
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleSave = async () => {
+    try {
+      setUploadingImage(true);
+      const bgUrl = await uploadImage();
+      saveMutation.mutate({ ...form, background_image: bgUrl, id: editingTraining?.id });
+    } catch {
+      toast.error(isRTL ? 'فشل رفع الصورة' : 'Image upload failed');
+      setUploadingImage(false);
+    }
   };
 
   const levelBadgeClasses: Record<string, string> = {
@@ -134,8 +168,8 @@ const AdminTrainings: React.FC = () => {
             <div className="flex-1">
               <h1 className="text-2xl font-bold">{editingTraining ? (isRTL ? 'تعديل تدريب' : 'Edit Training') : (isRTL ? 'إضافة تدريب' : 'Add Training')}</h1>
             </div>
-            <Button onClick={handleSave} disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? '...' : (isRTL ? 'حفظ' : 'Save')}
+            <Button onClick={handleSave} disabled={saveMutation.isPending || uploadingImage}>
+              {(saveMutation.isPending || uploadingImage) ? '...' : (isRTL ? 'حفظ' : 'Save')}
             </Button>
           </div>
 
@@ -152,6 +186,31 @@ const AdminTrainings: React.FC = () => {
             <CardContent className="p-6 space-y-5">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'الوصف' : 'Description'}</h3>
               <BilingualInput labelEn="Description" labelAr="الوصف" valueEn={form.description_en} valueAr={form.description_ar} onChangeEn={v => setForm(f => ({...f, description_en: v}))} onChangeAr={v => setForm(f => ({...f, description_ar: v}))} isTextarea rows={3} />
+            </CardContent>
+          </Card>
+
+          {/* Section: Background Image */}
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'صورة الخلفية' : 'Background Image'}</h3>
+              <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleImageSelect} />
+              {imagePreview ? (
+                <div className="relative rounded-lg overflow-hidden border border-border">
+                  <img src={imagePreview} alt="Background" className="w-full h-48 object-cover" />
+                  <Button variant="destructive" size="icon" className="absolute top-2 end-2 h-8 w-8" onClick={() => { setImageFile(null); setImagePreview(null); }}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-48 rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-foreground"
+                >
+                  <ImagePlus className="w-8 h-8" />
+                  <span className="text-sm">{isRTL ? 'اضغط لرفع صورة الخلفية' : 'Click to upload background image'}</span>
+                </button>
+              )}
             </CardContent>
           </Card>
 
