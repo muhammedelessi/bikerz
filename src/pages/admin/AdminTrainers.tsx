@@ -428,6 +428,7 @@ const AdminTrainers: React.FC = () => {
     setPhotoPreview(null);
     setAssignedTrainings([]);
     setTrainingServiceInputs({});
+    setIsOtherCity(false);
     setFormOpen(true);
   };
 
