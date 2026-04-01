@@ -218,6 +218,8 @@ const Login: React.FC = () => {
           <img
             src={heroImage}
             alt=""
+            width={1920}
+            height={1080}
             className="w-full h-full object-cover"
             loading="lazy"
             decoding="async"

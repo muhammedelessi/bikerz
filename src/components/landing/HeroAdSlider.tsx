@@ -121,8 +121,11 @@ const HeroAdSlider: React.FC = () => {
                 <img
                   src={slide.image_url}
                   alt=""
+                  width={1200}
+                  height={400}
                   className="w-full h-auto block"
                   loading="lazy"
+                  decoding="async"
                 />
                 <div className={cn("absolute bottom-2 p-2", isRTL ? "left-2" : "right-2")}>
                   <a

@@ -135,6 +135,8 @@ const HeroSection: React.FC = () => {
           <img
             src={heroRiderBg}
             alt=""
+            width={1920}
+            height={1080}
             className="w-full h-full object-cover"
             fetchPriority="high"
             decoding="async"

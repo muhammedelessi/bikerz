@@ -291,8 +291,11 @@ const Navbar: React.FC = () => {
                     <img
                       src={logoUrl}
                       alt={logoAlt}
+                      width={80}
+                      height={32}
                       className="h-6 w-auto object-contain"
                       loading="eager"
+                      decoding="async"
                     />
                   </Link>
                   <button
