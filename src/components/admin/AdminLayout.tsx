@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import LanguageToggle from '@/components/common/LanguageToggle';
+import LogoutConfirmDialog from '@/components/common/LogoutConfirmDialog';
 import NotificationsDropdown from '@/components/admin/NotificationsDropdown';
 import {
   LayoutDashboard,
