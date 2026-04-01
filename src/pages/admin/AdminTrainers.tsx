@@ -46,6 +46,7 @@ interface TrainerCourse {
   duration_hours: number;
   location: string;
   available_schedule: any;
+  services: string[];
 }
 
 // ─── Expandable Row Detail ───────────────────────────────────────────
