@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Star, Upload, X, ChevronDown, ChevronUp, ArrowLeft, ArrowRight, Users, MessageSquare, Bike, MapPin, Clock, AlertTriangle } from 'lucide-react';
 import BilingualInput from '@/components/admin/content/BilingualInput';
+import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
 import { format } from 'date-fns';
 
 interface Trainer {
