@@ -1370,19 +1370,8 @@ const CourseDetail: React.FC = () => {
       <Footer />
       </div>
 
-      {/* Persistent "View All Courses" button — mobile only */}
-      <div className="fixed bottom-20 end-4 z-50 lg:hidden">
-        <Button
-          size="sm"
-          className="h-10 px-4 text-xs font-bold rounded-full shadow-lg"
-          asChild
-        >
-          <Link to="/courses">
-            <BookOpen className="w-3.5 h-3.5 me-1.5" />
-            {isRTL ? 'كل الدورات' : 'All Courses'}
-          </Link>
-        </Button>
-      </div>
+
+
 
       {/* Checkout Modal */}
       {course && (
