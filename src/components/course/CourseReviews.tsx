@@ -56,34 +56,39 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
         .filter(r => !r.is_fake && r.user_id)
         .map(r => r.user_id!);
 
-      let profilesMap: Record<string, string> = {};
+      let profilesMap: Record<string, { name: string; avatar: string | null }> = {};
       if (realReviewUserIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('user_id, full_name')
+          .select('user_id, full_name, avatar_url')
           .in('user_id', realReviewUserIds);
         
         if (profiles) {
           profiles.forEach(p => {
-            if (p.full_name && p.full_name.trim()) {
-              profilesMap[p.user_id] = p.full_name.trim();
-            }
+            profilesMap[p.user_id] = {
+              name: (p.full_name && p.full_name.trim()) ? p.full_name.trim() : '',
+              avatar: p.avatar_url || null,
+            };
           });
         }
       }
 
       return (reviewsData || []).map((r, idx) => {
         let displayName: string;
+        let avatarUrl: string | null = null;
         if (r.is_fake) {
           displayName = r.fake_name || (isRTL ? 'متدرب' : 'Rider');
-        } else if (r.user_id && profilesMap[r.user_id]) {
-          displayName = profilesMap[r.user_id];
+        } else if (r.user_id && profilesMap[r.user_id]?.name) {
+          displayName = profilesMap[r.user_id].name;
+          avatarUrl = profilesMap[r.user_id].avatar;
         } else {
-          // Meaningful anonymous label using a hash of user_id for consistency
           const shortId = r.user_id ? r.user_id.slice(0, 4).toUpperCase() : String(idx + 1);
           displayName = isRTL ? `متدرب #${shortId}` : `Rider #${shortId}`;
+          if (r.user_id && profilesMap[r.user_id]) {
+            avatarUrl = profilesMap[r.user_id].avatar;
+          }
         }
-        return { ...r, displayName };
+        return { ...r, displayName, avatarUrl };
       });
     },
   });
@@ -312,9 +317,21 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
                 className="card-premium p-4 sm:p-5"
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
-                    <User className="w-4 h-4 text-primary" />
-                  </div>
+                  {review.avatarUrl ? (
+                    <img
+                      src={review.avatarUrl}
+                      alt={review.displayName}
+                      width={36}
+                      height={36}
+                      className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-primary" />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="text-sm font-semibold text-foreground truncate">
