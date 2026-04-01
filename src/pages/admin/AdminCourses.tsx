@@ -1146,7 +1146,7 @@ const AdminCourses: React.FC = () => {
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">{isRTL ? 'السعر النهائي' : 'Final Price'}</Label>
+                        <Label className="text-xs text-muted-foreground">{isRTL ? 'السعر بعد الخصم' : 'After Discount'}</Label>
                         <Input
                           value={cp.price}
                           readOnly
@@ -1155,6 +1155,39 @@ const AdminCourses: React.FC = () => {
                         />
                       </div>
                     </div>
+                    {/* Country Price Calculator */}
+                    {cp.original_price > 0 && cp.currency && (
+                      <div className="bg-muted/50 rounded-md p-3 space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground">{isRTL ? 'حاسبة السعر' : 'Price Breakdown'}</p>
+                        {(() => {
+                          const rate = SAR_RATES[cp.currency] || 1;
+                          const sarOriginal = rate > 0 ? Math.ceil(cp.original_price / rate) : 0;
+                          const afterDisc = cp.price;
+                          const vat = Math.ceil(afterDisc * (VAT_RATE / 100));
+                          const totalInclVat = afterDisc + vat;
+                          return (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                              <div className="bg-background rounded p-2 border border-border">
+                                <p className="text-muted-foreground">{isRTL ? 'ما يعادله بالريال' : 'SAR Equivalent'}</p>
+                                <p className="font-semibold">{sarOriginal} SAR</p>
+                              </div>
+                              <div className="bg-background rounded p-2 border border-border">
+                                <p className="text-muted-foreground">{isRTL ? 'بعد الخصم' : 'After Discount'}{cp.discount_percentage > 0 ? ` (-${cp.discount_percentage}%)` : ''}</p>
+                                <p className="font-semibold">{afterDisc} {cp.currency}</p>
+                              </div>
+                              <div className="bg-background rounded p-2 border border-border">
+                                <p className="text-muted-foreground">{isRTL ? 'الضريبة' : 'VAT'} (15%)</p>
+                                <p className="font-semibold">{vat} {cp.currency}</p>
+                              </div>
+                              <div className="bg-primary/10 rounded p-2 border border-primary/30">
+                                <p className="text-primary font-medium">{isRTL ? 'يظهر للمستخدم' : 'User Sees'}</p>
+                                <p className="font-bold text-primary">{totalInclVat} {cp.currency}</p>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </div>
                 );
               })}
