@@ -435,7 +435,7 @@ const AdminTrainers: React.FC = () => {
 
   const openEdit = async (t: Trainer) => {
     setEditingTrainer(t);
-    setForm({ name_ar: t.name_ar, name_en: t.name_en, bio_ar: t.bio_ar, bio_en: t.bio_en, country: t.country, city: t.city, bike_type: t.bike_type, years_of_experience: t.years_of_experience, services: t.services || [], status: t.status as 'active' | 'inactive', photo_url: t.photo_url });
+    setForm({ name_ar: t.name_ar, name_en: t.name_en, bio_ar: t.bio_ar, bio_en: t.bio_en, country: t.country, city: t.city, bike_type: t.bike_type, years_of_experience: t.years_of_experience, profit_ratio: t.profit_ratio || 0, services: t.services || [], status: t.status as 'active' | 'inactive', photo_url: t.photo_url });
     setPhotoFile(null);
     setPhotoPreview(t.photo_url);
     const { data } = await supabase.from('trainer_courses').select('training_id, price, duration_hours, location, available_schedule, services').eq('trainer_id', t.id);
