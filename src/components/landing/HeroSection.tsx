@@ -136,8 +136,8 @@ const HeroSection: React.FC = () => {
             fetchPriority="high"
             decoding="async"
           />
-          <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px]" />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background" />
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/70" />
         </div>
 
         <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 md:py-16 flex flex-col items-center text-center">
