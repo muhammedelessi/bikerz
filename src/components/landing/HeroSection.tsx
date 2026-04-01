@@ -3,7 +3,10 @@ import AnimatedCounter from "@/components/common/AnimatedCounter";
 import { LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Play, Users, GraduationCap, PlayCircle, BookOpen } from "lucide-react";
+import {
+  Play, Users, GraduationCap, PlayCircle, BookOpen,
+  Shield, Bike, Route, Gauge, Trophy, Compass, Wrench,
+} from "lucide-react";
 // Users icon is used for both stats and CTA
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
