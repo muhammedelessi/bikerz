@@ -262,10 +262,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-                  <LogOut className="w-4 h-4 me-2" />
-                  {isRTL ? 'تسجيل الخروج' : 'Sign Out'}
-                </DropdownMenuItem>
+                <LogoutConfirmDialog onConfirm={handleSignOut}>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                    <LogOut className="w-4 h-4 me-2" />
+                    {isRTL ? 'تسجيل الخروج' : 'Sign Out'}
+                  </DropdownMenuItem>
+                </LogoutConfirmDialog>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
