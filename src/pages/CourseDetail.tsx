@@ -702,45 +702,14 @@ const CourseDetail: React.FC = () => {
                             </div>
                           );
                         }
-                        return previewVideoPlaying ? (
-                          <div className="aspect-video w-full">
+                        return (
+                          <div className="aspect-video w-full rounded-2xl overflow-hidden">
                             <BunnyVideoEmbed
                               videoUrl={course.preview_video_url}
                               title={t('courseDetail.courseIntroduction')}
                               isPreview
                             />
                           </div>
-                        ) : (
-                          <button
-                            onClick={() => setPreviewVideoPlaying(true)}
-                            className="relative w-full aspect-video group cursor-pointer focus:outline-none"
-                            aria-label={t('courseDetail.playPreviewVideo')}
-                          >
-                            <picture>
-                              <source srcSet={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage} type="image/webp" />
-                              <img
-                                src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
-                                alt={t('courseDetail.videoThumbnail')}
-                                width={1280}
-                                height={720}
-                                className="w-full h-full object-cover"
-                                loading="eager"
-                                fetchPriority="high"
-                                decoding="async"
-                              />
-                            </picture>
-                            <div className="absolute inset-0" />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="w-20 h-20 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl ring-4 ring-primary/20">
-                                <Play className="w-9 h-9 text-primary-foreground ms-1" fill="currentColor" />
-                              </div>
-                            </div>
-                            <div className="absolute bottom-5 start-5">
-                              <span className="px-4 py-2 rounded-xl bg-black/50 text-white text-sm font-medium backdrop-blur-md border border-white/10">
-                                {t('courseDetail.watchPreview')}
-                              </span>
-                            </div>
-                          </button>
                         );
                       })()
                     ) : course.thumbnail_url ? (
