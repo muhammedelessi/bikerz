@@ -38,7 +38,7 @@ const Index: React.FC = () => {
       <div className="pt-[var(--navbar-h)]">
         <main>
           <HeroSection />
-          <FeaturedCoursesSection />
+          {/* <FeaturedCoursesSection /> */}
           <WhySection />
           <LearnSection />
           <JourneySection />
