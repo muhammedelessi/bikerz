@@ -318,7 +318,7 @@ const AdminTrainers: React.FC = () => {
   const [addStudentTrainerId, setAddStudentTrainerId] = useState<string | null>(null);
   const [addReviewTrainerId, setAddReviewTrainerId] = useState<string | null>(null);
 
-  const defaultForm = { name_ar: '', name_en: '', bio_ar: '', bio_en: '', country: '', city: '', bike_type: '', years_of_experience: 0, services: [] as string[], status: 'active' as 'active' | 'inactive', photo_url: null as string | null };
+  const defaultForm = { name_ar: '', name_en: '', bio_ar: '', bio_en: '', country: '', city: '', bike_type: '', years_of_experience: 0, profit_ratio: 0, services: [] as string[], status: 'active' as 'active' | 'inactive', photo_url: null as string | null };
   const [form, setForm] = useState(defaultForm);
 
   const { data: trainers, isLoading } = useQuery({
