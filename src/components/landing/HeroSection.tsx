@@ -211,7 +211,7 @@ const HeroSection: React.FC = () => {
               transition={anim(0.5, 0.9)}
               className="mt-8 sm:mt-10"
             >
-              <div className="inline-flex flex-wrap justify-center gap-6 sm:gap-8 px-5 sm:px-6 py-4 rounded-xl bg-card/40 backdrop-blur-sm border border-border/20">
+              <div className="inline-flex flex-wrap justify-center gap-6 sm:gap-8 px-5 sm:px-6 py-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
                 {displayStats.map((stat, i) => (
                   <StatCard
                     key={stat.key}
