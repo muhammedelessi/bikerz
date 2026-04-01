@@ -55,20 +55,16 @@ const StatCard: React.FC<{
   reducedMotion: boolean | null;
 }> = ({ value, label, icon: Icon, index, reducedMotion }) => (
   <m.div
-    initial={reducedMotion ? {} : { opacity: 0, scale: 0.8 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ duration: 0.5, delay: 1 + index * 0.12, type: "spring", stiffness: 200 }}
-    className="flex flex-col items-center gap-2 group min-w-[70px] sm:min-w-[90px]"
+    initial={reducedMotion ? {} : { opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4, delay: 1 + index * 0.1 }}
+    className="flex flex-col items-center gap-1.5 min-w-[60px] sm:min-w-[80px]"
   >
-    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 group-hover:bg-primary/30 group-hover:scale-110 transition-all duration-300 shadow-[0_0_15px_hsl(var(--primary)/0.15)]">
-      <Icon className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-primary" />
-    </div>
-    <div className="flex flex-col items-center">
-      <AnimatedCounter value={value} className="text-lg sm:text-xl md:text-2xl font-black text-white leading-none tracking-tight" />
-      <span className="text-[9px] sm:text-[10px] md:text-xs text-primary/80 uppercase tracking-widest font-semibold mt-1 whitespace-nowrap">
-        {label}
-      </span>
-    </div>
+    <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white/90" strokeWidth={1.8} />
+    <span className="text-lg sm:text-xl md:text-2xl font-black text-white leading-none">{value}</span>
+    <span className="text-[9px] sm:text-[10px] md:text-xs text-white/60 uppercase tracking-wider font-medium whitespace-nowrap">
+      {label}
+    </span>
   </m.div>
 );
 
