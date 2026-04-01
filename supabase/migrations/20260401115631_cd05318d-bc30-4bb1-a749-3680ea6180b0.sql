@@ -1,0 +1,1 @@
+ALTER TABLE public.trainer_courses ADD COLUMN services text[] DEFAULT '{}'::text[];

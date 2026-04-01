@@ -1910,6 +1910,7 @@ export type Database = {
           id: string
           location: string
           price: number
+          services: string[] | null
           trainer_id: string
           training_id: string
         }
@@ -1920,6 +1921,7 @@ export type Database = {
           id?: string
           location?: string
           price?: number
+          services?: string[] | null
           trainer_id: string
           training_id: string
         }
@@ -1930,6 +1932,7 @@ export type Database = {
           id?: string
           location?: string
           price?: number
+          services?: string[] | null
           trainer_id?: string
           training_id?: string
         }
