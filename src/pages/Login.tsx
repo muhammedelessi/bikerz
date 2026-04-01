@@ -98,6 +98,8 @@ const Login: React.FC = () => {
               <img
                 src={theme === 'light' ? logoDark : logoLight}
                 alt="BIKERZ"
+                width={80}
+                height={32}
                 className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
                 loading="eager"
                 decoding="async"
