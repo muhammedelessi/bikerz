@@ -39,6 +39,7 @@ interface Trainer {
   services: string[];
   status: string;
   created_at: string;
+  profit_ratio: number;
 }
 
 interface TrainerCourse {
