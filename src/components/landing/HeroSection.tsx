@@ -61,8 +61,8 @@ const StatCard: React.FC<{
       <Icon className="w-4 h-4 text-primary" />
     </div>
     <div className="flex flex-col">
-      <AnimatedCounter value={value} className="text-base sm:text-lg md:text-xl font-bold text-foreground leading-none" />
-      <span className="text-[10px] sm:text-[11px] md:text-xs text-muted-foreground uppercase tracking-wider font-medium mt-0.5 whitespace-nowrap">
+      <AnimatedCounter value={value} className="text-base sm:text-lg md:text-xl font-bold text-white leading-none" />
+      <span className="text-[10px] sm:text-[11px] md:text-xs text-white/60 uppercase tracking-wider font-medium mt-0.5 whitespace-nowrap">
         {label}
       </span>
     </div>
@@ -136,8 +136,8 @@ const HeroSection: React.FC = () => {
             fetchPriority="high"
             decoding="async"
           />
-          <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px]" />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background" />
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/70" />
         </div>
 
         <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 md:py-16 flex flex-col items-center text-center">
@@ -159,7 +159,7 @@ const HeroSection: React.FC = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={anim(0.7, 0.4)}
-            className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08] mb-4 text-foreground max-w-3xl"
+            className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08] mb-4 text-white max-w-3xl"
           >
             {title}
           </m.h1>
@@ -169,7 +169,7 @@ const HeroSection: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={anim(0.6, 0.6)}
-            className="text-base sm:text-lg lg:text-xl text-foreground/70 leading-relaxed mb-6 max-w-xl"
+            className="text-base sm:text-lg lg:text-xl text-white/80 leading-relaxed mb-6 max-w-xl"
           >
             {subtitle}
           </m.p>
@@ -211,7 +211,7 @@ const HeroSection: React.FC = () => {
               transition={anim(0.5, 0.9)}
               className="mt-8 sm:mt-10"
             >
-              <div className="inline-flex flex-wrap justify-center gap-6 sm:gap-8 px-5 sm:px-6 py-4 rounded-xl bg-card/40 backdrop-blur-sm border border-border/20">
+              <div className="inline-flex flex-wrap justify-center gap-6 sm:gap-8 px-5 sm:px-6 py-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
                 {displayStats.map((stat, i) => (
                   <StatCard
                     key={stat.key}
