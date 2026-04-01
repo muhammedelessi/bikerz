@@ -56,18 +56,19 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
         .filter(r => !r.is_fake && r.user_id)
         .map(r => r.user_id!);
 
-      let profilesMap: Record<string, string> = {};
+      let profilesMap: Record<string, { name: string; avatar: string | null }> = {};
       if (realReviewUserIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('user_id, full_name')
+          .select('user_id, full_name, avatar_url')
           .in('user_id', realReviewUserIds);
         
         if (profiles) {
           profiles.forEach(p => {
-            if (p.full_name && p.full_name.trim()) {
-              profilesMap[p.user_id] = p.full_name.trim();
-            }
+            profilesMap[p.user_id] = {
+              name: (p.full_name && p.full_name.trim()) ? p.full_name.trim() : '',
+              avatar: p.avatar_url || null,
+            };
           });
         }
       }
