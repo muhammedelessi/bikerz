@@ -317,9 +317,21 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
                 className="card-premium p-4 sm:p-5"
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
-                    <User className="w-4 h-4 text-primary" />
-                  </div>
+                  {review.avatarUrl ? (
+                    <img
+                      src={review.avatarUrl}
+                      alt={review.displayName}
+                      width={36}
+                      height={36}
+                      className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-primary" />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="text-sm font-semibold text-foreground truncate">
