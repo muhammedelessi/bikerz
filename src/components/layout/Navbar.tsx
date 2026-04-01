@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, LogOut, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LanguageToggle from '@/components/common/LanguageToggle';
+import LogoutConfirmDialog from '@/components/common/LogoutConfirmDialog';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
