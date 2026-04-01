@@ -309,6 +309,7 @@ const AdminTrainers: React.FC = () => {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [serviceInput, setServiceInput] = useState('');
+  const [trainingServiceInputs, setTrainingServiceInputs] = useState<Record<string, string>>({});
   const [assignedTrainings, setAssignedTrainings] = useState<TrainerCourse[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [addStudentTrainerId, setAddStudentTrainerId] = useState<string | null>(null);
