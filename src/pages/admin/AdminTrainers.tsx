@@ -516,8 +516,43 @@ const AdminTrainers: React.FC = () => {
             <CardContent className="p-6 space-y-5">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'الموقع والتخصص' : 'Location & Specialization'}</h3>
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2"><Label>{isRTL ? 'الدولة' : 'Country'}</Label><Input value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} /></div>
-                <div className="space-y-2"><Label>{isRTL ? 'المدينة' : 'City'}</Label><Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} /></div>
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'الدولة' : 'Country'}</Label>
+                  <Select value={form.country} onValueChange={v => setForm(f => ({ ...f, country: v, city: '' }))}>
+                    <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} /></SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map(c => (
+                        <SelectItem key={c.code} value={c.code}>{isRTL ? c.ar : c.en}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'المدينة' : 'City'}</Label>
+                  {(() => {
+                    const selectedCountry = COUNTRIES.find(c => c.code === form.country);
+                    const cities = selectedCountry ? [...selectedCountry.cities, OTHER_OPTION] : [];
+                    const isOtherCity = form.city && !cities.some(c => c.en === form.city);
+                    return cities.length > 0 ? (
+                      <div className="space-y-2">
+                        <Select value={isOtherCity ? 'Other' : form.city} onValueChange={v => setForm(f => ({ ...f, city: v === 'Other' ? '' : v }))}>
+                          <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} /></SelectTrigger>
+                          <SelectContent>
+                            {cities.map(c => (
+                              <SelectItem key={c.en} value={c.en}>{isRTL ? c.ar : c.en}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {(form.city === '' && isOtherCity) || (form.city === '') && cities.some(c => c.en === 'Other') ? null : null}
+                        {isOtherCity || (form.city === '' && COUNTRIES.find(c => c.code === form.country)) ? (
+                          <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'} />
+                        ) : null}
+                      </div>
+                    ) : (
+                      <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'} />
+                    );
+                  })()}
+                </div>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2"><Label>{isRTL ? 'نوع الدراجة' : 'Bike Type'}</Label><Input value={form.bike_type} onChange={e => setForm(f => ({ ...f, bike_type: e.target.value }))} /></div>
