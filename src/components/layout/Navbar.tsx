@@ -221,7 +221,6 @@ const Navbar: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={handleSignOut}
                       title={t('common.logout')}
                     >
                       <LogOut className="w-4 h-4" />
