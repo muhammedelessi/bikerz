@@ -98,17 +98,45 @@ const AdminTrainings: React.FC = () => {
   const openAdd = () => {
     setEditingTraining(null);
     setForm({ name_ar: '', name_en: '', type: 'theory', description_ar: '', description_en: '', level: 'beginner', status: 'active' });
+    setImageFile(null);
+    setImagePreview(null);
     setFormOpen(true);
   };
 
   const openEdit = (t: Training) => {
     setEditingTraining(t);
     setForm({ name_ar: t.name_ar, name_en: t.name_en, type: t.type as typeof form.type, description_ar: t.description_ar, description_en: t.description_en, level: t.level as typeof form.level, status: t.status as typeof form.status });
+    setImageFile(null);
+    setImagePreview(t.background_image || null);
     setFormOpen(true);
   };
 
-  const handleSave = () => {
-    saveMutation.mutate({ ...form, id: editingTraining?.id });
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return imagePreview;
+    const ext = imageFile.name.split('.').pop();
+    const path = `training-bg-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('training-images').upload(path, imageFile, { upsert: true });
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from('training-images').getPublicUrl(path);
+    return urlData.publicUrl;
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleSave = async () => {
+    try {
+      setUploadingImage(true);
+      const bgUrl = await uploadImage();
+      saveMutation.mutate({ ...form, background_image: bgUrl, id: editingTraining?.id });
+    } catch {
+      toast.error(isRTL ? 'فشل رفع الصورة' : 'Image upload failed');
+      setUploadingImage(false);
+    }
   };
 
   const levelBadgeClasses: Record<string, string> = {
