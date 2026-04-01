@@ -190,6 +190,34 @@ const HeroSection: React.FC = () => {
         </div>
 
         <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 md:py-16 flex flex-col items-center text-center">
+          {/* Animated Motorcycle Icon */}
+          <m.div
+            initial={prefersReducedMotion ? {} : { opacity: 0, x: -60 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={anim(0.8, 0.2)}
+            className="mb-5"
+          >
+            <m.div
+              animate={prefersReducedMotion ? {} : { x: [0, 6, 0, -6, 0], rotate: [0, -2, 0, 2, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="relative"
+            >
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-primary/20 border border-primary/30 backdrop-blur-sm flex items-center justify-center">
+                <Bike className="w-8 h-8 sm:w-10 sm:h-10 text-primary" strokeWidth={1.8} />
+              </div>
+              {/* Speed lines */}
+              <m.div
+                animate={prefersReducedMotion ? {} : { opacity: [0, 0.6, 0], x: [-8, -20] }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut" }}
+                className="absolute top-1/2 -translate-y-1/2 right-full mr-1 flex flex-col gap-1.5"
+              >
+                <div className="w-5 h-[2px] rounded-full bg-primary/50" />
+                <div className="w-3 h-[2px] rounded-full bg-primary/30" />
+                <div className="w-4 h-[2px] rounded-full bg-primary/40" />
+              </m.div>
+            </m.div>
+          </m.div>
+
           {/* Badge */}
           <m.div
             initial={{ opacity: 0, y: -10 }}
