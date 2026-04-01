@@ -144,7 +144,7 @@ const HeroSection: React.FC = () => {
         </div>
 
         {/* Floating Identity Icons */}
-        <div className="absolute inset-0 z-[5] pointer-events-none hidden sm:block overflow-hidden">
+        <div className="absolute inset-0 z-[5] pointer-events-none overflow-hidden">
           {[
             { Icon: Shield, x: "8%", y: "18%", size: 28, delay: 0, dur: 6 },
             { Icon: Bike, x: "88%", y: "22%", size: 32, delay: 0.5, dur: 7 },
