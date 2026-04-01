@@ -55,17 +55,31 @@ const StatCard: React.FC<{
   reducedMotion: boolean | null;
 }> = ({ value, label, icon: Icon, index, reducedMotion }) => (
   <m.div
-    initial={reducedMotion ? {} : { opacity: 0, scale: 0.8 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ duration: 0.5, delay: 1 + index * 0.12, type: "spring", stiffness: 200 }}
-    className="flex flex-col items-center gap-2 group min-w-[70px] sm:min-w-[90px]"
+    initial={reducedMotion ? {} : { opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 1 + index * 0.1, type: "spring", stiffness: 180 }}
+    className="relative group"
   >
-    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 group-hover:bg-primary/30 group-hover:scale-110 transition-all duration-300 shadow-[0_0_15px_hsl(var(--primary)/0.15)]">
-      <Icon className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-primary" />
-    </div>
-    <div className="flex flex-col items-center">
-      <AnimatedCounter value={value} className="text-lg sm:text-xl md:text-2xl font-black text-white leading-none tracking-tight" />
-      <span className="text-[9px] sm:text-[10px] md:text-xs text-primary/80 uppercase tracking-widest font-semibold mt-1 whitespace-nowrap">
+    {/* Glow behind card on hover */}
+    <div className="absolute -inset-1 rounded-2xl bg-primary/10 opacity-0 group-hover:opacity-100 blur-lg transition-opacity duration-500" />
+
+    <div className="relative flex flex-col items-center gap-1.5 sm:gap-2.5 px-2 sm:px-5 py-3 sm:py-5 rounded-xl sm:rounded-2xl bg-white/[0.06] border border-white/[0.08] backdrop-blur-md group-hover:bg-white/[0.1] group-hover:border-primary/30 transition-all duration-400">
+      {/* Icon with pulse ring */}
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-40" style={{ animationDuration: '2s' }} />
+        <div className="relative w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-gradient-to-br from-primary/25 to-primary/10 border border-primary/25 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+          <Icon className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-primary" />
+        </div>
+      </div>
+
+      {/* Value */}
+      <AnimatedCounter
+        value={value}
+        className="text-lg sm:text-2xl md:text-3xl font-black text-white leading-none tracking-tight"
+      />
+
+      {/* Label */}
+      <span className="text-[8px] sm:text-[10px] text-white/50 uppercase tracking-[0.15em] font-medium whitespace-nowrap">
         {label}
       </span>
     </div>
@@ -290,7 +304,7 @@ const HeroSection: React.FC = () => {
               transition={anim(0.5, 0.9)}
               className="mt-8 sm:mt-10"
             >
-              <div className="grid grid-cols-4 gap-4 sm:gap-8 px-4 sm:px-8 py-5 sm:py-6 rounded-2xl bg-black/30 backdrop-blur-md border border-primary/15 shadow-[0_0_30px_hsl(var(--primary)/0.08)]">
+              <div className="grid grid-cols-4 gap-2 sm:gap-4 md:gap-6 px-2 sm:px-6 py-3 sm:py-5 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/[0.06]">
                 {displayStats.map((stat, i) => (
                   <StatCard
                     key={stat.key}
