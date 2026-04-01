@@ -417,14 +417,15 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
         <Separator />
 
         {/* Logout */}
-        <Button
-          variant="destructive"
-          className="w-full"
-          onClick={handleSignOut}
-        >
-          <LogOut className="w-4 h-4 me-2" />
-          {isRTL ? 'تسجيل الخروج' : 'Logout'}
-        </Button>
+        <LogoutConfirmDialog onConfirm={handleSignOut}>
+          <Button
+            variant="destructive"
+            className="w-full"
+          >
+            <LogOut className="w-4 h-4 me-2" />
+            {isRTL ? 'تسجيل الخروج' : 'Logout'}
+          </Button>
+        </LogoutConfirmDialog>
       </div>
     </div>
   );

@@ -379,10 +379,12 @@ const Navbar: React.FC = () => {
                           {profile?.full_name || t('nav.dashboard')}
                         </Button>
                       </Link>
-                      <Button variant="ghost" onClick={handleSignOut} className="w-full h-11 text-sm text-muted-foreground">
-                        <LogOut className="w-4 h-4 me-2" />
-                        {t('common.logout')}
-                      </Button>
+                      <LogoutConfirmDialog onConfirm={handleSignOut}>
+                        <Button variant="ghost" className="w-full h-11 text-sm text-muted-foreground">
+                          <LogOut className="w-4 h-4 me-2" />
+                          {t('common.logout')}
+                        </Button>
+                      </LogoutConfirmDialog>
                     </>
                   ) : (
                     <>
