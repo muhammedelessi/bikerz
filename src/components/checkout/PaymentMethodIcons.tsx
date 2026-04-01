@@ -8,19 +8,19 @@ import madaLogo from '@/assets/payment/mada.svg';
 import applePayLogo from '@/assets/payment/apple-pay.svg';
 
 const ApplePayIcon = ({ className = 'h-5 w-auto' }: { className?: string }) => (
-  <img src={applePayLogo} alt="Apple Pay" className={className} />
+  <img src={applePayLogo} alt="Apple Pay" width={40} height={20} loading="lazy" decoding="async" className={className} />
 );
 
 const VisaIcon = ({ className = 'h-5 w-auto' }: { className?: string }) => (
-  <img src={visaLogo} alt="Visa" className={className} />
+  <img src={visaLogo} alt="Visa" width={40} height={20} loading="lazy" decoding="async" className={className} />
 );
 
 const MastercardIcon = ({ className = 'h-5 w-auto' }: { className?: string }) => (
-  <img src={mastercardLogo} alt="Mastercard" className={className} />
+  <img src={mastercardLogo} alt="Mastercard" width={40} height={20} loading="lazy" decoding="async" className={className} />
 );
 
 const MadaIcon = ({ className = 'h-5 w-auto' }: { className?: string }) => (
-  <img src={madaLogo} alt="mada" className={className} />
+  <img src={madaLogo} alt="mada" width={40} height={20} loading="lazy" decoding="async" className={className} />
 );
 
 interface PaymentMethodIconsProps {

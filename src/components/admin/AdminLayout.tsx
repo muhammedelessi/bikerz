@@ -125,6 +125,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <img
                 src={themeLogo}
                 alt="BIKERZ"
+                width={80}
+                height={32}
                 className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
                 loading="eager"
                 decoding="async"
@@ -136,6 +138,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <img
                 src={themeLogo}
                 alt="BIKERZ"
+                width={80}
+                height={24}
                 className="h-6 w-auto object-contain"
                 loading="eager"
                 decoding="async"
