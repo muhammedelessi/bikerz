@@ -130,15 +130,7 @@ const HeroSection: React.FC = () => {
       <section className="relative flex flex-col bg-background">
         {/* Main Content — side-by-side on desktop, stacked on mobile */}
         <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-4 sm:py-6 md:py-10 flex flex-col md:flex-row items-start gap-4 md:gap-8">
-          {/* Ad Slider — top on mobile, right/left on tablet+ */}
-          <m.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={anim(0.6, 0.2)}
-            className={`w-full md:w-[280px] lg:w-[320px] xl:w-[360px] shrink-0 order-1 md:order-none`}
-          >
-            <HeroAdSlider />
-          </m.div>
+          {/* Ad Slider hidden */}
 
           {/* Hero text content */}
           <div className="flex-1 flex flex-col order-2 md:order-none w-full">
