@@ -443,8 +443,9 @@ const AdminCourses: React.FC = () => {
     }
   };
 
+  const DEFAULT_COUNTRY_DISCOUNT = 78;
   const addCountryPrice = () => {
-    setCountryPrices([...countryPrices, { country_code: '', original_price: 0, discount_percentage: 0, price: 0, currency: '' }]);
+    setCountryPrices([...countryPrices, { country_code: '', original_price: 0, discount_percentage: DEFAULT_COUNTRY_DISCOUNT, price: 0, currency: '' }]);
   };
 
   const removeCountryPrice = (index: number) => {
@@ -1111,9 +1112,54 @@ const AdminCourses: React.FC = () => {
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {/* Row 1: SAR final price input → auto-converts everything */}
+                    <div className="space-y-1">
+                      <Label className="text-xs font-medium text-primary">
+                        {isRTL ? 'السعر النهائي بالريال (شامل الخصم والضريبة)' : 'Final SAR Price (incl. discount & VAT)'}
+                      </Label>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder={isRTL ? 'أدخل السعر النهائي بالريال' : 'Enter final SAR amount'}
+                        className="border-primary/50 font-semibold"
+                        value={(() => {
+                          if (!cp.price || !cp.currency) return '';
+                          const rate = SAR_RATES[cp.currency] || 1;
+                          const localWithVat = cp.price + Math.ceil(cp.price * (VAT_RATE / 100));
+                          return rate > 0 ? Math.ceil(localWithVat / rate) : '';
+                        })()}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                            const sarFinal = val === '' ? 0 : parseFloat(val) || 0;
+                            if (sarFinal > 0 && cp.currency) {
+                              const rate = SAR_RATES[cp.currency] || 1;
+                              const sarPreTax = sarFinal / (1 + VAT_RATE / 100);
+                              const localPreTax = Math.ceil(sarPreTax * rate);
+                              const disc = cp.discount_percentage > 0 ? cp.discount_percentage : DEFAULT_COUNTRY_DISCOUNT;
+                              const localOriginal = disc > 0 && disc < 100 ? Math.ceil(localPreTax / (1 - disc / 100)) : localPreTax;
+                              const updated = [...countryPrices];
+                              updated[idx] = {
+                                ...updated[idx],
+                                discount_percentage: disc,
+                                original_price: localOriginal,
+                                price: localPreTax,
+                              };
+                              setCountryPrices(updated);
+                            } else if (val === '') {
+                              const updated = [...countryPrices];
+                              updated[idx] = { ...updated[idx], original_price: 0, price: 0 };
+                              setCountryPrices(updated);
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+
+                    {/* Row 2: Local currency detail fields */}
+                    <div className="grid grid-cols-3 gap-2">
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">{isRTL ? 'السعر الأصلي (عملة محلية)' : 'Original Price (local)'}</Label>
+                        <Label className="text-xs text-muted-foreground">{isRTL ? 'السعر الأصلي (محلي)' : 'Original (local)'}</Label>
                         <Input
                           type="text"
                           inputMode="numeric"
@@ -1124,11 +1170,11 @@ const AdminCourses: React.FC = () => {
                               updateCountryPrice(idx, 'original_price', val === '' ? 0 : parseFloat(val) || 0);
                             }
                           }}
-                          placeholder={isRTL ? 'السعر الأصلي' : 'Original'}
+                          placeholder="0"
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">{isRTL ? 'نسبة الخصم %' : 'Discount %'}</Label>
+                        <Label className="text-xs text-muted-foreground">{isRTL ? 'الخصم %' : 'Discount %'}</Label>
                         <Input
                           type="text"
                           inputMode="numeric"
@@ -1142,51 +1188,16 @@ const AdminCourses: React.FC = () => {
                               }
                             }
                           }}
-                          placeholder="0"
+                          placeholder={String(DEFAULT_COUNTRY_DISCOUNT)}
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">{isRTL ? 'بعد الخصم (محلي)' : 'After Discount'}</Label>
-                        <Input
-                          value={cp.price}
-                          readOnly
-                          disabled
-                          className="bg-muted font-semibold"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">{isRTL ? 'السعر النهائي بالريال (شامل الضريبة)' : 'Final SAR (incl. VAT)'}</Label>
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder={isRTL ? 'أدخل بالريال' : 'Enter SAR'}
-                          className="border-primary/50"
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                              const sarFinal = val === '' ? 0 : parseFloat(val) || 0;
-                              if (sarFinal > 0 && cp.currency) {
-                                const rate = SAR_RATES[cp.currency] || 1;
-                                // SAR final is inclusive of 15% VAT → back-calculate pre-tax local
-                                const sarPreTax = sarFinal / 1.15;
-                                const localPreTax = Math.ceil(sarPreTax * rate);
-                                // Work backwards: if discount > 0, original = preTax / (1 - disc/100)
-                                const disc = cp.discount_percentage > 0 ? cp.discount_percentage : 0;
-                                const localOriginal = disc > 0 ? Math.ceil(localPreTax / (1 - disc / 100)) : localPreTax;
-                                const updated = [...countryPrices];
-                                updated[idx] = {
-                                  ...updated[idx],
-                                  original_price: localOriginal,
-                                  price: localPreTax,
-                                };
-                                setCountryPrices(updated);
-                              }
-                            }
-                          }}
-                        />
+                        <Label className="text-xs text-muted-foreground">{isRTL ? 'بعد الخصم (محلي)' : 'After Disc. (local)'}</Label>
+                        <Input value={cp.price} readOnly disabled className="bg-muted font-semibold" />
                       </div>
                     </div>
-                    {/* Country Price Calculator */}
+
+                    {/* Price Summary */}
                     {cp.original_price > 0 && cp.currency && (
                       <div className="bg-muted/50 rounded-md p-3 space-y-2">
                         <p className="text-xs font-medium text-muted-foreground">{isRTL ? 'ملخص السعر' : 'Price Summary'}</p>
@@ -1204,11 +1215,11 @@ const AdminCourses: React.FC = () => {
                                 <p className="font-semibold">{sarOriginal} SAR</p>
                               </div>
                               <div className="bg-background rounded p-2 border border-border">
-                                <p className="text-muted-foreground">{isRTL ? 'بعد الخصم' : 'After Disc.'}{cp.discount_percentage > 0 ? ` (-${cp.discount_percentage}%)` : ''}</p>
+                                <p className="text-muted-foreground">{isRTL ? 'بعد الخصم' : 'After Disc.'} (-{cp.discount_percentage}%)</p>
                                 <p className="font-semibold">{afterDisc} {cp.currency}</p>
                               </div>
                               <div className="bg-background rounded p-2 border border-border">
-                                <p className="text-muted-foreground">{isRTL ? 'الضريبة' : 'VAT'} (15%)</p>
+                                <p className="text-muted-foreground">{isRTL ? 'الضريبة' : 'VAT'} ({VAT_RATE}%)</p>
                                 <p className="font-semibold">{vat} {cp.currency}</p>
                               </div>
                               <div className="bg-primary/10 rounded p-2 border border-primary/30">
