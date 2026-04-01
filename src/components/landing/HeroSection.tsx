@@ -10,7 +10,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
-import HeroAdSlider from "@/components/landing/HeroAdSlider";
+import heroRiderBg from "@/assets/hero-rider.webp";
 
 interface HeroLandingContent extends HeroContent {
   defaultHeroImage?: string;
