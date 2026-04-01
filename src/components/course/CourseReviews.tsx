@@ -51,7 +51,7 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
 
       if (error) throw error;
 
-      // For real reviews, fetch profile names
+      // For real reviews, fetch profile names + emails as fallback
       const realReviewUserIds = (reviewsData || [])
         .filter(r => !r.is_fake && r.user_id)
         .map(r => r.user_id!);
@@ -65,17 +65,26 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
         
         if (profiles) {
           profiles.forEach(p => {
-            profilesMap[p.user_id] = p.full_name || (isRTL ? 'مستخدم' : 'User');
+            if (p.full_name && p.full_name.trim()) {
+              profilesMap[p.user_id] = p.full_name.trim();
+            }
           });
         }
       }
 
-      return (reviewsData || []).map(r => ({
-        ...r,
-        displayName: r.is_fake
-          ? r.fake_name
-          : (r.user_id ? profilesMap[r.user_id] || (isRTL ? 'مستخدم' : 'User') : (isRTL ? 'مستخدم' : 'User')),
-      }));
+      return (reviewsData || []).map((r, idx) => {
+        let displayName: string;
+        if (r.is_fake) {
+          displayName = r.fake_name || (isRTL ? 'متدرب' : 'Rider');
+        } else if (r.user_id && profilesMap[r.user_id]) {
+          displayName = profilesMap[r.user_id];
+        } else {
+          // Meaningful anonymous label using a hash of user_id for consistency
+          const shortId = r.user_id ? r.user_id.slice(0, 4).toUpperCase() : String(idx + 1);
+          displayName = isRTL ? `متدرب #${shortId}` : `Rider #${shortId}`;
+        }
+        return { ...r, displayName };
+      });
     },
   });
 
