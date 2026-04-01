@@ -124,6 +124,8 @@ const Footer: React.FC = () => {
                 <img
                   src={footerLogo}
                   alt="BIKERZ"
+                  width={120}
+                  height={56}
                   loading="lazy"
                   decoding="async"
                   className="h-12 sm:h-14 w-auto object-contain"
