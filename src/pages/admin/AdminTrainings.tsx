@@ -189,6 +189,31 @@ const AdminTrainings: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Section: Background Image */}
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'صورة الخلفية' : 'Background Image'}</h3>
+              <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleImageSelect} />
+              {imagePreview ? (
+                <div className="relative rounded-lg overflow-hidden border border-border">
+                  <img src={imagePreview} alt="Background" className="w-full h-48 object-cover" />
+                  <Button variant="destructive" size="icon" className="absolute top-2 end-2 h-8 w-8" onClick={() => { setImageFile(null); setImagePreview(null); }}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-48 rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-foreground"
+                >
+                  <ImagePlus className="w-8 h-8" />
+                  <span className="text-sm">{isRTL ? 'اضغط لرفع صورة الخلفية' : 'Click to upload background image'}</span>
+                </button>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Section: Classification */}
           <Card>
             <CardContent className="p-6 space-y-5">
