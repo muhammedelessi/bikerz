@@ -143,6 +143,51 @@ const HeroSection: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/80" />
         </div>
 
+        {/* Floating Identity Icons */}
+        <div className="absolute inset-0 z-[5] pointer-events-none hidden sm:block overflow-hidden">
+          {[
+            { Icon: Shield, x: "8%", y: "18%", size: 28, delay: 0, dur: 6 },
+            { Icon: Bike, x: "88%", y: "22%", size: 32, delay: 0.5, dur: 7 },
+            { Icon: Route, x: "12%", y: "72%", size: 24, delay: 1, dur: 8 },
+            { Icon: Gauge, x: "85%", y: "68%", size: 26, delay: 1.5, dur: 6.5 },
+            { Icon: Trophy, x: "5%", y: "45%", size: 22, delay: 0.8, dur: 7.5 },
+            { Icon: Compass, x: "92%", y: "45%", size: 24, delay: 1.2, dur: 6.8 },
+            { Icon: Wrench, x: "18%", y: "88%", size: 20, delay: 2, dur: 7.2 },
+            { Icon: GraduationCap, x: "80%", y: "85%", size: 22, delay: 0.3, dur: 8.2 },
+          ].map(({ Icon, x, y, size, delay, dur }, i) => (
+            <m.div
+              key={i}
+              className="absolute"
+              style={{ left: x, top: y }}
+              initial={prefersReducedMotion ? { opacity: 0.15 } : { opacity: 0, scale: 0.5 }}
+              animate={
+                prefersReducedMotion
+                  ? { opacity: 0.15 }
+                  : {
+                      opacity: [0, 0.2, 0.12, 0.2],
+                      scale: [0.8, 1, 0.9, 1],
+                      y: [0, -12, 0, 12, 0],
+                    }
+              }
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0 }
+                  : {
+                      duration: dur,
+                      repeat: Infinity,
+                      repeatType: "mirror" as const,
+                      delay,
+                      ease: "easeInOut",
+                    }
+              }
+            >
+              <div className="p-2.5 rounded-xl bg-white/[0.06] border border-white/[0.08] backdrop-blur-[3px]">
+                <Icon className="text-white/40" size={size} strokeWidth={1.5} />
+              </div>
+            </m.div>
+          ))}
+        </div>
+
         <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 md:py-16 flex flex-col items-center text-center">
           {/* Badge */}
           <m.div
