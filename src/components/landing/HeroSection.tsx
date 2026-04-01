@@ -159,12 +159,12 @@ const HeroSection: React.FC = () => {
               key={i}
               className="absolute"
               style={{ left: x, top: y }}
-              initial={prefersReducedMotion ? { opacity: 0.15 } : { opacity: 0, scale: 0.5 }}
+              initial={prefersReducedMotion ? { opacity: 0.6 } : { opacity: 0, scale: 0.5 }}
               animate={
                 prefersReducedMotion
-                  ? { opacity: 0.15 }
+                  ? { opacity: 0.6 }
                   : {
-                      opacity: [0, 0.2, 0.12, 0.2],
+                      opacity: [0, 0.7, 0.5, 0.7],
                       scale: [0.8, 1, 0.9, 1],
                       y: [0, -12, 0, 12, 0],
                     }
@@ -181,8 +181,8 @@ const HeroSection: React.FC = () => {
                     }
               }
             >
-              <div className="p-2.5 rounded-xl bg-white/[0.06] border border-white/[0.08] backdrop-blur-[3px]">
-                <Icon className="text-white/40" size={size} strokeWidth={1.5} />
+              <div className="p-2.5 rounded-xl bg-primary/15 border border-primary/30 backdrop-blur-sm">
+                <Icon className="text-primary" size={size} strokeWidth={1.8} />
               </div>
             </m.div>
           ))}
