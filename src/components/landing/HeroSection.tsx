@@ -127,97 +127,94 @@ const HeroSection: React.FC = () => {
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <section className="relative flex flex-col bg-background">
-        {/* Main Content — side-by-side on desktop, stacked on mobile */}
-        <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-4 sm:py-6 md:py-10 flex flex-col md:flex-row items-start gap-4 md:gap-8">
-          {/* Ad Slider hidden */}
+      <section className="relative flex flex-col bg-gradient-to-b from-primary/5 via-background to-background">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,hsl(var(--primary)/0.1),transparent)]" />
 
-          {/* Hero text content */}
-          <div className="flex-1 flex flex-col order-2 md:order-none w-full">
-            <div className="w-full">
-              <div className={`max-w-2xl text-center md:text-start ${isRTL ? "mx-auto md:mr-0 md:ml-auto" : "mx-auto md:ml-0 md:mr-auto"}`}>
-                {/* Badge */}
-                <m.div
-                  initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={anim(0.6, 0.3)}
-                  className="mb-3"
-                >
-                  <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    {isRTL ? "أكاديمية بايكرز" : "BIKERZ Academy"}
-                  </span>
-                </m.div>
+        <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 md:py-16 flex flex-col items-center text-center">
+          {/* Badge */}
+          <m.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={anim(0.6, 0.3)}
+            className="mb-4"
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              {isRTL ? "أكاديمية بايكرز" : "BIKERZ Academy"}
+            </span>
+          </m.div>
 
-                {/* Title */}
-                <m.h1
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={anim(0.7, 0.4)}
-                  className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08] mb-3 text-foreground"
-                >
-                  {title}
-                </m.h1>
+          {/* Title */}
+          <m.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={anim(0.7, 0.4)}
+            className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08] mb-4 text-foreground max-w-3xl"
+          >
+            {title}
+          </m.h1>
 
-                {/* Subtitle */}
-                <m.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={anim(0.6, 0.6)}
-                  className="text-base sm:text-lg lg:text-xl text-foreground/70 leading-relaxed mb-5 max-w-lg"
-                >
-                  {subtitle}
-                </m.p>
+          {/* Subtitle */}
+          <m.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={anim(0.6, 0.6)}
+            className="text-base sm:text-lg lg:text-xl text-foreground/70 leading-relaxed mb-6 max-w-xl"
+          >
+            {subtitle}
+          </m.p>
 
-                {/* CTA */}
-                <m.div
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={anim(0.5, 0.75)}
-                  className="flex flex-row gap-3 sm:gap-4 justify-center md:justify-start"
-                >
-                  <Link to="/courses" className="flex-1 sm:flex-none">
-                    <Button
-                      variant="hero"
-                      size="lg"
-                      className="w-full group gap-2 sm:gap-3 px-4 sm:px-8 py-6 text-sm sm:text-lg"
-                    >
-                      <Play className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
-                      {ctaText}
-                    </Button>
-                  </Link>
-                  <Link to="/join-community" className="flex-1 sm:flex-none">
-                    <Button
-                      variant="heroOutline"
-                      size="lg"
-                      className="w-full group gap-2 sm:gap-3 px-4 sm:px-8 py-6 text-sm sm:text-lg border-primary/50 text-primary hover:bg-primary/10 hover:border-primary"
-                    >
-                      <Users className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
-                      {isRTL ? "انضم لمجتمع بايكرز" : "Join Bikerz Community"}
-                    </Button>
-                  </Link>
-                </m.div>
+          {/* CTA */}
+          <m.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={anim(0.5, 0.75)}
+            className="flex flex-row gap-3 sm:gap-4 justify-center"
+          >
+            <Link to="/courses" className="flex-1 sm:flex-none">
+              <Button
+                variant="hero"
+                size="lg"
+                className="w-full group gap-2 sm:gap-3 px-4 sm:px-8 py-6 text-sm sm:text-lg"
+              >
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
+                {ctaText}
+              </Button>
+            </Link>
+            <Link to="/join-community" className="flex-1 sm:flex-none">
+              <Button
+                variant="heroOutline"
+                size="lg"
+                className="w-full group gap-2 sm:gap-3 px-4 sm:px-8 py-6 text-sm sm:text-lg border-primary/50 text-primary hover:bg-primary/10 hover:border-primary"
+              >
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
+                {isRTL ? "انضم لمجتمع بايكرز" : "Join Bikerz Community"}
+              </Button>
+            </Link>
+          </m.div>
+
+          {/* Stats Strip */}
+          {showStats && (
+            <m.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={anim(0.5, 0.9)}
+              className="mt-8 sm:mt-10"
+            >
+              <div className="inline-flex flex-wrap justify-center gap-6 sm:gap-8 px-5 sm:px-6 py-4 rounded-xl bg-card/40 backdrop-blur-sm border border-border/20">
+                {displayStats.map((stat, i) => (
+                  <StatCard
+                    key={stat.key}
+                    value={stat.value}
+                    label={stat.label}
+                    icon={stat.icon}
+                    index={i}
+                    reducedMotion={prefersReducedMotion}
+                  />
+                ))}
               </div>
-            </div>
-
-            {/* Stats Strip — inside content column */}
-            {showStats && (
-              <div className="mt-4 sm:mt-6 flex justify-center md:justify-start">
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:inline-flex md:flex-wrap md:justify-start md:gap-8 px-3 sm:px-4 py-3 sm:py-4 rounded-xl bg-card/30 backdrop-blur-sm border border-border/20 w-full md:w-auto">
-                  {displayStats.map((stat, i) => (
-                    <StatCard
-                      key={stat.key}
-                      value={stat.value}
-                      label={stat.label}
-                      icon={stat.icon}
-                      index={i}
-                      reducedMotion={prefersReducedMotion}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+            </m.div>
+          )}
         </div>
       </section>
     </LazyMotion>
