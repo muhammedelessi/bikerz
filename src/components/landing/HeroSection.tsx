@@ -304,7 +304,7 @@ const HeroSection: React.FC = () => {
               transition={anim(0.5, 0.9)}
               className="mt-8 sm:mt-10"
             >
-              <div className="grid grid-cols-4 gap-4 sm:gap-8 px-4 sm:px-8 py-5 sm:py-6 rounded-2xl bg-black/30 backdrop-blur-md border border-primary/15 shadow-[0_0_30px_hsl(var(--primary)/0.08)]">
+              <div className="grid grid-cols-4 gap-2 sm:gap-4 md:gap-6 px-2 sm:px-6 py-3 sm:py-5 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/[0.06]">
                 {displayStats.map((stat, i) => (
                   <StatCard
                     key={stat.key}
