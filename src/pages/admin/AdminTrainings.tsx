@@ -10,11 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
 import BilingualInput from '@/components/admin/content/BilingualInput';
 
 interface Training {
@@ -32,7 +31,7 @@ interface Training {
 const AdminTrainings: React.FC = () => {
   const { isRTL } = useLanguage();
   const queryClient = useQueryClient();
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingTraining, setEditingTraining] = useState<Training | null>(null);
   const [form, setForm] = useState({
@@ -72,7 +71,7 @@ const AdminTrainings: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trainings'] });
-      setSheetOpen(false);
+      setFormOpen(false);
       toast.success(isRTL ? 'تم الحفظ بنجاح' : 'Saved successfully');
     },
     onError: () => toast.error(isRTL ? 'حدث خطأ' : 'An error occurred'),
@@ -94,13 +93,13 @@ const AdminTrainings: React.FC = () => {
   const openAdd = () => {
     setEditingTraining(null);
     setForm({ name_ar: '', name_en: '', type: 'theory', description_ar: '', description_en: '', level: 'beginner', status: 'active' });
-    setSheetOpen(true);
+    setFormOpen(true);
   };
 
   const openEdit = (t: Training) => {
     setEditingTraining(t);
     setForm({ name_ar: t.name_ar, name_en: t.name_en, type: t.type as typeof form.type, description_ar: t.description_ar, description_en: t.description_en, level: t.level as typeof form.level, status: t.status as typeof form.status });
-    setSheetOpen(true);
+    setFormOpen(true);
   };
 
   const handleSave = () => {
@@ -122,6 +121,92 @@ const AdminTrainings: React.FC = () => {
     practical: 'bg-orange-500/15 text-orange-500 border-orange-500/30',
   };
 
+  // ─── Full-page form view ────────────────────────────────────────
+  if (formOpen) {
+    return (
+      <AdminLayout>
+        <div className="space-y-6 max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => setFormOpen(false)}>
+              {isRTL ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold">{editingTraining ? (isRTL ? 'تعديل تدريب' : 'Edit Training') : (isRTL ? 'إضافة تدريب' : 'Add Training')}</h1>
+            </div>
+            <Button onClick={handleSave} disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? '...' : (isRTL ? 'حفظ' : 'Save')}
+            </Button>
+          </div>
+
+          {/* Section: Basic Info */}
+          <Card>
+            <CardContent className="p-6 space-y-5">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'المعلومات الأساسية' : 'Basic Information'}</h3>
+              <BilingualInput labelEn="Name" labelAr="الاسم" valueEn={form.name_en} valueAr={form.name_ar} onChangeEn={v => setForm(f => ({...f, name_en: v}))} onChangeAr={v => setForm(f => ({...f, name_ar: v}))} placeholderEn="Training name" placeholderAr="اسم التدريب" />
+            </CardContent>
+          </Card>
+
+          {/* Section: Description */}
+          <Card>
+            <CardContent className="p-6 space-y-5">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'الوصف' : 'Description'}</h3>
+              <BilingualInput labelEn="Description" labelAr="الوصف" valueEn={form.description_en} valueAr={form.description_ar} onChangeEn={v => setForm(f => ({...f, description_en: v}))} onChangeAr={v => setForm(f => ({...f, description_ar: v}))} isTextarea rows={3} />
+            </CardContent>
+          </Card>
+
+          {/* Section: Classification */}
+          <Card>
+            <CardContent className="p-6 space-y-5">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'التصنيف' : 'Classification'}</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'النوع' : 'Type'}</Label>
+                  <Select value={form.type} onValueChange={v => setForm(f => ({...f, type: v as typeof f.type}))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="theory">{isRTL ? 'نظري' : 'Theory'}</SelectItem>
+                      <SelectItem value="practical">{isRTL ? 'عملي' : 'Practical'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'المستوى' : 'Level'}</Label>
+                  <Select value={form.level} onValueChange={v => setForm(f => ({...f, level: v as typeof f.level}))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beginner">{isRTL ? 'مبتدئ' : 'Beginner'}</SelectItem>
+                      <SelectItem value="intermediate">{isRTL ? 'متوسط' : 'Intermediate'}</SelectItem>
+                      <SelectItem value="advanced">{isRTL ? 'متقدم' : 'Advanced'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                <div>
+                  <Label className="text-sm font-medium">{isRTL ? 'الحالة' : 'Status'}</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">{isRTL ? 'تفعيل أو تعطيل هذا التدريب' : 'Enable or disable this training'}</p>
+                </div>
+                <Switch checked={form.status === 'active'} onCheckedChange={v => setForm(f => ({...f, status: v ? 'active' : 'archived'}))} />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Bottom Save */}
+          <div className="flex justify-end gap-3 pb-6">
+            <Button variant="outline" onClick={() => setFormOpen(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
+            <Button onClick={handleSave} disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? '...' : (isRTL ? 'حفظ' : 'Save')}
+            </Button>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // ─── Table View ─────────────────────────────────────────────────
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -212,69 +297,6 @@ const AdminTrainings: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Add/Edit Sheet */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side={isRTL ? 'left' : 'right'} className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{editingTraining ? (isRTL ? 'تعديل تدريب' : 'Edit Training') : (isRTL ? 'إضافة تدريب' : 'Add Training')}</SheetTitle>
-          </SheetHeader>
-          <div className="space-y-6 mt-6">
-            {/* Names */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'المعلومات الأساسية' : 'Basic Info'}</h3>
-              <BilingualInput labelEn="Name" labelAr="الاسم" valueEn={form.name_en} valueAr={form.name_ar} onChangeEn={v => setForm(f => ({...f, name_en: v}))} onChangeAr={v => setForm(f => ({...f, name_ar: v}))} placeholderEn="Training name" placeholderAr="اسم التدريب" />
-            </div>
-
-            {/* Description */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'الوصف' : 'Description'}</h3>
-              <BilingualInput labelEn="Description" labelAr="الوصف" valueEn={form.description_en} valueAr={form.description_ar} onChangeEn={v => setForm(f => ({...f, description_en: v}))} onChangeAr={v => setForm(f => ({...f, description_ar: v}))} isTextarea rows={3} />
-            </div>
-
-            {/* Type & Level */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'التصنيف' : 'Classification'}</h3>
-              <div className="grid gap-4 grid-cols-2">
-                <div className="space-y-2">
-                  <Label>{isRTL ? 'النوع' : 'Type'}</Label>
-                  <Select value={form.type} onValueChange={v => setForm(f => ({...f, type: v as typeof f.type}))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="theory">{isRTL ? 'نظري' : 'Theory'}</SelectItem>
-                      <SelectItem value="practical">{isRTL ? 'عملي' : 'Practical'}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>{isRTL ? 'المستوى' : 'Level'}</Label>
-                  <Select value={form.level} onValueChange={v => setForm(f => ({...f, level: v as typeof f.level}))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="beginner">{isRTL ? 'مبتدئ' : 'Beginner'}</SelectItem>
-                      <SelectItem value="intermediate">{isRTL ? 'متوسط' : 'Intermediate'}</SelectItem>
-                      <SelectItem value="advanced">{isRTL ? 'متقدم' : 'Advanced'}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Status */}
-            <div className="flex items-center justify-between rounded-lg border border-border p-4">
-              <div>
-                <Label className="text-sm font-medium">{isRTL ? 'الحالة' : 'Status'}</Label>
-                <p className="text-xs text-muted-foreground mt-0.5">{isRTL ? 'تفعيل أو تعطيل هذا التدريب' : 'Enable or disable this training'}</p>
-              </div>
-              <Switch checked={form.status === 'active'} onCheckedChange={v => setForm(f => ({...f, status: v ? 'active' : 'archived'}))} />
-            </div>
-          </div>
-          <SheetFooter className="mt-6 gap-2">
-            <Button variant="outline" onClick={() => setSheetOpen(false)} className="flex-1">{isRTL ? 'إلغاء' : 'Cancel'}</Button>
-            <Button onClick={handleSave} disabled={saveMutation.isPending} className="flex-1">{saveMutation.isPending ? '...' : (isRTL ? 'حفظ' : 'Save')}</Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
 
       {/* Delete Confirm */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
