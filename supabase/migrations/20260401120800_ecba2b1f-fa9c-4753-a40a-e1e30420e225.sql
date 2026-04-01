@@ -1,0 +1,1 @@
+ALTER TABLE public.trainers ADD COLUMN profit_ratio numeric NOT NULL DEFAULT 0;
