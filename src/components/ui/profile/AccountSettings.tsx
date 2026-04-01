@@ -12,6 +12,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import LogoutConfirmDialog from '@/components/common/LogoutConfirmDialog';
 import { cn } from '@/lib/utils';
 import {
   Settings,
@@ -416,14 +417,15 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
         <Separator />
 
         {/* Logout */}
-        <Button
-          variant="destructive"
-          className="w-full"
-          onClick={handleSignOut}
-        >
-          <LogOut className="w-4 h-4 me-2" />
-          {isRTL ? 'تسجيل الخروج' : 'Logout'}
-        </Button>
+        <LogoutConfirmDialog onConfirm={handleSignOut}>
+          <Button
+            variant="destructive"
+            className="w-full"
+          >
+            <LogOut className="w-4 h-4 me-2" />
+            {isRTL ? 'تسجيل الخروج' : 'Logout'}
+          </Button>
+        </LogoutConfirmDialog>
       </div>
     </div>
   );

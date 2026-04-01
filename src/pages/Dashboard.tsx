@@ -11,6 +11,7 @@ import { fetchEnrollmentsWithLiveProgress } from '@/lib/enrollmentProgress';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import LanguageToggle from '@/components/common/LanguageToggle';
+import LogoutConfirmDialog from '@/components/common/LogoutConfirmDialog';
 import ProfileCompletionReminder from '@/components/ui/profile/ProfileCompletionReminder';
 import {
   BookOpen,
@@ -316,14 +317,15 @@ const Dashboard: React.FC = () => {
                 <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               </div>
             </div>
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start text-muted-foreground hover:text-destructive touch-target"
-              onClick={handleSignOut}
-            >
-              <LogOut className="w-4 h-4 me-2" />
-              {t('common.logout')}
-            </Button>
+            <LogoutConfirmDialog onConfirm={handleSignOut}>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start text-muted-foreground hover:text-destructive touch-target"
+              >
+                <LogOut className="w-4 h-4 me-2" />
+                {t('common.logout')}
+              </Button>
+            </LogoutConfirmDialog>
           </div>
         </div>
       </aside>

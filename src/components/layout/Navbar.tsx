@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, LogOut, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LanguageToggle from '@/components/common/LanguageToggle';
+import LogoutConfirmDialog from '@/components/common/LogoutConfirmDialog';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -218,14 +219,15 @@ const Navbar: React.FC = () => {
                         </span>
                       </Button>
                     </Link>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleSignOut}
-                      title={t('common.logout')}
-                    >
-                      <LogOut className="w-4 h-4" />
-                    </Button>
+                    <LogoutConfirmDialog onConfirm={handleSignOut}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title={t('common.logout')}
+                      >
+                        <LogOut className="w-4 h-4" />
+                      </Button>
+                    </LogoutConfirmDialog>
                   </>
                 ) : (
                   <>
@@ -377,10 +379,12 @@ const Navbar: React.FC = () => {
                           {profile?.full_name || t('nav.dashboard')}
                         </Button>
                       </Link>
-                      <Button variant="ghost" onClick={handleSignOut} className="w-full h-11 text-sm text-muted-foreground">
-                        <LogOut className="w-4 h-4 me-2" />
-                        {t('common.logout')}
-                      </Button>
+                      <LogoutConfirmDialog onConfirm={handleSignOut}>
+                        <Button variant="ghost" className="w-full h-11 text-sm text-muted-foreground">
+                          <LogOut className="w-4 h-4 me-2" />
+                          {t('common.logout')}
+                        </Button>
+                      </LogoutConfirmDialog>
                     </>
                   ) : (
                     <>

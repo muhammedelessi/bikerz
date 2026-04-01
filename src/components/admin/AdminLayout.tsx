@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import LanguageToggle from '@/components/common/LanguageToggle';
+import LogoutConfirmDialog from '@/components/common/LogoutConfirmDialog';
 import NotificationsDropdown from '@/components/admin/NotificationsDropdown';
 import {
   LayoutDashboard,
@@ -261,10 +262,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-                  <LogOut className="w-4 h-4 me-2" />
-                  {isRTL ? 'تسجيل الخروج' : 'Sign Out'}
-                </DropdownMenuItem>
+                <LogoutConfirmDialog onConfirm={handleSignOut}>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                    <LogOut className="w-4 h-4 me-2" />
+                    {isRTL ? 'تسجيل الخروج' : 'Sign Out'}
+                  </DropdownMenuItem>
+                </LogoutConfirmDialog>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
