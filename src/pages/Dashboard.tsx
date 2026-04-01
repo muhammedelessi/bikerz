@@ -11,6 +11,7 @@ import { fetchEnrollmentsWithLiveProgress } from '@/lib/enrollmentProgress';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import LanguageToggle from '@/components/common/LanguageToggle';
+import LogoutConfirmDialog from '@/components/common/LogoutConfirmDialog';
 import ProfileCompletionReminder from '@/components/ui/profile/ProfileCompletionReminder';
 import {
   BookOpen,
