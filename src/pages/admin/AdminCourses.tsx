@@ -1111,9 +1111,9 @@ const AdminCourses: React.FC = () => {
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">{isRTL ? 'السعر الأصلي' : 'Original Price'}</Label>
+                        <Label className="text-xs text-muted-foreground">{isRTL ? 'السعر الأصلي (عملة محلية)' : 'Original Price (local)'}</Label>
                         <Input
                           type="text"
                           inputMode="numeric"
@@ -1146,7 +1146,7 @@ const AdminCourses: React.FC = () => {
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">{isRTL ? 'السعر بعد الخصم' : 'After Discount'}</Label>
+                        <Label className="text-xs text-muted-foreground">{isRTL ? 'بعد الخصم (محلي)' : 'After Discount'}</Label>
                         <Input
                           value={cp.price}
                           readOnly
@@ -1154,25 +1154,57 @@ const AdminCourses: React.FC = () => {
                           className="bg-muted font-semibold"
                         />
                       </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">{isRTL ? 'السعر النهائي بالريال (شامل الضريبة)' : 'Final SAR (incl. VAT)'}</Label>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder={isRTL ? 'أدخل بالريال' : 'Enter SAR'}
+                          className="border-primary/50"
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                              const sarFinal = val === '' ? 0 : parseFloat(val) || 0;
+                              if (sarFinal > 0 && cp.currency) {
+                                const rate = SAR_RATES[cp.currency] || 1;
+                                // SAR final is inclusive of 15% VAT → back-calculate pre-tax local
+                                const sarPreTax = sarFinal / 1.15;
+                                const localPreTax = Math.ceil(sarPreTax * rate);
+                                // Work backwards: if discount > 0, original = preTax / (1 - disc/100)
+                                const disc = cp.discount_percentage > 0 ? cp.discount_percentage : 0;
+                                const localOriginal = disc > 0 ? Math.ceil(localPreTax / (1 - disc / 100)) : localPreTax;
+                                const updated = [...countryPrices];
+                                updated[idx] = {
+                                  ...updated[idx],
+                                  original_price: localOriginal,
+                                  price: localPreTax,
+                                };
+                                setCountryPrices(updated);
+                              }
+                            }
+                          }}
+                        />
+                      </div>
                     </div>
                     {/* Country Price Calculator */}
                     {cp.original_price > 0 && cp.currency && (
                       <div className="bg-muted/50 rounded-md p-3 space-y-2">
-                        <p className="text-xs font-medium text-muted-foreground">{isRTL ? 'حاسبة السعر' : 'Price Breakdown'}</p>
+                        <p className="text-xs font-medium text-muted-foreground">{isRTL ? 'ملخص السعر' : 'Price Summary'}</p>
                         {(() => {
                           const rate = SAR_RATES[cp.currency] || 1;
                           const sarOriginal = rate > 0 ? Math.ceil(cp.original_price / rate) : 0;
                           const afterDisc = cp.price;
                           const vat = Math.ceil(afterDisc * (VAT_RATE / 100));
-                          const totalInclVat = afterDisc + vat;
+                          const totalLocal = afterDisc + vat;
+                          const sarTotal = rate > 0 ? Math.ceil(totalLocal / rate) : 0;
                           return (
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
                               <div className="bg-background rounded p-2 border border-border">
-                                <p className="text-muted-foreground">{isRTL ? 'ما يعادله بالريال' : 'SAR Equivalent'}</p>
+                                <p className="text-muted-foreground">{isRTL ? 'الأصلي بالريال' : 'SAR Original'}</p>
                                 <p className="font-semibold">{sarOriginal} SAR</p>
                               </div>
                               <div className="bg-background rounded p-2 border border-border">
-                                <p className="text-muted-foreground">{isRTL ? 'بعد الخصم' : 'After Discount'}{cp.discount_percentage > 0 ? ` (-${cp.discount_percentage}%)` : ''}</p>
+                                <p className="text-muted-foreground">{isRTL ? 'بعد الخصم' : 'After Disc.'}{cp.discount_percentage > 0 ? ` (-${cp.discount_percentage}%)` : ''}</p>
                                 <p className="font-semibold">{afterDisc} {cp.currency}</p>
                               </div>
                               <div className="bg-background rounded p-2 border border-border">
@@ -1181,7 +1213,11 @@ const AdminCourses: React.FC = () => {
                               </div>
                               <div className="bg-primary/10 rounded p-2 border border-primary/30">
                                 <p className="text-primary font-medium">{isRTL ? 'يظهر للمستخدم' : 'User Sees'}</p>
-                                <p className="font-bold text-primary">{totalInclVat} {cp.currency}</p>
+                                <p className="font-bold text-primary">{totalLocal} {cp.currency}</p>
+                              </div>
+                              <div className="bg-background rounded p-2 border border-border">
+                                <p className="text-muted-foreground">{isRTL ? 'الإجمالي بالريال' : 'SAR Total'}</p>
+                                <p className="font-semibold">{sarTotal} SAR</p>
                               </div>
                             </div>
                           );
