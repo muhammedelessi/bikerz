@@ -659,7 +659,7 @@ const CourseDetail: React.FC = () => {
                       <motion.div
                         className="relative"
                         animate={{ x: [0, 6, 0], y: [0, -4, 0] }}
-                        transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+                        transition={{ repeat: Number.POSITIVE_INFINITY, duration: 1.2, ease: "easeInOut" }}
                       >
                         <span className="text-4xl drop-shadow-lg" role="img" aria-label="point">👆</span>
                       </motion.div>
