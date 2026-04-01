@@ -46,6 +46,10 @@ const ScrollToTop = () => {
     window.scrollTo(0, 0);
     // Clear any stale scroll locks from previous route's modals
     clearStaleScrollLocks();
+    // Fire Meta Pixel PageView on SPA route change
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'PageView');
+    }
   }, [pathname]);
 
   // Safety: periodically check for orphaned scroll locks when no dialogs are open
