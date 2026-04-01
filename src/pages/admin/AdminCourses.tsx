@@ -955,7 +955,43 @@ const AdminCourses: React.FC = () => {
               </div>
             </div>
 
-            {/* Learning Outcomes */}
+            {/* SAR Price Calculator */}
+            {formData.price > 0 && (
+              <div className="border border-border rounded-lg p-4 bg-muted/30 space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-primary" />
+                  {isRTL ? 'حاسبة السعر (ر.س)' : 'Price Calculator (SAR)'}
+                </h4>
+                {(() => {
+                  const orig = formData.price;
+                  const disc = formData.discount_percentage > 0 ? formData.discount_percentage : 0;
+                  const afterDiscount = disc > 0 ? Math.ceil(orig * (1 - disc / 100)) : orig;
+                  const vat = Math.ceil(afterDiscount * (VAT_RATE / 100));
+                  const total = afterDiscount + vat;
+                  return (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                      <div className="bg-background rounded-md p-3 border border-border">
+                        <p className="text-muted-foreground text-xs">{isRTL ? 'السعر الأصلي' : 'Original Price'}</p>
+                        <p className="font-bold text-lg">{orig} <span className="text-xs font-normal">SAR</span></p>
+                      </div>
+                      <div className="bg-background rounded-md p-3 border border-border">
+                        <p className="text-muted-foreground text-xs">{isRTL ? 'بعد الخصم' : 'After Discount'}{disc > 0 ? ` (-${disc}%)` : ''}</p>
+                        <p className="font-bold text-lg">{afterDiscount} <span className="text-xs font-normal">SAR</span></p>
+                      </div>
+                      <div className="bg-background rounded-md p-3 border border-border">
+                        <p className="text-muted-foreground text-xs">{isRTL ? 'ضريبة القيمة المضافة' : 'VAT'} (15%)</p>
+                        <p className="font-bold text-lg">{vat} <span className="text-xs font-normal">SAR</span></p>
+                      </div>
+                      <div className="bg-primary/10 rounded-md p-3 border border-primary/30">
+                        <p className="text-primary text-xs font-medium">{isRTL ? 'السعر الشامل للمستخدم' : 'User Sees (Total)'}</p>
+                        <p className="font-bold text-lg text-primary">{total} <span className="text-xs font-normal">SAR</span></p>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-semibold">{isRTL ? 'ماذا ستتعلم' : 'What You Will Learn'}</Label>
