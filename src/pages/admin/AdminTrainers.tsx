@@ -432,8 +432,8 @@ const AdminTrainers: React.FC = () => {
     setForm({ name_ar: t.name_ar, name_en: t.name_en, bio_ar: t.bio_ar, bio_en: t.bio_en, country: t.country, city: t.city, bike_type: t.bike_type, years_of_experience: t.years_of_experience, services: t.services || [], status: t.status as 'active' | 'inactive', photo_url: t.photo_url });
     setPhotoFile(null);
     setPhotoPreview(t.photo_url);
-    const { data } = await supabase.from('trainer_courses').select('training_id, price, duration_hours, location, available_schedule').eq('trainer_id', t.id);
-    setAssignedTrainings((data || []).map(d => ({ training_id: d.training_id, price: Number(d.price), duration_hours: Number(d.duration_hours), location: d.location, available_schedule: d.available_schedule })));
+    const { data } = await supabase.from('trainer_courses').select('training_id, price, duration_hours, location, available_schedule, services').eq('trainer_id', t.id);
+    setAssignedTrainings((data || []).map(d => ({ training_id: d.training_id, price: Number(d.price), duration_hours: Number(d.duration_hours), location: d.location, available_schedule: d.available_schedule, services: (d as any).services || [] })));
     setFormOpen(true);
   };
 
