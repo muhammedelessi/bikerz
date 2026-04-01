@@ -181,8 +181,9 @@ const HeroSection: React.FC = () => {
                     }
               }
             >
-              <div className="p-2.5 rounded-xl bg-primary/15 border border-primary/30 backdrop-blur-sm">
-                <Icon className="text-primary" size={size} strokeWidth={1.8} />
+              <div className="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-primary/15 border border-primary/30 backdrop-blur-sm">
+                <Icon className="text-primary block sm:hidden" size={mSize} strokeWidth={1.8} />
+                <Icon className="text-primary hidden sm:block" size={size} strokeWidth={1.8} />
               </div>
             </m.div>
           ))}
