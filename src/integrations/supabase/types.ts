@@ -2000,6 +2000,7 @@ export type Database = {
           name_ar: string
           name_en: string
           photo_url: string | null
+          profit_ratio: number
           services: string[] | null
           status: Database["public"]["Enums"]["trainer_status"]
           years_of_experience: number
@@ -2015,6 +2016,7 @@ export type Database = {
           name_ar?: string
           name_en?: string
           photo_url?: string | null
+          profit_ratio?: number
           services?: string[] | null
           status?: Database["public"]["Enums"]["trainer_status"]
           years_of_experience?: number
@@ -2030,6 +2032,7 @@ export type Database = {
           name_ar?: string
           name_en?: string
           photo_url?: string | null
+          profit_ratio?: number
           services?: string[] | null
           status?: Database["public"]["Enums"]["trainer_status"]
           years_of_experience?: number
