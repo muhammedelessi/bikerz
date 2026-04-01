@@ -207,7 +207,7 @@ const HeroSection: React.FC = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={anim(0.7, 0.4)}
-            className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.05] mb-4 text-white max-w-3xl tracking-tight drop-shadow-lg"
+            className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black leading-[1.08] mb-3 text-white max-w-3xl tracking-tight drop-shadow-lg"
           >
             {title}
           </m.h1>
