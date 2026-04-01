@@ -498,6 +498,34 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </>
                   )}
                 </Button>
+              ) : currentStep === 'payment' && discountedPrice > 0 ? (
+                <Button
+                  className="flex-1 h-11 rounded-xl text-sm font-bold shadow-glow hover:shadow-glow-lg transition-all duration-300"
+                  variant="cta"
+                  onClick={() => handleSubmitPayment()}
+                  disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady}
+                >
+                  {guestSigningUp ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin me-2" />
+                      <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
+                    </>
+                  ) : paymentStatus === 'processing' ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin me-2" />
+                      <span>{isRTL ? 'جاري تجهيز الدفع...' : 'Preparing payment...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4 me-2" />
+                      <span>
+                        {isRTL
+                          ? `ادفع الآن ${discountedPrice} ${currencyLabel}`
+                          : `Pay Now ${discountedPrice} ${currencyLabel}`}
+                      </span>
+                    </>
+                  )}
+                </Button>
               ) : null}
             </div>
           </div>

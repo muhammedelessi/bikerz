@@ -211,36 +211,6 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(({
         </div>
       </div>
 
-      {/* Pay Now CTA */}
-      {discountedPrice > 0 && (
-        <Button
-          className="w-full h-12 rounded-xl text-base font-bold shadow-glow hover:shadow-glow-lg transition-all duration-300"
-          variant="cta"
-          onClick={onSubmitPayment}
-          disabled={paymentStatus === 'processing' || guestSigningUp || !isPaymentReady}
-        >
-          {guestSigningUp ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin me-2" />
-              <span>{isRTL ? 'جاري إنشاء الحساب...' : 'Creating account...'}</span>
-            </>
-          ) : paymentStatus === 'processing' ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin me-2" />
-              <span>{isRTL ? 'جاري تجهيز الدفع...' : 'Preparing payment...'}</span>
-            </>
-          ) : (
-            <>
-              <Lock className="w-4 h-4 me-2" />
-              <span>
-                {isRTL
-                  ? `ادفع الآن ${totalWithVat} ${currencyLabel}`
-                  : `Pay Now ${totalWithVat} ${currencyLabel}`}
-              </span>
-            </>
-          )}
-        </Button>
-      )}
 
       {/* Trust Badge */}
       <div className="flex flex-col items-center gap-2 pt-2">
