@@ -567,11 +567,84 @@ const AdminTrainers: React.FC = () => {
                       <span className="font-medium text-sm">{isRTL ? training.name_ar : training.name_en}</span>
                     </div>
                     {isAssigned && assignment && (
-                      <div className="px-4 pb-4 pt-0">
+                      <div className="px-4 pb-4 pt-0 space-y-3">
                         <div className="grid gap-3 md:grid-cols-3 ps-7">
                           <div className="space-y-1"><Label className="text-xs">{isRTL ? 'السعر' : 'Price'}</Label><Input type="number" value={assignment.price} onChange={e => updateAssignment(training.id, 'price', parseFloat(e.target.value) || 0)} /></div>
                           <div className="space-y-1"><Label className="text-xs">{isRTL ? 'المدة (ساعات)' : 'Duration (hrs)'}</Label><Input type="number" value={assignment.duration_hours} onChange={e => updateAssignment(training.id, 'duration_hours', parseFloat(e.target.value) || 0)} /></div>
                           <div className="space-y-1"><Label className="text-xs">{isRTL ? 'الموقع' : 'Location'}</Label><Input value={assignment.location} onChange={e => updateAssignment(training.id, 'location', e.target.value)} /></div>
+                        </div>
+                        {/* Per-training Services */}
+                        <div className="ps-7 space-y-2">
+                          <Label className="text-xs">{isRTL ? 'الخدمات لهذا التدريب' : 'Services for this training'}</Label>
+                          <div className="flex gap-2">
+                            <Select
+                              value=""
+                              onValueChange={(v) => {
+                                if (!assignment.services.includes(v)) {
+                                  updateAssignment(training.id, 'services', [...assignment.services, v]);
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="flex-1 h-9 text-xs">
+                                <SelectValue placeholder={isRTL ? 'اختر من خدماتك...' : 'Pick from your services...'} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {form.services.filter(s => !assignment.services.includes(s)).map(s => (
+                                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                                ))}
+                                {form.services.filter(s => !assignment.services.includes(s)).length === 0 && (
+                                  <div className="px-2 py-1.5 text-xs text-muted-foreground">{isRTL ? 'لا توجد خدمات متاحة' : 'No services available'}</div>
+                                )}
+                              </SelectContent>
+                            </Select>
+                            <div className="flex gap-1">
+                              <Input
+                                value={trainingServiceInputs[training.id] || ''}
+                                onChange={e => setTrainingServiceInputs(prev => ({ ...prev, [training.id]: e.target.value }))}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const val = (trainingServiceInputs[training.id] || '').trim();
+                                    if (val && !assignment.services.includes(val)) {
+                                      updateAssignment(training.id, 'services', [...assignment.services, val]);
+                                      if (!form.services.includes(val)) {
+                                        setForm(f => ({ ...f, services: [...f.services, val] }));
+                                      }
+                                      setTrainingServiceInputs(prev => ({ ...prev, [training.id]: '' }));
+                                    }
+                                  }
+                                }}
+                                placeholder={isRTL ? 'أو أضف جديدة...' : 'Or add new...'}
+                                className="h-9 text-xs w-36"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-9 w-9 shrink-0"
+                                onClick={() => {
+                                  const val = (trainingServiceInputs[training.id] || '').trim();
+                                  if (val && !assignment.services.includes(val)) {
+                                    updateAssignment(training.id, 'services', [...assignment.services, val]);
+                                    if (!form.services.includes(val)) {
+                                      setForm(f => ({ ...f, services: [...f.services, val] }));
+                                    }
+                                    setTrainingServiceInputs(prev => ({ ...prev, [training.id]: '' }));
+                                  }
+                                }}
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {assignment.services.map((s, i) => (
+                              <Badge key={i} variant="secondary" className="gap-1 px-2 py-1 text-xs">
+                                {s}
+                                <X className="w-3 h-3 cursor-pointer hover:text-destructive" onClick={() => updateAssignment(training.id, 'services', assignment.services.filter((_, idx) => idx !== i))} />
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     )}
