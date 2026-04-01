@@ -168,8 +168,8 @@ const AdminTrainings: React.FC = () => {
             <div className="flex-1">
               <h1 className="text-2xl font-bold">{editingTraining ? (isRTL ? 'تعديل تدريب' : 'Edit Training') : (isRTL ? 'إضافة تدريب' : 'Add Training')}</h1>
             </div>
-            <Button onClick={handleSave} disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? '...' : (isRTL ? 'حفظ' : 'Save')}
+            <Button onClick={handleSave} disabled={saveMutation.isPending || uploadingImage}>
+              {(saveMutation.isPending || uploadingImage) ? '...' : (isRTL ? 'حفظ' : 'Save')}
             </Button>
           </div>
 
