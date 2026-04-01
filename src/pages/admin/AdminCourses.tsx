@@ -443,8 +443,9 @@ const AdminCourses: React.FC = () => {
     }
   };
 
+  const DEFAULT_COUNTRY_DISCOUNT = 78;
   const addCountryPrice = () => {
-    setCountryPrices([...countryPrices, { country_code: '', original_price: 0, discount_percentage: 0, price: 0, currency: '' }]);
+    setCountryPrices([...countryPrices, { country_code: '', original_price: 0, discount_percentage: DEFAULT_COUNTRY_DISCOUNT, price: 0, currency: '' }]);
   };
 
   const removeCountryPrice = (index: number) => {
