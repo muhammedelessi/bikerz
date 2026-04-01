@@ -146,15 +146,15 @@ const HeroSection: React.FC = () => {
         {/* Floating Identity Icons */}
         <div className="absolute inset-0 z-[5] pointer-events-none overflow-hidden">
           {[
-            { Icon: Shield, x: "8%", y: "18%", size: 28, delay: 0, dur: 6 },
-            { Icon: Bike, x: "88%", y: "22%", size: 32, delay: 0.5, dur: 7 },
-            { Icon: Route, x: "12%", y: "72%", size: 24, delay: 1, dur: 8 },
-            { Icon: Gauge, x: "85%", y: "68%", size: 26, delay: 1.5, dur: 6.5 },
-            { Icon: Trophy, x: "5%", y: "45%", size: 22, delay: 0.8, dur: 7.5 },
-            { Icon: Compass, x: "92%", y: "45%", size: 24, delay: 1.2, dur: 6.8 },
-            { Icon: Wrench, x: "18%", y: "88%", size: 20, delay: 2, dur: 7.2 },
-            { Icon: GraduationCap, x: "80%", y: "85%", size: 22, delay: 0.3, dur: 8.2 },
-          ].map(({ Icon, x, y, size, delay, dur }, i) => (
+            { Icon: Shield, x: "5%", y: "18%", size: 28, mSize: 18, delay: 0, dur: 6 },
+            { Icon: Bike, x: "88%", y: "22%", size: 32, mSize: 20, delay: 0.5, dur: 7 },
+            { Icon: Route, x: "8%", y: "72%", size: 24, mSize: 16, delay: 1, dur: 8 },
+            { Icon: Gauge, x: "85%", y: "68%", size: 26, mSize: 18, delay: 1.5, dur: 6.5 },
+            { Icon: Trophy, x: "3%", y: "45%", size: 22, mSize: 16, delay: 0.8, dur: 7.5 },
+            { Icon: Compass, x: "92%", y: "45%", size: 24, mSize: 16, delay: 1.2, dur: 6.8 },
+            { Icon: Wrench, x: "15%", y: "88%", size: 20, mSize: 14, delay: 2, dur: 7.2 },
+            { Icon: GraduationCap, x: "80%", y: "85%", size: 22, mSize: 16, delay: 0.3, dur: 8.2 },
+          ].map(({ Icon, x, y, size, mSize, delay, dur }, i) => (
             <m.div
               key={i}
               className="absolute"
