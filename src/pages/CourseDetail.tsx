@@ -643,7 +643,7 @@ const CourseDetail: React.FC = () => {
                     </div>
                   );
                 }
-                return previewVideoPlaying ? (
+                return (
                   <div className="aspect-video w-full">
                     <BunnyVideoEmbed
                       videoUrl={course.preview_video_url}
@@ -651,37 +651,6 @@ const CourseDetail: React.FC = () => {
                       isPreview
                     />
                   </div>
-                ) : (
-                  <button
-                    onClick={() => setPreviewVideoPlaying(true)}
-                    className="relative w-full aspect-video group cursor-pointer focus:outline-none"
-                    aria-label={t('courseDetail.playPreviewVideo')}
-                  >
-                    <picture>
-                      <source srcSet={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage} type="image/webp" />
-                      <img
-                        src={(course as any).preview_video_thumbnail || course.thumbnail_url || heroImage}
-                        alt={t('courseDetail.videoThumbnail')}
-                        width={1280}
-                        height={720}
-                        className="w-full h-full object-cover"
-                        loading="eager"
-                        fetchPriority="high"
-                        decoding="async"
-                      />
-                    </picture>
-                    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-16 h-16 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-2xl">
-                        <Play className="w-7 h-7 text-primary-foreground ms-1" fill="currentColor" />
-                      </div>
-                    </div>
-                    <div className="absolute bottom-4 start-4">
-                      <span className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-sm font-medium backdrop-blur-sm">
-                        {t('courseDetail.watchPreview')}
-                      </span>
-                    </div>
-                  </button>
                 );
               })()
             ) : course.thumbnail_url ? (
