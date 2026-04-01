@@ -169,7 +169,7 @@ const HeroSection: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={anim(0.6, 0.6)}
-            className="text-base sm:text-lg lg:text-xl text-foreground/70 leading-relaxed mb-6 max-w-xl"
+            className="text-base sm:text-lg lg:text-xl text-white/80 leading-relaxed mb-6 max-w-xl"
           >
             {subtitle}
           </m.p>
