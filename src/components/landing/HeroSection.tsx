@@ -256,25 +256,25 @@ const HeroSection: React.FC = () => {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={anim(0.5, 0.75)}
-            className="flex flex-row gap-3 sm:gap-4 justify-center"
+            className="flex flex-col sm:flex-row gap-2.5 sm:gap-4 justify-center w-full sm:w-auto"
           >
-            <Link to="/courses" className="flex-1 sm:flex-none">
+            <Link to="/courses" className="sm:flex-none">
               <Button
                 variant="hero"
-                size="lg"
-                className="w-full group gap-2 sm:gap-3 px-4 sm:px-8 py-6 text-sm sm:text-lg"
+                size="default"
+                className="w-full group gap-2 px-5 sm:px-7 py-3 sm:py-4 text-xs sm:text-sm"
               >
-                <Play className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
+                <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:scale-110" />
                 {ctaText}
               </Button>
             </Link>
-            <Link to="/join-community" className="flex-1 sm:flex-none">
+            <Link to="/join-community" className="sm:flex-none">
               <Button
                 variant="heroOutline"
-                size="lg"
-                className="w-full group gap-2 sm:gap-3 px-4 sm:px-8 py-6 text-sm sm:text-lg border-primary/50 text-primary hover:bg-primary/10 hover:border-primary"
+                size="default"
+                className="w-full group gap-2 px-5 sm:px-7 py-3 sm:py-4 text-xs sm:text-sm border-primary/50 text-primary hover:bg-primary/10 hover:border-primary"
               >
-                <Users className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
+                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:scale-110" />
                 {isRTL ? "انضم لمجتمع بايكرز" : "Join Bikerz Community"}
               </Button>
             </Link>
