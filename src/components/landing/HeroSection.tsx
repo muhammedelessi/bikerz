@@ -136,8 +136,8 @@ const HeroSection: React.FC = () => {
             fetchPriority="high"
             decoding="async"
           />
-          <div className="absolute inset-0 bg-black/50" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/70" />
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/80" />
         </div>
 
         <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 md:py-16 flex flex-col items-center text-center">
@@ -159,7 +159,7 @@ const HeroSection: React.FC = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={anim(0.7, 0.4)}
-            className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08] mb-4 text-white max-w-3xl"
+            className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.05] mb-4 text-white max-w-3xl tracking-tight drop-shadow-lg"
           >
             {title}
           </m.h1>
@@ -169,7 +169,7 @@ const HeroSection: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={anim(0.6, 0.6)}
-            className="text-base sm:text-lg lg:text-xl text-white/80 leading-relaxed mb-6 max-w-xl"
+            className="text-base sm:text-lg lg:text-xl text-white/85 leading-relaxed mb-6 max-w-xl font-medium drop-shadow-md"
           >
             {subtitle}
           </m.p>
