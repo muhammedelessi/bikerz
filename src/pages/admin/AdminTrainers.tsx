@@ -454,7 +454,7 @@ const AdminTrainers: React.FC = () => {
 
   const toggleTraining = (trainingId: string, checked: boolean) => {
     if (checked) {
-      setAssignedTrainings(prev => [...prev, { training_id: trainingId, price: 0, duration_hours: 0, location: '', available_schedule: {} }]);
+      setAssignedTrainings(prev => [...prev, { training_id: trainingId, price: 0, duration_hours: 0, location: '', available_schedule: {}, services: [] }]);
     } else {
       setAssignedTrainings(prev => prev.filter(at => at.training_id !== trainingId));
     }
