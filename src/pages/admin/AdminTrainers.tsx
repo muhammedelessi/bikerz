@@ -439,6 +439,10 @@ const AdminTrainers: React.FC = () => {
     setPhotoPreview(t.photo_url);
     const { data } = await supabase.from('trainer_courses').select('training_id, price, duration_hours, location, available_schedule, services').eq('trainer_id', t.id);
     setAssignedTrainings((data || []).map(d => ({ training_id: d.training_id, price: Number(d.price), duration_hours: Number(d.duration_hours), location: d.location, available_schedule: d.available_schedule, services: (d as any).services || [] })));
+    // Check if stored city is in the country's city list
+    const countryEntry = COUNTRIES.find(c => c.code === t.country);
+    const cityInList = countryEntry?.cities.some(c => c.en === t.city);
+    setIsOtherCity(!!countryEntry && !cityInList && !!t.city);
     setFormOpen(true);
   };
 
