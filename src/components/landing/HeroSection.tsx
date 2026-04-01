@@ -144,17 +144,17 @@ const HeroSection: React.FC = () => {
         </div>
 
         {/* Floating Identity Icons */}
-        <div className="absolute inset-0 z-[5] pointer-events-none hidden sm:block overflow-hidden">
+        <div className="absolute inset-0 z-[5] pointer-events-none overflow-hidden">
           {[
-            { Icon: Shield, x: "8%", y: "18%", size: 28, delay: 0, dur: 6 },
-            { Icon: Bike, x: "88%", y: "22%", size: 32, delay: 0.5, dur: 7 },
-            { Icon: Route, x: "12%", y: "72%", size: 24, delay: 1, dur: 8 },
-            { Icon: Gauge, x: "85%", y: "68%", size: 26, delay: 1.5, dur: 6.5 },
-            { Icon: Trophy, x: "5%", y: "45%", size: 22, delay: 0.8, dur: 7.5 },
-            { Icon: Compass, x: "92%", y: "45%", size: 24, delay: 1.2, dur: 6.8 },
-            { Icon: Wrench, x: "18%", y: "88%", size: 20, delay: 2, dur: 7.2 },
-            { Icon: GraduationCap, x: "80%", y: "85%", size: 22, delay: 0.3, dur: 8.2 },
-          ].map(({ Icon, x, y, size, delay, dur }, i) => (
+            { Icon: Shield, x: "5%", y: "18%", size: 28, mSize: 18, delay: 0, dur: 6 },
+            { Icon: Bike, x: "88%", y: "22%", size: 32, mSize: 20, delay: 0.5, dur: 7 },
+            { Icon: Route, x: "8%", y: "72%", size: 24, mSize: 16, delay: 1, dur: 8 },
+            { Icon: Gauge, x: "85%", y: "68%", size: 26, mSize: 18, delay: 1.5, dur: 6.5 },
+            { Icon: Trophy, x: "3%", y: "45%", size: 22, mSize: 16, delay: 0.8, dur: 7.5 },
+            { Icon: Compass, x: "92%", y: "45%", size: 24, mSize: 16, delay: 1.2, dur: 6.8 },
+            { Icon: Wrench, x: "15%", y: "88%", size: 20, mSize: 14, delay: 2, dur: 7.2 },
+            { Icon: GraduationCap, x: "80%", y: "85%", size: 22, mSize: 16, delay: 0.3, dur: 8.2 },
+          ].map(({ Icon, x, y, size, mSize, delay, dur }, i) => (
             <m.div
               key={i}
               className="absolute"
@@ -181,8 +181,9 @@ const HeroSection: React.FC = () => {
                     }
               }
             >
-              <div className="p-2.5 rounded-xl bg-primary/15 border border-primary/30 backdrop-blur-sm">
-                <Icon className="text-primary" size={size} strokeWidth={1.8} />
+              <div className="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-primary/15 border border-primary/30 backdrop-blur-sm">
+                <Icon className="text-primary block sm:hidden" size={mSize} strokeWidth={1.8} />
+                <Icon className="text-primary hidden sm:block" size={size} strokeWidth={1.8} />
               </div>
             </m.div>
           ))}
@@ -207,7 +208,7 @@ const HeroSection: React.FC = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={anim(0.7, 0.4)}
-            className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.05] mb-4 text-white max-w-3xl tracking-tight drop-shadow-lg"
+            className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black leading-[1.08] mb-3 text-white max-w-3xl tracking-tight drop-shadow-lg"
           >
             {title}
           </m.h1>
@@ -217,7 +218,7 @@ const HeroSection: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={anim(0.6, 0.6)}
-            className="text-base sm:text-lg lg:text-xl text-white/85 leading-relaxed mb-6 max-w-xl font-medium drop-shadow-md"
+            className="text-sm sm:text-base lg:text-lg text-white/85 leading-relaxed mb-5 max-w-xl font-medium drop-shadow-md"
           >
             {subtitle}
           </m.p>
