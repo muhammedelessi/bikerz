@@ -717,12 +717,26 @@ const CourseDetail: React.FC = () => {
                           );
                         }
                         return (
-                          <div className="aspect-video w-full rounded-2xl overflow-hidden">
+                          <div className="aspect-video w-full rounded-2xl overflow-hidden relative">
                             <BunnyVideoEmbed
                               videoUrl={course.preview_video_url}
                               title={t('courseDetail.courseIntroduction')}
                               isPreview
                             />
+                            <motion.div
+                              className="absolute inset-0 flex items-center justify-center pointer-events-none z-30"
+                              initial={{ opacity: 1 }}
+                              animate={{ opacity: 0 }}
+                              transition={{ delay: 4, duration: 0.5 }}
+                            >
+                              <motion.div
+                                className="relative"
+                                animate={{ x: [0, 6, 0], y: [0, -4, 0] }}
+                                transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+                              >
+                                <span className="text-4xl drop-shadow-lg" role="img" aria-label="point">👆</span>
+                              </motion.div>
+                            </motion.div>
                           </div>
                         );
                       })()
