@@ -702,39 +702,12 @@ const AdminUsers: React.FC = () => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>{isRTL ? 'كلمة المرور الجديدة' : 'New Password'}</Label>
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder={isRTL ? 'مثال: Rider2025!' : 'e.g. Rider2025!'}
-                  className="flex-1"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-                    const lower = 'abcdefghijklmnopqrstuvwxyz';
-                    const digits = '0123456789';
-                    const special = '!@#$%&';
-                    const all = upper + lower + digits + special;
-                    const arr = new Uint8Array(12);
-                    crypto.getRandomValues(arr);
-                    let pwd = upper[arr[0] % upper.length] + lower[arr[1] % lower.length] + digits[arr[2] % digits.length] + special[arr[3] % special.length];
-                    for (let i = 4; i < 12; i++) pwd += all[arr[i] % all.length];
-                    setNewPassword(pwd);
-                  }}
-                >
-                  {isRTL ? 'توليد' : 'Generate'}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {isRTL
-                  ? 'يجب أن تحتوي على حروف كبيرة وصغيرة وأرقام (8 أحرف على الأقل)'
-                  : 'Must contain uppercase, lowercase, and numbers (min 8 chars)'}
-              </p>
+              <Input
+                type="text"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder={isRTL ? 'أدخل كلمة المرور الجديدة (6 أحرف على الأقل)' : 'Enter new password (min 6 characters)'}
+              />
             </div>
           </div>
           <DialogFooter>
@@ -742,7 +715,7 @@ const AdminUsers: React.FC = () => {
               {isRTL ? 'إلغاء' : 'Cancel'}
             </Button>
             <Button
-              disabled={isChangingPassword || newPassword.length < 8 || !/[a-z]/.test(newPassword) || !/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)}
+              disabled={isChangingPassword || newPassword.length < 6}
               onClick={async () => {
                 if (!passwordUser) return;
                 setIsChangingPassword(true);
