@@ -824,15 +824,9 @@ const AdminTrainers: React.FC = () => {
                 <TableBody>
                   {trainers?.map(t => {
                     const stats = reviewStats?.[t.id];
-                    const isExpanded = expandedId === t.id;
                     return (
                       <React.Fragment key={t.id}>
-                        <TableRow className="group cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : t.id)}>
-                          <TableCell className="px-2">
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
-                              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                            </Button>
-                          </TableCell>
+                        <TableRow className="group">
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <Avatar className="h-9 w-9 border border-border">
