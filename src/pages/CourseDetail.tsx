@@ -1137,8 +1137,8 @@ const CourseDetail: React.FC = () => {
                               </div>
                               <div className="min-w-0">
                                 <p className="text-sm font-medium text-foreground leading-relaxed">{item.text}</p>
-                                {'desc' in item && item.desc && (
-                                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{item.desc}</p>
+                                {'desc' in item && (item as any).desc && (
+                                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{(item as any).desc}</p>
                                 )}
                               </div>
                             </div>
