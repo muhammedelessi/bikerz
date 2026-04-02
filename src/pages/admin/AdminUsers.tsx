@@ -130,12 +130,21 @@ const AdminUsers: React.FC = () => {
 
       if (rolesError) throw rolesError;
 
-      // Fetch enrollment counts
-      const { data: enrollments, error: enrollError } = await supabase
-        .from('course_enrollments')
-        .select('user_id');
-
-      if (enrollError) throw enrollError;
+      // Fetch enrollment counts – paginate to bypass the 1000-row default limit
+      const enrollments: { user_id: string }[] = [];
+      let enrollPage = 0;
+      const PAGE_SIZE = 1000;
+      while (true) {
+        const { data: batch, error: enrollError } = await supabase
+          .from('course_enrollments')
+          .select('user_id')
+          .range(enrollPage * PAGE_SIZE, (enrollPage + 1) * PAGE_SIZE - 1);
+        if (enrollError) throw enrollError;
+        if (!batch || batch.length === 0) break;
+        enrollments.push(...batch);
+        if (batch.length < PAGE_SIZE) break;
+        enrollPage++;
+      }
 
       // Fetch emails from auth via secure function
       const { data: emailRows } = await supabase.rpc('get_all_user_emails');
