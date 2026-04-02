@@ -139,6 +139,12 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
                   {rating.toFixed(1)}
                 </span>
               )}
+              {!isEnrolled && (course.freeLessonCount ?? 0) > 0 && (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 font-semibold">
+                  <Unlock className="w-3 h-3" />
+                  {course.freeLessonCount} {t('courseDetail.freePreview')}
+                </span>
+              )}
             </div>
 
             {/* Divider */}
