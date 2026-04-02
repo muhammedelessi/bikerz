@@ -509,24 +509,14 @@ const AdminUsers: React.FC = () => {
                               {t('admin.users.manageRoles')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={async () => {
-                                if (!user.email) {
-                                  toast.error(isRTL ? 'لا يوجد بريد إلكتروني لهذا المستخدم' : 'No email found for this user');
-                                  return;
-                                }
-                                try {
-                                  const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-                                    redirectTo: `${window.location.origin}/reset-password`,
-                                  });
-                                  if (error) throw error;
-                                  toast.success(isRTL ? `تم إرسال رابط إعادة تعيين كلمة المرور إلى ${user.email}` : `Password reset link sent to ${user.email}`);
-                                } catch (err: any) {
-                                  toast.error(err.message || (isRTL ? 'فشل إرسال رابط إعادة التعيين' : 'Failed to send reset link'));
-                                }
+                              onClick={() => {
+                                setPasswordUser(user);
+                                setNewPassword('');
+                                setIsPasswordDialogOpen(true);
                               }}
                             >
                               <KeyRound className="w-4 h-4 me-2" />
-                              {isRTL ? 'إعادة تعيين كلمة المرور' : 'Reset Password'}
+                              {isRTL ? 'تغيير كلمة المرور' : 'Change Password'}
                             </DropdownMenuItem>
                             <DropdownMenuItem>
                               <Mail className="w-4 h-4 me-2" />
