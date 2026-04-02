@@ -32,7 +32,7 @@ const Courses: React.FC = () => {
           preview_video_url, preview_video_thumbnail,
           chapters (
             id, is_published,
-            lessons ( id, duration_minutes, is_published )
+            lessons ( id, duration_minutes, is_published, is_free )
           )
         `)
         .eq('is_published', true)
