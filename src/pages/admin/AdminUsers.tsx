@@ -116,6 +116,24 @@ const AdminUsers: React.FC = () => {
   const [passwordUser, setPasswordUser] = useState<UserWithDetails | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isFreeCourseDialogOpen, setIsFreeCourseDialogOpen] = useState(false);
+  const [freeCourseUser, setFreeCourseUser] = useState<UserWithDetails | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+  const [isGrantingCourse, setIsGrantingCourse] = useState(false);
+
+  // Fetch all published courses for the free course dialog
+  const { data: allCourses = [] } = useQuery({
+    queryKey: ['admin-all-courses'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('id, title, title_ar')
+        .eq('is_published', true)
+        .order('title');
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   // Fetch users with roles
   const { data: users = [], isLoading } = useQuery({
