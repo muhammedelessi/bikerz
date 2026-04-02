@@ -57,6 +57,7 @@ import {
   MessageSquare,
   Download,
   KeyRound,
+  Gift,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -115,6 +116,24 @@ const AdminUsers: React.FC = () => {
   const [passwordUser, setPasswordUser] = useState<UserWithDetails | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isFreeCourseDialogOpen, setIsFreeCourseDialogOpen] = useState(false);
+  const [freeCourseUser, setFreeCourseUser] = useState<UserWithDetails | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+  const [isGrantingCourse, setIsGrantingCourse] = useState(false);
+
+  // Fetch all published courses for the free course dialog
+  const { data: allCourses = [] } = useQuery({
+    queryKey: ['admin-all-courses'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('id, title, title_ar')
+        .eq('is_published', true)
+        .order('title');
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   // Fetch users with roles
   const { data: users = [], isLoading } = useQuery({
@@ -526,6 +545,16 @@ const AdminUsers: React.FC = () => {
                               <MessageSquare className="w-4 h-4 me-2" />
                               {t('admin.users.addNote')}
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setFreeCourseUser(user);
+                                setSelectedCourseId('');
+                                setIsFreeCourseDialogOpen(true);
+                              }}
+                            >
+                              <Gift className="w-4 h-4 me-2" />
+                              {isRTL ? 'منح دورة مجانية' : 'Grant Free Course'}
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-destructive">
                               <UserX className="w-4 h-4 me-2" />
@@ -737,6 +766,76 @@ const AdminUsers: React.FC = () => {
               {isChangingPassword
                 ? (isRTL ? 'جاري التغيير...' : 'Changing...')
                 : (isRTL ? 'تغيير كلمة المرور' : 'Change Password')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Grant Free Course Dialog */}
+      <Dialog open={isFreeCourseDialogOpen} onOpenChange={setIsFreeCourseDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{isRTL ? 'منح دورة مجانية' : 'Grant Free Course'}</DialogTitle>
+            <DialogDescription>
+              {isRTL
+                ? `تسجيل المستخدم "${freeCourseUser?.full_name || freeCourseUser?.email || ''}" في دورة مجاناً`
+                : `Enroll "${freeCourseUser?.full_name || freeCourseUser?.email || ''}" in a course for free`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{isRTL ? 'اختر الدورة' : 'Select Course'}</Label>
+              <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={isRTL ? 'اختر دورة...' : 'Choose a course...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {allCourses.map((course) => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {isRTL ? (course.title_ar || course.title) : course.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsFreeCourseDialogOpen(false)}>
+              {isRTL ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button
+              disabled={isGrantingCourse || !selectedCourseId}
+              onClick={async () => {
+                if (!freeCourseUser || !selectedCourseId) return;
+                setIsGrantingCourse(true);
+                try {
+                  const { error } = await supabase
+                    .from('course_enrollments')
+                    .insert({
+                      user_id: freeCourseUser.user_id,
+                      course_id: selectedCourseId,
+                    });
+                  if (error) {
+                    if (error.message.includes('duplicate')) {
+                      toast.error(isRTL ? 'المستخدم مسجل بالفعل في هذه الدورة' : 'User is already enrolled in this course');
+                    } else {
+                      throw error;
+                    }
+                  } else {
+                    toast.success(isRTL ? 'تم تسجيل المستخدم في الدورة بنجاح' : 'User enrolled in course successfully');
+                    queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+                    setIsFreeCourseDialogOpen(false);
+                  }
+                } catch (err: any) {
+                  toast.error(err.message || (isRTL ? 'فشل تسجيل المستخدم' : 'Failed to enroll user'));
+                } finally {
+                  setIsGrantingCourse(false);
+                }
+              }}
+            >
+              {isGrantingCourse
+                ? (isRTL ? 'جاري التسجيل...' : 'Enrolling...')
+                : (isRTL ? 'تسجيل مجاناً' : 'Enroll for Free')}
             </Button>
           </DialogFooter>
         </DialogContent>
