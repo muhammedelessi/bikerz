@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1245,9 +1246,11 @@ const CourseLearn: React.FC = () => {
                     <div 
                       className="prose dark:prose-invert max-w-none mb-6 sm:mb-8 text-sm sm:text-base text-muted-foreground"
                       dangerouslySetInnerHTML={{ 
-                        __html: isRTL && currentLesson.description_ar 
-                          ? currentLesson.description_ar 
-                          : currentLesson.description 
+                        __html: DOMPurify.sanitize(
+                          isRTL && currentLesson.description_ar 
+                            ? currentLesson.description_ar 
+                            : currentLesson.description ?? ''
+                        )
                       }}
                     />
                   )}
