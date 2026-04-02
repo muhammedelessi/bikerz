@@ -380,6 +380,8 @@ const AdminTrainings: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <TrainingProfileDialog training={viewTraining} open={!!viewTraining} onOpenChange={() => setViewTraining(null)} />
     </AdminLayout>
   );
 };
