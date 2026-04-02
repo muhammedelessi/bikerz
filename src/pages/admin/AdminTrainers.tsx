@@ -220,6 +220,7 @@ const AddReviewDialog: React.FC<{
 const AdminTrainers: React.FC = () => {
   const { isRTL } = useLanguage();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
