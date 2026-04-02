@@ -348,6 +348,7 @@ const AdminTrainers: React.FC = () => {
     setAssignedTrainings([]);
     setTrainingServiceInputs({});
     setIsOtherCity(false);
+    setIsOtherBikeType(false);
     setFormOpen(true);
   };
 
