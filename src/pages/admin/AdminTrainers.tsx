@@ -255,18 +255,40 @@ const AddReviewDialog: React.FC<{
   isRTL: boolean;
 }> = ({ open, onOpenChange, trainerId, isRTL }) => {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({ student_name: '', rating: 5, comment: '' });
+  const [form, setForm] = useState({ student_name: '', rating: 5, comment: '', training_id: '' });
+
+  const { data: trainerCourses } = useQuery({
+    queryKey: ['trainer-courses-for', trainerId],
+    queryFn: async () => {
+      const { data } = await supabase.from('trainer_courses').select('training_id').eq('trainer_id', trainerId);
+      return data || [];
+    },
+    enabled: !!trainerId,
+  });
+
+  const { data: trainings } = useQuery({
+    queryKey: ['all-trainings-list'],
+    queryFn: async () => {
+      const { data } = await supabase.from('trainings').select('id, name_ar, name_en');
+      return data || [];
+    },
+  });
+
+  const availableTrainings = trainings?.filter(t => trainerCourses?.some(tc => tc.training_id === t.id)) || [];
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from('trainer_reviews').insert({ ...form, trainer_id: trainerId });
+      const payload: any = { student_name: form.student_name, rating: form.rating, comment: form.comment, trainer_id: trainerId };
+      if (form.training_id) payload.training_id = form.training_id;
+      const { error } = await supabase.from('trainer_reviews').insert(payload);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trainer-reviews-detail', trainerId] });
       queryClient.invalidateQueries({ queryKey: ['trainer-review-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['trainer-profile-reviews', trainerId] });
       onOpenChange(false);
-      setForm({ student_name: '', rating: 5, comment: '' });
+      setForm({ student_name: '', rating: 5, comment: '', training_id: '' });
       toast.success(isRTL ? 'تم إضافة التقييم' : 'Review added');
     },
     onError: () => toast.error(isRTL ? 'خطأ' : 'Error'),
@@ -278,6 +300,15 @@ const AddReviewDialog: React.FC<{
         <DialogHeader><DialogTitle>{isRTL ? 'إضافة تقييم' : 'Add Review'}</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2"><Label>{isRTL ? 'اسم الطالب' : 'Student Name'}</Label><Input value={form.student_name} onChange={e => setForm(f => ({ ...f, student_name: e.target.value }))} /></div>
+          <div className="space-y-2">
+            <Label>{isRTL ? 'التدريب' : 'Training'}</Label>
+            <Select value={form.training_id} onValueChange={v => setForm(f => ({ ...f, training_id: v }))}>
+              <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر تدريب (اختياري)' : 'Select training (optional)'} /></SelectTrigger>
+              <SelectContent>
+                {availableTrainings.map(t => <SelectItem key={t.id} value={t.id}>{isRTL ? t.name_ar : t.name_en}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label>{isRTL ? 'التقييم' : 'Rating'}</Label>
             <div className="flex gap-1">
