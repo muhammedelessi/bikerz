@@ -545,6 +545,16 @@ const AdminUsers: React.FC = () => {
                               <MessageSquare className="w-4 h-4 me-2" />
                               {t('admin.users.addNote')}
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setFreeCourseUser(user);
+                                setSelectedCourseId('');
+                                setIsFreeCourseDialogOpen(true);
+                              }}
+                            >
+                              <Gift className="w-4 h-4 me-2" />
+                              {isRTL ? 'منح دورة مجانية' : 'Grant Free Course'}
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-destructive">
                               <UserX className="w-4 h-4 me-2" />
