@@ -841,6 +841,7 @@ const CourseDetail: React.FC = () => {
                           {isRTL ? 'شاهد الآن' : 'Watch Now'}
                           {isRTL ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                         </Button>
+                      </motion.div>
                     )}
 
                     {/* Description */}
