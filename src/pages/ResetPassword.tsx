@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Lock, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { Lock, CheckCircle, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import logoDark from '@/assets/logo-dark.png';
@@ -17,7 +17,6 @@ const ResetPassword: React.FC = () => {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { isRTL } = useLanguage();
-  const navigate = useNavigate();
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,30 +24,46 @@ const ResetPassword: React.FC = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [isValidLink, setIsValidLink] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const [ready, setReady] = useState(false);
+  const [valid, setValid] = useState<boolean | null>(null); // null = still checking
 
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash && hash.includes('type=recovery')) {
-      setIsValidLink(true);
-    }
+    // Supabase auto-parses hash tokens on load. Check session + listen for events.
+    const checkSession = async () => {
+      const { data: { session } } = await (supabase.auth as any).getSession();
+      if (session) {
+        setReady(true);
+        setValid(true);
+      }
+    };
 
-    // Listen for the PASSWORD_RECOVERY event
+    checkSession();
+
     const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(
-      (event: string) => {
-        if (event === 'PASSWORD_RECOVERY') {
-          setIsValidLink(true);
+      (event: string, session: any) => {
+        if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
+          setReady(true);
+          setValid(true);
+        }
+        if (event === 'SIGNED_OUT') {
+          setReady(false);
         }
       }
     );
-
-    setChecking(false);
 
     return () => {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Timeout: if not ready after 5s, mark as invalid
+  useEffect(() => {
+    if (ready) return;
+    const timeout = setTimeout(() => {
+      if (!ready) setValid(false);
+    }, 5000);
+    return () => clearTimeout(timeout);
+  }, [ready]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +87,6 @@ const ResetPassword: React.FC = () => {
 
     try {
       const { error } = await (supabase.auth as any).updateUser({ password });
-
       if (error) throw error;
 
       setIsSuccess(true);
@@ -85,7 +99,16 @@ const ResetPassword: React.FC = () => {
     }
   };
 
-  if (checking) return null;
+  const logo = theme === 'light' ? logoDark : logoLight;
+
+  // Still checking
+  if (valid === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -99,15 +122,7 @@ const ResetPassword: React.FC = () => {
       <header className="py-4 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link to="/">
-            <img
-              src={theme === 'light' ? logoDark : logoLight}
-              alt="BIKERZ"
-              width={80}
-              height={32}
-              className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
-              loading="eager"
-              decoding="async"
-            />
+            <img src={logo} alt="BIKERZ" width={80} height={32} className="h-6 sm:h-7 lg:h-8 w-auto object-contain" loading="eager" decoding="async" />
           </Link>
         </div>
       </header>
@@ -134,17 +149,19 @@ const ResetPassword: React.FC = () => {
                   </Button>
                 </Link>
               </div>
-            ) : !isValidLink ? (
+            ) : !valid ? (
               <div className="text-center space-y-6">
                 <div className="w-16 h-16 bg-destructive/20 rounded-full flex items-center justify-center mx-auto">
-                  <Lock className="w-8 h-8 text-destructive" />
+                  <AlertTriangle className="w-8 h-8 text-destructive" />
                 </div>
                 <div className="space-y-2">
                   <h1 className="text-2xl font-bold text-foreground">
-                    {isRTL ? 'رابط غير صالح' : 'Invalid Link'}
+                    {isRTL ? 'هذا الرابط لم يعد صالحاً' : 'This reset link is no longer valid'}
                   </h1>
                   <p className="text-muted-foreground">
-                    {isRTL ? 'رابط إعادة تعيين كلمة المرور غير صالح أو منتهي الصلاحية.' : 'This password reset link is invalid or has expired.'}
+                    {isRTL
+                      ? 'تنتهي صلاحية روابط إعادة التعيين بعد ساعة واحدة. يرجى طلب رابط جديد.'
+                      : 'Reset links expire after 1 hour. Please request a new one.'}
                   </p>
                 </div>
                 <Link to="/forgot-password">
@@ -169,63 +186,26 @@ const ResetPassword: React.FC = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="password">
-                      {isRTL ? 'كلمة المرور الجديدة' : 'New Password'}
-                    </Label>
+                    <Label htmlFor="password">{isRTL ? 'كلمة المرور الجديدة' : 'New Password'}</Label>
                     <div className="relative">
-                      <Input
-                        id="password"
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="h-12 pe-10"
-                        disabled={isLoading}
-                        required
-                        minLength={6}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground"
-                        tabIndex={-1}
-                      >
+                      <Input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 pe-10" disabled={isLoading} required minLength={6} />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground" tabIndex={-1}>
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">
-                      {isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}
-                    </Label>
+                    <Label htmlFor="confirmPassword">{isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}</Label>
                     <div className="relative">
-                      <Input
-                        id="confirmPassword"
-                        type={showConfirm ? 'text' : 'password'}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="h-12 pe-10"
-                        disabled={isLoading}
-                        required
-                        minLength={6}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirm(!showConfirm)}
-                        className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground"
-                        tabIndex={-1}
-                      >
+                      <Input id="confirmPassword" type={showConfirm ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="h-12 pe-10" disabled={isLoading} required minLength={6} />
+                      <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground" tabIndex={-1}>
                         {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
 
-                  <Button
-                    type="submit"
-                    variant="cta"
-                    className="w-full h-12"
-                    disabled={isLoading}
-                  >
+                  <Button type="submit" variant="cta" className="w-full h-12" disabled={isLoading}>
                     {isLoading ? (
                       <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                     ) : (
