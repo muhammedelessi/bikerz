@@ -32,7 +32,6 @@ async function fetchHeroStats() {
     supabase.from("course_enrollments").select("progress_percentage"),
     supabase.from("courses").select("*", { count: "exact", head: true }).eq("is_published", true),
   ]);
-
   const usersCount = profilesRes.count ?? 0;
   const lessonsCount = lessonsRes.count ?? 0;
   const coursesCount = coursesRes.count ?? 0;
@@ -40,44 +39,9 @@ async function fetchHeroStats() {
   const successfulEnrollments = enrollmentStats.filter((e) => (e.progress_percentage ?? 0) >= 70).length;
   const successRate =
     enrollmentStats.length > 0 ? Math.round((successfulEnrollments / enrollmentStats.length) * 100) : 0;
-
   return { members: usersCount, lessons: lessonsCount, successRate, courses: coursesCount };
 }
 
-/* ─── Star icon ─────────────────────────────────────────────────── */
-const StarIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="#F59F00" stroke="none">
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-  </svg>
-);
-
-/* ─── Stat Cell ─────────────────────────────────────────────────── */
-const StatCell: React.FC<{
-  label: string;
-  value: string;
-  desc: string;
-  index: number;
-  reduced: boolean | null;
-}> = ({ label, value, desc, index, reduced }) => (
-  <m.div
-    initial={reduced ? {} : { opacity: 0, y: 16 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.45, delay: 0.7 + index * 0.1, ease: "easeOut" }}
-    className="group relative px-6 py-5 border-r border-white/[0.07] last:border-r-0
-               hover:bg-white/[0.025] transition-colors duration-200 overflow-hidden"
-  >
-    {/* Top accent line */}
-    <span
-      className="absolute top-0 inset-x-0 h-[2px] bg-primary
-                 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"
-    />
-    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/40 mb-1.5">{label}</p>
-    <AnimatedCounter value={value} className="text-3xl font-black text-primary leading-none tracking-tight mb-1" />
-    <p className="text-xs text-white/35 font-medium">{desc}</p>
-  </m.div>
-);
-
-/* ─── Hero Section ──────────────────────────────────────────────── */
 const HeroSection: React.FC = () => {
   const { isRTL } = useLanguage();
   const prefersReducedMotion = useReducedMotion();
@@ -105,296 +69,291 @@ const HeroSection: React.FC = () => {
     ? String(content.stats_lessons_value)
     : formatCount(stats?.lessons ?? 0);
   const successValue = content?.stats_success_value
-    ? `${content.stats_success_value}%`
+    ? `${content.stats_success_value}`
     : stats?.successRate
-      ? `${stats.successRate}%`
-      : "0%";
+      ? `${stats.successRate}`
+      : "0";
   const coursesValue = content?.stats_courses_value
     ? String(content.stats_courses_value)
     : formatCount(stats?.courses ?? 0);
 
-  const statCells = useMemo(
+  const displayStats = useMemo(
     () => [
-      {
-        key: "members",
-        label: isRTL ? "الأعضاء" : "Members",
-        value: membersValue,
-        desc: isRTL ? "عضو نشط في المجتمع" : "Active community members",
-      },
-      {
-        key: "success",
-        label: isRTL ? "نسبة النجاح" : "Success Rate",
-        value: successValue,
-        desc: isRTL ? "من الطلاب ينهون الدورة" : "Students complete the course",
-      },
-      {
-        key: "lessons",
-        label: isRTL ? "الدروس" : "Lessons",
-        value: lessonsValue,
-        desc: isRTL ? "درس مسجل ومباشر" : "Recorded & live lessons",
-      },
-      {
-        key: "courses",
-        label: isRTL ? "الدورات" : "Courses",
-        value: coursesValue,
-        desc: isRTL ? "دورة من المبتدئ للمحترف" : "From beginner to expert",
-      },
+      { key: "members", value: membersValue, suffix: "", label: isRTL ? "عضو" : "Members" },
+      { key: "success", value: successValue, suffix: "%", label: isRTL ? "نسبة النجاح" : "Success Rate" },
+      { key: "lessons", value: lessonsValue, suffix: "", label: isRTL ? "درس" : "Lessons" },
     ],
-    [membersValue, lessonsValue, successValue, coursesValue, isRTL],
+    [membersValue, lessonsValue, successValue, isRTL],
   );
 
   const anim = (dur: number, delay = 0) => (prefersReducedMotion ? { duration: 0 } : { duration: dur, delay });
 
-  const title = isRTL
-    ? content?.title_ar || "تعلّم القيادة بثقة واحترافية"
-    : content?.title_en || "Ride with Confidence & Skill";
+  const titleLine1 = isRTL ? content?.title_ar?.split(" ")[0] || "اركب" : "RIDE";
+  const titleLine2 = isRTL ? content?.title_ar?.split(" ").slice(1).join(" ") || "بثقة" : "FREE";
   const subtitle = isRTL
-    ? content?.subtitle_ar || "من المبتدئ حتى المحترف — دورات دراجات نارية مع مدربين معتمدين وخبرة حقيقية على الطريق"
-    : content?.subtitle_en ||
-      "From beginner to pro — motorcycle courses with certified instructors and real road experience";
+    ? content?.subtitle_ar || "انطلق في رحلتك مع أفضل مدربي الدراجات النارية — من الأساسيات حتى الاحتراف"
+    : content?.subtitle_en || "Start your journey with expert motorcycle instructors — from basics to mastery";
   const ctaText = isRTL
     ? content?.secondary_cta_ar || "استكشف الدورات"
     : content?.secondary_cta_en || "Explore Courses";
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <div className="flex flex-col bg-[#0C0D0F]">
-        {/* ══ HERO SPLIT LAYOUT ══════════════════════════════════════ */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 min-h-[calc(100vh-64px)]">
-          {/* ── Left: Content ── */}
-          <div
-            className={`flex flex-col justify-center px-6 sm:px-10 lg:px-14 py-16 lg:py-20
-                        ${isRTL ? "lg:order-2" : "lg:order-1"}`}
-          >
-            {/* Eyebrow badge */}
-            <m.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={anim(0.5, 0.1)}
-              className="mb-7"
-            >
-              <span
-                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full
-                            text-[11px] font-bold uppercase tracking-[0.16em]
-                            bg-primary/10 text-primary border border-primary/25"
+      <section className="relative flex flex-col overflow-hidden bg-black" style={{ minHeight: "100svh" }}>
+        {/* ── Full-bleed photo ── */}
+        <m.div
+          className="absolute inset-0"
+          initial={{ scale: 1.06 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 2, ease: [0.25, 0.46, 0.45, 0.94] }}
+        >
+          <img
+            src={heroRiderBg}
+            alt=""
+            width={1920}
+            height={1080}
+            className="w-full h-full object-cover object-center"
+            fetchPriority="high"
+            decoding="async"
+          />
+        </m.div>
+
+        {/* ── Cinematic gradient overlays ── */}
+        {/* bottom-heavy dark fade — content lives at the bottom */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to top, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.6) 28%, rgba(0,0,0,0.15) 55%, transparent 78%)",
+          }}
+        />
+        {/* top fade for nav readability */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 22%)",
+          }}
+        />
+
+        {/* ── Cinematic letterbox bars ── */}
+        <div className="absolute inset-x-0 top-0 h-16 bg-black z-20" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-black z-20" />
+
+        {/* ── Navbar (inside top bar) ── */}
+        <m.nav
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={anim(0.6, 0.1)}
+          className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-6 sm:px-10 h-16"
+        >
+          {/* Logo */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                {isRTL ? "أكاديمية بايكرز" : "BIKERZ Academy"}
-              </span>
-            </m.div>
-
-            {/* Heading */}
-            <m.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={anim(0.65, 0.22)}>
-              <h1
-                className="text-[clamp(2.2rem,4.5vw,3.5rem)] font-black leading-[1.07]
-                           tracking-tight text-white mb-3"
-              >
-                {title}
-              </h1>
-              {/* Accent underline */}
-              <div className="flex items-center gap-3 mb-6">
-                <span className="text-[clamp(1.1rem,2vw,1.5rem)] font-bold text-primary">
-                  {isRTL ? "على الطريق" : "On the Road"}
-                </span>
-                <span className="h-[3px] w-10 rounded-full bg-primary opacity-50" />
-              </div>
-            </m.div>
-
-            {/* Subtitle */}
-            <m.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={anim(0.55, 0.38)}
-              className="text-[15px] leading-[1.75] text-white/55 max-w-[480px] mb-9 font-medium"
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+            </div>
+            <span
+              className="font-black text-[18px] tracking-widest text-white uppercase"
+              style={{ fontFamily: "'Barlow Condensed', 'Bebas Neue', sans-serif", letterSpacing: "0.18em" }}
             >
-              {subtitle}
-            </m.p>
-
-            {/* CTA Buttons */}
-            <m.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={anim(0.5, 0.5)}
-              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-10"
-            >
-              <Link to="/courses">
-                <Button
-                  variant="hero"
-                  size="default"
-                  className="group gap-2 px-7 py-4 text-sm font-bold w-full sm:w-auto
-                             shadow-[0_8px_32px_rgba(255,90,31,0.30)]
-                             hover:shadow-[0_12px_44px_rgba(255,90,31,0.48)]
-                             transition-shadow duration-300"
-                >
-                  <Play className="w-4 h-4 transition-transform group-hover:scale-110" />
-                  {ctaText}
-                </Button>
-              </Link>
-              <Link to="/join-community">
-                <Button
-                  variant="heroOutline"
-                  size="default"
-                  className="group gap-2 px-6 py-4 text-sm font-semibold w-full sm:w-auto
-                             bg-white/[0.04] border-white/[0.12] text-white/75
-                             hover:bg-white/[0.09] hover:border-white/25 hover:text-white
-                             transition-all duration-200"
-                >
-                  <Users className="w-4 h-4 transition-transform group-hover:scale-110" />
-                  {isRTL ? "انضم للمجتمع" : "Join Community"}
-                </Button>
-              </Link>
-            </m.div>
-
-            {/* Social proof row */}
-            <m.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={anim(0.5, 0.65)}
-              className="flex items-center gap-4"
-            >
-              {/* Avatars stack */}
-              <div className="flex">
-                {[
-                  { initials: "أح", bg: "#3B5BDB" },
-                  { initials: "مع", bg: "#2F9E44" },
-                  { initials: "فن", bg: "#E67700" },
-                  { initials: "سر", bg: "#862E9C" },
-                ].map((av, i) => (
-                  <div
-                    key={i}
-                    className="w-8 h-8 rounded-full border-2 border-[#0C0D0F] -ml-2.5 first:ml-0
-                               flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
-                    style={{ background: av.bg }}
-                  >
-                    {av.initials}
-                  </div>
-                ))}
-                <div
-                  className="w-8 h-8 rounded-full border-2 border-[#0C0D0F] -ml-2.5
-                             flex items-center justify-center text-[9px] font-bold
-                             text-white/50 bg-white/[0.07] flex-shrink-0"
-                >
-                  +1K
-                </div>
-              </div>
-              {/* Stars + text */}
-              <div>
-                <div className="flex items-center gap-0.5 mb-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <StarIcon key={i} />
-                  ))}
-                </div>
-                <p className="text-xs text-white/40 font-medium">
-                  <span className="text-white/75 font-bold">+1,200 عضو</span>{" "}
-                  {isRTL ? "يثقون بأكاديميتنا" : "trust our academy"}
-                </p>
-              </div>
-            </m.div>
+              BIKER<span className="text-primary">Z</span>
+            </span>
           </div>
 
-          {/* ── Right: Photo ── */}
-          <div
-            className={`relative overflow-hidden min-h-[300px] lg:min-h-0
-                        ${isRTL ? "lg:order-1" : "lg:order-2"}`}
-          >
-            {/* Photo with scale-in entry */}
-            <m.div
-              className="absolute inset-0"
-              initial={{ scale: 1.08 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 1.8, ease: "easeOut" }}
-            >
-              <img
-                src={heroRiderBg}
-                alt=""
-                width={960}
-                height={1080}
-                className="w-full h-full object-cover object-center"
-                fetchPriority="high"
-                decoding="async"
-              />
-            </m.div>
-
-            {/* Gradient: fades left to blend with content col */}
-            <div
-              className={`absolute inset-0 ${
-                isRTL
-                  ? "bg-gradient-to-l from-[#0C0D0F] via-[#0C0D0F]/30 to-transparent"
-                  : "bg-gradient-to-r from-[#0C0D0F] via-[#0C0D0F]/30 to-transparent"
-              }`}
-            />
-            {/* Top/bottom fades */}
-            <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#0C0D0F] to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0C0D0F] to-transparent" />
-
-            {/* ── Floating info card ── */}
-            <m.div
-              initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={anim(0.6, 0.9)}
-              className={`absolute bottom-10 ${isRTL ? "right-6 lg:-right-6" : "left-6 lg:-left-6"}
-                          bg-[#141518]/90 border border-white/[0.09] rounded-2xl
-                          px-5 py-4 backdrop-blur-xl w-52 z-20 hidden sm:block`}
-            >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/40 mb-2">
-                {isRTL ? "نسبة النجاح الكلية" : "Overall Success Rate"}
-              </p>
-              <p className="text-[28px] font-black text-white leading-none mb-1">
-                <span className="text-primary">{successValue.replace("%", "")}</span>
-                <span className="text-white/25 text-lg">%</span>
-              </p>
-              <p className="text-xs text-white/35 mb-3">{isRTL ? "من إجمالي الطلاب" : "of total students"}</p>
-              {/* Progress bar */}
-              <div className="h-1 bg-white/[0.07] rounded-full overflow-hidden">
-                <m.div
-                  className="h-full bg-primary rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: successValue }}
-                  transition={{ duration: 1.4, delay: 1.2, ease: "easeOut" }}
-                />
-              </div>
-            </m.div>
-
-            {/* ── Floating badge top ── */}
-            <m.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={anim(0.5, 0.8)}
-              className={`absolute top-8 ${isRTL ? "left-6" : "right-6"}
-                          bg-[#141518]/88 border border-white/[0.09] rounded-xl
-                          px-4 py-3 backdrop-blur-xl z-20 hidden sm:block`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 border border-primary/20">
-                  <GraduationCap className="w-4 h-4 text-primary" strokeWidth={2} />
-                </div>
-                <div>
-                  <p className="text-[13px] font-bold text-white leading-tight">
-                    {isRTL ? "مدربون معتمدون" : "Certified Instructors"}
-                  </p>
-                  <p className="text-[11px] text-white/40">{isRTL ? "خبرة +10 سنوات" : "+10 years experience"}</p>
-                </div>
-              </div>
-            </m.div>
-          </div>
-        </section>
-
-        {/* ══ STATS BAR ══════════════════════════════════════════════ */}
-        {showStats && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 border-t border-white/[0.07] bg-[#141518]">
-            {statCells.map((cell, i) => (
-              <StatCell
-                key={cell.key}
-                label={cell.label}
-                value={cell.value}
-                desc={cell.desc}
-                index={i}
-                reduced={prefersReducedMotion}
-              />
+          {/* Nav links */}
+          <div className="hidden md:flex items-center gap-1">
+            {(isRTL ? ["الدورات", "المدربون", "المجتمع"] : ["Courses", "Instructors", "Community"]).map((item) => (
+              <button
+                key={item}
+                className="px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em]
+                           text-white/45 hover:text-white rounded transition-colors duration-150
+                           border-none bg-transparent cursor-pointer"
+              >
+                {item}
+              </button>
             ))}
           </div>
+
+          {/* CTA */}
+          <Link to="/courses">
+            <button
+              className="text-[11px] font-bold uppercase tracking-[0.14em]
+                         text-primary border border-primary/35 bg-primary/08
+                         px-5 py-2 rounded cursor-pointer
+                         hover:bg-primary/18 hover:border-primary/70
+                         transition-all duration-150"
+            >
+              {isRTL ? "ابدأ الآن" : "Start Now"}
+            </button>
+          </Link>
+        </m.nav>
+
+        {/* ── Main content — pinned to bottom-left ── */}
+        <div className="relative z-10 mt-auto px-6 sm:px-10 pb-24 sm:pb-28 max-w-3xl">
+          {/* Eyebrow */}
+          <m.div
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={anim(0.55, 0.3)}
+            className="flex items-center gap-3 mb-5"
+          >
+            <span className="w-8 h-[2px] bg-primary rounded-full" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">
+              {isRTL ? "أكاديمية بايكرز — تعلّم القيادة الاحترافية" : "BIKERZ Academy — Professional Riding"}
+            </span>
+          </m.div>
+
+          {/* Giant heading */}
+          <m.h1
+            initial={{ opacity: 0, y: 32 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={anim(0.75, 0.4)}
+            className="font-black uppercase leading-[0.9] tracking-[-2px] mb-6 text-white"
+            style={{
+              fontFamily: "'Barlow Condensed', 'Bebas Neue', Impact, sans-serif",
+              fontSize: "clamp(68px, 13vw, 140px)",
+            }}
+          >
+            {/* Ghost / outline first line */}
+            <span
+              className="block"
+              style={{
+                WebkitTextStroke: "1.5px rgba(255,255,255,0.22)",
+                color: "transparent",
+              }}
+            >
+              {titleLine1}
+            </span>
+            {/* Solid accent second line */}
+            <span className="block text-primary">{titleLine2}</span>
+          </m.h1>
+
+          {/* Subtitle — left-border accent */}
+          <m.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={anim(0.6, 0.58)}
+            className="text-[14px] sm:text-[15px] font-normal text-white/50 leading-[1.75]
+                       max-w-[420px] mb-9 pl-4 border-l-2 border-primary/40"
+            style={{ borderLeftColor: "rgba(232,66,10,0.4)" }}
+          >
+            {subtitle}
+          </m.p>
+
+          {/* CTA buttons */}
+          <m.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={anim(0.5, 0.7)}
+            className="flex items-center gap-5 flex-wrap"
+          >
+            <Link to="/courses">
+              <button
+                className="inline-flex items-center gap-2.5 bg-primary text-white
+                           font-bold uppercase tracking-[0.14em] text-[13px]
+                           px-8 py-4 rounded border-none cursor-pointer
+                           hover:opacity-88 hover:-translate-y-[2px]
+                           active:scale-[.97] transition-all duration-150"
+                style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+              >
+                <Play className="w-3.5 h-3.5 fill-white stroke-none" />
+                {ctaText}
+              </button>
+            </Link>
+
+            <Link to="/join-community">
+              <button
+                className="inline-flex items-center gap-2 text-white/55
+                           font-bold uppercase tracking-[0.14em] text-[12px]
+                           bg-transparent border-none border-b border-white/20 pb-px
+                           cursor-pointer hover:text-white hover:border-white/50
+                           transition-all duration-150"
+                style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+              >
+                <Users className="w-3.5 h-3.5" />
+                {isRTL ? "انضم للمجتمع" : "Join Community"}
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </button>
+            </Link>
+          </m.div>
+        </div>
+
+        {/* ── Stats — bottom-right ── */}
+        {showStats && (
+          <m.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={anim(0.6, 0.85)}
+            className="absolute bottom-20 right-6 sm:right-10 z-10
+                       flex flex-col items-end gap-4"
+          >
+            {displayStats.map((stat, i) => (
+              <React.Fragment key={stat.key}>
+                {i > 0 && <span className="w-px h-6 bg-white/10 self-end" />}
+                <m.div
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={anim(0.45, 0.9 + i * 0.12)}
+                  className="text-right"
+                >
+                  <div
+                    className="font-black text-white leading-none tracking-tight"
+                    style={{
+                      fontFamily: "'Barlow Condensed', sans-serif",
+                      fontSize: "clamp(28px, 4vw, 40px)",
+                    }}
+                  >
+                    <AnimatedCounter value={`${stat.value}${stat.suffix}`} className="text-primary" />
+                  </div>
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/30 mt-0.5">
+                    {stat.label}
+                  </p>
+                </m.div>
+              </React.Fragment>
+            ))}
+          </m.div>
         )}
-      </div>
+
+        {/* ── Scroll indicator — bottom-center ── */}
+        <m.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={anim(0.5, 1.3)}
+          className="absolute bottom-[72px] left-1/2 -translate-x-1/2 z-10
+                     flex flex-col items-center gap-1.5"
+        >
+          <div className="relative w-[18px] h-7 border border-white/20 rounded-full flex justify-center pt-[5px]">
+            <m.span
+              className="w-[2px] h-2 bg-primary rounded-full"
+              animate={{ y: [0, 8, 0], opacity: [1, 0, 0] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: "easeIn" }}
+            />
+          </div>
+          <span className="text-[8px] uppercase tracking-[0.22em] text-white/20 font-semibold">scroll</span>
+        </m.div>
+      </section>
     </LazyMotion>
   );
 };
