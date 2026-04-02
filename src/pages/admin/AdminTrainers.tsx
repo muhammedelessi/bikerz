@@ -20,7 +20,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Star, Upload, X, ChevronDown, ChevronUp, ArrowLeft, ArrowRight, Users, MessageSquare, Bike, MapPin, Clock, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Plus, Pencil, Trash2, Star, Upload, X, ChevronDown, ChevronUp, ArrowLeft, ArrowRight, Users, MessageSquare, Bike, MapPin, Clock, AlertTriangle, TrendingUp, Eye } from 'lucide-react';
+import TrainerProfileDialog from '@/components/admin/TrainerProfileDialog';
 import BilingualInput from '@/components/admin/content/BilingualInput';
 import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
 import { format } from 'date-fns';
@@ -317,6 +318,7 @@ const AdminTrainers: React.FC = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [addStudentTrainerId, setAddStudentTrainerId] = useState<string | null>(null);
   const [addReviewTrainerId, setAddReviewTrainerId] = useState<string | null>(null);
+  const [viewProfileTrainer, setViewProfileTrainer] = useState<Trainer | null>(null);
 
   const defaultForm = { name_ar: '', name_en: '', bio_ar: '', bio_en: '', country: '', city: '', bike_type: '', years_of_experience: 0, profit_ratio: 0, services: [] as string[], status: 'active' as 'active' | 'inactive', photo_url: null as string | null };
   const [form, setForm] = useState(defaultForm);
@@ -974,6 +976,9 @@ const AdminTrainers: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" title={isRTL ? 'عرض الملف' : 'View Profile'} onClick={() => setViewProfileTrainer(t)}>
+                                <Eye className="w-3.5 h-3.5" />
+                              </Button>
                               <Button variant="ghost" size="icon" className="h-7 w-7" title={isRTL ? 'إضافة طالب' : 'Add Student'} onClick={() => setAddStudentTrainerId(t.id)}>
                                 <Plus className="w-3.5 h-3.5" />
                               </Button>
@@ -1036,6 +1041,9 @@ const AdminTrainers: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* View Profile Dialog */}
+      <TrainerProfileDialog trainer={viewProfileTrainer} open={!!viewProfileTrainer} onOpenChange={() => setViewProfileTrainer(null)} />
     </AdminLayout>
   );
 };
