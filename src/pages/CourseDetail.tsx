@@ -824,7 +824,7 @@ const CourseDetail: React.FC = () => {
                         <div className="w-9 h-9 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
                           <Gift className="w-4 h-4 text-green-500" />
                         </div>
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-green-600 dark:text-green-400">
                             {t('courseDetail.freeVideosIncluded', { count: totalFreeLessons })}
                           </p>
@@ -832,7 +832,15 @@ const CourseDetail: React.FC = () => {
                             {t('courseDetail.noAccountNeeded')}
                           </p>
                         </div>
-                      </motion.div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="flex-shrink-0 text-green-600 dark:text-green-400 hover:bg-green-500/10 text-xs font-semibold gap-1"
+                          onClick={() => document.getElementById('free-videos-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                        >
+                          {isRTL ? 'شاهد الآن' : 'Watch Now'}
+                          {isRTL ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                        </Button>
                     )}
 
                     {/* Description */}
