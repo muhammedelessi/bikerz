@@ -1961,6 +1961,7 @@ export type Database = {
           rating: number
           student_name: string
           trainer_id: string
+          training_id: string | null
         }
         Insert: {
           comment?: string
@@ -1969,6 +1970,7 @@ export type Database = {
           rating?: number
           student_name?: string
           trainer_id: string
+          training_id?: string | null
         }
         Update: {
           comment?: string
@@ -1977,6 +1979,7 @@ export type Database = {
           rating?: number
           student_name?: string
           trainer_id?: string
+          training_id?: string | null
         }
         Relationships: [
           {
@@ -1984,6 +1987,13 @@ export type Database = {
             columns: ["trainer_id"]
             isOneToOne: false
             referencedRelation: "trainers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_reviews_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
             referencedColumns: ["id"]
           },
         ]

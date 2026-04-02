@@ -1,0 +1,1 @@
+ALTER TABLE public.trainer_reviews ADD COLUMN training_id uuid REFERENCES public.trainings(id) ON DELETE SET NULL;
