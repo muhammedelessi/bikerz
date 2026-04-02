@@ -371,6 +371,21 @@ const AdminUsers: React.FC = () => {
                 <SelectItem value="academy_admin">{t('admin.users.roles_labels.academy_admin')}</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={enrollmentFilter} onValueChange={setEnrollmentFilter}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <GraduationCap className="w-4 h-4 me-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{isRTL ? 'الكل' : 'All'}</SelectItem>
+                <SelectItem value="enrolled">{isRTL ? 'مشتركين بدورات' : 'Enrolled'}</SelectItem>
+                <SelectItem value="not_enrolled">{isRTL ? 'غير مشتركين' : 'Not Enrolled'}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={exportToCSV} className="gap-2">
+              <Download className="w-4 h-4" />
+              {isRTL ? 'تصدير' : 'Export'}
+            </Button>
           </div>
         </CardContent>
       </Card>
