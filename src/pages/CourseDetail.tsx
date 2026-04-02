@@ -798,7 +798,7 @@ const CourseDetail: React.FC = () => {
                         <span className="text-muted-foreground">{t('courseDetail.lessons')}</span>
                       </div>
                       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/60 text-xs sm:text-sm">
-                        <Clock className="w-3.5 h-3.5 text-secondary-foreground" />
+                        <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                         <span className="font-semibold text-foreground">{formatDuration(totalDurationMinutes)}</span>
                       </div>
                       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/60 text-xs sm:text-sm">
