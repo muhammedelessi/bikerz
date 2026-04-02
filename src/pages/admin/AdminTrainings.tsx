@@ -13,8 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, X, Eye } from 'lucide-react';
 import BilingualInput from '@/components/admin/content/BilingualInput';
+import TrainingProfileDialog from '@/components/admin/TrainingProfileDialog';
 
 interface Training {
   id: string;
