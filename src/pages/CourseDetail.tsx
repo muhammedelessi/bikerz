@@ -1259,7 +1259,16 @@ const CourseDetail: React.FC = () => {
                                   className="overflow-hidden"
                                 >
                                   <div className="mt-2 ms-0 space-y-1">
-                                    {chapter.lessons.map((lesson) => {
+                                    {/* Sort free lessons first for non-enrolled users */}
+                                    {[...chapter.lessons]
+                                      .sort((a, b) => {
+                                        if (!isEnrolled) {
+                                          if (a.is_free && !b.is_free) return -1;
+                                          if (!a.is_free && b.is_free) return 1;
+                                        }
+                                        return 0;
+                                      })
+                                      .map((lesson) => {
                                       const locked = isLessonLocked(lesson, chapter);
                                       const state = getLessonState(lesson.id);
                                       const lTitle = isRTL && lesson.title_ar ? lesson.title_ar : lesson.title;
@@ -1270,14 +1279,18 @@ const CourseDetail: React.FC = () => {
                                           to={locked ? '#' : `/courses/${id}/lessons/${lesson.id}`}
                                           className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-colors ${
                                             locked
-                                              ? 'opacity-50 cursor-not-allowed'
-                                              : 'hover:bg-muted/50'
+                                              ? 'opacity-60 cursor-not-allowed'
+                                              : lesson.is_free && !isEnrolled
+                                                ? 'bg-green-500/5 hover:bg-green-500/10 border border-green-500/15'
+                                                : 'hover:bg-muted/50'
                                           }`}
                                           onClick={e => locked && e.preventDefault()}
                                         >
                                           <div className="flex-shrink-0">
                                             {locked ? (
                                               <Lock className="w-4 h-4 text-muted-foreground" />
+                                            ) : lesson.is_free && !isEnrolled ? (
+                                              <Unlock className="w-4 h-4 text-green-500" />
                                             ) : state === 'completed' ? (
                                               <CheckCircle2 className="w-4 h-4 text-primary" />
                                             ) : state === 'in_progress' ? (
@@ -1286,17 +1299,20 @@ const CourseDetail: React.FC = () => {
                                               <Play className="w-4 h-4 text-muted-foreground" />
                                             )}
                                           </div>
-                                          <span className="flex-1 truncate text-foreground">{lTitle}</span>
+                                          <span className={`flex-1 truncate ${lesson.is_free && !isEnrolled ? 'text-foreground font-medium' : 'text-foreground'}`}>{lTitle}</span>
                                           {lesson.duration_minutes && (
                                             <span className="text-xs text-muted-foreground flex-shrink-0">
                                               {lesson.duration_minutes}{t('courseDetail.minuteAbbr')}
                                             </span>
                                           )}
-                                          {lesson.is_free && !isEnrolled && (
-                                            <span className="text-xs text-primary font-medium flex-shrink-0">
-                                              {t('courseDetail.free')}
+                                          {lesson.is_free && !isEnrolled ? (
+                                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-600 dark:text-green-400 flex-shrink-0 flex items-center gap-1">
+                                              <Eye className="w-3 h-3" />
+                                              {t('courseDetail.freePreview')}
                                             </span>
-                                          )}
+                                          ) : locked ? (
+                                            <Lock className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
+                                          ) : null}
                                         </Link>
                                       );
                                     })}
