@@ -198,9 +198,45 @@ const AdminUsers: React.FC = () => {
     
     const matchesRole = roleFilter === 'all' || 
       user.roles.some(r => r.role === roleFilter);
+
+    const matchesEnrollment = enrollmentFilter === 'all' ||
+      (enrollmentFilter === 'enrolled' && user.enrollmentCount > 0) ||
+      (enrollmentFilter === 'not_enrolled' && user.enrollmentCount === 0);
     
-    return matchesSearch && matchesRole;
+    return matchesSearch && matchesRole && matchesEnrollment;
   });
+
+  const exportToCSV = () => {
+    const headers = [
+      isRTL ? 'الاسم' : 'Name',
+      isRTL ? 'البريد' : 'Email',
+      isRTL ? 'الهاتف' : 'Phone',
+      isRTL ? 'المدينة' : 'City',
+      isRTL ? 'الدولة' : 'Country',
+      isRTL ? 'الأدوار' : 'Roles',
+      isRTL ? 'الدورات المسجلة' : 'Enrollments',
+      isRTL ? 'تاريخ الانضمام' : 'Joined',
+    ];
+    const rows = filteredUsers.map(u => [
+      u.full_name || '',
+      u.email || '',
+      u.phone || '',
+      u.city || '',
+      u.country || '',
+      u.roles.map(r => r.role).join(', '),
+      u.enrollmentCount,
+      format(new Date(u.created_at), 'dd/MM/yyyy'),
+    ]);
+    const csvContent = '\uFEFF' + [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `users_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(isRTL ? 'تم تصدير البيانات بنجاح' : 'Data exported successfully');
+  };
 
   const getRoleBadge = (role: string) => {
     const roleStyles: Record<string, string> = {
