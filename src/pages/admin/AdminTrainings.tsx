@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, X, Eye } from 'lucide-react';
 import BilingualInput from '@/components/admin/content/BilingualInput';
-import TrainingProfileDialog from '@/components/admin/TrainingProfileDialog';
+
 
 interface Training {
   id: string;
@@ -33,10 +34,10 @@ interface Training {
 const AdminTrainings: React.FC = () => {
   const { isRTL } = useLanguage();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [formOpen, setFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingTraining, setEditingTraining] = useState<Training | null>(null);
-  const [viewTraining, setViewTraining] = useState<Training | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -346,7 +347,7 @@ const AdminTrainings: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title={isRTL ? 'عرض التفاصيل' : 'View Details'} onClick={() => setViewTraining(t)}><Eye className="w-3.5 h-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title={isRTL ? 'عرض التفاصيل' : 'View Details'} onClick={() => navigate(`/admin/trainings/${t.id}`)}><Eye className="w-3.5 h-3.5" /></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(t)}><Pencil className="w-3.5 h-3.5" /></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeleteId(t.id)}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
                         </div>
@@ -381,7 +382,7 @@ const AdminTrainings: React.FC = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <TrainingProfileDialog training={viewTraining} open={!!viewTraining} onOpenChange={() => setViewTraining(null)} />
+      
     </AdminLayout>
   );
 };
