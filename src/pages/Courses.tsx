@@ -32,7 +32,7 @@ const Courses: React.FC = () => {
           preview_video_url, preview_video_thumbnail,
           chapters (
             id, is_published,
-            lessons ( id, duration_minutes, is_published )
+            lessons ( id, duration_minutes, is_published, is_free )
           )
         `)
         .eq('is_published', true)
@@ -43,17 +43,19 @@ const Courses: React.FC = () => {
       return (data || []).map((course: any) => {
         let lessonCount = 0;
         let totalMinutes = 0;
+        let freeLessonCount = 0;
         (course.chapters || []).forEach((chapter: any) => {
           if (chapter.is_published) {
             (chapter.lessons || []).forEach((lesson: any) => {
               if (lesson.is_published) {
                 lessonCount++;
                 totalMinutes += lesson.duration_minutes || 0;
+                if (lesson.is_free) freeLessonCount++;
               }
             });
           }
         });
-        return { ...course, lessonCount, totalMinutes };
+        return { ...course, lessonCount, totalMinutes, freeLessonCount };
       });
     },
   });

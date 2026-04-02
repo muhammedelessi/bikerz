@@ -2,7 +2,7 @@ import React from "react";
 
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy, ShoppingCart } from "lucide-react";
+import { Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy, ShoppingCart, Unlock } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTranslation } from "react-i18next";
@@ -26,6 +26,7 @@ export interface CourseCardProps {
     base_rating?: number;
     base_review_count?: number;
     lessonCount: number;
+    freeLessonCount?: number;
     totalMinutes: number;
   };
   index?: number;
@@ -136,6 +137,12 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
                 <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted">
                   <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                   {rating.toFixed(1)}
+                </span>
+              )}
+              {!isEnrolled && (course.freeLessonCount ?? 0) > 0 && (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 font-semibold">
+                  <Unlock className="w-3 h-3" />
+                  {course.freeLessonCount} {t('courseDetail.freePreview')}
                 </span>
               )}
             </div>

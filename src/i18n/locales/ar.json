@@ -422,6 +422,9 @@
     "learningRoadmap": "خطة التعلم",
     "noChaptersYet": "لا توجد فصول متاحة حتى الآن",
     "free": "مجاني",
+    "freePreview": "معاينة مجانية",
+    "noAccountNeeded": "بدون حساب · شاهد فوراً",
+    "freeVideosIncluded": "✅ {{count}} فيديوهات مجانية — ابدأ المشاهدة الآن",
     "minuteAbbr": "د",
     "remaining": "متبقي {{duration}}",
     "failedToEnroll": "فشل التسجيل"
