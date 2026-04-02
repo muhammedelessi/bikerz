@@ -234,7 +234,7 @@ const AdminTrainers: React.FC = () => {
   
   const [addStudentTrainerId, setAddStudentTrainerId] = useState<string | null>(null);
   const [addReviewTrainerId, setAddReviewTrainerId] = useState<string | null>(null);
-  const [viewProfileTrainer, setViewProfileTrainer] = useState<Trainer | null>(null);
+  
 
   const [isOtherBikeType, setIsOtherBikeType] = useState(false);
   const defaultForm = { name_ar: '', name_en: '', bio_ar: '', bio_en: '', country: '', city: '', bike_type: '', motorbike_brand: '', license_type: '', years_of_experience: 0, profit_ratio: 0, services: [] as string[], status: 'active' as 'active' | 'inactive', photo_url: null as string | null };
