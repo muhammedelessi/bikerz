@@ -57,6 +57,7 @@ import {
   MessageSquare,
   Download,
   KeyRound,
+  Gift,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
