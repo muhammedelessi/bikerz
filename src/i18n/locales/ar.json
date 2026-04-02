@@ -424,7 +424,7 @@
     "free": "مجاني",
     "freePreview": "معاينة مجانية",
     "noAccountNeeded": "بدون حساب · شاهد فوراً",
-    "freeVideosIncluded": "✅ {{count}} فيديوهات مجانية — ابدأ المشاهدة الآن",
+    "freeVideosIncluded": "{{count}} فيديوهات مجانية — ابدأ المشاهدة الآن",
     "minuteAbbr": "د",
     "remaining": "متبقي {{duration}}",
     "failedToEnroll": "فشل التسجيل"

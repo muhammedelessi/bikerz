@@ -424,7 +424,7 @@
     "free": "Free",
     "freePreview": "Free Preview",
     "noAccountNeeded": "No account needed · Watch instantly",
-    "freeVideosIncluded": "✅ {{count}} free videos included — start watching now",
+    "freeVideosIncluded": "{{count}} free videos included — start watching now",
     "minuteAbbr": "m",
     "remaining": "{{duration}} remaining",
     "failedToEnroll": "Failed to enroll"
