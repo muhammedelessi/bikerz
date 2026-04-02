@@ -56,7 +56,7 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
         .filter(r => !r.is_fake && r.user_id)
         .map(r => r.user_id!);
 
-      let profilesMap: Record<string, { name: string; avatar: string | null }> = {};
+      let profilesMap: Record<string, { name: string; avatar: string | null; email: string | null }> = {};
       if (realReviewUserIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
@@ -68,6 +68,7 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
             profilesMap[p.user_id] = {
               name: (p.full_name && p.full_name.trim()) ? p.full_name.trim() : '',
               avatar: p.avatar_url || null,
+              email: null,
             };
           });
         }
@@ -81,12 +82,14 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
         } else if (r.user_id && profilesMap[r.user_id]?.name) {
           displayName = profilesMap[r.user_id].name;
           avatarUrl = profilesMap[r.user_id].avatar;
+        } else if (r.user_id && profilesMap[r.user_id]) {
+          // Profile exists but no name — use first part of user_id as identifier
+          avatarUrl = profilesMap[r.user_id].avatar;
+          const shortId = r.user_id.slice(0, 4).toUpperCase();
+          displayName = isRTL ? `متدرب #${shortId}` : `Rider #${shortId}`;
         } else {
           const shortId = r.user_id ? r.user_id.slice(0, 4).toUpperCase() : String(idx + 1);
           displayName = isRTL ? `متدرب #${shortId}` : `Rider #${shortId}`;
-          if (r.user_id && profilesMap[r.user_id]) {
-            avatarUrl = profilesMap[r.user_id].avatar;
-          }
         }
         return { ...r, displayName, avatarUrl };
       });
