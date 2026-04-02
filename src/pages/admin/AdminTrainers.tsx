@@ -624,10 +624,82 @@ const AdminTrainers: React.FC = () => {
                     </div>
                     {isAssigned && assignment && (
                       <div className="px-4 pb-4 pt-0 space-y-3">
-                        <div className="grid gap-3 md:grid-cols-3 ps-7">
-                          <div className="space-y-1"><Label className="text-xs">{isRTL ? 'السعر' : 'Price'}</Label><Input type="number" value={assignment.price} onChange={e => updateAssignment(training.id, 'price', parseFloat(e.target.value) || 0)} /></div>
+                        <div className="grid gap-3 md:grid-cols-2 ps-7">
+                          <div className="space-y-1">
+                            <Label className="text-xs">{isRTL ? 'السعر (ر.س)' : 'Price (SAR)'}</Label>
+                            <div className="relative">
+                              <Input type="number" value={assignment.price} onChange={e => updateAssignment(training.id, 'price', parseFloat(e.target.value) || 0)} className="pe-12" />
+                              <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{isRTL ? 'ر.س' : 'SAR'}</span>
+                            </div>
+                          </div>
                           <div className="space-y-1"><Label className="text-xs">{isRTL ? 'المدة (ساعات)' : 'Duration (hrs)'}</Label><Input type="number" value={assignment.duration_hours} onChange={e => updateAssignment(training.id, 'duration_hours', parseFloat(e.target.value) || 0)} /></div>
-                          <div className="space-y-1"><Label className="text-xs">{isRTL ? 'الموقع' : 'Location'}</Label><Input value={assignment.location} onChange={e => updateAssignment(training.id, 'location', e.target.value)} /></div>
+                        </div>
+                        <div className="grid gap-3 md:grid-cols-2 ps-7">
+                          <div className="space-y-1">
+                            <Label className="text-xs">{isRTL ? 'الدولة' : 'Country'}</Label>
+                            <Select
+                              value={(() => {
+                                const loc = assignment.location || '';
+                                const parts = loc.split(' - ');
+                                const countryPart = parts[0] || '';
+                                return COUNTRIES.find(c => c.en === countryPart || c.ar === countryPart)?.code || '';
+                              })()}
+                              onValueChange={v => {
+                                const country = COUNTRIES.find(c => c.code === v);
+                                if (country) {
+                                  updateAssignment(training.id, 'location', country.en);
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="h-9 text-xs"><SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} /></SelectTrigger>
+                              <SelectContent>
+                                {COUNTRIES.map(c => (
+                                  <SelectItem key={c.code} value={c.code}>{isRTL ? c.ar : c.en}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">{isRTL ? 'المدينة' : 'City'}</Label>
+                            {(() => {
+                              const loc = assignment.location || '';
+                              const parts = loc.split(' - ');
+                              const countryPart = parts[0] || '';
+                              const cityPart = parts[1] || '';
+                              const selectedCountry = COUNTRIES.find(c => c.en === countryPart || c.ar === countryPart);
+                              if (!selectedCountry) return <Input className="h-9 text-xs" disabled placeholder={isRTL ? 'اختر الدولة أولاً' : 'Select country first'} />;
+                              const cities = [...selectedCountry.cities, OTHER_OPTION];
+                              const cityInList = cities.some(c => c.en === cityPart);
+                              const isOtherCityForTraining = cityPart && !cityInList;
+                              return (
+                                <div className="space-y-1.5">
+                                  <Select
+                                    value={cityInList ? cityPart : (isOtherCityForTraining ? 'Other' : '')}
+                                    onValueChange={v => {
+                                      if (v === 'Other') {
+                                        updateAssignment(training.id, 'location', selectedCountry.en + ' - ');
+                                      } else {
+                                        updateAssignment(training.id, 'location', selectedCountry.en + ' - ' + v);
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-9 text-xs"><SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} /></SelectTrigger>
+                                    <SelectContent>
+                                      {cities.map(c => (
+                                        <SelectItem key={c.en} value={c.en}>{isRTL ? c.ar : c.en}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  {(isOtherCityForTraining || (!cityInList && cityPart === '')) && cityPart !== '' ? null : null}
+                                  {(() => {
+                                    const showManual = !cityInList && loc.includes(' - ');
+                                    if (!showManual) return null;
+                                    return <Input className="h-9 text-xs" value={cityPart} onChange={e => updateAssignment(training.id, 'location', selectedCountry.en + ' - ' + e.target.value)} placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'} />;
+                                  })()}
+                                </div>
+                              );
+                            })()}
+                          </div>
                         </div>
                         {/* Per-training Services */}
                         <div className="ps-7 space-y-2">
