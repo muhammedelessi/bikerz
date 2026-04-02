@@ -494,7 +494,46 @@ const AdminTrainers: React.FC = () => {
                 </div>
               </div>
               <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2"><Label>{isRTL ? 'نوع الدراجة' : 'Bike Type'}</Label><Input value={form.bike_type} onChange={e => setForm(f => ({ ...f, bike_type: e.target.value }))} /></div>
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'نوع الدراجة' : 'Motorbike Type'}</Label>
+                  <Select
+                    value={isOtherBikeType ? '__other__' : form.bike_type}
+                    onValueChange={v => {
+                      if (v === '__other__') {
+                        setIsOtherBikeType(true);
+                        setForm(f => ({ ...f, bike_type: '' }));
+                      } else {
+                        setIsOtherBikeType(false);
+                        setForm(f => ({ ...f, bike_type: v }));
+                      }
+                    }}
+                  >
+                    <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر النوع' : 'Select type'} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Sport">{isRTL ? 'رياضية' : 'Sport'}</SelectItem>
+                      <SelectItem value="Cruiser">{isRTL ? 'كروزر' : 'Cruiser'}</SelectItem>
+                      <SelectItem value="Adventure">{isRTL ? 'مغامرة' : 'Adventure'}</SelectItem>
+                      <SelectItem value="Touring">{isRTL ? 'سياحية' : 'Touring'}</SelectItem>
+                      <SelectItem value="Naked">{isRTL ? 'نيكد' : 'Naked'}</SelectItem>
+                      <SelectItem value="Dual Sport">{isRTL ? 'ثنائية الاستخدام' : 'Dual Sport'}</SelectItem>
+                      <SelectItem value="Scooter">{isRTL ? 'سكوتر' : 'Scooter'}</SelectItem>
+                      <SelectItem value="__other__">{isRTL ? 'أخرى' : 'Other'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {isOtherBikeType && (
+                    <Input value={form.bike_type} onChange={e => setForm(f => ({ ...f, bike_type: e.target.value }))} placeholder={isRTL ? 'أدخل نوع الدراجة' : 'Enter motorbike type'} className="mt-2" />
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'ماركة الدراجة' : 'Motorbike Brand'}</Label>
+                  <Input value={form.motorbike_brand} onChange={e => setForm(f => ({ ...f, motorbike_brand: e.target.value }))} placeholder={isRTL ? 'مثال: Yamaha' : 'e.g. Yamaha'} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'نوع الرخصة' : 'License Type'}</Label>
+                  <Input value={form.license_type} onChange={e => setForm(f => ({ ...f, license_type: e.target.value }))} placeholder={isRTL ? 'مثال: A2' : 'e.g. A2'} />
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2"><Label>{isRTL ? 'سنوات الخبرة' : 'Years of Experience'}</Label><Input type="number" value={form.years_of_experience} onChange={e => setForm(f => ({ ...f, years_of_experience: parseInt(e.target.value) || 0 }))} /></div>
                 <div className="space-y-2"><Label>{isRTL ? 'نسبة الربح (%)' : 'Profit Ratio (%)'}</Label><Input type="number" min={0} max={100} value={form.profit_ratio} onChange={e => setForm(f => ({ ...f, profit_ratio: parseFloat(e.target.value) || 0 }))} /></div>
               </div>
