@@ -105,6 +105,7 @@ const AdminUsers: React.FC = () => {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [enrollmentFilter, setEnrollmentFilter] = useState<string>('all');
   const [selectedUser, setSelectedUser] = useState<UserWithDetails | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
