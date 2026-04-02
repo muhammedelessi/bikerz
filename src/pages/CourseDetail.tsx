@@ -395,7 +395,24 @@ const CourseDetail: React.FC = () => {
   const isEnrolled = !!enrollment;
   const isLoading = courseLoading || chaptersLoading;
 
-  // Auto-open checkout when navigated with ?checkout=true
+  // Auto-expand chapters that contain free videos
+  useEffect(() => {
+    if (!autoExpandedOnce && chapters.length > 0) {
+      const chaptersWithFree = chapters
+        .filter(ch => ch.lessons.some(l => l.is_free))
+        .map(ch => ch.id);
+      if (chaptersWithFree.length > 0) {
+        setExpandedChapters(prev => {
+          const next = new Set(prev);
+          chaptersWithFree.forEach(id => next.add(id));
+          return next;
+        });
+      }
+      setAutoExpandedOnce(true);
+    }
+  }, [chapters, autoExpandedOnce]);
+
+
   useEffect(() => {
     if (searchParams.get('checkout') === 'true' && course && !isEnrolled) {
       if (user) {
