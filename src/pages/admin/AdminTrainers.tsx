@@ -857,7 +857,7 @@ const AdminTrainers: React.FC = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary" className="cursor-pointer text-xs" onClick={e => { e.stopPropagation(); setExpandedId(t.id); }}>
+                            <Badge variant="secondary" className="text-xs">
                               <Users className="w-3 h-3 me-1" />
                               {studentCounts?.[t.id] || 0}
                             </Badge>
