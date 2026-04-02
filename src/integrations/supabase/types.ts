@@ -2007,6 +2007,8 @@ export type Database = {
           country: string
           created_at: string
           id: string
+          license_type: string
+          motorbike_brand: string
           name_ar: string
           name_en: string
           photo_url: string | null
@@ -2023,6 +2025,8 @@ export type Database = {
           country?: string
           created_at?: string
           id?: string
+          license_type?: string
+          motorbike_brand?: string
           name_ar?: string
           name_en?: string
           photo_url?: string | null
@@ -2039,6 +2043,8 @@ export type Database = {
           country?: string
           created_at?: string
           id?: string
+          license_type?: string
+          motorbike_brand?: string
           name_ar?: string
           name_en?: string
           photo_url?: string | null
