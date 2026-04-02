@@ -26,6 +26,7 @@ export interface CourseCardProps {
     base_rating?: number;
     base_review_count?: number;
     lessonCount: number;
+    freeLessonCount?: number;
     totalMinutes: number;
   };
   index?: number;
