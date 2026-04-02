@@ -55,6 +55,7 @@ import {
   Users,
   Filter,
   MessageSquare,
+  Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -104,6 +105,7 @@ const AdminUsers: React.FC = () => {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [enrollmentFilter, setEnrollmentFilter] = useState<string>('all');
   const [selectedUser, setSelectedUser] = useState<UserWithDetails | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
@@ -196,9 +198,45 @@ const AdminUsers: React.FC = () => {
     
     const matchesRole = roleFilter === 'all' || 
       user.roles.some(r => r.role === roleFilter);
+
+    const matchesEnrollment = enrollmentFilter === 'all' ||
+      (enrollmentFilter === 'enrolled' && user.enrollmentCount > 0) ||
+      (enrollmentFilter === 'not_enrolled' && user.enrollmentCount === 0);
     
-    return matchesSearch && matchesRole;
+    return matchesSearch && matchesRole && matchesEnrollment;
   });
+
+  const exportToCSV = () => {
+    const headers = [
+      isRTL ? 'الاسم' : 'Name',
+      isRTL ? 'البريد' : 'Email',
+      isRTL ? 'الهاتف' : 'Phone',
+      isRTL ? 'المدينة' : 'City',
+      isRTL ? 'الدولة' : 'Country',
+      isRTL ? 'الأدوار' : 'Roles',
+      isRTL ? 'الدورات المسجلة' : 'Enrollments',
+      isRTL ? 'تاريخ الانضمام' : 'Joined',
+    ];
+    const rows = filteredUsers.map(u => [
+      u.full_name || '',
+      u.email || '',
+      u.phone || '',
+      u.city || '',
+      u.country || '',
+      u.roles.map(r => r.role).join(', '),
+      u.enrollmentCount,
+      format(new Date(u.created_at), 'dd/MM/yyyy'),
+    ]);
+    const csvContent = '\uFEFF' + [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `users_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(isRTL ? 'تم تصدير البيانات بنجاح' : 'Data exported successfully');
+  };
 
   const getRoleBadge = (role: string) => {
     const roleStyles: Record<string, string> = {
@@ -333,6 +371,21 @@ const AdminUsers: React.FC = () => {
                 <SelectItem value="academy_admin">{t('admin.users.roles_labels.academy_admin')}</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={enrollmentFilter} onValueChange={setEnrollmentFilter}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <GraduationCap className="w-4 h-4 me-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{isRTL ? 'الكل' : 'All'}</SelectItem>
+                <SelectItem value="enrolled">{isRTL ? 'مشتركين بدورات' : 'Enrolled'}</SelectItem>
+                <SelectItem value="not_enrolled">{isRTL ? 'غير مشتركين' : 'Not Enrolled'}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={exportToCSV} className="gap-2">
+              <Download className="w-4 h-4" />
+              {isRTL ? 'تصدير' : 'Export'}
+            </Button>
           </div>
         </CardContent>
       </Card>
