@@ -46,6 +46,7 @@ import {
   Eye,
   Unlock,
   Gift,
+  MousePointerClick,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.webp';
