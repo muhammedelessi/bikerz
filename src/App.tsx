@@ -32,6 +32,7 @@ import Signup from "./pages/Signup";
 
 // Secondary public routes - lazy loaded
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const AboutUs = lazy(() => import("./pages/AboutUs"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
@@ -145,6 +146,7 @@ const AppRoutes = () => (
 
         {/* Secondary public routes */}
         <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
+        <Route path="/reset-password" element={<Suspense fallback={<div />}><ResetPassword /></Suspense>} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
