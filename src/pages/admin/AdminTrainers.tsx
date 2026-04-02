@@ -807,6 +807,68 @@ const AdminTrainers: React.FC = () => {
           <Button onClick={openAdd} size="sm"><Plus className="w-4 h-4 me-2" />{isRTL ? 'إضافة مدرب' : 'Add Trainer'}</Button>
         </div>
 
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            {
+              titleEn: 'Total Trainers',
+              titleAr: 'إجمالي المدربين',
+              value: trainers?.length || 0,
+              icon: Users,
+              color: 'text-blue-500',
+              bgColor: 'bg-blue-500/10',
+            },
+            {
+              titleEn: 'Active Trainers',
+              titleAr: 'المدربين النشطين',
+              value: trainers?.filter(t => t.status === 'active')?.length || 0,
+              icon: TrendingUp,
+              color: 'text-green-500',
+              bgColor: 'bg-green-500/10',
+            },
+            {
+              titleEn: 'Avg. Rating',
+              titleAr: 'متوسط التقييم',
+              value: (() => {
+                if (!reviewStats || !trainers?.length) return '0.0';
+                const allRatings = Object.values(reviewStats);
+                if (!allRatings.length) return '0.0';
+                return (allRatings.reduce((sum, s) => sum + s.avg, 0) / allRatings.length).toFixed(1);
+              })(),
+              icon: Star,
+              color: 'text-yellow-500',
+              bgColor: 'bg-yellow-500/10',
+            },
+            {
+              titleEn: 'Total Students',
+              titleAr: 'إجمالي الطلاب',
+              value: studentCounts ? Object.values(studentCounts).reduce((a, b) => a + b, 0) : 0,
+              icon: Users,
+              color: 'text-purple-500',
+              bgColor: 'bg-purple-500/10',
+            },
+          ].map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={index}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        {isRTL ? stat.titleAr : stat.titleEn}
+                      </p>
+                      <p className="text-2xl font-bold">{stat.value}</p>
+                    </div>
+                    <div className={`p-3 rounded-full ${stat.bgColor}`}>
+                      <Icon className={`w-5 h-5 ${stat.color}`} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
         <Card>
           <CardContent className="p-0">
             {isLoading ? (
