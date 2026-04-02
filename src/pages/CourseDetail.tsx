@@ -1147,6 +1147,7 @@ const CourseDetail: React.FC = () => {
                           <div
                             className="flex gap-3 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4"
                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                            dir="ltr"
                             onScroll={(e) => {
                               const el = e.currentTarget;
                               const cardWidth = el.firstElementChild ? (el.firstElementChild as HTMLElement).offsetWidth + 12 : 1;
@@ -1155,24 +1156,29 @@ const CourseDetail: React.FC = () => {
                               if (counter) counter.textContent = `${Math.min(idx + 1, totalSlides)} / ${totalSlides}`;
                             }}
                           >
-                            {items.map((item) => (
-                              <div key={item.id} className="flex-shrink-0 snap-start w-[85%]">
-                                <div className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50 hover:border-primary/20 transition-all h-full">
-                                  <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                            {items.map((item, idx) => (
+                              <div key={item.id} className="flex-shrink-0 snap-start w-[85%]" dir={isRTL ? 'rtl' : 'ltr'}>
+                                <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-br from-card via-card to-muted/30 p-5 h-full transition-all duration-300 hover:border-primary/30">
+                                  <div className="absolute top-3 end-3 w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <span className="text-xs font-bold text-primary">{idx + 1}</span>
                                   </div>
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-medium text-foreground leading-relaxed">{item.text}</p>
-                                    {'desc' in item && (item as any).desc && (
-                                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{(item as any).desc}</p>
-                                    )}
+                                  <div className="flex items-start gap-3 pe-8">
+                                    <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                      <CheckCircle2 className="w-4 h-4 text-primary" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-semibold text-foreground leading-relaxed">{item.text}</p>
+                                      {'desc' in item && (item as any).desc && (
+                                        <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">{(item as any).desc}</p>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                             ))}
                           </div>
-                          <div className="flex justify-center mt-2">
-                            <span data-slide-counter className="text-xs font-medium text-muted-foreground bg-muted/60 px-3 py-1 rounded-full tabular-nums">
+                          <div className="flex justify-center mt-3">
+                            <span data-slide-counter className="text-xs font-medium text-muted-foreground bg-muted/60 px-3 py-1.5 rounded-full tabular-nums">
                               1 / {totalSlides}
                             </span>
                           </div>
