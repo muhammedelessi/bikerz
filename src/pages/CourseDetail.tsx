@@ -44,6 +44,8 @@ import {
   Infinity,
   MonitorPlay,
   Eye,
+  Unlock,
+  Gift,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.webp';
