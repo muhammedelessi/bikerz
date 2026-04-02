@@ -1,0 +1,1 @@
+DROP POLICY "Users can enroll themselves" ON public.course_enrollments;
