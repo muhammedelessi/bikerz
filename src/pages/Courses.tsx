@@ -43,17 +43,19 @@ const Courses: React.FC = () => {
       return (data || []).map((course: any) => {
         let lessonCount = 0;
         let totalMinutes = 0;
+        let freeLessonCount = 0;
         (course.chapters || []).forEach((chapter: any) => {
           if (chapter.is_published) {
             (chapter.lessons || []).forEach((lesson: any) => {
               if (lesson.is_published) {
                 lessonCount++;
                 totalMinutes += lesson.duration_minutes || 0;
+                if (lesson.is_free) freeLessonCount++;
               }
             });
           }
         });
-        return { ...course, lessonCount, totalMinutes };
+        return { ...course, lessonCount, totalMinutes, freeLessonCount };
       });
     },
   });
