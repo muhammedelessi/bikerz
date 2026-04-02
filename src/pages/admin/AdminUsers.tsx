@@ -687,6 +687,60 @@ const AdminUsers: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{isRTL ? 'تغيير كلمة المرور' : 'Change Password'}</DialogTitle>
+            <DialogDescription>
+              {isRTL
+                ? `تغيير كلمة المرور للمستخدم: ${passwordUser?.full_name || passwordUser?.email || ''}`
+                : `Change password for: ${passwordUser?.full_name || passwordUser?.email || ''}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{isRTL ? 'كلمة المرور الجديدة' : 'New Password'}</Label>
+              <Input
+                type="text"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder={isRTL ? 'أدخل كلمة المرور الجديدة (6 أحرف على الأقل)' : 'Enter new password (min 6 characters)'}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
+              {isRTL ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button
+              disabled={isChangingPassword || newPassword.length < 6}
+              onClick={async () => {
+                if (!passwordUser) return;
+                setIsChangingPassword(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke('admin-update-password', {
+                    body: { user_id: passwordUser.user_id, new_password: newPassword },
+                  });
+                  if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
+                  toast.success(isRTL ? 'تم تغيير كلمة المرور بنجاح' : 'Password changed successfully');
+                  setIsPasswordDialogOpen(false);
+                } catch (err: any) {
+                  toast.error(err.message || (isRTL ? 'فشل تغيير كلمة المرور' : 'Failed to change password'));
+                } finally {
+                  setIsChangingPassword(false);
+                }
+              }}
+            >
+              {isChangingPassword
+                ? (isRTL ? 'جاري التغيير...' : 'Changing...')
+                : (isRTL ? 'تغيير كلمة المرور' : 'Change Password')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
     </AdminLayout>
   );
