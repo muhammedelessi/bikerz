@@ -742,7 +742,7 @@ const AdminUsers: React.FC = () => {
               {isRTL ? 'إلغاء' : 'Cancel'}
             </Button>
             <Button
-              disabled={isChangingPassword || newPassword.length < 6}
+              disabled={isChangingPassword || newPassword.length < 8 || !/[a-z]/.test(newPassword) || !/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)}
               onClick={async () => {
                 if (!passwordUser) return;
                 setIsChangingPassword(true);
