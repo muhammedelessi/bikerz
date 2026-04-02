@@ -2,7 +2,7 @@ import React from "react";
 
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy, ShoppingCart } from "lucide-react";
+import { Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy, ShoppingCart, Unlock } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTranslation } from "react-i18next";
