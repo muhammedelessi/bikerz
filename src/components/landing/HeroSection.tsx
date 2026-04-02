@@ -3,10 +3,15 @@ import AnimatedCounter from "@/components/common/AnimatedCounter";
 import { LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Play, Users, GraduationCap, PlayCircle, BookOpen } from "lucide-react";
+import {
+  Play, Users, GraduationCap, PlayCircle, BookOpen,
+  Shield, Bike, Route, Gauge, Trophy, Compass, Wrench,
+} from "lucide-react";
+// Users icon is used for both stats and CTA
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+
 import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
 import heroRiderBg from "@/assets/hero-rider.webp";
 
@@ -42,6 +47,45 @@ async function fetchHeroStats() {
   return { members: usersCount, lessons: lessonsCount, successRate, courses: coursesCount };
 }
 
+const StatCard: React.FC<{
+  value: string;
+  label: string;
+  icon: React.ElementType;
+  index: number;
+  reducedMotion: boolean | null;
+}> = ({ value, label, icon: Icon, index, reducedMotion }) => (
+  <m.div
+    initial={reducedMotion ? {} : { opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 1 + index * 0.1, type: "spring", stiffness: 180 }}
+    className="relative group"
+  >
+    {/* Glow behind card on hover */}
+    <div className="absolute -inset-1 rounded-2xl bg-primary/10 opacity-0 group-hover:opacity-100 blur-lg transition-opacity duration-500" />
+
+    <div className="relative flex flex-col items-center gap-1.5 sm:gap-2.5 px-2 sm:px-5 py-3 sm:py-5 rounded-xl sm:rounded-2xl bg-white/[0.06] border border-white/[0.08] backdrop-blur-md group-hover:bg-white/[0.1] group-hover:border-primary/30 transition-all duration-400">
+      {/* Icon with pulse ring */}
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-40" style={{ animationDuration: '2s' }} />
+        <div className="relative w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-gradient-to-br from-primary/25 to-primary/10 border border-primary/25 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+          <Icon className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-primary" />
+        </div>
+      </div>
+
+      {/* Value */}
+      <AnimatedCounter
+        value={value}
+        className="text-lg sm:text-2xl md:text-3xl font-black text-white leading-none tracking-tight"
+      />
+
+      {/* Label */}
+      <span className="text-[8px] sm:text-[10px] text-white/50 uppercase tracking-[0.15em] font-medium whitespace-nowrap">
+        {label}
+      </span>
+    </div>
+  </m.div>
+);
+
 const HeroSection: React.FC = () => {
   const { isRTL } = useLanguage();
   const prefersReducedMotion = useReducedMotion();
@@ -69,290 +113,184 @@ const HeroSection: React.FC = () => {
     ? String(content.stats_lessons_value)
     : formatCount(stats?.lessons ?? 0);
   const successValue = content?.stats_success_value
-    ? `${content.stats_success_value}`
+    ? `${content.stats_success_value}%`
     : stats?.successRate
-      ? `${stats.successRate}`
-      : "0";
+      ? `${stats.successRate}%`
+      : "0%";
   const coursesValue = content?.stats_courses_value
     ? String(content.stats_courses_value)
     : formatCount(stats?.courses ?? 0);
 
   const displayStats = useMemo(
     () => [
-      { key: "members", value: membersValue, suffix: "", label: isRTL ? "عضو" : "Members" },
-      { key: "success", value: successValue, suffix: "%", label: isRTL ? "نسبة النجاح" : "Success Rate" },
-      { key: "lessons", value: lessonsValue, suffix: "", label: isRTL ? "درس" : "Lessons" },
+      { key: "members", value: membersValue, label: isRTL ? "عضو" : "Members", icon: Users },
+      { key: "success", value: successValue, label: isRTL ? "نسبة النجاح" : "Success", icon: GraduationCap },
+      { key: "lessons", value: lessonsValue, label: isRTL ? "درس" : "Lessons", icon: PlayCircle },
+      { key: "courses", value: coursesValue, label: isRTL ? "دورة" : "Courses", icon: BookOpen },
     ],
-    [membersValue, lessonsValue, successValue, isRTL],
+    [membersValue, lessonsValue, successValue, coursesValue, isRTL],
   );
 
   const anim = (dur: number, delay = 0) => (prefersReducedMotion ? { duration: 0 } : { duration: dur, delay });
 
-  const titleLine1 = isRTL ? content?.title_ar?.split(" ")[0] || "اركب" : "RIDE";
-  const titleLine2 = isRTL ? content?.title_ar?.split(" ").slice(1).join(" ") || "بثقة" : "FREE";
+  
+  const title = isRTL ? content?.title_ar || "لنقد بثقة" : content?.title_en || "Ride with Confidence";
   const subtitle = isRTL
-    ? content?.subtitle_ar || "انطلق في رحلتك مع أفضل مدربي الدراجات النارية — من الأساسيات حتى الاحتراف"
-    : content?.subtitle_en || "Start your journey with expert motorcycle instructors — from basics to mastery";
+    ? content?.subtitle_ar || "انطلق في رحلتك مع أفضل مدربي الدراجات النارية"
+    : content?.subtitle_en || "Start your journey with expert motorcycle instructors";
   const ctaText = isRTL
     ? content?.secondary_cta_ar || "استكشف الدورات"
     : content?.secondary_cta_en || "Explore Courses";
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <section className="relative flex flex-col overflow-hidden bg-black" style={{ minHeight: "100svh" }}>
-        {/* ── Full-bleed photo ── */}
-        <m.div
-          className="absolute inset-0"
-          initial={{ scale: 1.06 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 2, ease: [0.25, 0.46, 0.45, 0.94] }}
-        >
+      <section className="relative flex flex-col overflow-hidden">
+        <div className="absolute inset-0">
           <img
             src={heroRiderBg}
             alt=""
             width={1920}
             height={1080}
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-cover"
             fetchPriority="high"
             decoding="async"
           />
-        </m.div>
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/80" />
+        </div>
 
-        {/* ── Cinematic gradient overlays ── */}
-        {/* bottom-heavy dark fade — content lives at the bottom */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(to top, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.6) 28%, rgba(0,0,0,0.15) 55%, transparent 78%)",
-          }}
-        />
-        {/* top fade for nav readability */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 22%)",
-          }}
-        />
-
-        {/* ── Cinematic letterbox bars ── */}
-        <div className="absolute inset-x-0 top-0 h-16 bg-black z-20" />
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-black z-20" />
-
-        {/* ── Navbar (inside top bar) ── */}
-        <m.nav
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={anim(0.6, 0.1)}
-          className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-6 sm:px-10 h-16"
-        >
-          {/* Logo */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
-            </div>
-            <span
-              className="font-black text-[18px] tracking-widest text-white uppercase"
-              style={{ fontFamily: "'Barlow Condensed', 'Bebas Neue', sans-serif", letterSpacing: "0.18em" }}
+        {/* Floating Identity Icons */}
+        <div className="absolute inset-0 z-[5] pointer-events-none overflow-hidden">
+          {[
+            { Icon: Shield, x: "5%", y: "18%", size: 28, mSize: 18, delay: 0, dur: 6 },
+            { Icon: Bike, x: "88%", y: "22%", size: 32, mSize: 20, delay: 0.5, dur: 7 },
+            { Icon: Route, x: "8%", y: "72%", size: 24, mSize: 16, delay: 1, dur: 8 },
+            { Icon: Gauge, x: "85%", y: "68%", size: 26, mSize: 18, delay: 1.5, dur: 6.5 },
+            { Icon: Trophy, x: "3%", y: "45%", size: 22, mSize: 16, delay: 0.8, dur: 7.5 },
+            { Icon: Compass, x: "92%", y: "45%", size: 24, mSize: 16, delay: 1.2, dur: 6.8 },
+            { Icon: Wrench, x: "15%", y: "88%", size: 20, mSize: 14, delay: 2, dur: 7.2 },
+            { Icon: GraduationCap, x: "80%", y: "85%", size: 22, mSize: 16, delay: 0.3, dur: 8.2 },
+          ].map(({ Icon, x, y, size, mSize, delay, dur }, i) => (
+            <m.div
+              key={i}
+              className="absolute"
+              style={{ left: x, top: y }}
+              initial={prefersReducedMotion ? { opacity: 0.6 } : { opacity: 0, scale: 0.5 }}
+              animate={
+                prefersReducedMotion
+                  ? { opacity: 0.6 }
+                  : {
+                      opacity: [0, 0.7, 0.5, 0.7],
+                      scale: [0.8, 1, 0.9, 1],
+                      y: [0, -12, 0, 12, 0],
+                    }
+              }
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0 }
+                  : {
+                      duration: dur,
+                      repeat: Infinity,
+                      repeatType: "mirror" as const,
+                      delay,
+                      ease: "easeInOut",
+                    }
+              }
             >
-              BIKER<span className="text-primary">Z</span>
-            </span>
-          </div>
+              <div className="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-primary/15 border border-primary/30 backdrop-blur-sm">
+                <Icon className="text-primary block sm:hidden" size={mSize} strokeWidth={1.8} />
+                <Icon className="text-primary hidden sm:block" size={size} strokeWidth={1.8} />
+              </div>
+            </m.div>
+          ))}
+        </div>
 
-          {/* Nav links */}
-          <div className="hidden md:flex items-center gap-1">
-            {(isRTL ? ["الدورات", "المدربون", "المجتمع"] : ["Courses", "Instructors", "Community"]).map((item) => (
-              <button
-                key={item}
-                className="px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em]
-                           text-white/45 hover:text-white rounded transition-colors duration-150
-                           border-none bg-transparent cursor-pointer"
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-
-          {/* CTA */}
-          <Link to="/courses">
-            <button
-              className="text-[11px] font-bold uppercase tracking-[0.14em]
-                         text-primary border border-primary/35 bg-primary/08
-                         px-5 py-2 rounded cursor-pointer
-                         hover:bg-primary/18 hover:border-primary/70
-                         transition-all duration-150"
-            >
-              {isRTL ? "ابدأ الآن" : "Start Now"}
-            </button>
-          </Link>
-        </m.nav>
-
-        {/* ── Main content — pinned to bottom-left ── */}
-        <div className="relative z-10 mt-auto px-6 sm:px-10 pb-24 sm:pb-28 max-w-3xl">
-          {/* Eyebrow */}
+        <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 md:py-16 flex flex-col items-center text-center">
+          {/* Badge */}
           <m.div
-            initial={{ opacity: 0, x: -16 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={anim(0.55, 0.3)}
-            className="flex items-center gap-3 mb-5"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={anim(0.6, 0.3)}
+            className="mb-4"
           >
-            <span className="w-8 h-[2px] bg-primary rounded-full" />
-            <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">
-              {isRTL ? "أكاديمية بايكرز — تعلّم القيادة الاحترافية" : "BIKERZ Academy — Professional Riding"}
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              {isRTL ? "أكاديمية بايكرز" : "BIKERZ Academy"}
             </span>
           </m.div>
 
-          {/* Giant heading */}
+          {/* Title */}
           <m.h1
-            initial={{ opacity: 0, y: 32 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={anim(0.75, 0.4)}
-            className="font-black uppercase leading-[0.9] tracking-[-2px] mb-6 text-white"
-            style={{
-              fontFamily: "'Barlow Condensed', 'Bebas Neue', Impact, sans-serif",
-              fontSize: "clamp(68px, 13vw, 140px)",
-            }}
+            transition={anim(0.7, 0.4)}
+            className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black leading-[1.08] mb-3 text-white max-w-3xl tracking-tight drop-shadow-lg"
           >
-            {/* Ghost / outline first line */}
-            <span
-              className="block"
-              style={{
-                WebkitTextStroke: "1.5px rgba(255,255,255,0.22)",
-                color: "transparent",
-              }}
-            >
-              {titleLine1}
-            </span>
-            {/* Solid accent second line */}
-            <span className="block text-primary">{titleLine2}</span>
+            {title}
           </m.h1>
 
-          {/* Subtitle — left-border accent */}
+          {/* Subtitle */}
           <m.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={anim(0.6, 0.58)}
-            className="text-[14px] sm:text-[15px] font-normal text-white/50 leading-[1.75]
-                       max-w-[420px] mb-9 pl-4 border-l-2 border-primary/40"
-            style={{ borderLeftColor: "rgba(232,66,10,0.4)" }}
+            transition={anim(0.6, 0.6)}
+            className="text-sm sm:text-base lg:text-lg text-white/85 leading-relaxed mb-5 max-w-xl font-medium drop-shadow-md"
           >
             {subtitle}
           </m.p>
 
-          {/* CTA buttons */}
+          {/* CTA */}
           <m.div
-            initial={{ opacity: 0, y: 14 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={anim(0.5, 0.7)}
-            className="flex items-center gap-5 flex-wrap"
+            transition={anim(0.5, 0.75)}
+            className="flex flex-col sm:flex-row gap-2.5 sm:gap-4 justify-center w-full sm:w-auto"
           >
-            <Link to="/courses">
-              <button
-                className="inline-flex items-center gap-2.5 bg-primary text-white
-                           font-bold uppercase tracking-[0.14em] text-[13px]
-                           px-8 py-4 rounded border-none cursor-pointer
-                           hover:opacity-88 hover:-translate-y-[2px]
-                           active:scale-[.97] transition-all duration-150"
-                style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+            <Link to="/courses" className="sm:flex-none">
+              <Button
+                variant="hero"
+                size="default"
+                className="w-full group gap-2 px-5 sm:px-7 py-3 sm:py-4 text-xs sm:text-sm"
               >
-                <Play className="w-3.5 h-3.5 fill-white stroke-none" />
+                <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:scale-110" />
                 {ctaText}
-              </button>
+              </Button>
             </Link>
-
-            <Link to="/join-community">
-              <button
-                className="inline-flex items-center gap-2 text-white/55
-                           font-bold uppercase tracking-[0.14em] text-[12px]
-                           bg-transparent border-none border-b border-white/20 pb-px
-                           cursor-pointer hover:text-white hover:border-white/50
-                           transition-all duration-150"
-                style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+            <Link to="/join-community" className="sm:flex-none">
+              <Button
+                variant="heroOutline"
+                size="default"
+                className="w-full group gap-2 px-5 sm:px-7 py-3 sm:py-4 text-xs sm:text-sm border-primary/50 text-primary hover:bg-primary/10 hover:border-primary"
               >
-                <Users className="w-3.5 h-3.5" />
-                {isRTL ? "انضم للمجتمع" : "Join Community"}
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </button>
+                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:scale-110" />
+                {isRTL ? "انضم لمجتمع بايكرز" : "Join Bikerz Community"}
+              </Button>
             </Link>
           </m.div>
+
+          {/* Stats Strip */}
+          {showStats && (
+            <m.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={anim(0.5, 0.9)}
+              className="mt-8 sm:mt-10"
+            >
+              <div className="grid grid-cols-4 gap-2 sm:gap-4 md:gap-6 px-2 sm:px-6 py-3 sm:py-5 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/[0.06]">
+                {displayStats.map((stat, i) => (
+                  <StatCard
+                    key={stat.key}
+                    value={stat.value}
+                    label={stat.label}
+                    icon={stat.icon}
+                    index={i}
+                    reducedMotion={prefersReducedMotion}
+                  />
+                ))}
+              </div>
+            </m.div>
+          )}
         </div>
-
-        {/* ── Stats — bottom-right ── */}
-        {showStats && (
-          <m.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={anim(0.6, 0.85)}
-            className="absolute bottom-20 right-6 sm:right-10 z-10
-                       flex flex-col items-end gap-4"
-          >
-            {displayStats.map((stat, i) => (
-              <React.Fragment key={stat.key}>
-                {i > 0 && <span className="w-px h-6 bg-white/10 self-end" />}
-                <m.div
-                  initial={{ opacity: 0, x: 12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={anim(0.45, 0.9 + i * 0.12)}
-                  className="text-right"
-                >
-                  <div
-                    className="font-black text-white leading-none tracking-tight"
-                    style={{
-                      fontFamily: "'Barlow Condensed', sans-serif",
-                      fontSize: "clamp(28px, 4vw, 40px)",
-                    }}
-                  >
-                    <AnimatedCounter value={`${stat.value}${stat.suffix}`} className="text-primary" />
-                  </div>
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/30 mt-0.5">
-                    {stat.label}
-                  </p>
-                </m.div>
-              </React.Fragment>
-            ))}
-          </m.div>
-        )}
-
-        {/* ── Scroll indicator — bottom-center ── */}
-        <m.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={anim(0.5, 1.3)}
-          className="absolute bottom-[72px] left-1/2 -translate-x-1/2 z-10
-                     flex flex-col items-center gap-1.5"
-        >
-          <div className="relative w-[18px] h-7 border border-white/20 rounded-full flex justify-center pt-[5px]">
-            <m.span
-              className="w-[2px] h-2 bg-primary rounded-full"
-              animate={{ y: [0, 8, 0], opacity: [1, 0, 0] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: "easeIn" }}
-            />
-          </div>
-          <span className="text-[8px] uppercase tracking-[0.22em] text-white/20 font-semibold">scroll</span>
-        </m.div>
       </section>
     </LazyMotion>
   );
