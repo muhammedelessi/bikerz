@@ -1220,7 +1220,13 @@ const CourseDetail: React.FC = () => {
                                       <Clock className="w-3.5 h-3.5" />
                                       {formatDuration(chDuration)}
                                     </span>
-                                    {chapter.is_free && (
+                                    {!isEnrolled && chapter.lessons.some(l => l.is_free) && (
+                                      <span className="flex items-center gap-1 text-green-600 dark:text-green-400 font-semibold">
+                                        <Unlock className="w-3.5 h-3.5" />
+                                        {chapter.lessons.filter(l => l.is_free).length} {t('courseDetail.freePreview')}
+                                      </span>
+                                    )}
+                                    {chapter.is_free && isEnrolled && (
                                       <span className="text-primary font-medium">
                                         {t('courseDetail.free')}
                                       </span>
