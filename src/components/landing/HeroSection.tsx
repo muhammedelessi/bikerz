@@ -1,598 +1,383 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useMemo } from "react";
+import AnimatedCounter from "@/components/common/AnimatedCounter";
+import { LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import {
+  Play,
+  Users,
+  GraduationCap,
+  PlayCircle,
+  BookOpen,
+  Shield,
+  Bike,
+  Route,
+  Gauge,
+  Trophy,
+  Compass,
+  Wrench,
+} from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
-const PRIMARY = "#E8420A";
-const PRIMARY_20 = "rgba(232,66,10,0.2)";
-const PRIMARY_40 = "rgba(232,66,10,0.4)";
+import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
+import heroRiderBg from "@/assets/hero-rider.webp";
 
-// Same content from the original
-const CONTENT = {
-  en: {
-    eyebrow: "BIKERZ Academy — Professional Riding",
-    titleLine1: "RIDE",
-    titleLine2: "FREE",
-    subtitle: "Start your journey with expert motorcycle instructors — from basics to mastery",
-    cta: "Explore Courses",
-    secondaryCta: "Join Community",
-    startNow: "Start Now",
-    navLinks: ["Courses", "Instructors", "Community"],
-    stats: [
-      { value: "2K+", label: "Members" },
-      { value: "94%", label: "Success Rate" },
-      { value: "120+", label: "Lessons" },
+interface HeroLandingContent extends HeroContent {
+  defaultHeroImage?: string;
+  show_stats?: boolean | string;
+  show_badge?: boolean | string;
+  stats_members_value?: string | number;
+  stats_lessons_value?: string | number;
+  stats_success_value?: string | number;
+  stats_courses_value?: string | number;
+}
+
+function formatCount(count: number) {
+  if (count >= 1000) return `${Math.floor(count / 1000)}K+`;
+  return count > 0 ? `${count}+` : "0";
+}
+
+async function fetchHeroStats() {
+  const [profilesRes, lessonsRes, enrollmentsRes, coursesRes] = await Promise.all([
+    supabase.from("profiles").select("*", { count: "exact", head: true }),
+    supabase.from("lessons").select("*", { count: "exact", head: true }).eq("is_published", true),
+    supabase.from("course_enrollments").select("progress_percentage"),
+    supabase.from("courses").select("*", { count: "exact", head: true }).eq("is_published", true),
+  ]);
+  const usersCount = profilesRes.count ?? 0;
+  const lessonsCount = lessonsRes.count ?? 0;
+  const coursesCount = coursesRes.count ?? 0;
+  const enrollmentStats = enrollmentsRes.data ?? [];
+  const successfulEnrollments = enrollmentStats.filter((e) => (e.progress_percentage ?? 0) >= 70).length;
+  const successRate =
+    enrollmentStats.length > 0 ? Math.round((successfulEnrollments / enrollmentStats.length) * 100) : 0;
+  return { members: usersCount, lessons: lessonsCount, successRate, courses: coursesCount };
+}
+
+/* ─────────────────────────────────────────────
+   Stat Card — redesigned: clean glass pill
+   ───────────────────────────────────────────── */
+const StatCard: React.FC<{
+  value: string;
+  label: string;
+  icon: React.ElementType;
+  index: number;
+  reducedMotion: boolean | null;
+}> = ({ value, label, icon: Icon, index, reducedMotion }) => (
+  <m.div
+    initial={reducedMotion ? {} : { opacity: 0, y: 24 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.55, delay: 1.1 + index * 0.12, type: "spring", stiffness: 160, damping: 18 }}
+    className="group relative flex flex-col items-center text-center"
+  >
+    {/* Icon */}
+    <div
+      className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-primary/10 border border-primary/20
+                    flex items-center justify-center mb-2 sm:mb-3
+                    group-hover:bg-primary/20 group-hover:border-primary/40
+                    group-hover:scale-105 transition-all duration-300"
+    >
+      <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+    </div>
+
+    {/* Value */}
+    <AnimatedCounter
+      value={value}
+      className="text-xl sm:text-2xl md:text-[28px] font-black text-white leading-none tracking-tight"
+    />
+
+    {/* Label */}
+    <span className="mt-1 text-[9px] sm:text-[10px] text-white/40 uppercase tracking-[0.16em] font-semibold">
+      {label}
+    </span>
+  </m.div>
+);
+
+/* ─────────────────────────────────────────────
+   Hero Section
+   ───────────────────────────────────────────── */
+const HeroSection: React.FC = () => {
+  const { isRTL } = useLanguage();
+  const prefersReducedMotion = useReducedMotion();
+  const { data: content } = useLandingContent<HeroLandingContent>("hero");
+
+  const showStats = content?.show_stats !== false && content?.show_stats !== "false";
+
+  const needsLiveStats = useMemo(() => {
+    if (!content) return true;
+    if (!showStats) return false;
+    return !content.stats_members_value || !content.stats_lessons_value || !content.stats_success_value;
+  }, [content, showStats]);
+
+  const { data: stats } = useQuery({
+    queryKey: ["hero-stats"],
+    queryFn: fetchHeroStats,
+    staleTime: 5 * 60 * 1000,
+    enabled: needsLiveStats,
+  });
+
+  const membersValue = content?.stats_members_value
+    ? String(content.stats_members_value)
+    : formatCount(stats?.members ?? 0);
+  const lessonsValue = content?.stats_lessons_value
+    ? String(content.stats_lessons_value)
+    : formatCount(stats?.lessons ?? 0);
+  const successValue = content?.stats_success_value
+    ? `${content.stats_success_value}%`
+    : stats?.successRate
+      ? `${stats.successRate}%`
+      : "0%";
+  const coursesValue = content?.stats_courses_value
+    ? String(content.stats_courses_value)
+    : formatCount(stats?.courses ?? 0);
+
+  const displayStats = useMemo(
+    () => [
+      { key: "members", value: membersValue, label: isRTL ? "عضو" : "Members", icon: Users },
+      { key: "success", value: successValue, label: isRTL ? "نسبة النجاح" : "Success", icon: GraduationCap },
+      { key: "lessons", value: lessonsValue, label: isRTL ? "درس" : "Lessons", icon: PlayCircle },
+      { key: "courses", value: coursesValue, label: isRTL ? "دورة" : "Courses", icon: BookOpen },
     ],
-    scroll: "scroll",
-  },
+    [membersValue, lessonsValue, successValue, coursesValue, isRTL],
+  );
+
+  const anim = (dur: number, delay = 0) => (prefersReducedMotion ? { duration: 0 } : { duration: dur, delay });
+
+  const title = isRTL ? content?.title_ar || "لنقد بثقة" : content?.title_en || "Ride with Confidence";
+  const subtitle = isRTL
+    ? content?.subtitle_ar || "انطلق في رحلتك مع أفضل مدربي الدراجات النارية"
+    : content?.subtitle_en || "Start your journey with expert motorcycle instructors";
+  const ctaText = isRTL
+    ? content?.secondary_cta_ar || "استكشف الدورات"
+    : content?.secondary_cta_en || "Explore Courses";
+
+  return (
+    <LazyMotion features={domAnimation} strict>
+      <section
+        className="relative flex flex-col overflow-hidden bg-black"
+        style={{ minHeight: "100svh" }}
+        dir={isRTL ? "rtl" : "ltr"}
+      >
+        {/* ── Background Image with Ken Burns ── */}
+        <m.div
+          className="absolute inset-0 z-0"
+          initial={{ scale: 1.08 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 2.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+        >
+          <img
+            src={heroRiderBg}
+            alt=""
+            width={1920}
+            height={1080}
+            className="w-full h-full object-cover"
+            fetchPriority="high"
+            decoding="async"
+          />
+        </m.div>
+
+        {/* ── Overlay stack for depth ── */}
+        <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black via-black/60 to-black/20" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/40 via-transparent to-transparent" />
+        <div
+          className="absolute inset-0 z-[1]"
+          style={{
+            background: isRTL
+              ? "linear-gradient(to left, rgba(0,0,0,0.3), transparent 50%)"
+              : "linear-gradient(to right, rgba(0,0,0,0.3), transparent 50%)",
+          }}
+        />
+
+        {/* ── Floating Identity Icons ── */}
+        <div className="absolute inset-0 z-[2] pointer-events-none overflow-hidden hidden md:block">
+          {[
+            { Icon: Shield, x: "6%", y: "20%", size: 26, delay: 0, dur: 6.5 },
+            { Icon: Bike, x: "90%", y: "18%", size: 30, delay: 0.5, dur: 7 },
+            { Icon: Route, x: "7%", y: "70%", size: 22, delay: 1, dur: 8 },
+            { Icon: Gauge, x: "88%", y: "65%", size: 24, delay: 1.5, dur: 6.5 },
+            { Icon: Trophy, x: "4%", y: "45%", size: 20, delay: 0.8, dur: 7.5 },
+            { Icon: Compass, x: "93%", y: "42%", size: 22, delay: 1.2, dur: 6.8 },
+            { Icon: Wrench, x: "14%", y: "86%", size: 18, delay: 2, dur: 7.2 },
+            { Icon: GraduationCap, x: "82%", y: "82%", size: 20, delay: 0.3, dur: 8.2 },
+          ].map(({ Icon, x, y, size, delay, dur }, i) => (
+            <m.div
+              key={i}
+              className="absolute"
+              style={{ left: x, top: y }}
+              initial={prefersReducedMotion ? { opacity: 0.5 } : { opacity: 0, scale: 0.6 }}
+              animate={
+                prefersReducedMotion
+                  ? { opacity: 0.5 }
+                  : {
+                      opacity: [0, 0.55, 0.35, 0.55],
+                      scale: [0.85, 1, 0.92, 1],
+                      y: [0, -10, 0, 10, 0],
+                    }
+              }
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0 }
+                  : {
+                      duration: dur,
+                      repeat: Infinity,
+                      repeatType: "mirror" as const,
+                      delay,
+                      ease: "easeInOut",
+                    }
+              }
+            >
+              <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm">
+                <Icon className="text-primary/70" size={size} strokeWidth={1.5} />
+              </div>
+            </m.div>
+          ))}
+        </div>
+
+        {/* ── Main Content ── */}
+        <div
+          className="relative z-10 flex-1 flex flex-col items-center justify-center
+                        max-w-[900px] mx-auto w-full px-5 sm:px-8
+                        pt-20 sm:pt-24 pb-8 sm:pb-12 text-center"
+        >
+          {/* Badge */}
+          <m.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={anim(0.55, 0.2)}
+            className="mb-5 sm:mb-7"
+          >
+            <span
+              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full
+                             text-[10px] sm:text-xs font-bold uppercase tracking-[0.14em]
+                             bg-white/[0.06] text-primary/90
+                             border border-primary/20 backdrop-blur-sm"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+              </span>
+              {isRTL ? "أكاديمية بايكرز" : "BIKERZ Academy"}
+            </span>
+          </m.div>
+
+          {/* Title */}
+          <m.h1
+            initial={{ opacity: 0, y: 36 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={anim(0.7, 0.35)}
+            className="text-[28px] sm:text-4xl md:text-5xl lg:text-[56px]
+                       font-black leading-[1.1] tracking-tight
+                       text-white mb-4 sm:mb-5 max-w-3xl"
+          >
+            {title}
+          </m.h1>
+
+          {/* Subtitle */}
+          <m.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={anim(0.6, 0.5)}
+            className="text-[14px] sm:text-base md:text-lg
+                       text-white/55 leading-[1.7] font-normal
+                       mb-7 sm:mb-9 max-w-lg"
+          >
+            {subtitle}
+          </m.p>
+
+          {/* CTA Buttons */}
+          <m.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={anim(0.5, 0.65)}
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full sm:w-auto"
+          >
+            <Link to="/courses" className="sm:flex-none">
+              <Button
+                variant="hero"
+                size="default"
+                className="w-full group gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4
+                           text-xs sm:text-sm font-bold uppercase tracking-wide
+                           shadow-[0_4px_24px_rgba(232,66,10,0.3)]
+                           hover:shadow-[0_6px_32px_rgba(232,66,10,0.45)]
+                           transition-shadow duration-300"
+              >
+                <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current transition-transform group-hover:scale-110" />
+                {ctaText}
+              </Button>
+            </Link>
+            <Link to="/join-community" className="sm:flex-none">
+              <Button
+                variant="heroOutline"
+                size="default"
+                className="w-full group gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4
+                           text-xs sm:text-sm font-bold uppercase tracking-wide
+                           border-white/15 text-white/70
+                           hover:bg-white/[0.06] hover:border-white/25 hover:text-white
+                           transition-all duration-300"
+              >
+                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:scale-110" />
+                {isRTL ? "انضم لمجتمع بايكرز" : "Join Bikerz Community"}
+              </Button>
+            </Link>
+          </m.div>
+        </div>
+
+        {/* ── Stats Bar — anchored to bottom ── */}
+        {showStats && (
+          <m.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={anim(0.6, 0.85)}
+            className="relative z-10 w-full"
+          >
+            <div className="max-w-[780px] mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
+              <div
+                className="grid grid-cols-4 gap-1 sm:gap-0
+                              rounded-2xl sm:rounded-3xl overflow-hidden
+                              bg-white/[0.04] border border-white/[0.07]
+                              backdrop-blur-md
+                              divide-x divide-white/[0.06]
+                              py-4 sm:py-6"
+              >
+                {displayStats.map((stat, i) => (
+                  <StatCard
+                    key={stat.key}
+                    value={stat.value}
+                    label={stat.label}
+                    icon={stat.icon}
+                    index={i}
+                    reducedMotion={prefersReducedMotion}
+                  />
+                ))}
+              </div>
+            </div>
+          </m.div>
+        )}
+
+        {/* ── Scroll hint ── */}
+        <m.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={anim(0.5, 1.5)}
+          className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10
+                     flex flex-col items-center gap-1"
+        >
+          <div className="w-[18px] h-7 rounded-full border border-white/15 flex justify-center pt-[5px]">
+            <m.span
+              className="w-[2px] h-2 bg-primary rounded-full"
+              animate={{ y: [0, 8, 0], opacity: [1, 0, 0] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: "easeIn" }}
+            />
+          </div>
+          <span className="text-[7px] uppercase tracking-[0.2em] text-white/20 font-semibold">
+            {isRTL ? "مرّر" : "scroll"}
+          </span>
+        </m.div>
+      </section>
+    </LazyMotion>
+  );
 };
 
-/* ─── Animated counter ─── */
-function AnimCount({ text, delay = 0 }) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), delay);
-    return () => clearTimeout(t);
-  }, [delay]);
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(18px)",
-        transition: "opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1)",
-      }}
-    >
-      {text}
-    </span>
-  );
-}
-
-/* ─── Reveal wrapper ─── */
-function Reveal({ children, delay = 0, y = 30, x = 0, style = {}, className = "" }) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), delay);
-    return () => clearTimeout(t);
-  }, [delay]);
-  return (
-    <div
-      className={className}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translate(0,0)" : `translate(${x}px,${y}px)`,
-        transition: `opacity .8s cubic-bezier(.22,1,.36,1) 0s, transform .8s cubic-bezier(.22,1,.36,1) 0s`,
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-export default function HeroSection() {
-  const c = CONTENT.en;
-  const [imgLoaded, setImgLoaded] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@400;500;600&display=swap');
-
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        .hero-root {
-          --primary: ${PRIMARY};
-          --primary-20: ${PRIMARY_20};
-          --primary-40: ${PRIMARY_40};
-          position: relative;
-          min-height: 100svh;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          background: #000;
-          font-family: 'DM Sans', sans-serif;
-          color: #fff;
-        }
-
-        /* ── Background image ── */
-        .hero-bg {
-          position: absolute; inset: 0; z-index: 0;
-          transform: scale(1.08);
-          animation: heroZoom 3s cubic-bezier(.25,.46,.45,.94) forwards;
-        }
-        @keyframes heroZoom { to { transform: scale(1); } }
-
-        .hero-bg img {
-          width: 100%; height: 100%;
-          object-fit: cover; object-position: center;
-          display: block;
-        }
-
-        /* ── Overlays ── */
-        .hero-overlay-bottom {
-          position: absolute; inset: 0; z-index: 1;
-          background: linear-gradient(
-            to top,
-            rgba(0,0,0,.98) 0%,
-            rgba(0,0,0,.72) 22%,
-            rgba(0,0,0,.25) 50%,
-            transparent 75%
-          );
-        }
-        .hero-overlay-top {
-          position: absolute; inset: 0; z-index: 1;
-          background: linear-gradient(to bottom, rgba(0,0,0,.55) 0%, transparent 25%);
-        }
-        /* Side vignette for depth */
-        .hero-overlay-vignette {
-          position: absolute; inset: 0; z-index: 1;
-          background: radial-gradient(ellipse 120% 100% at 80% 50%, transparent 50%, rgba(0,0,0,.5) 100%);
-        }
-
-        /* ── Letterbox bars ── */
-        .letterbox { position: absolute; left: 0; right: 0; height: 52px; background: #000; z-index: 20; }
-        .letterbox-top { top: 0; }
-        .letterbox-bottom { bottom: 0; }
-
-        /* ── Navbar ── */
-        .hero-nav {
-          position: absolute; top: 0; left: 0; right: 0; z-index: 30;
-          display: flex; align-items: center; justify-content: space-between;
-          height: 52px; padding: 0 clamp(20px, 4vw, 48px);
-        }
-        .nav-logo {
-          display: flex; align-items: center; gap: 10px;
-          text-decoration: none;
-        }
-        .nav-logo-icon {
-          width: 32px; height: 32px; border-radius: 8px;
-          background: var(--primary);
-          display: flex; align-items: center; justify-content: center;
-          flex-shrink: 0;
-        }
-        .nav-logo-text {
-          font-family: 'Barlow Condensed', sans-serif;
-          font-weight: 900; font-size: 17px;
-          letter-spacing: .18em; text-transform: uppercase;
-          color: #fff;
-        }
-        .nav-logo-text span { color: var(--primary); }
-
-        .nav-links {
-          display: flex; align-items: center; gap: 2px;
-        }
-        .nav-link {
-          background: none; border: none; cursor: pointer;
-          padding: 6px 16px;
-          font-size: 10.5px; font-weight: 600; text-transform: uppercase;
-          letter-spacing: .14em; color: rgba(255,255,255,.4);
-          transition: color .15s;
-          font-family: 'DM Sans', sans-serif;
-        }
-        .nav-link:hover { color: #fff; }
-
-        .nav-cta {
-          font-size: 10.5px; font-weight: 700; text-transform: uppercase;
-          letter-spacing: .14em; color: var(--primary);
-          border: 1px solid rgba(232,66,10,.35);
-          background: rgba(232,66,10,.06);
-          padding: 7px 20px; border-radius: 6px;
-          cursor: pointer; text-decoration: none;
-          font-family: 'DM Sans', sans-serif;
-          transition: background .15s, border-color .15s;
-        }
-        .nav-cta:hover {
-          background: rgba(232,66,10,.16);
-          border-color: rgba(232,66,10,.7);
-        }
-
-        /* ── Mobile menu toggle ── */
-        .menu-toggle {
-          display: none;
-          background: none; border: none; cursor: pointer; padding: 6px;
-        }
-        .menu-toggle span {
-          display: block; width: 22px; height: 2px;
-          background: rgba(255,255,255,.6); border-radius: 1px;
-          transition: transform .25s, opacity .2s;
-        }
-        .menu-toggle span + span { margin-top: 5px; }
-        .menu-toggle.open span:nth-child(1) { transform: rotate(45deg) translate(2.5px, 5px); }
-        .menu-toggle.open span:nth-child(2) { opacity: 0; }
-        .menu-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(2.5px, -5px); }
-
-        /* ── Main content ── */
-        .hero-content {
-          position: relative; z-index: 10;
-          margin-top: auto;
-          padding: 0 clamp(20px, 4vw, 48px);
-          padding-bottom: clamp(90px, 12vh, 140px);
-          max-width: 720px;
-        }
-
-        .eyebrow {
-          display: flex; align-items: center; gap: 12px;
-          margin-bottom: 20px;
-        }
-        .eyebrow-line {
-          width: 32px; height: 2px; border-radius: 1px;
-          background: var(--primary);
-          flex-shrink: 0;
-        }
-        .eyebrow-text {
-          font-size: 10px; font-weight: 600;
-          text-transform: uppercase; letter-spacing: .22em;
-          color: rgba(255,255,255,.35);
-        }
-
-        .hero-title {
-          font-family: 'Barlow Condensed', 'Impact', sans-serif;
-          font-weight: 900; text-transform: uppercase;
-          line-height: .88; letter-spacing: -2px;
-          margin-bottom: 24px;
-          font-size: clamp(72px, 14vw, 150px);
-        }
-        .hero-title-outline {
-          display: block;
-          -webkit-text-stroke: 1.5px rgba(255,255,255,.2);
-          color: transparent;
-        }
-        .hero-title-solid {
-          display: block;
-          color: var(--primary);
-          position: relative;
-        }
-        /* Glow behind solid text */
-        .hero-title-solid::after {
-          content: attr(data-text);
-          position: absolute; left: 0; top: 0;
-          color: var(--primary);
-          filter: blur(40px);
-          opacity: .35;
-          z-index: -1;
-        }
-
-        .hero-subtitle {
-          font-size: clamp(13.5px, 1.6vw, 16px);
-          font-weight: 400; color: rgba(255,255,255,.45);
-          line-height: 1.75;
-          max-width: 400px;
-          margin-bottom: 36px;
-          padding-left: 16px;
-          border-left: 2px solid var(--primary-40);
-        }
-
-        /* ── CTA ── */
-        .hero-ctas {
-          display: flex; align-items: center; gap: 24px;
-          flex-wrap: wrap;
-        }
-        .cta-primary {
-          display: inline-flex; align-items: center; gap: 10px;
-          background: var(--primary); color: #fff;
-          font-family: 'Barlow Condensed', sans-serif;
-          font-weight: 700; font-size: 13px;
-          text-transform: uppercase; letter-spacing: .14em;
-          padding: 14px 32px; border-radius: 6px;
-          border: none; cursor: pointer;
-          text-decoration: none;
-          transition: transform .15s, box-shadow .25s;
-          box-shadow: 0 0 0 0 rgba(232,66,10,0);
-        }
-        .cta-primary:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 30px rgba(232,66,10,.35);
-        }
-        .cta-primary:active { transform: scale(.97); }
-
-        .cta-secondary {
-          display: inline-flex; align-items: center; gap: 8px;
-          color: rgba(255,255,255,.5);
-          font-family: 'Barlow Condensed', sans-serif;
-          font-weight: 700; font-size: 12px;
-          text-transform: uppercase; letter-spacing: .14em;
-          background: none; border: none; cursor: pointer;
-          text-decoration: none;
-          border-bottom: 1px solid rgba(255,255,255,.15);
-          padding-bottom: 2px;
-          transition: color .15s, border-color .15s;
-        }
-        .cta-secondary:hover {
-          color: #fff; border-color: rgba(255,255,255,.5);
-        }
-
-        /* ── Stats ── */
-        .hero-stats {
-          position: absolute;
-          bottom: clamp(80px, 10vh, 120px);
-          right: clamp(20px, 4vw, 48px);
-          z-index: 10;
-          display: flex; gap: 0;
-        }
-        .stat-item {
-          text-align: center;
-          padding: 0 clamp(16px, 2.2vw, 28px);
-          border-right: 1px solid rgba(255,255,255,.08);
-        }
-        .stat-item:last-child { border-right: none; }
-        .stat-value {
-          font-family: 'Barlow Condensed', sans-serif;
-          font-weight: 900; font-size: clamp(26px, 3.5vw, 38px);
-          color: var(--primary);
-          line-height: 1;
-        }
-        .stat-label {
-          font-size: 9px; font-weight: 600;
-          text-transform: uppercase; letter-spacing: .18em;
-          color: rgba(255,255,255,.25);
-          margin-top: 4px;
-        }
-
-        /* ── Scroll indicator ── */
-        .scroll-indicator {
-          position: absolute;
-          bottom: 56px; left: 50%; transform: translateX(-50%);
-          z-index: 10;
-          display: flex; flex-direction: column; align-items: center; gap: 6px;
-        }
-        .scroll-capsule {
-          width: 18px; height: 28px;
-          border: 1px solid rgba(255,255,255,.18);
-          border-radius: 100px;
-          display: flex; justify-content: center;
-          padding-top: 5px;
-          overflow: hidden;
-        }
-        .scroll-dot {
-          width: 2px; height: 8px; border-radius: 1px;
-          background: var(--primary);
-          animation: scrollPulse 1.8s ease-in infinite;
-        }
-        @keyframes scrollPulse {
-          0%   { transform: translateY(0); opacity: 1; }
-          50%  { transform: translateY(10px); opacity: 0; }
-          100% { transform: translateY(0); opacity: 0; }
-        }
-        .scroll-text {
-          font-size: 8px; font-weight: 600;
-          text-transform: uppercase; letter-spacing: .22em;
-          color: rgba(255,255,255,.18);
-        }
-
-        /* ── Decorative vertical line ── */
-        .deco-line {
-          position: absolute;
-          right: clamp(42px, 6vw, 80px);
-          top: 52px; bottom: 52px;
-          width: 1px;
-          background: linear-gradient(
-            to bottom,
-            transparent 0%,
-            rgba(255,255,255,.06) 30%,
-            rgba(255,255,255,.06) 70%,
-            transparent 100%
-          );
-          z-index: 5;
-        }
-
-        /* ── Responsive ── */
-        @media (max-width: 900px) {
-          .nav-links { display: none; }
-          .menu-toggle { display: flex; flex-direction: column; }
-          .hero-stats {
-            position: relative;
-            bottom: auto; right: auto;
-            padding: 0 clamp(20px, 4vw, 48px);
-            padding-bottom: clamp(80px, 10vh, 120px);
-            margin-top: 32px;
-            justify-content: flex-start;
-          }
-          .hero-content {
-            padding-bottom: 0;
-          }
-          .deco-line { display: none; }
-        }
-
-        @media (max-width: 480px) {
-          .hero-title { letter-spacing: -1px; }
-          .stat-item { padding: 0 14px; }
-          .hero-subtitle { max-width: 100%; }
-          .letterbox { height: 40px; }
-          .hero-nav { height: 40px; }
-          .scroll-indicator { bottom: 44px; }
-        }
-
-        /* ── Mobile menu overlay ── */
-        .mobile-menu {
-          position: fixed; inset: 0; z-index: 25;
-          background: rgba(0,0,0,.95);
-          backdrop-filter: blur(20px);
-          display: flex; flex-direction: column;
-          align-items: center; justify-content: center; gap: 8px;
-          opacity: 0; pointer-events: none;
-          transition: opacity .25s;
-        }
-        .mobile-menu.open { opacity: 1; pointer-events: all; }
-        .mobile-menu a, .mobile-menu button {
-          background: none; border: none; cursor: pointer;
-          font-family: 'Barlow Condensed', sans-serif;
-          font-weight: 700; font-size: 28px;
-          text-transform: uppercase; letter-spacing: .1em;
-          color: rgba(255,255,255,.5);
-          padding: 12px 24px; text-decoration: none;
-          transition: color .15s;
-        }
-        .mobile-menu a:hover, .mobile-menu button:hover { color: var(--primary); }
-      `}</style>
-
-      <section className="hero-root">
-        {/* BG Image */}
-        <div className="hero-bg">
-          <img
-            src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=1920&q=85&auto=format"
-            alt=""
-            onLoad={() => setImgLoaded(true)}
-            loading="eager"
-            fetchpriority="high"
-          />
-        </div>
-
-        {/* Overlays */}
-        <div className="hero-overlay-bottom" />
-        <div className="hero-overlay-top" />
-        <div className="hero-overlay-vignette" />
-
-        {/* Letterbox */}
-        <div className="letterbox letterbox-top" />
-        <div className="letterbox letterbox-bottom" />
-
-        {/* Decorative line */}
-        <div className="deco-line" />
-
-        {/* Nav */}
-        <Reveal delay={100} y={0} style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 30 }}>
-          <nav className="hero-nav">
-            <a className="nav-logo" href="#">
-              <div className="nav-logo-icon">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#fff"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-              </div>
-              <span className="nav-logo-text">
-                BIKER<span>Z</span>
-              </span>
-            </a>
-
-            <div className="nav-links">
-              {c.navLinks.map((l) => (
-                <button key={l} className="nav-link">
-                  {l}
-                </button>
-              ))}
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <a className="nav-cta" href="#">
-                {c.startNow}
-              </a>
-              <button
-                className={`menu-toggle ${menuOpen ? "open" : ""}`}
-                onClick={() => setMenuOpen(!menuOpen)}
-                aria-label="Toggle menu"
-              >
-                <span />
-                <span />
-                <span />
-              </button>
-            </div>
-          </nav>
-        </Reveal>
-
-        {/* Mobile menu */}
-        <div className={`mobile-menu ${menuOpen ? "open" : ""}`}>
-          {c.navLinks.map((l) => (
-            <button key={l} onClick={() => setMenuOpen(false)}>
-              {l}
-            </button>
-          ))}
-          <a href="#" style={{ color: PRIMARY, marginTop: 16 }} onClick={() => setMenuOpen(false)}>
-            {c.startNow}
-          </a>
-        </div>
-
-        {/* Main content */}
-        <div className="hero-content">
-          <Reveal delay={300} x={-16} y={0}>
-            <div className="eyebrow">
-              <span className="eyebrow-line" />
-              <span className="eyebrow-text">{c.eyebrow}</span>
-            </div>
-          </Reveal>
-
-          <Reveal delay={420} y={36}>
-            <h1 className="hero-title">
-              <span className="hero-title-outline">{c.titleLine1}</span>
-              <span className="hero-title-solid" data-text={c.titleLine2}>
-                {c.titleLine2}
-              </span>
-            </h1>
-          </Reveal>
-
-          <Reveal delay={580}>
-            <p className="hero-subtitle">{c.subtitle}</p>
-          </Reveal>
-
-          <Reveal delay={700} y={16}>
-            <div className="hero-ctas">
-              <a className="cta-primary" href="#">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" stroke="none">
-                  <polygon points="5,3 19,12 5,21" />
-                </svg>
-                {c.cta}
-              </a>
-              <a className="cta-secondary" href="#">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-                {c.secondaryCta}
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </a>
-            </div>
-          </Reveal>
-        </div>
-
-        {/* Stats */}
-        <Reveal delay={900} y={0} x={0} className="hero-stats">
-          {c.stats.map((s, i) => (
-            <div className="stat-item" key={s.label}>
-              <div className="stat-value">
-                <AnimCount text={s.value} delay={1000 + i * 140} />
-              </div>
-              <p className="stat-label">{s.label}</p>
-            </div>
-          ))}
-        </Reveal>
-
-        {/* Scroll indicator */}
-        <Reveal delay={1300} className="scroll-indicator">
-          <div className="scroll-capsule">
-            <div className="scroll-dot" />
-          </div>
-          <span className="scroll-text">{c.scroll}</span>
-        </Reveal>
-      </section>
-    </>
-  );
-}
+export default HeroSection;
