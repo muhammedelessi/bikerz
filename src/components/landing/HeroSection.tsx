@@ -207,17 +207,6 @@ const HeroSection: React.FC = () => {
 
         <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 md:py-16 flex flex-col items-center text-center">
           {/* Badge */}
-          <m.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={anim(0.6, 0.3)}
-            className="mb-4"
-          >
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              {isRTL ? "أكاديمية بايكرز" : "BIKERZ Academy"}
-            </span>
-          </m.div>
 
           {/* Title */}
           <m.h1
