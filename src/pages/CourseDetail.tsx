@@ -711,10 +711,6 @@ const CourseDetail: React.FC = () => {
           </div>
 
           <div className="page-container relative z-10 pt-1 sm:pt-3 pb-6 lg:pb-16 px-4 sm:px-6">
-            <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-1.5 lg:mb-4 text-xs sm:text-sm group/back">
-              <BackIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 me-1 transition-transform group-hover/back:-translate-x-0.5 rtl:group-hover/back:translate-x-0.5" />
-              {t('courses.backToCourses')}
-            </Link>
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-8 lg:gap-10">
               {/* Left: Video (desktop) + Course Info */}
