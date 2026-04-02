@@ -289,7 +289,7 @@ const CourseDetail: React.FC = () => {
           base_rating, base_review_count,
           chapters (
             id, is_published,
-            lessons ( id, duration_minutes, is_published )
+            lessons ( id, duration_minutes, is_published, is_free )
           )
         `)
         .eq('is_published', true)
@@ -300,17 +300,19 @@ const CourseDetail: React.FC = () => {
       return (data || []).map((c: any) => {
         let lessonCount = 0;
         let totalMinutes = 0;
+        let freeLessonCount = 0;
         (c.chapters || []).forEach((ch: any) => {
           if (ch.is_published) {
             (ch.lessons || []).forEach((l: any) => {
               if (l.is_published) {
                 lessonCount++;
                 totalMinutes += l.duration_minutes || 0;
+                if (l.is_free) freeLessonCount++;
               }
             });
           }
         });
-        return { ...c, lessonCount, totalMinutes };
+        return { ...c, lessonCount, totalMinutes, freeLessonCount };
       });
     },
     enabled: !!id,
