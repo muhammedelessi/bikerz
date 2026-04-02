@@ -988,9 +988,6 @@ const AdminTrainers: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* View Profile Dialog */}
-      <TrainerProfileDialog trainer={viewProfileTrainer} open={!!viewProfileTrainer} onOpenChange={() => setViewProfileTrainer(null)} />
     </AdminLayout>
   );
 };
