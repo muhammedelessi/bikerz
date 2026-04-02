@@ -205,7 +205,7 @@ const ResetPassword: React.FC = () => {
                     </div>
                   </div>
 
-                  <Button type="submit" variant="cta" className="w-full h-12" disabled={isLoading}>
+                  <Button type="submit" variant="cta" className="w-full h-12" disabled={isLoading || password.length < 6 || password !== confirmPassword}>
                     {isLoading ? (
                       <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                     ) : (
