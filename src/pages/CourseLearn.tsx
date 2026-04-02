@@ -1246,9 +1246,11 @@ const CourseLearn: React.FC = () => {
                     <div 
                       className="prose dark:prose-invert max-w-none mb-6 sm:mb-8 text-sm sm:text-base text-muted-foreground"
                       dangerouslySetInnerHTML={{ 
-                        __html: isRTL && currentLesson.description_ar 
-                          ? currentLesson.description_ar 
-                          : currentLesson.description 
+                        __html: DOMPurify.sanitize(
+                          isRTL && currentLesson.description_ar 
+                            ? currentLesson.description_ar 
+                            : currentLesson.description ?? ''
+                        )
                       }}
                     />
                   )}
