@@ -377,7 +377,7 @@ const AdminUsers: React.FC = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{isRTL ? 'الكل' : 'All'}</SelectItem>
+                <SelectItem value="all">{isRTL ? 'حالة الاشتراك' : 'Enrollment Status'}</SelectItem>
                 <SelectItem value="enrolled">{isRTL ? 'مشتركين بدورات' : 'Enrolled'}</SelectItem>
                 <SelectItem value="not_enrolled">{isRTL ? 'غير مشتركين' : 'Not Enrolled'}</SelectItem>
               </SelectContent>
