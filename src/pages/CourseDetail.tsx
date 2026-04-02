@@ -828,6 +828,23 @@ const CourseDetail: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Free Videos Banner — for non-enrolled visitors */}
+                    {!isEnrolled && totalFreeLessons > 0 && (
+                      <div className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-green-500/10 border border-green-500/20 mb-3 sm:mb-0">
+                        <div className="w-9 h-9 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                          <Gift className="w-4.5 h-4.5 text-green-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-green-600 dark:text-green-400">
+                            {t('courseDetail.freeVideosIncluded', { count: totalFreeLessons })}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {t('courseDetail.noAccountNeeded')}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Description */}
                     {courseDescription && (
                       <p className="text-sm sm:text-base lg:text-base text-muted-foreground mb-4 sm:mb-8 leading-relaxed max-w-2xl">
