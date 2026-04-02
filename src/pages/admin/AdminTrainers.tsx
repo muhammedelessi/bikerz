@@ -228,7 +228,7 @@ const AdminTrainers: React.FC = () => {
   const [trainingServiceInputs, setTrainingServiceInputs] = useState<Record<string, string>>({});
   const [isOtherCity, setIsOtherCity] = useState(false);
   const [assignedTrainings, setAssignedTrainings] = useState<TrainerCourse[]>([]);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  
   const [addStudentTrainerId, setAddStudentTrainerId] = useState<string | null>(null);
   const [addReviewTrainerId, setAddReviewTrainerId] = useState<string | null>(null);
   const [viewProfileTrainer, setViewProfileTrainer] = useState<Trainer | null>(null);
