@@ -901,13 +901,6 @@ const AdminTrainers: React.FC = () => {
                             </div>
                           </TableCell>
                         </TableRow>
-                        {isExpanded && (
-                          <TableRow className="hover:bg-transparent">
-                            <TableCell colSpan={9} className="p-0">
-                              <TrainerExpandedRow trainer={t} isRTL={isRTL} />
-                            </TableCell>
-                          </TableRow>
-                        )}
                       </React.Fragment>
                     );
                   })}
