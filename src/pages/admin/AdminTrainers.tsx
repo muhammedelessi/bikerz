@@ -36,6 +36,8 @@ interface Trainer {
   country: string;
   city: string;
   bike_type: string;
+  motorbike_brand: string;
+  license_type: string;
   years_of_experience: number;
   services: string[];
   status: string;
