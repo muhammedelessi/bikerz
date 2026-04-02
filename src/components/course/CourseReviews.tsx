@@ -40,7 +40,7 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
 
   // Fetch reviews
   const { data: reviews = [], isLoading } = useQuery({
-    queryKey: ['course-reviews', courseId],
+    queryKey: ['course-reviews', courseId, isRTL],
     queryFn: async () => {
       // Fetch reviews
       const { data: reviewsData, error } = await supabase
