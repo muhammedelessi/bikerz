@@ -635,7 +635,7 @@ const CourseDetail: React.FC = () => {
                 const ytEmbedUrl = getYouTubeEmbedUrl(course.preview_video_url);
                 if (ytEmbedUrl) {
                   return (
-                    <div className="aspect-video w-full rounded-2xl overflow-hidden">
+                    <div className="aspect-video w-full overflow-hidden">
                       <iframe
                         width="100%"
                         height="100%"
@@ -692,8 +692,8 @@ const CourseDetail: React.FC = () => {
           </div>
 
           <div className="page-container relative z-10 pt-1 sm:pt-3 pb-6 lg:pb-16 px-4 sm:px-6">
-            <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-1.5 lg:mb-4 text-xs sm:text-sm">
-              <BackIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 me-1" />
+            <Link to="/courses" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-1.5 lg:mb-4 text-xs sm:text-sm group/back">
+              <BackIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 me-1 transition-transform group-hover/back:-translate-x-0.5 rtl:group-hover/back:translate-x-0.5" />
               {t('courses.backToCourses')}
             </Link>
 
@@ -708,7 +708,7 @@ const CourseDetail: React.FC = () => {
                         const ytEmbedUrl = getYouTubeEmbedUrl(course.preview_video_url);
                         if (ytEmbedUrl) {
                           return (
-                            <div className="aspect-video w-full rounded-2xl overflow-hidden">
+                            <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-lg ring-1 ring-border/50">
                               <iframe
                                 width="100%"
                                 height="100%"
@@ -722,7 +722,7 @@ const CourseDetail: React.FC = () => {
                           );
                         }
                         return (
-                          <div className="aspect-video w-full rounded-2xl overflow-hidden relative">
+                          <div className="aspect-video w-full rounded-2xl overflow-hidden relative shadow-lg ring-1 ring-border/50">
                             <BunnyVideoEmbed
                               videoUrl={course.preview_video_url}
                               title={t('courseDetail.courseIntroduction')}
@@ -746,7 +746,7 @@ const CourseDetail: React.FC = () => {
                         );
                       })()
                     ) : course.thumbnail_url ? (
-                      <div className="relative rounded-2xl overflow-hidden">
+                      <div className="relative rounded-2xl overflow-hidden shadow-lg ring-1 ring-border/50">
                         <picture>
                           <source srcSet={course.thumbnail_url} type="image/webp" />
                           <img
@@ -764,24 +764,24 @@ const CourseDetail: React.FC = () => {
                   </div>
 
                   {/* Course Info — directly below video */}
-                  <div className="md:mt-6">
+                  <div className="md:mt-6 space-y-3 sm:space-y-4">
                     {/* Badges */}
-                    <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
-                      {course.price === 0 && (
+                    {course.price === 0 && (
+                      <div className="flex flex-wrap gap-2">
                         <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold border border-primary/30">
                           {t('common.free')}
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     {/* Title */}
-                    <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-foreground mb-2 sm:mb-4 leading-tight">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-foreground leading-tight">
                       {courseTitle}
                     </h1>
 
                     {/* Rating Summary */}
                     {reviewStats && reviewStats.count > 0 && (
-                      <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                      <div className="flex items-center gap-2">
                         <StarRating rating={reviewStats.avg} size="sm" />
                         <span className="text-sm font-semibold text-foreground">{reviewStats.avg.toFixed(1)}</span>
                         <span className="text-xs text-muted-foreground">
@@ -790,51 +790,38 @@ const CourseDetail: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Stats Row */}
-                    <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-2 sm:gap-y-3 text-xs sm:text-sm mb-3 sm:mb-0">
-                      <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
-                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/15 flex items-center justify-center">
-                          <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
-                        </div>
-                        <div>
-                          <span className="font-semibold">{totalLessons}</span>
-                          <span className="text-muted-foreground ms-1">{t('courseDetail.lessons')}</span>
-                        </div>
+                    {/* Stats Row — compact pill layout */}
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/60 text-xs sm:text-sm">
+                        <BookOpen className="w-3.5 h-3.5 text-primary" />
+                        <span className="font-semibold text-foreground">{totalLessons}</span>
+                        <span className="text-muted-foreground">{t('courseDetail.lessons')}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
-                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-secondary/30 flex items-center justify-center">
-                          <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-secondary-foreground" />
-                        </div>
-                        <div>
-                          <span className="font-semibold">{formatDuration(totalDurationMinutes)}</span>
-                          <span className="text-muted-foreground ms-1">{t('courseDetail.total')}</span>
-                        </div>
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/60 text-xs sm:text-sm">
+                        <Clock className="w-3.5 h-3.5 text-secondary-foreground" />
+                        <span className="font-semibold text-foreground">{formatDuration(totalDurationMinutes)}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
-                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-accent/30 flex items-center justify-center">
-                          <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent-foreground" />
-                        </div>
-                        <div>
-                          <span className="font-semibold">{chapters.length}</span>
-                          <span className="text-muted-foreground ms-1">{t('courseDetail.chapters')}</span>
-                        </div>
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/60 text-xs sm:text-sm">
+                        <Layers className="w-3.5 h-3.5 text-accent-foreground" />
+                        <span className="font-semibold text-foreground">{chapters.length}</span>
+                        <span className="text-muted-foreground">{t('courseDetail.chapters')}</span>
                       </div>
-                      <span className="hidden sm:inline text-border">|</span>
-                      <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
-                        <Infinity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
+                      <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/60 text-xs sm:text-sm">
+                        <Infinity className="w-3.5 h-3.5 text-primary" />
                         <span className="text-muted-foreground">{t('courseDetail.lifetimeAccess')}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
-                        <MonitorPlay className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
-                        <span className="text-muted-foreground">{t('courseDetail.onlineCourse')}</span>
                       </div>
                     </div>
 
                     {/* Free Videos Banner — for non-enrolled visitors */}
                     {!isEnrolled && totalFreeLessons > 0 && (
-                      <div className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-green-500/10 border border-green-500/20 mb-3 sm:mb-0">
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-green-500/10 border border-green-500/20"
+                      >
                         <div className="w-9 h-9 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                          <Gift className="w-4.5 h-4.5 text-green-500" />
+                          <Gift className="w-4 h-4 text-green-500" />
                         </div>
                         <div>
                           <p className="text-sm font-bold text-green-600 dark:text-green-400">
@@ -844,12 +831,12 @@ const CourseDetail: React.FC = () => {
                             {t('courseDetail.noAccountNeeded')}
                           </p>
                         </div>
-                      </div>
+                      </motion.div>
                     )}
 
                     {/* Description */}
                     {courseDescription && (
-                      <p className="text-sm sm:text-base lg:text-base text-muted-foreground mb-4 sm:mb-8 leading-relaxed max-w-2xl">
+                      <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-2xl">
                         {courseDescription}
                       </p>
                     )}
