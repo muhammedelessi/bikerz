@@ -111,6 +111,10 @@ const AdminUsers: React.FC = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [newRole, setNewRole] = useState<string>('student');
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [passwordUser, setPasswordUser] = useState<UserWithDetails | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   // Fetch users with roles
   const { data: users = [], isLoading } = useQuery({
@@ -505,24 +509,14 @@ const AdminUsers: React.FC = () => {
                               {t('admin.users.manageRoles')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={async () => {
-                                if (!user.email) {
-                                  toast.error(isRTL ? 'لا يوجد بريد إلكتروني لهذا المستخدم' : 'No email found for this user');
-                                  return;
-                                }
-                                try {
-                                  const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-                                    redirectTo: `${window.location.origin}/reset-password`,
-                                  });
-                                  if (error) throw error;
-                                  toast.success(isRTL ? `تم إرسال رابط إعادة تعيين كلمة المرور إلى ${user.email}` : `Password reset link sent to ${user.email}`);
-                                } catch (err: any) {
-                                  toast.error(err.message || (isRTL ? 'فشل إرسال رابط إعادة التعيين' : 'Failed to send reset link'));
-                                }
+                              onClick={() => {
+                                setPasswordUser(user);
+                                setNewPassword('');
+                                setIsPasswordDialogOpen(true);
                               }}
                             >
                               <KeyRound className="w-4 h-4 me-2" />
-                              {isRTL ? 'إعادة تعيين كلمة المرور' : 'Reset Password'}
+                              {isRTL ? 'تغيير كلمة المرور' : 'Change Password'}
                             </DropdownMenuItem>
                             <DropdownMenuItem>
                               <Mail className="w-4 h-4 me-2" />
@@ -689,6 +683,60 @@ const AdminUsers: React.FC = () => {
               disabled={addRoleMutation.isPending}
             >
               {addRoleMutation.isPending ? t('admin.users.adding') : t('admin.users.addRole')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{isRTL ? 'تغيير كلمة المرور' : 'Change Password'}</DialogTitle>
+            <DialogDescription>
+              {isRTL
+                ? `تغيير كلمة المرور للمستخدم: ${passwordUser?.full_name || passwordUser?.email || ''}`
+                : `Change password for: ${passwordUser?.full_name || passwordUser?.email || ''}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{isRTL ? 'كلمة المرور الجديدة' : 'New Password'}</Label>
+              <Input
+                type="text"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder={isRTL ? 'أدخل كلمة المرور الجديدة (6 أحرف على الأقل)' : 'Enter new password (min 6 characters)'}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
+              {isRTL ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button
+              disabled={isChangingPassword || newPassword.length < 6}
+              onClick={async () => {
+                if (!passwordUser) return;
+                setIsChangingPassword(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke('admin-update-password', {
+                    body: { user_id: passwordUser.user_id, new_password: newPassword },
+                  });
+                  if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
+                  toast.success(isRTL ? 'تم تغيير كلمة المرور بنجاح' : 'Password changed successfully');
+                  setIsPasswordDialogOpen(false);
+                } catch (err: any) {
+                  toast.error(err.message || (isRTL ? 'فشل تغيير كلمة المرور' : 'Failed to change password'));
+                } finally {
+                  setIsChangingPassword(false);
+                }
+              }}
+            >
+              {isChangingPassword
+                ? (isRTL ? 'جاري التغيير...' : 'Changing...')
+                : (isRTL ? 'تغيير كلمة المرور' : 'Change Password')}
             </Button>
           </DialogFooter>
         </DialogContent>
