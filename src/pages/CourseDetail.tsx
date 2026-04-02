@@ -385,6 +385,7 @@ const CourseDetail: React.FC = () => {
 
   // Calculations
   const totalLessons = chapters.reduce((acc, ch) => acc + ch.lessons.length, 0);
+  const totalFreeLessons = chapters.reduce((acc, ch) => acc + ch.lessons.filter(l => l.is_free).length, 0);
   const completedLessons = lessonProgress.filter(lp => lp.is_completed).length;
   const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
   const isEnrolled = !!enrollment;
