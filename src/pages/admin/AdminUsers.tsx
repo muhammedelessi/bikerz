@@ -111,6 +111,10 @@ const AdminUsers: React.FC = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [newRole, setNewRole] = useState<string>('student');
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [passwordUser, setPasswordUser] = useState<UserWithDetails | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   // Fetch users with roles
   const { data: users = [], isLoading } = useQuery({
