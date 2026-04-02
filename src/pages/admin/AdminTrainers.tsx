@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +22,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Star, Upload, X, ArrowLeft, ArrowRight, Users, Bike, MapPin, Clock, AlertTriangle, TrendingUp, Eye } from 'lucide-react';
-import TrainerProfileDialog from '@/components/admin/TrainerProfileDialog';
 import BilingualInput from '@/components/admin/content/BilingualInput';
 import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
 import { format } from 'date-fns';
@@ -220,6 +220,7 @@ const AddReviewDialog: React.FC<{
 const AdminTrainers: React.FC = () => {
   const { isRTL } = useLanguage();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -233,7 +234,7 @@ const AdminTrainers: React.FC = () => {
   
   const [addStudentTrainerId, setAddStudentTrainerId] = useState<string | null>(null);
   const [addReviewTrainerId, setAddReviewTrainerId] = useState<string | null>(null);
-  const [viewProfileTrainer, setViewProfileTrainer] = useState<Trainer | null>(null);
+  
 
   const [isOtherBikeType, setIsOtherBikeType] = useState(false);
   const defaultForm = { name_ar: '', name_en: '', bio_ar: '', bio_en: '', country: '', city: '', bike_type: '', motorbike_brand: '', license_type: '', years_of_experience: 0, profit_ratio: 0, services: [] as string[], status: 'active' as 'active' | 'inactive', photo_url: null as string | null };
@@ -929,7 +930,7 @@ const AdminTrainers: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" title={isRTL ? 'عرض الملف' : 'View Profile'} onClick={() => setViewProfileTrainer(t)}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" title={isRTL ? 'عرض الملف' : 'View Profile'} onClick={() => navigate(`/admin/trainers/${t.id}`)}>
                                 <Eye className="w-3.5 h-3.5" />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-7 w-7" title={isRTL ? 'إضافة طالب' : 'Add Student'} onClick={() => setAddStudentTrainerId(t.id)}>
@@ -987,9 +988,6 @@ const AdminTrainers: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* View Profile Dialog */}
-      <TrainerProfileDialog trainer={viewProfileTrainer} open={!!viewProfileTrainer} onOpenChange={() => setViewProfileTrainer(null)} />
     </AdminLayout>
   );
 };

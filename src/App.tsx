@@ -66,6 +66,7 @@ const AdminAds = lazy(() => import("./pages/admin/AdminAds"));
 const AdminCommunity = lazy(() => import("./pages/admin/AdminCommunity"));
 const AdminTrainings = lazy(() => import("./pages/admin/AdminTrainings"));
 const AdminTrainers = lazy(() => import("./pages/admin/AdminTrainers"));
+const AdminTrainerProfile = lazy(() => import("./pages/admin/AdminTrainerProfile"));
 const AdminTrainingStudents = lazy(() => import("./pages/admin/AdminTrainingStudents"));
 const AdminTrainerReviews = lazy(() => import("./pages/admin/AdminTrainerReviews"));
 
@@ -183,6 +184,7 @@ const AppRoutes = () => (
         <Route path="/admin/community" element={<AdminRoute><AdminCommunity /></AdminRoute>} />
         <Route path="/admin/trainings" element={<AdminRoute><AdminTrainings /></AdminRoute>} />
         <Route path="/admin/trainers" element={<AdminRoute><AdminTrainers /></AdminRoute>} />
+        <Route path="/admin/trainers/:id" element={<AdminRoute><AdminTrainerProfile /></AdminRoute>} />
         <Route path="/admin/training-students" element={<AdminRoute><AdminTrainingStudents /></AdminRoute>} />
         <Route path="/admin/trainer-reviews" element={<AdminRoute><AdminTrainerReviews /></AdminRoute>} />
 
