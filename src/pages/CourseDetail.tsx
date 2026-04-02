@@ -850,7 +850,7 @@ const CourseDetail: React.FC = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
-                  className="card-premium p-5 sm:p-6 lg:p-8 md:sticky md:top-28 mx-0 md:rounded-2xl"
+                  className="card-premium p-5 sm:p-6 lg:p-8 md:sticky md:top-28 mx-0 md:rounded-2xl shadow-lg"
                 >
                   {isEnrolled ? (
                     <div className="space-y-5">
@@ -939,45 +939,48 @@ const CourseDetail: React.FC = () => {
                     </div>
                   ) : (
                     <div className="space-y-5">
+                      {/* Price display */}
                       <div className="text-center py-2">
                         {(() => {
                           const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                           const sym = getCurrencySymbol(priceInfo.currency, isRTL);
                           if (priceInfo.discountPct > 0 && course.price > 0) {
                             return (
-                              <div className="space-y-1">
+                              <div className="space-y-2">
                                 <div className="flex items-center justify-center gap-2">
-                                  <span className="text-lg text-muted-foreground line-through">
+                                  <span className="text-lg text-muted-foreground line-through tabular-nums" dir="ltr">
                                     {priceInfo.originalPrice} {sym}
                                   </span>
-                                  <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-sm font-bold">
+                                  <span className="px-2.5 py-0.5 rounded-full bg-destructive/10 text-destructive text-sm font-bold">
                                     -{priceInfo.discountPct}%
                                   </span>
                                 </div>
-                                <span className="text-4xl font-black text-foreground">
-                                  {priceInfo.finalPrice} {sym}
-                                </span>
+                                <div className="text-4xl sm:text-5xl font-black text-foreground tabular-nums" dir="ltr">
+                                  {priceInfo.finalPrice} <span className="text-2xl text-muted-foreground font-bold">{sym}</span>
+                                </div>
                               </div>
                             );
                           }
                           return (
-                            <span className="text-4xl font-black text-foreground">
+                            <div className="text-4xl sm:text-5xl font-black text-foreground tabular-nums" dir="ltr">
                               {course.price === 0
                                 ? t('common.free')
-                                : `${priceInfo.finalPrice} ${sym}`}
-                            </span>
+                                : <>{priceInfo.finalPrice} <span className="text-2xl text-muted-foreground font-bold">{sym}</span></>}
+                            </div>
                           );
                         })()}
                         {course.price > 0 && (
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs text-muted-foreground mt-2">
                             {t('courseDetail.priceIncludesVAT')}
                           </p>
                         )}
                       </div>
+
+                      {/* CTA Button */}
                       {course.price === 0 ? (
                         user ? (
                           <Button
-                            className="w-full btn-cta h-12 text-base"
+                            className="w-full btn-cta h-12 sm:h-14 text-base sm:text-lg font-bold"
                             onClick={() => enrollMutation.mutate()}
                             disabled={enrollMutation.isPending}
                           >
@@ -987,7 +990,7 @@ const CourseDetail: React.FC = () => {
                               : t('courses.enrollForFree')}
                           </Button>
                         ) : (
-                          <Button className="w-full btn-cta h-12 text-base" asChild>
+                          <Button className="w-full btn-cta h-12 sm:h-14 text-base sm:text-lg font-bold" asChild>
                             <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
                               <Zap className="w-5 h-5 me-2" />
                               {t('courses.enrollForFree')}
@@ -996,7 +999,7 @@ const CourseDetail: React.FC = () => {
                         )
                       ) : user ? (
                         <Button
-                          className="w-full btn-cta h-12 text-base"
+                          className="w-full btn-cta h-12 sm:h-14 text-base sm:text-lg font-bold"
                           onClick={() => setShowCheckout(true)}
                         >
                           <ShoppingCart className="w-5 h-5 me-2" />
@@ -1010,7 +1013,7 @@ const CourseDetail: React.FC = () => {
                         </Button>
                       ) : (
                         <Button
-                          className="w-full btn-cta h-12 text-base"
+                          className="w-full btn-cta h-12 sm:h-14 text-base sm:text-lg font-bold"
                           onClick={() => navigate(`/signup?returnTo=${encodeURIComponent(`/courses/${id}?checkout=true`)}`)}
                         >
                           <Zap className="w-5 h-5 me-2" />
@@ -1023,11 +1026,16 @@ const CourseDetail: React.FC = () => {
                           })()}
                         </Button>
                       )}
-                      <div className="space-y-3 pt-3 border-t border-border/50">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-1">
+
+                      {/* Divider */}
+                      <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+
+                      {/* Course includes */}
+                      <div className="space-y-3">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                           {t('courseDetail.thisCourseIncludes')}
                         </p>
-                        <div className="space-y-3">
+                        <div className="space-y-2.5">
                           {[
                             { icon: Video, text: t('courseDetail.videoLessons', { count: totalLessons }) },
                             { icon: Clock, text: t('courseDetail.contentOf', { duration: formatDuration(totalDurationMinutes) }) },
@@ -1036,8 +1044,8 @@ const CourseDetail: React.FC = () => {
                             { icon: MonitorPlay, text: t('courseDetail.watchOnAnyDevice') },
                           ].map(({ icon: Icon, text }, i) => (
                             <div key={i} className="flex items-center gap-3 text-sm text-foreground/80">
-                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                <Icon className="w-4 h-4 text-primary" />
+                              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <Icon className="w-3.5 h-3.5 text-primary" />
                               </div>
                               <span className="font-medium">{text}</span>
                             </div>
