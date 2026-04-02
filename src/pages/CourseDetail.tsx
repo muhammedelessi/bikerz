@@ -1097,9 +1097,9 @@ const CourseDetail: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <div className="flex sm:hidden items-center gap-1.5 text-xs text-muted-foreground">
                     <MousePointerClick className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">{isRTL ? 'اسحب للتصفح' : 'Swipe to browse'}</span>
+                    <span>{isRTL ? 'اسحب للتصفح' : 'Swipe to browse'}</span>
                   </div>
                 </div>
 
