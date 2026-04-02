@@ -146,6 +146,7 @@ const AppRoutes = () => (
 
         {/* Secondary public routes */}
         <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
+        <Route path="/reset-password" element={<Suspense fallback={<div />}><ResetPassword /></Suspense>} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
