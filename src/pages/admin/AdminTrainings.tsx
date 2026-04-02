@@ -347,7 +347,7 @@ const AdminTrainings: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title={isRTL ? 'عرض التفاصيل' : 'View Details'} onClick={() => setViewTraining(t)}><Eye className="w-3.5 h-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title={isRTL ? 'عرض التفاصيل' : 'View Details'} onClick={() => navigate(`/admin/trainings/${t.id}`)}><Eye className="w-3.5 h-3.5" /></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(t)}><Pencil className="w-3.5 h-3.5" /></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeleteId(t.id)}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
                         </div>
