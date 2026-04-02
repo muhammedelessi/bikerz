@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, X, Eye } from 'lucide-react';
 import BilingualInput from '@/components/admin/content/BilingualInput';
-import TrainingProfileDialog from '@/components/admin/TrainingProfileDialog';
+
 
 interface Training {
   id: string;
