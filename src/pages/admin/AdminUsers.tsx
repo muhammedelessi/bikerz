@@ -56,6 +56,7 @@ import {
   Filter,
   MessageSquare,
   Download,
+  KeyRound,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -502,6 +503,26 @@ const AdminUsers: React.FC = () => {
                             <DropdownMenuItem onClick={() => openRoleDialog(user)}>
                               <Shield className="w-4 h-4 me-2" />
                               {t('admin.users.manageRoles')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                if (!user.email) {
+                                  toast.error(isRTL ? 'لا يوجد بريد إلكتروني لهذا المستخدم' : 'No email found for this user');
+                                  return;
+                                }
+                                try {
+                                  const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+                                    redirectTo: `${window.location.origin}/reset-password`,
+                                  });
+                                  if (error) throw error;
+                                  toast.success(isRTL ? `تم إرسال رابط إعادة تعيين كلمة المرور إلى ${user.email}` : `Password reset link sent to ${user.email}`);
+                                } catch (err: any) {
+                                  toast.error(err.message || (isRTL ? 'فشل إرسال رابط إعادة التعيين' : 'Failed to send reset link'));
+                                }
+                              }}
+                            >
+                              <KeyRound className="w-4 h-4 me-2" />
+                              {isRTL ? 'إعادة تعيين كلمة المرور' : 'Reset Password'}
                             </DropdownMenuItem>
                             <DropdownMenuItem>
                               <Mail className="w-4 h-4 me-2" />
