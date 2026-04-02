@@ -1176,7 +1176,7 @@ const CourseDetail: React.FC = () => {
         })()}
 
         {/* Chapter Roadmap Timeline */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-20 lg:pb-24">
+        <section id="free-videos-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-20 lg:pb-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
