@@ -46,6 +46,7 @@ import {
   Eye,
   Unlock,
   Gift,
+  MousePointerClick,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-rider.webp';
@@ -1082,53 +1083,81 @@ const CourseDetail: React.FC = () => {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <div className="flex items-center gap-3 mb-5 sm:mb-8">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/15 flex items-center justify-center">
-                    <Target className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                <div className="flex items-center justify-between mb-5 sm:mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/15 flex items-center justify-center">
+                      <Target className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-foreground">
+                        {t('courseDetail.whatYoullLearn')}
+                      </h2>
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                        {t('courseDetail.skillsYoullGain')}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-foreground">
-                      {t('courseDetail.whatYoullLearn')}
-                    </h2>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                      {t('courseDetail.skillsYoullGain')}
-                    </p>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <MousePointerClick className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{isRTL ? 'اسحب للتصفح' : 'Swipe to browse'}</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
-                  {outcomes ? (
-                    outcomes.map((item, idx) => {
-                      const text = isRTL && item.text_ar ? item.text_ar : item.text_en;
-                      return (
-                        <div key={idx} className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50 hover:border-primary/20 transition-colors">
-                          <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                {(() => {
+                  const items = outcomes
+                    ? outcomes.map((item, idx) => ({ id: String(idx), text: isRTL && item.text_ar ? item.text_ar : item.text_en }))
+                    : chapters.slice(0, 6).map((ch) => ({
+                        id: ch.id,
+                        text: isRTL && ch.title_ar ? ch.title_ar : ch.title,
+                        desc: isRTL && ch.description_ar ? ch.description_ar : ch.description,
+                      }));
+                  const totalSlides = items.length;
+
+                  return (
+                    <div className="relative group">
+                      <div
+                        className="flex gap-3 lg:gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 scrollbar-hide"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                        onScroll={(e) => {
+                          const el = e.currentTarget;
+                          const cardWidth = el.firstElementChild ? (el.firstElementChild as HTMLElement).offsetWidth + 16 : 1;
+                          const idx = Math.round(el.scrollLeft / cardWidth);
+                          const counter = el.parentElement?.querySelector('[data-slide-counter]');
+                          if (counter) counter.textContent = `${Math.min(idx + 1, totalSlides)} / ${totalSlides}`;
+                        }}
+                      >
+                        {items.map((item, idx) => (
+                          <div
+                            key={item.id}
+                            className="flex-shrink-0 snap-start w-[85%] sm:w-[calc(50%-8px)] lg:w-[calc(33.333%-11px)]"
+                          >
+                            <div className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50 hover:border-primary/20 hover:shadow-sm transition-all h-full">
+                              <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-foreground leading-relaxed">{item.text}</p>
+                                {'desc' in item && (item as any).desc && (
+                                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{(item as any).desc}</p>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <p className="text-sm font-medium text-foreground leading-relaxed">{text}</p>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    chapters.slice(0, 6).map((chapter) => {
-                      const chTitle = isRTL && chapter.title_ar ? chapter.title_ar : chapter.title;
-                      const chDesc = isRTL && chapter.description_ar ? chapter.description_ar : chapter.description;
-                      return (
-                        <div key={chapter.id} className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50 hover:border-primary/20 transition-colors">
-                          <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground leading-relaxed">{chTitle}</p>
-                            {chDesc && (
-                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{chDesc}</p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
+                        ))}
+                      </div>
+
+                      {/* Slide counter */}
+                      <div className="flex justify-center mt-2">
+                        <span
+                          data-slide-counter
+                          className="text-xs font-medium text-muted-foreground bg-muted/60 px-3 py-1 rounded-full tabular-nums"
+                        >
+                          1 / {totalSlides}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </motion.div>
             </section>
           );
