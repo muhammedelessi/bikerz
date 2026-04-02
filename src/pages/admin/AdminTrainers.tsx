@@ -810,7 +810,7 @@ const AdminTrainers: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-[40px]"></TableHead>
+                    
                     <TableHead>{isRTL ? 'المدرب' : 'Trainer'}</TableHead>
                     <TableHead>{isRTL ? 'الموقع' : 'Location'}</TableHead>
                     <TableHead>{isRTL ? 'الدراجة' : 'Bike'}</TableHead>
