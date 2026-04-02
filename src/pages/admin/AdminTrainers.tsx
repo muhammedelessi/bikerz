@@ -930,7 +930,7 @@ const AdminTrainers: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" title={isRTL ? 'عرض الملف' : 'View Profile'} onClick={() => setViewProfileTrainer(t)}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" title={isRTL ? 'عرض الملف' : 'View Profile'} onClick={() => navigate(`/admin/trainers/${t.id}`)}>
                                 <Eye className="w-3.5 h-3.5" />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-7 w-7" title={isRTL ? 'إضافة طالب' : 'Add Student'} onClick={() => setAddStudentTrainerId(t.id)}>
