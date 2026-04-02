@@ -13,8 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, X, Eye } from 'lucide-react';
 import BilingualInput from '@/components/admin/content/BilingualInput';
+import TrainingProfileDialog from '@/components/admin/TrainingProfileDialog';
 
 interface Training {
   id: string;
@@ -35,6 +36,7 @@ const AdminTrainings: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingTraining, setEditingTraining] = useState<Training | null>(null);
+  const [viewTraining, setViewTraining] = useState<Training | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -344,6 +346,7 @@ const AdminTrainings: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title={isRTL ? 'عرض التفاصيل' : 'View Details'} onClick={() => setViewTraining(t)}><Eye className="w-3.5 h-3.5" /></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(t)}><Pencil className="w-3.5 h-3.5" /></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeleteId(t.id)}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
                         </div>
@@ -377,6 +380,8 @@ const AdminTrainings: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <TrainingProfileDialog training={viewTraining} open={!!viewTraining} onOpenChange={() => setViewTraining(null)} />
     </AdminLayout>
   );
 };
