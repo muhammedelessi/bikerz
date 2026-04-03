@@ -11,6 +11,7 @@ interface PurchaseEncouragementModalProps {
   onClose: () => void;
   onBuyNow: () => void;
   course: {
+    id: string;
     title: string;
     title_ar: string | null;
     thumbnail_url: string | null;
@@ -27,17 +28,12 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
 }) => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
-  const { formatPrice, getSarTotalWithVat } = useCurrency();
+  const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
 
-  // Calculate price with course discount and VAT included
-  const courseDiscountPct = course.discount_percentage && course.discount_percentage > 0 ? course.discount_percentage : 0;
-  const priceBeforeVat = courseDiscountPct > 0
-    ? Math.ceil(course.price * (1 - courseDiscountPct / 100))
-    : course.price;
-  const finalPrice = Math.ceil(priceBeforeVat * 1.15);
-  const originalPriceWithVat = Math.ceil(course.price * 1.15);
-
-  const hasAnyDiscount = courseDiscountPct > 0;
+  // Use centralized pricing logic (country-specific + VAT-inclusive)
+  const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
+  const sym = getCurrencySymbol(priceInfo.currency, isRTL);
+  const hasAnyDiscount = priceInfo.discountPct > 0;
 
   return (
     <AnimatePresence>
@@ -105,11 +101,11 @@ const PurchaseEncouragementModal: React.FC<PurchaseEncouragementModalProps> = ({
                 <div className="flex items-center justify-center gap-2">
                   {hasAnyDiscount && (
                     <span className="text-sm text-muted-foreground line-through">
-                      {formatPrice(originalPriceWithVat, isRTL)}
+                      {priceInfo.originalPrice} {sym}
                     </span>
                   )}
                   <span className="text-2xl font-black text-primary">
-                    {formatPrice(finalPrice, isRTL)}
+                    {priceInfo.finalPrice} {sym}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">

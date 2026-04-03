@@ -1496,6 +1496,7 @@ const CourseLearn: React.FC = () => {
             }
           }}
           course={{
+            id: course.id,
             title: course.title,
             title_ar: course.title_ar,
             thumbnail_url: course.thumbnail_url,
