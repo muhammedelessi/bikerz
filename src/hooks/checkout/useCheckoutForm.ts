@@ -143,13 +143,23 @@ export function useCheckoutForm(open: boolean) {
     return Object.keys(newErrors).length === 0;
   }, [fullName, email, phone, actualPrefix, city, cityManual, isOtherCity, country, countryManual, isOtherCountry, t]);
 
-  // Set phone prefix based on detected country
+  // Set phone prefix and country based on detected country
   useEffect(() => {
     if (detectedCountry) {
       const code = detectedCountry.toUpperCase();
+      // Auto-select phone prefix
       const found = PHONE_COUNTRIES.find(pc => pc.code === code);
       if (found) {
         setPhonePrefix(found.prefix + '_' + found.code);
+      }
+      // Auto-select country dropdown (only if not already set from profile)
+      if (!country && !isOtherCountry) {
+        const matchedCountry = COUNTRIES.find(c => c.code === code);
+        if (matchedCountry) {
+          setSelectedCountryCode(code);
+          setCountry(isRTL ? matchedCountry.ar : matchedCountry.en);
+          setIsOtherCountry(false);
+        }
       }
     }
   }, [detectedCountry]);
