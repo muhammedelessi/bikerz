@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -28,11 +28,25 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+
+  // Load saved credentials on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('bikerz_remember');
+      if (saved) {
+        const { email: savedEmail, password: savedPassword } = JSON.parse(saved);
+        if (savedEmail) setEmail(savedEmail);
+        if (savedPassword) setPassword(savedPassword);
+        setRememberMe(true);
+      }
+    } catch {}
+  }, []);
 
   const cms = authContent?.login || {};
   const heroImage = cms.image || defaultHeroImage;
@@ -71,6 +85,13 @@ const Login: React.FC = () => {
       setError(t("auth.login.invalidCredentials"));
       setIsLoading(false);
       return;
+    }
+
+    // Save or clear remembered credentials
+    if (rememberMe) {
+      localStorage.setItem('bikerz_remember', JSON.stringify({ email, password }));
+    } else {
+      localStorage.removeItem('bikerz_remember');
     }
 
     toast.success(t("auth.login.success"));
@@ -180,7 +201,18 @@ const Login: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex items-center justify-end">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer select-none touch-target py-1">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary accent-primary"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    {isRTL ? 'تذكر كلمة المرور' : 'Remember my password'}
+                  </span>
+                </label>
                 <Link to="/forgot-password" className="text-sm text-primary hover:underline touch-target py-1">
                   {forgotText}
                 </Link>
