@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import bcrypt from "https://esm.sh/bcryptjs@2.4.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,7 +24,6 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify the caller is authenticated
     const callerClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -51,14 +51,28 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use service role to update the user's own password (bypasses strength checks)
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const { error } = await adminClient.auth.admin.updateUserById(user.id, {
-      password: new_password,
+    // Hash password with bcryptjs (pure JS, works in Deno Deploy)
+    const salt = bcrypt.genSaltSync(10);
+    const hashedPassword = bcrypt.hashSync(new_password, salt);
+
+    // Use password_hash to bypass HIBP/strength checks
+    const response = await fetch(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceRoleKey}`,
+        "apikey": serviceRoleKey,
+      },
+      body: JSON.stringify({
+        password_hash: hashedPassword,
+      }),
     });
 
-    if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("GoTrue error:", result);
+      return new Response(JSON.stringify({ error: result.message || result.msg || "Failed to update password" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -68,6 +82,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("Error:", err);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
