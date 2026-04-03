@@ -266,6 +266,13 @@ const Signup: React.FC = () => {
       console.error('Post-signup sync failed:', e);
     }
 
+    // Save or clear remembered credentials
+    if (rememberMe) {
+      localStorage.setItem('bikerz_remember', JSON.stringify({ email, password }));
+    } else {
+      localStorage.removeItem('bikerz_remember');
+    }
+
     toast.success(t('auth.signup.success'));
     setIsLoading(false);
 
