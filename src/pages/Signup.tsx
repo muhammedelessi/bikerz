@@ -43,6 +43,7 @@ const Signup: React.FC = () => {
   const [customCountry, setCustomCountry] = useState('');
   const [customCity, setCustomCity] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
