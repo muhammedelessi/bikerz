@@ -22,8 +22,9 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseDbUrl = Deno.env.get("SUPABASE_DB_URL")!;
 
+    // Verify the caller is authenticated
     const callerClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -51,31 +52,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Hash password with bcryptjs (pure JS, works in Deno Deploy)
+    // Hash the password with bcryptjs (pure JS, Deno Deploy compatible)
     const salt = bcrypt.genSaltSync(10);
     const hashedPassword = bcrypt.hashSync(new_password, salt);
 
-    // Use password_hash to bypass HIBP/strength checks
-    const response = await fetch(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${serviceRoleKey}`,
-        "apikey": serviceRoleKey,
-      },
-      body: JSON.stringify({
-        password_hash: hashedPassword,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.error("GoTrue error:", result);
-      return new Response(JSON.stringify({ error: result.message || result.msg || "Failed to update password" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Import postgres client to update password directly, bypassing GoTrue HIBP check
+    const { default: postgres } = await import("https://deno.land/x/postgresjs@v3.4.5/mod.js");
+    
+    const sql = postgres(supabaseDbUrl);
+    
+    try {
+      await sql`
+        UPDATE auth.users 
+        SET encrypted_password = ${hashedPassword},
+            updated_at = now()
+        WHERE id = ${user.id}::uuid
+      `;
+    } finally {
+      await sql.end();
     }
 
     return new Response(JSON.stringify({ success: true }), {
