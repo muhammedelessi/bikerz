@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
+import bcrypt from "https://esm.sh/bcryptjs@2.4.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,7 +24,6 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify the caller is authenticated
     const callerClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -52,11 +51,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Hash the password with bcrypt to bypass HIBP/strength checks
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(new_password, salt);
+    // Hash password with bcryptjs (pure JS, works in Deno Deploy)
+    const salt = bcrypt.genSaltSync(10);
+    const hashedPassword = bcrypt.hashSync(new_password, salt);
 
-    // Use the GoTrue Admin API with password_hash to bypass password strength validation
+    // Use password_hash to bypass HIBP/strength checks
     const response = await fetch(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
       method: "PUT",
       headers: {
