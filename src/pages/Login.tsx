@@ -201,18 +201,7 @@ const Login: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer select-none touch-target py-1">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary accent-primary"
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    {isRTL ? 'تذكر كلمة المرور' : 'Remember my password'}
-                  </span>
-                </label>
+              <div className="flex items-center justify-end">
                 <Link to="/forgot-password" className="text-sm text-primary hover:underline touch-target py-1">
                   {forgotText}
                 </Link>
