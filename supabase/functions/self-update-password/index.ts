@@ -51,14 +51,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use service role to update the user's own password (bypasses strength checks)
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const { error } = await adminClient.auth.admin.updateUserById(user.id, {
-      password: new_password,
+    // Use the GoTrue Admin API directly to bypass HIBP check
+    const response = await fetch(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceRoleKey}`,
+        "apikey": serviceRoleKey,
+      },
+      body: JSON.stringify({
+        password: new_password,
+      }),
     });
 
-    if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
+    const result = await response.json();
+
+    if (!response.ok) {
+      return new Response(JSON.stringify({ error: result.message || result.msg || "Failed to update password" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
