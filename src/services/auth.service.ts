@@ -32,15 +32,34 @@ export async function fetchUserData(userId: string): Promise<{ profile: UserProf
 }
 
 export async function signUpUser(email: string, password: string, fullName: string) {
-  const { error } = await (supabase.auth as any).signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: window.location.origin,
-      data: { full_name: fullName },
-    },
-  });
-  return { error: error as Error | null };
+  try {
+    const response = await supabase.functions.invoke('signup-user', {
+      body: { email, password, full_name: fullName },
+    });
+
+    if (response.error) {
+      return { error: new Error(response.error.message || 'Signup failed') };
+    }
+
+    const result = response.data as any;
+    if (result?.error) {
+      return { error: new Error(result.error) };
+    }
+
+    // Sign in after successful creation
+    const { error: signInError, data: signInData } = await (supabase.auth as any).signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      return { error: signInError as Error };
+    }
+
+    return { error: null };
+  } catch (err: any) {
+    return { error: err as Error };
+  }
 }
 
 export async function signInUser(email: string, password: string) {
