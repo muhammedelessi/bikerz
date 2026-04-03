@@ -28,11 +28,25 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
+
+  // Load saved credentials on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('bikerz_remember');
+      if (saved) {
+        const { email: savedEmail, password: savedPassword } = JSON.parse(saved);
+        if (savedEmail) setEmail(savedEmail);
+        if (savedPassword) setPassword(savedPassword);
+        setRememberMe(true);
+      }
+    } catch {}
+  }, []);
 
   const cms = authContent?.login || {};
   const heroImage = cms.image || defaultHeroImage;
