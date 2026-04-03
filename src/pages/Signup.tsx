@@ -437,22 +437,19 @@ const Signup: React.FC = () => {
                 )}
               </div>
 
-              {/* Password — 6 digits */}
+              {/* Password */}
               <div className="space-y-1">
                 <div className="relative">
                   <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    inputMode="numeric"
-                    maxLength={6}
                     value={password}
                     onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9]/g, '');
-                      setPassword(val);
+                      setPassword(e.target.value);
                       setPasswordError(null);
                     }}
-                    placeholder={isRTL ? 'كلمة المرور (6 أرقام)' : 'Password (6 digits)'}
+                    placeholder={isRTL ? 'كلمة المرور (6 أحرف على الأقل)' : 'Password (min 6 characters)'}
                     className={`ps-9 pe-10 ${passwordError ? 'border-destructive' : ''}`}
                   />
                   <button
@@ -470,7 +467,7 @@ const Signup: React.FC = () => {
                   </p>
                 ) : (
                   <p className="text-xs text-muted-foreground mt-1">
-                    {isRTL ? 'يجب أن تتكون من 6 أرقام — ستستخدمها لتسجيل الدخول لاحقاً' : 'Must be 6 digits — you will use it to log in later'}
+                    {isRTL ? '6 أحرف على الأقل — ستستخدمها لتسجيل الدخول لاحقاً' : 'Min 6 characters — you will use it to log in later'}
                   </p>
                 )}
               </div>
