@@ -87,6 +87,13 @@ const Login: React.FC = () => {
       return;
     }
 
+    // Save or clear remembered credentials
+    if (rememberMe) {
+      localStorage.setItem('bikerz_remember', JSON.stringify({ email, password }));
+    } else {
+      localStorage.removeItem('bikerz_remember');
+    }
+
     toast.success(t("auth.login.success"));
     navigate(returnTo || "/dashboard");
   };
