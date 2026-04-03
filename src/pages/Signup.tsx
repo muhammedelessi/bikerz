@@ -228,8 +228,8 @@ const Signup: React.FC = () => {
 
     if (!validatePhone(phone)) hasError = true;
 
-    if (!/^\d{6}$/.test(password)) {
-      setPasswordError(isRTL ? 'كلمة المرور يجب أن تتكون من 6 أرقام' : 'Password must be exactly 6 digits');
+    if (password.length < 6) {
+      setPasswordError(isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
       hasError = true;
     }
 
