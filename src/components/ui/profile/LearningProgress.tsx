@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { BookOpen, Clock, CheckCircle, Play, TrendingUp, Trophy, ChevronRight, ChevronLeft, ShoppingCart, GraduationCap } from 'lucide-react';
 import { LearningStats, EnrolledCourseItem, AvailableCourseItem } from '@/hooks/useUserProfile';
 import { Button } from '@/components/ui/button';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface LearningProgressProps {
   stats: LearningStats;
