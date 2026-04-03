@@ -63,15 +63,30 @@ export async function incrementCouponUsage(params: {
 }
 
 export async function createGuestAccount(email: string, fullName: string, password: string) {
-  const { data, error } = await (supabase.auth as any).signUp({
+  const response = await supabase.functions.invoke('signup-user', {
+    body: { email, password, full_name: fullName },
+  });
+
+  if (response.error) {
+    return { data: { user: null }, error: new Error(response.error.message || 'Signup failed') };
+  }
+
+  const result = response.data as any;
+  if (result?.error) {
+    return { data: { user: null }, error: new Error(result.error) };
+  }
+
+  // Sign in to get session
+  const { data: signInData, error: signInError } = await (supabase.auth as any).signInWithPassword({
     email,
     password,
-    options: {
-      emailRedirectTo: window.location.origin,
-      data: { full_name: fullName },
-    },
   });
-  return { data, error };
+
+  if (signInError) {
+    return { data: { user: null }, error: signInError };
+  }
+
+  return { data: { user: signInData.user }, error: null };
 }
 
 export async function sendPasswordReset(email: string) {
