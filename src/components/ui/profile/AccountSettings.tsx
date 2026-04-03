@@ -90,11 +90,12 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
 
     setIsPasswordLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: passwordData.newPassword,
+      const { data, error } = await supabase.functions.invoke('self-update-password', {
+        body: { new_password: passwordData.newPassword },
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast.success(isRTL ? 'تم تغيير كلمة المرور بنجاح' : 'Password changed successfully');
       setIsChangingPassword(false);

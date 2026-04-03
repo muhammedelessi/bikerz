@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.signup-user]
 verify_jwt = false
+
+[functions.self-update-password]
+verify_jwt = false

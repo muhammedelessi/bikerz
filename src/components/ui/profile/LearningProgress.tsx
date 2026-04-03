@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { BookOpen, Clock, CheckCircle, Play, TrendingUp, Trophy, ChevronRight, ChevronLeft, ShoppingCart, GraduationCap } from 'lucide-react';
 import { LearningStats, EnrolledCourseItem, AvailableCourseItem } from '@/hooks/useUserProfile';
 import { Button } from '@/components/ui/button';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface LearningProgressProps {
   stats: LearningStats;
@@ -55,10 +56,11 @@ const CourseRow: React.FC<{ course: EnrolledCourseItem; isRTL: boolean }> = ({ c
 const AvailableCourseRow: React.FC<{ course: AvailableCourseItem; isRTL: boolean }> = ({ course, isRTL }) => {
   const title = isRTL && course.title_ar ? course.title_ar : course.title;
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
-  const hasDiscount = course.discount_percentage && course.discount_percentage > 0;
-  const discountedPrice = hasDiscount
-    ? Math.round(course.price * (1 - (course.discount_percentage! / 100)))
-    : course.price;
+  const { getCoursePriceInfo, symbol, symbolAr } = useCurrency();
+  
+  const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage ?? undefined);
+  const currSymbol = isRTL ? symbolAr : symbol;
+  const hasDiscount = priceInfo.discountPct > 0;
 
   return (
     <Link
@@ -90,15 +92,15 @@ const AvailableCourseRow: React.FC<{ course: AvailableCourseItem; isRTL: boolean
           {hasDiscount ? (
             <>
               <span className="text-xs text-muted-foreground line-through" dir="ltr">
-                {course.price} {course.currency || 'SAR'}
+                {priceInfo.originalPrice} {currSymbol}
               </span>
               <span className="text-xs font-semibold text-primary" dir="ltr">
-                {discountedPrice} {course.currency || 'SAR'}
+                {priceInfo.finalPrice} {currSymbol}
               </span>
             </>
           ) : (
             <span className="text-xs font-semibold text-primary" dir="ltr">
-              {course.price > 0 ? `${course.price} ${course.currency || 'SAR'}` : (isRTL ? 'مجاني' : 'Free')}
+              {priceInfo.finalPrice > 0 ? `${priceInfo.finalPrice} ${currSymbol}` : (isRTL ? 'مجاني' : 'Free')}
             </span>
           )}
         </div>
