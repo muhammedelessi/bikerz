@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,7 +52,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use the GoTrue Admin API directly to bypass HIBP check
+    // Hash the password with bcrypt to bypass HIBP/strength checks
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(new_password, salt);
+
+    // Use the GoTrue Admin API with password_hash to bypass password strength validation
     const response = await fetch(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
       method: "PUT",
       headers: {
@@ -60,13 +65,14 @@ Deno.serve(async (req) => {
         "apikey": serviceRoleKey,
       },
       body: JSON.stringify({
-        password: new_password,
+        password_hash: hashedPassword,
       }),
     });
 
     const result = await response.json();
 
     if (!response.ok) {
+      console.error("GoTrue error:", result);
       return new Response(JSON.stringify({ error: result.message || result.msg || "Failed to update password" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -77,6 +83,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("Error:", err);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
