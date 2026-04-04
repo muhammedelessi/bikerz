@@ -69,7 +69,7 @@ function getSessionToken(): string {
   }
 }
 
-export function useAnalyticsTracking() {
+export function useAnalyticsTracking(isAdmin = false) {
   const location = useLocation();
   const sessionIdRef = useRef<string | null>(null);
   const pageEntryRef = useRef<number>(Date.now());
