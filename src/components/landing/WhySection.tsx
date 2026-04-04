@@ -12,7 +12,7 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import safetyImage from '@/assets/safety-hands.webp';
 import instructorImage from '@/assets/instructor.webp';
-import { useLandingContent, WhyContent } from '@/hooks/useLandingContent';
+import { WhyContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
