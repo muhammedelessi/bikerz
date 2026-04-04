@@ -324,36 +324,30 @@ const HeroSection: React.FC = () => {
         </div>
 
         {/* ── Stats Bar — anchored to bottom ── */}
-        {showStats && (
-          <m.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={anim(0.6, 0.85)}
-            className="relative z-10 w-full"
-          >
-            <div className="max-w-[780px] mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
-              <div
-                className="grid grid-cols-4 gap-1 sm:gap-0
-                              rounded-2xl sm:rounded-3xl overflow-hidden
-                              bg-white/[0.04] border border-white/[0.07]
-                              backdrop-blur-md
-                              divide-x divide-white/[0.06]
-                              py-4 sm:py-6"
-              >
-                {displayStats.map((stat, i) => (
-                  <StatCard
-                    key={stat.key}
-                    value={stat.value}
-                    label={stat.label}
-                    icon={stat.icon}
-                    index={i}
-                    reducedMotion={prefersReducedMotion}
-                  />
-                ))}
-              </div>
+        <div className="relative z-10 w-full">
+          <div className="max-w-[780px] mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
+            <div
+              className="grid grid-cols-4 gap-1 sm:gap-0
+                            rounded-2xl sm:rounded-3xl overflow-hidden
+                            bg-white/[0.04] border border-white/[0.07]
+                            backdrop-blur-md
+                            divide-x divide-white/[0.06]
+                            py-4 sm:py-6"
+              style={{ minHeight: '80px' }}
+            >
+              {showStats && displayStats.map((stat, i) => (
+                <StatCard
+                  key={stat.key}
+                  value={stat.value}
+                  label={stat.label}
+                  icon={stat.icon}
+                  index={i}
+                  reducedMotion={prefersReducedMotion}
+                />
+              ))}
             </div>
-          </m.div>
-        )}
+          </div>
+        </div>
 
         {/* ── Scroll hint ── */}
         <m.div
