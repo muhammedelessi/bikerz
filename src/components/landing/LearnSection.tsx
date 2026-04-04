@@ -1,6 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
   Shield, Award, Navigation, Users, Bike, Route, Trophy,
@@ -12,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useLandingContent, LearnContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 const iconMap: Record<string, LucideIcon> = {
   Shield, Award, Navigation, Users, Bike, Route, Trophy,
@@ -21,9 +20,11 @@ const iconMap: Record<string, LucideIcon> = {
   Gift, Medal, Flag, Compass, Mountain, Sun, Moon, Wind,
 };
 
+const delayClass = (i: number) => `anim-delay-${Math.min(i + 1, 8)}`;
+
 const LearnSection: React.FC = () => {
   const { isRTL } = useLanguage();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const ref = useScrollReveal() as React.RefObject<HTMLElement>;
 
   const { data: content, isLoading } = useLandingContent<LearnContent>('learn');
 
@@ -38,12 +39,7 @@ const LearnSection: React.FC = () => {
 
       <div className="section-container relative z-10">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
+        <div className="text-center mb-12 anim-fade-up">
           {isLoading ? (
             <>
               <Skeleton className="h-10 w-64 mx-auto mb-4" />
@@ -56,7 +52,7 @@ const LearnSection: React.FC = () => {
               <p className="section-subtitle">{subtitle}</p>
             </>
           )}
-        </motion.div>
+        </div>
 
         {/* Skills Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -70,13 +66,9 @@ const LearnSection: React.FC = () => {
               const skillText = isRTL ? skill.text_ar : skill.text_en;
 
               return (
-                <motion.div
+                <div
                   key={skill.key}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={inView ? { opacity: 1, scale: 1 } : {}}
-                  transition={{ duration: 0.4, delay: 0.1 * index }}
-                  whileHover={{ y: -4, scale: 1.02 }}
-                  className="group p-4 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl bg-card/60 border border-border/30 backdrop-blur-sm hover:border-primary/40 hover:bg-card/80 transition-all duration-300 cursor-pointer"
+                  className={`anim-scale ${delayClass(index)} group p-4 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl bg-card/60 border border-border/30 backdrop-blur-sm hover:border-primary/40 hover:bg-card/80 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:scale-[1.02]`}
                 >
                   <div className="flex flex-col sm:flex-row items-center sm:items-center gap-3 sm:gap-4">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-primary flex items-center justify-center flex-shrink-0 transition-all duration-300">
@@ -86,7 +78,7 @@ const LearnSection: React.FC = () => {
                       {skillText}
                     </span>
                   </div>
-                </motion.div>
+                </div>
               );
             })
           )}

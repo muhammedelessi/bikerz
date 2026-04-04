@@ -1,6 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { 
   Shield, Award, Navigation, Users, Bike, Route, Trophy,
@@ -12,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useLandingContent, JourneyContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 const iconMap: Record<string, LucideIcon> = {
   Shield, Award, Navigation, Users, Bike, Route, Trophy,
@@ -30,9 +29,11 @@ const stepAccents = [
   'from-deep-green/80 to-primary/40',
 ];
 
+const delayClass = (i: number) => `anim-delay-${Math.min(i + 1, 8)}`;
+
 const JourneySection: React.FC = () => {
   const { isRTL } = useLanguage();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
+  const ref = useScrollReveal() as React.RefObject<HTMLElement>;
 
   const { data: content, isLoading } = useLandingContent<JourneyContent>('journey');
 
@@ -47,12 +48,7 @@ const JourneySection: React.FC = () => {
 
       <div className="section-container relative z-10">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-8 sm:mb-12"
-        >
+        <div className="text-center mb-8 sm:mb-12 anim-fade-up">
           {isLoading ? (
             <>
               <Skeleton className="h-10 w-64 mx-auto mb-4" />
@@ -65,7 +61,7 @@ const JourneySection: React.FC = () => {
               <p className="section-subtitle">{subtitle}</p>
             </>
           )}
-        </motion.div>
+        </div>
 
         {/* Steps */}
         {isLoading ? (
@@ -80,12 +76,7 @@ const JourneySection: React.FC = () => {
             <div className="lg:hidden relative max-w-md mx-auto">
               {/* Timeline line */}
               <div className={`absolute top-0 bottom-0 w-0.5 ${isRTL ? 'right-[19px]' : 'left-[19px]'}`}>
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={inView ? { height: '100%' } : {}}
-                  transition={{ duration: 1.2, ease: 'easeOut' }}
-                  className="w-full bg-gradient-to-b from-primary via-accent-orange/60 to-primary/20 rounded-full"
-                />
+                <div className="w-full h-full bg-gradient-to-b from-primary via-accent-orange/60 to-primary/20 rounded-full" />
               </div>
 
               <div className="space-y-5">
@@ -93,15 +84,11 @@ const JourneySection: React.FC = () => {
                   const IconComponent = iconMap[step.icon] || Shield;
                   const stepTitle = isRTL ? step.title_ar : step.title_en;
                   const stepDesc = isRTL ? step.description_ar : step.description_en;
-                  const accent = stepAccents[index % stepAccents.length];
 
                   return (
-                    <motion.div
+                    <div
                       key={index}
-                      initial={{ opacity: 0, x: isRTL ? 16 : -16 }}
-                      animate={inView ? { opacity: 1, x: 0 } : {}}
-                      transition={{ duration: 0.5, delay: 0.15 + index * 0.12 }}
-                      className="relative flex items-start gap-4"
+                      className={`anim-fade-up ${delayClass(index)} relative flex items-start gap-4`}
                     >
                       {/* Step number circle */}
                       <div className="relative z-10 flex-shrink-0">
@@ -122,7 +109,7 @@ const JourneySection: React.FC = () => {
                           <p className="text-sm text-muted-foreground leading-relaxed">{stepDesc}</p>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   );
                 })}
               </div>
@@ -132,12 +119,7 @@ const JourneySection: React.FC = () => {
             <div className="hidden lg:block relative max-w-5xl mx-auto">
               {/* Center timeline */}
               <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-0.5">
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={inView ? { height: '100%' } : {}}
-                  transition={{ duration: 1.5, ease: 'easeOut' }}
-                  className="w-full bg-gradient-to-b from-primary via-accent-orange/50 to-primary/20 rounded-full"
-                />
+                <div className="w-full h-full bg-gradient-to-b from-primary via-accent-orange/50 to-primary/20 rounded-full" />
               </div>
 
               <div className="space-y-6">
@@ -146,61 +128,49 @@ const JourneySection: React.FC = () => {
                   const stepTitle = isRTL ? step.title_ar : step.title_en;
                   const stepDesc = isRTL ? step.description_ar : step.description_en;
                   const isLeft = isRTL ? index % 2 !== 0 : index % 2 === 0;
-                  const accent = stepAccents[index % stepAccents.length];
 
                   return (
-                    <motion.div
+                    <div
                       key={index}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={inView ? { opacity: 1, y: 0 } : {}}
-                      transition={{ duration: 0.5, delay: 0.2 + index * 0.12 }}
-                      className="relative flex items-center"
+                      className={`anim-fade-up ${delayClass(index)} relative flex items-center`}
                     >
                       {/* Left side */}
                       <div className={`flex-1 ${isLeft ? 'pe-10' : ''}`}>
                         {isLeft && (
-                          <motion.div
-                            whileHover={{ y: -4 }}
-                            transition={{ type: 'spring', stiffness: 300 }}
-                            className={`ms-auto max-w-sm p-5 rounded-2xl bg-card/60 border border-border/40 backdrop-blur-sm hover:border-primary/30 hover:bg-card/80 transition-all duration-300 group ${isRTL ? 'text-start' : 'text-end'}`}
+                          <div
+                            className={`ms-auto max-w-sm p-5 rounded-2xl bg-card/60 border border-border/40 backdrop-blur-sm hover:border-primary/30 hover:bg-card/80 hover:-translate-y-1 transition-all duration-300 group ${isRTL ? 'text-start' : 'text-end'}`}
                           >
                             <span className="text-[11px] font-bold text-primary/60 tracking-widest uppercase">
                               {isRTL ? `الخطوة ${index + 1}` : `Step ${index + 1}`}
                             </span>
                             <h3 className="text-lg font-bold text-foreground mt-1 mb-2 group-hover:text-primary transition-colors">{stepTitle}</h3>
                             <p className="text-sm text-muted-foreground leading-relaxed">{stepDesc}</p>
-                          </motion.div>
+                          </div>
                         )}
                       </div>
 
                       {/* Center icon node */}
                       <div className="relative z-10 flex-shrink-0">
-                        <motion.div
-                          whileHover={{ scale: 1.15 }}
-                          transition={{ type: 'spring', stiffness: 400 }}
-                          className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg ring-4 ring-background"
-                        >
+                        <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg ring-4 ring-background hover:scale-[1.15] transition-transform duration-200">
                           <IconComponent className="w-7 h-7 text-primary-foreground" />
-                        </motion.div>
+                        </div>
                       </div>
 
                       {/* Right side */}
                       <div className={`flex-1 ${!isLeft ? 'ps-10' : ''}`}>
                         {!isLeft && (
-                          <motion.div
-                            whileHover={{ y: -4 }}
-                            transition={{ type: 'spring', stiffness: 300 }}
-                            className="max-w-sm p-5 rounded-2xl bg-card/60 border border-border/40 backdrop-blur-sm hover:border-primary/30 hover:bg-card/80 transition-all duration-300 group text-start"
+                          <div
+                            className="max-w-sm p-5 rounded-2xl bg-card/60 border border-border/40 backdrop-blur-sm hover:border-primary/30 hover:bg-card/80 hover:-translate-y-1 transition-all duration-300 group text-start"
                           >
                             <span className="text-[11px] font-bold text-primary/60 tracking-widest uppercase">
                               {isRTL ? `الخطوة ${index + 1}` : `Step ${index + 1}`}
                             </span>
                             <h3 className="text-lg font-bold text-foreground mt-1 mb-2 group-hover:text-primary transition-colors">{stepTitle}</h3>
                             <p className="text-sm text-muted-foreground leading-relaxed">{stepDesc}</p>
-                          </motion.div>
+                          </div>
                         )}
                       </div>
-                    </motion.div>
+                    </div>
                   );
                 })}
               </div>
