@@ -15,7 +15,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
-import heroRiderBg from "@/assets/hero-rider.webp";
+import heroRiderBg from "@/assets/hero-rider-new.webp";
 
 interface HeroLandingContent extends HeroContent {
   defaultHeroImage?: string;
@@ -111,7 +111,7 @@ const HeroSection: React.FC = () => {
         dir={isRTL ? "rtl" : "ltr"}
       >
         {/* ── Split Layout ── */}
-        <div className="grid lg:grid-cols-2 min-h-[90svh] lg:min-h-[92svh]">
+        <div className="grid lg:grid-cols-2 min-h-[auto] lg:min-h-[92svh]">
 
           {/* ── Text Column ── */}
           <div className="relative z-10 flex flex-col justify-center px-6 sm:px-10 lg:px-16 xl:px-24 py-20 sm:py-24 lg:py-16 order-2 lg:order-1">
@@ -148,6 +148,7 @@ const HeroSection: React.FC = () => {
               className="text-3xl sm:text-4xl md:text-5xl lg:text-[52px] xl:text-6xl
                          font-black leading-[1.08] tracking-tight
                          text-foreground mb-5"
+              style={{ fontWeight: 900, WebkitTextStroke: '0.5px currentColor' }}
             >
               {title}
             </m.h1>
@@ -231,7 +232,7 @@ const HeroSection: React.FC = () => {
           </div>
 
           {/* ── Image Column ── */}
-          <div className="relative order-1 lg:order-2 min-h-[45svh] lg:min-h-full">
+          <div className="relative order-1 lg:order-2 min-h-[30svh] sm:min-h-[35svh] lg:min-h-full">
             <m.div
               className="absolute inset-0"
               initial={{ scale: 1.06 }}
@@ -249,20 +250,17 @@ const HeroSection: React.FC = () => {
               />
             </m.div>
 
-            {/* Gradient overlays for seamless blend */}
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent lg:hidden" />
+            {/* Soft bottom fade on mobile only – no transparency on the image itself */}
+            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent lg:hidden" />
+            {/* Desktop: side blend into text column */}
             <div
               className="absolute inset-0 hidden lg:block"
               style={{
                 background: isRTL
-                  ? "linear-gradient(to left, transparent 30%, hsl(var(--background)) 100%)"
-                  : "linear-gradient(to right, transparent 30%, hsl(var(--background)) 100%)",
+                  ? "linear-gradient(to left, transparent 50%, hsl(var(--background)) 98%)"
+                  : "linear-gradient(to right, transparent 50%, hsl(var(--background)) 98%)",
               }}
             />
-            <div className="absolute inset-0 hidden lg:block bg-gradient-to-t from-background/40 via-transparent to-background/20" />
-
-            {/* Corner accent */}
-            <div className="absolute bottom-0 left-0 right-0 lg:hidden h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
           </div>
         </div>
       </section>
