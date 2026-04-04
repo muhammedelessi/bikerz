@@ -264,150 +264,125 @@ const Navbar: React.FC = () => {
         </div>
       </nav>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+      {/* Mobile Menu Backdrop */}
+      <div
+        onClick={() => setIsMobileMenuOpen(false)}
+        className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-200 ${
+          isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      />
+      {/* Mobile Menu Drawer */}
+      <div
+        className={`fixed top-0 ${isRTL ? 'left-0' : 'right-0'} z-50 w-full max-w-[320px] h-full bg-background border-s border-border/50 shadow-2xl lg:hidden safe-area-top transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          isMobileMenuOpen
+            ? 'translate-x-0'
+            : isRTL ? '-translate-x-full' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex flex-col h-full">
+          {/* Drawer Header */}
+          <div className="flex items-center justify-between px-4 h-14 border-b border-border/30">
+            <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>
+              <img
+                src={logoUrl}
+                alt={logoAlt}
+                width={80}
+                height={32}
+                className="h-6 w-auto object-contain"
+                loading="eager"
+                decoding="async"
+              />
+            </Link>
+            <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
-            />
-
-            <motion.div
-              initial={{ x: isRTL ? '-100%' : '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: isRTL ? '-100%' : '100%' }}
-              transition={{ type: 'tween', duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
-              className={`fixed top-0 ${isRTL ? 'left-0' : 'right-0'} z-50 w-full max-w-[320px] h-full bg-background border-s border-border/50 shadow-2xl lg:hidden safe-area-top`}
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-muted/50 text-foreground"
+              aria-label="Close menu"
             >
-              <div className="flex flex-col h-full">
-                {/* Drawer Header */}
-                <div className="flex items-center justify-between px-4 h-14 border-b border-border/30">
-                  <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>
-                    <img
-                      src={logoUrl}
-                      alt={logoAlt}
-                      width={80}
-                      height={32}
-                      className="h-6 w-auto object-contain"
-                      loading="eager"
-                      decoding="async"
-                    />
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          {/* Nav Links */}
+          <nav className="flex-1 overflow-y-auto py-3 px-3">
+            <div className="space-y-0.5">
+              {menuItems.map((item) => {
+                const active = isActive(item.link);
+                const label = isRTL ? item.title_ar : item.title_en;
+                const linkClass = `flex items-center justify-between py-3.5 px-4 rounded-xl transition-all duration-200 min-h-[48px] ${
+                  active
+                    ? 'bg-primary/10 text-primary font-semibold border-s-2 border-primary'
+                    : 'text-foreground hover:bg-muted/40 hover:text-primary'
+                }`;
+                if (item.open_in_new_tab) {
+                  return (
+                    <a key={item.id} href={item.link} target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)} className={linkClass}>
+                      <span className="text-base">{label}</span>
+                      <ChevronRight className={`w-4 h-4 text-muted-foreground ${isRTL ? 'rotate-180' : ''}`} />
+                    </a>
+                  );
+                }
+                return (
+                  <Link key={item.id} to={item.link} onClick={() => setIsMobileMenuOpen(false)} className={linkClass}>
+                    <span className="text-base">{label}</span>
+                    <ChevronRight className={`w-4 h-4 text-muted-foreground ${isRTL ? 'rotate-180' : ''}`} />
                   </Link>
-                  <button
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-muted/50 text-foreground"
-                    aria-label="Close menu"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-4 space-y-2">
+              {showLanguageToggle && (
+                <div className="px-4 py-3 rounded-xl bg-muted/20 flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">{t('common.language', 'Language')}</span>
+                  <LanguageToggle />
                 </div>
-
-                {/* Nav Links */}
-                <nav className="flex-1 overflow-y-auto py-3 px-3">
-                  <div className="space-y-0.5">
-                    {menuItems.map((item) => {
-                      const active = isActive(item.link);
-                      const label = isRTL ? item.title_ar : item.title_en;
-                      const linkClass = `flex items-center justify-between py-3.5 px-4 rounded-xl transition-all duration-200 min-h-[48px] ${
-                        active
-                          ? 'bg-primary/10 text-primary font-semibold border-s-2 border-primary'
-                          : 'text-foreground hover:bg-muted/40 hover:text-primary'
-                      }`;
-
-                      if (item.open_in_new_tab) {
-                        return (
-                          <a
-                            key={item.id}
-                            href={item.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className={linkClass}
-                          >
-                            <span className="text-base">{label}</span>
-                            <ChevronRight className={`w-4 h-4 text-muted-foreground ${isRTL ? 'rotate-180' : ''}`} />
-                          </a>
-                        );
-                      }
-                      return (
-                        <Link
-                          key={item.id}
-                          to={item.link}
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className={linkClass}
-                        >
-                          <span className="text-base">{label}</span>
-                          <ChevronRight className={`w-4 h-4 text-muted-foreground ${isRTL ? 'rotate-180' : ''}`} />
-                        </Link>
-                      );
-                    })}
-                  </div>
-
-                  {/* Language Toggle in drawer */}
-                  <div className="mt-4 space-y-2">
-                    {showLanguageToggle && (
-                      <div className="px-4 py-3 rounded-xl bg-muted/20 flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">{t('common.language', 'Language')}</span>
-                        <LanguageToggle />
-                      </div>
-                    )}
-                    <div className="px-4 py-3 rounded-xl bg-muted/20 flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">{isRTL ? 'الوضع' : 'Theme'}</span>
-                      <ThemeToggle />
-                    </div>
-                  </div>
-                </nav>
-
-                {/* Footer Auth */}
-                <div className="p-4 border-t border-border/30 space-y-2.5 safe-area-bottom">
-                  {user ? (
-                    <>
-                      <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block">
-                        <Button variant="outline" className="w-full h-12 text-base gap-3 border-border/50">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-                            <span className="text-sm font-bold text-primary-foreground">
-                              {profile?.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
-                            </span>
-                          </div>
-                          {profile?.full_name || t('nav.dashboard')}
-                        </Button>
-                      </Link>
-                      <LogoutConfirmDialog onConfirm={handleSignOut}>
-                        <Button variant="ghost" className="w-full h-11 text-sm text-muted-foreground">
-                          <LogOut className="w-4 h-4 me-2" />
-                          {t('common.logout')}
-                        </Button>
-                      </LogoutConfirmDialog>
-                    </>
-                  ) : (
-                    <>
-                      {loginButton.is_visible && (
-                        <Link to={loginButton.link} onClick={() => setIsMobileMenuOpen(false)} className="block">
-                          <Button variant="outline" className="w-full h-12 text-base border-border/50">
-                            {isRTL ? loginButton.text_ar : loginButton.text_en}
-                          </Button>
-                        </Link>
-                      )}
-                      {ctaButton.is_visible && (
-                        <Link to={ctaButton.link} onClick={() => setIsMobileMenuOpen(false)} className="block">
-                          <Button className="w-full h-12 text-base font-bold bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.3)]">
-                            {isRTL ? ctaButton.text_ar : ctaButton.text_en}
-                          </Button>
-                        </Link>
-                      )}
-                    </>
-                  )}
-                </div>
+              )}
+              <div className="px-4 py-3 rounded-xl bg-muted/20 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{isRTL ? 'الوضع' : 'Theme'}</span>
+                <ThemeToggle />
               </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+            </div>
+          </nav>
+          {/* Footer Auth */}
+          <div className="p-4 border-t border-border/30 space-y-2.5 safe-area-bottom">
+            {user ? (
+              <>
+                <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block">
+                  <Button variant="outline" className="w-full h-12 text-base gap-3 border-border/50">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                      <span className="text-sm font-bold text-primary-foreground">
+                        {profile?.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
+                      </span>
+                    </div>
+                    {profile?.full_name || t('nav.dashboard')}
+                  </Button>
+                </Link>
+                <LogoutConfirmDialog onConfirm={handleSignOut}>
+                  <Button variant="ghost" className="w-full h-11 text-sm text-muted-foreground">
+                    <LogOut className="w-4 h-4 me-2" />
+                    {t('common.logout')}
+                  </Button>
+                </LogoutConfirmDialog>
+              </>
+            ) : (
+              <>
+                {loginButton.is_visible && (
+                  <Link to={loginButton.link} onClick={() => setIsMobileMenuOpen(false)} className="block">
+                    <Button variant="outline" className="w-full h-12 text-base border-border/50">
+                      {isRTL ? loginButton.text_ar : loginButton.text_en}
+                    </Button>
+                  </Link>
+                )}
+                {ctaButton.is_visible && (
+                  <Link to={ctaButton.link} onClick={() => setIsMobileMenuOpen(false)} className="block">
+                    <Button className="w-full h-12 text-base font-bold bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.3)]">
+                      {isRTL ? ctaButton.text_ar : ctaButton.text_en}
+                    </Button>
+                  </Link>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
     </>
   );
 };
