@@ -27,14 +27,15 @@ function formatCount(count: number) {
 
 const delayClass = (i: number) => `anim-delay-${Math.min(i + 1, 8)}`;
 
-const CommunitySection: React.FC<{ content?: CommunityContent; isLoading?: boolean }> = ({ content: propContent, isLoading: propLoading }) => {
+interface CommunitySectionProps {
+  content?: CommunityContent;
+  contentLoading?: boolean;
+}
+const CommunitySection: React.FC<CommunitySectionProps> = ({ content, contentLoading = false }) => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const ref = useScrollReveal() as React.RefObject<HTMLElement>;
 
-  const { data: fetchedContent, isLoading: fetchedContentLoading } = useLandingContent<CommunityContent>('community');
-  const content = propContent || fetchedContent;
-  const contentLoading = propLoading ?? fetchedContentLoading;
   const { data: heroContent } = useLandingContent<HeroLandingContent>('hero');
 
   const needsLiveStats = useMemo(() => {
