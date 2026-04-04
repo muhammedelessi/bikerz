@@ -74,7 +74,7 @@ import { toast } from 'sonner';
 import BunnyVideoUploader from '@/components/admin/BunnyVideoUploader';
 import TestQuestionManager from '@/components/admin/TestQuestionManager';
 import LessonQuizManager from '@/components/admin/LessonQuizManager';
-import RichTextEditor from '@/components/admin/RichTextEditor';
+const RichTextEditor = React.lazy(() => import('@/components/admin/RichTextEditor'));
 import ImageUploader from '@/components/admin/content/ImageUploader';
 import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';
 
