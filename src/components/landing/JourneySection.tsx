@@ -8,7 +8,7 @@ import {
   Gift, Medal, Flag, Compass, Mountain, Sun, Moon, Wind,
   LucideIcon
 } from 'lucide-react';
-import { useLandingContent, JourneyContent } from '@/hooks/useLandingContent';
+import { JourneyContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
