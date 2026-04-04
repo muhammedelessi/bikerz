@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+
 import { useInView } from "react-intersection-observer";
 import { Gift, Copy, Check, Sparkles } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
