@@ -22,7 +22,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
-import heroRiderBg from "@/assets/hero-rider.webp";
+
 
 interface HeroLandingContent extends HeroContent {
   defaultHeroImage?: string;
@@ -168,7 +168,7 @@ const HeroSection: React.FC = () => {
           transition={{ duration: 2.8, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
           <img
-            src={heroRiderBg}
+            src="/hero-rider.webp"
             alt=""
             width={1920}
             height={1080}
