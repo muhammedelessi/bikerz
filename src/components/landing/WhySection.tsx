@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { 
   Shield, Award, Navigation, Users, Bike, Route, Trophy,
@@ -80,18 +79,11 @@ const WhySection: React.FC<WhySectionProps> = ({ content, isLoading = false }) =
     setTimeout(() => setIsPaused(false), 2000);
   };
 
-  const [direction, setDirection] = useState(1);
-
   const goToSlide = (index: number) => {
-    setDirection(index > activeIndex ? 1 : -1);
     setActiveIndex(index);
     setIsPaused(true);
     setTimeout(() => setIsPaused(false), 3000);
   };
-
-  useEffect(() => {
-    setDirection(1);
-  }, [activeIndex]);
 
   return (
     <section ref={(el) => { (ref as any)(el); (scrollRef as any).current = el; }} className="relative py-4 sm:py-10 overflow-hidden" style={{ minHeight: '500px' }}>
@@ -138,30 +130,25 @@ const WhySection: React.FC<WhySectionProps> = ({ content, isLoading = false }) =
               >
                 {/* Progress bar at top */}
                 <div className="absolute top-0 inset-x-0 h-0.5 bg-border/10">
-                  <motion.div
+                  <div
                     key={activeIndex}
                     className="h-full bg-primary rounded-full"
-                    initial={{ width: '0%' }}
-                    animate={{ width: '100%' }}
-                    transition={{ duration: 3.5, ease: 'linear' }}
+                    style={{ animation: 'growFull 3.5s linear forwards' }}
                   />
                 </div>
 
-                <AnimatePresence mode="wait" custom={direction}>
-                  <motion.div
-                    key={activeIndex}
-                    initial={{ opacity: 0, x: direction > 0 ? (isRTL ? -60 : 60) : (isRTL ? 60 : -60) }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: direction > 0 ? (isRTL ? 60 : -60) : (isRTL ? -60 : 60) }}
-                    transition={{ duration: 0.3, ease: 'easeInOut' }}
-                    className="w-full px-5 py-8"
-                  >
-                    {(() => {
-                      const card = cards[activeIndex];
-                      const IconComponent = iconMap[card.icon] || Shield;
-                      const cardTitle = isRTL ? card.title_ar : card.title_en;
-                      const cardDesc = isRTL ? card.description_ar : card.description_en;
-                      return (
+                <div className="relative w-full min-h-[200px] flex items-center justify-center">
+                  {cards.map((card, i) => {
+                    if (i !== activeIndex) return null;
+                    const IconComponent = iconMap[card.icon] || Shield;
+                    const cardTitle = isRTL ? card.title_ar : card.title_en;
+                    const cardDesc = isRTL ? card.description_ar : card.description_en;
+                    return (
+                      <div
+                        key={i}
+                        className="w-full px-5 py-8 transition-opacity duration-300 ease-in-out"
+                        style={{ animation: 'fadeIn 0.3s ease-in-out forwards' }}
+                      >
                         <div className="flex flex-col items-center text-center gap-3">
                           <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center">
                             <IconComponent className="w-7 h-7 text-primary-foreground" />
@@ -169,10 +156,10 @@ const WhySection: React.FC<WhySectionProps> = ({ content, isLoading = false }) =
                           <h3 className="text-base font-bold text-foreground leading-snug">{cardTitle}</h3>
                           <p className="text-sm text-muted-foreground leading-relaxed max-w-[260px]">{cardDesc}</p>
                         </div>
-                      );
-                    })()}
-                  </motion.div>
-                </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Dot indicators */}

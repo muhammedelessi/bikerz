@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
 import AnimatedCounter from "@/components/common/AnimatedCounter";
-import { LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,17 +8,11 @@ import {
   GraduationCap,
   PlayCircle,
   BookOpen,
-  Shield,
-  Bike,
-  Route,
-  Gauge,
-  Trophy,
-  Compass,
-  Wrench,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 import { HeroContent } from "@/hooks/useLandingContent";
 
@@ -64,13 +57,9 @@ const StatCard: React.FC<{
   label: string;
   icon: React.ElementType;
   index: number;
-  reducedMotion: boolean | null;
-}> = ({ value, label, icon: Icon, index, reducedMotion }) => (
-  <m.div
-    initial={reducedMotion ? {} : { opacity: 0, y: 24 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.55, delay: 1.1 + index * 0.12, type: "spring", stiffness: 160, damping: 18 }}
-    className="group relative flex flex-col items-center text-center"
+}> = ({ value, label, icon: Icon, index }) => (
+  <div
+    className={`anim-fade-up anim-delay-${Math.min(index + 1, 8)} group relative flex flex-col items-center text-center`}
   >
     {/* Icon */}
     <div
@@ -92,7 +81,7 @@ const StatCard: React.FC<{
     <span className="mt-1 text-[9px] sm:text-[10px] text-white/40 uppercase tracking-[0.16em] font-semibold">
       {label}
     </span>
-  </m.div>
+  </div>
 );
 
 /* ─────────────────────────────────────────────
@@ -104,7 +93,7 @@ interface HeroSectionProps {
 }
 const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
   const { isRTL } = useLanguage();
-  const prefersReducedMotion = useReducedMotion();
+  const ref = useScrollReveal() as React.RefObject<HTMLElement>;
 
   const showStats = content?.show_stats !== false && content?.show_stats !== "false";
 
@@ -146,8 +135,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
     [membersValue, lessonsValue, successValue, coursesValue, isRTL],
   );
 
-  const anim = (dur: number, delay = 0) => (prefersReducedMotion ? { duration: 0 } : { duration: dur, delay });
-
   const title = isRTL ? content?.title_ar || "لنقد بثقة" : content?.title_en || "Ride with Confidence";
   const subtitle = isRTL
     ? content?.subtitle_ar || "انطلق في رحلتك مع أفضل مدربي الدراجات النارية"
@@ -157,222 +144,156 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
     : content?.secondary_cta_en || "Explore Courses";
 
   return (
-    <LazyMotion features={domAnimation} strict>
-      <section
-        className="relative flex flex-col overflow-hidden bg-black"
-        style={{ minHeight: "100svh" }}
-        dir={isRTL ? "rtl" : "ltr"}
+    <section
+      ref={ref}
+      className="relative flex flex-col overflow-hidden bg-black"
+      style={{ minHeight: "100svh" }}
+      dir={isRTL ? "rtl" : "ltr"}
+    >
+      {/* ── Background Image with Ken Burns ── */}
+      <div className="absolute inset-0 z-0">
+        <picture>
+          <source media="(max-width: 768px)" srcSet="/hero-rider-mobile.webp" />
+          <img
+            src="/hero-rider.webp"
+            alt=""
+            width={1920}
+            height={1080}
+            className="w-full h-full object-cover"
+            loading="eager"
+            fetchPriority="high"
+            decoding="sync"
+          />
+        </picture>
+      </div>
+
+      {/* ── Overlay stack for depth ── */}
+      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black via-black/60 to-black/20" />
+      <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/40 via-transparent to-transparent" />
+      <div
+        className="absolute inset-0 z-[1]"
+        style={{
+          background: isRTL
+            ? "linear-gradient(to left, rgba(0,0,0,0.3), transparent 50%)"
+            : "linear-gradient(to right, rgba(0,0,0,0.3), transparent 50%)",
+        }}
+      />
+
+      {/* ── Main Content ── */}
+      <div
+        className="relative z-10 flex-1 flex flex-col items-center justify-center
+                      max-w-[900px] mx-auto w-full px-5 sm:px-8
+                      pt-20 sm:pt-24 pb-8 sm:pb-12 text-center"
       >
-        {/* ── Background Image with Ken Burns ── */}
-        <div className="absolute inset-0 z-0">
-          <picture>
-            <source media="(max-width: 768px)" srcSet="/hero-rider-mobile.webp" />
-            <img
-              src="/hero-rider.webp"
-              alt=""
-              width={1920}
-              height={1080}
-              className="w-full h-full object-cover"
-              loading="eager"
-              fetchPriority="high"
-              decoding="sync"
-            />
-          </picture>
-        </div>
-
-        {/* ── Overlay stack for depth ── */}
-        <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black via-black/60 to-black/20" />
-        <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/40 via-transparent to-transparent" />
-        <div
-          className="absolute inset-0 z-[1]"
-          style={{
-            background: isRTL
-              ? "linear-gradient(to left, rgba(0,0,0,0.3), transparent 50%)"
-              : "linear-gradient(to right, rgba(0,0,0,0.3), transparent 50%)",
-          }}
-        />
-
-        {/* ── Floating Identity Icons ── */}
-        <div className="absolute inset-0 z-[2] pointer-events-none overflow-hidden hidden md:block">
-          {[
-            { Icon: Shield, x: "6%", y: "20%", size: 26, delay: 0, dur: 6.5 },
-            { Icon: Bike, x: "90%", y: "18%", size: 30, delay: 0.5, dur: 7 },
-            { Icon: Route, x: "7%", y: "70%", size: 22, delay: 1, dur: 8 },
-            { Icon: Gauge, x: "88%", y: "65%", size: 24, delay: 1.5, dur: 6.5 },
-            { Icon: Trophy, x: "4%", y: "45%", size: 20, delay: 0.8, dur: 7.5 },
-            { Icon: Compass, x: "93%", y: "42%", size: 22, delay: 1.2, dur: 6.8 },
-            { Icon: Wrench, x: "14%", y: "86%", size: 18, delay: 2, dur: 7.2 },
-            { Icon: GraduationCap, x: "82%", y: "82%", size: 20, delay: 0.3, dur: 8.2 },
-          ].map(({ Icon, x, y, size, delay, dur }, i) => (
-            <m.div
-              key={i}
-              className="absolute"
-              style={{ left: x, top: y }}
-              initial={prefersReducedMotion ? { opacity: 0.5 } : { opacity: 0, scale: 0.6 }}
-              animate={
-                prefersReducedMotion
-                  ? { opacity: 0.5 }
-                  : {
-                      opacity: [0, 0.55, 0.35, 0.55],
-                      scale: [0.85, 1, 0.92, 1],
-                      y: [0, -10, 0, 10, 0],
-                    }
-              }
-              transition={
-                prefersReducedMotion
-                  ? { duration: 0 }
-                  : {
-                      duration: dur,
-                      repeat: Infinity,
-                      repeatType: "mirror" as const,
-                      delay,
-                      ease: "easeInOut",
-                    }
-              }
-            >
-              <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm">
-                <Icon className="text-primary/70" size={size} strokeWidth={1.5} />
-              </div>
-            </m.div>
-          ))}
-        </div>
-
-        {/* ── Main Content ── */}
-        <div
-          className="relative z-10 flex-1 flex flex-col items-center justify-center
-                        max-w-[900px] mx-auto w-full px-5 sm:px-8
-                        pt-20 sm:pt-24 pb-8 sm:pb-12 text-center"
-        >
-          {/* Badge */}
-          <m.div
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={anim(0.55, 0.2)}
-            className="mb-5 sm:mb-7"
+        {/* Badge */}
+        <div className="anim-fade-up mb-5 sm:mb-7">
+          <span
+            className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full
+                           text-[10px] sm:text-xs font-bold uppercase tracking-[0.14em]
+                           bg-white/[0.06] text-primary/90
+                           border border-primary/20 backdrop-blur-sm"
           >
-            <span
-              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full
-                             text-[10px] sm:text-xs font-bold uppercase tracking-[0.14em]
-                             bg-white/[0.06] text-primary/90
-                             border border-primary/20 backdrop-blur-sm"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-              </span>
-              {isRTL ? "أكاديمية بايكرز" : "BIKERZ Academy"}
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
             </span>
-          </m.div>
-
-          {/* Title */}
-          <m.h1
-            initial={{ opacity: 0, y: 36 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={anim(0.7, 0.35)}
-            className="text-[28px] sm:text-4xl md:text-5xl lg:text-[56px]
-                       font-black leading-[1.1] tracking-tight
-                       text-white mb-4 sm:mb-5 max-w-3xl"
-          >
-            {title}
-          </m.h1>
-
-          {/* Subtitle */}
-          <m.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={anim(0.6, 0.5)}
-            className="text-[14px] sm:text-base md:text-lg
-                       text-white/55 leading-[1.7] font-normal
-                       mb-7 sm:mb-9 max-w-lg"
-          >
-            {subtitle}
-          </m.p>
-
-          {/* CTA Buttons */}
-          <m.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={anim(0.5, 0.65)}
-            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full sm:w-auto"
-          >
-            <Link to="/courses" className="sm:flex-none">
-              <Button
-                variant="hero"
-                size="default"
-                className="w-full group gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4
-                           text-xs sm:text-sm font-bold uppercase tracking-wide
-                           shadow-[0_4px_24px_rgba(232,66,10,0.3)]
-                           hover:shadow-[0_6px_32px_rgba(232,66,10,0.45)]
-                           transition-shadow duration-300"
-              >
-                <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current transition-transform group-hover:scale-110" />
-                {ctaText}
-              </Button>
-            </Link>
-            <Link to="/join-community" className="sm:flex-none">
-              <Button
-                variant="heroOutline"
-                size="default"
-                className="w-full group gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4
-                           text-xs sm:text-sm font-bold uppercase tracking-wide
-                           border-white/15 text-white/70
-                           hover:bg-white/[0.06] hover:border-white/25 hover:text-white
-                           transition-all duration-300"
-              >
-                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:scale-110" />
-                {isRTL ? "انضم لمجتمع بايكرز" : "Join Bikerz Community"}
-              </Button>
-            </Link>
-          </m.div>
-        </div>
-
-        {/* ── Stats Bar — anchored to bottom ── */}
-        <div className="relative z-10 w-full">
-          <div className="max-w-[780px] mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
-            <div
-              className="grid grid-cols-4 gap-1 sm:gap-0
-                            rounded-2xl sm:rounded-3xl overflow-hidden
-                            bg-white/[0.04] border border-white/[0.07]
-                            backdrop-blur-md
-                            divide-x divide-white/[0.06]
-                            py-4 sm:py-6"
-              style={{ minHeight: '80px' }}
-            >
-              {showStats && displayStats.map((stat, i) => (
-                <StatCard
-                  key={stat.key}
-                  value={stat.value}
-                  label={stat.label}
-                  icon={stat.icon}
-                  index={i}
-                  reducedMotion={prefersReducedMotion}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* ── Scroll hint ── */}
-        <m.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={anim(0.5, 1.5)}
-          className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10
-                     flex flex-col items-center gap-1"
-        >
-          <div className="w-[18px] h-7 rounded-full border border-white/15 flex justify-center pt-[5px]">
-            <m.span
-              className="w-[2px] h-2 bg-primary rounded-full"
-              animate={{ y: [0, 8, 0], opacity: [1, 0, 0] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: "easeIn" }}
-            />
-          </div>
-          <span className="text-[7px] uppercase tracking-[0.2em] text-white/20 font-semibold">
-            {isRTL ? "مرّر" : "scroll"}
+            {isRTL ? "أكاديمية بايكرز" : "BIKERZ Academy"}
           </span>
-        </m.div>
-      </section>
-    </LazyMotion>
+        </div>
+
+        {/* Title */}
+        <h1
+          className="anim-fade-up anim-delay-1 text-[28px] sm:text-4xl md:text-5xl lg:text-[56px]
+                     font-black leading-[1.1] tracking-tight
+                     text-white mb-4 sm:mb-5 max-w-3xl"
+        >
+          {title}
+        </h1>
+
+        {/* Subtitle */}
+        <p
+          className="anim-fade-up anim-delay-2 text-[14px] sm:text-base md:text-lg
+                     text-white/55 leading-[1.7] font-normal
+                     mb-7 sm:mb-9 max-w-lg"
+        >
+          {subtitle}
+        </p>
+
+        {/* CTA Buttons */}
+        <div
+          className="anim-fade-up anim-delay-3 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full sm:w-auto"
+        >
+          <Link to="/courses" className="sm:flex-none">
+            <Button
+              variant="hero"
+              size="default"
+              className="w-full group gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4
+                         text-xs sm:text-sm font-bold uppercase tracking-wide
+                         shadow-[0_4px_24px_rgba(232,66,10,0.3)]
+                         hover:shadow-[0_6px_32px_rgba(232,66,10,0.45)]
+                         transition-shadow duration-300"
+            >
+              <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current transition-transform group-hover:scale-110" />
+              {ctaText}
+            </Button>
+          </Link>
+          <Link to="/join-community" className="sm:flex-none">
+            <Button
+              variant="heroOutline"
+              size="default"
+              className="w-full group gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4
+                         text-xs sm:text-sm font-bold uppercase tracking-wide
+                         border-white/15 text-white/70
+                         hover:bg-white/[0.06] hover:border-white/25 hover:text-white
+                         transition-all duration-300"
+            >
+              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:scale-110" />
+              {isRTL ? "انضم لمجتمع بايكرز" : "Join Bikerz Community"}
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* ── Stats Bar — anchored to bottom ── */}
+      <div className="relative z-10 w-full anim-fade-up anim-delay-4">
+        <div className="max-w-[780px] mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
+          <div
+            className="grid grid-cols-4 gap-1 sm:gap-0
+                          rounded-2xl sm:rounded-3xl overflow-hidden
+                          bg-white/[0.04] border border-white/[0.07]
+                          backdrop-blur-md
+                          divide-x divide-white/[0.06]
+                          py-4 sm:py-6"
+            style={{ minHeight: '80px' }}
+          >
+            {showStats && displayStats.map((stat, i) => (
+              <StatCard
+                key={stat.key}
+                value={stat.value}
+                label={stat.label}
+                icon={stat.icon}
+                index={i}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Scroll hint ── */}
+      <div
+        className="anim-fade anim-delay-6 absolute bottom-3 left-1/2 -translate-x-1/2 z-10
+                   flex flex-col items-center gap-1"
+      >
+        <div className="w-[18px] h-7 rounded-full border border-white/15 flex justify-center pt-[5px]">
+          <span
+            className="w-[2px] h-2 bg-primary rounded-full animate-scroll-dot"
+          />
+        </div>
+        <span className="text-[7px] uppercase tracking-[0.2em] text-white/20 font-semibold">
+          {isRTL ? "مرّر" : "scroll"}
+        </span>
+      </div>
+    </section>
   );
 };
 
