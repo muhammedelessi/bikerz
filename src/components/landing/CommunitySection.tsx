@@ -93,7 +93,7 @@ const CommunitySection: React.FC = () => {
   const isLoading = contentLoading || statsLoading;
 
   return (
-    <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden">
+    <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden" style={{ minHeight: '400px' }}>
       {/* Background Image with Black Overlay */}
       <div className="absolute inset-0">
         <picture>
