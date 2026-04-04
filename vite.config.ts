@@ -39,10 +39,6 @@ export default defineConfig(({ mode }) => {
           'vendor-supabase': ['@supabase/supabase-js'],
         },
       },
-      treeshake: {
-        moduleSideEffects: false,
-        propertyReadSideEffects: false,
-      },
     },
   },
 });
