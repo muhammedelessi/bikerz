@@ -1068,25 +1068,27 @@ const AdminCourseEditor: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{isRTL ? 'الوصف (إنجليزي)' : 'Description (English)'}</Label>
-                <RichTextEditor
-                  value={lessonForm.description}
-                  onChange={(val) => setLessonForm({ ...lessonForm, description: val })}
-                  placeholder="Description"
-                />
+            <Suspense fallback={<div className="h-[120px] animate-pulse bg-muted rounded-md" />}>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'الوصف (إنجليزي)' : 'Description (English)'}</Label>
+                  <RichTextEditor
+                    value={lessonForm.description}
+                    onChange={(val) => setLessonForm({ ...lessonForm, description: val })}
+                    placeholder="Description"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'الوصف (عربي)' : 'Description (Arabic)'}</Label>
+                  <RichTextEditor
+                    value={lessonForm.description_ar}
+                    onChange={(val) => setLessonForm({ ...lessonForm, description_ar: val })}
+                    placeholder="الوصف"
+                    dir="rtl"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>{isRTL ? 'الوصف (عربي)' : 'Description (Arabic)'}</Label>
-                <RichTextEditor
-                  value={lessonForm.description_ar}
-                  onChange={(val) => setLessonForm({ ...lessonForm, description_ar: val })}
-                  placeholder="الوصف"
-                  dir="rtl"
-                />
-              </div>
-            </div>
+            </Suspense>
             <div className="space-y-3">
               <Label>{isRTL ? 'الفيديو' : 'Video'}</Label>
               
