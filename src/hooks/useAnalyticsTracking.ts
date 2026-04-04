@@ -70,6 +70,29 @@ function getSessionToken(): string {
 }
 
 export function useAnalyticsTracking(isAdmin = false) {
+  // Disable GA4, Meta Pixel, TikTok Pixel & Hotjar for admin users
+  useEffect(() => {
+    if (isAdmin) {
+      // GA4 built-in opt-out
+      (window as any)['ga-disable-G-DDQSM0LN66'] = true;
+      // Suppress Meta Pixel
+      if (typeof (window as any).fbq === 'function') {
+        (window as any).fbq = function () {};
+      }
+      // Suppress TikTok Pixel
+      if ((window as any).ttq) {
+        (window as any).ttq.track = function () {};
+        (window as any).ttq.page = function () {};
+      }
+      // Remove Hotjar
+      if ((window as any).hj) {
+        (window as any).hj = function () {};
+      }
+    } else {
+      (window as any)['ga-disable-G-DDQSM0LN66'] = false;
+    }
+  }, [isAdmin]);
+
   const location = useLocation();
   const sessionIdRef = useRef<string | null>(null);
   const pageEntryRef = useRef<number>(Date.now());
