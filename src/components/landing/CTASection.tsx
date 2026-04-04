@@ -8,13 +8,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
-const CTASection: React.FC = () => {
+const CTASection: React.FC<{ content?: CTAContent; isLoading?: boolean }> = ({ content: propContent, isLoading: propLoading }) => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const ref = useScrollReveal() as React.RefObject<HTMLElement>;
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
-  const { data: content, isLoading } = useLandingContent<CTAContent>('cta');
+  const { data: fetchedContent, isLoading: fetchedLoading } = useLandingContent<CTAContent>('cta');
+  const content = propContent || fetchedContent;
+  const isLoading = propLoading ?? fetchedLoading;
 
   const title = isRTL ? (content?.title_ar || t('cta.title')) : (content?.title_en || t('cta.title'));
   const subtitle = isRTL ? (content?.subtitle_ar || '') : (content?.subtitle_en || '');
