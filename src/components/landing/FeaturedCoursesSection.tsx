@@ -117,11 +117,8 @@ const FeaturedCoursesSection: React.FC = () => {
 
       <div className="section-container relative z-10">
         {/* Header: title left, view all right */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="flex items-center justify-between mb-6 sm:mb-8"
+        <div
+          className={`flex items-center justify-between mb-6 sm:mb-8 transition-all duration-600 ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
         >
           <div>
             <div className="w-10 h-1 rounded-full bg-primary mb-3" />
