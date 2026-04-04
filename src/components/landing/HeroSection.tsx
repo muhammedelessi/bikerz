@@ -148,6 +148,7 @@ const HeroSection: React.FC = () => {
               className="text-3xl sm:text-4xl md:text-5xl lg:text-[52px] xl:text-6xl
                          font-black leading-[1.08] tracking-tight
                          text-foreground mb-5"
+              style={{ fontWeight: 900, WebkitTextStroke: '0.5px currentColor' }}
             >
               {title}
             </m.h1>
