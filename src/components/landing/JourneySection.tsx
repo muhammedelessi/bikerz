@@ -31,13 +31,13 @@ const stepAccents = [
 
 const delayClass = (i: number) => `anim-delay-${Math.min(i + 1, 8)}`;
 
-const JourneySection: React.FC<{ content?: JourneyContent; isLoading?: boolean }> = ({ content: propContent, isLoading: propLoading }) => {
+interface JourneySectionProps {
+  content?: JourneyContent;
+  isLoading?: boolean;
+}
+const JourneySection: React.FC<JourneySectionProps> = ({ content, isLoading = false }) => {
   const { isRTL } = useLanguage();
   const ref = useScrollReveal() as React.RefObject<HTMLElement>;
-
-  const { data: fetchedContent, isLoading: fetchedLoading } = useLandingContent<JourneyContent>('journey');
-  const content = propContent || fetchedContent;
-  const isLoading = propLoading ?? fetchedLoading;
 
   const title = isRTL ? (content?.title_ar || 'طريقك نحو الإتقان') : (content?.title_en || 'Your Path to Mastery');
   const subtitle = isRTL ? (content?.subtitle_ar || '') : (content?.subtitle_en || '');
