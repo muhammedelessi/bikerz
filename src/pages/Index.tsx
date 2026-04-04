@@ -39,15 +39,15 @@ const Index: React.FC = () => {
 
       <div className="pt-[var(--navbar-h)]">
         <main>
-          <HeroSection />
+          <HeroSection content={landingContent?.hero} isLoading={contentLoading} />
           {/* <FeaturedCoursesSection /> */}
-          <WhySection />
-          <LearnSection />
-          <JourneySection />
+          <WhySection content={landingContent?.why} isLoading={contentLoading} />
+          <LearnSection content={landingContent?.learn} isLoading={contentLoading} />
+          <JourneySection content={landingContent?.journey} isLoading={contentLoading} />
           {/* <TrainingsSection /> */}
           {/* <TrainersSection /> */}
-          <CommunitySection />
-          <CTASection />
+          <CommunitySection content={landingContent?.community} isLoading={contentLoading} />
+          <CTASection content={landingContent?.cta} isLoading={contentLoading} />
         </main>
         <Footer />
       </div>
