@@ -22,13 +22,13 @@ const iconMap: Record<string, LucideIcon> = {
 
 const delayClass = (i: number) => `anim-delay-${Math.min(i + 1, 8)}`;
 
-const LearnSection: React.FC<{ content?: LearnContent; isLoading?: boolean }> = ({ content: propContent, isLoading: propLoading }) => {
+interface LearnSectionProps {
+  content?: LearnContent;
+  isLoading?: boolean;
+}
+const LearnSection: React.FC<LearnSectionProps> = ({ content, isLoading = false }) => {
   const { isRTL } = useLanguage();
   const ref = useScrollReveal() as React.RefObject<HTMLElement>;
-
-  const { data: fetchedContent, isLoading: fetchedLoading } = useLandingContent<LearnContent>('learn');
-  const content = propContent || fetchedContent;
-  const isLoading = propLoading ?? fetchedLoading;
 
   const title = isRTL ? (content?.title_ar || 'ما ستتقنه') : (content?.title_en || 'What You\'ll Master');
   const subtitle = isRTL ? (content?.subtitle_ar || '') : (content?.subtitle_en || '');

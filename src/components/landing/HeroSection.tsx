@@ -98,11 +98,13 @@ const StatCard: React.FC<{
 /* ─────────────────────────────────────────────
    Hero Section
    ───────────────────────────────────────────── */
-const HeroSection: React.FC<{ content?: HeroContent; isLoading?: boolean }> = ({ content: propContent, isLoading: propLoading }) => {
+interface HeroSectionProps {
+  content?: HeroLandingContent;
+  isLoading?: boolean;
+}
+const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
   const { isRTL } = useLanguage();
   const prefersReducedMotion = useReducedMotion();
-  const { data: fetchedContent } = useLandingContent<HeroLandingContent>("hero");
-  const content = (propContent as HeroLandingContent | undefined) || fetchedContent;
 
   const showStats = content?.show_stats !== false && content?.show_stats !== "false";
 
