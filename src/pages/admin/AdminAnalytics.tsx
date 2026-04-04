@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
@@ -12,14 +12,20 @@ import {
 } from '@/components/ui/select';
 import { Calendar, Download, LayoutDashboard, Users, Video, BookOpen, GitBranch, DollarSign, Shield, Server } from 'lucide-react';
 
-import SystemOverview from '@/components/analytics/SystemOverview';
-import UserIntelligence from '@/components/analytics/UserIntelligence';
-import VideoMicroAnalytics from '@/components/analytics/VideoMicroAnalytics';
-import CoursePsychology from '@/components/analytics/CoursePsychology';
-import FunnelConversion from '@/components/analytics/FunnelConversion';
-import RevenueAnalytics from '@/components/analytics/RevenueAnalytics';
-import RetentionChurn from '@/components/analytics/RetentionChurn';
-import InfrastructureMetrics from '@/components/analytics/InfrastructureMetrics';
+const SystemOverview = lazy(() => import('@/components/analytics/SystemOverview'));
+const UserIntelligence = lazy(() => import('@/components/analytics/UserIntelligence'));
+const VideoMicroAnalytics = lazy(() => import('@/components/analytics/VideoMicroAnalytics'));
+const CoursePsychology = lazy(() => import('@/components/analytics/CoursePsychology'));
+const FunnelConversion = lazy(() => import('@/components/analytics/FunnelConversion'));
+const RevenueAnalytics = lazy(() => import('@/components/analytics/RevenueAnalytics'));
+const RetentionChurn = lazy(() => import('@/components/analytics/RetentionChurn'));
+const InfrastructureMetrics = lazy(() => import('@/components/analytics/InfrastructureMetrics'));
+
+const TabFallback = () => (
+  <div className="space-y-4 p-4">
+    <div className="h-[300px] animate-pulse bg-muted rounded-md" />
+  </div>
+);
 
 const AdminAnalytics = () => {
   const { isRTL } = useLanguage();
@@ -92,28 +98,44 @@ const AdminAnalytics = () => {
 
           <div className="mt-6">
             <TabsContent value="overview" className="m-0">
-              <SystemOverview dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <SystemOverview dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
             <TabsContent value="users" className="m-0">
-              <UserIntelligence dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <UserIntelligence dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
             <TabsContent value="videos" className="m-0">
-              <VideoMicroAnalytics dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <VideoMicroAnalytics dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
             <TabsContent value="courses" className="m-0">
-              <CoursePsychology dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <CoursePsychology dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
             <TabsContent value="funnel" className="m-0">
-              <FunnelConversion dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <FunnelConversion dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
             <TabsContent value="revenue" className="m-0">
-              <RevenueAnalytics dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <RevenueAnalytics dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
             <TabsContent value="retention" className="m-0">
-              <RetentionChurn dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <RetentionChurn dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
             <TabsContent value="infra" className="m-0">
-              <InfrastructureMetrics dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <InfrastructureMetrics dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
           </div>
         </Tabs>

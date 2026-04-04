@@ -25,7 +25,11 @@ export default defineConfig(({ mode }) => {
   },
   build: {
     target: "es2020",
+    minify: 'esbuild',
     cssCodeSplit: true,
+    cssMinify: true,
+    reportCompressedSize: false,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -33,9 +37,11 @@ export default defineConfig(({ mode }) => {
           'vendor-query': ['@tanstack/react-query', '@tanstack/query-core'],
           'vendor-ui': ['framer-motion', 'lucide-react', 'sonner'],
           'vendor-supabase': ['@supabase/supabase-js'],
-          'vendor-editor': ['@tiptap/react', '@tiptap/starter-kit', '@tiptap/extension-underline', '@tiptap/extension-text-align'],
-          'vendor-charts': ['recharts'],
         },
+      },
+      treeshake: {
+        moduleSideEffects: false,
+        propertyReadSideEffects: false,
       },
     },
   },

@@ -22,7 +22,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
-import heroRiderBg from "@/assets/hero-rider.webp";
+
 
 interface HeroLandingContent extends HeroContent {
   defaultHeroImage?: string;
@@ -161,22 +161,21 @@ const HeroSection: React.FC = () => {
         dir={isRTL ? "rtl" : "ltr"}
       >
         {/* ── Background Image with Ken Burns ── */}
-        <m.div
-          className="absolute inset-0 z-0"
-          initial={{ scale: 1.08 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 2.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-        >
-          <img
-            src={heroRiderBg}
-            alt=""
-            width={1920}
-            height={1080}
-            className="w-full h-full object-cover"
-            fetchPriority="high"
-            decoding="async"
-          />
-        </m.div>
+        <div className="absolute inset-0 z-0">
+          <picture>
+            <source media="(max-width: 768px)" srcSet="/hero-rider-mobile.webp" />
+            <img
+              src="/hero-rider.webp"
+              alt=""
+              width={1920}
+              height={1080}
+              className="w-full h-full object-cover"
+              loading="eager"
+              fetchPriority="high"
+              decoding="sync"
+            />
+          </picture>
+        </div>
 
         {/* ── Overlay stack for depth ── */}
         <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black via-black/60 to-black/20" />
@@ -325,36 +324,30 @@ const HeroSection: React.FC = () => {
         </div>
 
         {/* ── Stats Bar — anchored to bottom ── */}
-        {showStats && (
-          <m.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={anim(0.6, 0.85)}
-            className="relative z-10 w-full"
-          >
-            <div className="max-w-[780px] mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
-              <div
-                className="grid grid-cols-4 gap-1 sm:gap-0
-                              rounded-2xl sm:rounded-3xl overflow-hidden
-                              bg-white/[0.04] border border-white/[0.07]
-                              backdrop-blur-md
-                              divide-x divide-white/[0.06]
-                              py-4 sm:py-6"
-              >
-                {displayStats.map((stat, i) => (
-                  <StatCard
-                    key={stat.key}
-                    value={stat.value}
-                    label={stat.label}
-                    icon={stat.icon}
-                    index={i}
-                    reducedMotion={prefersReducedMotion}
-                  />
-                ))}
-              </div>
+        <div className="relative z-10 w-full">
+          <div className="max-w-[780px] mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
+            <div
+              className="grid grid-cols-4 gap-1 sm:gap-0
+                            rounded-2xl sm:rounded-3xl overflow-hidden
+                            bg-white/[0.04] border border-white/[0.07]
+                            backdrop-blur-md
+                            divide-x divide-white/[0.06]
+                            py-4 sm:py-6"
+              style={{ minHeight: '80px' }}
+            >
+              {showStats && displayStats.map((stat, i) => (
+                <StatCard
+                  key={stat.key}
+                  value={stat.value}
+                  label={stat.label}
+                  icon={stat.icon}
+                  index={i}
+                  reducedMotion={prefersReducedMotion}
+                />
+              ))}
             </div>
-          </m.div>
-        )}
+          </div>
+        </div>
 
         {/* ── Scroll hint ── */}
         <m.div

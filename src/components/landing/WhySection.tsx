@@ -88,7 +88,7 @@ const WhySection: React.FC = () => {
   }, [activeIndex]);
 
   return (
-    <section ref={ref} className="relative py-4 sm:py-10 overflow-hidden">
+    <section ref={ref} className="relative py-4 sm:py-10 overflow-hidden" style={{ minHeight: '500px' }}>
       {/* Subtle background accent */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
         <div

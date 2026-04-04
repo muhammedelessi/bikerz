@@ -10,7 +10,7 @@ import LanguageToggle from "@/components/common/LanguageToggle";
 import { useAuthPageContent } from "@/hooks/useAuthPageContent";
 import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle, Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
-import defaultHeroImage from "@/assets/hero-rider.webp";
+const defaultHeroImage = "/hero-rider.webp";
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 import { useTheme } from '@/components/ThemeProvider';

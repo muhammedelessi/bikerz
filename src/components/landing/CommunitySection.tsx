@@ -3,7 +3,7 @@ import AnimatedCounter from '@/components/common/AnimatedCounter';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { useLanguage } from '@/contexts/LanguageContext';
-import heroBackground from '@/assets/hero-rider.webp';
+const heroBackground = "/hero-rider.webp";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLandingContent, CommunityContent, HeroContent } from '@/hooks/useLandingContent';
@@ -93,7 +93,7 @@ const CommunitySection: React.FC = () => {
   const isLoading = contentLoading || statsLoading;
 
   return (
-    <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden">
+    <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden" style={{ minHeight: '400px' }}>
       {/* Background Image with Black Overlay */}
       <div className="absolute inset-0">
         <picture>
