@@ -232,7 +232,7 @@ const HeroSection: React.FC = () => {
           </div>
 
           {/* ── Image Column ── */}
-          <div className="relative order-1 lg:order-2 min-h-[45svh] lg:min-h-full">
+          <div className="relative order-1 lg:order-2 min-h-[30svh] sm:min-h-[35svh] lg:min-h-full">
             <m.div
               className="absolute inset-0"
               initial={{ scale: 1.06 }}
@@ -250,20 +250,17 @@ const HeroSection: React.FC = () => {
               />
             </m.div>
 
-            {/* Gradient overlays for seamless blend */}
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent lg:hidden" />
+            {/* Soft bottom fade on mobile only – no transparency on the image itself */}
+            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent lg:hidden" />
+            {/* Desktop: side blend into text column */}
             <div
               className="absolute inset-0 hidden lg:block"
               style={{
                 background: isRTL
-                  ? "linear-gradient(to left, transparent 30%, hsl(var(--background)) 100%)"
-                  : "linear-gradient(to right, transparent 30%, hsl(var(--background)) 100%)",
+                  ? "linear-gradient(to left, transparent 50%, hsl(var(--background)) 98%)"
+                  : "linear-gradient(to right, transparent 50%, hsl(var(--background)) 98%)",
               }}
             />
-            <div className="absolute inset-0 hidden lg:block bg-gradient-to-t from-background/40 via-transparent to-background/20" />
-
-            {/* Corner accent */}
-            <div className="absolute bottom-0 left-0 right-0 lg:hidden h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
           </div>
         </div>
       </section>
