@@ -13,6 +13,7 @@ import TrainersSection from "@/components/landing/TrainersSection";
 import CTASection from "@/components/landing/CTASection";
 import SEOHead from "@/components/common/SEOHead";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAllLandingContent } from '@/hooks/useLandingContent';
 
 const Index: React.FC = () => {
   const { isRTL, language } = useLanguage();
