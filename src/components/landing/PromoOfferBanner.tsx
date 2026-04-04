@@ -63,11 +63,8 @@ const PromoOfferBanner: React.FC = () => {
     <section ref={ref} className="relative py-6 sm:py-8 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-primary/15 via-primary/5 to-primary/15" />
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.6 }}
-        className="section-container relative z-10 !py-0"
+      <div
+        className={`section-container relative z-10 !py-0 transition-all duration-600 ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}
       >
         <div className="relative rounded-2xl border border-primary/30 bg-card/80 backdrop-blur-sm p-6 sm:p-8 overflow-hidden">
           {/* Glow effect */}
