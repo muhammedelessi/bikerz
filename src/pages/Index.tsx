@@ -17,6 +17,7 @@ import { useAllLandingContent } from '@/hooks/useLandingContent';
 
 const Index: React.FC = () => {
   const { isRTL, language } = useLanguage();
+  const { data: landingContent, isLoading: contentLoading } = useAllLandingContent();
 
   useEffect(() => {
     document.documentElement.dir = isRTL ? "rtl" : "ltr";
