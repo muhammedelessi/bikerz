@@ -133,7 +133,7 @@ const FeaturedCoursesSection: React.FC = () => {
             {isRTL ? "عرض الكل" : "View All"}
             <Arrow className="w-4 h-4" />
           </Link>
-        </motion.div>
+        </div>
 
         {/* Horizontal swipeable slider */}
         <div

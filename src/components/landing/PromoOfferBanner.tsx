@@ -107,7 +107,7 @@ const PromoOfferBanner: React.FC = () => {
             </button>
           </div>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 };
