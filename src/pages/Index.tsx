@@ -23,7 +23,10 @@ const Index: React.FC = () => {
   }, [isRTL, language]);
 
   return (
-    <div className="min-h-screen bg-background transition-all duration-300" dir={isRTL ? "rtl" : "ltr"}>
+    <div
+      className="min-h-screen bg-background transition-all duration-300"
+      dir={isRTL ? "rtl" : "ltr"}
+    >
       <SEOHead
         title={isRTL ? "تعلم قيادة الدراجات النارية مع خبراء" : "Learn Motorcycle Riding with Expert Instructors"}
         description="BIKERZ Academy is your premier online motorcycle riding school."
