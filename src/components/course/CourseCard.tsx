@@ -76,7 +76,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
       : t("courses.courseCard.duration.hoursOnly", { h });
   };
 
-  const thumbnailSrc = course.preview_video_thumbnail || course.thumbnail_url || heroImage;
+  const rawThumbnail = course.preview_video_thumbnail || course.thumbnail_url;
+  const thumbnailSrc = getOptimizedImageUrl(rawThumbnail, 640) || heroImage;
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't navigate if clicking on buttons or video area
