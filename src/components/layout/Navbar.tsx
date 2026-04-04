@@ -175,10 +175,8 @@ const Navbar: React.FC = () => {
                   <>
                     {label}
                     {active && (
-                      <motion.span
-                        layoutId="nav-underline"
-                        className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-primary"
-                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      <span
+                        className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-primary transition-all duration-300"
                       />
                     )}
                   </>
