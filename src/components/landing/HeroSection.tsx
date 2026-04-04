@@ -111,7 +111,7 @@ const HeroSection: React.FC = () => {
         dir={isRTL ? "rtl" : "ltr"}
       >
         {/* ── Split Layout ── */}
-        <div className="grid lg:grid-cols-2 min-h-[90svh] lg:min-h-[92svh]">
+        <div className="grid lg:grid-cols-2 min-h-[auto] lg:min-h-[92svh]">
 
           {/* ── Text Column ── */}
           <div className="relative z-10 flex flex-col justify-center px-6 sm:px-10 lg:px-16 xl:px-24 py-20 sm:py-24 lg:py-16 order-2 lg:order-1">
