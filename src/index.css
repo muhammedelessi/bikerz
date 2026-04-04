@@ -610,3 +610,57 @@
     display: none !important;
   }
 }
+
+/* ── Scroll-reveal animations (replaces framer-motion in landing) ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes growWidth {
+  from { width: 0; }
+  to   { width: 40px; }
+}
+
+.anim-fade-up {
+  opacity: 0;
+  animation: fadeInUp 0.55s ease forwards;
+}
+.anim-fade-up.in-view { animation-play-state: running; }
+.anim-fade-up:not(.in-view) { animation-play-state: paused; }
+
+.anim-fade {
+  opacity: 0;
+  animation: fadeIn 0.55s ease forwards paused;
+}
+.anim-scale {
+  opacity: 0;
+  animation: scaleIn 0.4s ease forwards paused;
+}
+.anim-grow-width {
+  width: 0;
+  animation: growWidth 0.5s ease forwards paused;
+}
+
+.anim-fade.in-view,
+.anim-scale.in-view,
+.anim-fade-up.in-view,
+.anim-grow-width.in-view {
+  animation-play-state: running;
+}
+
+.anim-delay-1 { animation-delay: 0.1s; }
+.anim-delay-2 { animation-delay: 0.2s; }
+.anim-delay-3 { animation-delay: 0.3s; }
+.anim-delay-4 { animation-delay: 0.4s; }
+.anim-delay-5 { animation-delay: 0.5s; }
+.anim-delay-6 { animation-delay: 0.6s; }
+.anim-delay-7 { animation-delay: 0.7s; }
+.anim-delay-8 { animation-delay: 0.8s; }
