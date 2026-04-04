@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
+
 import { useInView } from "react-intersection-observer";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
