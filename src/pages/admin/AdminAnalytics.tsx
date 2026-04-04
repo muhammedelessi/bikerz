@@ -98,28 +98,44 @@ const AdminAnalytics = () => {
 
           <div className="mt-6">
             <TabsContent value="overview" className="m-0">
-              <SystemOverview dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <SystemOverview dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
             <TabsContent value="users" className="m-0">
-              <UserIntelligence dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <UserIntelligence dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
             <TabsContent value="videos" className="m-0">
-              <VideoMicroAnalytics dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <VideoMicroAnalytics dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
             <TabsContent value="courses" className="m-0">
-              <CoursePsychology dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <CoursePsychology dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
             <TabsContent value="funnel" className="m-0">
-              <FunnelConversion dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <FunnelConversion dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
             <TabsContent value="revenue" className="m-0">
-              <RevenueAnalytics dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <RevenueAnalytics dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
             <TabsContent value="retention" className="m-0">
-              <RetentionChurn dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <RetentionChurn dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
             <TabsContent value="infra" className="m-0">
-              <InfrastructureMetrics dateRange={dateRange} />
+              <Suspense fallback={<TabFallback />}>
+                <InfrastructureMetrics dateRange={dateRange} />
+              </Suspense>
             </TabsContent>
           </div>
         </Tabs>
