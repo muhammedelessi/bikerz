@@ -13,9 +13,11 @@ import TrainersSection from "@/components/landing/TrainersSection";
 import CTASection from "@/components/landing/CTASection";
 import SEOHead from "@/components/common/SEOHead";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAllLandingContent } from '@/hooks/useLandingContent';
 
 const Index: React.FC = () => {
   const { isRTL, language } = useLanguage();
+  const { data: landingContent, isLoading: contentLoading } = useAllLandingContent();
 
   useEffect(() => {
     document.documentElement.dir = isRTL ? "rtl" : "ltr";
@@ -37,15 +39,15 @@ const Index: React.FC = () => {
 
       <div className="pt-[var(--navbar-h)]">
         <main>
-          <HeroSection />
+          <HeroSection content={landingContent?.hero} isLoading={contentLoading} />
           {/* <FeaturedCoursesSection /> */}
-          <WhySection />
-          <LearnSection />
-          <JourneySection />
+          <WhySection content={landingContent?.why} isLoading={contentLoading} />
+          <LearnSection content={landingContent?.learn} isLoading={contentLoading} />
+          <JourneySection content={landingContent?.journey} isLoading={contentLoading} />
           {/* <TrainingsSection /> */}
           {/* <TrainersSection /> */}
-          <CommunitySection />
-          <CTASection />
+          <CommunitySection content={landingContent?.community} isLoading={contentLoading} />
+          <CTASection content={landingContent?.cta} isLoading={contentLoading} />
         </main>
         <Footer />
       </div>
