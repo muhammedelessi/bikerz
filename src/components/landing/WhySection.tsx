@@ -12,7 +12,7 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import safetyImage from '@/assets/safety-hands.webp';
 import instructorImage from '@/assets/instructor.webp';
-import { useLandingContent, WhyContent } from '@/hooks/useLandingContent';
+import { WhyContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
@@ -31,16 +31,16 @@ const imageMap: Record<number, string | undefined> = {
 
 const delayClass = (i: number) => `anim-delay-${Math.min(i + 1, 8)}`;
 
-const WhySection: React.FC<{ content?: WhyContent; isLoading?: boolean }> = ({ content: propContent, isLoading: propLoading }) => {
+interface WhySectionProps {
+  content?: WhyContent;
+  isLoading?: boolean;
+}
+const WhySection: React.FC<WhySectionProps> = ({ content, isLoading = false }) => {
   const { isRTL } = useLanguage();
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
   const scrollRef = useScrollReveal() as React.RefObject<HTMLElement>;
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-
-  const { data: fetchedContent, isLoading: fetchedLoading } = useLandingContent<WhyContent>('why');
-  const content = propContent || fetchedContent;
-  const isLoading = propLoading ?? fetchedLoading;
 
   const title = isRTL ? (content?.title_ar || 'لماذا تتعلم معنا؟') : (content?.title_en || 'Why Learn With Us?');
   const subtitle = isRTL ? (content?.subtitle_ar || '') : (content?.subtitle_en || '');
