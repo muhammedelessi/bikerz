@@ -188,6 +188,7 @@ export function useAnalyticsTracking(isAdmin = false) {
 
   // Main effect: run on route change
   useEffect(() => {
+    if (isAdmin) return;
     let cancelled = false;
 
     const run = async () => {
@@ -207,15 +208,15 @@ export function useAnalyticsTracking(isAdmin = false) {
     run();
 
     return () => { cancelled = true; };
-  }, [location.pathname, ensureSession, trackPageView, updatePresence]);
+  }, [location.pathname, ensureSession, trackPageView, updatePresence, isAdmin]);
 
   // Heartbeat: update presence every 30s for live users
   useEffect(() => {
+    if (isAdmin) return;
     const interval = setInterval(async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.id) {
         await updatePresence(user.id, location.pathname);
-        // Update session last_activity
         if (sessionIdRef.current) {
           await supabase
             .from('user_sessions')
@@ -227,27 +228,20 @@ export function useAnalyticsTracking(isAdmin = false) {
 
     heartbeatRef.current = interval;
     return () => clearInterval(interval);
-  }, [location.pathname, updatePresence]);
+  }, [location.pathname, updatePresence, isAdmin]);
 
   // On tab close: end session
   useEffect(() => {
+    if (isAdmin) return;
     const handleBeforeUnload = () => {
       if (sessionIdRef.current) {
-        const timeOnPage = Math.round((Date.now() - pageEntryRef.current) / 1000);
-        // Use sendBeacon for reliable delivery on tab close
-        const payload = JSON.stringify({
-          ended_at: new Date().toISOString(),
-          is_active: false,
-        });
-        // Best-effort update via fetch keepalive
         navigator.sendBeacon?.(
           `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/user_sessions?id=eq.${sessionIdRef.current}`,
-          // sendBeacon doesn't support PATCH easily, so just let it expire
         );
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, []);
+  }, [isAdmin]);
 }
