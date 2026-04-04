@@ -10,6 +10,13 @@ import { Button } from "@/components/ui/button";
 
 const heroImage = "/hero-rider.webp";
 
+function getOptimizedImageUrl(url: string | null | undefined, width: number): string | undefined {
+  if (!url) return undefined;
+  if (!url.includes('supabase.co/storage')) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}width=${width}&quality=80&format=webp`;
+}
+
 export interface CourseCardProps {
   course: {
     id: string;
