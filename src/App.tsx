@@ -109,7 +109,8 @@ const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 // Analytics tracker component - must be inside BrowserRouter
 const AnalyticsTracker = () => {
-  useAnalyticsTracking();
+  const { canAccessAdmin } = useAuth();
+  useAnalyticsTracking(canAccessAdmin);
   return null;
 };
 
