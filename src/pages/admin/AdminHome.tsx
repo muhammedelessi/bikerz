@@ -21,22 +21,7 @@ import {
   UserCheck,
   Star,
 } from 'lucide-react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-} from '@/lib/recharts-compat';
-
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
+const AdminHomeCharts = lazy(() => import('@/components/admin/AdminHomeCharts'));
 
 const AdminHome: React.FC = () => {
   const { t } = useTranslation();
