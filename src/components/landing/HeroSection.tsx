@@ -162,16 +162,19 @@ const HeroSection: React.FC = () => {
       >
         {/* ── Background Image with Ken Burns ── */}
         <div className="absolute inset-0 z-0">
-          <img
-            src="/hero-rider.webp"
-            alt=""
-            width={1920}
-            height={1080}
-            className="w-full h-full object-cover"
-            loading="eager"
-            fetchPriority="high"
-            decoding="sync"
-          />
+          <picture>
+            <source media="(max-width: 768px)" srcSet="/hero-rider-mobile.webp" />
+            <img
+              src="/hero-rider.webp"
+              alt=""
+              width={1920}
+              height={1080}
+              className="w-full h-full object-cover"
+              loading="eager"
+              fetchPriority="high"
+              decoding="sync"
+            />
+          </picture>
         </div>
 
         {/* ── Overlay stack for depth ── */}
