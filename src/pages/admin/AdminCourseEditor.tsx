@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -74,7 +74,7 @@ import { toast } from 'sonner';
 import BunnyVideoUploader from '@/components/admin/BunnyVideoUploader';
 import TestQuestionManager from '@/components/admin/TestQuestionManager';
 import LessonQuizManager from '@/components/admin/LessonQuizManager';
-import RichTextEditor from '@/components/admin/RichTextEditor';
+const RichTextEditor = React.lazy(() => import('@/components/admin/RichTextEditor'));
 import ImageUploader from '@/components/admin/content/ImageUploader';
 import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';
 
@@ -990,25 +990,27 @@ const AdminCourseEditor: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{isRTL ? 'الوصف (إنجليزي)' : 'Description (English)'}</Label>
-                <RichTextEditor
-                  value={chapterForm.description}
-                  onChange={(val) => setChapterForm({ ...chapterForm, description: val })}
-                  placeholder="Description"
-                />
+            <Suspense fallback={<div className="h-[120px] animate-pulse bg-muted rounded-md" />}>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'الوصف (إنجليزي)' : 'Description (English)'}</Label>
+                  <RichTextEditor
+                    value={chapterForm.description}
+                    onChange={(val) => setChapterForm({ ...chapterForm, description: val })}
+                    placeholder="Description"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'الوصف (عربي)' : 'Description (Arabic)'}</Label>
+                  <RichTextEditor
+                    value={chapterForm.description_ar}
+                    onChange={(val) => setChapterForm({ ...chapterForm, description_ar: val })}
+                    placeholder="الوصف"
+                    dir="rtl"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>{isRTL ? 'الوصف (عربي)' : 'Description (Arabic)'}</Label>
-                <RichTextEditor
-                  value={chapterForm.description_ar}
-                  onChange={(val) => setChapterForm({ ...chapterForm, description_ar: val })}
-                  placeholder="الوصف"
-                  dir="rtl"
-                />
-              </div>
-            </div>
+            </Suspense>
             <div className="flex gap-6">
               <div className="flex items-center gap-3">
                 <Switch
@@ -1066,25 +1068,27 @@ const AdminCourseEditor: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{isRTL ? 'الوصف (إنجليزي)' : 'Description (English)'}</Label>
-                <RichTextEditor
-                  value={lessonForm.description}
-                  onChange={(val) => setLessonForm({ ...lessonForm, description: val })}
-                  placeholder="Description"
-                />
+            <Suspense fallback={<div className="h-[120px] animate-pulse bg-muted rounded-md" />}>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'الوصف (إنجليزي)' : 'Description (English)'}</Label>
+                  <RichTextEditor
+                    value={lessonForm.description}
+                    onChange={(val) => setLessonForm({ ...lessonForm, description: val })}
+                    placeholder="Description"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'الوصف (عربي)' : 'Description (Arabic)'}</Label>
+                  <RichTextEditor
+                    value={lessonForm.description_ar}
+                    onChange={(val) => setLessonForm({ ...lessonForm, description_ar: val })}
+                    placeholder="الوصف"
+                    dir="rtl"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>{isRTL ? 'الوصف (عربي)' : 'Description (Arabic)'}</Label>
-                <RichTextEditor
-                  value={lessonForm.description_ar}
-                  onChange={(val) => setLessonForm({ ...lessonForm, description_ar: val })}
-                  placeholder="الوصف"
-                  dir="rtl"
-                />
-              </div>
-            </div>
+            </Suspense>
             <div className="space-y-3">
               <Label>{isRTL ? 'الفيديو' : 'Video'}</Label>
               
