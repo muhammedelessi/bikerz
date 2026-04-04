@@ -12,14 +12,20 @@ import {
 } from '@/components/ui/select';
 import { Calendar, Download, LayoutDashboard, Users, Video, BookOpen, GitBranch, DollarSign, Shield, Server } from 'lucide-react';
 
-import SystemOverview from '@/components/analytics/SystemOverview';
-import UserIntelligence from '@/components/analytics/UserIntelligence';
-import VideoMicroAnalytics from '@/components/analytics/VideoMicroAnalytics';
-import CoursePsychology from '@/components/analytics/CoursePsychology';
-import FunnelConversion from '@/components/analytics/FunnelConversion';
-import RevenueAnalytics from '@/components/analytics/RevenueAnalytics';
-import RetentionChurn from '@/components/analytics/RetentionChurn';
-import InfrastructureMetrics from '@/components/analytics/InfrastructureMetrics';
+const SystemOverview = lazy(() => import('@/components/analytics/SystemOverview'));
+const UserIntelligence = lazy(() => import('@/components/analytics/UserIntelligence'));
+const VideoMicroAnalytics = lazy(() => import('@/components/analytics/VideoMicroAnalytics'));
+const CoursePsychology = lazy(() => import('@/components/analytics/CoursePsychology'));
+const FunnelConversion = lazy(() => import('@/components/analytics/FunnelConversion'));
+const RevenueAnalytics = lazy(() => import('@/components/analytics/RevenueAnalytics'));
+const RetentionChurn = lazy(() => import('@/components/analytics/RetentionChurn'));
+const InfrastructureMetrics = lazy(() => import('@/components/analytics/InfrastructureMetrics'));
+
+const TabFallback = () => (
+  <div className="space-y-4 p-4">
+    <div className="h-[300px] animate-pulse bg-muted rounded-md" />
+  </div>
+);
 
 const AdminAnalytics = () => {
   const { isRTL } = useLanguage();
