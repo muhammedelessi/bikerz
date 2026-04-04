@@ -168,7 +168,7 @@ const HeroSection: React.FC = () => {
           transition={{ duration: 2.8, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
           <img
-            src={heroRiderBg}
+            src="/hero-rider.webp"
             alt=""
             width={1920}
             height={1080}
