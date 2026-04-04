@@ -244,4 +244,23 @@ export function useAnalyticsTracking(isAdmin = false) {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isAdmin]);
+
+  // Disable GA4, Meta Pixel, TikTok Pixel & Hotjar for admin users
+  useEffect(() => {
+    if (isAdmin) {
+      (window as any)['ga-disable-G-DDQSM0LN66'] = true;
+      if (typeof (window as any).fbq === 'function') {
+        (window as any).fbq = function () {};
+      }
+      if ((window as any).ttq) {
+        (window as any).ttq.track = function () {};
+        (window as any).ttq.page = function () {};
+      }
+      if ((window as any).hj) {
+        (window as any).hj = function () {};
+      }
+    } else {
+      (window as any)['ga-disable-G-DDQSM0LN66'] = false;
+    }
+  }, [isAdmin]);
 }
