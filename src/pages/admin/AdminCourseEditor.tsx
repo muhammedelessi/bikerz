@@ -990,25 +990,27 @@ const AdminCourseEditor: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{isRTL ? 'الوصف (إنجليزي)' : 'Description (English)'}</Label>
-                <RichTextEditor
-                  value={chapterForm.description}
-                  onChange={(val) => setChapterForm({ ...chapterForm, description: val })}
-                  placeholder="Description"
-                />
+            <Suspense fallback={<div className="h-[120px] animate-pulse bg-muted rounded-md" />}>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'الوصف (إنجليزي)' : 'Description (English)'}</Label>
+                  <RichTextEditor
+                    value={chapterForm.description}
+                    onChange={(val) => setChapterForm({ ...chapterForm, description: val })}
+                    placeholder="Description"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'الوصف (عربي)' : 'Description (Arabic)'}</Label>
+                  <RichTextEditor
+                    value={chapterForm.description_ar}
+                    onChange={(val) => setChapterForm({ ...chapterForm, description_ar: val })}
+                    placeholder="الوصف"
+                    dir="rtl"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>{isRTL ? 'الوصف (عربي)' : 'Description (Arabic)'}</Label>
-                <RichTextEditor
-                  value={chapterForm.description_ar}
-                  onChange={(val) => setChapterForm({ ...chapterForm, description_ar: val })}
-                  placeholder="الوصف"
-                  dir="rtl"
-                />
-              </div>
-            </div>
+            </Suspense>
             <div className="flex gap-6">
               <div className="flex items-center gap-3">
                 <Switch
