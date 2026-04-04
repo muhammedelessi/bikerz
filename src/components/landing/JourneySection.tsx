@@ -41,7 +41,7 @@ const JourneySection: React.FC = () => {
   const steps = content?.steps || [];
 
   return (
-    <section ref={ref} className="relative py-6 sm:py-10 overflow-hidden" style={{ minHeight: '400px' }}>
+    <section ref={ref} className="relative py-6 sm:py-10 overflow-hidden">
       {/* Subtle background accent */}
       <div className="absolute inset-0 bg-gradient-to-b from-background via-secondary/5 to-background" />
 

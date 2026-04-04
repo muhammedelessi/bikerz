@@ -6,8 +6,6 @@
 
 @layer base {
   :root {
-    --navbar-h: 64px;
-
     /* Core Brand Colors */
     --accent-orange: 18 78% 45%;
     --sand: 43 18% 72%;

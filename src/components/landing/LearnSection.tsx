@@ -32,7 +32,7 @@ const LearnSection: React.FC = () => {
   const skills = content?.skills || [];
 
   return (
-    <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden" style={{ minHeight: '400px' }}>
+    <section ref={ref} className="relative py-16 sm:py-20 overflow-hidden">
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-background to-primary/5" />
 

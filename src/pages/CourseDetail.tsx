@@ -49,7 +49,7 @@ import {
   MousePointerClick,
 } from 'lucide-react';
 import { toast } from 'sonner';
-const heroImage = "/hero-rider.webp";
+import heroImage from '@/assets/hero-rider.webp';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
 
 import BunnyVideoEmbed from '@/components/course/BunnyVideoEmbed';
