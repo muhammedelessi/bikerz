@@ -14,6 +14,7 @@ import safetyImage from '@/assets/safety-hands.webp';
 import instructorImage from '@/assets/instructor.webp';
 import { useLandingContent, WhyContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 const iconMap: Record<string, LucideIcon> = {
   Shield, Award, Navigation, Users, Bike, Route, Trophy,
@@ -28,9 +29,12 @@ const imageMap: Record<number, string | undefined> = {
   1: instructorImage,
 };
 
+const delayClass = (i: number) => `anim-delay-${Math.min(i + 1, 8)}`;
+
 const WhySection: React.FC = () => {
   const { isRTL } = useLanguage();
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1, fallbackInView: true });
+  const scrollRef = useScrollReveal() as React.RefObject<HTMLElement>;
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -88,7 +92,7 @@ const WhySection: React.FC = () => {
   }, [activeIndex]);
 
   return (
-    <section ref={ref} className="relative py-4 sm:py-10 overflow-hidden" style={{ minHeight: '500px' }}>
+    <section ref={(el) => { (ref as any)(el); (scrollRef as any).current = el; }} className="relative py-4 sm:py-10 overflow-hidden" style={{ minHeight: '500px' }}>
       {/* Subtle background accent */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
         <div
@@ -102,12 +106,7 @@ const WhySection: React.FC = () => {
 
       <div className="section-container relative z-10">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-8 sm:mb-12"
-        >
+        <div className="text-center mb-8 sm:mb-12 anim-fade-up">
           {isLoading ? (
             <>
               <Skeleton className="h-10 w-64 mx-auto mb-4" />
@@ -122,7 +121,7 @@ const WhySection: React.FC = () => {
               )}
             </>
           )}
-        </motion.div>
+        </div>
 
         {/* ─── Mobile: Stacked carousel card ─── */}
         <div className="sm:hidden">
@@ -206,12 +205,9 @@ const WhySection: React.FC = () => {
               const cardDesc = isRTL ? card.description_ar : card.description_en;
 
               return (
-                <motion.div
+                <div
                   key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={inView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ duration: 0.5, delay: index * 0.08 }}
-                  className="group relative rounded-2xl border border-border/20 bg-card/40 backdrop-blur-sm p-5 lg:p-6 hover:border-primary/30 hover:bg-card/70 transition-all duration-300"
+                  className={`anim-fade-up ${delayClass(index)} group relative rounded-2xl border border-border/20 bg-card/40 backdrop-blur-sm p-5 lg:p-6 hover:border-primary/30 hover:bg-card/70 transition-all duration-300`}
                 >
                   {/* Hover glow */}
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
@@ -231,7 +227,7 @@ const WhySection: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               );
             })
           )}

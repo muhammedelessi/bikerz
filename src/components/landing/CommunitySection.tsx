@@ -1,7 +1,5 @@
 import React, { useMemo } from 'react';
 import AnimatedCounter from '@/components/common/AnimatedCounter';
-import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
 import { useLanguage } from '@/contexts/LanguageContext';
 const heroBackground = "/hero-rider.webp";
 import { useQuery } from '@tanstack/react-query';
@@ -12,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { Users, GraduationCap, PlayCircle, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 interface HeroLandingContent extends HeroContent {
   show_stats?: boolean | string;
@@ -26,10 +25,12 @@ function formatCount(count: number) {
   return count > 0 ? `${count}+` : '0';
 }
 
+const delayClass = (i: number) => `anim-delay-${Math.min(i + 1, 8)}`;
+
 const CommunitySection: React.FC = () => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const ref = useScrollReveal() as React.RefObject<HTMLElement>;
 
   const { data: content, isLoading: contentLoading } = useLandingContent<CommunityContent>('community');
   const { data: heroContent } = useLandingContent<HeroLandingContent>('hero');
@@ -112,12 +113,7 @@ const CommunitySection: React.FC = () => {
       <div className="section-container relative z-10">
         <div className="max-w-4xl mx-auto text-center">
           {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6 }}
-            className="mb-12"
-          >
+          <div className="mb-12 anim-fade-up">
             {isLoading ? (
               <>
                 <Skeleton className="h-10 w-64 mb-4" />
@@ -130,19 +126,16 @@ const CommunitySection: React.FC = () => {
                 <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-xl mx-auto">{subtitle}</p>
               </>
             )}
-          </motion.div>
+          </div>
 
-          {/* Stats Grid — same layout & icons as hero */}
+          {/* Stats Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
             {displayStats.map((stat, index) => {
               const Icon = stat.icon;
               return (
-                <motion.div
+                <div
                   key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={inView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-                  className="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-white/10 border border-white/10 backdrop-blur-sm text-center"
+                  className={`anim-fade-up ${delayClass(index)} p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-white/10 border border-white/10 backdrop-blur-sm text-center`}
                 >
                   {isLoading ? (
                     <>
@@ -163,24 +156,19 @@ const CommunitySection: React.FC = () => {
                       </div>
                     </>
                   )}
-                </motion.div>
+                </div>
               );
             })}
           </div>
 
           {/* CTA Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.6 }}
-            className="mt-10"
-          >
+          <div className="mt-10 anim-fade-up anim-delay-5">
             <Link to="/join-community">
               <Button size="lg" className="rounded-full px-10 py-4 text-base font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 hover:scale-105 transition-all duration-300">
                 {isRTL ? 'انضم لمجتمع بايكرز' : 'Join Bikerz Community'}
               </Button>
             </Link>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>
