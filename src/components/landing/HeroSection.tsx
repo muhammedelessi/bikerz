@@ -21,7 +21,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
-import { useLandingContent, HeroContent } from "@/hooks/useLandingContent";
+import { HeroContent } from "@/hooks/useLandingContent";
 
 
 interface HeroLandingContent extends HeroContent {
