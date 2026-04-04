@@ -173,8 +173,9 @@ const HeroSection: React.FC = () => {
             width={1920}
             height={1080}
             className="w-full h-full object-cover"
+            loading="eager"
             fetchPriority="high"
-            decoding="async"
+            decoding="sync"
           />
         </m.div>
 
