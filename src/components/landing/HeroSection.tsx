@@ -161,12 +161,7 @@ const HeroSection: React.FC = () => {
         dir={isRTL ? "rtl" : "ltr"}
       >
         {/* ── Background Image with Ken Burns ── */}
-        <m.div
-          className="absolute inset-0 z-0"
-          initial={{ scale: 1.08 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 2.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-        >
+        <div className="absolute inset-0 z-0">
           <img
             src="/hero-rider.webp"
             alt=""
@@ -177,7 +172,7 @@ const HeroSection: React.FC = () => {
             fetchPriority="high"
             decoding="sync"
           />
-        </m.div>
+        </div>
 
         {/* ── Overlay stack for depth ── */}
         <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black via-black/60 to-black/20" />
