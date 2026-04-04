@@ -8,7 +8,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
-import heroImage from "@/assets/hero-rider.webp";
+import heroImage from "@/assets/hero-rider-new.webp";
 
 export interface CourseCardProps {
   course: {
