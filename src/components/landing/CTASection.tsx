@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, ArrowLeft, Play, Shield, Clock } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
-import { useLandingContent, CTAContent } from '@/hooks/useLandingContent';
+import { CTAContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
