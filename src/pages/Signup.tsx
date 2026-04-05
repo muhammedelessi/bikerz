@@ -257,9 +257,17 @@ const Signup: React.FC = () => {
     }
 
     try {
-      const { data: { user: newUser } } = await (supabase.auth as any).getUser();
+      // Wait briefly for session to establish
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const { data: { user: newUser } } = await supabase.auth.getUser();
       if (newUser) {
         await saveProfileAndSync(newUser.id, name, email);
+      } else {
+        // Try signing in to get the user
+        const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInData?.user) {
+          await saveProfileAndSync(signInData.user.id, name, email);
+        }
       }
     } catch (e) {
       console.error('Post-signup sync failed:', e);
