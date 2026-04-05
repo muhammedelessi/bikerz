@@ -1261,11 +1261,7 @@ const CourseLearn: React.FC = () => {
                       <LessonQuiz
                         lessonId={currentLesson.id}
                         isQuizOnlyLesson={!currentLesson.video_url}
-                        onComplete={(totalXp) => {
-                          if (totalXp > 0) {
-                            toast.success(t('courseLearn.xpEarned', { xp: totalXp }));
-                          }
-                        }}
+                        onComplete={() => {}}
                       />
                     </div>
                   )}
