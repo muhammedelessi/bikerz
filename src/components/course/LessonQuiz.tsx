@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
 import confetti from 'canvas-confetti';
+import { useGamification } from '@/hooks/useGamification';
 
 type QuestionType = 'single_choice' | 'multiple_choice' | 'dropdown';
 
@@ -61,6 +62,8 @@ interface GradedResult {
 const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = false, onComplete }) => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
+  const { checkBadges, gamificationData } = useGamification();
+
   const queryClient = useQueryClient();
 
   const questionRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -183,6 +186,14 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
       if (isCorrect && xpEarned > 0) {
         setTotalXpEarned(prev => prev + xpEarned);
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 }, colors: ['#22c55e', '#3b82f6', '#f97316'] });
+      
+        const newTotalXP = (gamificationData?.total_xp || 0) + xpEarned;
+        checkBadges({
+          quizzesPassed: 1,
+          perfectScore: true,
+          totalXP: newTotalXP,
+          streakDays: gamificationData?.current_streak || 1,
+        });
       }
       scrollToNextQuestion(activityId);
     },

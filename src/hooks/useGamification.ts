@@ -318,8 +318,12 @@ export function useGamification() {
     streakDays?: number;
     totalXP?: number;
   }) => {
-    if (!user || !allBadges.length) return;
-
+    if (!user) return;
+    if (!allBadges.length) {
+      // Badges not loaded yet, retry after short delay
+      setTimeout(() => checkBadges(stats), 2000);
+      return;
+    }
     const earnedBadgeIds = new Set(userBadges.map(ub => ub.badge_id));
 
     for (const badge of allBadges) {

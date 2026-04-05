@@ -8,10 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { ApplePayIcon, VisaIcon, MastercardIcon, MadaIcon } from '@/components/checkout/PaymentMethodIcons';
 import { PHONE_COUNTRIES } from '@/data/phoneCountryCodes';
 import type { PaymentStatus, AppliedCoupon } from '@/types/payment';
-
+import PaymentMethodIcons from '@/components/checkout/PaymentMethodIcons';
 interface CheckoutPaymentStepProps {
   isRTL: boolean;
   currencyLabel: string;
@@ -74,18 +73,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(({
             {isRTL ? 'طرق الدفع المتاحة' : 'Accepted Payment Methods'}
           </h4>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {[
-            { Icon: VisaIcon, bg: 'bg-white', padding: 'p-1.5' },
-            { Icon: MastercardIcon, bg: 'bg-white', padding: 'p-1' },
-            { Icon: MadaIcon, bg: 'bg-white', padding: 'p-1' },
-            { Icon: ApplePayIcon, bg: 'bg-black', padding: 'p-1.5', invert: true },
-          ].map(({ Icon, bg, padding, invert }, i) => (
-            <div key={i} className={`flex items-center justify-center h-8 w-14 rounded-lg border border-border ${bg} ${padding}`}>
-              <Icon className={`h-full w-auto ${invert ? 'invert' : ''}`} />
-            </div>
-          ))}
-        </div>
+        <PaymentMethodIcons showLabel={false} className={`scale-90 ${isRTL ? 'origin-right self-end' : 'origin-left self-start'}`} />
 
         {/* WhatsApp fallback */}
         <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/50">

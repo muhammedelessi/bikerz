@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useGamification } from '@/hooks/useGamification';
+
 import {
   Accordion,
   AccordionContent,
@@ -126,6 +128,7 @@ const CourseLearn: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
+  const { checkBadges, gamificationData, addXP } = useGamification();
   const { theme } = useTheme();
   const themeLogo = theme === 'light' ? logoDark : logoLight;
   const queryClient = useQueryClient();
@@ -449,9 +452,25 @@ const CourseLearn: React.FC = () => {
         }
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['lesson-progress-learn'] });
       toast.success(t('courseLearn.lessonCompleted'));
+    
+      // Award XP for completing a lesson
+      await addXP({ amount: 20, sourceType: 'lesson_complete' });
+    
+      // Check lesson & XP badges
+      const { data: completedLessons } = await supabase
+        .from('lesson_progress')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user!.id)
+        .eq('is_completed', true);
+    
+      checkBadges({
+        lessonsCompleted: completedLessons?.length || 0,
+        totalXP: (gamificationData?.total_xp || 0) + 20,
+        streakDays: gamificationData?.current_streak || 1,
+      });
     },
   });
 
