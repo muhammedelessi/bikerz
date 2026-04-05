@@ -189,10 +189,10 @@ const Signup: React.FC = () => {
     } catch (syncErr) {
       console.error('GHL signup sync failed:', syncErr);
     }
-
     sendFormData({
       full_name: fullName,
       email: userEmail,
+      phone: getFullPhone(),
       country: getCountryName(),
       city: getCityName(),
       orderStatus: 'not purchased',
@@ -200,8 +200,7 @@ const Signup: React.FC = () => {
       totalPurchased: 0,
       isRTL,
     });
-  };
-
+  }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
