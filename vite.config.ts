@@ -22,11 +22,10 @@ export default defineConfig(({ mode }) => {
     mode === "production" && PrerenderPlugin({
       staticDir: path.join(__dirname, 'dist'),
       routes: ['/'],
-      renderer: '@prerenderer/renderer-puppeteer',
-      rendererOptions: {
+      renderer: new PrerenderPlugin.PuppeteerRenderer({
         renderAfterDocumentEvent: 'render-event',
         headless: true,
-      },
+      }),
     }),
   ].filter(Boolean),
   resolve: {
