@@ -408,6 +408,9 @@ const Dashboard: React.FC = () => {
             )}
           </div>
 
+          {/* Gamification Panel */}
+          <GamificationPanel />
+
           {/* Continue Learning */}
           <section>
             <h2 className="text-lg sm:text-xl font-bold text-foreground mb-3 sm:mb-4">
