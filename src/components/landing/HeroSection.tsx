@@ -2,12 +2,20 @@ import React, { useMemo } from "react";
 import AnimatedCounter from "@/components/common/AnimatedCounter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Play, Users } from "lucide-react";
+import {
+  Play,
+  Users,
+  GraduationCap,
+  PlayCircle,
+  BookOpen,
+} from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useScrollReveal } from '@/hooks/useScrollReveal';
+
 import { HeroContent } from "@/hooks/useLandingContent";
+
 
 interface HeroLandingContent extends HeroContent {
   defaultHeroImage?: string;
@@ -41,45 +49,48 @@ async function fetchHeroStats() {
   return { members: usersCount, lessons: lessonsCount, successRate, courses: coursesCount };
 }
 
+/* ─────────────────────────────────────────────
+   Stat Card — redesigned: clean glass pill
+   ───────────────────────────────────────────── */
 const StatCard: React.FC<{
   value: string;
   label: string;
-  sublabel: string;
+  icon: React.ElementType;
   index: number;
-  isRTL: boolean;
-}> = ({ value, label, sublabel, index, isRTL }) => (
-  <div className={`anim-fade-up anim-delay-${Math.min(index + 1, 8)} group`}>
+}> = ({ value, label, icon: Icon, index }) => (
+  <div
+    className={`anim-fade-up anim-delay-${Math.min(index + 1, 8)} group relative flex flex-col items-center text-center`}
+  >
+    {/* Icon */}
     <div
-      className={`
-        bg-white/[0.04] hover:bg-white/[0.07]
-        border border-white/[0.08]
-        rounded-lg p-3 sm:p-4
-        transition-all duration-300 cursor-default h-full
-        ${isRTL ? 'border-r-[3px] border-r-primary' : 'border-l-[3px] border-l-primary'}
-      `}
+      className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-primary/10 border border-primary/20
+                    flex items-center justify-center mb-2 sm:mb-3
+                    group-hover:bg-primary/20 group-hover:border-primary/40
+                    group-hover:scale-105 transition-all duration-300"
     >
-      <div className="flex items-center gap-1.5 mb-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-        <span className="text-[10px] text-primary/80 uppercase tracking-[0.12em] font-bold">
-          {label}
-        </span>
-      </div>
-      <AnimatedCounter
-        value={value}
-        className="text-2xl sm:text-3xl font-black text-white leading-none mb-1 block"
-      />
-      <div className="text-[10px] text-white/30 uppercase tracking-[0.12em] font-semibold">
-        {sublabel}
-      </div>
+      <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
     </div>
+
+    {/* Value */}
+    <AnimatedCounter
+      value={value}
+      className="text-xl sm:text-2xl md:text-[28px] font-black text-white leading-none tracking-tight"
+    />
+
+    {/* Label */}
+    <span className="mt-1 text-[9px] sm:text-[10px] text-white/40 uppercase tracking-[0.16em] font-semibold">
+      {label}
+    </span>
   </div>
 );
 
+/* ─────────────────────────────────────────────
+   Hero Section
+   ───────────────────────────────────────────── */
 interface HeroSectionProps {
   content?: HeroLandingContent;
   isLoading?: boolean;
 }
-
 const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
   const { isRTL } = useLanguage();
   const ref = useScrollReveal() as React.RefObject<HTMLElement>;
@@ -116,14 +127,18 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
 
   const displayStats = useMemo(
     () => [
-      { key: "members", value: membersValue, label: "Members", sublabel: isRTL ? "عضو" : "Members" },
-      { key: "success", value: successValue, label: "Success", sublabel: isRTL ? "نسبة النجاح" : "Success Rate" },
-      { key: "lessons", value: lessonsValue, label: "Lessons", sublabel: isRTL ? "درس" : "Lessons" },
-      { key: "courses", value: coursesValue, label: "Courses", sublabel: isRTL ? "دورة" : "Courses" },
+      { key: "members", value: membersValue, label: isRTL ? "عضو" : "Members", icon: Users },
+      { key: "success", value: successValue, label: isRTL ? "نسبة النجاح" : "Success", icon: GraduationCap },
+      { key: "lessons", value: lessonsValue, label: isRTL ? "درس" : "Lessons", icon: PlayCircle },
+      { key: "courses", value: coursesValue, label: isRTL ? "دورة" : "Courses", icon: BookOpen },
     ],
     [membersValue, lessonsValue, successValue, coursesValue, isRTL],
   );
 
+  const title = isRTL ? content?.title_ar || "لنقد بثقة" : content?.title_en || "Ride with Confidence";
+  const subtitle = isRTL
+    ? content?.subtitle_ar || "انطلق في رحلتك مع أفضل مدربي الدراجات النارية"
+    : content?.subtitle_en || "Start your journey with expert motorcycle instructors";
   const ctaText = isRTL
     ? content?.secondary_cta_ar || "استكشف الدورات"
     : content?.secondary_cta_en || "Explore Courses";
@@ -135,7 +150,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
       style={{ minHeight: "100svh" }}
       dir={isRTL ? "rtl" : "ltr"}
     >
-      {/* ── Background Image ── */}
+      {/* ── Background Image with Ken Burns ── */}
       <div className="absolute inset-0 z-0">
         <picture>
           <source media="(max-width: 768px)" srcSet="/hero-rider-mobile.webp" />
@@ -152,37 +167,34 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
         </picture>
       </div>
 
-      {/* ── Overlay Stack ── */}
-      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black via-black/75 to-black/30" />
-      <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/60 via-transparent to-transparent" />
+      {/* ── Overlay stack for depth ── */}
+      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black via-black/60 to-black/20" />
+      <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/40 via-transparent to-transparent" />
       <div
         className="absolute inset-0 z-[1]"
         style={{
           background: isRTL
-            ? "linear-gradient(to left, rgba(0,0,0,0.55), transparent 55%)"
-            : "linear-gradient(to right, rgba(0,0,0,0.55), transparent 55%)",
+            ? "linear-gradient(to left, rgba(0,0,0,0.3), transparent 50%)"
+            : "linear-gradient(to right, rgba(0,0,0,0.3), transparent 50%)",
         }}
       />
-
-      {/* ── Orange top accent line ── */}
-      <div className="absolute top-0 left-0 right-0 z-[2] h-[3px] bg-gradient-to-r from-transparent via-primary to-transparent" />
 
       {/* ── Main Content ── */}
       <div
         className="relative z-10 flex-1 flex flex-col items-center justify-center
-                      max-w-[920px] mx-auto w-full px-5 sm:px-8
+                      max-w-[900px] mx-auto w-full px-5 sm:px-8
                       pt-20 sm:pt-24 pb-8 sm:pb-12 text-center"
       >
         {/* Badge */}
         <div className="anim-fade-up mb-5 sm:mb-7">
           <span
-            className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full
-              text-[10px] sm:text-xs font-bold uppercase tracking-[0.18em]
-              bg-primary/20 text-primary
-              border border-primary/50 backdrop-blur-sm"
+            className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full
+                           text-[10px] sm:text-xs font-bold uppercase tracking-[0.14em]
+                           bg-white/[0.06] text-primary/90
+                           border border-primary/20 backdrop-blur-sm"
           >
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
             </span>
             {isRTL ? "أكاديمية بايكرز" : "BIKERZ Academy"}
@@ -191,48 +203,37 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
 
         {/* Title */}
         <h1
-          className="anim-fade-up anim-delay-1 text-[32px] sm:text-5xl md:text-6xl lg:text-[68px]
-                     font-black leading-[1.05] tracking-tighter
+          className="anim-fade-up anim-delay-1 text-[28px] sm:text-4xl md:text-5xl lg:text-[56px]
+                     font-black leading-[1.1] tracking-tight
                      text-white mb-4 sm:mb-5 max-w-3xl"
         >
-          {isRTL ? (
-            <>لنقد <span className="text-primary">بثقة</span></>
-          ) : (
-            <>Ride with <span className="text-primary">Confidence</span></>
-          )}
+          {title}
         </h1>
-
-        {/* Orange accent line */}
-        <div className="anim-fade-up anim-delay-1 flex items-center gap-3 mb-5 sm:mb-6">
-          <div className="h-[2px] w-12 bg-primary/40 rounded-full" />
-          <div className="h-[2px] w-20 bg-primary rounded-full" />
-          <div className="h-[2px] w-12 bg-primary/40 rounded-full" />
-        </div>
 
         {/* Subtitle */}
         <p
           className="anim-fade-up anim-delay-2 text-[14px] sm:text-base md:text-lg
-                     text-white/60 leading-[1.8] font-normal
-                     mb-8 sm:mb-10 max-w-lg"
+                     text-white/55 leading-[1.7] font-normal
+                     mb-7 sm:mb-9 max-w-lg"
         >
-          {isRTL
-            ? content?.subtitle_ar || "انطلق في رحلتك مع أفضل مدربي الدراجات النارية"
-            : content?.subtitle_en || "Start your journey with expert motorcycle instructors"}
+          {subtitle}
         </p>
 
         {/* CTA Buttons */}
-        <div className="anim-fade-up anim-delay-3 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full sm:w-auto">
+        <div
+          className="anim-fade-up anim-delay-3 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full sm:w-auto"
+        >
           <Link to="/courses" className="sm:flex-none">
             <Button
               variant="hero"
               size="default"
-              className="w-full group gap-2.5 px-7 sm:px-10 py-4 sm:py-5
-                         text-xs sm:text-sm font-black uppercase tracking-widest
-                         shadow-[0_4px_30px_rgba(232,66,10,0.45)]
-                         hover:shadow-[0_6px_40px_rgba(232,66,10,0.65)]
-                         transition-all duration-300 rounded-sm"
+              className="w-full group gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4
+                         text-xs sm:text-sm font-bold uppercase tracking-wide
+                         shadow-[0_4px_24px_rgba(232,66,10,0.3)]
+                         hover:shadow-[0_6px_32px_rgba(232,66,10,0.45)]
+                         transition-shadow duration-300"
             >
-              <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current transition-transform group-hover:scale-125" />
+              <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current transition-transform group-hover:scale-110" />
               {ctaText}
             </Button>
           </Link>
@@ -240,11 +241,11 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
             <Button
               variant="heroOutline"
               size="default"
-              className="w-full group gap-2.5 px-7 sm:px-10 py-4 sm:py-5
-                         text-xs sm:text-sm font-bold uppercase tracking-widest
-                         border-white/20 text-white/70
-                         hover:bg-white/[0.08] hover:border-primary/40 hover:text-white
-                         transition-all duration-300 rounded-sm"
+              className="w-full group gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4
+                         text-xs sm:text-sm font-bold uppercase tracking-wide
+                         border-white/15 text-white/70
+                         hover:bg-white/[0.06] hover:border-white/25 hover:text-white
+                         transition-all duration-300"
             >
               <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:scale-110" />
               {isRTL ? "انضم لمجتمع بايكرز" : "Join Bikerz Community"}
@@ -253,25 +254,45 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
         </div>
       </div>
 
-      {/* ── Stats Bar ── */}
+      {/* ── Stats Bar — anchored to bottom ── */}
       <div className="relative z-10 w-full anim-fade-up anim-delay-4">
-        <div className="max-w-[860px] mx-auto px-4 sm:px-6 pb-10 sm:pb-14">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="max-w-[780px] mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
+          <div
+            className="grid grid-cols-4 gap-1 sm:gap-0
+                          rounded-2xl sm:rounded-3xl overflow-hidden
+                          bg-white/[0.04] border border-white/[0.07]
+                          backdrop-blur-md
+                          divide-x divide-white/[0.06]
+                          py-4 sm:py-6"
+            style={{ minHeight: '80px' }}
+          >
             {showStats && displayStats.map((stat, i) => (
               <StatCard
                 key={stat.key}
                 value={stat.value}
                 label={stat.label}
-                sublabel={stat.sublabel}
+                icon={stat.icon}
                 index={i}
-                isRTL={isRTL}
               />
             ))}
           </div>
         </div>
       </div>
 
-
+      {/* ── Scroll hint ── */}
+      <div
+        className="anim-fade anim-delay-6 absolute bottom-3 left-1/2 -translate-x-1/2 z-10
+                   flex flex-col items-center gap-1"
+      >
+        <div className="w-[18px] h-7 rounded-full border border-white/15 flex justify-center pt-[5px]">
+          <span
+            className="w-[2px] h-2 bg-primary rounded-full animate-scroll-dot"
+          />
+        </div>
+        <span className="text-[7px] uppercase tracking-[0.2em] text-white/20 font-semibold">
+          {isRTL ? "مرّر" : "scroll"}
+        </span>
+      </div>
     </section>
   );
 };
