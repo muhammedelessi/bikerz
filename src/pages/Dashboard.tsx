@@ -409,7 +409,7 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Gamification Panel */}
-          <GamificationPanel />
+          <GamificationPanel compact />
 
           {/* Continue Learning */}
           <section>
