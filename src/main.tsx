@@ -76,6 +76,9 @@ const bootstrap = async () => {
   ensureViewportMeta();
   resetLayoutAfterOAuthRedirect();
   renderApp();
+
+  // Signal to prerenderer that the app has mounted
+  document.dispatchEvent(new Event('render-event'));
 };
 
 bootstrap();
