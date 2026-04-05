@@ -277,6 +277,9 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
   const allQuestionsCompleted = questions.length > 0 &&
     questions.every(q => submittedQuestions.has(q.id) || isQuestionPassed(q.id));
 
+  const allQuestionsCorrect = allQuestionsCompleted &&
+    questions.every(q => isQuestionCorrect(q.id));
+
   useEffect(() => {
     if (allQuestionsCompleted && onComplete && totalXpEarned > 0) {
       const timer = setTimeout(() => { onComplete(totalXpEarned); }, 1500);
@@ -496,7 +499,7 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
 
       {/* Completion Message */}
       <AnimatePresence>
-        {allQuestionsCompleted && (
+        {allQuestionsCorrect && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
