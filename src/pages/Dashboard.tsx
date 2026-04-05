@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import LanguageToggle from '@/components/common/LanguageToggle';
 import LogoutConfirmDialog from '@/components/common/LogoutConfirmDialog';
 import ProfileCompletionReminder from '@/components/ui/profile/ProfileCompletionReminder';
+import GamificationPanel from '@/components/gamification/GamificationPanel';
 import {
   BookOpen,
   Play,
