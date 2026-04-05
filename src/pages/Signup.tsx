@@ -189,10 +189,10 @@ const Signup: React.FC = () => {
     } catch (syncErr) {
       console.error('GHL signup sync failed:', syncErr);
     }
+
     sendFormData({
       full_name: fullName,
       email: userEmail,
-      phone: getFullPhone(),
       country: getCountryName(),
       city: getCityName(),
       orderStatus: 'not purchased',
@@ -200,7 +200,8 @@ const Signup: React.FC = () => {
       totalPurchased: 0,
       isRTL,
     });
-  }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -229,22 +230,8 @@ const Signup: React.FC = () => {
     if (!validatePhone(phone)) hasError = true;
 
     if (password.length < 6) {
-      const validatePassword = (pwd: string) => {
-        if (pwd.length < 6) {
-          setPasswordError(isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
-          return false;
-        }
-        if (!/[a-zA-Z]/.test(pwd)) {
-          setPasswordError(isRTL ? 'يجب أن تحتوي كلمة المرور على حرف واحد على الأقل' : 'Password must contain at least one letter');
-          return false;
-        }
-        if (!/[0-9]/.test(pwd)) {
-          setPasswordError(isRTL ? 'يجب أن تحتوي كلمة المرور على رقم واحد على الأقل' : 'Password must contain at least one number');
-          return false;
-        }
-        setPasswordError(null);
-        return true;
-      };
+      setPasswordError(isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+      hasError = true;
     }
 
     const finalCountry = getCountryName();
@@ -271,17 +258,9 @@ const Signup: React.FC = () => {
     }
 
     try {
-      // Wait briefly for session to establish
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const { data: { user: newUser } } = await supabase.auth.getUser();
+      const { data: { user: newUser } } = await (supabase.auth as any).getUser();
       if (newUser) {
         await saveProfileAndSync(newUser.id, name, email);
-      } else {
-        // Try signing in to get the user
-        const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInData?.user) {
-          await saveProfileAndSync(signInData.user.id, name, email);
-        }
       }
     } catch (e) {
       console.error('Post-signup sync failed:', e);

@@ -33,27 +33,27 @@ export async function fetchUserData(userId: string): Promise<{ profile: UserProf
 
 export async function signUpUser(email: string, password: string, fullName: string) {
   try {
-    // Use Supabase Auth directly — bypass Edge Function
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: {
-        data: { full_name: fullName.trim() },
-      },
+    const response = await supabase.functions.invoke('signup-user', {
+      body: { email, password, full_name: fullName },
     });
 
-    if (error) {
-      return { error };
+    if (response.error) {
+      return { error: new Error(response.error.message || 'Signup failed') };
     }
 
-    // Sign in immediately after signup
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+    const result = response.data as any;
+    if (result?.error) {
+      return { error: new Error(result.error) };
+    }
+
+    // Sign in after successful creation
+    const { error: signInError, data: signInData } = await (supabase.auth as any).signInWithPassword({
+      email,
       password,
     });
 
     if (signInError) {
-      return { error: signInError };
+      return { error: signInError as Error };
     }
 
     return { error: null };
