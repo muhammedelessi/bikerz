@@ -34,17 +34,29 @@ export async function sendGHLFormData(data: FormWebhookData): Promise<boolean> {
   };
 
   try {
+    // Try via Supabase Edge Function first
     const { error } = await supabase.functions.invoke('ghl-form-webhook', {
       body: payload,
     });
-    if (error) throw error;
-    return true;
+    
+    if (!error) return true;
+
+    // Fallback: send directly if Edge Function fails
+    const res = await fetch(
+      'https://services.leadconnectorhq.com/hooks/ddAvdgekc94cWL9NBHK1/webhook-trigger/0c004a12-e140-49df-8fcf-b62b101c4e8c',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }
+    );
+    
+    return res.ok;
   } catch (err) {
     console.error('GHL form webhook failed:', err);
     return false;
   }
 }
-
 export async function upsertCourseStatus(
   userId: string,
   courseId: string,
