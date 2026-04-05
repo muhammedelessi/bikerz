@@ -229,8 +229,22 @@ const Signup: React.FC = () => {
     if (!validatePhone(phone)) hasError = true;
 
     if (password.length < 6) {
-      setPasswordError(isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
-      hasError = true;
+      const validatePassword = (pwd: string) => {
+        if (pwd.length < 6) {
+          setPasswordError(isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+          return false;
+        }
+        if (!/[a-zA-Z]/.test(pwd)) {
+          setPasswordError(isRTL ? 'يجب أن تحتوي كلمة المرور على حرف واحد على الأقل' : 'Password must contain at least one letter');
+          return false;
+        }
+        if (!/[0-9]/.test(pwd)) {
+          setPasswordError(isRTL ? 'يجب أن تحتوي كلمة المرور على رقم واحد على الأقل' : 'Password must contain at least one number');
+          return false;
+        }
+        setPasswordError(null);
+        return true;
+      };
     }
 
     const finalCountry = getCountryName();
