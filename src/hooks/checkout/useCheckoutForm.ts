@@ -36,29 +36,26 @@ export function useCheckoutForm(open: boolean) {
     [selectedCountryCode],
   );
 
-  const handleCountryChange = useCallback(
-    (code: string) => {
-      if (code === "__other__") {
-        setIsOtherCountry(true);
-        setSelectedCountryCode("");
-        setCountry("");
-        setCountryManual("");
-      } else {
-        setIsOtherCountry(false);
-        setSelectedCountryCode(code);
-        setCountryManual("");
-        const found = COUNTRIES.find((c) => c.code === code);
-        if (found) {
-          setCountry(isRTL ? found.ar : found.en);
-        }
+  const handleCountryChange = useCallback((code: string) => {
+    if (code === "__other__") {
+      setIsOtherCountry(true);
+      setSelectedCountryCode("");
+      setCountry("");
+      setCountryManual("");
+    } else {
+      setIsOtherCountry(false);
+      setSelectedCountryCode(code);
+      setCountryManual("");
+      const found = COUNTRIES.find((c) => c.code === code);
+      if (found) {
+        setCountry(found.en); // دائماً English
       }
-      setCity("");
-      setCityManual("");
-      setIsOtherCity(false);
-      setErrors((prev) => ({ ...prev, country: undefined, city: undefined }));
-    },
-    [isRTL],
-  );
+    }
+    setCity("");
+    setCityManual("");
+    setIsOtherCity(false);
+    setErrors((prev) => ({ ...prev, country: undefined, city: undefined }));
+  }, []);
 
   const handleCityChange = useCallback((val: string) => {
     if (val === "__other__") {
@@ -97,13 +94,23 @@ export function useCheckoutForm(open: boolean) {
   }, [isRTL]);
 
   const actualPrefix = phonePrefix ? phonePrefix.split("_")[0] : "";
+
+  // Resolve country entry from any format (code, en name, ar name)
+  const resolvedCountry = useMemo(
+    () =>
+      COUNTRIES.find(
+        (c) => c.code === selectedCountryCode || c.en === country || c.ar === country || c.code === country,
+      ) || null,
+    [selectedCountryCode, country],
+  );
+
   const effectiveCity =
     isOtherCity || isOtherCountry
       ? cityManual.trim()
-      : selectedCountry?.cities.find((c) => c.ar === city || c.en === city)?.en || city.trim();
-  const effectiveCountry = isOtherCountry
-    ? countryManual.trim()
-    : COUNTRIES.find((c) => c.code === selectedCountryCode)?.en || country.trim();
+      : (resolvedCountry || selectedCountry)?.cities.find((c) => c.ar === city || c.en === city)?.en || city.trim();
+
+  const effectiveCountry = isOtherCountry ? countryManual.trim() : resolvedCountry?.en || country.trim();
+
   const getFullPhone = useCallback(() => {
     const rawPhone = phone.trim();
     if (!rawPhone) return "";
@@ -115,6 +122,7 @@ export function useCheckoutForm(open: boolean) {
     }
     return cleaned;
   }, [phone, actualPrefix]);
+
   const fullPhone = getFullPhone();
   const rawPhoneTrimmed = phone.trim();
   const isPhoneValid = rawPhoneTrimmed.length > 0;
@@ -155,17 +163,15 @@ export function useCheckoutForm(open: boolean) {
   useEffect(() => {
     if (detectedCountry) {
       const code = detectedCountry.toUpperCase();
-      // Auto-select phone prefix
       const found = PHONE_COUNTRIES.find((pc) => pc.code === code);
       if (found) {
         setPhonePrefix(found.prefix + "_" + found.code);
       }
-      // Auto-select country dropdown (only if not already set from profile)
       if (!country && !isOtherCountry) {
         const matchedCountry = COUNTRIES.find((c) => c.code === code);
         if (matchedCountry) {
           setSelectedCountryCode(code);
-          setCountry(isRTL ? matchedCountry.ar : matchedCountry.en);
+          setCountry(matchedCountry.en); // دائماً English
           setIsOtherCountry(false);
         }
       }
@@ -205,7 +211,6 @@ export function useCheckoutForm(open: boolean) {
     if (data.country) setCountry(data.country);
     if (data.postal_code) setPostalCode(data.postal_code);
 
-    // Pre-fill phone from DB if not already set from profile
     if (data.phone && !phone) {
       let rawPhone = data.phone;
       let matchedPc: (typeof PHONE_COUNTRIES)[number] | null = null;
@@ -223,9 +228,10 @@ export function useCheckoutForm(open: boolean) {
     }
 
     if (data.country) {
-      const matched = COUNTRIES.find((c) => c.en === data.country || c.ar === data.country);
+      const matched = COUNTRIES.find((c) => c.en === data.country || c.ar === data.country || c.code === data.country);
       if (matched) {
         setSelectedCountryCode(matched.code);
+        setCountry(matched.en); // دائماً English
         setIsOtherCountry(false);
       } else {
         setIsOtherCountry(true);
@@ -234,7 +240,9 @@ export function useCheckoutForm(open: boolean) {
     }
 
     if (data.city && data.country) {
-      const matchedCountry = COUNTRIES.find((c) => c.en === data.country || c.ar === data.country);
+      const matchedCountry = COUNTRIES.find(
+        (c) => c.en === data.country || c.ar === data.country || c.code === data.country,
+      );
       if (matchedCountry) {
         const cityMatch = matchedCountry.cities.find((ct) => ct.en === data.city || ct.ar === data.city);
         if (!cityMatch) {
@@ -283,7 +291,6 @@ export function useCheckoutForm(open: boolean) {
   }, []);
 
   return {
-    // State
     fullName,
     setFullName,
     email,
@@ -312,7 +319,6 @@ export function useCheckoutForm(open: boolean) {
     setIsEditingName,
     phonePrefix,
     setPhonePrefix,
-    // Computed
     selectedCountry,
     countryOptions,
     cityOptions,
@@ -324,7 +330,6 @@ export function useCheckoutForm(open: boolean) {
     isPhoneValid,
     isInfoValid,
     hasNamePrefilled,
-    // Methods
     handleCountryChange,
     handleCityChange,
     validateInfo,
