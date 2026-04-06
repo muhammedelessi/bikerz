@@ -4,7 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
 import { fetchEnrollmentsWithLiveProgress } from "@/lib/enrollmentProgress";
-import { sendFormData, getUserCourseStatuses } from "@/services/ghl.service";
+import { getUserCourseStatuses } from "@/services/ghl.service";
+
 export interface ExtendedProfile {
   id: string;
   user_id: string;
