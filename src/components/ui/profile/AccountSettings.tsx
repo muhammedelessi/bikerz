@@ -359,7 +359,15 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
         <FieldRow
           icon={Globe}
           label={isRTL ? "الدولة" : "Country"}
-          value={profile.country || notSet}
+          value={
+            profile.country
+              ? COUNTRIES.find((c) => c.en === profile.country || c.ar === profile.country)
+                ? isRTL
+                  ? COUNTRIES.find((c) => c.en === profile.country || c.ar === profile.country)!.ar
+                  : profile.country
+                : profile.country
+              : notSet
+          }
           onEdit={() => {
             setTempCountry(country);
             setTempCustomCountry(customCountry);
@@ -404,7 +412,15 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
         <FieldRow
           icon={MapPin}
           label={isRTL ? "المدينة" : "City"}
-          value={profile.city || notSet}
+          value={
+            profile.city
+              ? (() => {
+                  const countryEntry = COUNTRIES.find((c) => c.en === profile.country || c.ar === profile.country);
+                  const cityEntry = countryEntry?.cities.find((c) => c.en === profile.city || c.ar === profile.city);
+                  return cityEntry ? (isRTL ? cityEntry.ar : cityEntry.en) : profile.city;
+                })()
+              : notSet
+          }
           onEdit={() => {
             setTempCity(city);
             setTempCustomCity("");
