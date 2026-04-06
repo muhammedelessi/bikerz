@@ -208,20 +208,19 @@ const Signup: React.FC = () => {
     } catch (syncErr) {
       console.error("GHL signup sync failed:", syncErr);
     }
-    const mergedProfile = { ...profile, ...updates };
 
     // Get real course status before sending
     const { coursesJson, totalPurchased } = await getUserCourseStatuses(user.id);
 
     sendFormData({
-      full_name: mergedProfile?.full_name || "",
+      full_name: user?.full_name || "",
       email: user.email || "",
-      phone: mergedProfile?.phone || "",
-      country: mergedProfile?.country || "",
-      city: mergedProfile?.city || "",
-      address: [mergedProfile?.city, mergedProfile?.country].filter(Boolean).join(", "),
-      dateOfBirth: mergedProfile?.date_of_birth || "",
-      gender: mergedProfile?.gender || "",
+      phone: user?.phone || "",
+      country: user?.country || "",
+      city: user?.city || "",
+      address: [user?.city, user?.country].filter(Boolean).join(", "),
+      dateOfBirth: user?.date_of_birth || "",
+      gender: user?.gender || "",
       orderStatus: totalPurchased > 0 ? "purchased" : "not purchased",
       courses: coursesJson,
       totalPurchased,
