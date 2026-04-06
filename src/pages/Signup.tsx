@@ -208,6 +208,7 @@ const Signup: React.FC = () => {
     } catch (syncErr) {
       console.error("GHL signup sync failed:", syncErr);
     }
+    const mergedProfile = { ...profile, ...updates };
 
     // Get real course status before sending
     const { coursesJson, totalPurchased } = await getUserCourseStatuses(user.id);
