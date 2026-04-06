@@ -252,7 +252,9 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-muted-foreground" />
-              <Label className="text-xs text-muted-foreground">{isRTL ? "رقم الهاتف" : "Phone Number"} dir="ltr" style={{ textAlign: isRTL ? 'right' : 'left'</Label>
+              <Label className="text-xs text-muted-foreground">
+                {isRTL ? "رقم الهاتف" : "Phone Number"} dir="ltr" style={{ textAlign: isRTL ? "right" : "left" }}
+              </Label>
             </div>
             {!isEditingPhone && (
               <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setIsEditingPhone(true)}>
