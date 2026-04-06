@@ -63,10 +63,9 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
   const { user, signOut } = useAuth();
 
   // Phone state
-  const parsed = useMemo(() => parsePhone(profile.phone), [profile.phone]);
   const [isEditingPhone, setIsEditingPhone] = useState(false);
-  const [phonePrefix, setPhonePrefix] = useState(parsed.prefix);
-  const [phoneLocal, setPhoneLocal] = useState(parsed.local);
+  const [phonePrefix, setPhonePrefix] = useState(() => parsePhone(profile.phone).prefix);
+  const [phoneLocal, setPhoneLocal] = useState(() => parsePhone(profile.phone).local);
   const [phoneError, setPhoneError] = useState<string | null>(null);
 
   // Gender state
