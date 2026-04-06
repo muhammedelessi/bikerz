@@ -165,9 +165,10 @@ const Signup: React.FC = () => {
 
   const getFullPhone = () => {
     const prefix = phonePrefix.split("_")[0];
-    return `${prefix}${phone.replace(/[^0-9]/g, "")}`;
+    const digits = phone.replace(/[^0-9]/g, "");
+    const cleaned = digits.startsWith("0") ? digits.slice(1) : digits;
+    return `${prefix}${cleaned}`;
   };
-
   const getCountryName = () => {
     if (isOtherCountry) return customCountry.trim();
     return selectedCountryEntry ? selectedCountryEntry.en : ""; // دائماً English
