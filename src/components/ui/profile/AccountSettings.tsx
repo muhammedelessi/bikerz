@@ -229,7 +229,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
   return (
     <div className="card-premium p-6">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
           <Settings className="w-5 h-5 text-primary" />
         </div>
