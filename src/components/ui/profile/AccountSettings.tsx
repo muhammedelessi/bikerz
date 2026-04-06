@@ -15,14 +15,12 @@ import LogoutConfirmDialog from "@/components/common/LogoutConfirmDialog";
 import SearchableDropdown from "@/components/checkout/SearchableDropdown";
 import { cn } from "@/lib/utils";
 import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
-import { COUNTRIES, OTHER_OPTION } from "@/data/countryCityData";
+import { COUNTRIES } from "@/data/countryCityData";
 import {
-  Settings,
   Mail,
   Phone,
   Lock,
   CreditCard,
-  Smartphone,
   LogOut,
   Edit2,
   Check,
@@ -35,6 +33,7 @@ import {
   Globe,
   MapPin,
   AlertCircle,
+  ChevronRight,
 } from "lucide-react";
 import { ExtendedProfile } from "@/hooks/useUserProfile";
 
@@ -57,6 +56,49 @@ interface AccountSettingsProps {
   isUpdating: boolean;
 }
 
+// ── Reusable row wrapper ──────────────────────────────────────────
+const SettingRow: React.FC<{
+  icon: React.ElementType;
+  label: string;
+  onEdit?: () => void;
+  isEditing?: boolean;
+  children: React.ReactNode;
+}> = ({ icon: Icon, label, onEdit, isEditing, children }) => (
+  <div className="flex items-start gap-3 py-3.5 border-b border-border/30 last:border-0">
+    <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center flex-shrink-0 mt-0.5">
+      <Icon className="w-4 h-4 text-muted-foreground" />
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-[11px] text-muted-foreground mb-0.5 uppercase tracking-wide">{label}</p>
+      {children}
+    </div>
+    {onEdit && !isEditing && (
+      <button onClick={onEdit} className="p-1.5 rounded-md hover:bg-muted/50 transition-colors flex-shrink-0 mt-0.5">
+        <Edit2 className="w-3.5 h-3.5 text-muted-foreground" />
+      </button>
+    )}
+  </div>
+);
+
+// ── Save / Cancel buttons ─────────────────────────────────────────
+const EditActions: React.FC<{
+  onSave: () => void;
+  onCancel: () => void;
+  isLoading?: boolean;
+  isRTL: boolean;
+}> = ({ onSave, onCancel, isLoading, isRTL }) => (
+  <div className="flex items-center gap-2 mt-2">
+    <Button size="sm" onClick={onSave} disabled={isLoading} className="h-7 px-3 text-xs">
+      {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+      <span className="ms-1">{isRTL ? "حفظ" : "Save"}</span>
+    </Button>
+    <Button size="sm" variant="ghost" onClick={onCancel} className="h-7 px-3 text-xs text-muted-foreground">
+      <X className="w-3 h-3" />
+      <span className="ms-1">{isRTL ? "إلغاء" : "Cancel"}</span>
+    </Button>
+  </div>
+);
+
 export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpdate, isUpdating }) => {
   const { isRTL } = useLanguage();
   const { user, signOut } = useAuth();
@@ -78,13 +120,11 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
   const [customCountry, setCustomCountry] = useState(
     COUNTRIES.find((c) => c.en === profile.country || c.ar === profile.country) ? "" : profile.country || "",
   );
-  const [countrySearch, setCountrySearch] = useState("");
 
   // City
   const [isEditingCity, setIsEditingCity] = useState(false);
   const [city, setCity] = useState(profile.city || "");
   const [customCity, setCustomCity] = useState("");
-  const [citySearch, setCitySearch] = useState("");
 
   // Gender
   const [isEditingGender, setIsEditingGender] = useState(false);
@@ -102,57 +142,39 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
 
   const isOtherCountry = country === OTHER_VALUE;
   const isOtherCity = city === OTHER_VALUE;
-
   const selectedCountryEntry = useMemo(() => COUNTRIES.find((c) => c.code === country), [country]);
-
   const cities = useMemo(() => selectedCountryEntry?.cities || [], [selectedCountryEntry]);
   const hasCities = cities.length > 0 && !isOtherCountry;
 
   const phonePrefixOptions = useMemo(
-    () =>
-      PHONE_COUNTRIES.map((c) => ({
-        value: `${c.prefix}_${c.code}`,
-        label: `${c.prefix} ${isRTL ? c.ar : c.en}`,
-      })),
+    () => PHONE_COUNTRIES.map((c) => ({ value: `${c.prefix}_${c.code}`, label: `${c.prefix} ${isRTL ? c.ar : c.en}` })),
     [isRTL],
   );
 
-  const filteredCountries = useMemo(() => {
-    if (!countrySearch.trim()) return COUNTRIES;
-    const q = countrySearch.toLowerCase();
-    return COUNTRIES.filter((c) => c.en.toLowerCase().includes(q) || c.ar.includes(q));
-  }, [countrySearch]);
-
-  const filteredCities = useMemo(() => {
-    if (!citySearch.trim()) return cities;
-    const q = citySearch.toLowerCase();
-    return cities.filter((c) => c.en.toLowerCase().includes(q) || c.ar.includes(q));
-  }, [cities, citySearch]);
-
   const countryOptions = useMemo(
     () => [
-      ...filteredCountries.map((c) => ({ value: c.code, label: isRTL ? c.ar : c.en })),
+      ...COUNTRIES.map((c) => ({ value: c.code, label: isRTL ? c.ar : c.en })),
       { value: OTHER_VALUE, label: isRTL ? "أخرى" : "Other" },
     ],
-    [filteredCountries, isRTL],
+    [isRTL],
   );
 
   const cityOptions = useMemo(
     () => [
-      ...filteredCities.map((c) => ({ value: isRTL ? c.ar : c.en, label: isRTL ? c.ar : c.en })),
+      ...cities.map((c) => ({ value: isRTL ? c.ar : c.en, label: isRTL ? c.ar : c.en })),
       { value: OTHER_VALUE, label: isRTL ? "أخرى" : "Other" },
     ],
-    [filteredCities, isRTL],
+    [cities, isRTL],
   );
 
   const validatePhone = (val: string) => {
     const digits = val.replace(/[^0-9]/g, "");
     if (digits.length < 7) {
-      setPhoneError(isRTL ? "رقم الهاتف قصير جداً (7 أرقام على الأقل)" : "Phone too short (min 7 digits)");
+      setPhoneError(isRTL ? "رقم قصير جداً (7 أرقام على الأقل)" : "Too short (min 7 digits)");
       return false;
     }
     if (digits.length > 15) {
-      setPhoneError(isRTL ? "رقم الهاتف طويل جداً (15 رقم كحد أقصى)" : "Phone too long (max 15 digits)");
+      setPhoneError(isRTL ? "رقم طويل جداً (15 رقم كحد أقصى)" : "Too long (max 15 digits)");
       return false;
     }
     setPhoneError(null);
@@ -162,27 +184,25 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
   const handleSavePhone = async () => {
     if (!validatePhone(phoneLocal)) return;
     const prefix = phonePrefix.split("_")[0];
-    const fullPhone = `${prefix}${phoneLocal.replace(/[^0-9]/g, "")}`;
-    await onUpdate({ phone: fullPhone });
+    await onUpdate({ phone: `${prefix}${phoneLocal.replace(/[^0-9]/g, "")}` });
     setIsEditingPhone(false);
     setPhoneError(null);
   };
 
   const handleSaveCountry = async () => {
-    const countryName = isOtherCountry
+    const name = isOtherCountry
       ? customCountry.trim()
       : selectedCountryEntry
         ? isRTL
           ? selectedCountryEntry.ar
           : selectedCountryEntry.en
         : "";
-    await onUpdate({ country: countryName });
+    await onUpdate({ country: name });
     setIsEditingCountry(false);
   };
 
   const handleSaveCity = async () => {
-    const cityName = isOtherCity || isOtherCountry ? customCity.trim() : city;
-    await onUpdate({ city: cityName });
+    await onUpdate({ city: isOtherCity || isOtherCountry ? customCity.trim() : city });
     setIsEditingCity(false);
   };
 
@@ -194,9 +214,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
 
   const handleSaveDob = async (date: Date | undefined) => {
     setDob(date);
-    if (date) {
-      await onUpdate({ date_of_birth: format(date, "yyyy-MM-dd") });
-    }
+    if (date) await onUpdate({ date_of_birth: format(date, "yyyy-MM-dd") });
     setIsEditingDob(false);
   };
 
@@ -227,51 +245,26 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
   };
 
   return (
-    <div className="card-premium p-4">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Settings className="w-4 h-4 text-primary" />
-        </div>
-        <h3 className="text-base font-semibold text-foreground">
-          {isRTL ? "الحساب والإعدادات" : "Account & Settings"}
-        </h3>
+    <div className="card-premium overflow-hidden">
+      {/* ── Header ── */}
+      <div className="px-5 py-4 border-b border-border/40 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-foreground">{isRTL ? "الحساب والإعدادات" : "Account & Settings"}</h3>
+        <span className="text-xs text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full">{user?.email}</span>
       </div>
 
-      {/* Grid layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {/* Email — read only */}
-        <div className="bg-muted/20 rounded-lg p-3 border border-border/40">
-          <div className="flex items-center gap-2 mb-2">
-            <Mail className="w-4 h-4 text-muted-foreground" />
-            <Label className="text-xs text-muted-foreground">{isRTL ? "البريد الإلكتروني" : "Email"}</Label>
-          </div>
-          <p className="text-foreground font-medium truncate text-sm">{user?.email}</p>
-        </div>
-
+      {/* ── Rows ── */}
+      <div className="px-5 divide-y divide-border/20">
         {/* Phone */}
-        <div className="bg-muted/20 rounded-lg p-3 border border-border/40">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Phone className="w-4 h-4 text-muted-foreground" />
-              <Label
-                dir="ltr"
-                style={{ textAlign: isRTL ? "right" : "left" }}
-                className="text-xs text-muted-foreground"
-              >
-                {isRTL ? "رقم الهاتف" : "Phone Number"}
-              </Label>
-            </div>
-            {!isEditingPhone && (
-              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setIsEditingPhone(true)}>
-                <Edit2 className="w-3 h-3" />
-              </Button>
-            )}
-          </div>
+        <SettingRow
+          icon={Phone}
+          label={isRTL ? "رقم الهاتف" : "Phone"}
+          onEdit={() => setIsEditingPhone(true)}
+          isEditing={isEditingPhone}
+        >
           {isEditingPhone ? (
-            <div className="space-y-2">
+            <div className="space-y-1.5 mt-1">
               <div className="flex gap-2" dir="ltr">
-                <div className="w-36 flex-shrink-0">
+                <div className="w-32 flex-shrink-0">
                   <SearchableDropdown
                     options={phonePrefixOptions}
                     value={phonePrefix}
@@ -280,7 +273,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
                       setPhoneError(null);
                     }}
                     placeholder="+966"
-                    searchPlaceholder={isRTL ? "بحث..." : "Search..."}
+                    searchPlaceholder="Search..."
                     dir="ltr"
                   />
                 </div>
@@ -291,9 +284,9 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
                     setPhoneLocal(e.target.value.replace(/[^0-9]/g, ""));
                     setPhoneError(null);
                   }}
-                  placeholder={isRTL ? "رقم الهاتف" : "Phone number"}
+                  placeholder="501234567"
                   dir="ltr"
-                  className={cn("flex-1", phoneError && "border-destructive")}
+                  className={cn("flex-1 h-9", phoneError && "border-destructive")}
                   autoFocus
                 />
               </div>
@@ -303,47 +296,39 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
                   {phoneError}
                 </p>
               )}
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleSavePhone} disabled={isUpdating} className="h-7">
-                  {isUpdating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                  <span className="ms-1">{isRTL ? "حفظ" : "Save"}</span>
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7"
-                  onClick={() => {
-                    const p = parsePhone(profile.phone);
-                    setPhonePrefix(p.prefix);
-                    setPhoneLocal(p.local);
-                    setPhoneError(null);
-                    setIsEditingPhone(false);
-                  }}
-                >
-                  <X className="w-3 h-3" />
-                </Button>
-              </div>
+              <EditActions
+                onSave={handleSavePhone}
+                onCancel={() => {
+                  const p = parsePhone(profile.phone);
+                  setPhonePrefix(p.prefix);
+                  setPhoneLocal(p.local);
+                  setPhoneError(null);
+                  setIsEditingPhone(false);
+                }}
+                isLoading={isUpdating}
+                isRTL={isRTL}
+              />
             </div>
           ) : (
-            <p className="text-foreground font-medium text-sm">{profile.phone || (isRTL ? "غير محدد" : "Not set")}</p>
+            <p
+              className="text-sm font-medium text-foreground"
+              dir="ltr"
+              style={{ textAlign: isRTL ? "right" : "left" }}
+            >
+              {profile.phone || <span className="text-muted-foreground text-xs">{isRTL ? "غير محدد" : "Not set"}</span>}
+            </p>
           )}
-        </div>
+        </SettingRow>
 
         {/* Country */}
-        <div className="bg-muted/20 rounded-lg p-3 border border-border/40">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Globe className="w-4 h-4 text-muted-foreground" />
-              <Label className="text-xs text-muted-foreground">{isRTL ? "الدولة" : "Country"}</Label>
-            </div>
-            {!isEditingCountry && (
-              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setIsEditingCountry(true)}>
-                <Edit2 className="w-3 h-3" />
-              </Button>
-            )}
-          </div>
+        <SettingRow
+          icon={Globe}
+          label={isRTL ? "الدولة" : "Country"}
+          onEdit={() => setIsEditingCountry(true)}
+          isEditing={isEditingCountry}
+        >
           {isEditingCountry ? (
-            <div className="space-y-2">
+            <div className="space-y-1.5 mt-1">
               <SearchableDropdown
                 options={countryOptions}
                 value={country}
@@ -361,53 +346,50 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
                   onChange={(e) => setCustomCountry(e.target.value)}
                   placeholder={isRTL ? "أدخل اسم الدولة" : "Enter country name"}
                   dir={isRTL ? "rtl" : "ltr"}
+                  className="h-9"
                 />
               )}
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleSaveCountry} disabled={isUpdating} className="h-7">
-                  {isUpdating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                  <span className="ms-1">{isRTL ? "حفظ" : "Save"}</span>
-                </Button>
-                <Button size="sm" variant="ghost" className="h-7" onClick={() => setIsEditingCountry(false)}>
-                  <X className="w-3 h-3" />
-                </Button>
-              </div>
+              <EditActions
+                onSave={handleSaveCountry}
+                onCancel={() => setIsEditingCountry(false)}
+                isLoading={isUpdating}
+                isRTL={isRTL}
+              />
             </div>
           ) : (
-            <p className="text-foreground font-medium text-sm">{profile.country || (isRTL ? "غير محدد" : "Not set")}</p>
+            <p className="text-sm font-medium text-foreground">
+              {profile.country || (
+                <span className="text-muted-foreground text-xs">{isRTL ? "غير محدد" : "Not set"}</span>
+              )}
+            </p>
           )}
-        </div>
+        </SettingRow>
 
         {/* City */}
-        <div className="bg-muted/20 rounded-lg p-3 border border-border/40">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-muted-foreground" />
-              <Label className="text-xs text-muted-foreground">{isRTL ? "المدينة" : "City"}</Label>
-            </div>
-            {!isEditingCity && (
-              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setIsEditingCity(true)}>
-                <Edit2 className="w-3 h-3" />
-              </Button>
-            )}
-          </div>
+        <SettingRow
+          icon={MapPin}
+          label={isRTL ? "المدينة" : "City"}
+          onEdit={() => setIsEditingCity(true)}
+          isEditing={isEditingCity}
+        >
           {isEditingCity ? (
-            <div className="space-y-2">
+            <div className="space-y-1.5 mt-1">
               {hasCities ? (
                 <SearchableDropdown
                   options={cityOptions}
                   value={city}
-                  onChange={(val) => setCity(val)}
+                  onChange={setCity}
                   placeholder={isRTL ? "اختر المدينة" : "Select city"}
                   searchPlaceholder={isRTL ? "بحث..." : "Search..."}
                   dir={isRTL ? "rtl" : "ltr"}
                 />
               ) : (
                 <Input
-                  value={isOtherCity ? customCity : city}
-                  onChange={(e) => (isOtherCity ? setCustomCity(e.target.value) : setCity(e.target.value))}
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
                   placeholder={isRTL ? "أدخل اسم المدينة" : "Enter city name"}
                   dir={isRTL ? "rtl" : "ltr"}
+                  className="h-9"
                 />
               )}
               {isOtherCity && (
@@ -416,40 +398,34 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
                   onChange={(e) => setCustomCity(e.target.value)}
                   placeholder={isRTL ? "أدخل اسم المدينة" : "Enter city name"}
                   dir={isRTL ? "rtl" : "ltr"}
+                  className="h-9"
                 />
               )}
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleSaveCity} disabled={isUpdating} className="h-7">
-                  {isUpdating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                  <span className="ms-1">{isRTL ? "حفظ" : "Save"}</span>
-                </Button>
-                <Button size="sm" variant="ghost" className="h-7" onClick={() => setIsEditingCity(false)}>
-                  <X className="w-3 h-3" />
-                </Button>
-              </div>
+              <EditActions
+                onSave={handleSaveCity}
+                onCancel={() => setIsEditingCity(false)}
+                isLoading={isUpdating}
+                isRTL={isRTL}
+              />
             </div>
           ) : (
-            <p className="text-foreground font-medium text-sm">{profile.city || (isRTL ? "غير محدد" : "Not set")}</p>
+            <p className="text-sm font-medium text-foreground">
+              {profile.city || <span className="text-muted-foreground text-xs">{isRTL ? "غير محدد" : "Not set"}</span>}
+            </p>
           )}
-        </div>
+        </SettingRow>
 
         {/* Gender */}
-        <div className="bg-muted/20 rounded-lg p-3 border border-border/40">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-muted-foreground" />
-              <Label className="text-xs text-muted-foreground">{isRTL ? "الجنس" : "Gender"}</Label>
-            </div>
-            {!isEditingGender && (
-              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setIsEditingGender(true)}>
-                <Edit2 className="w-3 h-3" />
-              </Button>
-            )}
-          </div>
+        <SettingRow
+          icon={User}
+          label={isRTL ? "الجنس" : "Gender"}
+          onEdit={() => setIsEditingGender(true)}
+          isEditing={isEditingGender}
+        >
           {isEditingGender ? (
-            <div className="space-y-2">
+            <div className="space-y-1.5 mt-1">
               <Select value={gender} onValueChange={handleSaveGender} dir={isRTL ? "rtl" : "ltr"}>
-                <SelectTrigger className="h-8">
+                <SelectTrigger className="h-9">
                   <SelectValue placeholder={isRTL ? "اختر" : "Select"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -460,7 +436,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7"
+                className="h-7 px-3 text-xs text-muted-foreground"
                 onClick={() => {
                   setGender(profile.gender || "");
                   setIsEditingGender(false);
@@ -471,42 +447,40 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
               </Button>
             </div>
           ) : (
-            <p className="text-foreground font-medium text-sm">
-              {profile.gender
-                ? isRTL
-                  ? profile.gender === "Male"
-                    ? "ذكر"
-                    : "أنثى"
-                  : profile.gender
-                : isRTL
-                  ? "غير محدد"
-                  : "Not set"}
+            <p className="text-sm font-medium text-foreground">
+              {profile.gender ? (
+                isRTL ? (
+                  profile.gender === "Male" ? (
+                    "ذكر"
+                  ) : (
+                    "أنثى"
+                  )
+                ) : (
+                  profile.gender
+                )
+              ) : (
+                <span className="text-muted-foreground text-xs">{isRTL ? "غير محدد" : "Not set"}</span>
+              )}
             </p>
           )}
-        </div>
+        </SettingRow>
 
         {/* Date of Birth */}
-        <div className="bg-muted/20 rounded-lg p-3 border border-border/40">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="w-4 h-4 text-muted-foreground" />
-              <Label className="text-xs text-muted-foreground">{isRTL ? "تاريخ الميلاد" : "Date of Birth"}</Label>
-            </div>
-            {!isEditingDob && (
-              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setIsEditingDob(true)}>
-                <Edit2 className="w-3 h-3" />
-              </Button>
-            )}
-          </div>
+        <SettingRow
+          icon={CalendarIcon}
+          label={isRTL ? "تاريخ الميلاد" : "Date of Birth"}
+          onEdit={() => setIsEditingDob(true)}
+          isEditing={isEditingDob}
+        >
           {isEditingDob ? (
-            <div className="space-y-2">
+            <div className="space-y-1.5 mt-1">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className={cn("h-8 w-full justify-start font-normal", !dob && "text-muted-foreground")}
+                    className={cn("h-9 w-full justify-start font-normal text-sm", !dob && "text-muted-foreground")}
                   >
-                    <CalendarIcon className="me-2 h-4 w-4" />
+                    <CalendarIcon className="me-2 h-3.5 w-3.5" />
                     {dob
                       ? format(dob, "PPP", { locale: isRTL ? arSA : undefined })
                       : isRTL
@@ -528,7 +502,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7"
+                className="h-7 px-3 text-xs text-muted-foreground"
                 onClick={() => {
                   setDob(profile.date_of_birth ? new Date(profile.date_of_birth) : undefined);
                   setIsEditingDob(false);
@@ -539,96 +513,84 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
               </Button>
             </div>
           ) : (
-            <p className="text-foreground font-medium text-sm">
-              {profile.date_of_birth
-                ? format(new Date(profile.date_of_birth), "PPP", { locale: isRTL ? arSA : undefined })
-                : isRTL
-                  ? "غير محدد"
-                  : "Not set"}
+            <p className="text-sm font-medium text-foreground">
+              {profile.date_of_birth ? (
+                format(new Date(profile.date_of_birth), "PPP", { locale: isRTL ? arSA : undefined })
+              ) : (
+                <span className="text-muted-foreground text-xs">{isRTL ? "غير محدد" : "Not set"}</span>
+              )}
             </p>
           )}
-        </div>
+        </SettingRow>
 
-        {/* Password — full width */}
-        <div className="bg-muted/20 rounded-lg p-3 border border-border/40">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-muted-foreground" />
-              <Label className="text-xs text-muted-foreground">{isRTL ? "كلمة المرور" : "Password"}</Label>
-            </div>
-            {!isChangingPassword && (
-              <Button size="sm" variant="ghost" onClick={() => setIsChangingPassword(true)} className="h-7 text-xs">
-                {isRTL ? "تغيير" : "Change"}
-              </Button>
-            )}
-          </div>
+        {/* Password */}
+        <SettingRow
+          icon={Lock}
+          label={isRTL ? "كلمة المرور" : "Password"}
+          onEdit={() => setIsChangingPassword(true)}
+          isEditing={isChangingPassword}
+        >
           {isChangingPassword ? (
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div className="relative">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    value={passwordData.newPassword}
-                    onChange={(e) => setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))}
-                    placeholder={isRTL ? "كلمة المرور الجديدة" : "New password"}
-                    dir={isRTL ? "rtl" : "ltr"}
-                  />
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="absolute end-1 top-1/2 -translate-y-1/2 h-8 w-8"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </Button>
-                </div>
+            <div className="space-y-2 mt-1">
+              <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
-                  value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                  placeholder={isRTL ? "تأكيد كلمة المرور" : "Confirm password"}
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))}
+                  placeholder={isRTL ? "كلمة المرور الجديدة" : "New password"}
                   dir={isRTL ? "rtl" : "ltr"}
+                  className="h-9 pe-10"
                 />
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleChangePassword} disabled={isPasswordLoading}>
-                  {isPasswordLoading ? <Loader2 className="w-4 h-4 animate-spin me-2" /> : null}
-                  {isRTL ? "حفظ" : "Save"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setIsChangingPassword(false);
-                    setPasswordData({ newPassword: "", confirmPassword: "" });
-                  }}
+                <button
+                  type="button"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword(!showPassword)}
                 >
-                  {isRTL ? "إلغاء" : "Cancel"}
-                </Button>
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
+              <Input
+                type={showPassword ? "text" : "password"}
+                value={passwordData.confirmPassword}
+                onChange={(e) => setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                placeholder={isRTL ? "تأكيد كلمة المرور" : "Confirm password"}
+                dir={isRTL ? "rtl" : "ltr"}
+                className="h-9"
+              />
+              <EditActions
+                onSave={handleChangePassword}
+                onCancel={() => {
+                  setIsChangingPassword(false);
+                  setPasswordData({ newPassword: "", confirmPassword: "" });
+                }}
+                isLoading={isPasswordLoading}
+                isRTL={isRTL}
+              />
             </div>
           ) : (
-            <p className="text-foreground font-medium text-sm">••••••••</p>
+            <p className="text-sm font-medium text-foreground tracking-widest">••••••••</p>
           )}
-        </div>
+        </SettingRow>
 
-        {/* Subscription — read only, full width */}
-        <div className="bg-muted/20 rounded-lg p-3 border border-border/40 md:col-span-2">
-          <div className="flex items-center gap-2 mb-2">
-            <CreditCard className="w-4 h-4 text-muted-foreground" />
-            <Label className="text-xs text-muted-foreground">{isRTL ? "حالة الاشتراك" : "Subscription Status"}</Label>
-          </div>
-          <p className="text-foreground font-medium text-sm">{isRTL ? "مجاني" : "Free"}</p>
-        </div>
+        {/* Subscription — read only */}
+        <SettingRow icon={CreditCard} label={isRTL ? "حالة الاشتراك" : "Subscription"}>
+          <p className="text-sm font-medium text-foreground">
+            <span className="inline-flex items-center gap-1.5 text-xs bg-muted/50 px-2 py-0.5 rounded-full">
+              {isRTL ? "مجاني" : "Free Plan"}
+            </span>
+          </p>
+        </SettingRow>
       </div>
 
-      {/* Logout */}
-      <div className="mt-6">
+      {/* ── Logout ── */}
+      <div className="px-5 py-4 border-t border-border/40">
         <LogoutConfirmDialog onConfirm={signOut}>
-          <Button variant="destructive" className="w-full">
+          <Button
+            variant="ghost"
+            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 h-9 text-sm"
+          >
             <LogOut className="w-4 h-4 me-2" />
-            {isRTL ? "تسجيل الخروج" : "Logout"}
+            {isRTL ? "تسجيل الخروج" : "Sign Out"}
           </Button>
         </LogoutConfirmDialog>
       </div>
