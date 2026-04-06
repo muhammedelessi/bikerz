@@ -170,14 +170,15 @@ const Signup: React.FC = () => {
 
   const getCountryName = () => {
     if (isOtherCountry) return customCountry.trim();
-    return selectedCountryEntry ? (isRTL ? selectedCountryEntry.ar : selectedCountryEntry.en) : "";
+    return selectedCountryEntry ? selectedCountryEntry.en : ""; // دائماً English
   };
 
   const getCityName = () => {
     if (isOtherCity || isOtherCountry) return customCity.trim();
-    return city;
+    // ابحث عن الاسم الإنجليزي للمدينة
+    const cityEntry = selectedCountryEntry?.cities.find((c) => c.ar === city || c.en === city);
+    return cityEntry ? cityEntry.en : city; // دائماً English
   };
-
   const saveProfileAndSync = async (userId: string, fullName: string, userEmail: string) => {
     try {
       await supabase

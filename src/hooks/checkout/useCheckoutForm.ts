@@ -97,10 +97,13 @@ export function useCheckoutForm(open: boolean) {
   }, [isRTL]);
 
   const actualPrefix = phonePrefix ? phonePrefix.split("_")[0] : "";
-
-  const effectiveCity = isOtherCity || isOtherCountry ? cityManual.trim() : city.trim();
-  const effectiveCountry = isOtherCountry ? countryManual.trim() : country.trim();
-
+  const effectiveCity =
+    isOtherCity || isOtherCountry
+      ? cityManual.trim()
+      : selectedCountry?.cities.find((c) => c.ar === city || c.en === city)?.en || city.trim();
+  const effectiveCountry = isOtherCountry
+    ? countryManual.trim()
+    : COUNTRIES.find((c) => c.code === selectedCountryCode)?.en || country.trim();
   const getFullPhone = useCallback(() => {
     const rawPhone = phone.trim();
     if (!rawPhone) return "";
