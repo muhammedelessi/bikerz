@@ -262,8 +262,8 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
         >
           {isEditingPhone ? (
             <div className="space-y-1.5 mt-1">
-              <div className="flex gap-2" dir="ltr">
-                <div className="w-full">
+              <div className="flex gap-2 w-full">
+                <div className="w-36 flex-shrink-0">
                   <SearchableDropdown
                     options={phonePrefixOptions}
                     value={phonePrefix}
