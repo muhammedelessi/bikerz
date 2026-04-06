@@ -218,7 +218,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
   };
 
   const handleSaveCountry = async () => {
-    const name = isOtherCountry ? customCountry.trim() : selectedCountryEntry ? selectedCountryEntry.en : ""; // دائماً English
+    const name = isTempOtherCountry ? tempCustomCountry.trim() : tempCountryEntry ? tempCountryEntry.en : "";
     setCountry(tempCountry);
     setCustomCountry(tempCustomCountry);
     setCity("");
@@ -226,13 +226,10 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
     await onUpdate({ country: name, city: "" });
     setIsEditingCountry(false);
   };
-
   const handleSaveCity = async () => {
-    const cityName =
-      isOtherCity || isOtherCountry
-        ? customCity.trim()
-        : selectedCountryEntry?.cities.find((c) => c.ar === city || c.en === city)?.en || city;
-
+    const cityName = isTempOtherCity
+      ? tempCustomCity.trim()
+      : tempCountryEntry?.cities.find((c) => c.ar === tempCity || c.en === tempCity)?.en || tempCity;
     setCity(cityName);
     await onUpdate({ city: cityName });
     setIsEditingCity(false);
