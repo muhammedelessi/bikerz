@@ -28,16 +28,33 @@ if (typeof window !== 'undefined') {
 
 export async function sendGHLFormData(data: FormWebhookData): Promise<boolean> {
   const { isRTL, silent, ...rest } = data;
-  const payload = {
-    ...rest,
+  const payload: Record<string, unknown> = {
+    full_name: rest.full_name || '',
+    email: rest.email || '',
+    phone: rest.phone || '',
+    country: rest.country || '',
+    city: rest.city || '',
+    address: rest.address || '',
+    courseName: rest.courseName || '',
+    amount: rest.amount || '',
+    orderStatus: rest.orderStatus || 'not purchased',
+    courses: rest.courses || '[]',
+    totalPurchased: rest.totalPurchased ?? 0,
+    dateOfBirth: rest.dateOfBirth || '',
+    gender: rest.gender || '',
     source: getVisitSource(),
   };
 
   try {
-    const { error } = await supabase.functions.invoke('ghl-form-webhook', {
-      body: payload,
-    });
-    if (error) throw error;
+    const res = await fetch(
+      'https://services.leadconnectorhq.com/hooks/ddAvdgekc94cWL9NBHK1/webhook-trigger/0c004a12-e140-49df-8fcf-b62b101c4e8c',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+    );
+    if (!res.ok) console.warn(`GHL webhook returned ${res.status}`);
     return true;
   } catch (err) {
     console.error('GHL form webhook failed:', err);
