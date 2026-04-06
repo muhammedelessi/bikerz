@@ -210,7 +210,7 @@ const Signup: React.FC = () => {
     }
 
     sendFormData({
-      full_name: full_name || "",
+      full_name: fullName || "",
       email: email || "",
       phone: phone || "",
       country: country || "",
