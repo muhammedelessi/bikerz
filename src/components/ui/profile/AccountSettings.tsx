@@ -111,6 +111,8 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
 
   // Country
   const [isEditingCountry, setIsEditingCountry] = useState(false);
+  const [tempCountry, setTempCountry] = useState(country);
+  const [tempCustomCountry, setTempCustomCountry] = useState(customCountry);
   const [country, setCountry] = useState(() => {
     const match = COUNTRIES.find(
       (c) => c.en === profile.country || c.ar === profile.country || c.code === profile.country,
@@ -190,13 +192,11 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
   };
 
   const handleSaveCountry = async () => {
-    const name = isOtherCountry
-      ? customCountry.trim()
-      : selectedCountryEntry
-        ? isRTL
-          ? selectedCountryEntry.ar
-          : selectedCountryEntry.en
-        : "";
+    setCountry(tempCountry);
+    setCustomCountry(tempCustomCountry);
+    setCity(""); // reset city only on save
+    const match = COUNTRIES.find((c) => c.code === tempCountry);
+    const name = tempCountry === OTHER_VALUE ? tempCustomCountry.trim() : match ? (isRTL ? match.ar : match.en) : "";
     await onUpdate({ country: name });
     setIsEditingCountry(false);
   };
@@ -264,7 +264,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
           {isEditingPhone ? (
             <div className="space-y-1.5 mt-1">
               <div className="flex gap-2" dir="ltr">
-                <div className="w-32 flex-shrink-0">
+                <div className="w-full">
                   <SearchableDropdown
                     options={phonePrefixOptions}
                     value={phonePrefix}
@@ -331,10 +331,17 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
             <div className="space-y-1.5 mt-1">
               <SearchableDropdown
                 options={countryOptions}
-                value={country}
-                onChange={(val) => {
-                  setCountry(val);
-                  setCity("");
+                value={tempCountry}
+                onChange={(val) => setTempCountry(val)}
+                onCancel={() => {
+                  setTempCountry(country);
+                  setTempCustomCountry(customCountry);
+                  setIsEditingCountry(false);
+                }}
+                onEdit={() => {
+                  setTempCountry(country);
+                  setTempCustomCountry(customCountry);
+                  setIsEditingCountry(true);
                 }}
                 placeholder={isRTL ? "اختر الدولة" : "Select country"}
                 searchPlaceholder={isRTL ? "بحث..." : "Search..."}
