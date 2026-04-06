@@ -211,19 +211,23 @@ const Signup: React.FC = () => {
       console.error("GHL signup sync failed:", syncErr);
     }
 
+    const fullPhone = getFullPhone();
+    const countryName = getCountryName();
+    const cityName = getCityName();
+
     sendFormData({
       full_name: fullName || "",
-      email: email || "",
-      phone: phone || "",
-      country: country || "",
-      city: city || "",
-      address: [city, country].filter(Boolean).join(", "),
+      email: userEmail || "",
+      phone: fullPhone,
+      country: countryName,
+      city: cityName,
+      address: [cityName, countryName].filter(Boolean).join(", "),
       dateOfBirth: "",
       gender: "",
       orderStatus: "not purchased",
-      courses: "",
+      courses: "[]",
       totalPurchased: 0,
-      silent: true,
+      isRTL,
     });
   };
 
