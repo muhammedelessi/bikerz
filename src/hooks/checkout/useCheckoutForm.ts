@@ -108,10 +108,12 @@ export function useCheckoutForm(open: boolean) {
     const rawPhone = phone.trim();
     if (!rawPhone) return "";
     if (rawPhone.startsWith("+")) return rawPhone;
+    const digits = rawPhone.replace(/[^0-9]/g, "");
+    const cleaned = digits.startsWith("0") ? digits.slice(1) : digits;
     if (actualPrefix) {
-      return `${actualPrefix}${rawPhone}`;
+      return `${actualPrefix}${cleaned}`;
     }
-    return rawPhone;
+    return cleaned;
   }, [phone, actualPrefix]);
   const fullPhone = getFullPhone();
   const rawPhoneTrimmed = phone.trim();
