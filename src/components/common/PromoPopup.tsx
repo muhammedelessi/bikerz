@@ -1,34 +1,34 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { useCurrency } from '@/contexts/CurrencyContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { X, Clock, Zap, Star } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { X, Clock, Zap, Star } from "lucide-react";
 
-const COURSE_ID = '1f5ce93f-5ecd-4c49-b3c7-86adbc8704f6';
-const STORAGE_KEY = 'bikerz_promo_shown';
+const COURSE_ID = "1f5ce93f-5ecd-4c49-b3c7-86adbc8704f6";
+const STORAGE_KEY = "bikerz_promo_shown";
 const POPUP_DELAY_MS = 10000; // 10 seconds
 const SCROLL_THRESHOLD = 0.5; // 50% scroll
 const OFFER_DURATION_HOURS = 48;
 
 function getOrCreateExpiry(): number {
-  const stored = localStorage.getItem(STORAGE_KEY + '_expiry');
+  const stored = localStorage.getItem(STORAGE_KEY + "_expiry");
   if (stored) return parseInt(stored);
   const expiry = Date.now() + OFFER_DURATION_HOURS * 60 * 60 * 1000;
-  localStorage.setItem(STORAGE_KEY + '_expiry', String(expiry));
+  localStorage.setItem(STORAGE_KEY + "_expiry", String(expiry));
   return expiry;
 }
 
 function hasBeenShown(): boolean {
-  return localStorage.getItem(STORAGE_KEY) === 'true';
+  return localStorage.getItem(STORAGE_KEY) === "true";
 }
 
 function markAsShown() {
-  localStorage.setItem(STORAGE_KEY, 'true');
+  localStorage.setItem(STORAGE_KEY, "true");
 }
 
 function useCountdown(expiryMs: number) {
@@ -49,7 +49,7 @@ function useCountdown(expiryMs: number) {
 }
 
 interface PromoPopupProps {
-  trigger: 'timer' | 'scroll' | 'exit';
+  trigger: "timer" | "scroll" | "exit";
 }
 
 const PromoPopup: React.FC<PromoPopupProps> = ({ trigger }) => {
@@ -65,12 +65,12 @@ const PromoPopup: React.FC<PromoPopupProps> = ({ trigger }) => {
 
   // Fetch course data
   const { data: course } = useQuery({
-    queryKey: ['promo-course', COURSE_ID],
+    queryKey: ["promo-course", COURSE_ID],
     queryFn: async () => {
       const { data } = await supabase
-        .from('courses')
-        .select('id, title, title_ar, thumbnail_url, price, discount_percentage')
-        .eq('id', COURSE_ID)
+        .from("courses")
+        .select("id, title, title_ar, thumbnail_url, price, discount_percentage")
+        .eq("id", COURSE_ID)
         .single();
       return data;
     },
@@ -79,14 +79,14 @@ const PromoPopup: React.FC<PromoPopupProps> = ({ trigger }) => {
 
   // Check if user already enrolled
   const { data: isEnrolled } = useQuery({
-    queryKey: ['promo-enrolled', COURSE_ID, user?.id],
+    queryKey: ["promo-enrolled", COURSE_ID, user?.id],
     queryFn: async () => {
       if (!user) return false;
       const { data } = await supabase
-        .from('course_enrollments')
-        .select('id')
-        .eq('course_id', COURSE_ID)
-        .eq('user_id', user.id)
+        .from("course_enrollments")
+        .select("id")
+        .eq("course_id", COURSE_ID)
+        .eq("user_id", user.id)
         .maybeSingle();
       return !!data;
     },
@@ -104,45 +104,56 @@ const PromoPopup: React.FC<PromoPopupProps> = ({ trigger }) => {
 
   // Timer trigger
   useEffect(() => {
-    if (trigger !== 'timer' || fired) return;
+    if (trigger !== "timer" || fired) return;
     const id = setTimeout(showPopup, POPUP_DELAY_MS);
     return () => clearTimeout(id);
   }, [trigger, fired, showPopup]);
 
   // Scroll trigger
   useEffect(() => {
-    if (trigger !== 'scroll' || fired) return;
+    if (trigger !== "scroll" || fired) return;
     const handleScroll = () => {
       const scrolled = window.scrollY / (document.body.scrollHeight - window.innerHeight);
       if (scrolled >= SCROLL_THRESHOLD) showPopup();
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [trigger, fired, showPopup]);
 
-  // Exit intent trigger
+  // Exit intent trigger — desktop + mobile
   useEffect(() => {
-    if (trigger !== 'exit' || fired) return;
+    if (trigger !== "exit" || fired) return;
+
+    // Desktop: mouse leaves top of page
     const handleMouseLeave = (e: MouseEvent) => {
       if (e.clientY <= 0) showPopup();
     };
-    document.addEventListener('mouseleave', handleMouseLeave);
-    return () => document.removeEventListener('mouseleave', handleMouseLeave);
-  }, [trigger, fired, showPopup]);
+    document.addEventListener("mouseleave", handleMouseLeave);
 
+    // Mobile: page becomes hidden (back button or switch app)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") showPopup();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("mouseleave", handleMouseLeave);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [trigger, fired, showPopup]);
   if (!course) return null;
 
   const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
   const hasDiscount = priceInfo.discountPct > 0;
   const courseTitle = isRTL && course.title_ar ? course.title_ar : course.title;
 
-  const pad = (n: number) => String(n).padStart(2, '0');
+  const pad = (n: number) => String(n).padStart(2, "0");
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
         className="sm:max-w-[440px] w-[calc(100vw-2rem)] p-0 overflow-hidden border-0 gap-0"
-        dir={isRTL ? 'rtl' : 'ltr'}
+        dir={isRTL ? "rtl" : "ltr"}
       >
         {/* Close button */}
         <button
@@ -156,19 +167,14 @@ const PromoPopup: React.FC<PromoPopupProps> = ({ trigger }) => {
         <div className="bg-primary px-5 py-3 flex items-center gap-2">
           <Zap className="w-4 h-4 text-white flex-shrink-0" />
           <p className="text-white text-xs font-bold uppercase tracking-wider">
-            {isRTL ? '🔥 عرض حصري لفترة محدودة!' : '🔥 Exclusive Limited Time Offer!'}
+            {isRTL ? "🔥 عرض حصري لفترة محدودة!" : "🔥 Exclusive Limited Time Offer!"}
           </p>
         </div>
 
         {/* Course thumbnail */}
         {course.thumbnail_url && (
           <div className="relative h-40 overflow-hidden">
-            <img
-              src={course.thumbnail_url}
-              alt={courseTitle}
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
+            <img src={course.thumbnail_url} alt={courseTitle} className="w-full h-full object-cover" loading="lazy" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             {hasDiscount && (
               <div className="absolute top-3 start-3 bg-primary text-white text-sm font-black px-3 py-1 rounded-full">
@@ -177,7 +183,7 @@ const PromoPopup: React.FC<PromoPopupProps> = ({ trigger }) => {
             )}
             <div className="absolute bottom-3 start-3 end-3">
               <div className="flex items-center gap-1 mb-1">
-                {[1,2,3,4,5].map(i => (
+                {[1, 2, 3, 4, 5].map((i) => (
                   <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                 ))}
               </div>
@@ -188,13 +194,10 @@ const PromoPopup: React.FC<PromoPopupProps> = ({ trigger }) => {
 
         {/* Content */}
         <div className="px-5 py-4 space-y-4 bg-card">
-
           {/* Offer text */}
           <div className="text-center">
             <p className="text-foreground font-semibold text-sm">
-              {isRTL
-                ? 'استغل هذا العرض قبل أن ينتهي!'
-                : 'Grab this deal before it expires!'}
+              {isRTL ? "استغل هذا العرض قبل أن ينتهي!" : "Grab this deal before it expires!"}
             </p>
             {hasDiscount && (
               <p className="text-muted-foreground text-xs mt-1">
@@ -222,14 +225,14 @@ const PromoPopup: React.FC<PromoPopupProps> = ({ trigger }) => {
             <div className="flex items-center justify-center gap-1.5 mb-2">
               <Clock className="w-3.5 h-3.5 text-primary" />
               <span className="text-xs text-muted-foreground font-medium">
-                {isRTL ? 'ينتهي العرض خلال:' : 'Offer expires in:'}
+                {isRTL ? "ينتهي العرض خلال:" : "Offer expires in:"}
               </span>
             </div>
             <div className="flex items-center justify-center gap-2">
               {[
-                { val: pad(countdown.hours), label: isRTL ? 'ساعة' : 'hrs' },
-                { val: pad(countdown.minutes), label: isRTL ? 'دقيقة' : 'min' },
-                { val: pad(countdown.seconds), label: isRTL ? 'ثانية' : 'sec' },
+                { val: pad(countdown.hours), label: isRTL ? "ساعة" : "hrs" },
+                { val: pad(countdown.minutes), label: isRTL ? "دقيقة" : "min" },
+                { val: pad(countdown.seconds), label: isRTL ? "ثانية" : "sec" },
               ].map(({ val, label }, i) => (
                 <React.Fragment key={label}>
                   {i > 0 && <span className="text-primary font-bold text-lg">:</span>}
@@ -255,15 +258,13 @@ const PromoPopup: React.FC<PromoPopupProps> = ({ trigger }) => {
               }}
             >
               <Zap className="w-4 h-4" />
-              {isRTL ? 'استغل العرض الآن!' : 'Grab the Deal Now!'}
+              {isRTL ? "استغل العرض الآن!" : "Grab the Deal Now!"}
             </Button>
             <button
               onClick={() => setOpen(false)}
               className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
             >
-              {isRTL
-                ? 'لا شكراً، سأدفع السعر الكامل لاحقاً'
-                : "No thanks, I'll pay full price later"}
+              {isRTL ? "لا شكراً، سأدفع السعر الكامل لاحقاً" : "No thanks, I'll pay full price later"}
             </button>
           </div>
         </div>
