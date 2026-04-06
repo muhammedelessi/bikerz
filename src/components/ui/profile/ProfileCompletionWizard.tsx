@@ -1,31 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { 
-  User, 
-  Bike, 
-  Award,
-  ChevronRight, 
-  ChevronLeft,
-  X,
-  Sparkles,
-  Camera,
-  Check
-} from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
-import { useGHLSync } from '@/hooks/useGHLSync';
-import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { motion, AnimatePresence } from "framer-motion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { getUserCourseStatuses } from "@/services/ghl.service";
+import { User, Bike, Award, ChevronRight, ChevronLeft, X, Sparkles, Camera, Check } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { useGHLSync } from "@/hooks/useGHLSync";
+import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
 
 interface ProfileCompletionWizardProps {
   open: boolean;
@@ -34,66 +25,69 @@ interface ProfileCompletionWizardProps {
 }
 
 const STEPS = [
-  { id: 'rider', icon: User, titleKey: 'profileCompletion.step1Title' },
-  { id: 'bike', icon: Bike, titleKey: 'profileCompletion.step2Title' },
-  { id: 'complete', icon: Award, titleKey: 'profileCompletion.step3Title' },
+  { id: "rider", icon: User, titleKey: "profileCompletion.step1Title" },
+  { id: "bike", icon: Bike, titleKey: "profileCompletion.step2Title" },
+  { id: "complete", icon: Award, titleKey: "profileCompletion.step3Title" },
 ];
 
 const BIKE_BRANDS = [
-  'Honda', 'Yamaha', 'Kawasaki', 'Suzuki', 'Ducati', 'BMW', 'Harley-Davidson',
-  'KTM', 'Triumph', 'Aprilia', 'Royal Enfield', 'Benelli', 'CFMoto', 'Other'
+  "Honda",
+  "Yamaha",
+  "Kawasaki",
+  "Suzuki",
+  "Ducati",
+  "BMW",
+  "Harley-Davidson",
+  "KTM",
+  "Triumph",
+  "Aprilia",
+  "Royal Enfield",
+  "Benelli",
+  "CFMoto",
+  "Other",
 ];
 
-const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
-  open,
-  onOpenChange,
-  onComplete
-}) => {
+const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({ open, onOpenChange, onComplete }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user, profile } = useAuth();
   const { syncContact } = useGHLSync();
   const { sendFormData } = useGHLFormWebhook();
-  
+
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Form data
-  const [riderNickname, setRiderNickname] = useState('');
-  const [phone, setPhone] = useState('');
-  const [bikeBrand, setBikeBrand] = useState('');
-  const [bikeModel, setBikeModel] = useState('');
-  const [engineSize, setEngineSize] = useState('');
-  const [ridingYears, setRidingYears] = useState('');
+  const [riderNickname, setRiderNickname] = useState("");
+  const [phone, setPhone] = useState("");
+  const [bikeBrand, setBikeBrand] = useState("");
+  const [bikeModel, setBikeModel] = useState("");
+  const [engineSize, setEngineSize] = useState("");
+  const [ridingYears, setRidingYears] = useState("");
   const [noBike, setNoBike] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  
 
   // Pre-fill with existing data if available
   useEffect(() => {
     const loadExistingProfile = async () => {
       if (!user) return;
-      
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-      
+
+      const { data } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
+
       if (data) {
-        setRiderNickname(data.rider_nickname || '');
-        setPhone(data.phone || '');
-        setBikeBrand(data.bike_brand || '');
-        setBikeModel(data.bike_model || '');
-        setEngineSize(data.engine_size_cc?.toString() || '');
-        setRidingYears(data.riding_experience_years?.toString() || '');
+        setRiderNickname(data.rider_nickname || "");
+        setPhone(data.phone || "");
+        setBikeBrand(data.bike_brand || "");
+        setBikeModel(data.bike_model || "");
+        setEngineSize(data.engine_size_cc?.toString() || "");
+        setRidingYears(data.riding_experience_years?.toString() || "");
         if (data.avatar_url) {
           setAvatarPreview(data.avatar_url);
         }
       }
     };
-    
+
     if (open) {
       loadExistingProfile();
     }
@@ -113,23 +107,23 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
 
   const uploadAvatar = async (): Promise<string | null> => {
     if (!avatarFile || !user) return null;
-    
-    const fileExt = avatarFile.name.split('.').pop();
+
+    const fileExt = avatarFile.name.split(".").pop();
     const fileName = `${user.id}/avatar.${fileExt}`;
-    
+
     const { error: uploadError } = await supabase.storage
-      .from('avatars')
+      .from("avatars")
       .upload(fileName, avatarFile, { upsert: true });
-    
+
     if (uploadError) {
-      console.error('Upload error:', uploadError);
+      console.error("Upload error:", uploadError);
       return null;
     }
-    
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(fileName);
-    
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("avatars").getPublicUrl(fileName);
+
     return publicUrl;
   };
 
@@ -139,7 +133,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
       try {
         await saveProfile();
       } catch (e) {
-        console.error('Save failed, still advancing:', e);
+        console.error("Save failed, still advancing:", e);
       }
     }
     if (currentStep < STEPS.length - 1) {
@@ -155,17 +149,17 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
 
   const handleSkip = async () => {
     // Mark as skipped in localStorage to show reminder later
-    localStorage.setItem('profile_completion_skipped', 'true');
-    localStorage.setItem('profile_completion_skip_time', Date.now().toString());
+    localStorage.setItem("profile_completion_skipped", "true");
+    localStorage.setItem("profile_completion_skip_time", Date.now().toString());
     onOpenChange(false);
-    toast.info(t('profileCompletion.completeProfileLater'));
+    toast.info(t("profileCompletion.completeProfileLater"));
   };
 
   const saveProfile = async () => {
     if (!user) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Upload avatar if selected
       let avatarUrl = avatarPreview;
@@ -173,10 +167,10 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
         const uploadedUrl = await uploadAvatar();
         if (uploadedUrl) avatarUrl = uploadedUrl;
       }
-      
+
       // Update profile
       const { error } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({
           rider_nickname: riderNickname || null,
           phone: phone || null,
@@ -187,15 +181,15 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
           avatar_url: avatarUrl,
           updated_at: new Date().toISOString(),
         })
-        .eq('user_id', user.id);
-      
+        .eq("user_id", user.id);
+
       if (error) throw error;
-      
+
       // Clear skip flags and store coupon for auto-apply at checkout
-      localStorage.removeItem('profile_completion_skipped');
-      localStorage.removeItem('profile_completion_skip_time');
-      localStorage.setItem('profile_completed', 'true');
-      
+      localStorage.removeItem("profile_completion_skipped");
+      localStorage.removeItem("profile_completion_skip_time");
+      localStorage.setItem("profile_completed", "true");
+
       // Sync contact to GHL CRM
       syncContact({
         full_name: profile?.full_name || riderNickname || null,
@@ -204,33 +198,39 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
         bike_model: bikeModel || null,
       });
 
-      // Send to GHL form webhook
+      const { coursesJson, totalPurchased } = await getUserCourseStatuses(user.id);
+
       sendFormData({
-        full_name: profile?.full_name || riderNickname || '',
-        email: user.email || '',
-        phone: phone || '',
-        dateOfBirth: profile?.date_of_birth || '',
-        gender: profile?.gender || '',
-        orderStatus: 'not purchased',
+        full_name: profile?.full_name || riderNickname || "",
+        email: user.email || "",
+        phone: phone || profile?.phone || "",
+        country: profile?.country || "",
+        city: profile?.city || "",
+        address: [profile?.city, profile?.country].filter(Boolean).join(", "),
+        dateOfBirth: profile?.date_of_birth || "",
+        gender: profile?.gender || "",
+        orderStatus: totalPurchased > 0 ? "purchased" : "not purchased",
+        courses: coursesJson,
+        totalPurchased,
         isRTL,
       });
 
       // Log activity
-      await supabase.from('user_activity_timeline').insert({
+      await supabase.from("user_activity_timeline").insert({
         user_id: user.id,
-        activity_type: 'profile_completed',
-        title: 'Profile completed',
-        title_ar: 'تم إكمال الملف الشخصي',
-        description: 'Profile completed successfully',
-        description_ar: 'تم إكمال الملف الشخصي بنجاح',
+        activity_type: "profile_completed",
+        title: "Profile completed",
+        title_ar: "تم إكمال الملف الشخصي",
+        description: "Profile completed successfully",
+        description_ar: "تم إكمال الملف الشخصي بنجاح",
       });
-      
-      toast.success(t('profileCompletion.profileComplete'));
-      
+
+      toast.success(t("profileCompletion.profileComplete"));
+
       onComplete?.();
     } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error(t('profile.profileUpdateFailed'));
+      console.error("Error updating profile:", error);
+      toast.error(t("profile.profileUpdateFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -240,11 +240,11 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
 
   const handleDone = () => {
     onOpenChange(false);
-    navigate('/courses');
+    navigate("/courses");
   };
 
   const progress = ((currentStep + 1) / STEPS.length) * 100;
-  
+
   const ChevronNext = isRTL ? ChevronLeft : ChevronRight;
   const ChevronPrev = isRTL ? ChevronRight : ChevronLeft;
   const isMobile = useIsMobile();
@@ -278,57 +278,49 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
                     <Camera className="w-8 h-8 text-muted-foreground" />
                   )}
                 </div>
-                <label 
+                <label
                   htmlFor="avatar-upload"
                   className="absolute bottom-0 right-0 p-2 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors"
                 >
                   <Camera className="w-4 h-4 text-primary-foreground" />
-                  <input 
-                    type="file" 
+                  <input
+                    type="file"
                     id="avatar-upload"
-                    className="hidden" 
+                    className="hidden"
                     accept="image/*"
                     onChange={handleAvatarChange}
                   />
                 </label>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {t('profile.addProfilePhoto')}
-              </p>
+              <p className="text-sm text-muted-foreground">{t("profile.addProfilePhoto")}</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="nickname">
-                {t('profile.riderNickname')}
-              </Label>
+              <Label htmlFor="nickname">{t("profile.riderNickname")}</Label>
               <Input
                 id="nickname"
                 value={riderNickname}
                 onChange={(e) => setRiderNickname(e.target.value)}
-                placeholder={t('profile.nicknamePlaceholder')}
+                placeholder={t("profile.nicknamePlaceholder")}
                 className="h-11"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">
-                {t('profile.phoneNumber')}
-              </Label>
+              <Label htmlFor="phone">{t("profile.phoneNumber")}</Label>
               <Input
                 id="phone"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder={isRTL ? '+966 5XX XXX XXXX' : '+966 5XX XXX XXXX'}
+                placeholder={isRTL ? "+966 5XX XXX XXXX" : "+966 5XX XXX XXXX"}
                 className="h-11"
                 dir="ltr"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ridingYears">
-                {t('profile.yearsOfExperience')}
-              </Label>
+              <Label htmlFor="ridingYears">{t("profile.yearsOfExperience")}</Label>
               <Input
                 id="ridingYears"
                 type="number"
@@ -336,13 +328,13 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
                 max="50"
                 value={ridingYears}
                 onChange={(e) => setRidingYears(e.target.value)}
-                placeholder={t('profile.yearsPlaceholder')}
+                placeholder={t("profile.yearsPlaceholder")}
                 className="h-11"
               />
             </div>
           </motion.div>
         );
-        
+
       case 1: // Bike Info
         return (
           <motion.div
@@ -360,59 +352,51 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
                 onChange={(e) => {
                   setNoBike(e.target.checked);
                   if (e.target.checked) {
-                    setBikeBrand('');
-                    setBikeModel('');
-                    setEngineSize('');
+                    setBikeBrand("");
+                    setBikeModel("");
+                    setEngineSize("");
                   }
                 }}
                 className="h-4 w-4 rounded border-primary text-primary focus:ring-primary"
               />
               <div>
-                <span className="text-sm font-medium text-foreground">
-                  {t('profileCompletion.noBikeYet')}
-                </span>
-                <p className="text-xs text-muted-foreground">
-                  {t('profileCompletion.addBikeLater')}
-                </p>
+                <span className="text-sm font-medium text-foreground">{t("profileCompletion.noBikeYet")}</span>
+                <p className="text-xs text-muted-foreground">{t("profileCompletion.addBikeLater")}</p>
               </div>
             </label>
 
             {!noBike && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="bikeBrand">
-                    {t('profile.bikeBrand')}
-                  </Label>
+                  <Label htmlFor="bikeBrand">{t("profile.bikeBrand")}</Label>
                   <select
                     id="bikeBrand"
                     value={bikeBrand}
                     onChange={(e) => setBikeBrand(e.target.value)}
                     className="w-full h-11 px-3 rounded-md border border-input bg-background text-foreground"
                   >
-                    <option value="">{t('profile.selectBrand')}</option>
-                    {BIKE_BRANDS.map(brand => (
-                      <option key={brand} value={brand}>{brand}</option>
+                    <option value="">{t("profile.selectBrand")}</option>
+                    {BIKE_BRANDS.map((brand) => (
+                      <option key={brand} value={brand}>
+                        {brand}
+                      </option>
                     ))}
                   </select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bikeModel">
-                    {t('profile.bikeModel')}
-                  </Label>
+                  <Label htmlFor="bikeModel">{t("profile.bikeModel")}</Label>
                   <Input
                     id="bikeModel"
                     value={bikeModel}
                     onChange={(e) => setBikeModel(e.target.value)}
-                    placeholder={t('profile.modelPlaceholder')}
+                    placeholder={t("profile.modelPlaceholder")}
                     className="h-11"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="engineSize">
-                    {t('profile.engineSize')}
-                  </Label>
+                  <Label htmlFor="engineSize">{t("profile.engineSize")}</Label>
                   <Input
                     id="engineSize"
                     type="number"
@@ -420,7 +404,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
                     max="3000"
                     value={engineSize}
                     onChange={(e) => setEngineSize(e.target.value)}
-                    placeholder={t('profile.enginePlaceholder')}
+                    placeholder={t("profile.enginePlaceholder")}
                     className="h-11"
                   />
                 </div>
@@ -428,7 +412,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
             )}
           </motion.div>
         );
-        
+
       case 2: // Complete
         return (
           <motion.div
@@ -440,17 +424,13 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4">
               <Sparkles className="w-10 h-10 text-white" />
             </div>
-            
-            <h3 className="text-xl font-bold mb-2">
-              {t('profileCompletion.profileCompleteSuccess')}
-            </h3>
-            
-            <p className="text-muted-foreground mb-6">
-                {t('profileCompletion.profileCompleteMessage')}
-            </p>
+
+            <h3 className="text-xl font-bold mb-2">{t("profileCompletion.profileCompleteSuccess")}</h3>
+
+            <p className="text-muted-foreground mb-6">{t("profileCompletion.profileCompleteMessage")}</p>
           </motion.div>
         );
-        
+
       default:
         return null;
     }
@@ -460,25 +440,21 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
     <>
       <div className="flex items-center gap-3">
         {React.createElement(STEPS[currentStep].icon, {
-          className: "w-5 h-5 sm:w-6 sm:h-6 text-primary"
+          className: "w-5 h-5 sm:w-6 sm:h-6 text-primary",
         })}
         <div>
           {isMobile ? (
             <>
-              <DrawerTitle className="text-base sm:text-lg">
-                {t(STEPS[currentStep].titleKey)}
-              </DrawerTitle>
+              <DrawerTitle className="text-base sm:text-lg">{t(STEPS[currentStep].titleKey)}</DrawerTitle>
               <DrawerDescription className="text-xs sm:text-sm">
-                  {t('profileCompletion.stepOf', { current: currentStep + 1, total: STEPS.length })}
+                {t("profileCompletion.stepOf", { current: currentStep + 1, total: STEPS.length })}
               </DrawerDescription>
             </>
           ) : (
             <>
-              <DialogTitle className="text-lg">
-                {t(STEPS[currentStep].titleKey)}
-              </DialogTitle>
+              <DialogTitle className="text-lg">{t(STEPS[currentStep].titleKey)}</DialogTitle>
               <DialogDescription className="text-sm">
-                  {t('profileCompletion.stepOf', { current: currentStep + 1, total: STEPS.length })}
+                {t("profileCompletion.stepOf", { current: currentStep + 1, total: STEPS.length })}
               </DialogDescription>
             </>
           )}
@@ -491,34 +467,30 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
   const bodyContent = (
     <>
       <div className="mt-3 sm:mt-4 min-h-0 overflow-y-auto max-h-[60vh] sm:max-h-[70vh] px-1">
-        <AnimatePresence mode="wait">
-          {renderStepContent()}
-        </AnimatePresence>
+        <AnimatePresence mode="wait">{renderStepContent()}</AnimatePresence>
       </div>
 
       {/* Actions */}
       <div className="flex items-center justify-between gap-2 sm:gap-3 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t">
         {currentStep === 0 ? (
           <Button variant="ghost" onClick={handleSkip} className="text-muted-foreground text-sm">
-            {t('profileCompletion.skipForNow')}
+            {t("profileCompletion.skipForNow")}
           </Button>
-        ) : currentStep === 2 ? (
-          null
-        ) : (
+        ) : currentStep === 2 ? null : (
           <Button variant="outline" onClick={handlePrev} disabled={isSubmitting} size={isMobile ? "sm" : "default"}>
             <ChevronPrev className="w-4 h-4" />
-            {t('profileCompletion.previous')}
+            {t("profileCompletion.previous")}
           </Button>
         )}
 
         {currentStep === 0 ? (
           <Button onClick={handleNext} size={isMobile ? "sm" : "default"}>
-            {t('profileCompletion.next')}
+            {t("profileCompletion.next")}
             <ChevronNext className="w-4 h-4" />
           </Button>
         ) : currentStep === 1 ? (
-          <Button 
-            onClick={handleNext} 
+          <Button
+            onClick={handleNext}
             disabled={isSubmitting}
             className="bg-gradient-to-r from-primary to-accent text-sm"
             size={isMobile ? "sm" : "default"}
@@ -527,19 +499,19 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <>
-                {t('profileCompletion.completeProfile')}
+                {t("profileCompletion.completeProfile")}
                 <ChevronNext className="w-4 h-4" />
               </>
             )}
           </Button>
         ) : (
-          <Button 
+          <Button
             onClick={handleDone}
             className="bg-gradient-to-r from-primary to-accent w-full text-sm"
             size={isMobile ? "sm" : "default"}
           >
             <Check className="w-4 h-4" />
-            {t('profileCompletion.browseCourses')}
+            {t("profileCompletion.browseCourses")}
           </Button>
         )}
       </div>
@@ -550,9 +522,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="px-4 pb-6 pt-2 max-h-[92vh] overflow-y-auto">
-          <DrawerHeader className="px-0 pb-2">
-            {headerContent}
-          </DrawerHeader>
+          <DrawerHeader className="px-0 pb-2">{headerContent}</DrawerHeader>
           {bodyContent}
         </DrawerContent>
       </Drawer>
@@ -562,9 +532,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          {headerContent}
-        </DialogHeader>
+        <DialogHeader>{headerContent}</DialogHeader>
         {bodyContent}
       </DialogContent>
     </Dialog>
