@@ -108,11 +108,6 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
   const [phonePrefix, setPhonePrefix] = useState(() => parsePhone(profile.phone).prefix);
   const [phoneLocal, setPhoneLocal] = useState(() => parsePhone(profile.phone).local);
   const [phoneError, setPhoneError] = useState<string | null>(null);
-
-  // Country
-  const [isEditingCountry, setIsEditingCountry] = useState(false);
-  const [tempCountry, setTempCountry] = useState(country);
-  const [tempCustomCountry, setTempCustomCountry] = useState(customCountry);
   const [country, setCountry] = useState(() => {
     const match = COUNTRIES.find(
       (c) => c.en === profile.country || c.ar === profile.country || c.code === profile.country,
@@ -122,6 +117,10 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
   const [customCountry, setCustomCountry] = useState(
     COUNTRIES.find((c) => c.en === profile.country || c.ar === profile.country) ? "" : profile.country || "",
   );
+  // Country
+  const [isEditingCountry, setIsEditingCountry] = useState(false);
+  const [tempCountry, setTempCountry] = useState(country);
+  const [tempCustomCountry, setTempCustomCountry] = useState(customCountry);
 
   // City
   const [isEditingCity, setIsEditingCity] = useState(false);
