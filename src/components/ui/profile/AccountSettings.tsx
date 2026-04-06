@@ -231,9 +231,11 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <div className="-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Settings className="w-5 h-5 text-primary" />
+          <Settings className="w-4 h-4 text-primary" />
         </div>
-        <h3 className="text-lg font-semibold text-foreground">{isRTL ? "الحساب والإعدادات" : "Account & Settings"}</h3>
+        <h3 className="text-base font-semibold text-foreground">
+          {isRTL ? "الحساب والإعدادات" : "Account & Settings"}
+        </h3>
       </div>
 
       {/* Grid layout */}
