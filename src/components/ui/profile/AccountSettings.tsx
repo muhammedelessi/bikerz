@@ -227,10 +227,10 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
   };
 
   return (
-    <div className="card-premium p-6">
+    <div className="card-premium p-4">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+        <div className="-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
           <Settings className="w-5 h-5 text-primary" />
         </div>
         <h3 className="text-lg font-semibold text-foreground">{isRTL ? "الحساب والإعدادات" : "Account & Settings"}</h3>
@@ -612,7 +612,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
         </div>
 
         {/* Subscription — read only, full width */}
-        <div className="bg-muted/20 rounded-xl p-4 border border-border/40 md:col-span-2">
+        <div className="bg-muted/20 rounded-lg p-3 border border-border/40 md:col-span-2">
           <div className="flex items-center gap-2 mb-2">
             <CreditCard className="w-4 h-4 text-muted-foreground" />
             <Label className="text-xs text-muted-foreground">{isRTL ? "حالة الاشتراك" : "Subscription Status"}</Label>
