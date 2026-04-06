@@ -226,31 +226,30 @@ export function useCheckoutForm(open: boolean) {
         setPhonePrefix(matchedPc.prefix + "_" + matchedPc.code);
       }
     }
-
     if (data.country) {
       const matched = COUNTRIES.find((c) => c.en === data.country || c.ar === data.country || c.code === data.country);
       if (matched) {
         setSelectedCountryCode(matched.code);
-        setCountry(matched.en); // دائماً English
+        setCountry(matched.en);
         setIsOtherCountry(false);
+
+        // Set city within same block so selectedCountry is available
+        if (data.city) {
+          const cityMatch = matched.cities.find((ct) => ct.en === data.city || ct.ar === data.city);
+          if (cityMatch) {
+            setCity(isRTL ? cityMatch.ar : cityMatch.en);
+            setIsOtherCity(false);
+          } else {
+            setIsOtherCity(true);
+            setCityManual(data.city);
+          }
+        }
       } else {
         setIsOtherCountry(true);
         setCountryManual(data.country);
-      }
-    }
-
-    if (data.city && data.country) {
-      const matchedCountry = COUNTRIES.find(
-        (c) => c.en === data.country || c.ar === data.country || c.code === data.country,
-      );
-      if (matchedCountry) {
-        const cityMatch = matchedCountry.cities.find((ct) => ct.en === data.city || ct.ar === data.city);
-        if (!cityMatch) {
-          setIsOtherCity(true);
+        if (data.city) {
           setCityManual(data.city);
         }
-      } else {
-        setCityManual(data.city);
       }
     }
 
