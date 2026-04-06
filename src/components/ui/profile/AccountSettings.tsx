@@ -237,9 +237,9 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
       </div>
 
       {/* Grid layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {/* Email — read only */}
-        <div className="bg-muted/20 rounded-xl p-4 border border-border/40">
+        <div className="bg-muted/20 rounded-lg p-3 border border-border/40">
           <div className="flex items-center gap-2 mb-2">
             <Mail className="w-4 h-4 text-muted-foreground" />
             <Label className="text-xs text-muted-foreground">{isRTL ? "البريد الإلكتروني" : "Email"}</Label>
@@ -248,7 +248,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
         </div>
 
         {/* Phone */}
-        <div className="bg-muted/20 rounded-xl p-4 border border-border/40">
+        <div className="bg-muted/20 rounded-lg p-3 border border-border/40">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-muted-foreground" />
@@ -328,7 +328,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
         </div>
 
         {/* Country */}
-        <div className="bg-muted/20 rounded-xl p-4 border border-border/40">
+        <div className="bg-muted/20 rounded-lg p-3 border border-border/40">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Globe className="w-4 h-4 text-muted-foreground" />
@@ -377,7 +377,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
         </div>
 
         {/* City */}
-        <div className="bg-muted/20 rounded-xl p-4 border border-border/40">
+        <div className="bg-muted/20 rounded-lg p-3 border border-border/40">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-muted-foreground" />
@@ -432,7 +432,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
         </div>
 
         {/* Gender */}
-        <div className="bg-muted/20 rounded-xl p-4 border border-border/40">
+        <div className="bg-muted/20 rounded-lg p-3 border border-border/40">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <User className="w-4 h-4 text-muted-foreground" />
@@ -484,7 +484,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
         </div>
 
         {/* Date of Birth */}
-        <div className="bg-muted/20 rounded-xl p-4 border border-border/40">
+        <div className="bg-muted/20 rounded-lg p-3 border border-border/40">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <CalendarIcon className="w-4 h-4 text-muted-foreground" />
@@ -548,7 +548,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
         </div>
 
         {/* Password — full width */}
-        <div className="bg-muted/20 rounded-xl p-4 border border-border/40 md:col-span-2">
+        <div className="bg-muted/20 rounded-lg p-3 border border-border/40">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-muted-foreground" />
@@ -562,7 +562,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ profile, onUpd
           </div>
           {isChangingPassword ? (
             <div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
