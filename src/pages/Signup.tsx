@@ -213,14 +213,14 @@ const Signup: React.FC = () => {
     const { coursesJson, totalPurchased } = await getUserCourseStatuses(user.id);
 
     sendFormData({
-      full_name: user?.full_name || "",
-      email: user.email || "",
-      phone: user?.phone || "",
-      country: user?.country || "",
-      city: user?.city || "",
-      address: [user?.city, user?.country].filter(Boolean).join(", "),
-      dateOfBirth: user?.date_of_birth || "",
-      gender: user?.gender || "",
+      full_name: User?.full_name || "",
+      email: User.email || "",
+      phone: User?.phone || "",
+      country: User?.country || "",
+      city: User?.city || "",
+      address: [User?.city, User?.country].filter(Boolean).join(", "),
+      dateOfBirth: User?.date_of_birth || "",
+      gender: User?.gender || "",
       orderStatus: totalPurchased > 0 ? "purchased" : "not purchased",
       courses: coursesJson,
       totalPurchased,
