@@ -95,7 +95,6 @@ const PaymentSuccess: React.FC = () => {
           gender: profile?.gender || "",
           silent: true,
         });
-
         // Send order data to n8n webhook (fire-and-forget)
         fetch("https://n8n.srv1504278.hstgr.cloud/webhook/new_order", {
           method: "POST",
