@@ -12,7 +12,6 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -130,12 +129,7 @@ const CourseDetail: React.FC = () => {
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ArrowLeft : ArrowRight;
   const [showCheckout, setShowCheckout] = useState(false);
-  // Auto-open checkout if coming from promo popup
-  useEffect(() => {
-    if (searchParams.get("checkout") === "true" && !enrollment) {
-      setShowCheckout(true);
-    }
-  }, [searchParams, enrollment]);
+
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
