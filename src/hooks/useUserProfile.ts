@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
-import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
-import { fetchEnrollmentsWithLiveProgress } from '@/lib/enrollmentProgress';
-
+import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
+import { fetchEnrollmentsWithLiveProgress } from "@/lib/enrollmentProgress";
+import { sendFormData, getUserCourseStatuses } from "@/services/ghl.service";
 export interface ExtendedProfile {
   id: string;
   user_id: string;
@@ -73,18 +73,18 @@ export interface ActivityItem {
 
 // Experience level thresholds based on XP and activity
 const EXPERIENCE_LEVELS = [
-  { level: 'FUTURE RIDER', minXp: 0, minLessons: 0 },
-  { level: 'TRAINEE', minXp: 100, minLessons: 5 },
-  { level: '1500KM Builder', minXp: 500, minLessons: 15 },
-  { level: 'Safe Rider', minXp: 1500, minLessons: 30 },
-  { level: 'Champion', minXp: 3000, minLessons: 50 },
-  { level: 'Trainer', minXp: 6000, minLessons: 80 },
-  { level: 'Master', minXp: 10000, minLessons: 120 },
-  { level: 'Legend', minXp: 20000, minLessons: 200 },
+  { level: "FUTURE RIDER", minXp: 0, minLessons: 0 },
+  { level: "TRAINEE", minXp: 100, minLessons: 5 },
+  { level: "1500KM Builder", minXp: 500, minLessons: 15 },
+  { level: "Safe Rider", minXp: 1500, minLessons: 30 },
+  { level: "Champion", minXp: 3000, minLessons: 50 },
+  { level: "Trainer", minXp: 6000, minLessons: 80 },
+  { level: "Master", minXp: 10000, minLessons: 120 },
+  { level: "Legend", minXp: 20000, minLessons: 200 },
 ];
 
 export function calculateExperienceLevel(totalXp: number, completedLessons: number): string {
-  let level = 'FUTURE RIDER';
+  let level = "FUTURE RIDER";
   for (const threshold of EXPERIENCE_LEVELS) {
     if (totalXp >= threshold.minXp && completedLessons >= threshold.minLessons) {
       level = threshold.level;
@@ -111,42 +111,38 @@ export function useUserProfile() {
 
     setIsUpdating(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('user_id', user.id);
+      const { error } = await supabase.from("profiles").update(updates).eq("user_id", user.id);
 
       if (error) throw error;
 
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      setProfile((prev) => (prev ? { ...prev, ...updates } : null));
 
       // Send updated fields to GHL via form webhook (uses email to match contact)
       const mergedProfile = { ...profile, ...updates };
-      const ghlPayload: Record<string, string | undefined> = {
-        email: user.email,
-      };
-      if (updates.full_name !== undefined) ghlPayload.full_name = updates.full_name || '';
-      if (updates.phone !== undefined) ghlPayload.phone = updates.phone || '';
-      if (updates.city !== undefined) ghlPayload.city = updates.city || '';
-      if (updates.country !== undefined) ghlPayload.country = updates.country || '';
-      if (updates.city !== undefined || updates.country !== undefined) {
-        ghlPayload.address = [mergedProfile?.city, mergedProfile?.country].filter(Boolean).join(', ');
-      }
-      // Always include dateOfBirth and gender from merged profile
-      ghlPayload.dateOfBirth = mergedProfile?.date_of_birth || '';
-      ghlPayload.gender = mergedProfile?.gender || '';
 
-      console.log('[GHL] Profile update webhook payload:', ghlPayload);
-      sendFormData({ ...ghlPayload, silent: true }).then(ok => {
-        console.log('[GHL] Profile update webhook result:', ok);
-      }).catch(err => {
-        console.error('[GHL] Profile update webhook error:', err);
+      const { coursesJson, totalPurchased } = await getUserCourseStatuses(user.id);
+
+      sendFormData({
+        full_name: mergedProfile?.full_name || "",
+        email: user.email || "",
+        phone: mergedProfile?.phone || "",
+        country: mergedProfile?.country || "",
+        city: mergedProfile?.city || "",
+        address: [mergedProfile?.city, mergedProfile?.country].filter(Boolean).join(", "),
+        dateOfBirth: mergedProfile?.date_of_birth || "",
+        gender: mergedProfile?.gender || "",
+        orderStatus: totalPurchased > 0 ? "purchased" : "not purchased",
+        courses: coursesJson,
+        totalPurchased,
+        silent: true,
+      }).catch((err) => {
+        console.error("[GHL] Profile update webhook error:", err);
       });
 
-      toast.success('Profile updated successfully');
+      toast.success("Profile updated successfully");
     } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
     } finally {
       setIsUpdating(false);
     }
@@ -156,34 +152,32 @@ export function useUserProfile() {
     if (!user) return null;
 
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/avatar_${Date.now()}.${fileExt}`;
 
       // Delete old avatar file from storage
       if (profile?.avatar_url) {
-        const oldPath = profile.avatar_url.split('/avatars/')[1]?.split('?')[0];
+        const oldPath = profile.avatar_url.split("/avatars/")[1]?.split("?")[0];
         if (oldPath) {
-          await supabase.storage.from('avatars').remove([oldPath]);
+          await supabase.storage.from("avatars").remove([oldPath]);
         }
       }
 
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, { upsert: true });
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(fileName);
 
       const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
       await updateProfile({ avatar_url: cacheBustedUrl });
 
       return cacheBustedUrl;
     } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast.error('Failed to upload avatar');
+      console.error("Error uploading avatar:", error);
+      toast.error("Failed to upload avatar");
       return null;
     }
   };
@@ -191,56 +185,53 @@ export function useUserProfile() {
   const loadAllData = async (userId: string) => {
     try {
       // Fetch profile, enrollments, lesson progress, gamification, and activities in parallel
-      const [profileRes, enrollmentsRes, liveProgress, progressRes, gamificationRes, activitiesRes] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', userId)
-          .single(),
-        supabase
-          .from('course_enrollments')
-          .select('id, progress_percentage, completed_at, course_id, course:courses!course_enrollments_course_id_fkey(title, title_ar, thumbnail_url)')
-          .eq('user_id', userId),
-        fetchEnrollmentsWithLiveProgress(userId),
-        supabase
-          .from('lesson_progress')
-          .select('id, is_completed, watch_time_seconds, lesson_id, completed_at, last_watched_at')
-          .eq('user_id', userId)
-          .order('last_watched_at', { ascending: false, nullsFirst: false }),
-        supabase
-          .from('user_gamification')
-          .select('total_xp')
-          .eq('user_id', userId)
-          .maybeSingle(),
-        supabase
-          .from('user_activity_timeline')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(50),
-      ]);
+      const [profileRes, enrollmentsRes, liveProgress, progressRes, gamificationRes, activitiesRes] = await Promise.all(
+        [
+          supabase.from("profiles").select("*").eq("user_id", userId).single(),
+          supabase
+            .from("course_enrollments")
+            .select(
+              "id, progress_percentage, completed_at, course_id, course:courses!course_enrollments_course_id_fkey(title, title_ar, thumbnail_url)",
+            )
+            .eq("user_id", userId),
+          fetchEnrollmentsWithLiveProgress(userId),
+          supabase
+            .from("lesson_progress")
+            .select("id, is_completed, watch_time_seconds, lesson_id, completed_at, last_watched_at")
+            .eq("user_id", userId)
+            .order("last_watched_at", { ascending: false, nullsFirst: false }),
+          supabase.from("user_gamification").select("total_xp").eq("user_id", userId).maybeSingle(),
+          supabase
+            .from("user_activity_timeline")
+            .select("*")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(50),
+        ],
+      );
 
       // Process profile
       const profileData = profileRes.data as ExtendedProfile | null;
-      
+
       // Process learning stats
       const enrollments = enrollmentsRes.data || [];
       const progress = progressRes.data || [];
       const gamification = gamificationRes.data;
 
       // Build a map of live progress percentages
-      const liveProgressMap = new Map(liveProgress.map(lp => [lp.course_id, lp.progress_percentage]));
+      const liveProgressMap = new Map(liveProgress.map((lp) => [lp.course_id, lp.progress_percentage]));
 
       const totalCourses = enrollments.length;
-      const coursesInProgress = enrollments.filter(e => !e.completed_at).length;
-      const completedLessons = progress.filter(p => p.is_completed).length;
+      const coursesInProgress = enrollments.filter((e) => !e.completed_at).length;
+      const completedLessons = progress.filter((p) => p.is_completed).length;
       const totalWatchTimeSeconds = progress.reduce((acc, p) => acc + (p.watch_time_seconds || 0), 0);
       const totalLearningTimeHours = Math.round((totalWatchTimeSeconds / 3600) * 10) / 10;
 
       // Calculate overall progress
-      const overallProgress = totalCourses > 0
-        ? Math.round(enrollments.reduce((acc, e) => acc + e.progress_percentage, 0) / totalCourses)
-        : 0;
+      const overallProgress =
+        totalCourses > 0
+          ? Math.round(enrollments.reduce((acc, e) => acc + e.progress_percentage, 0) / totalCourses)
+          : 0;
 
       // Build course items from enrollments with joined course data
       const courseItems: EnrolledCourseItem[] = enrollments.map((e: any) => {
@@ -248,7 +239,7 @@ export function useUserProfile() {
         const realProgress = liveProgressMap.get(e.course_id) ?? e.progress_percentage;
         return {
           course_id: e.course_id,
-          title: course?.title || '',
+          title: course?.title || "",
           title_ar: course?.title_ar || null,
           thumbnail_url: course?.thumbnail_url || null,
           progress_percentage: realProgress,
@@ -256,22 +247,22 @@ export function useUserProfile() {
         };
       });
 
-      const completedCourses = courseItems.filter(c => c.completed_at || c.progress_percentage >= 100);
-      const remainingCourses = courseItems.filter(c => !c.completed_at && c.progress_percentage < 100);
+      const completedCourses = courseItems.filter((c) => c.completed_at || c.progress_percentage >= 100);
+      const remainingCourses = courseItems.filter((c) => !c.completed_at && c.progress_percentage < 100);
 
       // Fetch all published courses the user hasn't enrolled in
       const enrolledCourseIds = enrollments.map((e: any) => e.course_id);
       let availableCourses: AvailableCourseItem[] = [];
-      
+
       const availableQuery = supabase
-        .from('courses')
-        .select('id, title, title_ar, thumbnail_url, price, currency, difficulty_level, discount_percentage')
-        .eq('is_published', true);
-      
+        .from("courses")
+        .select("id, title, title_ar, thumbnail_url, price, currency, difficulty_level, discount_percentage")
+        .eq("is_published", true);
+
       if (enrolledCourseIds.length > 0) {
         // Filter out enrolled courses - need to use not.in
         const { data: allCourses } = await availableQuery;
-        availableCourses = (allCourses || []).filter(c => !enrolledCourseIds.includes(c.id)) as AvailableCourseItem[];
+        availableCourses = (allCourses || []).filter((c) => !enrolledCourseIds.includes(c.id)) as AvailableCourseItem[];
       } else {
         const { data: allCourses } = await availableQuery;
         availableCourses = (allCourses || []) as AvailableCourseItem[];
@@ -280,15 +271,15 @@ export function useUserProfile() {
       // Get last lesson details (most recently watched, already sorted by last_watched_at desc)
       let lastLessonTitle = null;
       let lastLessonTitleAr = null;
-      
+
       const lastProgress = progress[0];
       if (lastProgress) {
         const { data: lessonData } = await supabase
-          .from('lessons')
-          .select('title, title_ar')
-          .eq('id', lastProgress.lesson_id)
+          .from("lessons")
+          .select("title, title_ar")
+          .eq("id", lastProgress.lesson_id)
           .single();
-        
+
         if (lessonData) {
           lastLessonTitle = lessonData.title;
           lastLessonTitleAr = lessonData.title_ar;
@@ -298,19 +289,16 @@ export function useUserProfile() {
       // Calculate experience level based on XP and lessons
       const totalXp = gamification?.total_xp || 0;
       const newLevel = calculateExperienceLevel(totalXp, completedLessons);
-      
+
       let finalProfile = profileData;
       if (profileData && profileData.experience_level !== newLevel) {
-        await supabase
-          .from('profiles')
-          .update({ experience_level: newLevel })
-          .eq('user_id', userId);
-        
+        await supabase.from("profiles").update({ experience_level: newLevel }).eq("user_id", userId);
+
         finalProfile = { ...profileData, experience_level: newLevel };
-        
-        await supabase.from('user_activity_timeline').insert({
+
+        await supabase.from("user_activity_timeline").insert({
           user_id: userId,
-          activity_type: 'level_change',
+          activity_type: "level_change",
           title: `Reached ${newLevel} level`,
           title_ar: `وصل إلى مستوى ${newLevel}`,
         });
@@ -331,7 +319,7 @@ export function useUserProfile() {
       });
       setActivities(activitiesRes.data || []);
     } catch (error) {
-      console.error('Error loading profile data:', error);
+      console.error("Error loading profile data:", error);
     }
   };
 
