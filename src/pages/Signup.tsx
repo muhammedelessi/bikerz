@@ -1,29 +1,43 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { supabase } from '@/integrations/supabase/client';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
-import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
-import LanguageToggle from '@/components/common/LanguageToggle';
-import ProfileCompletionWizard from '@/components/ui/profile/ProfileCompletionWizard';
-import { useAuthPageContent } from '@/hooks/useAuthPageContent';
-import { ArrowRight, ArrowLeft, AlertCircle, User, Mail, Phone, Globe, MapPin, ChevronDown, Search, Lock, Eye, EyeOff } from 'lucide-react';
-import { toast } from 'sonner';
-import defaultHeroImage from '@/assets/community-ride.webp';
-import SEOHead from '@/components/common/SEOHead';
-import logoDark from '@/assets/logo-dark.png';
-import logoLight from '@/assets/logo-light.png';
-import { useTheme } from '@/components/ThemeProvider';
-import SearchableDropdown from '@/components/checkout/SearchableDropdown';
-import { PHONE_COUNTRIES } from '@/data/phoneCountryCodes';
-import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
+import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { supabase } from "@/integrations/supabase/client";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import LanguageToggle from "@/components/common/LanguageToggle";
+import ProfileCompletionWizard from "@/components/ui/profile/ProfileCompletionWizard";
+import { useAuthPageContent } from "@/hooks/useAuthPageContent";
+import {
+  ArrowRight,
+  ArrowLeft,
+  AlertCircle,
+  User,
+  Mail,
+  Phone,
+  Globe,
+  MapPin,
+  ChevronDown,
+  Search,
+  Lock,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { toast } from "sonner";
+import defaultHeroImage from "@/assets/community-ride.webp";
+import SEOHead from "@/components/common/SEOHead";
+import logoDark from "@/assets/logo-dark.png";
+import logoLight from "@/assets/logo-light.png";
+import { useTheme } from "@/components/ThemeProvider";
+import SearchableDropdown from "@/components/checkout/SearchableDropdown";
+import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
+import { COUNTRIES, OTHER_OPTION } from "@/data/countryCityData";
+import { getUserCourseStatuses } from "@/services/ghl.service";
 
-
-const OTHER_VALUE = '__other__';
+const OTHER_VALUE = "__other__";
 
 const Signup: React.FC = () => {
   const { t } = useTranslation();
@@ -32,17 +46,17 @@ const Signup: React.FC = () => {
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const returnTo = searchParams.get('returnTo');
+  const returnTo = searchParams.get("returnTo");
   const { data: authContent } = useAuthPageContent();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [phonePrefix, setPhonePrefix] = useState('+966_SA');
-  const [country, setCountry] = useState('SA');
-  const [city, setCity] = useState('');
-  const [customCountry, setCustomCountry] = useState('');
-  const [customCity, setCustomCity] = useState('');
-  const [password, setPassword] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [phonePrefix, setPhonePrefix] = useState("+966_SA");
+  const [country, setCountry] = useState("SA");
+  const [city, setCity] = useState("");
+  const [customCountry, setCustomCountry] = useState("");
+  const [customCity, setCustomCity] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -55,9 +69,9 @@ const Signup: React.FC = () => {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [showProfileWizard, setShowProfileWizard] = useState(false);
   const [countryOpen, setCountryOpen] = useState(false);
-  const [countrySearch, setCountrySearch] = useState('');
+  const [countrySearch, setCountrySearch] = useState("");
   const [cityOpen, setCityOpen] = useState(false);
-  const [citySearch, setCitySearch] = useState('');
+  const [citySearch, setCitySearch] = useState("");
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const { sendFormData } = useGHLFormWebhook();
@@ -65,35 +79,30 @@ const Signup: React.FC = () => {
   const isOtherCountry = country === OTHER_VALUE;
   const isOtherCity = city === OTHER_VALUE;
 
-  const selectedCountryEntry = useMemo(
-    () => COUNTRIES.find(c => c.code === country),
-    [country]
-  );
+  const selectedCountryEntry = useMemo(() => COUNTRIES.find((c) => c.code === country), [country]);
 
   // Auto-detect country code by user location
   useEffect(() => {
     const detectCountry = async () => {
       try {
-        const res = await fetch('https://ipapi.co/json/');
+        const res = await fetch("https://ipapi.co/json/");
         if (!res.ok) return;
         const data = await res.json();
         const countryCode = data.country_code;
-        const phoneMatch = PHONE_COUNTRIES.find(c => c.code === countryCode);
+        const phoneMatch = PHONE_COUNTRIES.find((c) => c.code === countryCode);
         if (phoneMatch) {
           setPhonePrefix(`${phoneMatch.prefix}_${phoneMatch.code}`);
         }
-        const countryMatch = COUNTRIES.find(c => c.code === countryCode);
+        const countryMatch = COUNTRIES.find((c) => c.code === countryCode);
         if (countryMatch) {
           setCountry(countryCode);
         } else {
           setCountry(OTHER_VALUE);
-          setCustomCountry(data.country_name || '');
+          setCustomCountry(data.country_name || "");
         }
         // Try to auto-set city
         if (data.city && countryMatch) {
-          const cityMatch = countryMatch.cities.find(
-            c => c.en.toLowerCase() === data.city.toLowerCase()
-          );
+          const cityMatch = countryMatch.cities.find((c) => c.en.toLowerCase() === data.city.toLowerCase());
           if (cityMatch) {
             setCity(isRTL ? cityMatch.ar : cityMatch.en);
           }
@@ -105,18 +114,19 @@ const Signup: React.FC = () => {
     detectCountry();
   }, []);
 
-  const phonePrefixOptions = useMemo(() =>
-    PHONE_COUNTRIES.map(c => ({
-      value: `${c.prefix}_${c.code}`,
-      label: `${c.prefix} ${isRTL ? c.ar : c.en}`,
-    })),
-    [isRTL]
+  const phonePrefixOptions = useMemo(
+    () =>
+      PHONE_COUNTRIES.map((c) => ({
+        value: `${c.prefix}_${c.code}`,
+        label: `${c.prefix} ${isRTL ? c.ar : c.en}`,
+      })),
+    [isRTL],
   );
 
   const filteredCountries = useMemo(() => {
     if (!countrySearch.trim()) return COUNTRIES;
     const q = countrySearch.toLowerCase();
-    return COUNTRIES.filter(c => c.en.toLowerCase().includes(q) || c.ar.includes(q));
+    return COUNTRIES.filter((c) => c.en.toLowerCase().includes(q) || c.ar.includes(q));
   }, [countrySearch]);
 
   const cities = useMemo(() => selectedCountryEntry?.cities || [], [selectedCountryEntry]);
@@ -124,29 +134,29 @@ const Signup: React.FC = () => {
   const filteredCities = useMemo(() => {
     if (!citySearch.trim()) return cities;
     const q = citySearch.toLowerCase();
-    return cities.filter(c => c.en.toLowerCase().includes(q) || c.ar.includes(q));
+    return cities.filter((c) => c.en.toLowerCase().includes(q) || c.ar.includes(q));
   }, [cities, citySearch]);
 
   const hasCities = cities.length > 0 && !isOtherCountry;
 
   const cms = authContent?.signup || {};
   const heroImage = cms.image || defaultHeroImage;
-  const title = (isRTL ? cms.title_ar : cms.title_en) || t('auth.signup.title');
-  const subtitle = (isRTL ? cms.subtitle_ar : cms.subtitle_en) || t('auth.signup.subtitle');
-  const buttonText = (isRTL ? cms.button_ar : cms.button_en) || t('auth.signup.button');
-  const nameLabel = (isRTL ? cms.name_label_ar : cms.name_label_en) || t('auth.signup.name');
-  const emailLabel = (isRTL ? cms.email_label_ar : cms.email_label_en) || t('auth.signup.email');
-  const hasAccountText = (isRTL ? cms.has_account_ar : cms.has_account_en) || t('auth.signup.hasAccount');
-  const loginLinkText = (isRTL ? cms.login_link_ar : cms.login_link_en) || t('auth.signup.loginLink');
+  const title = (isRTL ? cms.title_ar : cms.title_en) || t("auth.signup.title");
+  const subtitle = (isRTL ? cms.subtitle_ar : cms.subtitle_en) || t("auth.signup.subtitle");
+  const buttonText = (isRTL ? cms.button_ar : cms.button_en) || t("auth.signup.button");
+  const nameLabel = (isRTL ? cms.name_label_ar : cms.name_label_en) || t("auth.signup.name");
+  const emailLabel = (isRTL ? cms.email_label_ar : cms.email_label_en) || t("auth.signup.email");
+  const hasAccountText = (isRTL ? cms.has_account_ar : cms.has_account_en) || t("auth.signup.hasAccount");
+  const loginLinkText = (isRTL ? cms.login_link_ar : cms.login_link_en) || t("auth.signup.loginLink");
 
   const validatePhone = (phoneValue: string): boolean => {
-    const digitsOnly = phoneValue.replace(/[^0-9]/g, '');
+    const digitsOnly = phoneValue.replace(/[^0-9]/g, "");
     if (digitsOnly.length < 7) {
-      setPhoneError(isRTL ? 'رقم الهاتف قصير جداً (7 أرقام على الأقل)' : 'Phone number too short (min 7 digits)');
+      setPhoneError(isRTL ? "رقم الهاتف قصير جداً (7 أرقام على الأقل)" : "Phone number too short (min 7 digits)");
       return false;
     }
     if (digitsOnly.length > 15) {
-      setPhoneError(isRTL ? 'رقم الهاتف طويل جداً (15 رقم كحد أقصى)' : 'Phone number too long (max 15 digits)');
+      setPhoneError(isRTL ? "رقم الهاتف طويل جداً (15 رقم كحد أقصى)" : "Phone number too long (max 15 digits)");
       return false;
     }
     setPhoneError(null);
@@ -154,13 +164,13 @@ const Signup: React.FC = () => {
   };
 
   const getFullPhone = () => {
-    const prefix = phonePrefix.split('_')[0];
-    return `${prefix}${phone.replace(/[^0-9]/g, '')}`;
+    const prefix = phonePrefix.split("_")[0];
+    return `${prefix}${phone.replace(/[^0-9]/g, "")}`;
   };
 
   const getCountryName = () => {
     if (isOtherCountry) return customCountry.trim();
-    return selectedCountryEntry ? (isRTL ? selectedCountryEntry.ar : selectedCountryEntry.en) : '';
+    return selectedCountryEntry ? (isRTL ? selectedCountryEntry.ar : selectedCountryEntry.en) : "";
   };
 
   const getCityName = () => {
@@ -170,35 +180,51 @@ const Signup: React.FC = () => {
 
   const saveProfileAndSync = async (userId: string, fullName: string, userEmail: string) => {
     try {
-      await supabase.from('profiles').update({
-        phone: getFullPhone(),
-        country: getCountryName(),
-        city: getCityName(),
-      }).eq('user_id', userId);
+      await supabase
+        .from("profiles")
+        .update({
+          phone: getFullPhone(),
+          country: getCountryName(),
+          city: getCityName(),
+        })
+        .eq("user_id", userId);
     } catch (e) {
-      console.error('Failed to save profile:', e);
+      console.error("Failed to save profile:", e);
     }
 
     try {
-      await supabase.functions.invoke('ghl-sync', {
+      await supabase.functions.invoke("ghl-sync", {
         body: {
-          action: 'create_or_update_contact',
-          data: { full_name: fullName, email: userEmail, phone: getFullPhone(), country: getCountryName(), city: getCityName() },
+          action: "create_or_update_contact",
+          data: {
+            full_name: fullName,
+            email: userEmail,
+            phone: getFullPhone(),
+            country: getCountryName(),
+            city: getCityName(),
+          },
         },
       });
     } catch (syncErr) {
-      console.error('GHL signup sync failed:', syncErr);
+      console.error("GHL signup sync failed:", syncErr);
     }
 
+    // Get real course status before sending
+    const { coursesJson, totalPurchased } = await getUserCourseStatuses(user.id);
+
     sendFormData({
-      full_name: fullName,
-      email: userEmail,
-      country: getCountryName(),
-      city: getCityName(),
-      orderStatus: 'not purchased',
-      courses: '[]',
-      totalPurchased: 0,
-      isRTL,
+      full_name: mergedProfile?.full_name || "",
+      email: user.email || "",
+      phone: mergedProfile?.phone || "",
+      country: mergedProfile?.country || "",
+      city: mergedProfile?.city || "",
+      address: [mergedProfile?.city, mergedProfile?.country].filter(Boolean).join(", "),
+      dateOfBirth: mergedProfile?.date_of_birth || "",
+      gender: mergedProfile?.gender || "",
+      orderStatus: totalPurchased > 0 ? "purchased" : "not purchased",
+      courses: coursesJson,
+      totalPurchased,
+      silent: true,
     });
   };
 
@@ -214,34 +240,34 @@ const Signup: React.FC = () => {
     let hasError = false;
 
     if (!name.trim()) {
-      setNameError(isRTL ? 'يرجى إدخال الاسم' : 'Please enter your name');
+      setNameError(isRTL ? "يرجى إدخال الاسم" : "Please enter your name");
       hasError = true;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim()) {
-      setEmailError(isRTL ? 'يرجى إدخال البريد الإلكتروني' : 'Please enter your email');
+      setEmailError(isRTL ? "يرجى إدخال البريد الإلكتروني" : "Please enter your email");
       hasError = true;
     } else if (!emailRegex.test(email.trim())) {
-      setEmailError(isRTL ? 'البريد الإلكتروني غير صالح' : 'Invalid email address');
+      setEmailError(isRTL ? "البريد الإلكتروني غير صالح" : "Invalid email address");
       hasError = true;
     }
 
     if (!validatePhone(phone)) hasError = true;
 
     if (password.length < 6) {
-      setPasswordError(isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+      setPasswordError(isRTL ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "Password must be at least 6 characters");
       hasError = true;
     }
 
     const finalCountry = getCountryName();
     const finalCity = getCityName();
     if (!finalCountry) {
-      setCountryError(isRTL ? 'يرجى اختيار أو إدخال الدولة' : 'Please select or enter your country');
+      setCountryError(isRTL ? "يرجى اختيار أو إدخال الدولة" : "Please select or enter your country");
       hasError = true;
     }
     if (!finalCity) {
-      setCityError(isRTL ? 'يرجى اختيار أو إدخال المدينة' : 'Please select or enter your city');
+      setCityError(isRTL ? "يرجى اختيار أو إدخال المدينة" : "Please select or enter your city");
       hasError = true;
     }
 
@@ -258,22 +284,24 @@ const Signup: React.FC = () => {
     }
 
     try {
-      const { data: { user: newUser } } = await (supabase.auth as any).getUser();
+      const {
+        data: { user: newUser },
+      } = await (supabase.auth as any).getUser();
       if (newUser) {
         await saveProfileAndSync(newUser.id, name, email);
       }
     } catch (e) {
-      console.error('Post-signup sync failed:', e);
+      console.error("Post-signup sync failed:", e);
     }
 
     // Save or clear remembered credentials
     if (rememberMe) {
-      localStorage.setItem('bikerz_remember', JSON.stringify({ email, password }));
+      localStorage.setItem("bikerz_remember", JSON.stringify({ email, password }));
     } else {
-      localStorage.removeItem('bikerz_remember');
+      localStorage.removeItem("bikerz_remember");
     }
 
-    toast.success(t('auth.signup.success'));
+    toast.success(t("auth.signup.success"));
     setIsLoading(false);
 
     // If coming from checkout, skip profile wizard and redirect directly
@@ -287,13 +315,17 @@ const Signup: React.FC = () => {
   const handleProfileWizardClose = (open: boolean) => {
     setShowProfileWizard(open);
     if (!open) {
-      navigate(returnTo || '/dashboard');
+      navigate(returnTo || "/dashboard");
     }
   };
 
   return (
     <div className="min-h-screen min-h-[100dvh] w-full overflow-x-hidden flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
-      <SEOHead title="Sign Up" description="Create your BIKERZ Academy account and start learning motorcycle riding from expert instructors today." canonical="/signup" />
+      <SEOHead
+        title="Sign Up"
+        description="Create your BIKERZ Academy account and start learning motorcycle riding from expert instructors today."
+        canonical="/signup"
+      />
       {/* Image Section - Hidden on mobile */}
       <div className="hidden lg:block flex-1 relative">
         <picture>
@@ -325,7 +357,7 @@ const Signup: React.FC = () => {
           <div className="flex items-center justify-between mb-6 sm:mb-8">
             <Link to="/" className="flex items-center">
               <img
-                src={theme === 'light' ? logoDark : logoLight}
+                src={theme === "light" ? logoDark : logoLight}
                 alt="BIKERZ"
                 className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
                 loading="eager"
@@ -338,12 +370,8 @@ const Signup: React.FC = () => {
           {/* Form Card */}
           <div className="card-premium p-4 sm:p-6 lg:p-8 overflow-visible">
             <div className="text-center mb-6 sm:mb-8">
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
-                {title}
-              </h1>
-              <p className="text-sm sm:text-base text-muted-foreground">
-                {subtitle}
-              </p>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2">{title}</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">{subtitle}</p>
             </div>
 
             {error && (
@@ -360,7 +388,7 @@ const Signup: React.FC = () => {
                 const el = e.target as HTMLElement | null;
                 if (!el) return;
                 window.setTimeout(() => {
-                  el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+                  el.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
                 }, 50);
               }}
             >
@@ -372,9 +400,12 @@ const Signup: React.FC = () => {
                     id="name"
                     type="text"
                     value={name}
-                    onChange={(e) => { setName(e.target.value); setNameError(null); }}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      setNameError(null);
+                    }}
                     placeholder={nameLabel}
-                    className={`ps-9 ${nameError ? 'border-destructive' : ''}`}
+                    className={`ps-9 ${nameError ? "border-destructive" : ""}`}
                   />
                 </div>
                 {nameError && (
@@ -393,9 +424,12 @@ const Signup: React.FC = () => {
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setEmailError(null);
+                    }}
                     placeholder={emailLabel}
-                    className={`ps-9 ${emailError ? 'border-destructive' : ''}`}
+                    className={`ps-9 ${emailError ? "border-destructive" : ""}`}
                   />
                 </div>
                 {emailError && (
@@ -413,26 +447,31 @@ const Signup: React.FC = () => {
                     <SearchableDropdown
                       options={phonePrefixOptions}
                       value={phonePrefix}
-                      onChange={(val) => { setPhonePrefix(val); setPhoneError(null); }}
+                      onChange={(val) => {
+                        setPhonePrefix(val);
+                        setPhoneError(null);
+                      }}
                       placeholder="+---"
-                      searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
+                      searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
                       hasError={!!phoneError}
                       dir="ltr"
                     />
                   </div>
                   <div className="relative flex-1">
-                    <Phone className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none ${isRTL ? "right-3" : "left-3"}`} />
+                    <Phone
+                      className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none ${isRTL ? "right-3" : "left-3"}`}
+                    />
                     <Input
                       id="phone"
                       type="tel"
                       value={phone}
                       onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        const val = e.target.value.replace(/[^0-9]/g, "");
                         setPhone(val);
                         setPhoneError(null);
                       }}
-                      placeholder={isRTL ? 'رقم الهاتف' : 'Phone Number'}
-                      className={`${isRTL ? "pr-9 text-right" : "pl-9 text-left"} ${phoneError ? 'border-destructive' : ''}`}
+                      placeholder={isRTL ? "رقم الهاتف" : "Phone Number"}
+                      className={`${isRTL ? "pr-9 text-right" : "pl-9 text-left"} ${phoneError ? "border-destructive" : ""}`}
                       dir={isRTL ? "rtl" : "ltr"}
                     />
                   </div>
@@ -457,8 +496,8 @@ const Signup: React.FC = () => {
                       setPassword(e.target.value);
                       setPasswordError(null);
                     }}
-                    placeholder={isRTL ? 'كلمة المرور (6 أحرف على الأقل)' : 'Password (min 6 characters)'}
-                    className={`ps-9 pe-10 ${passwordError ? 'border-destructive' : ''}`}
+                    placeholder={isRTL ? "كلمة المرور (6 أحرف على الأقل)" : "Password (min 6 characters)"}
+                    className={`ps-9 pe-10 ${passwordError ? "border-destructive" : ""}`}
                   />
                   <button
                     type="button"
@@ -475,11 +514,12 @@ const Signup: React.FC = () => {
                   </p>
                 ) : (
                   <p className="text-xs text-muted-foreground mt-1">
-                    {isRTL ? '6 أحرف على الأقل — ستستخدمها لتسجيل الدخول لاحقاً' : 'Min 6 characters — you will use it to log in later'}
+                    {isRTL
+                      ? "6 أحرف على الأقل — ستستخدمها لتسجيل الدخول لاحقاً"
+                      : "Min 6 characters — you will use it to log in later"}
                   </p>
                 )}
               </div>
-
 
               <div className="grid grid-cols-2 gap-3">
                 {/* Country */}
@@ -487,12 +527,23 @@ const Signup: React.FC = () => {
                   <div className="relative">
                     <button
                       type="button"
-                      onClick={() => { setCountryOpen(!countryOpen); setCityOpen(false); }}
+                      onClick={() => {
+                        setCountryOpen(!countryOpen);
+                        setCityOpen(false);
+                      }}
                       className={`flex h-10 w-full items-center rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${countryError ? "border-destructive" : "border-input"}`}
                     >
                       <Globe className="w-4 h-4 text-muted-foreground me-2 flex-shrink-0" />
-                      <span className={`flex-1 text-start truncate ${selectedCountryEntry ? "text-foreground" : "text-muted-foreground"}`}>
-                        {selectedCountryEntry ? (isRTL ? selectedCountryEntry.ar : selectedCountryEntry.en) : (isRTL ? 'الدولة' : 'Country')}
+                      <span
+                        className={`flex-1 text-start truncate ${selectedCountryEntry ? "text-foreground" : "text-muted-foreground"}`}
+                      >
+                        {selectedCountryEntry
+                          ? isRTL
+                            ? selectedCountryEntry.ar
+                            : selectedCountryEntry.en
+                          : isRTL
+                            ? "الدولة"
+                            : "Country"}
                       </span>
                       <ChevronDown className="w-4 h-4 text-muted-foreground" />
                     </button>
@@ -503,7 +554,7 @@ const Signup: React.FC = () => {
                             <Search className="absolute start-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <input
                               className="w-full ps-8 pe-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
-                              placeholder={isRTL ? 'بحث...' : 'Search...'}
+                              placeholder={isRTL ? "بحث..." : "Search..."}
                               value={countrySearch}
                               onChange={(e) => setCountrySearch(e.target.value)}
                               autoFocus
@@ -518,13 +569,13 @@ const Signup: React.FC = () => {
                               className={`w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors ${country === c.code ? "bg-accent text-accent-foreground" : ""}`}
                               onClick={() => {
                                 setCountry(c.code);
-                                setCity('');
-                                setCustomCity('');
+                                setCity("");
+                                setCustomCity("");
                                 setCountryOpen(false);
-                                setCountrySearch('');
+                                setCountrySearch("");
                                 setCountryError(null);
                                 setCityError(null);
-                                setCustomCountry('');
+                                setCustomCountry("");
                               }}
                             >
                               {isRTL ? c.ar : c.en}
@@ -535,10 +586,10 @@ const Signup: React.FC = () => {
                             className={`w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors text-muted-foreground ${country === OTHER_VALUE ? "bg-accent text-accent-foreground" : ""}`}
                             onClick={() => {
                               setCountry(OTHER_VALUE);
-                              setCity('');
-                              setCustomCity('');
+                              setCity("");
+                              setCustomCity("");
                               setCountryOpen(false);
-                              setCountrySearch('');
+                              setCountrySearch("");
                               setCountryError(null);
                             }}
                           >
@@ -552,9 +603,12 @@ const Signup: React.FC = () => {
                     <Input
                       type="text"
                       value={customCountry}
-                      onChange={(e) => { setCustomCountry(e.target.value); setCountryError(null); }}
-                      placeholder={isRTL ? 'اسم الدولة' : 'Country name'}
-                      className={`text-sm ${countryError ? 'border-destructive' : ''}`}
+                      onChange={(e) => {
+                        setCustomCountry(e.target.value);
+                        setCountryError(null);
+                      }}
+                      placeholder={isRTL ? "اسم الدولة" : "Country name"}
+                      className={`text-sm ${countryError ? "border-destructive" : ""}`}
                     />
                   )}
                   {countryError && (
@@ -571,12 +625,17 @@ const Signup: React.FC = () => {
                     <div className="relative">
                       <button
                         type="button"
-                        onClick={() => { setCityOpen(!cityOpen); setCountryOpen(false); }}
+                        onClick={() => {
+                          setCityOpen(!cityOpen);
+                          setCountryOpen(false);
+                        }}
                         className={`flex h-10 w-full items-center rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${cityError ? "border-destructive" : "border-input"}`}
                       >
                         <MapPin className="w-4 h-4 text-muted-foreground me-2 flex-shrink-0" />
-                        <span className={`flex-1 text-start truncate ${city && city !== OTHER_VALUE ? "text-foreground" : "text-muted-foreground"}`}>
-                          {city && city !== OTHER_VALUE ? city : (isRTL ? 'المدينة' : 'City')}
+                        <span
+                          className={`flex-1 text-start truncate ${city && city !== OTHER_VALUE ? "text-foreground" : "text-muted-foreground"}`}
+                        >
+                          {city && city !== OTHER_VALUE ? city : isRTL ? "المدينة" : "City"}
                         </span>
                         <ChevronDown className="w-4 h-4 text-muted-foreground" />
                       </button>
@@ -587,7 +646,7 @@ const Signup: React.FC = () => {
                               <Search className="absolute start-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                               <input
                                 className="w-full ps-8 pe-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
-                                placeholder={isRTL ? 'بحث...' : 'Search...'}
+                                placeholder={isRTL ? "بحث..." : "Search..."}
                                 value={citySearch}
                                 onChange={(e) => setCitySearch(e.target.value)}
                                 autoFocus
@@ -603,7 +662,7 @@ const Signup: React.FC = () => {
                                 onClick={() => {
                                   setCity(isRTL ? c.ar : c.en);
                                   setCityOpen(false);
-                                  setCitySearch('');
+                                  setCitySearch("");
                                   setCityError(null);
                                 }}
                               >
@@ -616,7 +675,7 @@ const Signup: React.FC = () => {
                               onClick={() => {
                                 setCity(OTHER_VALUE);
                                 setCityOpen(false);
-                                setCitySearch('');
+                                setCitySearch("");
                               }}
                             >
                               {isRTL ? OTHER_OPTION.ar : OTHER_OPTION.en}
@@ -631,11 +690,14 @@ const Signup: React.FC = () => {
                       <Input
                         value={isOtherCountry ? customCity : city}
                         onChange={(e) => {
-                          if (isOtherCountry) { setCustomCity(e.target.value); }
-                          else { setCity(e.target.value); }
+                          if (isOtherCountry) {
+                            setCustomCity(e.target.value);
+                          } else {
+                            setCity(e.target.value);
+                          }
                           setCityError(null);
                         }}
-                        placeholder={isRTL ? 'المدينة' : 'City'}
+                        placeholder={isRTL ? "المدينة" : "City"}
                         className={`ps-9 ${cityError ? "border-destructive" : ""}`}
                       />
                     </div>
@@ -644,9 +706,12 @@ const Signup: React.FC = () => {
                     <Input
                       type="text"
                       value={customCity}
-                      onChange={(e) => { setCustomCity(e.target.value); setCityError(null); }}
-                      placeholder={isRTL ? 'اسم المدينة' : 'City name'}
-                      className={`text-sm ${cityError ? 'border-destructive' : ''}`}
+                      onChange={(e) => {
+                        setCustomCity(e.target.value);
+                        setCityError(null);
+                      }}
+                      placeholder={isRTL ? "اسم المدينة" : "City name"}
+                      className={`text-sm ${cityError ? "border-destructive" : ""}`}
                     />
                   )}
                   {cityError && (
@@ -658,11 +723,7 @@ const Signup: React.FC = () => {
                 </div>
               </div>
 
-              <Button
-                variant="cta"
-                className="w-full"
-                disabled={isLoading}
-              >
+              <Button variant="cta" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                 ) : (
@@ -675,8 +736,11 @@ const Signup: React.FC = () => {
             </form>
 
             <div className="mt-5 sm:mt-6 text-center text-sm sm:text-base text-muted-foreground">
-              {hasAccountText}{' '}
-              <Link to={returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : '/login'} className="text-primary hover:underline font-medium">
+              {hasAccountText}{" "}
+              <Link
+                to={returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login"}
+                className="text-primary hover:underline font-medium"
+              >
                 {loginLinkText}
               </Link>
             </div>
@@ -701,10 +765,7 @@ const Signup: React.FC = () => {
       </div>
 
       {/* Profile Completion Wizard */}
-      <ProfileCompletionWizard
-        open={showProfileWizard}
-        onOpenChange={handleProfileWizardClose}
-      />
+      <ProfileCompletionWizard open={showProfileWizard} onOpenChange={handleProfileWizardClose} />
     </div>
   );
 };
