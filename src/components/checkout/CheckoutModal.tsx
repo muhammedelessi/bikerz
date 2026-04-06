@@ -1,408 +1,267 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { useTapPayment } from "@/hooks/useTapPayment";
-import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
-import { useCheckoutForm } from "@/hooks/checkout/useCheckoutForm";
-import { useCheckoutPromo } from "@/hooks/checkout/useCheckoutPromo";
-import { enrollUserInCourse, incrementCouponUsage } from "@/services/supabase.service";
-import { AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import React, { memo, useCallback, useState } from "react";
+import { motion } from "framer-motion";
+import { CreditCard, Gift, Shield, Check, Lock, Loader2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Check, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { trackInitiateCheckout, trackAddPaymentInfo } from "@/utils/metaPixel";
-import CheckoutStatusOverlay from "@/components/checkout/CheckoutStatusOverlay";
-import CheckoutPaymentStep from "@/components/checkout/CheckoutPaymentStep";
-import type { CheckoutCourse } from "@/types/payment";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
+import type { PaymentStatus, AppliedCoupon } from "@/types/payment";
+import PaymentMethodIcons from "@/components/checkout/PaymentMethodIcons";
+interface CheckoutPaymentStepProps {
+  isRTL: boolean;
+  currencyLabel: string;
+  formatLocal: (amount: number) => string;
+  promoCode: string;
+  setPromoCode: (v: string) => void;
+  promoApplied: boolean;
+  appliedCoupon: AppliedCoupon | null;
+  handleApplyPromo: () => void;
+  clearPromo: () => void;
+  discountLabel: string;
+  discountAmount: number;
+  discountedPrice: number;
+  fullName: string;
+  phone: string;
+  phonePrefix: string;
+  isOtherCountry: boolean;
+  isOtherCity: boolean;
+  countryManual: string;
+  country: string;
+  cityManual: string;
+  city: string;
+  courseTitle: string;
+  courseTitleAr: string | null;
+  paymentStatus: PaymentStatus;
+  guestSigningUp: boolean;
+  isPaymentReady: boolean;
 
-interface CheckoutModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  course: CheckoutCourse;
-  onSuccess: () => void;
-  onPaymentStarted?: () => void;
+  onSubmitPayment: () => void;
 }
 
-const CheckoutModal: React.FC<CheckoutModalProps> = ({ open, onOpenChange, course, onSuccess, onPaymentStarted }) => {
-  const { isRTL } = useLanguage();
-  const { symbol, symbolAr, getCoursePriceInfo } = useCurrency();
-  const { user, profile } = useAuth();
-  const navigate = useNavigate();
-
-  const { status: paymentStatus, error: paymentError, submitPayment, reset: resetPayment } = useTapPayment();
-  const { sendCourseStatus } = useGHLFormWebhook();
-
-  const currencyLabel = isRTL ? symbolAr : symbol;
-  const formatLocal = useCallback((amount: number) => `${amount} ${currencyLabel}`, [currencyLabel]);
-
-  const isIOS = typeof navigator !== "undefined" && /iPhone|iPad|iPod/.test(navigator.userAgent);
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
-
-  const priceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
-  const basePrice = priceInfo.finalPrice;
-
-  const form = useCheckoutForm(open);
-  const promo = useCheckoutPromo(course.id, basePrice);
-  const discountedPrice = promo.appliedCoupon ? promo.appliedCoupon.final_amount : basePrice;
-  const discountAmount = promo.appliedCoupon ? promo.appliedCoupon.discount_amount : 0;
-  const discountLabel = promo.appliedCoupon
-    ? promo.appliedCoupon.discount_type === "percentage_discount"
-      ? `-${promo.appliedCoupon.discount_value}%`
-      : `-${formatLocal(promo.appliedCoupon.discount_amount)}`
-    : "";
-
-  const isPaymentReady = form.isInfoValid;
-
-  // Redirect to signup if not logged in
-  useEffect(() => {
-    if (open && !user) {
-      onOpenChange(false);
-      const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-      navigate(`/signup?returnTo=${returnTo}`);
-    }
-  }, [open, user]);
-
-  // Pre-fill billing data on open
-  useEffect(() => {
-    if (!open || !user) return;
-    form.prefillAndAutoAdvance();
-  }, [open, user]);
-
-  // Auto-apply saved coupon
-  useEffect(() => {
-    if (!open) return;
-    promo.autoApplySavedCoupon();
-  }, [open]);
-
-  // iOS keyboard offset
-  useEffect(() => {
-    if (!open || !isIOS || typeof window === "undefined" || !window.visualViewport) {
-      setKeyboardOffset(0);
-      return;
-    }
-    const viewport = window.visualViewport;
-    const update = () => {
-      setKeyboardOffset(Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop));
-    };
-    update();
-    viewport.addEventListener("resize", update);
-    viewport.addEventListener("scroll", update);
-    return () => {
-      viewport.removeEventListener("resize", update);
-      viewport.removeEventListener("scroll", update);
-      setKeyboardOffset(0);
-    };
-  }, [open, isIOS]);
-
-  // Meta Pixel
-  useEffect(() => {
-    if (open && course) {
-      trackInitiateCheckout({
-        content_name: course.title,
-        content_ids: [course.id],
-        value: course.price,
-        currency: "SAR",
-        num_items: 1,
-      });
-    }
-  }, [open, course]);
-
-  // Reset on close
-  useEffect(() => {
-    if (!open) {
-      promo.resetPromo();
-      form.resetForm();
-      resetPayment();
-    }
-  }, [open, resetPayment]);
-
-  const handleSubmitPayment = useCallback(async () => {
-    if (!isPaymentReady) return;
-    onPaymentStarted?.();
-
-    const composedAddress = [form.effectiveCity, form.effectiveCountry, form.postalCode].filter(Boolean).join(", ");
-    const currentUserId = user?.id;
-    if (!currentUserId) {
-      toast.error(isRTL ? "يجب تسجيل الدخول أولاً" : "Please sign in first");
-      onOpenChange(false);
-      navigate("/signup");
-      return;
-    }
-
-    // Save profile data before payment
-    await form.saveProfileData(currentUserId);
-
-    // 100% discount → enroll directly
-    if (discountedPrice <= 0 && promo.appliedCoupon) {
-      try {
-        resetPayment();
-        await enrollUserInCourse(currentUserId, course.id);
-        await incrementCouponUsage({
-          couponId: promo.appliedCoupon.coupon_id,
-          userId: currentUserId,
-          courseId: course.id,
-          discountAmount: promo.appliedCoupon.discount_amount,
-          originalAmount: basePrice,
-          finalAmount: 0,
-        });
-        sendCourseStatus(currentUserId, course.id, course.title, "purchased", {
-          full_name: form.fullName,
-          email: form.email,
-          phone: form.fullPhone,
-          city: form.effectiveCity,
-          country: form.effectiveCountry,
-          address: composedAddress,
-          amount: "0",
-          dateOfBirth: profile?.date_of_birth || "",
-          gender: profile?.gender || "",
-          isRTL,
-          silent: true,
-        });
-        toast.success(
-          isRTL ? "تم التسجيل بنجاح! الدورة مجانية بالكامل" : "Enrolled successfully! Course is fully free",
-        );
-        onSuccess();
-        onOpenChange(false);
-      } catch (err: any) {
-        toast.error(err.message || (isRTL ? "فشل التسجيل" : "Enrollment failed"));
-      }
-      return;
-    }
-
-    trackAddPaymentInfo({
-      content_ids: [course.id],
-      value: discountedPrice,
-      currency: "SAR",
-    });
-
-    sendCourseStatus(currentUserId, course.id, course.title, "pending", {
-      full_name: form.fullName,
-      email: form.email,
-      phone: form.fullPhone,
-      city: form.effectiveCity,
-      country: form.effectiveCountry,
-      address: composedAddress,
-      amount: String(discountedPrice),
-      dateOfBirth: profile?.date_of_birth || "",
-      gender: profile?.gender || "",
-      isRTL,
-      silent: true,
-    });
-
-    const courseDisplayName = isRTL && course.title_ar ? course.title_ar : course.title;
-
-    await submitPayment({
-      courseId: course.id,
-      currency: "SAR",
-      customerName: form.fullName,
-      customerEmail: form.email,
-      couponId: promo.appliedCoupon?.coupon_id,
-      customerPhone: form.fullPhone,
-      paymentMethod: "card",
-      amount: discountedPrice,
-      courseName: courseDisplayName,
-      isRTL,
-    });
-  }, [
-    isPaymentReady,
-    user,
-    form,
-    promo,
-    course,
-    basePrice,
-    discountedPrice,
+const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
+  ({
     isRTL,
-    profile,
-    onPaymentStarted,
-    onSuccess,
-    onOpenChange,
-    resetPayment,
-    submitPayment,
-    sendCourseStatus,
-    navigate,
-  ]);
+    currencyLabel,
+    formatLocal,
+    promoCode,
+    setPromoCode,
+    promoApplied,
+    appliedCoupon,
+    handleApplyPromo,
+    clearPromo,
+    discountLabel,
+    discountAmount,
+    discountedPrice,
+    fullName,
+    phone,
+    phonePrefix,
+    isOtherCountry,
+    isOtherCity,
+    countryManual,
+    country,
+    cityManual,
+    city,
+    courseTitle,
+    courseTitleAr,
+    paymentStatus,
+    guestSigningUp,
+    isPaymentReady,
+    onSubmitPayment,
+  }) => {
+    const effectiveCountry = isOtherCountry ? countryManual : country;
+    const effectiveCity = isOtherCity ? cityManual : city;
+    const totalWithVat = discountedPrice;
 
-  const handleClose = useCallback(() => {
-    if (paymentStatus === "processing" || paymentStatus === "verifying") return;
-    onOpenChange(false);
-  }, [paymentStatus, onOpenChange]);
-
-  const isStatusOverlay = paymentStatus === "verifying" || paymentStatus === "succeeded" || paymentStatus === "failed";
-  const modalHeight = isIOS && keyboardOffset > 0 ? `calc(100dvh - ${keyboardOffset}px)` : "100dvh";
-
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent
-        className="sm:max-w-[520px] w-full max-w-full h-[100svh] sm:h-auto max-h-[100svh] sm:max-h-[92vh] bg-card border-0 sm:border-2 sm:border-border shadow-2xl p-0 overflow-hidden flex flex-col !rounded-none sm:!rounded-lg !left-0 !top-0 !translate-x-0 !translate-y-0 sm:!left-[50%] sm:!top-[50%] sm:!-translate-x-1/2 sm:!-translate-y-1/2 gap-0"
-        style={!isStatusOverlay ? { height: modalHeight, maxHeight: modalHeight } : undefined}
+    return (
+      <motion.div
+        key="payment"
+        initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
+        className="space-y-5"
       >
-        {/* Header */}
-        <div className="bg-muted/30 p-4 sm:p-5 border-b-2 border-border flex-shrink-0">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold">{isRTL ? "إتمام الشراء" : "Complete Purchase"}</DialogTitle>
-          </DialogHeader>
+        {/* Accepted Payment Methods */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-primary" />
+            <h4 className="font-semibold text-foreground text-sm">
+              {isRTL ? "طرق الدفع المتاحة" : "Accepted Payment Methods"}
+            </h4>
+          </div>
+          <PaymentMethodIcons
+            showLabel={false}
+            className={`scale-90 ${isRTL ? "origin-right self-end" : "origin-left self-start"}`}
+          />
 
-          {/* Course info */}
-          <div className="flex items-center gap-3 mt-3">
-            <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-              {course.thumbnail_url ? (
-                <img
-                  src={course.thumbnail_url}
-                  alt={course.title}
-                  width={96}
-                  height={96}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                />
-              ) : (
-                <div className="w-full h-full bg-primary/20 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-primary" />
-                </div>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-sm text-foreground truncate">
-                {isRTL && course.title_ar ? course.title_ar : course.title}
-              </h3>
-              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                {priceInfo.discountPct > 0 && (
-                  <span className="text-xs text-muted-foreground line-through">
-                    {formatLocal(priceInfo.originalPrice)}
-                  </span>
-                )}
-                <span className="text-base font-bold text-primary">{formatLocal(discountedPrice)}</span>
-                {promo.promoApplied && discountLabel && (
-                  <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">{discountLabel}</span>
-                )}
-              </div>
-            </div>
+          {/* WhatsApp fallback */}
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/50">
+            <p className="text-xs text-muted-foreground flex-1 leading-relaxed">
+              {isRTL
+                ? "إذا طريقة الدفع المناسبة لك غير متاحة، تواصل معنا عبر واتساب لنوفرها لك فوراً"
+                : "If your preferred payment method isn't available, contact us via WhatsApp and we'll accommodate you right away"}
+            </p>
+            <a
+              href="https://wa.me/966562562368"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#25D366] text-white text-xs font-semibold hover:bg-[#1fb855] transition-colors"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="w-3.5 h-3.5 fill-current"
+                dangerouslySetInnerHTML={{
+                  __html:
+                    '<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>',
+                }}
+              />
+              {isRTL ? "واتساب" : "WhatsApp"}
+            </a>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0">
-          <CheckoutStatusOverlay
-            paymentStatus={paymentStatus}
-            paymentError={paymentError}
-            courseId={course.id}
-            onSuccess={onSuccess}
-            onOpenChange={onOpenChange}
-            onRetry={() => resetPayment()}
-            navigate={navigate}
-          />
-
-          {!isStatusOverlay && (
-            <AnimatePresence mode="wait">
-              <CheckoutPaymentStep
-                isRTL={isRTL}
-                currencyLabel={currencyLabel}
-                formatLocal={formatLocal}
-                promoCode={promo.promoCode}
-                setPromoCode={promo.setPromoCode}
-                promoApplied={promo.promoApplied}
-                appliedCoupon={promo.appliedCoupon}
-                handleApplyPromo={promo.handleApplyPromo}
-                clearPromo={promo.clearPromo}
-                discountLabel={discountLabel}
-                discountAmount={discountAmount}
-                discountedPrice={discountedPrice}
-                fullName={form.fullName}
-                email={form.email}
-                phone={form.phone}
-                phonePrefix={form.phonePrefix}
-                setPhonePrefix={form.setPhonePrefix}
-                phonePrefixOptions={form.phonePrefixOptions}
-                isOtherCountry={form.isOtherCountry}
-                isOtherCity={form.isOtherCity}
-                countryManual={form.countryManual}
-                setCountryManual={form.setCountryManual}
-                country={form.country}
-                setCountry={form.setCountry}
-                cityManual={form.cityManual}
-                setCityManual={form.setCityManual}
-                city={form.city}
-                countryOptions={form.countryOptions}
-                cityOptions={form.cityOptions}
-                selectedCountryCode={form.selectedCountryCode}
-                handleCountryChange={form.handleCountryChange}
-                handleCityChange={form.handleCityChange}
-                setPhone={form.setPhone}
-                setFullName={form.setFullName}
-                errors={form.errors}
-                setErrors={form.setErrors}
-                courseTitle={course.title}
-                courseTitleAr={course.title_ar}
-                paymentStatus={paymentStatus}
-                isPaymentReady={isPaymentReady}
-                onSubmitPayment={handleSubmitPayment}
+        {/* Promo Code */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium flex items-center gap-1.5">
+            <Gift className="w-3.5 h-3.5 text-primary" />
+            {isRTL ? "رمز الخصم" : "Promo Code"}
+          </Label>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Input
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                placeholder={isRTL ? "أدخل رمز الخصم" : "Enter promo code"}
+                disabled={promoApplied || paymentStatus === "processing"}
+                className="w-full pe-9 h-10"
               />
-            </AnimatePresence>
+              {promoCode && !promoApplied && (
+                <button
+                  type="button"
+                  onClick={() => setPromoCode("")}
+                  className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <XCircle className="w-4 h-4" />
+                </button>
+              )}
+              {promoApplied && (
+                <button
+                  type="button"
+                  onClick={clearPromo}
+                  className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <XCircle className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="default"
+              onClick={handleApplyPromo}
+              disabled={!promoCode || promoApplied || paymentStatus === "processing"}
+            >
+              {promoApplied ? (isRTL ? "مطبق" : "Applied") : isRTL ? "تطبيق" : "Apply"}
+            </Button>
+          </div>
+          {promoApplied && appliedCoupon && (
+            <p className="text-xs text-primary flex items-center gap-1">
+              <Check className="w-3.5 h-3.5" />
+              {isRTL
+                ? `تم تطبيق خصم ${discountLabel} (وفّرت ${formatLocal(discountAmount)})`
+                : `${discountLabel} discount applied (saved ${formatLocal(discountAmount)})`}
+            </p>
           )}
         </div>
 
-        {/* Footer */}
-        {!isStatusOverlay && (
-          <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-5 border-t-2 border-border flex-shrink-0">
-            {discountedPrice <= 0 && promo.appliedCoupon ? (
-              <Button
-                className="w-full"
-                variant="cta"
-                onClick={handleSubmitPayment}
-                disabled={paymentStatus === "processing" || !isPaymentReady}
-              >
-                {paymentStatus === "processing" ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin me-2" />
-                    {isRTL ? "جاري التسجيل..." : "Enrolling..."}
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-4 h-4 me-2" />
-                    {isRTL ? "سجّل مجاناً" : "Enroll for Free"}
-                  </>
-                )}
-              </Button>
-            ) : (
-              <Button
-                className="w-full h-11 rounded-xl text-sm font-bold shadow-glow hover:shadow-glow-lg transition-all duration-300"
-                variant="cta"
-                onClick={handleSubmitPayment}
-                disabled={paymentStatus === "processing" || !isPaymentReady}
-              >
-                {paymentStatus === "processing" ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin me-2" />
-                    <span>{isRTL ? "جاري تجهيز الدفع..." : "Preparing payment..."}</span>
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="w-4 h-4 me-2" />
-                    <span>
-                      {isRTL
-                        ? `ادفع الآن ${discountedPrice} ${currencyLabel}`
-                        : `Pay Now ${discountedPrice} ${currencyLabel}`}
+        {/* Order Summary */}
+        <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
+          <div className="px-4 py-3 bg-muted/30 border-b border-border">
+            <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
+              {isRTL ? "ملخص الطلب" : "Order Summary"}
+            </p>
+          </div>
+          <div className="p-4 space-y-2.5">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">{isRTL ? "الاسم" : "Name"}</span>
+              <span className="font-medium truncate max-w-[200px]">{fullName}</span>
+            </div>
+            {phone &&
+              (() => {
+                const prefixEntry = PHONE_COUNTRIES.find((pc) => phonePrefix === pc.prefix + "_" + pc.code);
+                const prefixStr = prefixEntry ? prefixEntry.prefix : "";
+                return (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{isRTL ? "الهاتف" : "Phone"}</span>
+                    <span className="font-medium font-mono" dir="ltr">
+                      {prefixStr}
+                      {phone}
                     </span>
-                  </>
-                )}
-              </Button>
+                  </div>
+                );
+              })()}
+            {(() => {
+              const addressParts = [effectiveCity, effectiveCountry].filter(Boolean);
+              return addressParts.length > 0 ? (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{isRTL ? "العنوان" : "Address"}</span>
+                  <span className="font-medium truncate max-w-[200px]">{addressParts.join(", ")}</span>
+                </div>
+              ) : null;
+            })()}
+            <Separator className="my-1" />
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">{isRTL ? "الدورة" : "Course"}</span>
+              <span className="font-medium truncate max-w-[200px]">
+                {isRTL && courseTitleAr ? courseTitleAr : courseTitle}
+              </span>
+            </div>
+            {promoApplied && appliedCoupon && (
+              <div className="flex justify-between text-sm text-primary">
+                <span>
+                  {isRTL ? "الخصم" : "Discount"} ({discountLabel})
+                </span>
+                <span>-{formatLocal(discountAmount)}</span>
+              </div>
             )}
+            <Separator className="my-1" />
+            <div className="flex justify-between font-bold text-base">
+              <span>{isRTL ? "الإجمالي (شامل الضريبة)" : "Total (incl. VAT)"}</span>
+              <span className="text-primary">
+                {totalWithVat} {currencyLabel}
+              </span>
+            </div>
+            <div className="pt-2 border-t border-border/50">
+              <p className="text-[11px] text-muted-foreground text-center">
+                {isRTL ? "الرقم الضريبي" : "VAT Number"}:{" "}
+                <span className="font-mono font-medium text-foreground/70">311508395300003</span>
+              </p>
+            </div>
           </div>
-        )}
+        </div>
 
-        {paymentStatus === "failed" && (
-          <div className="p-4 sm:p-5 border-t-2 border-border flex-shrink-0">
-            <Button className="w-full" variant="outline" onClick={() => onOpenChange(false)}>
-              {isRTL ? "إغلاق" : "Close"}
-            </Button>
+        {/* Trust Badge */}
+        <div className="flex flex-col items-center gap-2 pt-2">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Lock className="w-3.5 h-3.5 text-primary" />
+            <span>🔒 {isRTL ? "مُؤمّن بواسطة Tap Payments" : "Secured by Tap Payments"}</span>
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-};
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+              <Shield className="w-3 h-3" />
+              <span>3D Secure</span>
+            </div>
+            <span className="text-muted-foreground/20">|</span>
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+              <Shield className="w-3 h-3" />
+              <span>PCI DSS</span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  },
+);
 
-export default CheckoutModal;
+CheckoutPaymentStep.displayName = "CheckoutPaymentStep";
+
+export default CheckoutPaymentStep;
