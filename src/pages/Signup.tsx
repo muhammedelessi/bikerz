@@ -209,21 +209,18 @@ const Signup: React.FC = () => {
       console.error("GHL signup sync failed:", syncErr);
     }
 
-    // Get real course status before sending
-    const { coursesJson, totalPurchased } = await getUserCourseStatuses(user.id);
-
     sendFormData({
-      full_name: User?.full_name || "",
-      email: User.email || "",
-      phone: User?.phone || "",
-      country: User?.country || "",
-      city: User?.city || "",
-      address: [User?.city, User?.country].filter(Boolean).join(", "),
-      dateOfBirth: User?.date_of_birth || "",
-      gender: User?.gender || "",
-      orderStatus: totalPurchased > 0 ? "purchased" : "not purchased",
-      courses: coursesJson,
-      totalPurchased,
+      full_name: full_name || "",
+      email: email || "",
+      phone: phone || "",
+      country: country || "",
+      city: city || "",
+      address: [city, country].filter(Boolean).join(", "),
+      dateOfBirth: "",
+      gender: "",
+      orderStatus: "not purchased",
+      courses: "",
+      totalPurchased: 0,
       silent: true,
     });
   };
