@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import CourseCountryPricing, { PricingGroup, expandGroupsToRows } from '@/components/admin/CourseCountryPricing';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
