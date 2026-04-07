@@ -574,10 +574,12 @@ export type Database = {
           created_at: string
           currency: string
           discount_percentage: number
+          final_price_with_vat: number
           id: string
           original_price: number
           price: number
           updated_at: string
+          vat_percentage: number
         }
         Insert: {
           country_code: string
@@ -585,10 +587,12 @@ export type Database = {
           created_at?: string
           currency?: string
           discount_percentage?: number
+          final_price_with_vat?: number
           id?: string
           original_price?: number
           price?: number
           updated_at?: string
+          vat_percentage?: number
         }
         Update: {
           country_code?: string
@@ -596,10 +600,12 @@ export type Database = {
           created_at?: string
           currency?: string
           discount_percentage?: number
+          final_price_with_vat?: number
           id?: string
           original_price?: number
           price?: number
           updated_at?: string
+          vat_percentage?: number
         }
         Relationships: [
           {
