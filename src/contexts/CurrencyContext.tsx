@@ -160,7 +160,12 @@ interface CurrencyContextType {
   /** Get price for a specific course considering country-specific pricing */
   getCoursePrice: (courseId: string, sarPrice: number) => number;
   /** Get full price info for a course (original, discount, final) considering country pricing */
-  getCoursePriceInfo: (courseId: string, sarPrice: number, courseDiscountPct?: number) => CoursePriceInfo;
+  getCoursePriceInfo: (
+    courseId: string,
+    sarPrice: number,
+    courseDiscountPct?: number,
+    _unused?: any,
+  ) => CoursePriceInfo;
   /** Get the currency code for a course price (may differ from user currency if country price exists) */
   getCourseCurrency: (courseId: string) => CurrencyCode;
   /** Format a SAR price as local currency string */
@@ -438,7 +443,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   /** Get full price info for display — uses country pricing when available */
   const getCoursePriceInfo = useCallback(
-    (courseId: string, sarPrice: number, courseDiscountPct = 0): CoursePriceInfo => {
+    (courseId: string, sarPrice: number, courseDiscountPct = 0, _unused?: any): CoursePriceInfo => {
       const entry = getCountryPriceEntry(courseId);
       if (entry) {
         const ccy = currencyCode;
