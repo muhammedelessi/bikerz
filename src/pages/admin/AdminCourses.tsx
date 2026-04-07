@@ -332,18 +332,31 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
 
   const nonSA = PRICING_COUNTRIES.filter((c) => c.code !== "SA");
   const sa = rows["SA"];
+  // Only show enabled non-SA countries
+  const enabledCountries = nonSA.filter((c) => rows[c.code]?.enabled && rows[c.code]?.original > 0);
+  // Countries not yet added
+  const availableCountries = nonSA.filter((c) => !rows[c.code]?.enabled || rows[c.code]?.original <= 0);
+  const [showCountryPicker, setShowCountryPicker] = React.useState(false);
+  const [countrySearch, setCountrySearch] = React.useState("");
+
+  const filteredAvailable = availableCountries.filter(
+    (c) =>
+      c.name_ar.includes(countrySearch) ||
+      c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+      c.currency.toLowerCase().includes(countrySearch.toLowerCase()),
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[700px] w-full max-h-[90vh] flex flex-col p-0 gap-0" dir={isRTL ? "rtl" : "ltr"}>
+      <DialogContent className="max-w-[780px] w-full max-h-[90vh] flex flex-col p-0 gap-0" dir={isRTL ? "rtl" : "ltr"}>
         <DialogHeader className="px-6 py-4 border-b border-border flex-shrink-0">
           <DialogTitle className="text-base font-bold">
             {isRTL ? "تسعير موحد لجميع الكورسات" : "Unified Pricing for All Courses"}
           </DialogTitle>
           <p className="text-xs text-muted-foreground mt-1">
             {isRTL
-              ? "أدخل الأسعار مرة واحدة — تُطبَّق على جميع الكورسات. الدول غير المخصصة تأخذ سعر السعودية تلقائياً."
-              : "Enter prices once — applied to all courses. Unset countries inherit Saudi Arabia price."}
+              ? "أدخل الأسعار مرة واحدة — تُطبَّق على جميع الكورسات. الدول غير المضافة تأخذ سعر السعودية تلقائياً."
+              : "Enter prices once — applied to all courses. Countries not added inherit Saudi Arabia price."}
             {ratesLoading && (
               <span className="ms-2 text-primary inline-flex items-center gap-1">
                 <Loader2 className="w-3 h-3 animate-spin inline" />
@@ -372,16 +385,19 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
                 <th className="border border-border px-2 py-2 text-center font-semibold min-w-[70px]">
                   {isRTL ? "ضريبة %" : "VAT %"}
                 </th>
-                <th className="border border-border px-2 py-2 text-center font-semibold min-w-[90px] bg-primary/5">
-                  {isRTL ? "السعر النهائي" : "Final Price"}
+                <th className="border border-border px-2 py-2 text-center font-semibold min-w-[100px] bg-primary/5">
+                  {isRTL ? "النهائي (محلي)" : "Final (Local)"}
                 </th>
-                <th className="border border-border px-2 py-2 text-center font-semibold min-w-[70px]">
-                  {isRTL ? "مخصص" : "Custom"}
+                <th className="border border-border px-2 py-2 text-center font-semibold min-w-[90px] bg-green-500/5">
+                  {isRTL ? "النهائي (ر.س)" : "Final (SAR)"}
+                </th>
+                <th className="border border-border px-2 py-2 text-center font-semibold min-w-[60px]">
+                  {isRTL ? "حذف" : "Del"}
                 </th>
               </tr>
             </thead>
             <tbody>
-              {/* SA row — always editable */}
+              {/* SA row — always editable, no delete */}
               <tr className="bg-primary/5">
                 <td className="border border-border px-3 py-2">
                   <div className="flex items-center gap-2">
@@ -428,7 +444,7 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
                     type="number"
                     min={0}
                     max={100}
-                    value={sa?.vat ?? 0}
+                    value={sa?.vat ?? 15}
                     onChange={(e) => updateRow("SA", "vat", parseFloat(e.target.value) || 0)}
                     className="h-7 text-xs text-center px-1"
                   />
@@ -439,16 +455,23 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
                   </span>
                   <span className="text-muted-foreground ms-1 text-[10px]">SAR</span>
                 </td>
+                <td className="border border-border px-2 py-1 text-center bg-green-500/5">
+                  <span className="font-bold text-green-600 dark:text-green-400 text-sm">
+                    {sa?.final > 0 ? sa.final.toLocaleString() : "—"}
+                  </span>
+                  <span className="text-muted-foreground ms-1 text-[10px]">SAR</span>
+                </td>
                 <td className="border border-border px-2 py-1 text-center">
-                  <span className="text-[10px] text-muted-foreground">{isRTL ? "أساس" : "base"}</span>
+                  <span className="text-[10px] text-muted-foreground">—</span>
                 </td>
               </tr>
 
-              {/* Other countries */}
-              {nonSA.map((country, ri) => {
+              {/* Enabled custom countries */}
+              {enabledCountries.map((country, ri) => {
                 const row = rows[country.code];
-                const isCustom = row?.enabled && row.original > 0;
                 const eff = getEffective(country.code, country.currency);
+                const rate = liveRates[country.currency] || 1;
+                const finalSAR = rate > 0 ? Math.round(eff.final / rate) : 0;
                 return (
                   <tr key={country.code} className={ri % 2 === 0 ? "bg-background" : "bg-muted/20"}>
                     <td className="border border-border px-3 py-2">
@@ -461,96 +484,134 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
                       </div>
                     </td>
                     <td className="border border-border px-1 py-1">
-                      {isCustom ? (
-                        <Input
-                          type="number"
-                          min={0}
-                          value={row.original || ""}
-                          placeholder="0"
-                          onChange={(e) => updateRow(country.code, "original", parseFloat(e.target.value) || 0)}
-                          className="h-7 text-xs text-center px-1"
-                        />
-                      ) : (
-                        <span className="text-muted-foreground/40 text-[10px] block text-center">
-                          {eff.original > 0 ? eff.original.toLocaleString() : "—"}
-                        </span>
-                      )}
+                      <Input
+                        type="number"
+                        min={0}
+                        value={row.original || ""}
+                        placeholder="0"
+                        onChange={(e) => updateRow(country.code, "original", parseFloat(e.target.value) || 0)}
+                        className="h-7 text-xs text-center px-1"
+                      />
                     </td>
                     <td className="border border-border px-1 py-1">
-                      {isCustom ? (
-                        <Input
-                          type="number"
-                          min={0}
-                          max={99}
-                          value={row.discount || ""}
-                          placeholder="0"
-                          onChange={(e) => updateRow(country.code, "discount", parseFloat(e.target.value) || 0)}
-                          className="h-7 text-xs text-center px-1"
-                        />
-                      ) : (
-                        <span className="text-muted-foreground/40 text-[10px] block text-center">
-                          {eff.discount > 0 ? `${eff.discount}%` : "—"}
-                        </span>
-                      )}
+                      <Input
+                        type="number"
+                        min={0}
+                        max={99}
+                        value={row.discount || ""}
+                        placeholder="0"
+                        onChange={(e) => updateRow(country.code, "discount", parseFloat(e.target.value) || 0)}
+                        className="h-7 text-xs text-center px-1"
+                      />
                     </td>
                     <td className="border border-border px-1 py-1">
-                      {isCustom ? (
-                        <Input
-                          type="number"
-                          min={0}
-                          value={row.after_discount || ""}
-                          placeholder="0"
-                          onChange={(e) => updateRow(country.code, "after_discount", parseFloat(e.target.value) || 0)}
-                          className="h-7 text-xs text-center px-1"
-                        />
-                      ) : (
-                        <span className="text-muted-foreground/40 text-[10px] block text-center">
-                          {eff.after_discount > 0 ? eff.after_discount.toLocaleString() : "—"}
-                        </span>
-                      )}
+                      <Input
+                        type="number"
+                        min={0}
+                        value={row.after_discount || ""}
+                        placeholder="0"
+                        onChange={(e) => updateRow(country.code, "after_discount", parseFloat(e.target.value) || 0)}
+                        className="h-7 text-xs text-center px-1"
+                      />
                     </td>
                     <td className="border border-border px-1 py-1">
-                      {isCustom ? (
-                        <Input
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={row.vat ?? 0}
-                          onChange={(e) => updateRow(country.code, "vat", parseFloat(e.target.value) || 0)}
-                          className="h-7 text-xs text-center px-1"
-                        />
-                      ) : (
-                        <span className="text-muted-foreground/40 text-[10px] block text-center">
-                          {eff.vat > 0 ? `${eff.vat}%` : "0%"}
-                        </span>
-                      )}
+                      <Input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={row.vat ?? 0}
+                        onChange={(e) => updateRow(country.code, "vat", parseFloat(e.target.value) || 0)}
+                        className="h-7 text-xs text-center px-1"
+                      />
                     </td>
-                    {/* Final price — always visible */}
-                    <td className="border border-border px-2 py-1 text-center bg-muted/30">
-                      <span className={`font-bold text-sm ${isCustom ? "text-primary" : "text-muted-foreground"}`}>
+                    <td className="border border-border px-2 py-1 text-center bg-primary/5">
+                      <span className="font-bold text-primary text-sm">
                         {eff.final > 0 ? eff.final.toLocaleString() : "—"}
                       </span>
                       <span className="text-muted-foreground ms-1 text-[10px]">{country.currency}</span>
                     </td>
-                    {/* Custom toggle */}
+                    <td className="border border-border px-2 py-1 text-center bg-green-500/5">
+                      <span className="font-bold text-green-600 dark:text-green-400 text-sm">
+                        {finalSAR > 0 ? finalSAR.toLocaleString() : "—"}
+                      </span>
+                      <span className="text-muted-foreground ms-1 text-[10px]">SAR</span>
+                    </td>
                     <td className="border border-border px-2 py-1 text-center">
                       <button
-                        onClick={() => toggleRow(country.code, !isCustom)}
-                        className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${
-                          isCustom
-                            ? "bg-primary/10 border-primary/30 text-primary"
-                            : "bg-muted border-border text-muted-foreground hover:border-primary/30 hover:text-primary"
-                        }`}
+                        onClick={() => toggleRow(country.code, false)}
+                        className="text-destructive hover:bg-destructive/10 rounded p-1 transition-colors"
+                        title={isRTL ? "حذف" : "Remove"}
                       >
-                        {isCustom ? (isRTL ? "مخصص ✓" : "custom ✓") : isRTL ? "تخصيص" : "set"}
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </td>
                   </tr>
                 );
               })}
+
+              {/* Add country row */}
+              <tr>
+                <td colSpan={8} className="border border-border px-3 py-2">
+                  <button
+                    onClick={() => {
+                      setShowCountryPicker(true);
+                      setCountrySearch("");
+                    }}
+                    className="flex items-center gap-2 text-xs text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    {isRTL ? "إضافة دولة مخصصة" : "Add Custom Country"}
+                  </button>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
+
+        {/* Country Picker Overlay */}
+        {showCountryPicker && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 rounded-lg">
+            <div className="bg-card border border-border rounded-lg w-72 max-h-80 flex flex-col shadow-xl">
+              <div className="p-3 border-b border-border flex items-center gap-2">
+                <Input
+                  value={countrySearch}
+                  onChange={(e) => setCountrySearch(e.target.value)}
+                  placeholder={isRTL ? "ابحث عن دولة..." : "Search country..."}
+                  className="h-8 text-xs"
+                  autoFocus
+                />
+                <button
+                  onClick={() => setShowCountryPicker(false)}
+                  className="text-muted-foreground hover:text-foreground flex-shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="overflow-y-auto flex-1 p-1">
+                {filteredAvailable.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">
+                    {isRTL ? "لا توجد دول متاحة" : "No countries available"}
+                  </p>
+                ) : (
+                  filteredAvailable.map((c) => (
+                    <button
+                      key={c.code}
+                      onClick={() => {
+                        toggleRow(c.code, true);
+                        setShowCountryPicker(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted rounded-md transition-colors text-start"
+                    >
+                      <span className="text-sm">{c.flag}</span>
+                      <span className="flex-1">{isRTL ? c.name_ar : c.name}</span>
+                      <span className="text-muted-foreground">{c.currency}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         <DialogFooter className="px-6 py-4 border-t border-border flex-shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
