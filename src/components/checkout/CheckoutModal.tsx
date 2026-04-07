@@ -134,10 +134,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
-    // Convert display price to SAR for Tap
-    // exchangeRate = how many local units = 1 SAR
-    // So SAR = localPrice / exchangeRate
-    const sarAmount = isSAR || exchangeRate <= 0 ? discountedPrice : Math.ceil(discountedPrice / exchangeRate);
+    // Tap supported currencies
+    const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
+    const localCurrency = priceInfo.currency as string;
+
+    let paymentCurrency: string;
+    let paymentAmount: number;
+
+    if (TAP_SUPPORTED.includes(localCurrency)) {
+      // Pay in local currency directly
+      paymentCurrency = localCurrency;
+      paymentAmount = discountedPrice;
+    } else {
+      // Unsupported currency → convert to SAR
+      paymentCurrency = "SAR";
+      paymentAmount = isSAR || exchangeRate <= 0 ? discountedPrice : Math.ceil(discountedPrice / exchangeRate);
+    }
 
     sendCourseStatus(user.id, course.id, course.title, "pending", {
       full_name: form.fullName,
@@ -146,7 +158,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       country: form.effectiveCountry,
       city: form.effectiveCity,
       address: composedAddress,
-      amount: String(sarAmount),
+      amount: String(paymentAmount),
       dateOfBirth: profile?.date_of_birth || "",
       gender: profile?.gender || "",
       silent: true,
@@ -156,12 +168,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     await tap.submitPayment({
       courseId: course.id,
-      currency: "SAR",
+      currency: paymentCurrency,
       customerName: form.fullName,
       customerEmail: form.email,
       customerPhone: form.fullPhone,
       couponId: promo.appliedCoupon?.coupon_id,
-      amount: sarAmount,
+      amount: paymentAmount,
       courseName: courseDisplayName,
       isRTL,
     });
@@ -415,9 +427,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <>
                   <CreditCard className="w-4 h-4 me-2" />
                   {(() => {
-                    const sarAmt =
-                      isSAR || exchangeRate <= 0 ? discountedPrice : Math.ceil(discountedPrice / exchangeRate);
-                    return isRTL ? `ادفع الآن ${sarAmt} ر.س` : `Pay Now ${sarAmt} SAR`;
+                    const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
+                    const localCurrency = priceInfo.currency as string;
+                    const showLocal = TAP_SUPPORTED.includes(localCurrency);
+                    const displayAmt = showLocal
+                      ? discountedPrice
+                      : isSAR || exchangeRate <= 0
+                        ? discountedPrice
+                        : Math.ceil(discountedPrice / exchangeRate);
+                    const displaySym = showLocal ? currSym : isRTL ? "ر.س" : "SAR";
+                    return isRTL ? `ادفع الآن ${displayAmt} ${displaySym}` : `Pay Now ${displayAmt} ${displaySym}`;
                   })()}
                 </>
               )}
