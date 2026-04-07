@@ -334,7 +334,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 courseTitle={course.title}
                 courseTitleAr={course.title_ar}
                 paymentStatus={tap.status}
-                guestSigningUp={guestSigningUp}
                 isPaymentReady={isPaymentReady}
                 vatPct={vatPct}
                 onSubmitPayment={handleSubmitPayment}
