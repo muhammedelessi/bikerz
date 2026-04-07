@@ -870,6 +870,7 @@ const AdminPayments = () => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+    </AdminLayout>
   );
 };
 
