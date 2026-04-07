@@ -45,7 +45,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { sendCourseStatus } = useGHLFormWebhook();
   const { handleGuestSignup, guestSigningUp } = useGuestSignup();
 
-  const [step, setStep] = useState<"info" | "payment">("info");
+  const [step] = useState<"payment">("payment");
 
   const priceInfo = useMemo(
     () => getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0),
@@ -72,16 +72,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   useEffect(() => {
     if (!open) {
-      setStep("info");
       promo.resetPromo();
       tap.reset();
       form.resetForm();
       return;
     }
     if (user) {
-      form.prefillAndAutoAdvance().then((canSkip: boolean) => {
-        if (canSkip) setStep("payment");
-      });
+      form.prefillAndAutoAdvance();
     }
   }, [open, user]);
 
@@ -426,18 +423,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               ) : (
                 <>
                   <CreditCard className="w-4 h-4 me-2" />
-                  {(() => {
-                    const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
-                    const localCurrency = priceInfo.currency as string;
-                    const showLocal = TAP_SUPPORTED.includes(localCurrency);
-                    const displayAmt = showLocal
-                      ? discountedPrice
-                      : isSAR || exchangeRate <= 0
-                        ? discountedPrice
-                        : Math.ceil(discountedPrice / exchangeRate);
-                    const displaySym = showLocal ? currSym : isRTL ? "ر.س" : "SAR";
-                    return isRTL ? `ادفع الآن ${displayAmt} ${displaySym}` : `Pay Now ${displayAmt} ${displaySym}`;
-                  })()}
+                  {isRTL ? "ادفع الآن" : "Pay Now"}
                 </>
               )}
             </Button>
