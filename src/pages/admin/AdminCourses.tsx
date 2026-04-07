@@ -102,15 +102,6 @@ const AdminCourses: React.FC = () => {
   const navigate = useNavigate();
 
   // Form state
-  interface CountryPrice {
-    id?: string;
-    country_code: string;
-    original_price: number;
-    discount_percentage: number;
-    price: number;
-    currency: string;
-  }
-
   const ARAB_COUNTRIES = [
     { code: 'SA', name: 'Saudi Arabia', name_ar: 'السعودية', currency: 'SAR' },
     { code: 'AE', name: 'UAE', name_ar: 'الإمارات', currency: 'AED' },
@@ -164,7 +155,7 @@ const AdminCourses: React.FC = () => {
     learning_outcomes: [] as { text_en: string; text_ar: string }[],
   });
 
-  const [countryPrices, setCountryPrices] = useState<CountryPrice[]>([]);
+  const [pricingGroups, setPricingGroups] = useState<PricingGroup[]>([]);
 
   // Fetch courses
   const { data: courses = [], isLoading } = useQuery({
