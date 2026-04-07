@@ -505,10 +505,16 @@ const AdminCourses: React.FC = () => {
             {isRTL ? 'إنشاء وتعديل وإدارة جميع الدورات' : 'Create, edit, and manage all courses'}
           </p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
-          <Plus className="w-4 h-4" />
-          {isRTL ? 'إنشاء دورة' : 'Create Course'}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setManagePricesOpen(true)} className="gap-2">
+            <DollarSign className="w-4 h-4" />
+            {isRTL ? 'إدارة أسعار الكورسات' : 'Manage Course Prices'}
+          </Button>
+          <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            {isRTL ? 'إنشاء دورة' : 'Create Course'}
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
