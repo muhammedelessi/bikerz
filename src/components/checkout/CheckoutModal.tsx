@@ -13,6 +13,7 @@ import { useCheckoutForm } from "@/hooks/checkout/useCheckoutForm";
 import { useCheckoutPromo } from "@/hooks/checkout/useCheckoutPromo";
 import { useTapPayment } from "@/hooks/useTapPayment";
 import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
+import { useGuestSignup } from "@/hooks/checkout/useGuestSignup";
 import { enrollUserInCourse, incrementCouponUsage } from "@/services/supabase.service";
 import CheckoutInfoStep from "@/components/checkout/CheckoutInfoStep";
 import CheckoutPaymentStep from "@/components/checkout/CheckoutPaymentStep";
@@ -42,6 +43,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const navigate = useNavigate();
   const { getCoursePriceInfo, getCurrencySymbol, convertPrice, isSAR } = useCurrency();
   const { sendCourseStatus } = useGHLFormWebhook();
+  const { handleGuestSignup, guestSigningUp } = useGuestSignup();
 
   const [step, setStep] = useState<"info" | "payment">("info");
 
