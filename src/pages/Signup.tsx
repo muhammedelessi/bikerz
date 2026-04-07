@@ -278,10 +278,30 @@ const Signup: React.FC = () => {
 
     setIsLoading(true);
 
+    // Check if phone already exists
+    const fullPhone = getFullPhone();
+    const { data: existingPhone } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('phone', fullPhone)
+      .maybeSingle();
+
+    if (existingPhone) {
+      setPhoneError(isRTL 
+        ? 'رقم الهاتف مستخدم مسبقاً' 
+        : 'This phone number is already registered');
+      setIsLoading(false);
+      return;
+    }
+
     const { error } = await signUp(email, password, name);
 
     if (error) {
-      setError(error.message);
+      if (error.message === 'EMAIL_EXISTS') {
+        setEmailError('EMAIL_EXISTS');
+      } else {
+        setError(error.message);
+      }
       setIsLoading(false);
       return;
     }

@@ -38,12 +38,20 @@ export async function signUpUser(email: string, password: string, fullName: stri
     });
 
     if (response.error) {
-      return { error: new Error(response.error.message || 'Signup failed') };
+      const msg = response.error.message || '';
+      if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('User already registered')) {
+        return { error: new Error('EMAIL_EXISTS') };
+      }
+      return { error: new Error(msg || 'Signup failed') };
     }
 
     const result = response.data as any;
     if (result?.error) {
-      return { error: new Error(result.error) };
+      const errMsg = result.error;
+      if (errMsg.includes('already registered') || errMsg.includes('already exists') || errMsg.includes('User already registered')) {
+        return { error: new Error('EMAIL_EXISTS') };
+      }
+      return { error: new Error(errMsg) };
     }
 
     // Sign in after successful creation
