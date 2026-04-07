@@ -719,6 +719,7 @@ export type Database = {
           title_ar: string | null
           total_lessons: number | null
           updated_at: string
+          vat_percentage: number
         }
         Insert: {
           base_rating?: number
@@ -748,6 +749,7 @@ export type Database = {
           title_ar?: string | null
           total_lessons?: number | null
           updated_at?: string
+          vat_percentage?: number
         }
         Update: {
           base_rating?: number
@@ -777,6 +779,7 @@ export type Database = {
           title_ar?: string | null
           total_lessons?: number | null
           updated_at?: string
+          vat_percentage?: number
         }
         Relationships: [
           {

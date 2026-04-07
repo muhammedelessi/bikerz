@@ -22,6 +22,7 @@ export interface CheckoutCourse {
   price: number;
   discount_percentage?: number | null;
   thumbnail_url: string | null;
+  vat_percentage?: number | null;
 }
 
 export interface AppliedCoupon {

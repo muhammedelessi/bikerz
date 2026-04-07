@@ -1,0 +1,1 @@
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS vat_percentage numeric NOT NULL DEFAULT 15;

@@ -38,6 +38,7 @@ interface CheckoutPaymentStepProps {
   paymentStatus: PaymentStatus;
   guestSigningUp: boolean;
   isPaymentReady: boolean;
+  vatPct?: number;
   
   onSubmitPayment: () => void;
 }
@@ -49,7 +50,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(({
   fullName, phone, phonePrefix,
   isOtherCountry, isOtherCity, countryManual, country, cityManual, city,
   courseTitle, courseTitleAr,
-  paymentStatus, guestSigningUp, isPaymentReady, onSubmitPayment,
+  paymentStatus, guestSigningUp, isPaymentReady, vatPct = 15, onSubmitPayment,
 }) => {
   const effectiveCountry = isOtherCountry ? countryManual : country;
   const effectiveCity = isOtherCity ? cityManual : city;
@@ -188,14 +189,16 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(({
           )}
           <Separator className="my-1" />
           <div className="flex justify-between font-bold text-base">
-            <span>{isRTL ? 'الإجمالي (شامل الضريبة)' : 'Total (incl. VAT)'}</span>
+            <span>{vatPct > 0 ? (isRTL ? 'الإجمالي (شامل الضريبة)' : 'Total (incl. VAT)') : (isRTL ? 'الإجمالي' : 'Total')}</span>
             <span className="text-primary">{totalWithVat} {currencyLabel}</span>
           </div>
-          <div className="pt-2 border-t border-border/50">
-            <p className="text-[11px] text-muted-foreground text-center">
-              {isRTL ? 'الرقم الضريبي' : 'VAT Number'}: <span className="font-mono font-medium text-foreground/70">311508395300003</span>
-            </p>
-          </div>
+          {vatPct > 0 && (
+            <div className="pt-2 border-t border-border/50">
+              <p className="text-[11px] text-muted-foreground text-center">
+                {isRTL ? 'الرقم الضريبي' : 'VAT Number'}: <span className="font-mono font-medium text-foreground/70">311508395300003</span>
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

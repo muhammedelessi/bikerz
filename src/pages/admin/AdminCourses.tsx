@@ -85,6 +85,7 @@ interface Course {
   instructor_id: string | null;
   discount_percentage?: number;
   discount_expires_at?: string | null;
+  vat_percentage?: number;
 }
 
 const AdminCourses: React.FC = () => {
@@ -149,6 +150,7 @@ const AdminCourses: React.FC = () => {
     discount_percentage: 0,
     discount_duration: '' as string,
     discount_expires_at: null as string | null,
+    vat_percentage: 15,
     currency: 'SAR',
     difficulty_level: 'beginner',
     duration_hours: 0,
@@ -185,6 +187,7 @@ const AdminCourses: React.FC = () => {
         price: data.price,
         discount_percentage: data.discount_percentage || 0,
         discount_expires_at: data.discount_percentage > 0 ? expiresAt : null,
+        vat_percentage: data.vat_percentage ?? 15,
         currency: data.currency,
         difficulty_level: data.difficulty_level,
         duration_hours: data.duration_hours || null,
@@ -220,6 +223,7 @@ const AdminCourses: React.FC = () => {
           price: data.price,
           discount_percentage: data.discount_percentage || 0,
           discount_expires_at: data.discount_percentage > 0 ? expiresAt : null,
+          vat_percentage: data.vat_percentage ?? 15,
           currency: data.currency,
           difficulty_level: data.difficulty_level,
           duration_hours: data.duration_hours || null,
@@ -280,6 +284,7 @@ const AdminCourses: React.FC = () => {
       discount_percentage: 0,
       discount_duration: '',
       discount_expires_at: null,
+      vat_percentage: 15,
       currency: 'SAR',
       difficulty_level: 'beginner',
       duration_hours: 0,
@@ -371,6 +376,7 @@ const AdminCourses: React.FC = () => {
       discount_percentage: discPct,
       discount_duration: (course as any).discount_expires_at ? 'keep' : '',
       discount_expires_at: (course as any).discount_expires_at || null,
+      vat_percentage: (course as any).vat_percentage ?? 15,
       currency: course.currency || 'SAR',
       difficulty_level: course.difficulty_level,
       duration_hours: course.duration_hours || 0,
@@ -930,6 +936,22 @@ const AdminCourses: React.FC = () => {
               </div>
             )}
               <div className="space-y-2">
+                <Label>{isRTL ? 'ضريبة القيمة المضافة %' : 'VAT %'}</Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.vat_percentage}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                      const num = val === '' ? 0 : parseFloat(val) || 0;
+                      setFormData({ ...formData, vat_percentage: Math.min(100, Math.max(0, num)) });
+                    }
+                  }}
+                  placeholder="15"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label>{isRTL ? 'العملة' : 'Currency'}</Label>
                 <Select 
                   value={formData.currency} 
@@ -974,7 +996,8 @@ const AdminCourses: React.FC = () => {
                   const orig = formData.original_price || formData.price;
                   const afterDiscount = formData.price;
                   const disc = formData.discount_percentage;
-                  const vat = Math.ceil(afterDiscount * (VAT_RATE / 100));
+                  const vatPct = formData.vat_percentage ?? 15;
+                  const vat = vatPct > 0 ? Math.ceil(afterDiscount * (vatPct / 100)) : 0;
                   const total = afterDiscount + vat;
                   return (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
@@ -986,10 +1009,12 @@ const AdminCourses: React.FC = () => {
                         <p className="text-muted-foreground text-xs">{isRTL ? 'بعد الخصم' : 'After Discount'}{disc > 0 ? ` (-${disc}%)` : ''}</p>
                         <p className="font-bold text-lg">{afterDiscount} <span className="text-xs font-normal">SAR</span></p>
                       </div>
-                      <div className="bg-background rounded-md p-3 border border-border">
-                        <p className="text-muted-foreground text-xs">{isRTL ? 'ضريبة القيمة المضافة' : 'VAT'} (15%)</p>
-                        <p className="font-bold text-lg">{vat} <span className="text-xs font-normal">SAR</span></p>
-                      </div>
+                      {vatPct > 0 && (
+                        <div className="bg-background rounded-md p-3 border border-border">
+                          <p className="text-muted-foreground text-xs">{isRTL ? 'ضريبة القيمة المضافة' : 'VAT'} ({vatPct}%)</p>
+                          <p className="font-bold text-lg">{vat} <span className="text-xs font-normal">SAR</span></p>
+                        </div>
+                      )}
                       <div className="bg-primary/10 rounded-md p-3 border border-primary/30">
                         <p className="text-primary text-xs font-medium">{isRTL ? 'السعر الشامل للمستخدم' : 'User Sees (Total)'}</p>
                         <p className="font-bold text-lg text-primary">{total} <span className="text-xs font-normal">SAR</span></p>
