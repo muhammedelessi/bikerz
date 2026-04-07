@@ -135,14 +135,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(({
       return;
     }
 
-    // Calculate SAR amount for Tap — discountedPrice is in local currency
-    let sarAmount: number;
-    if (priceInfo.isCountryPrice) {
-      // Country has custom pricing — convert local price back to SAR
-      sarAmount = Math.ceil(discountedPrice / convertPrice(1));
-    } else {
-      sarAmount = isSAR ? discountedPrice : Math.ceil(discountedPrice / convertPrice(1));
-    }
+    // Convert the final visible price back to SAR for Tap
+    const sarAmount = isSAR
+      ? discountedPrice
+      : Math.ceil(discountedPrice / convertPrice(1));
 
     // Paid checkout via Tap
     await tap.submitPayment({
