@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import CourseCountryPricing, { PricingGroup, expandGroupsToRows } from '@/components/admin/CourseCountryPricing';
+import CourseCountryPricing, { CountryPriceEntry, expandEntriesToRows, getCountryInfo, calcAfterDiscount, calcFinalWithVat, localToSar } from '@/components/admin/CourseCountryPricing';
+import ManageCoursePricesDialog from '@/components/admin/ManageCoursePricesDialog';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -158,7 +159,8 @@ const AdminCourses: React.FC = () => {
     learning_outcomes: [] as { text_en: string; text_ar: string }[],
   });
 
-  const [pricingGroups, setPricingGroups] = useState<PricingGroup[]>([]);
+  const [countryPrices, setCountryPrices] = useState<CountryPriceEntry[]>([]);
+  const [managePricesOpen, setManagePricesOpen] = useState(false);
 
   // Fetch courses
   const { data: courses = [], isLoading } = useQuery({
@@ -291,7 +293,7 @@ const AdminCourses: React.FC = () => {
       is_published: false,
       learning_outcomes: [],
     });
-    setPricingGroups([]);
+    setCountryPrices([]);
   };
 
   const handleThumbnailUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -386,35 +388,28 @@ const AdminCourses: React.FC = () => {
     // Load country prices and group them
     const { data: prices } = await supabase
       .from('course_country_prices')
-      .select('id, country_code, price, currency, original_price, discount_percentage')
+      .select('*')
       .eq('course_id', course.id);
-    // Convert flat rows into pricing groups — group by similar SAR final price
-    const rows = (prices || []).map(p => {
-      const rate = SAR_RATES[p.currency] || 1;
-      const localPrice = Number(p.price);
-      const sarFinal = rate > 0 ? Math.ceil(localPrice / rate) : localPrice;
+    const entries: CountryPriceEntry[] = (prices || []).map((p: any) => {
+      const info = getCountryInfo(p.country_code);
+      const currency = p.currency || info?.currency || 'SAR';
+      const originalPrice = Number(p.original_price) || 0;
+      const discPct = Number(p.discount_percentage) || 0;
+      const priceAfterDiscount = Number(p.price) || 0;
+      const vatPct = Number(p.vat_percentage) ?? 15;
+      const finalLocal = Number(p.final_price_with_vat) || calcFinalWithVat(priceAfterDiscount, vatPct);
       return {
         country_code: p.country_code,
-        discount_percentage: Number((p as any).discount_percentage) || 0,
-        sar_final: sarFinal,
+        original_price: originalPrice,
+        discount_percentage: discPct,
+        price_after_discount: priceAfterDiscount,
+        vat_percentage: vatPct,
+        final_price_local: finalLocal,
+        final_price_sar: localToSar(finalLocal, currency),
+        currency,
       };
     });
-    // Group by sar_final + discount_percentage
-    const groupMap = new Map<string, PricingGroup>();
-    rows.forEach(r => {
-      const key = `${r.sar_final}-${r.discount_percentage}`;
-      if (groupMap.has(key)) {
-        groupMap.get(key)!.countries.push(r.country_code);
-      } else {
-        groupMap.set(key, {
-          id: crypto.randomUUID(),
-          sar_final_price: r.sar_final,
-          discount_percentage: r.discount_percentage,
-          countries: [r.country_code],
-        });
-      }
-    });
-    setPricingGroups(Array.from(groupMap.values()));
+    setCountryPrices(entries);
     setEditingCourse(course);
   };
 
@@ -442,7 +437,7 @@ const AdminCourses: React.FC = () => {
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
-          if (latest && pricingGroups.length > 0) {
+          if (latest && countryPrices.length > 0) {
             await saveCountryPrices(latest.id);
           }
         }
@@ -451,10 +446,8 @@ const AdminCourses: React.FC = () => {
   };
 
   const saveCountryPrices = async (courseId: string) => {
-    // Delete existing prices for this course
     await supabase.from('course_country_prices').delete().eq('course_id', courseId);
-    // Expand groups into flat rows and insert
-    const rows = expandGroupsToRows(pricingGroups);
+    const rows = expandEntriesToRows(countryPrices);
     if (rows.length > 0) {
       const dbRows = rows.map(r => ({
         course_id: courseId,
@@ -463,6 +456,8 @@ const AdminCourses: React.FC = () => {
         discount_percentage: r.discount_percentage,
         price: r.price,
         currency: r.currency,
+        vat_percentage: r.vat_percentage,
+        final_price_with_vat: r.final_price_with_vat,
       }));
       await supabase.from('course_country_prices').insert(dbRows);
     }
@@ -510,10 +505,16 @@ const AdminCourses: React.FC = () => {
             {isRTL ? 'إنشاء وتعديل وإدارة جميع الدورات' : 'Create, edit, and manage all courses'}
           </p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
-          <Plus className="w-4 h-4" />
-          {isRTL ? 'إنشاء دورة' : 'Create Course'}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setManagePricesOpen(true)} className="gap-2">
+            <DollarSign className="w-4 h-4" />
+            {isRTL ? 'إدارة أسعار الكورسات' : 'Manage Course Prices'}
+          </Button>
+          <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            {isRTL ? 'إنشاء دورة' : 'Create Course'}
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -1087,8 +1088,8 @@ const AdminCourses: React.FC = () => {
 
             {/* Country-Specific Pricing */}
             <CourseCountryPricing
-              pricingGroups={pricingGroups}
-              onChange={setPricingGroups}
+              countryPrices={countryPrices}
+              onChange={setCountryPrices}
               isRTL={isRTL}
             />
 
@@ -1163,6 +1164,15 @@ const AdminCourses: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Manage All Course Prices Dialog */}
+      <ManageCoursePricesDialog
+        open={managePricesOpen}
+        onClose={() => {
+          setManagePricesOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
+        }}
+      />
     </div>
     </AdminLayout>
   );
