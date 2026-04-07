@@ -41,7 +41,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { isRTL } = useLanguage();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
-  const { getCoursePriceInfo, getCurrencySymbol, convertPrice, isSAR } = useCurrency();
+  const { getCoursePriceInfo, getCurrencySymbol, convertPrice, isSAR, exchangeRate } = useCurrency();
   const { sendCourseStatus } = useGHLFormWebhook();
   const { handleGuestSignup, guestSigningUp } = useGuestSignup();
 
@@ -135,7 +135,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
 
     // Convert display price to SAR for Tap
-    const sarAmount = isSAR ? discountedPrice : Math.ceil(discountedPrice / convertPrice(1));
+    // exchangeRate = how many local units = 1 SAR
+    // So SAR = localPrice / exchangeRate
+    const sarAmount = isSAR || exchangeRate <= 0 ? discountedPrice : Math.ceil(discountedPrice / exchangeRate);
 
     sendCourseStatus(user.id, course.id, course.title, "pending", {
       full_name: form.fullName,
@@ -173,7 +175,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     basePrice,
     discountAmount,
     isSAR,
-    convertPrice,
+    exchangeRate,
     isRTL,
     profile,
     onPaymentStarted,
@@ -412,7 +414,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               ) : (
                 <>
                   <CreditCard className="w-4 h-4 me-2" />
-                  {isRTL ? `ادفع الآن ${discountedPrice} ${currSym}` : `Pay Now ${discountedPrice} ${currSym}`}
+                  {(() => {
+                    const sarAmt =
+                      isSAR || exchangeRate <= 0 ? discountedPrice : Math.ceil(discountedPrice / exchangeRate);
+                    return isRTL ? `ادفع الآن ${sarAmt} ر.س` : `Pay Now ${sarAmt} SAR`;
+                  })()}
                 </>
               )}
             </Button>

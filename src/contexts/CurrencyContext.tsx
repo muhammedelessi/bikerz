@@ -186,6 +186,8 @@ interface CurrencyContextType {
   vatLabel: string;
   vatLabelAr: string;
   isSAR: boolean;
+  /** Raw exchange rate: how many local currency units = 1 SAR */
+  exchangeRate: number;
   /** Check if a country-specific price exists for a course */
   hasCountryPrice: (courseId: string) => boolean;
   /** Get the display symbol for a given CurrencyCode based on locale */
@@ -580,6 +582,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         vatLabel: `VAT (${VAT_RATE}%)`,
         vatLabelAr: `ضريبة القيمة المضافة (${VAT_RATE}%)`,
         isSAR,
+        exchangeRate: rate,
         hasCountryPrice,
         getCurrencySymbol,
       }}
