@@ -114,6 +114,26 @@ const PaymentSuccess: React.FC = () => {
             date: new Date().toISOString(),
           }),
         }).catch((err) => console.warn("[n8n webhook] failed:", err));
+
+        // Send purchase data to n8n test webhook (fire-and-forget)
+        fetch("https://n8n.srv1504278.hstgr.cloud/webhook-test/fec802fa-f0c5-45e9-b9c9-3ecb0ecbc5c3", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            full_name: profile?.full_name || "",
+            email: user.email || "",
+            phone: profile?.phone || "",
+            country: profile?.country || "",
+            city: profile?.city || "",
+            course_id: courseId,
+            course_name: course.title || "",
+            amount: course.price || 0,
+            currency: "SAR",
+            payment_id: tapId,
+            purchase_date: new Date().toISOString(),
+            order_status: "purchased",
+          }),
+        }).catch(() => {});
       }
     }
   }, [verifyStatus, course, courseId]);
