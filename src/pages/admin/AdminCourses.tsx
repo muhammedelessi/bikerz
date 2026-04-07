@@ -85,6 +85,7 @@ interface Course {
   instructor_id: string | null;
   discount_percentage?: number;
   discount_expires_at?: string | null;
+  vat_percentage?: number;
 }
 
 const AdminCourses: React.FC = () => {
@@ -149,6 +150,7 @@ const AdminCourses: React.FC = () => {
     discount_percentage: 0,
     discount_duration: '' as string,
     discount_expires_at: null as string | null,
+    vat_percentage: 15,
     currency: 'SAR',
     difficulty_level: 'beginner',
     duration_hours: 0,
@@ -185,6 +187,7 @@ const AdminCourses: React.FC = () => {
         price: data.price,
         discount_percentage: data.discount_percentage || 0,
         discount_expires_at: data.discount_percentage > 0 ? expiresAt : null,
+        vat_percentage: data.vat_percentage ?? 15,
         currency: data.currency,
         difficulty_level: data.difficulty_level,
         duration_hours: data.duration_hours || null,
@@ -220,6 +223,7 @@ const AdminCourses: React.FC = () => {
           price: data.price,
           discount_percentage: data.discount_percentage || 0,
           discount_expires_at: data.discount_percentage > 0 ? expiresAt : null,
+          vat_percentage: data.vat_percentage ?? 15,
           currency: data.currency,
           difficulty_level: data.difficulty_level,
           duration_hours: data.duration_hours || null,
@@ -280,6 +284,7 @@ const AdminCourses: React.FC = () => {
       discount_percentage: 0,
       discount_duration: '',
       discount_expires_at: null,
+      vat_percentage: 15,
       currency: 'SAR',
       difficulty_level: 'beginner',
       duration_hours: 0,
@@ -371,6 +376,7 @@ const AdminCourses: React.FC = () => {
       discount_percentage: discPct,
       discount_duration: (course as any).discount_expires_at ? 'keep' : '',
       discount_expires_at: (course as any).discount_expires_at || null,
+      vat_percentage: (course as any).vat_percentage ?? 15,
       currency: course.currency || 'SAR',
       difficulty_level: course.difficulty_level,
       duration_hours: course.duration_hours || 0,
