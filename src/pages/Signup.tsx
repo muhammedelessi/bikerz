@@ -171,7 +171,7 @@ const Signup: React.FC = () => {
   };
   const getCountryName = () => {
     if (isOtherCountry) return customCountry.trim();
-    return selectedCountryEntry ? selectedCountryEntry.en : ""; // دائماً English
+    return selectedCountryEntry ? selectedCountryEntry.code : "";
   };
 
   const getCityName = () => {
