@@ -13,7 +13,6 @@ import { useCheckoutForm } from "@/hooks/checkout/useCheckoutForm";
 import { useCheckoutPromo } from "@/hooks/checkout/useCheckoutPromo";
 import { useTapPayment } from "@/hooks/useTapPayment";
 import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
-import { useGuestSignup } from "@/hooks/checkout/useGuestSignup";
 import { enrollUserInCourse, incrementCouponUsage } from "@/services/supabase.service";
 import CheckoutInfoStep from "@/components/checkout/CheckoutInfoStep";
 import CheckoutPaymentStep from "@/components/checkout/CheckoutPaymentStep";
