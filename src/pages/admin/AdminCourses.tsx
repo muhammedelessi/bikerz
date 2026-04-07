@@ -144,6 +144,7 @@ const AdminCourses: React.FC = () => {
     description: '',
     description_ar: '',
     thumbnail_url: '',
+    original_price: 0,
     price: 0,
     discount_percentage: 0,
     discount_duration: '' as string,
@@ -274,6 +275,7 @@ const AdminCourses: React.FC = () => {
       description: '',
       description_ar: '',
       thumbnail_url: '',
+      original_price: 0,
       price: 0,
       discount_percentage: 0,
       discount_duration: '',
@@ -354,14 +356,19 @@ const AdminCourses: React.FC = () => {
   };
 
   const openEditDialog = async (course: Course) => {
+    const discPct = (course as any).discount_percentage || 0;
+    const coursePrice = course.price;
+    // Reverse-calculate original price from price and discount
+    const origPrice = discPct > 0 ? Math.round(coursePrice / (1 - discPct / 100)) : coursePrice;
     setFormData({
       title: course.title,
       title_ar: course.title_ar || '',
       description: course.description || '',
       description_ar: course.description_ar || '',
       thumbnail_url: course.thumbnail_url || '',
-      price: course.price,
-      discount_percentage: (course as any).discount_percentage || 0,
+      original_price: origPrice,
+      price: coursePrice,
+      discount_percentage: discPct,
       discount_duration: (course as any).discount_expires_at ? 'keep' : '',
       discount_expires_at: (course as any).discount_expires_at || null,
       currency: course.currency || 'SAR',
@@ -634,7 +641,19 @@ const AdminCourses: React.FC = () => {
                     <TableCell>
                       {course.price === 0 
                         ? (isRTL ? 'مجاني' : 'Free')
-                        : `${course.price} ${course.currency || 'SAR'}`}
+                        : (
+                          <div>
+                            {(course as any).discount_percentage > 0 && (
+                              <span className="text-muted-foreground line-through text-xs me-1">
+                                {Math.round(course.price / (1 - ((course as any).discount_percentage || 0) / 100))}
+                              </span>
+                            )}
+                            <span>{course.price} {course.currency || 'SAR'}</span>
+                            {(course as any).discount_percentage > 0 && (
+                              <Badge variant="secondary" className="ms-1 text-xs">-{(course as any).discount_percentage}%</Badge>
+                            )}
+                          </div>
+                        )}
                     </TableCell>
                     <TableCell>
                       {course.duration_hours ? `${course.duration_hours}h` : '-'}
@@ -822,7 +841,27 @@ const AdminCourses: React.FC = () => {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="space-y-2">
-                <Label>{isRTL ? 'السعر' : 'Price'}</Label>
+                <Label>{isRTL ? 'السعر قبل الخصم' : 'Original Price'}</Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.original_price || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                      const origPrice = val === '' ? 0 : parseFloat(val) || 0;
+                      const afterDiscount = formData.price;
+                      const discPct = origPrice > 0 && afterDiscount > 0 && afterDiscount < origPrice
+                        ? Math.round((1 - afterDiscount / origPrice) * 100)
+                        : 0;
+                      setFormData({ ...formData, original_price: origPrice, discount_percentage: discPct });
+                    }
+                  }}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{isRTL ? 'السعر بعد الخصم' : 'Price After Discount'}</Label>
                 <Input
                   type="text"
                   inputMode="numeric"
@@ -830,30 +869,19 @@ const AdminCourses: React.FC = () => {
                   onChange={(e) => {
                     const val = e.target.value;
                     if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                      setFormData({ ...formData, price: val === '' ? 0 : parseFloat(val) || 0 });
+                      const afterDiscount = val === '' ? 0 : parseFloat(val) || 0;
+                      const origPrice = formData.original_price;
+                      const discPct = origPrice > 0 && afterDiscount > 0 && afterDiscount < origPrice
+                        ? Math.round((1 - afterDiscount / origPrice) * 100)
+                        : 0;
+                      setFormData({ ...formData, price: afterDiscount, discount_percentage: discPct });
                     }
                   }}
                   placeholder="0"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label>{isRTL ? 'نسبة الخصم %' : 'Discount %'}</Label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={formData.discount_percentage || ''}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                      const num = val === '' ? 0 : parseFloat(val) || 0;
-                      setFormData({ ...formData, discount_percentage: Math.min(100, Math.max(0, num)) });
-                    }
-                  }}
-                  placeholder="0"
-                />
-                {formData.discount_percentage > 0 && formData.price > 0 && (
+                {formData.discount_percentage > 0 && (
                   <p className="text-xs text-primary font-medium">
-                    {isRTL ? 'السعر بعد الخصم:' : 'After discount:'} {Math.round(formData.price * (1 - formData.discount_percentage / 100))} {formData.currency}
+                    {isRTL ? 'نسبة الخصم:' : 'Discount:'} {formData.discount_percentage}%
                   </p>
                 )}
               </div>
@@ -943,9 +971,9 @@ const AdminCourses: React.FC = () => {
                   {isRTL ? 'حاسبة السعر (ر.س)' : 'Price Calculator (SAR)'}
                 </h4>
                 {(() => {
-                  const orig = formData.price;
-                  const disc = formData.discount_percentage > 0 ? formData.discount_percentage : 0;
-                  const afterDiscount = disc > 0 ? Math.ceil(orig * (1 - disc / 100)) : orig;
+                  const orig = formData.original_price || formData.price;
+                  const afterDiscount = formData.price;
+                  const disc = formData.discount_percentage;
                   const vat = Math.ceil(afterDiscount * (VAT_RATE / 100));
                   const total = afterDiscount + vat;
                   return (
