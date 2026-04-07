@@ -457,8 +457,16 @@ const Signup: React.FC = () => {
                 </div>
                 {emailError && (
                   <p className="text-xs text-destructive flex items-center gap-1 mt-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {emailError}
+                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                    {emailError === 'EMAIL_EXISTS' ? (
+                      <span>
+                        {isRTL ? 'البريد الإلكتروني مستخدم مسبقاً، يرجى ' : 'This email is already registered. Please '}
+                        <Link to="/login" className="underline font-medium hover:text-destructive/80">
+                          {isRTL ? 'تسجيل الدخول' : 'sign in'}
+                        </Link>
+                        {isRTL ? ' أو استخدام بريد آخر' : ' or use a different email'}
+                      </span>
+                    ) : emailError}
                   </p>
                 )}
               </div>
