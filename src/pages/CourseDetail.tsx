@@ -101,6 +101,7 @@ interface Course {
   duration_hours: number | null;
   total_lessons: number | null;
   instructor_id: string | null;
+  vat_percentage?: number | null;
 }
 
 interface LessonProgress {
