@@ -1536,6 +1536,7 @@ const CourseDetail: React.FC = () => {
                 price: course.price,
                 discount_percentage: effectiveDiscount,
                 thumbnail_url: course.thumbnail_url,
+                vat_percentage: courseVat,
               }}
               onSuccess={() => {
                 queryClient.invalidateQueries({ queryKey: ["enrollment", id, user?.id] });
