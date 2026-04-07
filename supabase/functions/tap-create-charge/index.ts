@@ -178,10 +178,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Base SAR price is the source of truth for charging
+    // Base SAR price is the source of truth for fallback charging
     const basePriceSar = Number(course.price);
 
-    // Country-specific pricing is for DISPLAY only — we still charge in SAR
+    // Country-specific pricing is for display and may also define the intended payable amount.
     let localizedDisplayPrice: number | null = null;
     let localizedDisplayCurrency: string | null = null;
     if (detected_country) {
@@ -200,12 +200,12 @@ Deno.serve(async (req) => {
     }
 
     const courseDiscountPct = course.discount_percentage && Number(course.discount_percentage) > 0 ? Number(course.discount_percentage) : 0;
-    let priceBeforeTax = courseDiscountPct > 0
+    let fallbackPriceBeforeTax = courseDiscountPct > 0
       ? Math.ceil(basePriceSar * (1 - courseDiscountPct / 100))
       : basePriceSar;
-    const priceAfterCourseDiscount = priceBeforeTax;
+    const priceAfterCourseDiscount = fallbackPriceBeforeTax;
 
-    // Apply coupon discount if provided (server-side validation, in SAR)
+    // Apply coupon discount on the fallback server-side amount (for validation/minimum checks)
     let couponDiscount = 0;
     if (coupon_id) {
       const { data: coupon } = await adminClient
@@ -218,33 +218,33 @@ Deno.serve(async (req) => {
           && new Date() >= new Date(coupon.start_date)
           && new Date() <= new Date(coupon.expiry_date)
           && coupon.used_count < coupon.max_usage) {
-        // Check course scope
         const scopeValid = coupon.is_global || !coupon.course_id || coupon.course_id === course_id;
-        const minValid = !coupon.minimum_amount || priceBeforeTax >= Number(coupon.minimum_amount);
+        const minValid = !coupon.minimum_amount || fallbackPriceBeforeTax >= Number(coupon.minimum_amount);
 
         if (scopeValid && minValid) {
           if (coupon.type === "percentage_discount") {
-            couponDiscount = Math.round(priceBeforeTax * (Number(coupon.value) / 100) * 100) / 100;
+            couponDiscount = Math.round(fallbackPriceBeforeTax * (Number(coupon.value) / 100) * 100) / 100;
           } else if (coupon.type === "fixed_amount_discount") {
-            couponDiscount = Math.min(Number(coupon.value), priceBeforeTax);
+            couponDiscount = Math.min(Number(coupon.value), fallbackPriceBeforeTax);
           } else if (coupon.type === "promotion") {
             couponDiscount = Number(coupon.value);
           }
-          priceBeforeTax = Math.max(priceBeforeTax - couponDiscount, 0);
+          fallbackPriceBeforeTax = Math.max(fallbackPriceBeforeTax - couponDiscount, 0);
         }
       }
     }
 
-    if (priceBeforeTax <= 0) {
+    const clientRequestedAmount = Number(requestedAmount);
+    const hasClientAmount = Number.isFinite(clientRequestedAmount) && clientRequestedAmount > 0;
+    const finalAmount = hasClientAmount ? Math.ceil(clientRequestedAmount) : Math.ceil(fallbackPriceBeforeTax * 1.15);
+    const priceBeforeTax = Math.max(0, Math.round((finalAmount / 1.15) * 100) / 100);
+
+    if (finalAmount <= 0) {
       return new Response(
         JSON.stringify({ error: "Final amount is zero. Use free enrollment instead." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // Add VAT on top of the pre-tax price (15%)
-    const vatRate = 0.15;
-    const finalAmount = Math.ceil(priceBeforeTax * (1 + vatRate));
 
     console.log(
       "Server-authoritative SAR pricing:",
