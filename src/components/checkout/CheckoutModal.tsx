@@ -34,7 +34,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(
     const { isRTL } = useLanguage();
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { getCoursePriceInfo, getCurrencySymbol, rate } = useCurrency();
+    const { getCoursePriceInfo, getCurrencySymbol, convertPrice, isSAR } = useCurrency();
     const { sendCourseStatus } = useGHLFormWebhook();
     const { handleGuestSignup, guestSigningUp } = useGuestSignup();
 
@@ -127,8 +127,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(
       // Convert display price to SAR for Tap payment
       // discountedPrice is in user's local currency (e.g. ILS)
       // rate = local currency per 1 SAR, so SAR = local / rate
-      const sarAmount = priceInfo.currency === "SAR" ? discountedPrice : Math.ceil(discountedPrice / rate);
-
+      // convertPrice(1) gives the rate: how many local units = 1 SAR
+      // So sarAmount = discountedPrice / convertPrice(1)
+      const sarAmount = isSAR ? discountedPrice : Math.ceil(discountedPrice / convertPrice(1));
       // Paid checkout via Tap
       await tap.submitPayment({
         courseId: course.id,
