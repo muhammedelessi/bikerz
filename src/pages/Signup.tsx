@@ -278,10 +278,30 @@ const Signup: React.FC = () => {
 
     setIsLoading(true);
 
+    // Check if phone already exists
+    const fullPhone = getFullPhone();
+    const { data: existingPhone } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('phone', fullPhone)
+      .maybeSingle();
+
+    if (existingPhone) {
+      setPhoneError(isRTL 
+        ? 'رقم الهاتف مستخدم مسبقاً' 
+        : 'This phone number is already registered');
+      setIsLoading(false);
+      return;
+    }
+
     const { error } = await signUp(email, password, name);
 
     if (error) {
-      setError(error.message);
+      if (error.message === 'EMAIL_EXISTS') {
+        setEmailError('EMAIL_EXISTS');
+      } else {
+        setError(error.message);
+      }
       setIsLoading(false);
       return;
     }
@@ -437,8 +457,16 @@ const Signup: React.FC = () => {
                 </div>
                 {emailError && (
                   <p className="text-xs text-destructive flex items-center gap-1 mt-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {emailError}
+                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                    {emailError === 'EMAIL_EXISTS' ? (
+                      <span>
+                        {isRTL ? 'البريد الإلكتروني مستخدم مسبقاً، يرجى ' : 'This email is already registered. Please '}
+                        <Link to="/login" className="underline font-medium hover:text-destructive/80">
+                          {isRTL ? 'تسجيل الدخول' : 'sign in'}
+                        </Link>
+                        {isRTL ? ' أو استخدام بريد آخر' : ' or use a different email'}
+                      </span>
+                    ) : emailError}
                   </p>
                 )}
               </div>
