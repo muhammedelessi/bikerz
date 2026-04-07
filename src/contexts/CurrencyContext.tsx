@@ -387,7 +387,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Requirement: show "before discount" price WITHOUT VAT.
         // Final price stays VAT-inclusive (this is what Tap charges).
         const origNoVat = Math.ceil(entry.original_price);
-        const finalWithVat = Math.ceil(entry.price * 1.15);
+        const finalWithVat = Math.ceil(entry.price);
         return {
           originalPrice: origNoVat,
           discountPct: entry.discount_percentage,
