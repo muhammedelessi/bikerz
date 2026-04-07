@@ -581,6 +581,12 @@ const AdminPayments = () => {
                                   </DropdownMenuItem>
                                 </>
                               )}
+                              <DropdownMenuItem
+                                onClick={(e) => { e.stopPropagation(); setDeleteTarget(payment); }}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4 me-2" />{isRTL ? 'حذف' : 'Delete'}
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -841,7 +847,29 @@ const AdminPayments = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </AdminLayout>
+
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+          <AlertDialogContent dir={isRTL ? 'rtl' : 'ltr'}>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{isRTL ? 'حذف المدفوعة' : 'Delete Payment'}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {isRTL
+                  ? 'هل أنت متأكد من حذف هذه المدفوعة؟ لن يمكن التراجع عن هذا الإجراء.'
+                  : 'Are you sure you want to delete this payment? This action cannot be undone.'}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => deleteTarget && deletePaymentMutation.mutate(deleteTarget)}
+              >
+                {isRTL ? 'حذف' : 'Delete'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
   );
 };
 
