@@ -1,5 +1,38 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { FormWebhookData } from '@/types/ghl';
+import { COUNTRIES } from '@/data/countryCityData';
+
+/**
+ * Resolve any country value (code like "SA", Arabic "السعودية", English "Saudi Arabia")
+ * to its canonical English name.
+ */
+export function resolveCountryEnglish(value: string | null | undefined): string {
+  if (!value) return '';
+  const match = COUNTRIES.find(
+    (c) => c.code === value || c.en === value || c.ar === value,
+  );
+  return match ? match.en : value;
+}
+
+/**
+ * Resolve any city value (Arabic or English) to its canonical English name,
+ * using the country to narrow the lookup.
+ */
+export function resolveCityEnglish(
+  country: string | null | undefined,
+  city: string | null | undefined,
+): string {
+  if (!city) return '';
+  if (!country) return city;
+  const countryMatch = COUNTRIES.find(
+    (c) => c.code === country || c.en === country || c.ar === country,
+  );
+  if (!countryMatch) return city;
+  const cityMatch = countryMatch.cities.find(
+    (ct) => ct.en === city || ct.ar === city,
+  );
+  return cityMatch ? cityMatch.en : city;
+}
 
 function getVisitSource(): string {
   try {
