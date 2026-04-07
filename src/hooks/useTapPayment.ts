@@ -36,25 +36,28 @@ export function useTapPayment(): UseTapPaymentReturn {
   const verifyCharge = useCallback(async (chargeId: string) => {
     updateStatus('verifying');
     try {
-      const data = await verifyChargeOnce(chargeId);
-      if (data?.status === 'succeeded') {
-        updateStatus('succeeded');
-        return;
+      const maxAttempts = 5;
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const data = await verifyChargeOnce(chargeId);
+
+        if (data?.status === 'succeeded') {
+          updateStatus('succeeded');
+          return;
+        }
+
+        if (data?.status === 'failed' || data?.status === 'cancelled') {
+          setError('Payment was declined. Please try again.');
+          updateStatus('failed');
+          return;
+        }
+
+        if (attempt < maxAttempts - 1) {
+          await new Promise(r => setTimeout(r, 3000));
+        }
       }
-      if (data?.status === 'failed' || data?.status === 'cancelled') {
-        setError('Payment was declined. Please try again.');
-        updateStatus('failed');
-        return;
-      }
-      // Retry once
-      await new Promise(r => setTimeout(r, 3000));
-      const d2 = await verifyChargeOnce(chargeId);
-      if (d2?.status === 'succeeded') {
-        updateStatus('succeeded');
-      } else {
-        setError('Payment verification timed out. Please check your email for confirmation.');
-        updateStatus('failed');
-      }
+
+      setError('Payment is still being confirmed. Please wait a moment and try again from the success page if needed.');
+      updateStatus('failed');
     } catch (err: any) {
       setError(err.message || 'Payment verification failed');
       updateStatus('failed');
