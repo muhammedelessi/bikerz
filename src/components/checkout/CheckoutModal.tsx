@@ -45,7 +45,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { sendCourseStatus } = useGHLFormWebhook();
   const { handleGuestSignup, guestSigningUp } = useGuestSignup();
 
-  const [step] = useState<"payment">("payment");
+  const [step, setStep] = useState<"info" | "payment">("info");
 
   const priceInfo = useMemo(
     () => getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0),
@@ -72,13 +72,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   useEffect(() => {
     if (!open) {
+      setStep("info");
       promo.resetPromo();
       tap.reset();
       form.resetForm();
       return;
     }
     if (user) {
-      form.prefillAndAutoAdvance();
+      form.prefillAndAutoAdvance().then((canSkip: boolean) => {
+        if (canSkip) setStep("payment");
+      });
     }
   }, [open, user]);
 
@@ -370,6 +373,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         {/* Footer */}
         <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-border flex-shrink-0 flex gap-2">
+          {step === "payment" && (
+            <Button variant="outline" onClick={() => setStep("info")} className="flex-shrink-0">
+              <BackArrowIcon className="w-4 h-4" />
+            </Button>
+          )}
           {step === "info" ? (
             <Button
               className="flex-1 btn-cta"
@@ -418,7 +426,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               ) : (
                 <>
                   <CreditCard className="w-4 h-4 me-2" />
-                  {isRTL ? "ادفع الآن" : "Pay Now"}
+                  {(() => {
+                    const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
+                    const localCurrency = priceInfo.currency as string;
+                    const showLocal = TAP_SUPPORTED.includes(localCurrency);
+                    const displayAmt = showLocal
+                      ? discountedPrice
+                      : isSAR || exchangeRate <= 0
+                        ? discountedPrice
+                        : Math.ceil(discountedPrice / exchangeRate);
+                    const displaySym = showLocal ? currSym : isRTL ? "ر.س" : "SAR";
+                    return isRTL ? `ادفع الآن ${displayAmt} ${displaySym}` : `Pay Now ${displayAmt} ${displaySym}`;
+                  })()}
                 </>
               )}
             </Button>

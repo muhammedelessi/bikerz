@@ -12,7 +12,6 @@ import type { DropdownOption } from "@/components/checkout/SearchableDropdown";
 import type { PaymentStatus, AppliedCoupon } from "@/types/payment";
 import type { ValidationErrors } from "@/types/payment";
 import PaymentMethodIcons from "@/components/checkout/PaymentMethodIcons";
-import { COUNTRIES } from "@/data/countryCityData";
 
 const WhatsAppIcon = () => (
   <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current">
@@ -115,27 +114,6 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     const effectiveCountry = isOtherCountry ? countryManual : country;
     const effectiveCity = isOtherCity ? cityManual : city;
     const totalWithVat = discountedPrice;
-
-    // Translate country/city to user's language for display only
-    const displayCountry = (() => {
-      if (!effectiveCountry) return "";
-      const entry = COUNTRIES.find(
-        (c) => c.en === effectiveCountry || c.ar === effectiveCountry || c.code === effectiveCountry,
-      );
-      if (!entry) return effectiveCountry;
-      return isRTL ? entry.ar : entry.en;
-    })();
-
-    const displayCity = (() => {
-      if (!effectiveCity) return "";
-      const countryEntry = COUNTRIES.find(
-        (c) => c.en === effectiveCountry || c.ar === effectiveCountry || c.code === effectiveCountry,
-      );
-      if (!countryEntry) return effectiveCity;
-      const cityEntry = countryEntry.cities.find((c) => c.en === effectiveCity || c.ar === effectiveCity);
-      if (!cityEntry) return effectiveCity;
-      return isRTL ? cityEntry.ar : cityEntry.en;
-    })();
 
     const prefixEntry = PHONE_COUNTRIES.find((pc) => phonePrefix === pc.prefix + "_" + pc.code);
     const prefixStr = prefixEntry ? prefixEntry.prefix : "";
@@ -273,7 +251,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                     {isRTL ? "العنوان" : "Address"}
                   </span>
                   <span className="font-medium truncate max-w-[200px]">
-                    {[displayCity, displayCountry].filter(Boolean).join(", ")}
+                    {[effectiveCity, effectiveCountry].filter(Boolean).join(", ")}
                   </span>
                 </div>
               )}
@@ -373,11 +351,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                   </div>
                   <Input
                     value={phone}
-                    onChange={(e) => {
-                      let val = e.target.value.replace(/[^0-9]/g, "");
-                      if (val.startsWith("0")) val = val.slice(1);
-                      setPhone(val);
-                    }}
+                    onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ""))}
                     placeholder="5XXXXXXXX"
                     dir="ltr"
                     className="flex-1"
@@ -385,57 +359,55 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">{isRTL ? "الدولة" : "Country"}</Label>
-                  <SearchableDropdown
-                    options={countryOptions}
-                    value={isOtherCountry ? "__other__" : selectedCountryCode}
-                    onChange={handleCountryChange}
-                    placeholder={isRTL ? "اختر الدولة" : "Select country"}
-                    searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
-                    dir={isRTL ? "rtl" : "ltr"}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">{isRTL ? "الدولة" : "Country"}</Label>
+                <SearchableDropdown
+                  options={countryOptions}
+                  value={isOtherCountry ? "__other__" : selectedCountryCode}
+                  onChange={handleCountryChange}
+                  placeholder={isRTL ? "اختر الدولة" : "Select country"}
+                  searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
+                  dir={isRTL ? "rtl" : "ltr"}
+                />
+                {isOtherCountry && (
+                  <Input
+                    value={countryManual}
+                    onChange={(e) => {
+                      setCountryManual(e.target.value);
+                      setCountry(e.target.value);
+                    }}
+                    placeholder={isRTL ? "اسم الدولة" : "Country name"}
                   />
-                  {isOtherCountry && (
-                    <Input
-                      value={countryManual}
-                      onChange={(e) => {
-                        setCountryManual(e.target.value);
-                        setCountry(e.target.value);
-                      }}
-                      placeholder={isRTL ? "اسم الدولة" : "Country name"}
-                    />
-                  )}
-                </div>
+                )}
+              </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">{isRTL ? "المدينة" : "City"}</Label>
-                  {isOtherCountry ? (
-                    <Input
-                      value={cityManual}
-                      onChange={(e) => setCityManual(e.target.value)}
-                      placeholder={isRTL ? "اسم المدينة" : "City name"}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">{isRTL ? "المدينة" : "City"}</Label>
+                {isOtherCountry ? (
+                  <Input
+                    value={cityManual}
+                    onChange={(e) => setCityManual(e.target.value)}
+                    placeholder={isRTL ? "اسم المدينة" : "City name"}
+                  />
+                ) : (
+                  <>
+                    <SearchableDropdown
+                      options={cityOptions}
+                      value={isOtherCity ? "__other__" : city}
+                      onChange={handleCityChange}
+                      placeholder={isRTL ? "اختر المدينة" : "Select city"}
+                      searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
+                      dir={isRTL ? "rtl" : "ltr"}
                     />
-                  ) : (
-                    <>
-                      <SearchableDropdown
-                        options={cityOptions}
-                        value={isOtherCity ? "__other__" : city}
-                        onChange={handleCityChange}
-                        placeholder={isRTL ? "اختر المدينة" : "Select city"}
-                        searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
-                        dir={isRTL ? "rtl" : "ltr"}
+                    {isOtherCity && (
+                      <Input
+                        value={cityManual}
+                        onChange={(e) => setCityManual(e.target.value)}
+                        placeholder={isRTL ? "اسم المدينة" : "City name"}
                       />
-                      {isOtherCity && (
-                        <Input
-                          value={cityManual}
-                          onChange={(e) => setCityManual(e.target.value)}
-                          placeholder={isRTL ? "اسم المدينة" : "City name"}
-                        />
-                      )}
-                    </>
-                  )}
-                </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
 
