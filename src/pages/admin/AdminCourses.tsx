@@ -135,20 +135,20 @@ const PRICING_SAR_RATES: Record<string, number> = {
   GBP: 0.211,
 };
 
-type PricingCell = {
-  original_price: number;
+// Per-country row: SA is always editable, others are auto unless overridden
+type CountryRow = {
+  // SAR values (user edits these for SA, or optionally overrides for other countries)
+  sar_original: number;
+  sar_after_discount: number;
   discount_percentage: number;
-  price_after_discount: number;
-  vat_percentage: number;
+  // Is this row manually overridden (not auto-calculated from SA)?
+  is_custom: boolean;
 };
 
-type PricingMatrix = Record<string, Record<string, PricingCell>>;
-const EMPTY_PRICING_CELL: PricingCell = {
-  original_price: 0,
-  discount_percentage: 0,
-  price_after_discount: 0,
-  vat_percentage: 15,
-};
+// Matrix: [course_id][country_code] = CountryRow
+type PricingMatrix = Record<string, Record<string, CountryRow>>;
+
+const EMPTY_ROW: CountryRow = { sar_original: 0, sar_after_discount: 0, discount_percentage: 0, is_custom: false };
 
 const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean) => void }> = ({
   open,
@@ -157,12 +157,8 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
   const { isRTL } = useLanguage();
   const [pricingCourses, setPricingCourses] = React.useState<AllCourseForPricing[]>([]);
   const [matrix, setMatrix] = React.useState<PricingMatrix>({});
-  const [basePrices, setBasePrices] = React.useState<
-    Record<string, { original: number; after_discount: number; vat: number }>
-  >({});
   const [pricingLoading, setPricingLoading] = React.useState(false);
   const [pricingSaving, setPricingSaving] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<"country" | "base">("country");
 
   React.useEffect(() => {
     if (!open) return;
@@ -174,76 +170,138 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
       ]);
       const c = (cd || []) as AllCourseForPricing[];
       setPricingCourses(c);
-      const bp: Record<string, { original: number; after_discount: number; vat: number }> = {};
+
+      const m: PricingMatrix = {};
       c.forEach((course) => {
-        const after =
+        m[course.id] = {};
+        PRICING_COUNTRIES.forEach((country) => {
+          m[course.id][country.code] = { ...EMPTY_ROW };
+        });
+        // Default SA from course base price
+        const sarAfter =
           course.discount_percentage > 0
             ? Math.round(course.price * (1 - course.discount_percentage / 100))
             : course.price;
-        bp[course.id] = { original: course.price, after_discount: after, vat: 15 };
+        m[course.id]["SA"] = {
+          sar_original: course.price,
+          sar_after_discount: sarAfter,
+          discount_percentage: course.discount_percentage || 0,
+          is_custom: true,
+        };
       });
-      setBasePrices(bp);
-      const m: PricingMatrix = {};
-      PRICING_COUNTRIES.forEach((country) => {
-        m[country.code] = {};
-        c.forEach((course) => {
-          m[country.code][course.id] = { ...EMPTY_PRICING_CELL };
-        });
-      });
+
+      // Load saved custom prices
       (pd || []).forEach((p: any) => {
-        if (m[p.country_code]?.[p.course_id]) {
-          const after =
-            p.discount_percentage > 0 ? Math.round(p.original_price * (1 - p.discount_percentage / 100)) : p.price;
-          m[p.country_code][p.course_id] = {
-            original_price: Number(p.original_price) || 0,
-            discount_percentage: Number(p.discount_percentage) || 0,
-            price_after_discount: after,
-            vat_percentage: Number(p.vat_percentage) ?? 15,
-          };
-        }
+        if (!m[p.course_id]) return;
+        m[p.course_id][p.country_code] = {
+          sar_original: Number(p.original_price) || 0,
+          sar_after_discount: Number(p.price) || 0,
+          discount_percentage: Number(p.discount_percentage) || 0,
+          is_custom: true,
+        };
       });
+
       setMatrix(m);
       setPricingLoading(false);
     };
     load();
   }, [open]);
 
-  const updateCell = (cc: string, cid: string, field: keyof PricingCell, val: number) => {
+  // Get effective SAR after discount for a cell
+  // Non-custom countries inherit SA's sar_after_discount
+  const getEffectiveRow = (courseId: string, countryCode: string): CountryRow => {
+    const cell = matrix[courseId]?.[countryCode];
+    if (cell?.is_custom && cell.sar_after_discount > 0) return cell;
+    // Fallback to SA
+    const sa = matrix[courseId]?.["SA"];
+    return {
+      ...EMPTY_ROW,
+      sar_original: sa?.sar_original || 0,
+      sar_after_discount: sa?.sar_after_discount || 0,
+      discount_percentage: sa?.discount_percentage || 0,
+      is_custom: false,
+    };
+  };
+
+  const updateSA = (
+    courseId: string,
+    field: "sar_original" | "sar_after_discount" | "discount_percentage",
+    val: number,
+  ) => {
     setMatrix((prev) => {
-      const cell = { ...(prev[cc]?.[cid] || EMPTY_PRICING_CELL), [field]: val };
-      if (field === "original_price" || field === "discount_percentage") {
-        cell.price_after_discount =
-          cell.discount_percentage > 0
-            ? Math.round(cell.original_price * (1 - cell.discount_percentage / 100))
-            : cell.original_price;
+      const sa = { ...(prev[courseId]?.["SA"] || EMPTY_ROW), [field]: val, is_custom: true };
+      if (field === "sar_original" || field === "discount_percentage") {
+        sa.sar_after_discount =
+          sa.discount_percentage > 0
+            ? Math.round(sa.sar_original * (1 - sa.discount_percentage / 100))
+            : sa.sar_original;
       }
-      if (field === "price_after_discount") {
-        cell.discount_percentage =
-          cell.original_price > 0 ? Math.round((1 - cell.price_after_discount / cell.original_price) * 100) : 0;
+      if (field === "sar_after_discount") {
+        sa.discount_percentage =
+          sa.sar_original > 0 ? Math.round((1 - sa.sar_after_discount / sa.sar_original) * 100) : 0;
       }
-      return { ...prev, [cc]: { ...prev[cc], [cid]: cell } };
+      return { ...prev, [courseId]: { ...prev[courseId], SA: sa } };
     });
   };
 
-  const updateBase = (cid: string, field: string, val: number) => {
-    setBasePrices((prev) => ({
-      ...prev,
-      [cid]: { ...(prev[cid] || { original: 0, after_discount: 0, vat: 15 }), [field]: val },
-    }));
+  const toggleCustom = (courseId: string, countryCode: string, enable: boolean) => {
+    setMatrix((prev) => {
+      const sa = getEffectiveRow(courseId, "SA");
+      const current = prev[courseId]?.[countryCode] || EMPTY_ROW;
+      const updated: CountryRow = enable
+        ? {
+            ...current,
+            is_custom: true,
+            sar_original: sa.sar_original,
+            sar_after_discount: sa.sar_after_discount,
+            discount_percentage: sa.discount_percentage,
+          }
+        : { ...EMPTY_ROW, is_custom: false };
+      return { ...prev, [courseId]: { ...prev[courseId], [countryCode]: updated } };
+    });
+  };
+
+  const updateCustomCell = (
+    courseId: string,
+    countryCode: string,
+    field: "sar_original" | "sar_after_discount" | "discount_percentage",
+    val: number,
+  ) => {
+    setMatrix((prev) => {
+      const cell = { ...(prev[courseId]?.[countryCode] || EMPTY_ROW), [field]: val, is_custom: true };
+      if (field === "sar_original" || field === "discount_percentage") {
+        cell.sar_after_discount =
+          cell.discount_percentage > 0
+            ? Math.round(cell.sar_original * (1 - cell.discount_percentage / 100))
+            : cell.sar_original;
+      }
+      if (field === "sar_after_discount") {
+        cell.discount_percentage =
+          cell.sar_original > 0 ? Math.round((1 - cell.sar_after_discount / cell.sar_original) * 100) : 0;
+      }
+      return { ...prev, [courseId]: { ...prev[courseId], [countryCode]: cell } };
+    });
   };
 
   const saveAll = async () => {
     setPricingSaving(true);
     try {
+      // Update base course prices from SA row
       await Promise.all(
         pricingCourses.map((course) => {
-          const bp = basePrices[course.id];
-          if (!bp) return Promise.resolve();
-          const disc =
-            bp.original > 0 && bp.after_discount > 0 ? Math.round((1 - bp.after_discount / bp.original) * 100) : 0;
-          return supabase.from("courses").update({ price: bp.original, discount_percentage: disc }).eq("id", course.id);
+          const sa = matrix[course.id]?.["SA"];
+          if (!sa || sa.sar_original <= 0) return Promise.resolve();
+          return supabase
+            .from("courses")
+            .update({
+              price: sa.sar_original,
+              discount_percentage: sa.discount_percentage || 0,
+            })
+            .eq("id", course.id);
         }),
       );
+
+      // Delete and re-insert all country prices
       await supabase
         .from("course_country_prices")
         .delete()
@@ -251,24 +309,29 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
           "course_id",
           pricingCourses.map((c) => c.id),
         );
+
       const rows: any[] = [];
-      PRICING_COUNTRIES.forEach((country) => {
-        pricingCourses.forEach((course) => {
-          const cell = matrix[country.code]?.[course.id];
-          if (!cell || cell.original_price <= 0) return;
-          const finalLocal = Math.round(cell.price_after_discount * (1 + (cell.vat_percentage || 0) / 100));
+      pricingCourses.forEach((course) => {
+        PRICING_COUNTRIES.forEach((country) => {
+          const effective = getEffectiveRow(course.id, country.code);
+          if (effective.sar_after_discount <= 0) return;
+          // Convert SAR to local currency
+          const rate = PRICING_SAR_RATES[country.currency] || 1;
+          const localOriginal = Math.round(effective.sar_original * rate);
+          const localAfterDiscount = Math.round(effective.sar_after_discount * rate);
           rows.push({
             course_id: course.id,
             country_code: country.code,
             currency: country.currency,
-            original_price: cell.original_price,
-            discount_percentage: cell.discount_percentage,
-            price: cell.price_after_discount,
-            vat_percentage: cell.vat_percentage,
-            final_price_with_vat: finalLocal,
+            original_price: localOriginal,
+            discount_percentage: effective.discount_percentage,
+            price: localAfterDiscount,
+            vat_percentage: 0,
+            final_price_with_vat: localAfterDiscount,
           });
         });
       });
+
       if (rows.length > 0) await supabase.from("course_country_prices").insert(rows);
       toast.success(isRTL ? "تم حفظ جميع الأسعار بنجاح" : "All prices saved successfully");
       onOpenChange(false);
@@ -280,6 +343,8 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
 
   const cName = (c: AllCourseForPricing) => (isRTL && c.title_ar ? c.title_ar : c.title);
 
+  const nonSACountries = PRICING_COUNTRIES.filter((c) => c.code !== "SA");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] w-full h-[90vh] flex flex-col p-0 gap-0" dir={isRTL ? "rtl" : "ltr"}>
@@ -287,6 +352,11 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
           <DialogTitle className="text-lg font-bold">
             {isRTL ? "إدارة أسعار جميع الكورسات" : "Manage All Course Prices"}
           </DialogTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            {isRTL
+              ? "أدخل سعر السعودية — باقي الدول تحوّل تلقائياً. فعّل أي دولة لتخصيص سعرها."
+              : "Enter Saudi price — other countries auto-convert. Enable any country to set a custom price."}
+          </p>
         </DialogHeader>
 
         {pricingLoading ? (
@@ -294,250 +364,236 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : (
-          <>
-            <div className="px-6 pt-3 flex-shrink-0 flex gap-2 border-b border-border pb-3">
-              <Button
-                size="sm"
-                variant={activeTab === "country" ? "default" : "outline"}
-                onClick={() => setActiveTab("country")}
-              >
-                {isRTL ? "أسعار حسب الدولة" : "Country Prices"}
-              </Button>
-              <Button
-                size="sm"
-                variant={activeTab === "base" ? "default" : "outline"}
-                onClick={() => setActiveTab("base")}
-              >
-                {isRTL ? "الأسعار الأساسية" : "Base Prices"}
-              </Button>
-            </div>
-
-            {activeTab === "country" && (
-              <div className="flex-1 overflow-auto">
-                <table className="border-collapse text-xs" style={{ minWidth: "100%" }}>
-                  <thead className="sticky top-0 z-20 bg-muted/90">
-                    <tr>
-                      <th
-                        className={`sticky ${isRTL ? "right-0" : "left-0"} z-30 bg-muted/90 border border-border px-3 py-2 text-start font-semibold min-w-[140px]`}
-                      >
-                        {isRTL ? "الدولة" : "Country"}
-                      </th>
-                      {pricingCourses.map((c) => (
+          <div className="flex-1 overflow-auto">
+            <table className="border-collapse text-xs" style={{ minWidth: "100%" }}>
+              <thead className="sticky top-0 z-20 bg-muted/90">
+                <tr>
+                  {/* Country column */}
+                  <th
+                    className={`sticky ${isRTL ? "right-0" : "left-0"} z-30 bg-muted/90 border border-border px-3 py-2 text-start font-semibold min-w-[150px]`}
+                  >
+                    {isRTL ? "الدولة" : "Country"}
+                  </th>
+                  {/* Course columns: each has 3 editable + 2 readonly */}
+                  {pricingCourses.map((c) => (
+                    <th
+                      key={c.id}
+                      colSpan={5}
+                      className="border border-border px-2 py-2 text-center font-semibold bg-primary/5 min-w-[400px]"
+                    >
+                      {cName(c)}
+                    </th>
+                  ))}
+                </tr>
+                <tr className="bg-muted/60">
+                  <th
+                    className={`sticky ${isRTL ? "right-0" : "left-0"} z-30 bg-muted/60 border border-border px-3 py-1.5`}
+                  />
+                  {pricingCourses.map((c) => (
+                    <React.Fragment key={c.id}>
+                      {[
+                        isRTL ? "الأصلي (ر.س)" : "Original (SAR)",
+                        isRTL ? "الخصم %" : "Disc %",
+                        isRTL ? "بعد الخصم (ر.س)" : "After Disc (SAR)",
+                        isRTL ? "المحلي" : "Local",
+                        isRTL ? "مخصص" : "Custom",
+                      ].map((l, i) => (
                         <th
-                          key={c.id}
-                          colSpan={6}
-                          className="border border-border px-2 py-2 text-center font-semibold bg-primary/5 min-w-[480px]"
+                          key={i}
+                          className="border border-border px-2 py-1.5 text-center text-muted-foreground font-medium min-w-[80px]"
                         >
-                          {cName(c)}
+                          {l}
                         </th>
                       ))}
-                    </tr>
-                    <tr className="bg-muted/60">
-                      <th
-                        className={`sticky ${isRTL ? "right-0" : "left-0"} z-30 bg-muted/60 border border-border px-3 py-1.5`}
-                      />
-                      {pricingCourses.map((c) => (
-                        <React.Fragment key={c.id}>
-                          {[
-                            isRTL ? "الأصلي" : "Original",
-                            isRTL ? "الخصم %" : "Disc %",
-                            isRTL ? "بعد الخصم" : "After Disc",
-                            isRTL ? "الضريبة %" : "VAT %",
-                            isRTL ? "النهائي محلي" : "Final Local",
-                            isRTL ? "النهائي ر.س" : "Final SAR",
-                          ].map((l, i) => (
-                            <th
-                              key={i}
-                              className="border border-border px-2 py-1.5 text-center text-muted-foreground font-medium min-w-[80px]"
-                            >
-                              {l}
-                            </th>
-                          ))}
-                        </React.Fragment>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {PRICING_COUNTRIES.map((country, ri) => (
-                      <tr key={country.code} className={ri % 2 === 0 ? "bg-background" : "bg-muted/20"}>
-                        <td
-                          className={`sticky ${isRTL ? "right-0" : "left-0"} z-10 border border-border px-3 py-2 font-medium bg-inherit`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-base">{country.flag}</span>
-                            <div>
-                              <div className="font-medium">{isRTL ? country.name_ar : country.name}</div>
-                              <div className="text-muted-foreground text-[10px]">{country.currency}</div>
-                            </div>
-                          </div>
+                    </React.Fragment>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {/* SA row — always editable, is the base */}
+                <tr className="bg-primary/5">
+                  <td
+                    className={`sticky ${isRTL ? "right-0" : "left-0"} z-10 border border-border px-3 py-2 font-medium bg-primary/5`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">🇸🇦</span>
+                      <div>
+                        <div className="font-semibold text-primary">{isRTL ? "السعودية" : "Saudi Arabia"}</div>
+                        <div className="text-[10px] text-primary/70">SAR — {isRTL ? "الأساس" : "Base"}</div>
+                      </div>
+                    </div>
+                  </td>
+                  {pricingCourses.map((course) => {
+                    const sa = matrix[course.id]?.["SA"] || EMPTY_ROW;
+                    return (
+                      <React.Fragment key={course.id}>
+                        <td className="border border-border px-1 py-1">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={sa.sar_original || ""}
+                            placeholder="0"
+                            onChange={(e) => updateSA(course.id, "sar_original", parseFloat(e.target.value) || 0)}
+                            className="h-7 text-xs text-center px-1 w-full border-primary/30"
+                          />
                         </td>
-                        {pricingCourses.map((course) => {
-                          const cell = matrix[country.code]?.[course.id] || EMPTY_PRICING_CELL;
-                          const finalLocal = Math.round(
-                            cell.price_after_discount * (1 + (cell.vat_percentage || 0) / 100),
-                          );
-                          const rate = PRICING_SAR_RATES[country.currency] || 1;
-                          const finalSAR = rate > 0 ? Math.round(finalLocal / rate) : 0;
-                          return (
-                            <React.Fragment key={course.id}>
-                              <td className="border border-border px-1 py-1">
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  value={cell.original_price || ""}
-                                  placeholder="0"
-                                  onChange={(e) =>
-                                    updateCell(
-                                      country.code,
-                                      course.id,
-                                      "original_price",
-                                      parseFloat(e.target.value) || 0,
-                                    )
-                                  }
-                                  className="h-7 text-xs text-center px-1 w-full"
-                                />
-                              </td>
-                              <td className="border border-border px-1 py-1">
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  max={99}
-                                  value={cell.discount_percentage || ""}
-                                  placeholder="0"
-                                  onChange={(e) =>
-                                    updateCell(
-                                      country.code,
-                                      course.id,
-                                      "discount_percentage",
-                                      parseFloat(e.target.value) || 0,
-                                    )
-                                  }
-                                  className="h-7 text-xs text-center px-1 w-full"
-                                />
-                              </td>
-                              <td className="border border-border px-1 py-1">
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  value={cell.price_after_discount || ""}
-                                  placeholder="0"
-                                  onChange={(e) =>
-                                    updateCell(
-                                      country.code,
-                                      course.id,
-                                      "price_after_discount",
-                                      parseFloat(e.target.value) || 0,
-                                    )
-                                  }
-                                  className="h-7 text-xs text-center px-1 w-full"
-                                />
-                              </td>
-                              <td className="border border-border px-1 py-1">
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  max={100}
-                                  value={cell.vat_percentage ?? 15}
-                                  onChange={(e) =>
-                                    updateCell(
-                                      country.code,
-                                      course.id,
-                                      "vat_percentage",
-                                      parseFloat(e.target.value) || 0,
-                                    )
-                                  }
-                                  className="h-7 text-xs text-center px-1 w-full"
-                                />
-                              </td>
-                              <td className="border border-border px-2 py-1 text-center">
-                                <span className="font-semibold text-primary">
-                                  {cell.price_after_discount > 0 ? finalLocal.toLocaleString() : "—"}
-                                </span>
-                                <span className="text-muted-foreground ms-1">{country.currency}</span>
-                              </td>
-                              <td className="border border-border px-2 py-1 text-center">
-                                <span className="font-semibold text-green-600 dark:text-green-400">
-                                  {cell.price_after_discount > 0 ? finalSAR.toLocaleString() : "—"}
-                                </span>
-                                <span className="text-muted-foreground ms-1 text-[10px]">ر.س</span>
-                              </td>
-                            </React.Fragment>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                        <td className="border border-border px-1 py-1">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={99}
+                            value={sa.discount_percentage || ""}
+                            placeholder="0"
+                            onChange={(e) =>
+                              updateSA(course.id, "discount_percentage", parseFloat(e.target.value) || 0)
+                            }
+                            className="h-7 text-xs text-center px-1 w-full border-primary/30"
+                          />
+                        </td>
+                        <td className="border border-border px-1 py-1">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={sa.sar_after_discount || ""}
+                            placeholder="0"
+                            onChange={(e) => updateSA(course.id, "sar_after_discount", parseFloat(e.target.value) || 0)}
+                            className="h-7 text-xs text-center px-1 w-full border-primary/30"
+                          />
+                        </td>
+                        <td className="border border-border px-2 py-1 text-center">
+                          <span className="font-semibold text-primary">
+                            {sa.sar_after_discount > 0 ? sa.sar_after_discount.toLocaleString() : "—"}
+                          </span>
+                          <span className="text-muted-foreground ms-1 text-[10px]">SAR</span>
+                        </td>
+                        <td className="border border-border px-2 py-1 text-center text-muted-foreground text-[10px]">
+                          {isRTL ? "أساس" : "base"}
+                        </td>
+                      </React.Fragment>
+                    );
+                  })}
+                </tr>
 
-            {activeTab === "base" && (
-              <div className="flex-1 overflow-auto p-4">
-                <table className="w-full text-sm border-collapse">
-                  <thead>
-                    <tr className="bg-muted/50">
-                      <th className="border border-border px-4 py-2 text-start">{isRTL ? "الكورس" : "Course"}</th>
-                      <th className="border border-border px-4 py-2 text-center">
-                        {isRTL ? "السعر الأصلي (ر.س)" : "Original (SAR)"}
-                      </th>
-                      <th className="border border-border px-4 py-2 text-center">
-                        {isRTL ? "بعد الخصم (ر.س)" : "After Discount (SAR)"}
-                      </th>
-                      <th className="border border-border px-4 py-2 text-center">{isRTL ? "الخصم %" : "Discount %"}</th>
-                      <th className="border border-border px-4 py-2 text-center">{isRTL ? "الضريبة %" : "VAT %"}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pricingCourses.map((course, i) => {
-                      const bp = basePrices[course.id] || { original: 0, after_discount: 0, vat: 15 };
-                      const disc =
-                        bp.original > 0 && bp.after_discount > 0
-                          ? Math.round((1 - bp.after_discount / bp.original) * 100)
-                          : 0;
+                {/* Other countries */}
+                {nonSACountries.map((country, ri) => (
+                  <tr key={country.code} className={ri % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                    <td
+                      className={`sticky ${isRTL ? "right-0" : "left-0"} z-10 border border-border px-3 py-2 font-medium bg-inherit`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{country.flag}</span>
+                        <div>
+                          <div className="font-medium">{isRTL ? country.name_ar : country.name}</div>
+                          <div className="text-muted-foreground text-[10px]">{country.currency}</div>
+                        </div>
+                      </div>
+                    </td>
+                    {pricingCourses.map((course) => {
+                      const cell = matrix[course.id]?.[country.code] || EMPTY_ROW;
+                      const isCustom = cell.is_custom;
+                      const effective = getEffectiveRow(course.id, country.code);
+                      const rate = PRICING_SAR_RATES[country.currency] || 1;
+                      const localFinal = Math.round(effective.sar_after_discount * rate);
                       return (
-                        <tr key={course.id} className={i % 2 === 0 ? "" : "bg-muted/20"}>
-                          <td className="border border-border px-4 py-2 font-medium">{cName(course)}</td>
-                          <td className="border border-border px-2 py-1">
-                            <Input
-                              type="number"
-                              min={0}
-                              value={bp.original || ""}
-                              placeholder="0"
-                              onChange={(e) => updateBase(course.id, "original", parseFloat(e.target.value) || 0)}
-                              className="h-8 text-center"
-                            />
+                        <React.Fragment key={course.id}>
+                          <td className="border border-border px-1 py-1">
+                            {isCustom ? (
+                              <Input
+                                type="number"
+                                min={0}
+                                value={cell.sar_original || ""}
+                                placeholder="0"
+                                onChange={(e) =>
+                                  updateCustomCell(
+                                    course.id,
+                                    country.code,
+                                    "sar_original",
+                                    parseFloat(e.target.value) || 0,
+                                  )
+                                }
+                                className="h-7 text-xs text-center px-1 w-full"
+                              />
+                            ) : (
+                              <span className="text-muted-foreground/50 text-[10px] block text-center">
+                                {isRTL ? "تلقائي" : "auto"}
+                              </span>
+                            )}
                           </td>
-                          <td className="border border-border px-2 py-1">
-                            <Input
-                              type="number"
-                              min={0}
-                              value={bp.after_discount || ""}
-                              placeholder="0"
-                              onChange={(e) => updateBase(course.id, "after_discount", parseFloat(e.target.value) || 0)}
-                              className="h-8 text-center"
-                            />
+                          <td className="border border-border px-1 py-1">
+                            {isCustom ? (
+                              <Input
+                                type="number"
+                                min={0}
+                                max={99}
+                                value={cell.discount_percentage || ""}
+                                placeholder="0"
+                                onChange={(e) =>
+                                  updateCustomCell(
+                                    course.id,
+                                    country.code,
+                                    "discount_percentage",
+                                    parseFloat(e.target.value) || 0,
+                                  )
+                                }
+                                className="h-7 text-xs text-center px-1 w-full"
+                              />
+                            ) : (
+                              <span className="text-muted-foreground/50 text-[10px] block text-center">
+                                {effective.discount_percentage > 0 ? `${effective.discount_percentage}%` : "—"}
+                              </span>
+                            )}
                           </td>
-                          <td className="border border-border px-4 py-2 text-center font-semibold text-primary">
-                            {disc > 0 ? `${disc}%` : "—"}
+                          <td className="border border-border px-1 py-1">
+                            {isCustom ? (
+                              <Input
+                                type="number"
+                                min={0}
+                                value={cell.sar_after_discount || ""}
+                                placeholder="0"
+                                onChange={(e) =>
+                                  updateCustomCell(
+                                    course.id,
+                                    country.code,
+                                    "sar_after_discount",
+                                    parseFloat(e.target.value) || 0,
+                                  )
+                                }
+                                className="h-7 text-xs text-center px-1 w-full"
+                              />
+                            ) : (
+                              <span className="text-muted-foreground/50 text-[10px] block text-center">
+                                {effective.sar_after_discount > 0 ? effective.sar_after_discount : "—"}
+                              </span>
+                            )}
                           </td>
-                          <td className="border border-border px-2 py-1">
-                            <Input
-                              type="number"
-                              min={0}
-                              max={100}
-                              value={bp.vat ?? 15}
-                              onChange={(e) => updateBase(course.id, "vat", parseFloat(e.target.value) || 0)}
-                              className="h-8 text-center"
-                            />
+                          {/* Local currency — always shown */}
+                          <td className="border border-border px-2 py-1 text-center">
+                            <span className={`font-semibold ${isCustom ? "text-primary" : "text-muted-foreground"}`}>
+                              {effective.sar_after_discount > 0 ? localFinal.toLocaleString() : "—"}
+                            </span>
+                            <span className="text-muted-foreground ms-1 text-[10px]">{country.currency}</span>
                           </td>
-                        </tr>
+                          {/* Custom toggle */}
+                          <td className="border border-border px-2 py-1 text-center">
+                            <button
+                              onClick={() => toggleCustom(course.id, country.code, !isCustom)}
+                              className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
+                                isCustom
+                                  ? "bg-primary/10 border-primary/30 text-primary"
+                                  : "bg-muted border-border text-muted-foreground hover:border-primary/30"
+                              }`}
+                            >
+                              {isCustom ? (isRTL ? "مخصص ✓" : "custom ✓") : isRTL ? "تفعيل" : "enable"}
+                            </button>
+                          </td>
+                        </React.Fragment>
                       );
                     })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         <DialogFooter className="px-6 py-4 border-t border-border flex-shrink-0">
