@@ -331,10 +331,10 @@ Deno.serve(async (req) => {
       requestOrigin.endsWith(".lovable.app") ||
       requestOrigin.endsWith(".lovableproject.com");
     const origin = isKnownOrigin ? requestOrigin : "https://academy.bikerz.com";
-    // If token_id is provided (embedded flow), redirect to 3DS callback page
-    const redirectBackUrl = token_id
-      ? `${origin}/tap-3ds-callback.html?course=${course_id}`
-      : `${origin}/payment-success?course=${course_id}`;
+    // Always redirect to the static 3DS callback page — it sends postMessage
+    // back to the parent/opener window for seamless popup flow.
+    // Tap appends ?tap_id=chg_xxx automatically to the redirect URL.
+    const redirectBackUrl = `${origin}/tap-3ds-callback.html?course=${course_id}`;
 
     // ── Create Tap charge (always in SAR) ──
     const chargePayload: Record<string, unknown> = {
