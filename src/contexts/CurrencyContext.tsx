@@ -396,15 +396,18 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           isCountryPrice: true,
         };
       }
-      // Fallback: convert SAR and apply course-level discount, then add VAT
-      const convertedBase = currencyCode === 'SAR' ? Math.ceil(sarPrice) : Math.ceil(sarPrice * rate);
+      // Fallback: compute final price in SAR first, then convert once to avoid rounding drift
       const dPct = courseDiscountPct > 0 ? courseDiscountPct : 0;
-      const finalBeforeVat = dPct > 0 ? Math.ceil(convertedBase * (1 - dPct / 100)) : convertedBase;
+      const sarOriginal = Math.ceil(sarPrice);
+      const sarAfterDiscount = dPct > 0 ? Math.ceil(sarOriginal * (1 - dPct / 100)) : sarOriginal;
+      const sarFinal = Math.ceil(sarAfterDiscount * 1.15);
+
+      const toLocal = (v: number) => currencyCode === 'SAR' ? v : Math.ceil(v * rate);
+
       return {
-        // Show "before discount" price WITHOUT VAT.
-        originalPrice: convertedBase,
+        originalPrice: toLocal(sarOriginal),
         discountPct: dPct,
-        finalPrice: Math.ceil(finalBeforeVat * 1.15),
+        finalPrice: toLocal(sarFinal),
         currency: currencyCode,
         isCountryPrice: false,
       };
