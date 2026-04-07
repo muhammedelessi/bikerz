@@ -166,6 +166,7 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
   };
 
   const [rows, setRows] = React.useState<Record<string, CountryPriceRow>>(initRows);
+  const [courseBasePrice, setCourseBasePrice] = React.useState<number>(0); // SAR price before discount & VAT
 
   // Fetch live exchange rates
   React.useEffect(() => {
@@ -196,6 +197,7 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
           const disc = c.discount_percentage || 0;
           const { after_discount, final } = calcRow(c.price, disc, 0);
           updated["SA"] = { original: c.price, discount: disc, after_discount, vat: 0, final, enabled: true };
+          setCourseBasePrice(c.price); // save base price before discount
         }
         // Set custom countries from saved prices (take first course's prices as template)
         if (prices && courses?.[0]) {
@@ -253,14 +255,12 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
   const getEffective = (code: string, currency: string): CountryPriceRow => {
     const row = rows[code];
     if (row?.enabled && row.original > 0) return row;
-    // Auto from SA
-    const sa = rows["SA"];
+    // Auto: use course base price (before discount) converted to local currency
+    const baseSAR = courseBasePrice > 0 ? courseBasePrice : rows["SA"]?.original || 0;
     const rate = liveRates[currency] || 1;
-    const orig = Math.round(sa.original * rate);
-    const disc = sa.discount;
-    const vat = sa.vat;
-    const { after_discount, final } = calcRow(orig, disc, vat);
-    return { original: orig, discount: disc, after_discount, vat, final, enabled: false };
+    const orig = Math.round(baseSAR * rate);
+    const { after_discount, final } = calcRow(orig, 0, 0); // no discount, no VAT for auto
+    return { original: orig, discount: 0, after_discount, vat: 0, final, enabled: false };
   };
 
   const handleSave = async () => {
@@ -444,7 +444,7 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
                     type="number"
                     min={0}
                     max={100}
-                    value={sa?.vat ?? 15}
+                    value={sa?.vat ?? 0}
                     onChange={(e) => updateRow("SA", "vat", parseFloat(e.target.value) || 0)}
                     className="h-7 text-xs text-center px-1"
                   />
