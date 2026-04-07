@@ -126,16 +126,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(
         }
         return;
       }
-      // Convert to SAR for Tap payment
-      const sarPriceInfo = getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0);
-      // Use SAR base price converted
-      const sarBasePrice = Math.ceil(course.price); // price is already in SAR
-      const sarDiscount = promo.appliedCoupon
-        ? promo.appliedCoupon.discount_type === "percentage_discount"
-          ? Math.floor((sarBasePrice * promo.appliedCoupon.discount_value) / 100)
-          : promo.appliedCoupon.discount_amount
-        : 0;
-      const sarDiscountedPrice = Math.max(0, sarBasePrice - sarDiscount);
+
       // Paid checkout via Tap
       await tap.submitPayment({
         courseId: course.id,
@@ -144,8 +135,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(
         customerEmail: form.email,
         customerPhone: form.fullPhone,
         couponId: promo.appliedCoupon?.coupon_id,
-        amount: sarDiscountedPrice,
-
+        amount: discountedPrice,
         courseName: course.title,
         isRTL,
       });
