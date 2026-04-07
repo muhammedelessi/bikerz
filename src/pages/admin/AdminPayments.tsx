@@ -24,9 +24,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Search, MoreHorizontal, DollarSign, Clock, CheckCircle, XCircle,
   Eye, Check, X, Download, CreditCard, Banknote, User, MapPin,
-  Phone, Mail, AlertTriangle, FileText, Shield,
+  Phone, Mail, AlertTriangle, FileText, Shield, Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -85,7 +89,7 @@ const AdminPayments = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedPayment, setSelectedPayment] = useState<UnifiedPayment | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
-
+  const [deleteTarget, setDeleteTarget] = useState<UnifiedPayment | null>(null);
   const { data: payments, isLoading } = useQuery({
     queryKey: ['admin-payments-unified'],
     queryFn: async () => {
@@ -193,6 +197,36 @@ const AdminPayments = () => {
         variant: 'destructive',
         title: isRTL ? 'خطأ' : 'Error',
         description: isRTL ? 'فشل في تحديث الدفع' : 'Failed to update payment',
+      });
+    },
+  });
+
+  const deletePaymentMutation = useMutation({
+    mutationFn: async (payment: UnifiedPayment) => {
+      const table = payment.source === 'manual' ? 'manual_payments' : 'tap_charges';
+      const { error } = await supabase.from(table).delete().eq('id', payment.id);
+      if (error) throw error;
+      await logAction({
+        action: 'payment_deleted',
+        entityType: 'payment',
+        entityId: payment.id,
+        oldData: { amount: payment.amount, status: payment.status, source: payment.source },
+        newData: null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-payments-unified'] });
+      setDeleteTarget(null);
+      toast({
+        title: isRTL ? 'تم الحذف' : 'Deleted',
+        description: isRTL ? 'تم حذف المدفوعة بنجاح' : 'Payment deleted successfully',
+      });
+    },
+    onError: () => {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Error',
+        description: isRTL ? 'فشل في حذف المدفوعة' : 'Failed to delete payment',
       });
     },
   });
@@ -547,6 +581,12 @@ const AdminPayments = () => {
                                   </DropdownMenuItem>
                                 </>
                               )}
+                              <DropdownMenuItem
+                                onClick={(e) => { e.stopPropagation(); setDeleteTarget(payment); }}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4 me-2" />{isRTL ? 'حذف' : 'Delete'}
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -806,6 +846,28 @@ const AdminPayments = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+          <AlertDialogContent dir={isRTL ? 'rtl' : 'ltr'}>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{isRTL ? 'حذف المدفوعة' : 'Delete Payment'}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {isRTL
+                  ? 'هل أنت متأكد من حذف هذه المدفوعة؟ لن يمكن التراجع عن هذا الإجراء.'
+                  : 'Are you sure you want to delete this payment? This action cannot be undone.'}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{isRTL ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => deleteTarget && deletePaymentMutation.mutate(deleteTarget)}
+              >
+                {isRTL ? 'حذف' : 'Delete'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AdminLayout>
   );
