@@ -136,9 +136,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(({
     }
 
     // Convert the final visible price back to SAR for Tap
+    // Use a large reference value to avoid Math.ceil() rounding errors on small numbers
+    // e.g. for ILS rate=0.837, convertPrice(1)=ceil(0.837)=1 which destroys the conversion
+    const rateApprox = convertPrice(1000) / 1000;
     const sarAmount = isSAR
       ? discountedPrice
-      : Math.ceil(discountedPrice / convertPrice(1));
+      : Math.ceil(discountedPrice / rateApprox);
 
     // Paid checkout via Tap
     await tap.submitPayment({
