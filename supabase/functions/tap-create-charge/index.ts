@@ -90,19 +90,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    const currency = String(rawCurrency || "SAR").trim().toUpperCase();
-    const allowedCurrencies = [
-      "SAR", "AED", "KWD", "BHD", "QAR", "OMR", "JOD",
-      "EGP", "IQD", "SYP", "LBP", "YER", "LYD", "TND",
-      "DZD", "MAD", "SDG", "SOS", "MRU", "KMF", "DJF",
-      "ILS", "USD", "GBP",
-    ];
-    if (!allowedCurrencies.includes(currency)) {
-      return new Response(
-        JSON.stringify({ error: `Unsupported currency: ${currency}` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Tap only supports: SAR, AED, BHD, KWD, OMR, QAR, USD, GBP, EUR
+    // The client may send a display currency (e.g. EGP, DZD, MAD) — we always charge in SAR.
+    const requestedCurrency = String(rawCurrency || "SAR").trim().toUpperCase();
+    const chargeCurrency = "SAR";
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -171,8 +162,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── SERVER-AUTHORITATIVE PRICING ──
-    // Fetch course and compute price from DB — never trust client amount
+    // ── SERVER-AUTHORITATIVE PRICING (always in SAR) ──
+    // Fetch course SAR price from DB — never trust client amount
     const { data: course, error: courseError } = await adminClient
       .from("courses")
       .select("id, price, currency, title, discount_percentage")
@@ -186,10 +177,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    let originalPrice = Number(course.price);
-    let pricingCurrency = "SAR";
+    // Base SAR price is the source of truth for charging
+    const basePriceSar = Number(course.price);
 
-    // Check for country-specific pricing
+    // Country-specific pricing is for DISPLAY only — we still charge in SAR
+    let localizedDisplayPrice: number | null = null;
+    let localizedDisplayCurrency: string | null = null;
     if (detected_country) {
       const { data: countryPrice } = await adminClient
         .from("course_country_prices")
@@ -197,21 +190,21 @@ Deno.serve(async (req) => {
         .eq("course_id", course_id)
         .eq("country_code", detected_country)
         .maybeSingle();
-      
+
       if (countryPrice) {
-        originalPrice = Number(countryPrice.price);
-        pricingCurrency = countryPrice.currency || "SAR";
-        console.log(`Country-specific pricing applied: ${detected_country} → ${originalPrice} ${pricingCurrency}`);
+        localizedDisplayPrice = Number(countryPrice.price);
+        localizedDisplayCurrency = countryPrice.currency || requestedCurrency;
+        console.log(`Localized display pricing: ${detected_country} → ${localizedDisplayPrice} ${localizedDisplayCurrency} (charging in SAR)`);
       }
     }
 
     const courseDiscountPct = course.discount_percentage && Number(course.discount_percentage) > 0 ? Number(course.discount_percentage) : 0;
     let priceBeforeTax = courseDiscountPct > 0
-      ? Math.ceil(originalPrice * (1 - courseDiscountPct / 100))
-      : originalPrice;
+      ? Math.ceil(basePriceSar * (1 - courseDiscountPct / 100))
+      : basePriceSar;
     const priceAfterCourseDiscount = priceBeforeTax;
 
-    // Apply coupon discount if provided (server-side validation)
+    // Apply coupon discount if provided (server-side validation, in SAR)
     let couponDiscount = 0;
     if (coupon_id) {
       const { data: coupon } = await adminClient
@@ -248,20 +241,21 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Add VAT on top of the pre-tax price (15% for SAR)
+    // Add VAT on top of the pre-tax price (15%)
     const vatRate = 0.15;
     const finalAmount = Math.ceil(priceBeforeTax * (1 + vatRate));
 
     console.log(
-      "Server-authoritative pricing:",
-      `original=${originalPrice}`,
-      `pricingCurrency=${pricingCurrency}`,
+      "Server-authoritative SAR pricing:",
+      `basePriceSar=${basePriceSar}`,
+      `requestedCurrency=${requestedCurrency}`,
+      `chargeCurrency=${chargeCurrency}`,
       `courseDiscount=${courseDiscountPct}%`,
       `afterCourseDiscount=${priceAfterCourseDiscount}`,
       `couponDiscount=${couponDiscount}`,
       `priceBeforeTax=${priceBeforeTax}`,
       `vatRate=${vatRate * 100}%`,
-      `finalAmount=${finalAmount}`
+      `finalAmountSar=${finalAmount}`
     );
 
     // ── Check if already enrolled ──
@@ -289,7 +283,7 @@ Deno.serve(async (req) => {
         user_id: userId,
         course_id,
         amount: finalAmount,
-        currency,
+        currency: chargeCurrency,
         status: "pending",
         customer_name: customer_name || profileData.full_name || "",
         customer_email: customer_email || userEmail,
@@ -300,13 +294,18 @@ Deno.serve(async (req) => {
           internal_order_id: idempotency_key,
           user_id: userId,
           coupon_id: coupon_id || null,
-          original_price: originalPrice,
+          original_price: basePriceSar,
           course_discount_pct: courseDiscountPct,
           price_after_course_discount: priceAfterCourseDiscount,
           coupon_discount: couponDiscount,
           price_before_tax: priceBeforeTax,
           vat_rate: vatRate * 100,
           final_amount: finalAmount,
+          requested_currency: requestedCurrency,
+          charge_currency: chargeCurrency,
+          localized_display_price: localizedDisplayPrice,
+          localized_display_currency: localizedDisplayCurrency,
+          detected_country: detected_country || null,
           environment: tapSecretKey.startsWith("sk_test") ? "test" : "live",
           billing_city: profileData.city,
           billing_country: profileData.country,
@@ -337,10 +336,10 @@ Deno.serve(async (req) => {
       ? `${origin}/tap-3ds-callback.html?course=${course_id}`
       : `${origin}/payment-success?course=${course_id}`;
 
-    // ── Create Tap charge ──
+    // ── Create Tap charge (always in SAR) ──
     const chargePayload: Record<string, unknown> = {
       amount: finalAmount,
-      currency,
+      currency: chargeCurrency,
       threeDSecure: true,
       save_card: false,
       description: `Course: ${course.title}`,
@@ -365,6 +364,7 @@ Deno.serve(async (req) => {
         user_id: userId,
         course_id,
         internal_id: chargeRecord.id,
+        requested_currency: requestedCurrency,
       },
       source: {
         id: token_id || "src_all",
@@ -374,7 +374,7 @@ Deno.serve(async (req) => {
       },
     };
 
-    console.log("Creating Tap charge for user:", userId, "amount:", finalAmount, currency);
+    console.log("Creating Tap charge for user:", userId, "amount:", finalAmount, chargeCurrency, "(requested:", requestedCurrency + ")");
 
     let tapData: Record<string, any>;
     let tapResponse: Response;
@@ -488,7 +488,7 @@ Deno.serve(async (req) => {
         status: chargeStatus,
         redirect_url: tapRedirectUrl,
         amount: finalAmount,
-        currency,
+        currency: chargeCurrency,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
