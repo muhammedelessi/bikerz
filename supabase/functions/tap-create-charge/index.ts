@@ -246,6 +246,8 @@ Deno.serve(async (req) => {
       );
     }
 
+    const vatRate = 0.15;
+
     console.log(
       "Server-authoritative SAR pricing:",
       `basePriceSar=${basePriceSar}`,
@@ -254,6 +256,7 @@ Deno.serve(async (req) => {
       `courseDiscount=${courseDiscountPct}%`,
       `afterCourseDiscount=${priceAfterCourseDiscount}`,
       `couponDiscount=${couponDiscount}`,
+      `clientRequestedAmount=${hasClientAmount ? clientRequestedAmount : 'none'}`,
       `priceBeforeTax=${priceBeforeTax}`,
       `vatRate=${vatRate * 100}%`,
       `finalAmountSar=${finalAmount}`
