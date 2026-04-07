@@ -24,9 +24,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Search, MoreHorizontal, DollarSign, Clock, CheckCircle, XCircle,
   Eye, Check, X, Download, CreditCard, Banknote, User, MapPin,
-  Phone, Mail, AlertTriangle, FileText, Shield,
+  Phone, Mail, AlertTriangle, FileText, Shield, Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
