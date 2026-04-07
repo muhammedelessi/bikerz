@@ -201,6 +201,36 @@ const AdminPayments = () => {
     },
   });
 
+  const deletePaymentMutation = useMutation({
+    mutationFn: async (payment: UnifiedPayment) => {
+      const table = payment.source === 'manual' ? 'manual_payments' : 'tap_charges';
+      const { error } = await supabase.from(table).delete().eq('id', payment.id);
+      if (error) throw error;
+      await logAction({
+        action: 'payment_deleted',
+        entityType: 'payment',
+        entityId: payment.id,
+        oldData: { amount: payment.amount, status: payment.status, source: payment.source },
+        newData: null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-payments-unified'] });
+      setDeleteTarget(null);
+      toast({
+        title: isRTL ? 'تم الحذف' : 'Deleted',
+        description: isRTL ? 'تم حذف المدفوعة بنجاح' : 'Payment deleted successfully',
+      });
+    },
+    onError: () => {
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ' : 'Error',
+        description: isRTL ? 'فشل في حذف المدفوعة' : 'Failed to delete payment',
+      });
+    },
+  });
+
   const filteredPayments = payments?.filter((payment) => {
     const displayName = payment.source === 'tap'
       ? payment.customer_name || payment.profile?.full_name
