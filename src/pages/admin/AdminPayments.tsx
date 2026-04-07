@@ -846,7 +846,6 @@ const AdminPayments = () => {
             )}
           </DialogContent>
         </Dialog>
-      </div>
 
         <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
           <AlertDialogContent dir={isRTL ? 'rtl' : 'ltr'}>
@@ -870,6 +869,7 @@ const AdminPayments = () => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+    </AdminLayout>
   );
 };
 
