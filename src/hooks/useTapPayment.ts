@@ -9,6 +9,7 @@ export type { PaymentMethod, PaymentStatus, TapPaymentConfig } from '@/types/pay
 interface UseTapPaymentReturn {
   status: PaymentStatus;
   error: string | null;
+  chargeId: string | null;
   submitPayment: (config: TapPaymentConfig) => Promise<void>;
   reset: () => void;
 }
@@ -17,6 +18,7 @@ export function useTapPayment(): UseTapPaymentReturn {
   const { detectedCountry } = useCurrency();
   const [status, setStatus] = useState<PaymentStatus>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [chargeId, setChargeId] = useState<string | null>(null);
   const statusRef = useRef<PaymentStatus>('idle');
   const popupRef = useRef<Window | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -70,11 +72,17 @@ export function useTapPayment(): UseTapPaymentReturn {
       if (event.data?.type === 'TAP_3DS_COMPLETE') {
         clearPoll();
         const tapId = event.data.tap_id;
+        const courseId = event.data.course_id;
         if (popupRef.current && !popupRef.current.closed) {
           popupRef.current.close();
         }
         popupRef.current = null;
         if (tapId) {
+          setChargeId(tapId);
+          if (courseId) {
+            window.location.assign(`/payment-success?course=${encodeURIComponent(courseId)}&tap_id=${encodeURIComponent(tapId)}`);
+            return;
+          }
           verifyCharge(tapId);
         } else {
           setError('Payment response missing. Please try again.');
@@ -108,6 +116,8 @@ export function useTapPayment(): UseTapPaymentReturn {
         currentSession.user.id,
         detectedCountry,
       );
+
+      setChargeId(data?.charge_id ?? null);
 
       if (data.status === 'succeeded') {
         updateStatus('succeeded');
@@ -163,9 +173,10 @@ export function useTapPayment(): UseTapPaymentReturn {
       popupRef.current.close();
     }
     popupRef.current = null;
+    setChargeId(null);
     updateStatus('idle');
     setError(null);
   }, [updateStatus, clearPoll]);
 
-  return { status, error, submitPayment, reset };
+  return { status, error, chargeId, submitPayment, reset };
 }
