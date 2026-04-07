@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { getUserCourseStatuses } from "@/services/ghl.service";
+import { getUserCourseStatuses, resolveCountryEnglish, resolveCityEnglish } from "@/services/ghl.service";
 import { User, Bike, Award, ChevronRight, ChevronLeft, X, Sparkles, Camera, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -200,13 +200,16 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({ open,
 
       const { coursesJson, totalPurchased } = await getUserCourseStatuses(user.id);
 
+      const countryEn = resolveCountryEnglish(profile?.country);
+      const cityEn = resolveCityEnglish(profile?.country, profile?.city);
+
       sendFormData({
         full_name: profile?.full_name || riderNickname || "",
         email: user.email || "",
         phone: phone || profile?.phone || "",
-        country: profile?.country || "",
-        city: profile?.city || "",
-        address: [profile?.city, profile?.country].filter(Boolean).join(", "),
+        country: countryEn,
+        city: cityEn,
+        address: [cityEn, countryEn].filter(Boolean).join(", "),
         dateOfBirth: profile?.date_of_birth || "",
         gender: profile?.gender || "",
         orderStatus: totalPurchased > 0 ? "purchased" : "not purchased",
