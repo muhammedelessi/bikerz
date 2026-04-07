@@ -159,7 +159,8 @@ const AdminCourses: React.FC = () => {
     learning_outcomes: [] as { text_en: string; text_ar: string }[],
   });
 
-  const [pricingGroups, setPricingGroups] = useState<PricingGroup[]>([]);
+  const [countryPrices, setCountryPrices] = useState<CountryPriceEntry[]>([]);
+  const [managePricesOpen, setManagePricesOpen] = useState(false);
 
   // Fetch courses
   const { data: courses = [], isLoading } = useQuery({
