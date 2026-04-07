@@ -39,7 +39,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(({
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
+  const { getCoursePriceInfo, getCurrencySymbol, convertPrice, isSAR } = useCurrency();
   const { sendCourseStatus } = useGHLFormWebhook();
   const { handleGuestSignup, guestSigningUp } = useGuestSignup();
 
