@@ -1054,7 +1054,7 @@ const CourseDetail: React.FC = () => {
                                 </div>
                               );
                             })()}
-                            {course.price > 0 && (
+                            {course.price > 0 && courseVat > 0 && (
                               <p className="text-xs text-muted-foreground mt-2">{t("courseDetail.priceIncludesVAT")}</p>
                             )}
                           </div>
