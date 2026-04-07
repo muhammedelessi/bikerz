@@ -163,10 +163,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(({
 
   // Handle tap payment success
   useEffect(() => {
-    if (tap.status === "succeeded") {
-      navigate(`/payment-success?course=${course.id}&tap_id=tap_success`);
+    if (tap.status === "succeeded" && tap.chargeId) {
+      navigate(`/payment-success?course=${course.id}&tap_id=${tap.chargeId}`);
     }
-  }, [tap.status, course.id, navigate]);
+  }, [tap.status, tap.chargeId, course.id, navigate]);
 
   const isPaymentReady =
     form.isInfoValid && !tap.error && tap.status !== "processing" && tap.status !== "verifying";
