@@ -101,7 +101,6 @@ interface Course {
   duration_hours: number | null;
   total_lessons: number | null;
   instructor_id: string | null;
-  vat_percentage?: number | null;
 }
 
 interface LessonProgress {
@@ -383,7 +382,6 @@ const CourseDetail: React.FC = () => {
   const discountExpiresAt = (course as any)?.discount_expires_at;
   const isDiscountExpired = discountExpiresAt ? new Date(discountExpiresAt).getTime() <= Date.now() : false;
   const effectiveDiscount = isDiscountExpired ? 0 : course?.discount_percentage || 0;
-  const courseVat = (course as any)?.vat_percentage ?? 15;
 
   // Calculations
   const totalLessons = chapters.reduce((acc, ch) => acc + ch.lessons.length, 0);
@@ -624,7 +622,7 @@ const CourseDetail: React.FC = () => {
                           }
                         >
                           {(() => {
-                            const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount, courseVat);
+                            const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                             const sym = getCurrencySymbol(info.currency, isRTL);
                             return isRTL
                               ? `اشترك الآن – ${info.finalPrice} ${sym}`
@@ -1015,7 +1013,7 @@ const CourseDetail: React.FC = () => {
                           {/* Price display */}
                           <div className="text-center py-2">
                             {(() => {
-                              const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount, courseVat);
+                              const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                               const sym = getCurrencySymbol(priceInfo.currency, isRTL);
                               if (priceInfo.discountPct > 0 && course.price > 0) {
                                 return (
@@ -1054,7 +1052,7 @@ const CourseDetail: React.FC = () => {
                                 </div>
                               );
                             })()}
-                            {course.price > 0 && courseVat > 0 && (
+                            {course.price > 0 && (
                               <p className="text-xs text-muted-foreground mt-2">{t("courseDetail.priceIncludesVAT")}</p>
                             )}
                           </div>
@@ -1085,7 +1083,7 @@ const CourseDetail: React.FC = () => {
                             >
                               <ShoppingCart className="w-5 h-5 me-2" />
                               {(() => {
-                                const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount, courseVat);
+                                const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                                 const sym = getCurrencySymbol(info.currency, isRTL);
                                 return isRTL
                                   ? `اشترك الآن – ${info.finalPrice} ${sym}`
@@ -1101,7 +1099,7 @@ const CourseDetail: React.FC = () => {
                             >
                               <Zap className="w-5 h-5 me-2" />
                               {(() => {
-                                const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount, courseVat);
+                                const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                                 const sym = getCurrencySymbol(info.currency, isRTL);
                                 return isRTL
                                   ? `اشترك الآن – ${info.finalPrice} ${sym}`
@@ -1536,8 +1534,8 @@ const CourseDetail: React.FC = () => {
                 price: course.price,
                 discount_percentage: effectiveDiscount,
                 thumbnail_url: course.thumbnail_url,
-                vat_percentage: courseVat,
               }}
+              vatPct={getCoursePriceInfo(course.id, course.price, effectiveDiscount).vatPct ?? 0}
               onSuccess={() => {
                 queryClient.invalidateQueries({ queryKey: ["enrollment", id, user?.id] });
                 navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
@@ -1564,7 +1562,7 @@ const CourseDetail: React.FC = () => {
                 {/* Price */}
                 <div className="flex flex-col min-w-0">
                   {(() => {
-                    const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount, courseVat);
+                    const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                     const sym = getCurrencySymbol(priceInfo.currency, isRTL);
                     if (course.price === 0) {
                       return <span className="text-lg font-black text-foreground">{t("common.free")}</span>;
@@ -1614,7 +1612,7 @@ const CourseDetail: React.FC = () => {
                   >
                     <ShoppingCart className="w-4 h-4 me-1.5" />
                     {(() => {
-                      const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount, courseVat);
+                      const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                       const sym = getCurrencySymbol(info.currency, isRTL);
                       return isRTL
                         ? `اشترك الآن – ${info.finalPrice} ${sym}`
