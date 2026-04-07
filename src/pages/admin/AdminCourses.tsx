@@ -100,7 +100,8 @@ const PRICING_COUNTRIES = [
   { code: "DJ", name: "Djibouti", name_ar: "جيبوتي", flag: "🇩🇯", currency: "DJF" },
 ];
 
-const PRICING_SAR_RATES: Record<string, number> = {
+// Fallback rates (used if live fetch fails)
+const PRICING_SAR_RATES_FALLBACK: Record<string, number> = {
   SAR: 1,
   AED: 0.979,
   KWD: 0.082,
@@ -152,6 +153,8 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
 }) => {
   const { isRTL } = useLanguage();
   const [saving, setSaving] = React.useState(false);
+  const [liveRates, setLiveRates] = React.useState<Record<string, number>>(PRICING_SAR_RATES_FALLBACK);
+  const [ratesLoading, setRatesLoading] = React.useState(false);
 
   // One row per country
   const initRows = (): Record<string, CountryPriceRow> => {
@@ -163,6 +166,19 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
   };
 
   const [rows, setRows] = React.useState<Record<string, CountryPriceRow>>(initRows);
+
+  // Fetch live exchange rates
+  React.useEffect(() => {
+    if (!open) return;
+    setRatesLoading(true);
+    fetch("https://open.er-api.com/v6/latest/SAR")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.rates) setLiveRates((prev) => ({ ...prev, ...data.rates }));
+      })
+      .catch(() => {})
+      .finally(() => setRatesLoading(false));
+  }, [open]);
 
   // Load existing prices on open
   React.useEffect(() => {
@@ -224,7 +240,7 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
       // Pre-fill from SA when enabling
       const sa = prev["SA"];
       const country = PRICING_COUNTRIES.find((c) => c.code === code)!;
-      const rate = PRICING_SAR_RATES[country.currency] || 1;
+      const rate = liveRates[country.currency] || 1;
       const orig = Math.round(sa.original * rate);
       const disc = sa.discount;
       const vat = sa.vat;
@@ -239,7 +255,7 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
     if (row?.enabled && row.original > 0) return row;
     // Auto from SA
     const sa = rows["SA"];
-    const rate = PRICING_SAR_RATES[currency] || 1;
+    const rate = liveRates[currency] || 1;
     const orig = Math.round(sa.original * rate);
     const disc = sa.discount;
     const vat = sa.vat;
@@ -328,6 +344,12 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
             {isRTL
               ? "أدخل الأسعار مرة واحدة — تُطبَّق على جميع الكورسات. الدول غير المخصصة تأخذ سعر السعودية تلقائياً."
               : "Enter prices once — applied to all courses. Unset countries inherit Saudi Arabia price."}
+            {ratesLoading && (
+              <span className="ms-2 text-primary inline-flex items-center gap-1">
+                <Loader2 className="w-3 h-3 animate-spin inline" />
+                {isRTL ? "جاري تحديث أسعار الصرف..." : "Updating exchange rates..."}
+              </span>
+            )}
           </p>
         </DialogHeader>
 
