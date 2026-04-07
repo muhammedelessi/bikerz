@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
     const {
       course_id,
       currency: rawCurrency = "SAR",
+      amount: requestedAmount,
       customer_name,
       customer_email,
       customer_phone,
