@@ -266,6 +266,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(({
                 paymentStatus={tap.status}
                 guestSigningUp={guestSigningUp}
                 isPaymentReady={isPaymentReady}
+                vatPct={courseVat}
                 onSubmitPayment={handleSubmitPayment}
               />
             )}
