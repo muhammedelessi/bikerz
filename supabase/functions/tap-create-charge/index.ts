@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
 
     const {
       course_id,
-      currency = "SAR",
+      currency: rawCurrency = "SAR",
       customer_name,
       customer_email,
       customer_phone,
@@ -90,10 +90,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    const allowedCurrencies = ["SAR", "KWD", "USD", "AED", "BHD", "QAR", "OMR", "EGP", "GBP", "JOD", "IQD", "LBP", "LYD", "MAD", "MRU", "SDG", "SOS", "SYP", "TND", "YER", "DJF", "KMF"];
+    const currency = String(rawCurrency || "SAR").trim().toUpperCase();
+    const allowedCurrencies = [
+      "SAR", "AED", "KWD", "BHD", "QAR", "OMR", "JOD",
+      "EGP", "IQD", "SYP", "LBP", "YER", "LYD", "TND",
+      "DZD", "MAD", "SDG", "SOS", "MRU", "KMF", "DJF",
+      "ILS", "USD", "GBP",
+    ];
     if (!allowedCurrencies.includes(currency)) {
       return new Response(
-        JSON.stringify({ error: "Unsupported currency" }),
+        JSON.stringify({ error: `Unsupported currency: ${currency}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
