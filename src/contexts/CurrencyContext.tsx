@@ -88,6 +88,8 @@ export interface CoursePriceInfo {
   currency: CurrencyCode;
   /** Whether a country-specific price was used */
   isCountryPrice: boolean;
+  /** VAT percentage used for this price */
+  vatPct: number;
 }
 
 interface CurrencyContextType {
@@ -100,7 +102,7 @@ interface CurrencyContextType {
   /** Get price for a specific course considering country-specific pricing */
   getCoursePrice: (courseId: string, sarPrice: number) => number;
   /** Get full price info for a course (original, discount, final) considering country pricing */
-  getCoursePriceInfo: (courseId: string, sarPrice: number, courseDiscountPct?: number) => CoursePriceInfo;
+  getCoursePriceInfo: (courseId: string, sarPrice: number, courseDiscountPct?: number, vatPct?: number) => CoursePriceInfo;
   /** Get the currency code for a course price (may differ from user currency if country price exists) */
   getCourseCurrency: (courseId: string) => CurrencyCode;
   /** Format a SAR price as local currency string */
@@ -377,15 +379,11 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   /** Get full price info for display — uses country pricing when available, VAT-inclusive */
   const getCoursePriceInfo = useCallback(
-    (courseId: string, sarPrice: number, courseDiscountPct = 0): CoursePriceInfo => {
+    (courseId: string, sarPrice: number, courseDiscountPct = 0, vatPct?: number): CoursePriceInfo => {
+      const effectiveVat = vatPct ?? VAT_RATE;
       const entry = getCountryPriceEntry(courseId);
       if (entry) {
-        // Country-specific pricing: use original_price and country discount, add VAT
-        // Display currency should follow the user's detected currency (country -> currency mapping),
-        // not the DB currency value (which may be inconsistent across environments).
         const ccy = currencyCode;
-        // Requirement: show "before discount" price WITHOUT VAT.
-        // Final price stays VAT-inclusive (this is what Tap charges).
         const origNoVat = Math.ceil(entry.original_price);
         const finalWithVat = Math.ceil(entry.price);
         return {
@@ -394,13 +392,14 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           finalPrice: finalWithVat,
           currency: ccy,
           isCountryPrice: true,
+          vatPct: effectiveVat,
         };
       }
       // Fallback: compute final price in SAR first, then convert once to avoid rounding drift
       const dPct = courseDiscountPct > 0 ? courseDiscountPct : 0;
       const sarOriginal = Math.ceil(sarPrice);
       const sarAfterDiscount = dPct > 0 ? Math.ceil(sarOriginal * (1 - dPct / 100)) : sarOriginal;
-      const sarFinal = Math.ceil(sarAfterDiscount * 1.15);
+      const sarFinal = effectiveVat > 0 ? Math.ceil(sarAfterDiscount * (1 + effectiveVat / 100)) : sarAfterDiscount;
 
       const toLocal = (v: number) => currencyCode === 'SAR' ? v : Math.ceil(v * rate);
 
@@ -410,6 +409,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         finalPrice: toLocal(sarFinal),
         currency: currencyCode,
         isCountryPrice: false,
+        vatPct: effectiveVat,
       };
     },
     [getCountryPriceEntry, currencyCode, rate]
