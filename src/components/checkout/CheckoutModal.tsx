@@ -158,7 +158,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(({
     });
   }, [
     user, discountedPrice, promo.appliedCoupon, course, form, tap,
-    basePrice, discountAmount, priceInfo.currency, isRTL, onSuccess, onPaymentStarted, sendCourseStatus, t,
+    basePrice, discountAmount, priceInfo, isRTL, isSAR, convertPrice,
+    onSuccess, onPaymentStarted, sendCourseStatus, t,
   ]);
 
   // Handle tap payment success
