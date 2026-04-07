@@ -8,6 +8,7 @@ export type AuditAction =
   | 'role_removed'
   | 'payment_approved'
   | 'payment_rejected'
+  | 'payment_deleted'
   | 'course_created'
   | 'course_updated'
   | 'course_deleted'
