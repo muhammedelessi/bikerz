@@ -78,35 +78,37 @@ const ContactUs: React.FC = () => {
       setIsSubmitted(true);
       toast.success(t('contact.requestSubmitted'));
 
-      // Send to GHL form webhook
+      // Send to GHL form webhook (fire-and-forget)
       const countryEn = resolveCountryEnglish(user?.user_metadata?.country || '');
       const cityEn = resolveCityEnglish(countryEn, user?.user_metadata?.city || '');
 
-      // Try to get course statuses
-      let coursesJson = '[]';
-      let totalPurchased = 0;
-      try {
-        if (user?.id) {
-          const statuses = await getUserCourseStatuses(user.id);
-          coursesJson = statuses.coursesJson;
-          totalPurchased = statuses.totalPurchased;
-        }
-      } catch {}
+      // Fetch course statuses async, then send webhook
+      (async () => {
+        let coursesJson = '[]';
+        let totalPurchased = 0;
+        try {
+          if (user?.id) {
+            const statuses = await getUserCourseStatuses(user.id);
+            coursesJson = statuses.coursesJson;
+            totalPurchased = statuses.totalPurchased;
+          }
+        } catch {}
 
-      sendFormData({
-        full_name: formData.name || user?.user_metadata?.full_name || '',
-        email: formData.email || user?.email || '',
-        phone: user?.user_metadata?.phone || '',
-        country: countryEn,
-        city: cityEn,
-        address: [cityEn, countryEn].filter(Boolean).join(', '),
-        orderStatus: totalPurchased > 0 ? 'purchased' : 'not purchased',
-        courses: coursesJson,
-        totalPurchased,
-        dateOfBirth: user?.user_metadata?.date_of_birth || '',
-        gender: user?.user_metadata?.gender || '',
-        isRTL,
-      });
+        sendFormData({
+          full_name: formData.name || user?.user_metadata?.full_name || '',
+          email: formData.email || user?.email || '',
+          phone: user?.user_metadata?.phone || '',
+          country: countryEn,
+          city: cityEn,
+          address: [cityEn, countryEn].filter(Boolean).join(', '),
+          orderStatus: totalPurchased > 0 ? 'purchased' : 'not purchased',
+          courses: coursesJson,
+          totalPurchased,
+          dateOfBirth: user?.user_metadata?.date_of_birth || '',
+          gender: user?.user_metadata?.gender || '',
+          isRTL,
+        });
+      })();
     },
     onError: (error: Error) => {
       toast.error(error.message || t('contact.failedToSubmit'));
