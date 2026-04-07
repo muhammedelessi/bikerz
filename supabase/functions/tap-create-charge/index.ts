@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const allowedCurrencies = ["SAR", "KWD", "USD", "AED", "BHD", "QAR", "OMR", "EGP"];
+    const allowedCurrencies = ["SAR", "KWD", "USD", "AED", "BHD", "QAR", "OMR", "EGP", "GBP", "JOD", "IQD", "LBP", "LYD", "MAD", "MRU", "SDG", "SOS", "SYP", "TND", "YER", "DJF", "KMF"];
     if (!allowedCurrencies.includes(currency)) {
       return new Response(
         JSON.stringify({ error: "Unsupported currency" }),
