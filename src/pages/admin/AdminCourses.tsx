@@ -1082,8 +1082,8 @@ const AdminCourses: React.FC = () => {
 
             {/* Country-Specific Pricing */}
             <CourseCountryPricing
-              pricingGroups={pricingGroups}
-              onChange={setPricingGroups}
+              countryPrices={countryPrices}
+              onChange={setCountryPrices}
               isRTL={isRTL}
             />
 
