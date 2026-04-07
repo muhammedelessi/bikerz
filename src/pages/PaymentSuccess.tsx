@@ -13,7 +13,7 @@ import bikerLogo from "@/assets/bikerz-logo.webp";
 import { trackPurchase } from "@/utils/metaPixel";
 import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
 import type { User } from "@supabase/supabase-js";
-
+import { COUNTRIES } from "@/data/countryCityData";
 function useAuthReady() {
   const [isReady, setIsReady] = useState(false);
   const [user, setUser] = useState<User | null>(null);
