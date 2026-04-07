@@ -1164,6 +1164,15 @@ const AdminCourses: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Manage All Course Prices Dialog */}
+      <ManageCoursePricesDialog
+        open={managePricesOpen}
+        onClose={() => {
+          setManagePricesOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
+        }}
+      />
     </div>
     </AdminLayout>
   );
