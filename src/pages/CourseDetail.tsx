@@ -383,6 +383,7 @@ const CourseDetail: React.FC = () => {
   const discountExpiresAt = (course as any)?.discount_expires_at;
   const isDiscountExpired = discountExpiresAt ? new Date(discountExpiresAt).getTime() <= Date.now() : false;
   const effectiveDiscount = isDiscountExpired ? 0 : course?.discount_percentage || 0;
+  const courseVat = (course as any)?.vat_percentage ?? 15;
 
   // Calculations
   const totalLessons = chapters.reduce((acc, ch) => acc + ch.lessons.length, 0);
