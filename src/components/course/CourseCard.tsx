@@ -30,6 +30,7 @@ export interface CourseCardProps {
     price: number;
     discount_percentage?: number | null;
     discount_expires_at?: string | null;
+    vat_percentage?: number | null;
     base_rating?: number;
     base_review_count?: number;
     lessonCount: number;
@@ -55,7 +56,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   const title = isRTL && course.title_ar ? course.title_ar : course.title;
   const isDiscountExpired = course.discount_expires_at && new Date(course.discount_expires_at).getTime() <= Date.now();
   const effectiveDiscount = isDiscountExpired ? 0 : (course.discount_percentage || 0);
-  const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+  const courseVat = course.vat_percentage ?? 15;
+  const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount, courseVat);
   const sym = getCurrencySymbol(priceInfo.currency, isRTL);
   const formatAmount = (value: number) =>
     new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);

@@ -45,9 +45,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(({
 
   const [step, setStep] = useState<"info" | "payment">("info");
 
+  const courseVat = (course as any).vat_percentage ?? 15;
   const priceInfo = useMemo(
-    () => getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0),
-    [course.id, course.price, course.discount_percentage, getCoursePriceInfo],
+    () => getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0, courseVat),
+    [course.id, course.price, course.discount_percentage, courseVat, getCoursePriceInfo],
   );
 
   const basePrice = priceInfo.finalPrice;
