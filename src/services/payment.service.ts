@@ -35,6 +35,7 @@ export async function createCharge(
     body: {
       course_id: config.courseId,
       currency: config.currency,
+      amount: config.amount ?? null,
       customer_name: config.customerName,
       customer_email: config.customerEmail,
       customer_phone: config.customerPhone,
