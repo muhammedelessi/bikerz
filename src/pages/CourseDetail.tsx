@@ -624,7 +624,7 @@ const CourseDetail: React.FC = () => {
                           }
                         >
                           {(() => {
-                            const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                            const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount, courseVat);
                             const sym = getCurrencySymbol(info.currency, isRTL);
                             return isRTL
                               ? `اشترك الآن – ${info.finalPrice} ${sym}`
@@ -1015,7 +1015,7 @@ const CourseDetail: React.FC = () => {
                           {/* Price display */}
                           <div className="text-center py-2">
                             {(() => {
-                              const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                              const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount, courseVat);
                               const sym = getCurrencySymbol(priceInfo.currency, isRTL);
                               if (priceInfo.discountPct > 0 && course.price > 0) {
                                 return (
@@ -1085,7 +1085,7 @@ const CourseDetail: React.FC = () => {
                             >
                               <ShoppingCart className="w-5 h-5 me-2" />
                               {(() => {
-                                const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                                const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount, courseVat);
                                 const sym = getCurrencySymbol(info.currency, isRTL);
                                 return isRTL
                                   ? `اشترك الآن – ${info.finalPrice} ${sym}`
@@ -1101,7 +1101,7 @@ const CourseDetail: React.FC = () => {
                             >
                               <Zap className="w-5 h-5 me-2" />
                               {(() => {
-                                const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                                const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount, courseVat);
                                 const sym = getCurrencySymbol(info.currency, isRTL);
                                 return isRTL
                                   ? `اشترك الآن – ${info.finalPrice} ${sym}`
@@ -1563,7 +1563,7 @@ const CourseDetail: React.FC = () => {
                 {/* Price */}
                 <div className="flex flex-col min-w-0">
                   {(() => {
-                    const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                    const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount, courseVat);
                     const sym = getCurrencySymbol(priceInfo.currency, isRTL);
                     if (course.price === 0) {
                       return <span className="text-lg font-black text-foreground">{t("common.free")}</span>;
@@ -1613,7 +1613,7 @@ const CourseDetail: React.FC = () => {
                   >
                     <ShoppingCart className="w-4 h-4 me-1.5" />
                     {(() => {
-                      const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
+                      const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount, courseVat);
                       const sym = getCurrencySymbol(info.currency, isRTL);
                       return isRTL
                         ? `اشترك الآن – ${info.finalPrice} ${sym}`
