@@ -12,7 +12,6 @@ import confetti from "canvas-confetti";
 import bikerLogo from "@/assets/bikerz-logo.webp";
 import { trackPurchase } from "@/utils/metaPixel";
 import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
-import { resolveCountryEnglish, resolveCityEnglish } from "@/services/ghl.service";
 import type { User } from "@supabase/supabase-js";
 
 function useAuthReady() {
@@ -84,16 +83,17 @@ const PaymentSuccess: React.FC = () => {
         currency: "SAR",
       });
       if (user) {
-        const countryEn = resolveCountryEnglish(profile?.country);
-        const cityEn = resolveCityEnglish(profile?.country, profile?.city);
-
         sendCourseStatus(user.id, courseId, course.title, "purchased", {
           full_name: profile?.full_name || "",
           email: user.email || "",
           phone: profile?.phone || "",
-          country: countryEn,
-          city: cityEn,
-          address: [cityEn, countryEn].filter(Boolean).join(", "),
+          country:
+            COUNTRIES.find((c) => c.en === profile?.country || c.ar === profile?.country || c.code === profile?.country)
+              ?.code ||
+            profile?.country ||
+            "",
+          city: profile?.city || "",
+          address: [profile?.city, profile?.country].filter(Boolean).join(", "),
           amount: String(course.price ?? 0),
           dateOfBirth: profile?.date_of_birth || "",
           gender: profile?.gender || "",
