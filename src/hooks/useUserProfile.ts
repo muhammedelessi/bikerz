@@ -4,8 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
 import { fetchEnrollmentsWithLiveProgress } from "@/lib/enrollmentProgress";
-import { getUserCourseStatuses } from "@/services/ghl.service";
-import { COUNTRIES } from "@/data/countryCityData";
+import { getUserCourseStatuses, resolveCountryEnglish, resolveCityEnglish } from "@/services/ghl.service";
+
 export interface ExtendedProfile {
   id: string;
   user_id: string;
@@ -123,16 +123,16 @@ export function useUserProfile() {
 
       const { coursesJson, totalPurchased } = await getUserCourseStatuses(user.id);
 
+      const countryEn = resolveCountryEnglish(mergedProfile?.country);
+      const cityEn = resolveCityEnglish(mergedProfile?.country, mergedProfile?.city);
+
       sendFormData({
         full_name: mergedProfile?.full_name || "",
         email: user.email || "",
         phone: mergedProfile?.phone || "",
-        country: (() => {
-          const entry = COUNTRIES.find((c) => c.en === mergedProfile?.country || c.ar === mergedProfile?.country);
-          return entry ? entry.code : mergedProfile?.country || "";
-        })(),
-        city: mergedProfile?.city || "",
-        address: [mergedProfile?.city, mergedProfile?.country].filter(Boolean).join(", "),
+        country: countryEn,
+        city: cityEn,
+        address: [cityEn, countryEn].filter(Boolean).join(", "),
         dateOfBirth: mergedProfile?.date_of_birth || "",
         gender: mergedProfile?.gender || "",
         orderStatus: totalPurchased > 0 ? "purchased" : "not purchased",

@@ -51,7 +51,7 @@ export function useGuestSignup() {
         const countryEntry = COUNTRIES.find(
           (c) => c.code === profileData.country || c.en === profileData.country || c.ar === profileData.country,
         );
-        const countryName = countryEntry ? countryEntry.code : profileData.country;
+        const countryName = countryEntry ? countryEntry.en : profileData.country;
 
         // Resolve city English name
         const cityEntry = countryEntry?.cities.find((c) => c.ar === profileData.city || c.en === profileData.city);
