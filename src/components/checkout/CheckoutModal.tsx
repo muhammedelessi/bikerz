@@ -125,11 +125,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(
       }
 
       // Convert display price to SAR for Tap payment
-      // discountedPrice is in user's local currency (e.g. ILS)
-      // rate = local currency per 1 SAR, so SAR = local / rate
-      // convertPrice(1) gives the rate: how many local units = 1 SAR
-      // So sarAmount = discountedPrice / convertPrice(1)
+      // convertPrice(1) = how many local units per 1 SAR
+      // sarAmount = discountedPrice / convertPrice(1)
       const sarAmount = isSAR ? discountedPrice : Math.ceil(discountedPrice / convertPrice(1));
+
       // Paid checkout via Tap
       await tap.submitPayment({
         courseId: course.id,
@@ -151,8 +150,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(
       tap,
       basePrice,
       discountAmount,
-      priceInfo.currency,
-      rate,
+      isSAR,
+      convertPrice,
       isRTL,
       onSuccess,
       onPaymentStarted,
