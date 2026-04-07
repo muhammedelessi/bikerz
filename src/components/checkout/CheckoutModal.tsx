@@ -34,7 +34,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(
     const { isRTL } = useLanguage();
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
+    const { getCoursePriceInfo, getCurrencySymbol, rate } = useCurrency();
     const { sendCourseStatus } = useGHLFormWebhook();
     const { handleGuestSignup, guestSigningUp } = useGuestSignup();
 
@@ -52,7 +52,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(
     const promo = useCheckoutPromo(course.id, basePrice);
     const tap = useTapPayment();
 
-    // Compute discount values from promo
     const discountAmount = promo.appliedCoupon ? promo.appliedCoupon.discount_amount : 0;
     const discountedPrice = promo.appliedCoupon ? promo.appliedCoupon.final_amount : basePrice;
     const discountLabel = promo.appliedCoupon
@@ -63,7 +62,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(
 
     const formatLocal = useCallback((amount: number) => `${amount} ${currSym}`, [currSym]);
 
-    // Auto prefill and advance
     useEffect(() => {
       if (!open) {
         setStep("info");
@@ -107,7 +105,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(
               finalAmount: 0,
             });
           }
-          // Send GHL webhook
           sendCourseStatus(user.id, course.id, course.title, "purchased", {
             full_name: form.fullName,
             email: form.email,
@@ -127,15 +124,20 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(
         return;
       }
 
+      // Convert display price to SAR for Tap payment
+      // discountedPrice is in user's local currency (e.g. ILS)
+      // rate = local currency per 1 SAR, so SAR = local / rate
+      const sarAmount = priceInfo.currency === "SAR" ? discountedPrice : Math.ceil(discountedPrice / rate);
+
       // Paid checkout via Tap
       await tap.submitPayment({
         courseId: course.id,
-        currency: "SAR", // Always charge in SAR
+        currency: "SAR",
         customerName: form.fullName,
         customerEmail: form.email,
         customerPhone: form.fullPhone,
         couponId: promo.appliedCoupon?.coupon_id,
-        amount: discountedPrice,
+        amount: sarAmount,
         courseName: course.title,
         isRTL,
       });
@@ -149,6 +151,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(
       basePrice,
       discountAmount,
       priceInfo.currency,
+      rate,
       isRTL,
       onSuccess,
       onPaymentStarted,
@@ -156,7 +159,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(
       t,
     ]);
 
-    // Handle tap payment success
     useEffect(() => {
       if (tap.status === "succeeded") {
         navigate(`/payment-success?course=${course.id}&tap_id=tap_success`);
@@ -165,7 +167,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(
 
     const isPaymentReady = form.isInfoValid && !tap.error && tap.status !== "processing" && tap.status !== "verifying";
 
-    // Show status overlay for non-idle tap states
     if (tap.status !== "idle" && tap.status !== "succeeded") {
       return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -269,7 +270,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = memo(
             </AnimatePresence>
           </div>
 
-          {/* Footer buttons */}
           <div className="flex-shrink-0 border-t border-border pt-3 flex gap-2">
             {step === "payment" && (
               <Button variant="outline" onClick={() => setStep("info")} className="gap-1">
