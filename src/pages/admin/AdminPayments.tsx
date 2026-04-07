@@ -89,7 +89,7 @@ const AdminPayments = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedPayment, setSelectedPayment] = useState<UnifiedPayment | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
-
+  const [deleteTarget, setDeleteTarget] = useState<UnifiedPayment | null>(null);
   const { data: payments, isLoading } = useQuery({
     queryKey: ['admin-payments-unified'],
     queryFn: async () => {
