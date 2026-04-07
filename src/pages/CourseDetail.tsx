@@ -1052,9 +1052,12 @@ const CourseDetail: React.FC = () => {
                                 </div>
                               );
                             })()}
-                            {course.price > 0 && (
-                              <p className="text-xs text-muted-foreground mt-2">{t("courseDetail.priceIncludesVAT")}</p>
-                            )}
+                            {course.price > 0 &&
+                              getCoursePriceInfo(course.id, course.price, effectiveDiscount).vatPct > 0 && (
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  {t("courseDetail.priceIncludesVAT")}
+                                </p>
+                              )}
                           </div>
 
                           {/* CTA Button */}
