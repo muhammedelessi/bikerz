@@ -12,9 +12,21 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Trash2, Search, X, Eye } from 'lucide-react';
+import { Plus, Trash2, Search, X } from 'lucide-react';
 
 // ── Types ──
+export interface CountryPriceEntry {
+  country_code: string;
+  original_price: number;
+  discount_percentage: number;
+  price_after_discount: number;
+  vat_percentage: number;
+  final_price_local: number;
+  final_price_sar: number;
+  currency: string;
+}
+
+// Keep old types for backward compat (unused but exported previously)
 export interface PricingGroup {
   id: string;
   sar_final_price: number;
@@ -28,10 +40,12 @@ export interface CountryPriceRow {
   discount_percentage: number;
   price: number;
   currency: string;
+  vat_percentage: number;
+  final_price_with_vat: number;
 }
 
 // ── All world countries with currencies ──
-const ALL_COUNTRIES: { code: string; name: string; name_ar: string; currency: string; flag: string }[] = [
+export const ALL_COUNTRIES: { code: string; name: string; name_ar: string; currency: string; flag: string }[] = [
   // Gulf
   { code: 'SA', name: 'Saudi Arabia', name_ar: 'السعودية', currency: 'SAR', flag: '🇸🇦' },
   { code: 'AE', name: 'UAE', name_ar: 'الإمارات', currency: 'AED', flag: '🇦🇪' },
@@ -89,7 +103,7 @@ const ALL_COUNTRIES: { code: string; name: string; name_ar: string; currency: st
 ];
 
 // ── Exchange rates SAR → X ──
-const SAR_RATES: Record<string, number> = {
+export const SAR_RATES: Record<string, number> = {
   SAR: 1, AED: 0.979, KWD: 0.082, BHD: 0.1, QAR: 0.971, OMR: 0.103,
   JOD: 0.189, EGP: 13.97, IQD: 348.89, SYP: 30.37, LBP: 23867,
   YER: 63.58, LYD: 1.694, TND: 0.782, DZD: 35.08, MAD: 2.511,
@@ -102,34 +116,21 @@ const SAR_RATES: Record<string, number> = {
   CNY: 1.94, THB: 9.56, PHP: 14.92,
 };
 
-const GROUP_COLORS = [
-  { bg: 'bg-blue-500/10', border: 'border-blue-500/30', dot: 'bg-blue-500', text: 'text-blue-600' },
-  { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', dot: 'bg-emerald-500', text: 'text-emerald-600' },
-  { bg: 'bg-amber-500/10', border: 'border-amber-500/30', dot: 'bg-amber-500', text: 'text-amber-600' },
-  { bg: 'bg-purple-500/10', border: 'border-purple-500/30', dot: 'bg-purple-500', text: 'text-purple-600' },
-  { bg: 'bg-rose-500/10', border: 'border-rose-500/30', dot: 'bg-rose-500', text: 'text-rose-600' },
-];
-
-function getCountryInfo(code: string) {
+export function getCountryInfo(code: string) {
   return ALL_COUNTRIES.find(c => c.code === code);
 }
 
-function getLocalPrice(sarFinalPrice: number, currencyCode: string): number {
-  const rate = SAR_RATES[currencyCode] || 1;
-  return Math.ceil(sarFinalPrice * rate);
+export function calcAfterDiscount(original: number, discPct: number): number {
+  return Math.ceil(original * (1 - discPct / 100));
 }
 
-function getOriginalPrice(localPrice: number, discountPct: number): number {
-  if (discountPct > 0 && discountPct < 100) {
-    return Math.ceil(localPrice / (1 - discountPct / 100));
-  }
-  return localPrice;
+export function calcFinalWithVat(afterDiscount: number, vatPct: number): number {
+  return Math.ceil(afterDiscount * (1 + vatPct / 100));
 }
 
-interface Props {
-  pricingGroups: PricingGroup[];
-  onChange: (groups: PricingGroup[]) => void;
-  isRTL: boolean;
+export function localToSar(localPrice: number, currency: string): number {
+  const rate = SAR_RATES[currency] || 1;
+  return rate > 0 ? Math.ceil(localPrice / rate) : localPrice;
 }
 
 // ── Country Picker Dialog ──
@@ -137,25 +138,21 @@ function CountryPickerDialog({
   open,
   onClose,
   onConfirm,
-  currentSelection,
-  reservedCountries,
+  existingCountries,
   isRTL,
-  sarFinalPrice,
 }: {
   open: boolean;
   onClose: () => void;
   onConfirm: (codes: string[]) => void;
-  currentSelection: string[];
-  reservedCountries: Set<string>;
+  existingCountries: Set<string>;
   isRTL: boolean;
-  sarFinalPrice: number;
 }) {
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<Set<string>>(new Set(currentSelection));
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   React.useEffect(() => {
-    if (open) setSelected(new Set(currentSelection));
-  }, [open, currentSelection]);
+    if (open) setSelected(new Set());
+  }, [open]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return ALL_COUNTRIES;
@@ -178,7 +175,7 @@ function CountryPickerDialog({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>{isRTL ? 'اختيار الدول' : 'Select Countries'}</DialogTitle>
+          <DialogTitle>{isRTL ? 'إضافة دول' : 'Add Countries'}</DialogTitle>
         </DialogHeader>
         <div className="relative">
           <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -193,21 +190,20 @@ function CountryPickerDialog({
         <ScrollArea className="flex-1 max-h-[400px] border border-border rounded-md">
           <div className="p-1">
             {filtered.map(c => {
-              const isReserved = reservedCountries.has(c.code);
+              const isExisting = existingCountries.has(c.code);
               const isChecked = selected.has(c.code);
-              const localPrice = sarFinalPrice > 0 ? getLocalPrice(sarFinalPrice, c.currency) : 0;
               return (
                 <label
                   key={c.code}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer transition-colors ${
-                    isReserved ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent'
-                  } ${isChecked && !isReserved ? 'bg-accent/50' : ''}`}
-                  onClick={e => { if (isReserved) e.preventDefault(); }}
+                    isExisting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent'
+                  } ${isChecked && !isExisting ? 'bg-accent/50' : ''}`}
+                  onClick={e => { if (isExisting) e.preventDefault(); }}
                 >
                   <Checkbox
                     checked={isChecked}
-                    disabled={isReserved}
-                    onCheckedChange={() => !isReserved && toggle(c.code)}
+                    disabled={isExisting}
+                    onCheckedChange={() => !isExisting && toggle(c.code)}
                   />
                   <span className="text-lg leading-none">{c.flag}</span>
                   <div className="flex-1 min-w-0">
@@ -216,15 +212,11 @@ function CountryPickerDialog({
                     </p>
                     <p className="text-xs text-muted-foreground">{c.currency}</p>
                   </div>
-                  {isReserved ? (
+                  {isExisting && (
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                      {isRTL ? 'محجوزة' : 'Reserved'}
+                      {isRTL ? 'مضافة' : 'Added'}
                     </Badge>
-                  ) : localPrice > 0 ? (
-                    <span className="text-xs text-muted-foreground font-medium">
-                      {localPrice} {c.currency}
-                    </span>
-                  ) : null}
+                  )}
                 </label>
               );
             })}
@@ -235,7 +227,7 @@ function CountryPickerDialog({
             {isRTL ? 'إلغاء' : 'Cancel'}
           </Button>
           <Button onClick={() => { onConfirm(Array.from(selected)); onClose(); }}>
-            {isRTL ? 'تأكيد' : 'Confirm'} ({selected.size})
+            {isRTL ? 'إضافة' : 'Add'} ({selected.size})
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -243,259 +235,248 @@ function CountryPickerDialog({
   );
 }
 
+// ── Inline editable number input ──
+function InlineNum({
+  value,
+  onChange,
+  readOnly,
+  className = '',
+}: {
+  value: number;
+  onChange?: (v: number) => void;
+  readOnly?: boolean;
+  className?: string;
+}) {
+  return (
+    <Input
+      type="text"
+      inputMode="numeric"
+      value={value || ''}
+      onChange={e => {
+        if (readOnly || !onChange) return;
+        const val = e.target.value;
+        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+          onChange(val === '' ? 0 : parseFloat(val) || 0);
+        }
+      }}
+      readOnly={readOnly}
+      className={`h-8 text-xs px-2 ${readOnly ? 'bg-muted/50 cursor-default' : ''} ${className}`}
+    />
+  );
+}
+
+// ── Props ──
+interface Props {
+  countryPrices: CountryPriceEntry[];
+  onChange: (entries: CountryPriceEntry[]) => void;
+  isRTL: boolean;
+  // Keep backward compat props (ignored)
+  pricingGroups?: PricingGroup[];
+}
+
 // ── Main Component ──
-export default function CourseCountryPricing({ pricingGroups, onChange, isRTL }: Props) {
-  const [pickerGroupId, setPickerGroupId] = useState<string | null>(null);
+export default function CourseCountryPricing({ countryPrices, onChange, isRTL }: Props) {
+  const [pickerOpen, setPickerOpen] = useState(false);
 
-  // All countries reserved in OTHER groups (for the picker)
-  const getReservedForGroup = (groupId: string): Set<string> => {
-    const reserved = new Set<string>();
-    pricingGroups.forEach(g => {
-      if (g.id !== groupId) g.countries.forEach(c => reserved.add(c));
+  const existingCodes = useMemo(() => new Set(countryPrices.map(e => e.country_code)), [countryPrices]);
+
+  const addCountries = (codes: string[]) => {
+    const newEntries: CountryPriceEntry[] = codes.map(code => {
+      const info = getCountryInfo(code);
+      const currency = info?.currency || 'SAR';
+      return {
+        country_code: code,
+        original_price: 0,
+        discount_percentage: 0,
+        price_after_discount: 0,
+        vat_percentage: 15,
+        final_price_local: 0,
+        final_price_sar: 0,
+        currency,
+      };
     });
-    return reserved;
+    onChange([...countryPrices, ...newEntries]);
   };
 
-  const addGroup = () => {
-    onChange([
-      ...pricingGroups,
-      { id: crypto.randomUUID(), sar_final_price: 0, discount_percentage: 78, countries: [] },
-    ]);
+  const removeCountry = (code: string) => {
+    onChange(countryPrices.filter(e => e.country_code !== code));
   };
 
-  const removeGroup = (id: string) => {
-    onChange(pricingGroups.filter(g => g.id !== id));
+  const updateEntry = (code: string, field: keyof CountryPriceEntry, value: number) => {
+    onChange(countryPrices.map(e => {
+      if (e.country_code !== code) return e;
+      const updated = { ...e, [field]: value };
+
+      // Recalculate dependent fields
+      if (field === 'original_price' || field === 'discount_percentage') {
+        updated.price_after_discount = calcAfterDiscount(updated.original_price, updated.discount_percentage);
+      }
+      if (field === 'price_after_discount') {
+        // Reverse-calc discount %
+        if (updated.original_price > 0 && updated.price_after_discount < updated.original_price) {
+          updated.discount_percentage = Math.round((1 - updated.price_after_discount / updated.original_price) * 100);
+        } else {
+          updated.discount_percentage = 0;
+        }
+      }
+      // Always recalculate finals
+      updated.final_price_local = calcFinalWithVat(updated.price_after_discount, updated.vat_percentage);
+      updated.final_price_sar = localToSar(updated.final_price_local, updated.currency);
+
+      return updated;
+    }));
   };
-
-  const updateGroup = (id: string, patch: Partial<PricingGroup>) => {
-    onChange(pricingGroups.map(g => g.id === id ? { ...g, ...patch } : g));
-  };
-
-  const removeCountryFromGroup = (groupId: string, countryCode: string) => {
-    onChange(pricingGroups.map(g =>
-      g.id === groupId ? { ...g, countries: g.countries.filter(c => c !== countryCode) } : g
-    ));
-  };
-
-  const pickerGroup = pricingGroups.find(g => g.id === pickerGroupId);
-
-  // Build preview data
-  const previewRows = useMemo(() => {
-    const rows: { code: string; flag: string; name: string; currency: string; localPrice: number; originalPrice: number; discountPct: number; colorIdx: number }[] = [];
-    pricingGroups.forEach((g, gi) => {
-      g.countries.forEach(code => {
-        const info = getCountryInfo(code);
-        if (!info) return;
-        const localPrice = getLocalPrice(g.sar_final_price, info.currency);
-        const originalPrice = getOriginalPrice(localPrice, g.discount_percentage);
-        rows.push({
-          code,
-          flag: info.flag,
-          name: isRTL ? info.name_ar : info.name,
-          currency: info.currency,
-          localPrice,
-          originalPrice,
-          discountPct: g.discount_percentage,
-          colorIdx: gi % GROUP_COLORS.length,
-        });
-      });
-    });
-    return rows;
-  }, [pricingGroups, isRTL]);
 
   return (
     <div className="space-y-3 border-t border-border pt-4">
       <div className="flex items-center justify-between">
         <div>
-          <Label className="text-sm font-semibold">{isRTL ? 'مجموعات التسعير حسب الدولة' : 'Country Pricing Groups'}</Label>
+          <Label className="text-sm font-semibold">{isRTL ? 'أسعار الدول' : 'Country Prices'}</Label>
           <p className="text-xs text-muted-foreground mt-0.5">
             {isRTL
-              ? 'أنشئ مجموعات تسعير وأضف الدول لكل مجموعة. السعر النهائي بالريال هو المبلغ الذي سيتم تحصيله.'
-              : 'Create pricing groups and assign countries. The SAR final price is the amount charged.'}
+              ? 'أضف دولاً وحدد أسعارها بالعملة المحلية مع الخصم والضريبة.'
+              : 'Add countries and set their local currency prices with discount and VAT.'}
           </p>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={addGroup}>
+        <Button type="button" variant="outline" size="sm" onClick={() => setPickerOpen(true)}>
           <Plus className="w-4 h-4 me-1" />
-          {isRTL ? 'إضافة مجموعة تسعير' : 'Add Pricing Group'}
+          {isRTL ? 'إضافة دول' : 'Add Countries'}
         </Button>
       </div>
 
-      {/* Group cards */}
-      {pricingGroups.map((group, gi) => {
-        const color = GROUP_COLORS[gi % GROUP_COLORS.length];
-        return (
-          <div key={group.id} className={`rounded-lg border ${color.border} ${color.bg} p-4 space-y-3`}>
-            {/* Header row */}
-            <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${color.dot} flex-shrink-0`} />
-              <span className="text-sm font-semibold flex-1">
-                {isRTL ? `مجموعة ${gi + 1}` : `Group ${gi + 1}`}
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-destructive hover:text-destructive"
-                onClick={() => removeGroup(group.id)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* Price inputs */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">{isRTL ? 'السعر النهائي (ر.س)' : 'Final Price (SAR)'}</Label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={group.sar_final_price || ''}
-                  onChange={e => {
-                    const val = e.target.value;
-                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                      updateGroup(group.id, { sar_final_price: val === '' ? 0 : parseFloat(val) || 0 });
-                    }
-                  }}
-                  placeholder="0"
-                  className="font-semibold"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">{isRTL ? 'نسبة الخصم %' : 'Discount %'}</Label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={group.discount_percentage || ''}
-                  onChange={e => {
-                    const val = e.target.value;
-                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                      const num = val === '' ? 0 : Math.min(100, parseFloat(val) || 0);
-                      updateGroup(group.id, { discount_percentage: num });
-                    }
-                  }}
-                  placeholder="78"
-                />
-              </div>
-            </div>
-
-            {/* Country tags */}
-            <div className="flex flex-wrap gap-1.5">
-              {group.countries.map(code => {
-                const info = getCountryInfo(code);
+      {countryPrices.length > 0 && (
+        <div className="overflow-x-auto border border-border rounded-lg">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border bg-muted/30">
+                <th className="px-2 py-2 text-start font-medium">{isRTL ? 'الدولة' : 'Country'}</th>
+                <th className="px-2 py-2 text-start font-medium">{isRTL ? 'السعر الأصلي' : 'Original'}</th>
+                <th className="px-2 py-2 text-start font-medium">{isRTL ? 'خصم %' : 'Disc %'}</th>
+                <th className="px-2 py-2 text-start font-medium">{isRTL ? 'بعد الخصم' : 'After Disc'}</th>
+                <th className="px-2 py-2 text-start font-medium">{isRTL ? 'ضريبة %' : 'VAT %'}</th>
+                <th className="px-2 py-2 text-start font-medium">{isRTL ? 'النهائي (محلي)' : 'Final (local)'}</th>
+                <th className="px-2 py-2 text-start font-medium">{isRTL ? 'النهائي (ر.س)' : 'Final (SAR)'}</th>
+                <th className="px-2 py-2 w-8"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {countryPrices.map(entry => {
+                const info = getCountryInfo(entry.country_code);
                 if (!info) return null;
-                const localPrice = group.sar_final_price > 0 ? getLocalPrice(group.sar_final_price, info.currency) : 0;
                 return (
-                  <Badge
-                    key={code}
-                    variant="secondary"
-                    className="gap-1 pe-1 py-1 text-xs"
-                  >
-                    <span>{info.flag}</span>
-                    <span>{isRTL ? info.name_ar : info.name}</span>
-                    {localPrice > 0 && (
-                      <span className="text-muted-foreground font-normal">
-                        ({localPrice} {info.currency})
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      className="ms-0.5 hover:bg-destructive/20 rounded-full p-0.5"
-                      onClick={() => removeCountryFromGroup(group.id, code)}
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </Badge>
+                  <tr key={entry.country_code} className="border-b border-border/50 hover:bg-accent/30">
+                    <td className="px-2 py-1.5">
+                      <div className="flex items-center gap-1.5 min-w-[100px]">
+                        <span className="text-sm">{info.flag}</span>
+                        <span className="font-medium truncate">{isRTL ? info.name_ar : info.name}</span>
+                        <Badge variant="outline" className="text-[9px] px-1 py-0">{info.currency}</Badge>
+                      </div>
+                    </td>
+                    <td className="px-1 py-1.5">
+                      <InlineNum
+                        value={entry.original_price}
+                        onChange={v => updateEntry(entry.country_code, 'original_price', v)}
+                      />
+                    </td>
+                    <td className="px-1 py-1.5">
+                      <InlineNum
+                        value={entry.discount_percentage}
+                        onChange={v => updateEntry(entry.country_code, 'discount_percentage', Math.min(100, v))}
+                      />
+                    </td>
+                    <td className="px-1 py-1.5">
+                      <InlineNum
+                        value={entry.price_after_discount}
+                        onChange={v => updateEntry(entry.country_code, 'price_after_discount', v)}
+                      />
+                    </td>
+                    <td className="px-1 py-1.5">
+                      <InlineNum
+                        value={entry.vat_percentage}
+                        onChange={v => updateEntry(entry.country_code, 'vat_percentage', Math.min(100, Math.max(0, v)))}
+                      />
+                    </td>
+                    <td className="px-1 py-1.5">
+                      <InlineNum value={entry.final_price_local} readOnly />
+                    </td>
+                    <td className="px-1 py-1.5">
+                      <InlineNum value={entry.final_price_sar} readOnly />
+                    </td>
+                    <td className="px-1 py-1.5">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={() => removeCountry(entry.country_code)}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    </td>
+                  </tr>
                 );
               })}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1"
-                onClick={() => setPickerGroupId(group.id)}
-              >
-                <Plus className="w-3 h-3" />
-                {isRTL ? 'اختيار الدول' : 'Select Countries'}
-              </Button>
-            </div>
-          </div>
-        );
-      })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      {pricingGroups.length === 0 && (
+      {countryPrices.length === 0 && (
         <div className="text-center py-6 border border-dashed border-border rounded-lg">
           <p className="text-sm text-muted-foreground mb-2">
-            {isRTL ? 'لا توجد مجموعات تسعير بعد' : 'No pricing groups yet'}
+            {isRTL ? 'لا توجد أسعار دول بعد' : 'No country prices yet'}
           </p>
-          <Button type="button" variant="outline" size="sm" onClick={addGroup}>
+          <Button type="button" variant="outline" size="sm" onClick={() => setPickerOpen(true)}>
             <Plus className="w-4 h-4 me-1" />
-            {isRTL ? 'إضافة مجموعة تسعير' : 'Add Pricing Group'}
+            {isRTL ? 'إضافة دول' : 'Add Countries'}
           </Button>
         </div>
       )}
 
-      {/* Live Preview */}
-      {previewRows.length > 0 && (
-        <div className="border border-border rounded-lg p-4 bg-muted/30 space-y-3">
-          <h4 className="text-sm font-semibold flex items-center gap-2">
-            <Eye className="w-4 h-4 text-primary" />
-            {isRTL ? 'معاينة — ما سيراه المستخدم' : 'Preview — What the user will see'}
-          </h4>
-          <div className="grid gap-2">
-            {previewRows.map(row => (
-              <div key={row.code} className="flex items-center gap-2 bg-background rounded-md p-2.5 border border-border text-sm">
-                <div className={`w-2 h-2 rounded-full ${GROUP_COLORS[row.colorIdx].dot} flex-shrink-0`} />
-                <span className="text-base leading-none">{row.flag}</span>
-                <span className="font-medium flex-1 truncate">{row.name}</span>
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">{row.currency}</Badge>
-                {row.discountPct > 0 && (
-                  <>
-                    <span className="text-muted-foreground line-through text-xs">
-                      {row.originalPrice}
-                    </span>
-                    <Badge className="text-[10px] px-1.5 py-0 bg-destructive/10 text-destructive border-destructive/20">
-                      -{row.discountPct}%
-                    </Badge>
-                  </>
-                )}
-                <span className="font-bold">{row.localPrice} {row.currency}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Country Picker Dialog */}
-      {pickerGroup && (
-        <CountryPickerDialog
-          open={!!pickerGroupId}
-          onClose={() => setPickerGroupId(null)}
-          onConfirm={codes => updateGroup(pickerGroup.id, { countries: codes })}
-          currentSelection={pickerGroup.countries}
-          reservedCountries={getReservedForGroup(pickerGroup.id)}
-          isRTL={isRTL}
-          sarFinalPrice={pickerGroup.sar_final_price}
-        />
-      )}
+      <CountryPickerDialog
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onConfirm={addCountries}
+        existingCountries={existingCodes}
+        isRTL={isRTL}
+      />
     </div>
   );
 }
 
-// ── Helper: expand groups into flat country price rows for DB save ──
+// ── Helper: expand entries to flat rows for DB save ──
+export function expandEntriesToRows(entries: CountryPriceEntry[]): CountryPriceRow[] {
+  return entries.map(e => ({
+    country_code: e.country_code,
+    original_price: e.original_price,
+    discount_percentage: e.discount_percentage,
+    price: e.price_after_discount,
+    currency: e.currency,
+    vat_percentage: e.vat_percentage,
+    final_price_with_vat: e.final_price_local,
+  }));
+}
+
+// Keep old export for backward compat
 export function expandGroupsToRows(groups: PricingGroup[]): CountryPriceRow[] {
   const rows: CountryPriceRow[] = [];
   for (const g of groups) {
     for (const code of g.countries) {
       const info = ALL_COUNTRIES.find(c => c.code === code);
       if (!info) continue;
-      const localPrice = getLocalPrice(g.sar_final_price, info.currency);
-      const originalPrice = getOriginalPrice(localPrice, g.discount_percentage);
+      const rate = SAR_RATES[info.currency] || 1;
+      const localPrice = Math.ceil(g.sar_final_price * rate);
+      const originalPrice = g.discount_percentage > 0 && g.discount_percentage < 100
+        ? Math.ceil(localPrice / (1 - g.discount_percentage / 100))
+        : localPrice;
       rows.push({
         country_code: code,
         price: localPrice,
         original_price: originalPrice,
         discount_percentage: g.discount_percentage,
         currency: info.currency,
+        vat_percentage: 15,
+        final_price_with_vat: localPrice,
       });
     }
   }
