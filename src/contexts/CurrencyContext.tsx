@@ -1,11 +1,31 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export type CurrencyCode =
-  | 'SAR' | 'AED' | 'KWD' | 'BHD' | 'QAR' | 'OMR' | 'JOD'
-  | 'EGP' | 'IQD' | 'SYP' | 'LBP' | 'YER' | 'LYD' | 'TND'
-  | 'DZD' | 'MAD' | 'SDG' | 'SOS' | 'MRU' | 'KMF' | 'DJF'
-  | 'ILS' | 'USD' | 'GBP';
+  | "SAR"
+  | "AED"
+  | "KWD"
+  | "BHD"
+  | "QAR"
+  | "OMR"
+  | "JOD"
+  | "EGP"
+  | "IQD"
+  | "SYP"
+  | "LBP"
+  | "YER"
+  | "LYD"
+  | "TND"
+  | "DZD"
+  | "MAD"
+  | "SDG"
+  | "SOS"
+  | "MRU"
+  | "KMF"
+  | "DJF"
+  | "ILS"
+  | "USD"
+  | "GBP";
 
 interface CurrencyMeta {
   symbol: string;
@@ -13,54 +33,92 @@ interface CurrencyMeta {
 }
 
 const CURRENCY_META: Record<CurrencyCode, CurrencyMeta> = {
-  SAR: { symbol: 'SAR', symbolAr: 'ر.س' },
-  AED: { symbol: 'AED', symbolAr: 'د.إ' },
-  KWD: { symbol: 'KWD', symbolAr: 'د.ك' },
-  BHD: { symbol: 'BHD', symbolAr: 'د.ب' },
-  QAR: { symbol: 'QAR', symbolAr: 'ر.ق' },
-  OMR: { symbol: 'OMR', symbolAr: 'ر.ع' },
-  JOD: { symbol: 'JOD', symbolAr: 'د.أ' },
-  EGP: { symbol: 'EGP', symbolAr: 'ج.م' },
-  IQD: { symbol: 'IQD', symbolAr: 'د.ع' },
-  SYP: { symbol: 'SYP', symbolAr: 'ل.س' },
-  LBP: { symbol: 'LBP', symbolAr: 'ل.ل' },
-  YER: { symbol: 'YER', symbolAr: 'ر.ي' },
-  LYD: { symbol: 'LYD', symbolAr: 'د.ل' },
-  TND: { symbol: 'TND', symbolAr: 'د.ت' },
-  DZD: { symbol: 'DZD', symbolAr: 'د.ج' },
-  MAD: { symbol: 'MAD', symbolAr: 'د.م' },
-  SDG: { symbol: 'SDG', symbolAr: 'ج.س' },
-  SOS: { symbol: 'SOS', symbolAr: 'ش.ص' },
-  MRU: { symbol: 'MRU', symbolAr: 'أ.م' },
-  KMF: { symbol: 'KMF', symbolAr: 'ف.ق' },
-  DJF: { symbol: 'DJF', symbolAr: 'ف.ج' },
-  ILS: { symbol: 'ILS', symbolAr: '₪' },
-  USD: { symbol: 'USD', symbolAr: '$' },
-  GBP: { symbol: 'GBP', symbolAr: '£' },
+  SAR: { symbol: "SAR", symbolAr: "ر.س" },
+  AED: { symbol: "AED", symbolAr: "د.إ" },
+  KWD: { symbol: "KWD", symbolAr: "د.ك" },
+  BHD: { symbol: "BHD", symbolAr: "د.ب" },
+  QAR: { symbol: "QAR", symbolAr: "ر.ق" },
+  OMR: { symbol: "OMR", symbolAr: "ر.ع" },
+  JOD: { symbol: "JOD", symbolAr: "د.أ" },
+  EGP: { symbol: "EGP", symbolAr: "ج.م" },
+  IQD: { symbol: "IQD", symbolAr: "د.ع" },
+  SYP: { symbol: "SYP", symbolAr: "ل.س" },
+  LBP: { symbol: "LBP", symbolAr: "ل.ل" },
+  YER: { symbol: "YER", symbolAr: "ر.ي" },
+  LYD: { symbol: "LYD", symbolAr: "د.ل" },
+  TND: { symbol: "TND", symbolAr: "د.ت" },
+  DZD: { symbol: "DZD", symbolAr: "د.ج" },
+  MAD: { symbol: "MAD", symbolAr: "د.م" },
+  SDG: { symbol: "SDG", symbolAr: "ج.س" },
+  SOS: { symbol: "SOS", symbolAr: "ش.ص" },
+  MRU: { symbol: "MRU", symbolAr: "أ.م" },
+  KMF: { symbol: "KMF", symbolAr: "ف.ق" },
+  DJF: { symbol: "DJF", symbolAr: "ف.ج" },
+  ILS: { symbol: "ILS", symbolAr: "₪" },
+  USD: { symbol: "USD", symbolAr: "$" },
+  GBP: { symbol: "GBP", symbolAr: "£" },
 };
 
 const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
-  SA: 'SAR', AE: 'AED', KW: 'KWD', BH: 'BHD', QA: 'QAR', OM: 'OMR',
-  JO: 'JOD', EG: 'EGP', IQ: 'IQD', SY: 'SYP', LB: 'LBP', YE: 'YER',
-  LY: 'LYD', TN: 'TND', DZ: 'DZD', MA: 'MAD', SD: 'SDG', SO: 'SOS',
-  MR: 'MRU', KM: 'KMF', DJ: 'DJF', PS: 'ILS', IL: 'ILS',
-  GB: 'GBP',
+  SA: "SAR",
+  AE: "AED",
+  KW: "KWD",
+  BH: "BHD",
+  QA: "QAR",
+  OM: "OMR",
+  JO: "JOD",
+  EG: "EGP",
+  IQ: "IQD",
+  SY: "SYP",
+  LB: "LBP",
+  YE: "YER",
+  LY: "LYD",
+  TN: "TND",
+  DZ: "DZD",
+  MA: "MAD",
+  SD: "SDG",
+  SO: "SOS",
+  MR: "MRU",
+  KM: "KMF",
+  DJ: "DJF",
+  PS: "ILS",
+  IL: "ILS",
+  GB: "GBP",
 };
 
 // Fallback rates (SAR → X) used if live fetch fails
 const FALLBACK_RATES: Record<CurrencyCode, number> = {
-  SAR: 1, AED: 0.979, KWD: 0.082, BHD: 0.1, QAR: 0.971, OMR: 0.103,
-  JOD: 0.189, EGP: 13.97, IQD: 348.89, SYP: 30.37, LBP: 23867,
-  YER: 63.58, LYD: 1.694, TND: 0.782, DZD: 35.08, MAD: 2.511,
-  SDG: 135.35, SOS: 152, MRU: 10.651, KMF: 114.55, DJF: 47.39,
-  ILS: 0.837, USD: 0.267, GBP: 0.211,
+  SAR: 1,
+  AED: 0.979,
+  KWD: 0.082,
+  BHD: 0.1,
+  QAR: 0.971,
+  OMR: 0.103,
+  JOD: 0.189,
+  EGP: 13.97,
+  IQD: 348.89,
+  SYP: 30.37,
+  LBP: 23867,
+  YER: 63.58,
+  LYD: 1.694,
+  TND: 0.782,
+  DZD: 35.08,
+  MAD: 2.511,
+  SDG: 135.35,
+  SOS: 152,
+  MRU: 10.651,
+  KMF: 114.55,
+  DJF: 47.39,
+  ILS: 0.837,
+  USD: 0.267,
+  GBP: 0.211,
 };
 
 const VAT_RATE = 15; // Saudi VAT — server always charges 15%
 
-const RATES_CACHE_KEY = 'bikerz_exchange_rates';
-const CURRENCY_CACHE_KEY = 'bikerz_currency';
-const COUNTRY_CACHE_KEY = 'bikerz_detected_country';
+const RATES_CACHE_KEY = "bikerz_exchange_rates";
+const CURRENCY_CACHE_KEY = "bikerz_currency";
+const COUNTRY_CACHE_KEY = "bikerz_detected_country";
 const CACHE_TTL_MS = 3600_000; // 1 hour
 
 interface CachedRates {
@@ -88,7 +146,7 @@ export interface CoursePriceInfo {
   currency: CurrencyCode;
   /** Whether a country-specific price was used */
   isCountryPrice: boolean;
-  /** VAT percentage used for this price */
+  /** VAT percentage for this country (0 for non-SA countries unless explicitly set) */
   vatPct: number;
 }
 
@@ -102,7 +160,7 @@ interface CurrencyContextType {
   /** Get price for a specific course considering country-specific pricing */
   getCoursePrice: (courseId: string, sarPrice: number) => number;
   /** Get full price info for a course (original, discount, final) considering country pricing */
-  getCoursePriceInfo: (courseId: string, sarPrice: number, courseDiscountPct?: number, vatPct?: number) => CoursePriceInfo;
+  getCoursePriceInfo: (courseId: string, sarPrice: number, courseDiscountPct?: number) => CoursePriceInfo;
   /** Get the currency code for a course price (may differ from user currency if country price exists) */
   getCourseCurrency: (courseId: string) => CurrencyCode;
   /** Format a SAR price as local currency string */
@@ -139,7 +197,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch {
       // Ignore restricted-storage environments on iOS
     }
-    return 'SAR';
+    return "SAR";
   });
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [isDetecting, setIsDetecting] = useState(true);
@@ -153,7 +211,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [countryPrices, setCountryPrices] = useState<CountryPrice[]>([]);
 
   const meta = CURRENCY_META[currencyCode];
-  const isSAR = currencyCode === 'SAR';
+  const isSAR = currencyCode === "SAR";
 
   // Keep currency synced with cached detected country (avoids stale sessionStorage mismatches).
   useEffect(() => {
@@ -174,17 +232,19 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     const loadCountryPrices = async () => {
       const { data } = await supabase
-        .from('course_country_prices')
-        .select('course_id, country_code, price, currency, original_price, discount_percentage');
+        .from("course_country_prices")
+        .select("course_id, country_code, price, currency, original_price, discount_percentage");
       if (data) {
-        setCountryPrices(data.map(d => ({
-          course_id: d.course_id,
-          country_code: d.country_code,
-          original_price: Number(d.original_price) || Number(d.price),
-          discount_percentage: Number(d.discount_percentage) || 0,
-          price: Number(d.price),
-          currency: d.currency,
-        })));
+        setCountryPrices(
+          data.map((d) => ({
+            course_id: d.course_id,
+            country_code: d.country_code,
+            original_price: Number(d.original_price) || Number(d.price),
+            discount_percentage: Number(d.discount_percentage) || 0,
+            price: Number(d.price),
+            currency: d.currency,
+          })),
+        );
       }
     };
     loadCountryPrices();
@@ -205,18 +265,20 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         try {
           const parsed: CachedRates = JSON.parse(cached);
           if (Date.now() - parsed.fetchedAt < CACHE_TTL_MS) {
-            setRates(prev => ({ ...prev, ...parsed.rates }));
+            setRates((prev) => ({ ...prev, ...parsed.rates }));
             return;
           }
-        } catch { /* ignore corrupt cache */ }
+        } catch {
+          /* ignore corrupt cache */
+        }
       }
 
       try {
-        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
         const timeout = setTimeout(() => controller?.abort(), 8000);
         const res = await fetch(
-          'https://open.er-api.com/v6/latest/SAR',
-          controller ? { signal: controller.signal } : undefined
+          "https://open.er-api.com/v6/latest/SAR",
+          controller ? { signal: controller.signal } : undefined,
         );
         clearTimeout(timeout);
 
@@ -229,12 +291,12 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 newRates[code] = data.rates[code];
               }
             }
-            setRates(prev => ({ ...prev, ...newRates }));
+            setRates((prev) => ({ ...prev, ...newRates }));
 
             try {
               sessionStorage.setItem(
                 RATES_CACHE_KEY,
-                JSON.stringify({ rates: newRates, fetchedAt: Date.now() } as CachedRates)
+                JSON.stringify({ rates: newRates, fetchedAt: Date.now() } as CachedRates),
               );
             } catch {
               // Ignore restricted-storage environments on iOS
@@ -262,9 +324,9 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const detectLocation = async () => {
       try {
-        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
         const timeout = setTimeout(() => controller?.abort(), 5000);
-        const res = await fetch('https://ipapi.co/json/', controller ? { signal: controller.signal } : undefined);
+        const res = await fetch("https://ipapi.co/json/", controller ? { signal: controller.signal } : undefined);
         clearTimeout(timeout);
 
         if (res.ok) {
@@ -284,7 +346,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           if (detected) {
             // Always sync currency with the latest detected country.
             // This avoids stale sessionStorage values when a user changes location/country.
-            setCurrencyCodeState(prev => (prev === detected ? prev : detected));
+            setCurrencyCodeState((prev) => (prev === detected ? prev : detected));
             try {
               sessionStorage.setItem(CURRENCY_CACHE_KEY, detected);
             } catch {
@@ -292,9 +354,9 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
           } else {
             // Non-Arab country → USD
-            setCurrencyCodeState(prev => (prev === 'USD' ? prev : 'USD'));
+            setCurrencyCodeState((prev) => (prev === "USD" ? prev : "USD"));
             try {
-              sessionStorage.setItem(CURRENCY_CACHE_KEY, 'USD');
+              sessionStorage.setItem(CURRENCY_CACHE_KEY, "USD");
             } catch {
               // Ignore restricted-storage environments on iOS
             }
@@ -305,10 +367,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // This helps cases where users are in Palestine but the IP lookup is blocked.
         try {
           const tz = Intl.DateTimeFormat().resolvedOptions().timeZone?.toUpperCase() || "";
-          const isPalestineTz =
-            tz.includes("GAZA") ||
-            tz.includes("HEBRON") ||
-            tz.includes("JERUSALEM");
+          const isPalestineTz = tz.includes("GAZA") || tz.includes("HEBRON") || tz.includes("JERUSALEM");
 
           if (isPalestineTz) {
             setDetectedCountry("PS");
@@ -351,18 +410,18 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const hasCountryPrice = useCallback(
     (courseId: string): boolean => {
       if (!detectedCountry) return false;
-      return countryPrices.some(cp => cp.course_id === courseId && cp.country_code === detectedCountry);
+      return countryPrices.some((cp) => cp.course_id === courseId && cp.country_code === detectedCountry);
     },
-    [detectedCountry, countryPrices]
+    [detectedCountry, countryPrices],
   );
 
   /** Get the country-specific price for a course, or null */
   const getCountryPriceEntry = useCallback(
     (courseId: string): CountryPrice | null => {
       if (!detectedCountry) return null;
-      return countryPrices.find(cp => cp.course_id === courseId && cp.country_code === detectedCountry) || null;
+      return countryPrices.find((cp) => cp.course_id === courseId && cp.country_code === detectedCountry) || null;
     },
-    [detectedCountry, countryPrices]
+    [detectedCountry, countryPrices],
   );
 
   /** Get price for a specific course — uses country price if available, otherwise converts */
@@ -371,48 +430,45 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const entry = getCountryPriceEntry(courseId);
       if (entry) return Math.ceil(entry.price);
       // Fallback to conversion
-      if (currencyCode === 'SAR') return Math.ceil(sarPrice);
+      if (currencyCode === "SAR") return Math.ceil(sarPrice);
       return Math.ceil(sarPrice * rate);
     },
-    [getCountryPriceEntry, currencyCode, rate]
+    [getCountryPriceEntry, currencyCode, rate],
   );
 
-  /** Get full price info for display — uses country pricing when available, VAT-inclusive */
+  /** Get full price info for display — uses country pricing when available */
   const getCoursePriceInfo = useCallback(
-    (courseId: string, sarPrice: number, courseDiscountPct = 0, vatPct?: number): CoursePriceInfo => {
-      const effectiveVat = vatPct ?? VAT_RATE;
+    (courseId: string, sarPrice: number, courseDiscountPct = 0): CoursePriceInfo => {
       const entry = getCountryPriceEntry(courseId);
       if (entry) {
         const ccy = currencyCode;
         const origNoVat = Math.ceil(entry.original_price);
-        const finalWithVat = Math.ceil(entry.price);
+        const entryVat = (entry as any).vat_percentage ?? (detectedCountry === "SA" ? 15 : 0);
+        const finalPrice = entryVat > 0 ? Math.ceil(entry.price * (1 + entryVat / 100)) : Math.ceil(entry.price);
         return {
           originalPrice: origNoVat,
           discountPct: entry.discount_percentage,
-          finalPrice: finalWithVat,
+          finalPrice,
           currency: ccy,
           isCountryPrice: true,
-          vatPct: effectiveVat,
+          vatPct: entryVat,
         };
       }
-      // Fallback: compute final price in SAR first, then convert once to avoid rounding drift
+      const convertedBase = currencyCode === "SAR" ? Math.ceil(sarPrice) : Math.ceil(sarPrice * rate);
       const dPct = courseDiscountPct > 0 ? courseDiscountPct : 0;
-      const sarOriginal = Math.ceil(sarPrice);
-      const sarAfterDiscount = dPct > 0 ? Math.ceil(sarOriginal * (1 - dPct / 100)) : sarOriginal;
-      const sarFinal = effectiveVat > 0 ? Math.ceil(sarAfterDiscount * (1 + effectiveVat / 100)) : sarAfterDiscount;
-
-      const toLocal = (v: number) => currencyCode === 'SAR' ? v : Math.ceil(v * rate);
-
+      const finalBeforeVat = dPct > 0 ? Math.ceil(convertedBase * (1 - dPct / 100)) : convertedBase;
+      const vatForFallback = currencyCode === "SAR" ? VAT_RATE : 0;
+      const finalPrice = vatForFallback > 0 ? Math.ceil(finalBeforeVat * (1 + vatForFallback / 100)) : finalBeforeVat;
       return {
-        originalPrice: toLocal(sarOriginal),
+        originalPrice: convertedBase,
         discountPct: dPct,
-        finalPrice: toLocal(sarFinal),
+        finalPrice,
         currency: currencyCode,
         isCountryPrice: false,
-        vatPct: effectiveVat,
+        vatPct: vatForFallback,
       };
     },
-    [getCountryPriceEntry, currencyCode, rate]
+    [getCountryPriceEntry, currencyCode, rate, detectedCountry],
   );
 
   const getCourseCurrency = useCallback(
@@ -421,16 +477,16 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Keep currency aligned with the user's detected currency.
       return entry ? currencyCode : currencyCode;
     },
-    [getCountryPriceEntry, currencyCode]
+    [getCountryPriceEntry, currencyCode],
   );
 
   /** Convert SAR → local, rounded */
   const convertPrice = useCallback(
     (sarPrice: number): number => {
-      if (currencyCode === 'SAR') return Math.ceil(sarPrice);
+      if (currencyCode === "SAR") return Math.ceil(sarPrice);
       return Math.ceil(sarPrice * rate);
     },
-    [currencyCode, rate]
+    [currencyCode, rate],
   );
 
   /** Format SAR price as local currency string */
@@ -440,7 +496,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const sym = isRTL ? meta.symbolAr : meta.symbol;
       return `${converted} ${sym}`;
     },
-    [convertPrice, meta]
+    [convertPrice, meta],
   );
 
   /** Format a course price using country-specific pricing if available */
@@ -452,14 +508,11 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const sym = isRTL ? courseMeta.symbolAr : courseMeta.symbol;
       return `${price} ${sym}`;
     },
-    [getCoursePrice, getCourseCurrency]
+    [getCoursePrice, getCourseCurrency],
   );
 
   /** SAR total after 15% VAT — the exact amount Tap will charge */
-  const getSarTotalWithVat = useCallback(
-    (sarPrice: number): number => Math.ceil(sarPrice * 1.15),
-    []
-  );
+  const getSarTotalWithVat = useCallback((sarPrice: number): number => Math.ceil(sarPrice * 1.15), []);
 
   /** Tax breakdown in local currency for display purposes */
   const calculateTax = useCallback(
@@ -469,7 +522,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const total = subtotal + tax;
       return { subtotal, tax, total };
     },
-    [convertPrice]
+    [convertPrice],
   );
 
   /** Tax breakdown for a course with country-specific pricing */
@@ -480,53 +533,52 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const total = subtotal + tax;
       return { subtotal, tax, total };
     },
-    [getCoursePrice]
+    [getCoursePrice],
   );
 
   /** Alias for backward compat */
   const calculateTotalWithTax = useCallback(
     (sarPrice: number): number => {
-      if (currencyCode === 'SAR') return getSarTotalWithVat(sarPrice);
+      if (currencyCode === "SAR") return getSarTotalWithVat(sarPrice);
       const subtotal = convertPrice(sarPrice);
       return subtotal + Math.ceil(subtotal * (VAT_RATE / 100));
     },
-    [currencyCode, convertPrice, getSarTotalWithVat]
+    [currencyCode, convertPrice, getSarTotalWithVat],
   );
 
-  const getCurrencySymbol = useCallback(
-    (code: CurrencyCode, isRTL = false): string => {
-      const m = CURRENCY_META[code];
-      if (!m) return code;
-      return isRTL ? m.symbolAr : m.symbol;
-    },
-    []
-  );
+  const getCurrencySymbol = useCallback((code: CurrencyCode, isRTL = false): string => {
+    const m = CURRENCY_META[code];
+    if (!m) return code;
+    return isRTL ? m.symbolAr : m.symbol;
+  }, []);
 
   return (
-    <CurrencyContext.Provider value={{
-      currencyCode,
-      symbol: meta.symbol,
-      symbolAr: meta.symbolAr,
-      setCurrency,
-      convertPrice,
-      getCoursePrice,
-      getCoursePriceInfo,
-      getCourseCurrency,
-      formatPrice,
-      formatCoursePrice,
-      getSarTotalWithVat,
-      calculateTax,
-      calculateCourseTax,
-      calculateTotalWithTax,
-      isDetecting,
-      detectedCountry,
-      vatRate: VAT_RATE,
-      vatLabel: `VAT (${VAT_RATE}%)`,
-      vatLabelAr: `ضريبة القيمة المضافة (${VAT_RATE}%)`,
-      isSAR,
-      hasCountryPrice,
-      getCurrencySymbol,
-    }}>
+    <CurrencyContext.Provider
+      value={{
+        currencyCode,
+        symbol: meta.symbol,
+        symbolAr: meta.symbolAr,
+        setCurrency,
+        convertPrice,
+        getCoursePrice,
+        getCoursePriceInfo,
+        getCourseCurrency,
+        formatPrice,
+        formatCoursePrice,
+        getSarTotalWithVat,
+        calculateTax,
+        calculateCourseTax,
+        calculateTotalWithTax,
+        isDetecting,
+        detectedCountry,
+        vatRate: VAT_RATE,
+        vatLabel: `VAT (${VAT_RATE}%)`,
+        vatLabelAr: `ضريبة القيمة المضافة (${VAT_RATE}%)`,
+        isSAR,
+        hasCountryPrice,
+        getCurrencySymbol,
+      }}
+    >
       {children}
     </CurrencyContext.Provider>
   );
@@ -535,7 +587,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 export const useCurrency = () => {
   const context = useContext(CurrencyContext);
   if (!context) {
-    throw new Error('useCurrency must be used within a CurrencyProvider');
+    throw new Error("useCurrency must be used within a CurrencyProvider");
   }
   return context;
 };
