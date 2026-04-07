@@ -43,7 +43,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const navigate = useNavigate();
   const { getCoursePriceInfo, getCurrencySymbol, convertPrice, isSAR } = useCurrency();
   const { sendCourseStatus } = useGHLFormWebhook();
-  const { handleGuestSignup, guestSigningUp } = useGuestSignup();
 
   const [step, setStep] = useState<"info" | "payment">("info");
 
