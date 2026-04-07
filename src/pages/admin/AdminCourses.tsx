@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import CourseCountryPricing, { PricingGroup, expandGroupsToRows } from '@/components/admin/CourseCountryPricing';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -101,15 +102,6 @@ const AdminCourses: React.FC = () => {
   const navigate = useNavigate();
 
   // Form state
-  interface CountryPrice {
-    id?: string;
-    country_code: string;
-    original_price: number;
-    discount_percentage: number;
-    price: number;
-    currency: string;
-  }
-
   const ARAB_COUNTRIES = [
     { code: 'SA', name: 'Saudi Arabia', name_ar: 'السعودية', currency: 'SAR' },
     { code: 'AE', name: 'UAE', name_ar: 'الإمارات', currency: 'AED' },
@@ -163,7 +155,7 @@ const AdminCourses: React.FC = () => {
     learning_outcomes: [] as { text_en: string; text_ar: string }[],
   });
 
-  const [countryPrices, setCountryPrices] = useState<CountryPrice[]>([]);
+  const [pricingGroups, setPricingGroups] = useState<PricingGroup[]>([]);
 
   // Fetch courses
   const { data: courses = [], isLoading } = useQuery({
@@ -292,7 +284,7 @@ const AdminCourses: React.FC = () => {
       is_published: false,
       learning_outcomes: [],
     });
-    setCountryPrices([]);
+    setPricingGroups([]);
   };
 
   const handleThumbnailUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -378,19 +370,38 @@ const AdminCourses: React.FC = () => {
       is_published: Boolean(course.is_published),
       learning_outcomes: Array.isArray((course as any).learning_outcomes) ? (course as any).learning_outcomes : [],
     });
-    // Load country prices
+    // Load country prices and group them
     const { data: prices } = await supabase
       .from('course_country_prices')
       .select('id, country_code, price, currency, original_price, discount_percentage')
       .eq('course_id', course.id);
-    setCountryPrices((prices || []).map(p => ({
-      id: p.id,
-      country_code: p.country_code,
-      original_price: Number((p as any).original_price) || Number(p.price),
-      discount_percentage: Number((p as any).discount_percentage) || 0,
-      price: Number(p.price),
-      currency: p.currency,
-    })));
+    // Convert flat rows into pricing groups — group by similar SAR final price
+    const rows = (prices || []).map(p => {
+      const rate = SAR_RATES[p.currency] || 1;
+      const localPrice = Number(p.price);
+      const sarFinal = rate > 0 ? Math.ceil(localPrice / rate) : localPrice;
+      return {
+        country_code: p.country_code,
+        discount_percentage: Number((p as any).discount_percentage) || 0,
+        sar_final: sarFinal,
+      };
+    });
+    // Group by sar_final + discount_percentage
+    const groupMap = new Map<string, PricingGroup>();
+    rows.forEach(r => {
+      const key = `${r.sar_final}-${r.discount_percentage}`;
+      if (groupMap.has(key)) {
+        groupMap.get(key)!.countries.push(r.country_code);
+      } else {
+        groupMap.set(key, {
+          id: crypto.randomUUID(),
+          sar_final_price: r.sar_final,
+          discount_percentage: r.discount_percentage,
+          countries: [r.country_code],
+        });
+      }
+    });
+    setPricingGroups(Array.from(groupMap.values()));
     setEditingCourse(course);
   };
 
@@ -418,7 +429,7 @@ const AdminCourses: React.FC = () => {
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
-          if (latest && countryPrices.length > 0) {
+          if (latest && pricingGroups.length > 0) {
             await saveCountryPrices(latest.id);
           }
         }
@@ -429,51 +440,19 @@ const AdminCourses: React.FC = () => {
   const saveCountryPrices = async (courseId: string) => {
     // Delete existing prices for this course
     await supabase.from('course_country_prices').delete().eq('course_id', courseId);
-    // Insert new ones
-    if (countryPrices.length > 0) {
-      const rows = countryPrices.map(cp => ({
+    // Expand groups into flat rows and insert
+    const rows = expandGroupsToRows(pricingGroups);
+    if (rows.length > 0) {
+      const dbRows = rows.map(r => ({
         course_id: courseId,
-        country_code: cp.country_code,
-        original_price: cp.original_price,
-        discount_percentage: cp.discount_percentage,
-        price: cp.price,
-        currency: cp.currency,
+        country_code: r.country_code,
+        original_price: r.original_price,
+        discount_percentage: r.discount_percentage,
+        price: r.price,
+        currency: r.currency,
       }));
-      await supabase.from('course_country_prices').insert(rows);
+      await supabase.from('course_country_prices').insert(dbRows);
     }
-  };
-
-  const DEFAULT_COUNTRY_DISCOUNT = 78;
-  const addCountryPrice = () => {
-    setCountryPrices([...countryPrices, { country_code: '', original_price: 0, discount_percentage: DEFAULT_COUNTRY_DISCOUNT, price: 0, currency: '' }]);
-  };
-
-  const removeCountryPrice = (index: number) => {
-    setCountryPrices(countryPrices.filter((_, i) => i !== index));
-  };
-
-  const recalcCountryPrice = (originalPrice: number, discountPct: number): number => {
-    if (discountPct > 0 && discountPct <= 100) {
-      return Math.ceil(originalPrice * (1 - discountPct / 100));
-    }
-    return originalPrice;
-  };
-
-  const updateCountryPrice = (index: number, field: keyof CountryPrice, value: any) => {
-    const updated = [...countryPrices];
-    if (field === 'country_code') {
-      const country = ARAB_COUNTRIES.find(c => c.code === value);
-      updated[index] = { ...updated[index], country_code: value, currency: country?.currency || '' };
-    } else if (field === 'original_price') {
-      const op = typeof value === 'number' ? value : parseFloat(value) || 0;
-      updated[index] = { ...updated[index], original_price: op, price: recalcCountryPrice(op, updated[index].discount_percentage) };
-    } else if (field === 'discount_percentage') {
-      const dp = typeof value === 'number' ? value : parseFloat(value) || 0;
-      updated[index] = { ...updated[index], discount_percentage: dp, price: recalcCountryPrice(updated[index].original_price, dp) };
-    } else {
-      updated[index] = { ...updated[index], [field]: value };
-    }
-    setCountryPrices(updated);
   };
 
   // Filter courses
@@ -1054,191 +1033,11 @@ const AdminCourses: React.FC = () => {
             </div>
 
             {/* Country-Specific Pricing */}
-            <div className="space-y-3 border-t border-border pt-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-sm font-semibold">{isRTL ? 'أسعار حسب الدولة' : 'Country Pricing'}</Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {isRTL ? 'حدد أسعار مخصصة لكل دولة. إذا لم يتم التحديد، سيتم التحويل تلقائياً من السعر الأساسي.' : 'Set custom prices per country. If not set, base price will be auto-converted.'}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addCountryPrice}
-                >
-                  <Plus className="w-4 h-4 me-1" />
-                  {isRTL ? 'إضافة سعر' : 'Add Country Price'}
-                </Button>
-              </div>
-              {countryPrices.map((cp, idx) => {
-                const usedCodes = countryPrices.filter((_, i) => i !== idx).map(p => p.country_code);
-                const availableCountries = ARAB_COUNTRIES.filter(c => !usedCodes.includes(c.code));
-                return (
-                  <div key={idx} className="border border-border/50 rounded-lg p-3 space-y-2">
-                    <div className="flex gap-2 items-center">
-                      <div className="flex-1 grid grid-cols-2 gap-2">
-                        <Select
-                          value={cp.country_code}
-                          onValueChange={(val) => updateCountryPrice(idx, 'country_code', val)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={isRTL ? 'الدولة' : 'Country'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableCountries.map(c => (
-                              <SelectItem key={c.code} value={c.code}>
-                                {isRTL ? c.name_ar : c.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          value={cp.currency}
-                          readOnly
-                          disabled
-                          className="bg-muted"
-                          placeholder={isRTL ? 'العملة' : 'Currency'}
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 text-destructive flex-shrink-0"
-                        onClick={() => removeCountryPrice(idx)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    {/* Row 1: SAR final price input → auto-converts everything */}
-                    <div className="space-y-1">
-                      <Label className="text-xs font-medium text-primary">
-                        {isRTL ? 'السعر النهائي بالريال (شامل الخصم والضريبة)' : 'Final SAR Price (incl. discount & VAT)'}
-                      </Label>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder={isRTL ? 'أدخل السعر النهائي بالريال' : 'Enter final SAR amount'}
-                        className="border-primary/50 font-semibold"
-                        value={(() => {
-                          if (!cp.price || !cp.currency) return '';
-                          const rate = SAR_RATES[cp.currency] || 1;
-                          const localWithVat = cp.price + Math.ceil(cp.price * (VAT_RATE / 100));
-                          return rate > 0 ? Math.ceil(localWithVat / rate) : '';
-                        })()}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                            const sarFinal = val === '' ? 0 : parseFloat(val) || 0;
-                            if (sarFinal > 0 && cp.currency) {
-                              const rate = SAR_RATES[cp.currency] || 1;
-                              const sarPreTax = sarFinal / (1 + VAT_RATE / 100);
-                              const localPreTax = Math.ceil(sarPreTax * rate);
-                              const disc = cp.discount_percentage > 0 ? cp.discount_percentage : DEFAULT_COUNTRY_DISCOUNT;
-                              const localOriginal = disc > 0 && disc < 100 ? Math.ceil(localPreTax / (1 - disc / 100)) : localPreTax;
-                              const updated = [...countryPrices];
-                              updated[idx] = {
-                                ...updated[idx],
-                                discount_percentage: disc,
-                                original_price: localOriginal,
-                                price: localPreTax,
-                              };
-                              setCountryPrices(updated);
-                            } else if (val === '') {
-                              const updated = [...countryPrices];
-                              updated[idx] = { ...updated[idx], original_price: 0, price: 0 };
-                              setCountryPrices(updated);
-                            }
-                          }
-                        }}
-                      />
-                    </div>
-
-                    {/* Row 2: Local currency detail fields */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">{isRTL ? 'السعر الأصلي (محلي)' : 'Original (local)'}</Label>
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          value={cp.original_price || ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                              updateCountryPrice(idx, 'original_price', val === '' ? 0 : parseFloat(val) || 0);
-                            }
-                          }}
-                          placeholder="0"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">{isRTL ? 'الخصم %' : 'Discount %'}</Label>
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          value={cp.discount_percentage || ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                              const num = val === '' ? 0 : parseFloat(val) || 0;
-                              if (num <= 100) {
-                                updateCountryPrice(idx, 'discount_percentage', num);
-                              }
-                            }
-                          }}
-                          placeholder={String(DEFAULT_COUNTRY_DISCOUNT)}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">{isRTL ? 'بعد الخصم (محلي)' : 'After Disc. (local)'}</Label>
-                        <Input value={cp.price} readOnly disabled className="bg-muted font-semibold" />
-                      </div>
-                    </div>
-
-                    {/* Price Summary */}
-                    {cp.original_price > 0 && cp.currency && (
-                      <div className="bg-muted/50 rounded-md p-3 space-y-2">
-                        <p className="text-xs font-medium text-muted-foreground">{isRTL ? 'ملخص السعر' : 'Price Summary'}</p>
-                        {(() => {
-                          const rate = SAR_RATES[cp.currency] || 1;
-                          const sarOriginal = rate > 0 ? Math.ceil(cp.original_price / rate) : 0;
-                          const afterDisc = cp.price;
-                          const vat = Math.ceil(afterDisc * (VAT_RATE / 100));
-                          const totalLocal = afterDisc + vat;
-                          const sarTotal = rate > 0 ? Math.ceil(totalLocal / rate) : 0;
-                          return (
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
-                              <div className="bg-background rounded p-2 border border-border">
-                                <p className="text-muted-foreground">{isRTL ? 'الأصلي بالريال' : 'SAR Original'}</p>
-                                <p className="font-semibold">{sarOriginal} SAR</p>
-                              </div>
-                              <div className="bg-background rounded p-2 border border-border">
-                                <p className="text-muted-foreground">{isRTL ? 'بعد الخصم' : 'After Disc.'} (-{cp.discount_percentage}%)</p>
-                                <p className="font-semibold">{afterDisc} {cp.currency}</p>
-                              </div>
-                              <div className="bg-background rounded p-2 border border-border">
-                                <p className="text-muted-foreground">{isRTL ? 'الضريبة' : 'VAT'} ({VAT_RATE}%)</p>
-                                <p className="font-semibold">{vat} {cp.currency}</p>
-                              </div>
-                              <div className="bg-primary/10 rounded p-2 border border-primary/30">
-                                <p className="text-primary font-medium">{isRTL ? 'يظهر للمستخدم' : 'User Sees'}</p>
-                                <p className="font-bold text-primary">{totalLocal} {cp.currency}</p>
-                              </div>
-                              <div className="bg-background rounded p-2 border border-border">
-                                <p className="text-muted-foreground">{isRTL ? 'الإجمالي بالريال' : 'SAR Total'}</p>
-                                <p className="font-semibold">{sarTotal} SAR</p>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <CourseCountryPricing
+              pricingGroups={pricingGroups}
+              onChange={setPricingGroups}
+              isRTL={isRTL}
+            />
 
             <div className="space-y-2">
               <Label>{isRTL ? 'المدة (ساعات)' : 'Duration (hours)'}</Label>
