@@ -433,6 +433,36 @@ const PaymentSuccess: React.FC = () => {
             >
               {t("payment.welcomeFamily")}
             </motion.p>
+
+            {import.meta.env.DEV && (
+              <button
+                onClick={() => {
+                  fetch('https://n8n.srv1504278.hstgr.cloud/webhook-test/fec802fa-f0c5-45e9-b9c9-3ecb0ecbc5c3', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      full_name: 'Test User',
+                      email: 'test@bikerz.com',
+                      phone: '+966500000000',
+                      country: 'SA',
+                      city: 'Riyadh',
+                      course_id: 'test-course-id',
+                      course_name: 'Test Course',
+                      amount: 69,
+                      currency: 'SAR',
+                      payment_id: 'test_payment_123',
+                      purchase_date: new Date().toISOString(),
+                      order_status: 'purchased',
+                    }),
+                  })
+                    .then(() => alert('Webhook sent successfully!'))
+                    .catch(() => alert('Webhook failed!'));
+                }}
+                style={{ marginTop: '16px', padding: '8px 16px', background: '#e85', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+              >
+                TEST: Send Webhook
+              </button>
+            )}
           </div>
         </div>
       </motion.div>
