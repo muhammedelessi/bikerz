@@ -243,7 +243,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
               <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
                 {isRTL ? "ملخص الطلب" : "Order Summary"}
               </p>
-            {/*  <button
+              {/*  <button
                 onClick={() => setEditOpen(true)}
                 className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
               >
@@ -325,17 +325,17 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                       <span className="text-[12px] text-muted-foreground">
                         {isRTL ? "سيتم خصم" : "You will be charged"}
                       </span>
-                      <span className="text-[12px] font-bold text-primary flex items-center gap-1>
+                      <span className="text-[12px] font-bold text-primary flex items-center gap-1">
                         {isSupported ? `${totalWithVat} ${currencyLabel}` : `${totalWithVat} ${currencyLabel}`}
                       </span>
                       <span className="text-[12px] text-muted-foreground">
                         {isRTL ? "أي ما يعادل" : "equivalent to"}
                       </span>
                       <span className="text-[12px] font-bold text-foreground">
-  {sarEquivalent}
+                        {sarEquivalent}
 
-  <span>{'SAR'}</span>
-</span>
+                        <span>{"SAR"}</span>
+                      </span>
                     </div>
                   );
                 })()}
