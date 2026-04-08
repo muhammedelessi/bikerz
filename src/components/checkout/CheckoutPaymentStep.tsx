@@ -62,6 +62,8 @@ interface CheckoutPaymentStepProps {
   paymentStatus: PaymentStatus;
   isPaymentReady: boolean;
   vatPct?: number;
+  exchangeRate?: number;
+  isSAR?: boolean;
   onSubmitPayment: () => void;
 }
 
@@ -108,42 +110,15 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     paymentStatus,
     isPaymentReady,
     vatPct = 0,
+    exchangeRate = 1,
+    isSAR = true,
     onSubmitPayment,
   }) => {
     const [editOpen, setEditOpen] = useState(false);
-    const [editErrors, setEditErrors] = useState<Record<string, string>>({});
 
     const effectiveCountry = isOtherCountry ? countryManual : country;
     const effectiveCity = isOtherCity ? cityManual : city;
     const totalWithVat = discountedPrice;
-
-    const validateEditFields = (): boolean => {
-      const errs: Record<string, string> = {};
-      if (!fullName || fullName.trim().length < 3) {
-        errs.fullName = isRTL ? "الاسم مطلوب (3 أحرف على الأقل)" : "Name is required (min 3 characters)";
-      }
-      const rawPhone = phone?.replace(/[^0-9]/g, "") || "";
-      if (!rawPhone || rawPhone.length < 7 || rawPhone.length > 15) {
-        errs.phone = isRTL ? "رقم هاتف صحيح مطلوب (7-15 رقم)" : "Valid phone required (7-15 digits)";
-      }
-      const effCountry = isOtherCountry ? countryManual : country;
-      if (!effCountry || effCountry.trim().length === 0) {
-        errs.country = isRTL ? "الدولة مطلوبة" : "Country is required";
-      }
-      const effCity = isOtherCity ? cityManual : city;
-      if (!effCity || effCity.trim().length === 0) {
-        errs.city = isRTL ? "المدينة مطلوبة" : "City is required";
-      }
-      setEditErrors(errs);
-      return Object.keys(errs).length === 0;
-    };
-
-    const handleEditDone = () => {
-      if (validateEditFields()) {
-        setEditOpen(false);
-        setEditErrors({});
-      }
-    };
 
     // Translate country/city to user's language for display only
     const displayCountry = (() => {
@@ -223,8 +198,6 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                   placeholder={isRTL ? "أدخل رمز الخصم" : "Enter promo code"}
                   disabled={promoApplied || paymentStatus === "processing"}
                   className="w-full pe-9 h-10"
-                  autoFocus={false}
-                  tabIndex={-1}
                 />
                 {promoCode && !promoApplied && (
                   <button
@@ -338,6 +311,30 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                   {totalWithVat} {currencyLabel}
                 </span>
               </div>
+
+              {/* Equivalent amount info — for all non-SAR currencies */}
+              {!isSAR &&
+                exchangeRate > 0 &&
+                (() => {
+                  const TAP_SUPPORTED = ["KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
+                  const isSupported = TAP_SUPPORTED.some((c) => currencyLabel.includes(c));
+                  const sarEquivalent = Math.ceil(totalWithVat / exchangeRate);
+
+                  return (
+                    <div className="flex items-center justify-center gap-1.5 mt-1 px-3 py-2 rounded-lg bg-muted/40">
+                      <span className="text-[11px] text-muted-foreground text-center leading-relaxed">
+                        {isSupported
+                          ? isRTL
+                            ? `سيتم خصم ${totalWithVat} ${currencyLabel} ما يعادل ${sarEquivalent} ر.س من بطاقتك`
+                            : `${totalWithVat} ${currencyLabel} (≈ ${sarEquivalent} SAR) will be charged to your card`
+                          : isRTL
+                            ? `سيتم خصم ${sarEquivalent} ر.س ما يعادل ${totalWithVat} ${currencyLabel} من بطاقتك`
+                            : `${sarEquivalent} SAR (≈ ${totalWithVat} ${currencyLabel}) will be charged to your card`}
+                      </span>
+                    </div>
+                  );
+                })()}
+
               {vatPct > 0 && (
                 <div className="pt-2 border-t border-border/50">
                   <p className="text-[11px] text-muted-foreground text-center">
@@ -383,15 +380,10 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                 <Label className="text-xs text-muted-foreground">{isRTL ? "الاسم الكامل" : "Full Name"}</Label>
                 <Input
                   value={fullName}
-                  onChange={(e) => {
-                    setFullName(e.target.value);
-                    if (editErrors.fullName) setEditErrors((p) => ({ ...p, fullName: "" }));
-                  }}
+                  onChange={(e) => setFullName(e.target.value)}
                   placeholder={isRTL ? "الاسم الكامل" : "Full name"}
                   dir={isRTL ? "rtl" : "ltr"}
-                  className={editErrors.fullName ? "border-destructive" : ""}
                 />
-                {editErrors.fullName && <p className="text-xs text-destructive">{editErrors.fullName}</p>}
               </div>
 
               <div className="space-y-1.5">
@@ -413,14 +405,12 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                       let val = e.target.value.replace(/[^0-9]/g, "");
                       if (val.startsWith("0")) val = val.slice(1);
                       setPhone(val);
-                      if (editErrors.phone) setEditErrors((p) => ({ ...p, phone: "" }));
                     }}
                     placeholder="5XXXXXXXX"
                     dir="ltr"
-                    className={`flex-1 ${editErrors.phone ? "border-destructive" : ""}`}
+                    className="flex-1"
                   />
                 </div>
-                {editErrors.phone && <p className="text-xs text-destructive">{editErrors.phone}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -429,10 +419,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                   <SearchableDropdown
                     options={countryOptions}
                     value={isOtherCountry ? "__other__" : selectedCountryCode}
-                    onChange={(v) => {
-                      handleCountryChange(v);
-                      if (editErrors.country) setEditErrors((p) => ({ ...p, country: "" }));
-                    }}
+                    onChange={handleCountryChange}
                     placeholder={isRTL ? "اختر الدولة" : "Select country"}
                     searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
                     dir={isRTL ? "rtl" : "ltr"}
@@ -443,12 +430,10 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                       onChange={(e) => {
                         setCountryManual(e.target.value);
                         setCountry(e.target.value);
-                        if (editErrors.country) setEditErrors((p) => ({ ...p, country: "" }));
                       }}
                       placeholder={isRTL ? "اسم الدولة" : "Country name"}
                     />
                   )}
-                  {editErrors.country && <p className="text-xs text-destructive">{editErrors.country}</p>}
                 </div>
 
                 <div className="space-y-1.5">
@@ -456,10 +441,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                   {isOtherCountry ? (
                     <Input
                       value={cityManual}
-                      onChange={(e) => {
-                        setCityManual(e.target.value);
-                        if (editErrors.city) setEditErrors((p) => ({ ...p, city: "" }));
-                      }}
+                      onChange={(e) => setCityManual(e.target.value)}
                       placeholder={isRTL ? "اسم المدينة" : "City name"}
                     />
                   ) : (
@@ -467,10 +449,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                       <SearchableDropdown
                         options={cityOptions}
                         value={isOtherCity ? "__other__" : city}
-                        onChange={(v) => {
-                          handleCityChange(v);
-                          if (editErrors.city) setEditErrors((p) => ({ ...p, city: "" }));
-                        }}
+                        onChange={handleCityChange}
                         placeholder={isRTL ? "اختر المدينة" : "Select city"}
                         searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
                         dir={isRTL ? "rtl" : "ltr"}
@@ -478,26 +457,22 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                       {isOtherCity && (
                         <Input
                           value={cityManual}
-                          onChange={(e) => {
-                            setCityManual(e.target.value);
-                            if (editErrors.city) setEditErrors((p) => ({ ...p, city: "" }));
-                          }}
+                          onChange={(e) => setCityManual(e.target.value)}
                           placeholder={isRTL ? "اسم المدينة" : "City name"}
                         />
                       )}
                     </>
                   )}
-                  {editErrors.city && <p className="text-xs text-destructive">{editErrors.city}</p>}
                 </div>
               </div>
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button className="flex-1" onClick={handleEditDone}>
+              <Button className="flex-1" onClick={() => setEditOpen(false)}>
                 <Check className="w-4 h-4 me-2" />
                 {isRTL ? "تم" : "Done"}
               </Button>
-              <Button variant="ghost" onClick={() => { setEditOpen(false); setEditErrors({}); }}>
+              <Button variant="ghost" onClick={() => setEditOpen(false)}>
                 <X className="w-4 h-4" />
               </Button>
             </div>

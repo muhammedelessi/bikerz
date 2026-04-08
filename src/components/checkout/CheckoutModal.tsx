@@ -85,6 +85,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const handleNextStep = useCallback(() => {
     if (!form.validateInfo()) return;
     form.saveProfileData();
+    setStep("payment");
   }, [form]);
 
   const handleSubmitPayment = useCallback(async () => {
@@ -160,6 +161,23 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       silent: true,
     });
 
+    // Save form data to sessionStorage for PaymentSuccess webhook
+    try {
+      sessionStorage.setItem(
+        "bikerz_checkout_data",
+        JSON.stringify({
+          fullName: form.fullName,
+          phone: form.fullPhone,
+          country: form.effectiveCountry,
+          city: form.effectiveCity,
+          amount: String(paymentAmount),
+          currency: paymentCurrency,
+        }),
+      );
+    } catch {
+      /* ignore */
+    }
+
     const courseDisplayName = isRTL && course.title_ar ? course.title_ar : course.title;
 
     await tap.submitPayment({
@@ -217,6 +235,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             onOpenChange={onOpenChange}
             onRetry={() => {
               tap.reset();
+              setStep("payment");
             }}
             navigate={navigate}
           />
@@ -232,7 +251,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         <div className="bg-muted/30 p-4 sm:p-5 border-b-2 border-border flex-shrink-0">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold">
-              {isRTL ? "إتمام الشراء" : "Complete Purchase"}
+              {step === "info"
+                ? isRTL
+                  ? "معلومات الدفع"
+                  : "Billing Information"
+                : isRTL
+                  ? "إتمام الشراء"
+                  : "Complete Purchase"}
             </DialogTitle>
           </DialogHeader>
 
@@ -277,51 +302,40 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         {/* Content */}
         <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0">
           <AnimatePresence mode="wait">
-            <CheckoutPaymentStep
-              key="payment"
-              isRTL={isRTL}
-              currencyLabel={currSym}
-              formatLocal={formatLocal}
-              promoCode={promo.promoCode}
-              setPromoCode={promo.setPromoCode}
-              promoApplied={promo.promoApplied}
-              appliedCoupon={promo.appliedCoupon}
-              handleApplyPromo={promo.handleApplyPromo}
-              clearPromo={promo.clearPromo}
-              discountLabel={discountLabel}
-              discountAmount={discountAmount}
-              discountedPrice={discountedPrice}
-              fullName={form.fullName}
-              setFullName={form.setFullName}
-              email={form.email}
-              phone={form.phone}
-              setPhone={form.setPhone}
-              phonePrefix={form.phonePrefix}
-              setPhonePrefix={form.setPhonePrefix}
-              phonePrefixOptions={form.phonePrefixOptions}
-              isOtherCountry={form.isOtherCountry}
-              isOtherCity={form.isOtherCity}
-              countryManual={form.countryManual}
-              setCountryManual={form.setCountryManual}
-              country={form.country}
-              setCountry={form.setCountry}
-              cityManual={form.cityManual}
-              setCityManual={form.setCityManual}
-              city={form.city}
-              countryOptions={form.countryOptions}
-              cityOptions={form.cityOptions}
-              selectedCountryCode={form.selectedCountryCode}
-              handleCountryChange={form.handleCountryChange}
-              handleCityChange={form.handleCityChange}
-              errors={form.errors}
-              setErrors={form.setErrors}
-              courseTitle={course.title}
-              courseTitleAr={course.title_ar}
-              paymentStatus={tap.status}
-              isPaymentReady={isPaymentReady}
-              vatPct={vatPct}
-              onSubmitPayment={handleSubmitPayment}
-            />
+            {step === "info" ? (
+              <CheckoutInfoStep
+                key="info"
+                isRTL={isRTL}
+                user={user}
+                fullName={form.fullName}
+                setFullName={form.setFullName}
+                hasNamePrefilled={form.hasNamePrefilled}
+                isEditingName={form.isEditingName}
+                setIsEditingName={form.setIsEditingName}
+                email={form.email}
+                setEmail={form.setEmail}
+                phone={form.phone}
+                setPhone={form.setPhone}
+                phonePrefix={form.phonePrefix}
+                setPhonePrefix={form.setPhonePrefix}
+                phonePrefixOptions={form.phonePrefixOptions}
+                countryOptions={form.countryOptions}
+                cityOptions={form.cityOptions}
+                selectedCountryCode={form.selectedCountryCode}
+                isOtherCountry={form.isOtherCountry}
+                isOtherCity={form.isOtherCity}
+                countryManual={form.countryManual}
+                setCountryManual={form.setCountryManual}
+                setCountry={form.setCountry}
+                cityManual={form.cityManual}
+                setCityManual={form.setCityManual}
+                handleCountryChange={form.handleCountryChange}
+                handleCityChange={form.handleCityChange}
+                city={form.city}
+                errors={form.errors}
+                setErrors={form.setErrors}
+              />
+            ) : (
               <CheckoutPaymentStep
                 key="payment"
                 isRTL={isRTL}
@@ -365,14 +379,27 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 paymentStatus={tap.status}
                 isPaymentReady={isPaymentReady}
                 vatPct={vatPct}
+                exchangeRate={exchangeRate}
+                isSAR={isSAR}
                 onSubmitPayment={handleSubmitPayment}
               />
+            )}
           </AnimatePresence>
         </div>
 
         {/* Footer */}
         <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-border flex-shrink-0 flex gap-2">
-          {discountedPrice <= 0 && promo.appliedCoupon ? (
+          {step === "info" ? (
+            <Button
+              className="flex-1 btn-cta"
+              onClick={handleNextStep}
+              disabled={form.profileSaving || !form.isInfoValid}
+            >
+              {form.profileSaving && <Loader2 className="w-4 h-4 animate-spin me-2" />}
+              {isRTL ? "التالي" : "Next"}
+              <ArrowIcon className="w-4 h-4 ms-2" />
+            </Button>
+          ) : discountedPrice <= 0 && promo.appliedCoupon ? (
             <Button
               className="flex-1"
               variant="cta"
