@@ -333,7 +333,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                       </span>
                       <span className="text-[12px] font-bold text-foreground">
                         {sarEquivalent}
-                        <span>{"SAR"}</span>
+                        <span>{" SAR "}</span>
                       </span>
                     </div>
                   );
