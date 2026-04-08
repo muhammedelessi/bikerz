@@ -355,7 +355,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
           <div className="flex flex-col items-center gap-2 pt-2">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Lock className="w-3.5 h-3.5 text-primary" />
-              <span>{isRTL ? "🔒 مُؤمّن بواسطة Tap Payments" : "🔒 Secured by Tap Payments"}</span>
+              <span>{isRTL ? "مُؤمّن بواسطة Tap Payments" : "Secured by Tap Payments"}</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
