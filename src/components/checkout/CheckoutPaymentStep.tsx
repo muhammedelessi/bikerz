@@ -223,6 +223,8 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                   placeholder={isRTL ? "أدخل رمز الخصم" : "Enter promo code"}
                   disabled={promoApplied || paymentStatus === "processing"}
                   className="w-full pe-9 h-10"
+                  autoFocus={false}
+                  tabIndex={-1}
                 />
                 {promoCode && !promoApplied && (
                   <button
