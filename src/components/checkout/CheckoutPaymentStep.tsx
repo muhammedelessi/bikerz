@@ -197,7 +197,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                   onChange={(e) => setPromoCode(e.target.value)}
                   placeholder={isRTL ? "أدخل رمز الخصم" : "Enter promo code"}
                   disabled={promoApplied || paymentStatus === "processing"}
-                  className="w-full pe-7 h-8"
+                  className="w-full pe-8 h-9"
                 />
                 {promoCode && !promoApplied && (
                   <button
@@ -243,13 +243,13 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
               <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
                 {isRTL ? "ملخص الطلب" : "Order Summary"}
               </p>
-              <button
+              {/*  <button
                 onClick={() => setEditOpen(true)}
                 className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
               >
                 <Pencil className="w-3 h-3" />
                 {isRTL ? "تعديل" : "Edit"}
-              </button>
+              </button>*/}
             </div>
             <div className="p-4 space-y-2.5">
               <div className="flex justify-between text-sm">
@@ -331,15 +331,18 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                       <span className="text-[11px] text-muted-foreground">
                         {isRTL ? "أي ما يعادل" : "equivalent to"}
                       </span>
-                      <span className="text-[12px] font-bold text-primary flex items-center gap-0.5">
-                        {isSupported ? sarEquivalent : sarEquivalent}
+                      <span className="text-[12px] font-bold text-primary flex items-center gap-1">
+                        {sarEquivalent}
                         <svg
                           viewBox="0 0 24 24"
-                          className="w-3.5 h-3.5 fill-current"
+                          width="14"
+                          height="14"
+                          fill="currentColor"
                           xmlns="http://www.w3.org/2000/svg"
                         >
-                          <path d="M3.51 15.41l2.41-8.54h2.1l-1.07 3.8h5.4l1.07-3.8h2.1L13.1 15.41h-2.1l1.16-4.12H6.76l-1.16 4.12H3.51zm13.61 0l.74-2.64h-1.7l.52-1.88h1.7l1.43-5.02h2.1l-1.43 5.02h1.7l-.52 1.88h-1.7l-.74 2.64h-2.1z" />
+                          <path d="M2 6h2v8.5A3.5 3.5 0 0 0 7.5 18 3.5 3.5 0 0 0 11 14.5V6h2v8.5A5.5 5.5 0 0 1 7.5 20 5.5 5.5 0 0 1 2 14.5V6zm13 0h2v4h-2V6zm0 6h2v2h-2v-2z" />
                         </svg>
+                        <span>{isRTL ? "ريال سعودي" : "SAR"}</span>
                       </span>
                     </div>
                   );
