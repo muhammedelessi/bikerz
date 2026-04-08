@@ -329,11 +329,10 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                         {isSupported ? `${totalWithVat} ${currencyLabel}` : `${totalWithVat} ${currencyLabel}`}
                       </span>
                       <span className="text-[12px] text-muted-foreground">
-                        {isRTL ? "أي ما يعادل" : "equivalent to"}
+                        {isRTL ? " أي ما يعادل" : "equivalent to"}
                       </span>
                       <span className="text-[12px] font-bold text-foreground">
                         {sarEquivalent}
-
                         <span>{"SAR"}</span>
                       </span>
                     </div>
