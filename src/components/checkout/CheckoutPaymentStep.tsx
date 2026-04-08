@@ -197,7 +197,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                   onChange={(e) => setPromoCode(e.target.value)}
                   placeholder={isRTL ? "أدخل رمز الخصم" : "Enter promo code"}
                   disabled={promoApplied || paymentStatus === "processing"}
-                  className="w-full pe-9 h-10"
+                  className="w-full pe-7 h-8"
                 />
                 {promoCode && !promoApplied && (
                   <button
@@ -322,15 +322,20 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
 
                   return (
                     <div className="flex items-center justify-center gap-1.5 mt-1 px-3 py-2 rounded-lg bg-muted/40">
-                      <span className="text-[11px] text-muted-foreground text-center leading-relaxed">
-                        {isSupported
-                          ? isRTL
-                            ? `سيتم خصم ${totalWithVat} ${currencyLabel} ما يعادل ${sarEquivalent} ر.س من بطاقتك`
-                            : `${totalWithVat} ${currencyLabel} (≈ ${sarEquivalent} SAR) will be charged to your card`
-                          : isRTL
-                            ? `سيتم خصم ${sarEquivalent} ر.س ما يعادل ${totalWithVat} ${currencyLabel} من بطاقتك`
-                            : `${sarEquivalent} SAR (≈ ${totalWithVat} ${currencyLabel}) will be charged to your card`}
-                      </span>
+                      <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] text-muted-foreground text-center leading-relaxed">
+                          {isRTL ? "سيتم خصم" : "You will be charged"}
+                        </span>
+                        <span className="text-[12px] font-semibold text-foreground">
+                          {isSupported ? `${totalWithVat} ${currencyLabel}` : `${sarEquivalent} ر.س`}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {isRTL ? "من بطاقتك فقط، أي ما يعادل" : "from your card, equivalent to"}
+                        </span>
+                        <span className="text-[12px] font-semibold text-foreground">
+                          {isSupported ? `${sarEquivalent} ر.س` : `${totalWithVat} ${currencyLabel}`}
+                        </span>
+                      </div>
                     </div>
                   );
                 })()}
