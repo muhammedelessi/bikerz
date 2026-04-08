@@ -456,7 +456,10 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                   {isOtherCountry ? (
                     <Input
                       value={cityManual}
-                      onChange={(e) => setCityManual(e.target.value)}
+                      onChange={(e) => {
+                        setCityManual(e.target.value);
+                        if (editErrors.city) setEditErrors((p) => ({ ...p, city: "" }));
+                      }}
                       placeholder={isRTL ? "اسم المدينة" : "City name"}
                     />
                   ) : (
@@ -464,7 +467,10 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                       <SearchableDropdown
                         options={cityOptions}
                         value={isOtherCity ? "__other__" : city}
-                        onChange={handleCityChange}
+                        onChange={(v) => {
+                          handleCityChange(v);
+                          if (editErrors.city) setEditErrors((p) => ({ ...p, city: "" }));
+                        }}
                         placeholder={isRTL ? "اختر المدينة" : "Select city"}
                         searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
                         dir={isRTL ? "rtl" : "ltr"}
@@ -472,22 +478,26 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                       {isOtherCity && (
                         <Input
                           value={cityManual}
-                          onChange={(e) => setCityManual(e.target.value)}
+                          onChange={(e) => {
+                            setCityManual(e.target.value);
+                            if (editErrors.city) setEditErrors((p) => ({ ...p, city: "" }));
+                          }}
                           placeholder={isRTL ? "اسم المدينة" : "City name"}
                         />
                       )}
                     </>
                   )}
+                  {editErrors.city && <p className="text-xs text-destructive">{editErrors.city}</p>}
                 </div>
               </div>
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button className="flex-1" onClick={() => setEditOpen(false)}>
+              <Button className="flex-1" onClick={handleEditDone}>
                 <Check className="w-4 h-4 me-2" />
                 {isRTL ? "تم" : "Done"}
               </Button>
-              <Button variant="ghost" onClick={() => setEditOpen(false)}>
+              <Button variant="ghost" onClick={() => { setEditOpen(false); setEditErrors({}); }}>
                 <X className="w-4 h-4" />
               </Button>
             </div>
