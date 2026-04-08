@@ -91,10 +91,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Tap only supports: SAR, AED, BHD, KWD, OMR, QAR, USD, GBP, EUR
-    // The client may send a display currency (e.g. EGP, DZD, MAD) — we always charge in SAR.
+    // Tap supports these currencies natively
+    const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP", "GBP", "EUR"];
     const requestedCurrency = String(rawCurrency || "SAR").trim().toUpperCase();
-    const chargeCurrency = "SAR";
+    // If the client sends a Tap-supported currency, charge in that currency; otherwise fall back to SAR
+    const chargeCurrency = TAP_SUPPORTED.includes(requestedCurrency) ? requestedCurrency : "SAR";
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
