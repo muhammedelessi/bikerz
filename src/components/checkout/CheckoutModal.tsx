@@ -45,7 +45,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { sendCourseStatus } = useGHLFormWebhook();
   const { handleGuestSignup, guestSigningUp } = useGuestSignup();
 
-  const [step] = useState<"payment">("payment");
+  const [step, setStep] = useState<"info" | "payment">("info");
 
   const priceInfo = useMemo(
     () => getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0),
