@@ -333,16 +333,8 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                       </span>
                       <span className="text-[12px] font-bold text-primary flex items-center gap-1">
                         {sarEquivalent}
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="14"
-                          height="14"
-                          fill="currentColor"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path d="M2 6h2v8.5A3.5 3.5 0 0 0 7.5 18 3.5 3.5 0 0 0 11 14.5V6h2v8.5A5.5 5.5 0 0 1 7.5 20 5.5 5.5 0 0 1 2 14.5V6zm13 0h2v4h-2V6zm0 6h2v2h-2v-2z" />
-                        </svg>
-                        <span>{isRTL ? "ريال سعودي" : "SAR"}</span>
+
+                        <span>{"SAR"}</span>
                       </span>
                     </div>
                   );
