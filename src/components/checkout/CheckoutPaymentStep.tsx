@@ -321,21 +321,19 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                   const sarEquivalent = Math.ceil(totalWithVat / exchangeRate);
 
                   return (
-                    <div className="flex items-center justify-center gap-1.5 mt-1 px-3 py-2 rounded-lg bg-muted/40">
-                      <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                        <span className="text-[11px] text-muted-foreground text-center leading-relaxed">
-                          {isRTL ? "سيتم خصم" : "You will be charged"}
-                        </span>
-                        <span className="text-[12px] font-semibold text-foreground">
-                          {isSupported ? `${totalWithVat} ${currencyLabel}` : `${sarEquivalent} ر.س`}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {isRTL ? "من بطاقتك فقط، أي ما يعادل" : "from your card, equivalent to"}
-                        </span>
-                        <span className="text-[12px] font-semibold text-foreground">
-                          {isSupported ? `${sarEquivalent} ر.س` : `${totalWithVat} ${currencyLabel}`}
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                      <span className="text-[11px] text-muted-foreground leading-relaxed">
+                        {isRTL ? "سيتم خصم" : "You will be charged"}
+                      </span>
+                      <span className="text-[12px] font-semibold text-foreground">
+                        {isSupported ? `${totalWithVat} ${currencyLabel}` : `${sarEquivalent} ر.س`}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground leading-relaxed">
+                        {isRTL ? "من بطاقتك، أي ما يعادل" : "from your card, equivalent to"}
+                      </span>
+                      <span className="text-[12px] font-semibold text-foreground">
+                        {isSupported ? `≈ ${sarEquivalent} ر.س` : `≈ ${totalWithVat} ${currencyLabel}`}
+                      </span>
                     </div>
                   );
                 })()}
