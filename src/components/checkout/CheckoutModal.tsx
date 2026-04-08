@@ -373,17 +373,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         {/* Footer */}
         <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-border flex-shrink-0 flex gap-2">
-          {step === "info" ? (
-            <Button
-              className="flex-1 btn-cta"
-              onClick={handleNextStep}
-              disabled={form.profileSaving || !form.isInfoValid}
-            >
-              {form.profileSaving && <Loader2 className="w-4 h-4 animate-spin me-2" />}
-              {isRTL ? "التالي" : "Next"}
-              <ArrowIcon className="w-4 h-4 ms-2" />
-            </Button>
-          ) : discountedPrice <= 0 && promo.appliedCoupon ? (
+          {discountedPrice <= 0 && promo.appliedCoupon ? (
             <Button
               className="flex-1"
               variant="cta"
