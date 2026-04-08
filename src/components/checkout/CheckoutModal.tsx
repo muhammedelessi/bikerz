@@ -445,7 +445,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         ? discountedPrice
                         : Math.ceil(discountedPrice / exchangeRate);
                     const displaySym = showLocal ? currSym : isRTL ? "ر.س" : "SAR";
-                    return isRTL ? `ادفع الآن ${displayAmt} ${displaySym}` : `Pay Now ${displayAmt} ${displaySym}`;
+                    return isRTL ? `ادفع الآن` : `Pay Now`;
                   })()}
                 </>
               )}
