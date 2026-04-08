@@ -321,18 +321,25 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                   const sarEquivalent = Math.ceil(totalWithVat / exchangeRate);
 
                   return (
-                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] text-muted-foreground leading-relaxed">
+                    <div className="flex items-center justify-center gap-1.5 flex-wrap text-center px-2 py-2 rounded-lg bg-muted/40 mt-1">
+                      <span className="text-[11px] text-muted-foreground">
                         {isRTL ? "سيتم خصم" : "You will be charged"}
                       </span>
-                      <span className="text-[12px] font-semibold text-foreground">
-                        {isSupported ? `${totalWithVat} ${currencyLabel}` : `${sarEquivalent} ر.س`}
+                      <span className="text-[12px] font-bold text-foreground">
+                        {isSupported ? `${totalWithVat} ${currencyLabel}` : `${totalWithVat} ${currencyLabel}`}
                       </span>
-                      <span className="text-[11px] text-muted-foreground leading-relaxed">
-                        {isRTL ? "من بطاقتك، أي ما يعادل" : "from your card, equivalent to"}
+                      <span className="text-[11px] text-muted-foreground">
+                        {isRTL ? "أي ما يعادل" : "equivalent to"}
                       </span>
-                      <span className="text-[12px] font-semibold text-foreground">
-                        {isSupported ? `≈ ${sarEquivalent} ر.س` : `≈ ${totalWithVat} ${currencyLabel}`}
+                      <span className="text-[12px] font-bold text-primary flex items-center gap-0.5">
+                        {isSupported ? sarEquivalent : sarEquivalent}
+                        <svg
+                          viewBox="0 0 24 24"
+                          className="w-3.5 h-3.5 fill-current"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="M3.51 15.41l2.41-8.54h2.1l-1.07 3.8h5.4l1.07-3.8h2.1L13.1 15.41h-2.1l1.16-4.12H6.76l-1.16 4.12H3.51zm13.61 0l.74-2.64h-1.7l.52-1.88h1.7l1.43-5.02h2.1l-1.43 5.02h1.7l-.52 1.88h-1.7l-.74 2.64h-2.1z" />
+                        </svg>
                       </span>
                     </div>
                   );
