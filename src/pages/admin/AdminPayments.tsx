@@ -828,22 +828,26 @@ const AdminPayments = () => {
                                 }
                               />
                             )}
-                            {breakdown.hasVat && (
-                              <DetailRow
-                                label={isRTL ? "المبلغ قبل الضريبة" : "Amount Before VAT"}
-                                value={`${breakdown.amountBeforeVAT.toFixed(2)} ${selectedPayment.currency}`}
-                              />
-                            )}
-                            {breakdown.hasVat && (
-                              <DetailRow
-                                label={
-                                  isRTL
-                                    ? `ضريبة القيمة المضافة (${breakdown.vatPct || 15}%)`
-                                    : `VAT (${breakdown.vatPct || 15}%)`
-                                }
-                                value={`${breakdown.vatAmount.toFixed(2)} ${selectedPayment.currency}`}
-                              />
-                            )}
+                            <DetailRow
+                              label={isRTL ? "المبلغ قبل الضريبة" : "Amount Before VAT"}
+                              value={`${breakdown.amountBeforeVAT.toFixed(2)} ${selectedPayment.currency}`}
+                            />
+                            <DetailRow
+                              label={
+                                isRTL
+                                  ? `ضريبة القيمة المضافة (${breakdown.hasVat ? breakdown.vatPct || 15 : 0}%)`
+                                  : `VAT (${breakdown.hasVat ? breakdown.vatPct || 15 : 0}%)`
+                              }
+                              value={`${breakdown.vatAmount.toFixed(2)} ${selectedPayment.currency}`}
+                            />
+                            <DetailRow
+                              label={isRTL ? "المبلغ بعد الضريبة" : "Amount After VAT"}
+                              value={
+                                <span className="font-semibold">
+                                  {selectedPayment.amount.toFixed(2)} {selectedPayment.currency}
+                                </span>
+                              }
+                            />
                           </>
                         );
                       })()}
