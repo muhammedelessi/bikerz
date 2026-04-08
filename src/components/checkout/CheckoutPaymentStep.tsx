@@ -322,7 +322,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
 
                   return (
                     <div className="flex items-center justify-center gap-1.5 flex-wrap text-center px-2 py-2 rounded-lg bg-muted/40 mt-1">
-                      <span className="text-[11px] text-muted-foreground">
+                      <span className="text-[12px] text-muted-foreground">
                         {isRTL ? "سيتم خصم" : "You will be charged"}
                       </span>
                       <span className="text-[12px] font-bold text-foreground">
@@ -331,7 +331,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                       <span className="text-[11px] text-muted-foreground">
                         {isRTL ? "أي ما يعادل" : "equivalent to"}
                       </span>
-                      <span className="text-[12px] font-bold text-primary flex items-center gap-1">
+                      <span className="text-[10px] font-bold text-primary flex items-center gap-1">
                         {sarEquivalent}
 
                         <span>{"SAR"}</span>
