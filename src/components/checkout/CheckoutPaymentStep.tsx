@@ -111,10 +111,39 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     onSubmitPayment,
   }) => {
     const [editOpen, setEditOpen] = useState(false);
+    const [editErrors, setEditErrors] = useState<Record<string, string>>({});
 
     const effectiveCountry = isOtherCountry ? countryManual : country;
     const effectiveCity = isOtherCity ? cityManual : city;
     const totalWithVat = discountedPrice;
+
+    const validateEditFields = (): boolean => {
+      const errs: Record<string, string> = {};
+      if (!fullName || fullName.trim().length < 3) {
+        errs.fullName = isRTL ? "الاسم مطلوب (3 أحرف على الأقل)" : "Name is required (min 3 characters)";
+      }
+      const rawPhone = phone?.replace(/[^0-9]/g, "") || "";
+      if (!rawPhone || rawPhone.length < 7 || rawPhone.length > 15) {
+        errs.phone = isRTL ? "رقم هاتف صحيح مطلوب (7-15 رقم)" : "Valid phone required (7-15 digits)";
+      }
+      const effCountry = isOtherCountry ? countryManual : country;
+      if (!effCountry || effCountry.trim().length === 0) {
+        errs.country = isRTL ? "الدولة مطلوبة" : "Country is required";
+      }
+      const effCity = isOtherCity ? cityManual : city;
+      if (!effCity || effCity.trim().length === 0) {
+        errs.city = isRTL ? "المدينة مطلوبة" : "City is required";
+      }
+      setEditErrors(errs);
+      return Object.keys(errs).length === 0;
+    };
+
+    const handleEditDone = () => {
+      if (validateEditFields()) {
+        setEditOpen(false);
+        setEditErrors({});
+      }
+    };
 
     // Translate country/city to user's language for display only
     const displayCountry = (() => {
