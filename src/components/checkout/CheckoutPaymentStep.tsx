@@ -383,10 +383,15 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                 <Label className="text-xs text-muted-foreground">{isRTL ? "الاسم الكامل" : "Full Name"}</Label>
                 <Input
                   value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  onChange={(e) => {
+                    setFullName(e.target.value);
+                    if (editErrors.fullName) setEditErrors((p) => ({ ...p, fullName: "" }));
+                  }}
                   placeholder={isRTL ? "الاسم الكامل" : "Full name"}
                   dir={isRTL ? "rtl" : "ltr"}
+                  className={editErrors.fullName ? "border-destructive" : ""}
                 />
+                {editErrors.fullName && <p className="text-xs text-destructive">{editErrors.fullName}</p>}
               </div>
 
               <div className="space-y-1.5">
