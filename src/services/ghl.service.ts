@@ -23,6 +23,22 @@ export function toCountryCode(country: string | null | undefined): string {
   return entry ? entry.code : country;
 }
 
+// Resolve country to English name
+export function resolveCountryEnglish(country: string | null | undefined): string {
+  if (!country) return "";
+  const entry = COUNTRIES.find((c) => c.en === country || c.ar === country || c.code === country);
+  return entry ? entry.en : country;
+}
+
+// Resolve city to English name
+export function resolveCityEnglish(city: string | null | undefined, country: string | null | undefined): string {
+  if (!city) return "";
+  const countryEntry = COUNTRIES.find((c) => c.en === country || c.ar === country || c.code === country);
+  if (!countryEntry) return city;
+  const cityEntry = countryEntry.cities.find((c) => c.en === city || c.ar === city);
+  return cityEntry ? cityEntry.en : city;
+}
+
 // Persist UTM on first load
 if (typeof window !== "undefined") {
   try {
