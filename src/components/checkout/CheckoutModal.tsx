@@ -367,7 +367,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 vatPct={vatPct}
                 onSubmitPayment={handleSubmitPayment}
               />
-            )}
           </AnimatePresence>
         </div>
 
