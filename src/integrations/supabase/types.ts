@@ -3137,6 +3137,7 @@ export type Database = {
         Returns: Json
       }
       award_badge_secure: { Args: { p_badge_id: string }; Returns: Json }
+      check_email_exists: { Args: { p_email: string }; Returns: boolean }
       check_google_provider: { Args: { p_email: string }; Returns: boolean }
       check_phone_exists: { Args: { p_phone: string }; Returns: boolean }
       get_all_user_emails: {
