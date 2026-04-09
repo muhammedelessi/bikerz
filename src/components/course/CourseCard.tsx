@@ -10,11 +10,9 @@ import { Button } from "@/components/ui/button";
 
 const heroImage = "/hero-rider.webp";
 
-function getOptimizedImageUrl(url: string | null | undefined, width: number): string | undefined {
+function getOptimizedImageUrl(url: string | null | undefined): string | undefined {
   if (!url) return undefined;
-  if (!url.includes('supabase.co/storage')) return url;
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}width=${width}&quality=80&format=webp`;
+  return url;
 }
 
 export interface CourseCardProps {
@@ -79,7 +77,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   };
 
   const rawThumbnail = course.preview_video_thumbnail || course.thumbnail_url;
-  const thumbnailSrc = getOptimizedImageUrl(rawThumbnail, 640) || heroImage;
+  const thumbnailSrc = getOptimizedImageUrl(rawThumbnail) || heroImage;
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't navigate if clicking on buttons or video area
