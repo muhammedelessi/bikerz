@@ -278,6 +278,15 @@ const Signup: React.FC = () => {
 
     setIsLoading(true);
 
+    // Check if email already exists using secure RPC
+    const { data: emailExists } = await supabase.rpc('check_email_exists', { p_email: email.trim() });
+
+    if (emailExists) {
+      setEmailError('EMAIL_EXISTS');
+      setIsLoading(false);
+      return;
+    }
+
     // Check if phone already exists using secure RPC
     const fullPhone = getFullPhone();
     const { data: phoneExists } = await supabase.rpc('check_phone_exists', { p_phone: fullPhone });
