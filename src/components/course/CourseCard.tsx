@@ -77,7 +77,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   };
 
   const rawThumbnail = course.preview_video_thumbnail || course.thumbnail_url;
-  const thumbnailSrc = getOptimizedImageUrl(rawThumbnail, 640) || heroImage;
+  const thumbnailSrc = getOptimizedImageUrl(rawThumbnail) || heroImage;
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't navigate if clicking on buttons or video area
