@@ -133,17 +133,24 @@ const AdminCoupons: React.FC = () => {
       const userIds = [...new Set(logs.map(l => l.user_id))];
       const courseIds = [...new Set(logs.map(l => l.course_id).filter(Boolean))] as string[];
 
-      const [profilesRes, coursesRes, emailsRes] = await Promise.all([
+      const [profilesRes, coursesRes] = await Promise.all([
         supabase.from('profiles').select('user_id, full_name, phone').in('user_id', userIds),
         courseIds.length > 0
           ? supabase.from('courses').select('id, title, title_ar').in('id', courseIds)
           : Promise.resolve({ data: [] as any[] }),
-        supabase.rpc('get_all_user_emails') as any,
       ]);
+
+      // Fetch emails separately to handle potential RPC errors gracefully
+      let emailMap = new Map<string, string>();
+      try {
+        const { data: emailsData } = await supabase.rpc('get_all_user_emails') as any;
+        if (emailsData) {
+          emailMap = new Map(emailsData.map((e: any) => [e.user_id, e.email]));
+        }
+      } catch {}
 
       const profileMap = new Map((profilesRes.data || []).map((p: any) => [p.user_id, p]));
       const courseMap = new Map((coursesRes.data || []).map((c: any) => [c.id, c]));
-      const emailMap = new Map((emailsRes.data || []).map((e: any) => [e.user_id, e.email]));
 
       return logs.map(log => ({
         ...log,
