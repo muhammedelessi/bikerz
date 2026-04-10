@@ -116,18 +116,41 @@ const AdminCoupons: React.FC = () => {
   });
 
   // Fetch usage logs for a coupon
-  const { data: usageLogs } = useQuery({
+  const { data: usageLogs, isLoading: usageLoading } = useQuery({
     queryKey: ['coupon-usage', viewUsage],
     enabled: !!viewUsage,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: logs, error } = await supabase
         .from('coupon_usage_logs')
         .select('*')
         .eq('coupon_id', viewUsage!)
         .order('applied_at', { ascending: false })
         .limit(50);
       if (error) throw error;
-      return data;
+      if (!logs || logs.length === 0) return [];
+
+      // Fetch user profiles and course names in parallel
+      const userIds = [...new Set(logs.map(l => l.user_id))];
+      const courseIds = [...new Set(logs.map(l => l.course_id).filter(Boolean))] as string[];
+
+      const [profilesRes, coursesRes, emailsRes] = await Promise.all([
+        supabase.from('profiles').select('user_id, full_name, phone').in('user_id', userIds),
+        courseIds.length > 0
+          ? supabase.from('courses').select('id, title, title_ar').in('id', courseIds)
+          : Promise.resolve({ data: [] as any[] }),
+        supabase.rpc('get_all_user_emails') as any,
+      ]);
+
+      const profileMap = new Map((profilesRes.data || []).map((p: any) => [p.user_id, p]));
+      const courseMap = new Map((coursesRes.data || []).map((c: any) => [c.id, c]));
+      const emailMap = new Map((emailsRes.data || []).map((e: any) => [e.user_id, e.email]));
+
+      return logs.map(log => ({
+        ...log,
+        _profile: profileMap.get(log.user_id) || null,
+        _email: emailMap.get(log.user_id) || null,
+        _course: log.course_id ? courseMap.get(log.course_id) || null : null,
+      }));
     },
   });
 
@@ -704,42 +727,68 @@ const AdminCoupons: React.FC = () => {
 
         {/* Usage Log Dialog */}
         <Dialog open={!!viewUsage} onOpenChange={() => setViewUsage(null)}>
-          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{isRTL ? 'سجل الاستخدام' : 'Usage Log'}</DialogTitle>
+              <DialogDescription>
+                {isRTL ? 'تفاصيل المستخدمين الذين استخدموا هذا الكوبون' : 'Details of users who used this coupon'}
+              </DialogDescription>
             </DialogHeader>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{isRTL ? 'التاريخ' : 'Date'}</TableHead>
-                  <TableHead>{isRTL ? 'النتيجة' : 'Result'}</TableHead>
-                  <TableHead>{isRTL ? 'الخصم' : 'Discount'}</TableHead>
-                  <TableHead>{isRTL ? 'المبلغ النهائي' : 'Final'}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {usageLogs?.map((log: any) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="text-xs">{format(new Date(log.applied_at), 'MMM dd, HH:mm')}</TableCell>
-                    <TableCell>
-                      {log.result === 'success'
-                        ? <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">✓</Badge>
-                        : <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">✗</Badge>
-                      }
-                    </TableCell>
-                    <TableCell>{Number(log.discount_amount).toFixed(0)} SAR</TableCell>
-                    <TableCell>{Number(log.final_amount).toFixed(0)} SAR</TableCell>
-                  </TableRow>
-                ))}
-                {(!usageLogs || usageLogs.length === 0) && (
+            {usageLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                      {isRTL ? 'لا يوجد سجل استخدام' : 'No usage records'}
-                    </TableCell>
+                    <TableHead>{isRTL ? 'المستخدم' : 'User'}</TableHead>
+                    <TableHead>{isRTL ? 'الدورة' : 'Course'}</TableHead>
+                    <TableHead>{isRTL ? 'التاريخ' : 'Date'}</TableHead>
+                    <TableHead>{isRTL ? 'النتيجة' : 'Result'}</TableHead>
+                    <TableHead>{isRTL ? 'الخصم' : 'Discount'}</TableHead>
+                    <TableHead>{isRTL ? 'المبلغ النهائي' : 'Final'}</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {usageLogs?.map((log: any) => (
+                    <TableRow key={log.id}>
+                      <TableCell>
+                        <div className="min-w-[120px]">
+                          <p className="text-sm font-medium truncate">{log._profile?.full_name || (isRTL ? 'غير معروف' : 'Unknown')}</p>
+                          {log._email && <p className="text-xs text-muted-foreground truncate">{log._email}</p>}
+                          {log._profile?.phone && <p className="text-xs text-muted-foreground" dir="ltr">{log._profile.phone}</p>}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm truncate block max-w-[140px]">
+                          {log._course
+                            ? (isRTL ? log._course.title_ar || log._course.title : log._course.title)
+                            : <span className="text-muted-foreground">—</span>}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">{format(new Date(log.applied_at), 'MMM dd, HH:mm')}</TableCell>
+                      <TableCell>
+                        {log.result === 'success'
+                          ? <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">{isRTL ? 'نجح' : 'OK'}</Badge>
+                          : <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">{isRTL ? 'فشل' : 'Fail'}</Badge>
+                        }
+                        {log.failure_reason && <p className="text-xs text-destructive mt-0.5 max-w-[100px] truncate">{log.failure_reason}</p>}
+                      </TableCell>
+                      <TableCell>{Number(log.discount_amount).toFixed(0)} SAR</TableCell>
+                      <TableCell>{Number(log.final_amount).toFixed(0)} SAR</TableCell>
+                    </TableRow>
+                  ))}
+                  {(!usageLogs || usageLogs.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                        {isRTL ? 'لا يوجد سجل استخدام' : 'No usage records'}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </DialogContent>
         </Dialog>
       </div>
