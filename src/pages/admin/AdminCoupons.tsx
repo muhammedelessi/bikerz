@@ -116,18 +116,41 @@ const AdminCoupons: React.FC = () => {
   });
 
   // Fetch usage logs for a coupon
-  const { data: usageLogs } = useQuery({
+  const { data: usageLogs, isLoading: usageLoading } = useQuery({
     queryKey: ['coupon-usage', viewUsage],
     enabled: !!viewUsage,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: logs, error } = await supabase
         .from('coupon_usage_logs')
         .select('*')
         .eq('coupon_id', viewUsage!)
         .order('applied_at', { ascending: false })
         .limit(50);
       if (error) throw error;
-      return data;
+      if (!logs || logs.length === 0) return [];
+
+      // Fetch user profiles and course names in parallel
+      const userIds = [...new Set(logs.map(l => l.user_id))];
+      const courseIds = [...new Set(logs.map(l => l.course_id).filter(Boolean))] as string[];
+
+      const [profilesRes, coursesRes, emailsRes] = await Promise.all([
+        supabase.from('profiles').select('user_id, full_name, phone').in('user_id', userIds),
+        courseIds.length > 0
+          ? supabase.from('courses').select('id, title, title_ar').in('id', courseIds)
+          : Promise.resolve({ data: [] as any[] }),
+        supabase.rpc('get_all_user_emails') as any,
+      ]);
+
+      const profileMap = new Map((profilesRes.data || []).map((p: any) => [p.user_id, p]));
+      const courseMap = new Map((coursesRes.data || []).map((c: any) => [c.id, c]));
+      const emailMap = new Map((emailsRes.data || []).map((e: any) => [e.user_id, e.email]));
+
+      return logs.map(log => ({
+        ...log,
+        _profile: profileMap.get(log.user_id) || null,
+        _email: emailMap.get(log.user_id) || null,
+        _course: log.course_id ? courseMap.get(log.course_id) || null : null,
+      }));
     },
   });
 
