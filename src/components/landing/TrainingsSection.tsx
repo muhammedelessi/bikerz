@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { BookOpen, Dumbbell, Star, MapPin, Clock, DollarSign, ChevronRight, ChevronLeft, Users } from 'lucide-react';
+import { BookOpen, Wrench, Star, MapPin, Clock, DollarSign, ChevronRight, ChevronLeft, Users, GraduationCap, BarChart3 } from 'lucide-react';
 import TrainerProfileModal from '@/components/landing/TrainerProfileModal';
 import { cn } from '@/lib/utils';
 
@@ -71,7 +71,6 @@ const TrainingsSection: React.FC = () => {
   return (
     <section className="py-12 sm:py-16">
       <div className="container mx-auto px-4 max-w-[1200px]">
-        {/* Header */}
         <div className="text-center mb-10">
           <div className="w-10 h-1 bg-primary mx-auto mb-4 rounded-full" />
           <h2 className="text-2xl sm:text-3xl font-black text-foreground mb-2">
@@ -82,7 +81,6 @@ const TrainingsSection: React.FC = () => {
           </p>
         </div>
 
-        {/* Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {trainings.map(t => {
             const level = levelConfig[t.level] || levelConfig.beginner;
@@ -93,24 +91,19 @@ const TrainingsSection: React.FC = () => {
                 key={t.id}
                 onClick={() => setSelectedTraining(t)}
                 className={cn(
-                  "group relative bg-card rounded-2xl border border-border/60 overflow-hidden cursor-pointer",
+                  "group relative bg-card rounded-2xl border border-border/60 overflow-hidden cursor-pointer flex flex-col",
                   "transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 hover:border-primary/30"
                 )}
               >
-                {/* Icon header */}
-                <div className="p-5 pb-0">
+                <div className="p-5 flex-1 flex flex-col">
+                  {/* Icon + badges row */}
                   <div className="flex items-start justify-between mb-4">
-                    <div className={cn(
-                      "w-12 h-12 rounded-xl flex items-center justify-center",
-                      "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                    )}>
-                      {t.type === 'theory' ? <BookOpen className="w-5 h-5" /> : <Dumbbell className="w-5 h-5" />}
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary text-primary-foreground shadow-md shadow-primary/20">
+                      {t.type === 'theory' ? <GraduationCap className="w-5 h-5" /> : <Wrench className="w-5 h-5" />}
                     </div>
-                    <div className="flex gap-2">
-                      <span className={cn("text-[11px] font-semibold px-2.5 py-1 rounded-full border", level.color)}>
-                        {isRTL ? level.label.ar : level.label.en}
-                      </span>
-                    </div>
+                    <span className={cn("text-[11px] font-semibold px-2.5 py-1 rounded-full border", level.color)}>
+                      {isRTL ? level.label.ar : level.label.en}
+                    </span>
                   </div>
 
                   {/* Title & description */}
@@ -120,26 +113,25 @@ const TrainingsSection: React.FC = () => {
                   <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed mb-4">
                     {isRTL ? t.description_ar : t.description_en}
                   </p>
-                </div>
 
-                {/* Footer */}
-                <div className="px-5 pb-5">
-                  {/* Meta chips */}
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-muted">
+                  {/* Meta */}
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-auto">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted font-medium">
                       {t.type === 'theory'
-                        ? (isRTL ? '📖 نظري' : '📖 Theory')
-                        : (isRTL ? '🏍️ عملي' : '🏍️ Practical')}
+                        ? (isRTL ? 'نظري' : 'Theory')
+                        : (isRTL ? 'عملي' : 'Practical')}
                     </span>
                     {trainersCount > 0 && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-muted">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-muted font-medium">
                         <Users className="w-3 h-3" />
                         {trainersCount} {isRTL ? 'مدرب' : 'trainers'}
                       </span>
                     )}
                   </div>
+                </div>
 
-                  {/* CTA */}
+                {/* CTA - always at bottom */}
+                <div className="px-5 pb-5">
                   <button className="w-full flex items-center justify-center gap-1 py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-semibold transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                     {isRTL ? 'عرض التفاصيل' : 'View Details'}
                     <Arrow className="w-4 h-4 transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
@@ -159,11 +151,9 @@ const TrainingsSection: React.FC = () => {
               <DialogHeader>
                 <div className="flex items-center gap-3 mb-1">
                   <div className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-                    {selectedTraining.type === 'theory' ? <BookOpen className="w-5 h-5" /> : <Dumbbell className="w-5 h-5" />}
+                    {selectedTraining.type === 'theory' ? <GraduationCap className="w-5 h-5" /> : <Wrench className="w-5 h-5" />}
                   </div>
-                  <div>
-                    <DialogTitle className="text-lg">{isRTL ? selectedTraining.name_ar : selectedTraining.name_en}</DialogTitle>
-                  </div>
+                  <DialogTitle className="text-lg">{isRTL ? selectedTraining.name_ar : selectedTraining.name_en}</DialogTitle>
                 </div>
               </DialogHeader>
               <p className="text-sm text-muted-foreground">{isRTL ? selectedTraining.description_ar : selectedTraining.description_en}</p>
