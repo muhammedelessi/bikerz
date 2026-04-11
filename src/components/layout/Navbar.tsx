@@ -128,6 +128,14 @@ const Navbar: React.FC = () => {
         open_in_new_tab: false,
       },
       {
+        id: "trainings",
+        title_en: "Practical Training",
+        title_ar: "التدريب العملي",
+        link: "/trainings",
+        is_visible: true,
+        open_in_new_tab: false,
+      },
+      {
         id: "mentors",
         title_en: t("nav.mentors", { lng: "en" }),
         title_ar: t("nav.mentors", { lng: "ar" }),
