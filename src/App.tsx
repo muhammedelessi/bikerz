@@ -26,6 +26,7 @@ const SocialProofNotification = lazy(() => lazyRetry(() => import("@/components/
 // Critical routes - loaded eagerly (above-the-fold / high-traffic)
 import Index from "./pages/Index";
 import Courses from "./pages/Courses";
+import Trainings from "./pages/Trainings";
 import CourseDetail from "./pages/CourseDetail";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -143,6 +144,7 @@ const AppRoutes = () => (
         {/* Critical eager-loaded routes */}
         <Route path="/" element={<Index />} />
         <Route path="/courses" element={<Courses />} />
+        <Route path="/trainings" element={<Trainings />} />
         <Route path="/courses/:id" element={<CourseDetail />} />
         <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
         <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
