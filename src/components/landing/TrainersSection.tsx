@@ -76,7 +76,7 @@ const TrainersSection: React.FC = () => {
             const students = studentCounts?.[t.id] || 0;
             const name = isRTL ? t.name_ar : t.name_en;
             const initials = name?.charAt(0) || '?';
-            const bio = isRTL ? (t.bio_ar || t.bio) : (t.bio || '');
+            const bio = isRTL ? (t.bio_ar || t.bio_en) : (t.bio_en || '');
 
             return (
               <div
