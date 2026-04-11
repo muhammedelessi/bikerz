@@ -44,8 +44,8 @@ const Index: React.FC = () => {
             <WhySection content={landingContent?.why} isLoading={contentLoading} />
             <LearnSection content={landingContent?.learn} isLoading={contentLoading} />
             <JourneySection content={landingContent?.journey} isLoading={contentLoading} />
-            {/* <TrainingsSection /> */}
-            {/* <TrainersSection /> */}
+            <TrainingsSection />
+            <TrainersSection />
             <CommunitySection content={landingContent?.community} contentLoading={contentLoading} />
             <CTASection content={landingContent?.cta} isLoading={contentLoading} />
           </main>
