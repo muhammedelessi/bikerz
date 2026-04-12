@@ -311,7 +311,7 @@ const Navbar: React.FC = () => {
                             </span>
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="min-w-[200px]" dir={isRTL ? "rtl" : "ltr"}>
+                        <DropdownMenuContent align="end" className={`min-w-[200px] ${isRTL ? "text-right" : "text-left"}`}>
                           <DropdownMenuItem asChild>
                             <Link to="/dashboard" className="cursor-pointer flex gap-2">
                               <LayoutDashboard className="h-4 w-4" />

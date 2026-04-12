@@ -495,8 +495,8 @@ Deno.serve(async (req) => {
       description: isTrainingBooking ? `Training: ${course.title}` : `Course: ${course.title}`,
       statement_descriptor: "BIKERZ",
       reference: {
-        transaction: idempotency_key,
-        order: chargeRecord.id,
+        transaction: String(idempotency_key || "").slice(0, 64),
+        order: String(chargeRecord.id || "").slice(0, 64),
       },
       receipt: {
         email: true,
