@@ -254,7 +254,11 @@ const AdminTrainingProfile = () => {
                             <div className="flex flex-wrap gap-3 mt-1.5 text-sm text-muted-foreground">
                               <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{trainer.city}, {trainer.country}</span>
                               <span className="flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" />{tc.price} {isRTL ? 'ر.س' : 'SAR'}</span>
-                              <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{tc.duration_hours} {isRTL ? 'ساعات' : 'hrs'}</span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5" />
+                                {Math.max(1, Number(tc.sessions_count ?? 1))}×{isRTL ? ' جلسات، ' : ' sessions, '}
+                                {tc.duration_hours} {isRTL ? 'س/جلسة' : 'h/sess'}
+                              </span>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">

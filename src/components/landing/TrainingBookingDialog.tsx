@@ -44,6 +44,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, CreditCard, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useTrainingPlatformPricing } from '@/hooks/useTrainingPlatformPricing';
+import { applyTrainingPlatformMarkupSar, trainingCustomerChargeTotalSar } from '@/lib/trainingPlatformMarkup';
 
 type TrainingMini = { id: string; name_ar: string; name_en: string } | null;
 
@@ -58,7 +60,7 @@ type Props = {
 const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, selectedCourse, returnTo }) => {
   const { isRTL, language } = useLanguage();
   const { user, profile, isLoading: authLoading } = useAuth();
-  const { getCoursePriceInfo, isSAR, exchangeRate, formatPriceValueThenCurrencyName } = useCurrency();
+  const { getCoursePriceInfo, formatPriceValueThenCurrencyName } = useCurrency();
   const tap = useTapPayment();
 
   const [step, setStep] = useState<'pick' | 'details'>('pick');
@@ -193,10 +195,17 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
 
   const calendarLocale = isRTL ? arSA : undefined;
 
+  const { data: pricing } = useTrainingPlatformPricing();
+  const trainingPlatformMarkupPct = pricing?.markupPercent ?? 0;
+  const trainingPlatformVatPct = pricing?.vatPercent ?? 15;
+
   const priceInfo = useMemo(() => {
     if (!selectedCourse) return null;
-    return getCoursePriceInfo(TRAINING_PRICE_PLACEHOLDER_COURSE_ID, Number(selectedCourse.price), 0);
-  }, [selectedCourse, getCoursePriceInfo]);
+    const markedBase = applyTrainingPlatformMarkupSar(Number(selectedCourse.price), trainingPlatformMarkupPct);
+    return getCoursePriceInfo(TRAINING_PRICE_PLACEHOLDER_COURSE_ID, markedBase, 0, {
+      vatPercent: trainingPlatformVatPct,
+    });
+  }, [selectedCourse, getCoursePriceInfo, trainingPlatformMarkupPct, trainingPlatformVatPct]);
 
   useEffect(() => {
     if (!open || !user) return;
@@ -246,18 +255,13 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
       return;
     }
 
-    const TAP_SUPPORTED = ['SAR', 'KWD', 'AED', 'USD', 'BHD', 'QAR', 'OMR', 'EGP'];
-    const localCurrency = priceInfo.currency as string;
-    const base = priceInfo.finalPrice;
-    let paymentCurrency: string;
-    let paymentAmount: number;
-    if (TAP_SUPPORTED.includes(localCurrency)) {
-      paymentCurrency = localCurrency;
-      paymentAmount = base;
-    } else {
-      paymentCurrency = 'SAR';
-      paymentAmount = isSAR || exchangeRate <= 0 ? base : Math.ceil(base / exchangeRate);
-    }
+    /** Tap + edge always charge practical training in SAR (server-authoritative total). */
+    const paymentCurrency = 'SAR';
+    const paymentAmount = trainingCustomerChargeTotalSar(
+      Number(selectedCourse.price),
+      trainingPlatformMarkupPct,
+      trainingPlatformVatPct,
+    );
 
     const endTime = slotEndTimePg(selectedSlot, selectedCourse.duration_hours);
 

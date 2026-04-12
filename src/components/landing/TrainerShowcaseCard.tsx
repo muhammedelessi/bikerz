@@ -39,6 +39,8 @@ export type TrainerShowcaseCardProps = {
   metaRows: TrainerShowcaseMetaRow[];
   /** When set, shows large primary price (user currency / country pricing, value then currency name) */
   priceSar?: number | null;
+  /** Saudi VAT % on marked-up subtotal (admin setting); omit to use site default VAT for SAR. */
+  trainingVatPercent?: number | null;
   /** Actions only (buttons/links); card body is not clickable */
   footer: React.ReactNode;
   className?: string;
@@ -52,6 +54,7 @@ const TrainerShowcaseCard: React.FC<TrainerShowcaseCardProps> = ({
   bioPreview,
   metaRows,
   priceSar,
+  trainingVatPercent,
   footer,
   className,
 }) => {
@@ -119,7 +122,9 @@ const TrainerShowcaseCard: React.FC<TrainerShowcaseCardProps> = ({
 
         {priceSar != null && !Number.isNaN(Number(priceSar)) && (
           <p className="text-lg font-bold text-primary tabular-nums" dir={isRTL ? 'rtl' : 'ltr'} lang={isRTL ? 'ar' : 'en'}>
-            {formatTrainingOfferPrice(Number(priceSar), isRTL)}
+            {formatTrainingOfferPrice(Number(priceSar), isRTL, {
+              vatPercent: trainingVatPercent != null && Number.isFinite(Number(trainingVatPercent)) ? trainingVatPercent : undefined,
+            })}
           </p>
         )}
 

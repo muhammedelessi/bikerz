@@ -14,11 +14,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, ArrowRight, CalendarDays } from 'lucide-react';
 import type { TrainerCourseRow } from '@/lib/trainingBookingUtils';
 import { useCurrency, TRAINING_PRICE_PLACEHOLDER_COURSE_ID } from '@/contexts/CurrencyContext';
+import { useTrainingPlatformPricing } from '@/hooks/useTrainingPlatformPricing';
+import { applyTrainingPlatformMarkupSar } from '@/lib/trainingPlatformMarkup';
+
 const TrainingBooking: React.FC = () => {
   const { trainingId, trainerCourseId } = useParams<{ trainingId: string; trainerCourseId: string }>();
   const navigate = useNavigate();
   const { isRTL, language } = useLanguage();
   const { getCoursePriceInfo, formatPriceValueThenCurrencyName } = useCurrency();
+  const { data: pricing } = useTrainingPlatformPricing();
+  const trainingPlatformMarkupPct = pricing?.markupPercent ?? 0;
+  const trainingPlatformVatPct = pricing?.vatPercent ?? 15;
 
   useEffect(() => {
     document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
@@ -92,8 +98,11 @@ const TrainingBooking: React.FC = () => {
 
   const priceInfo = useMemo(() => {
     if (!selectedCourse) return null;
-    return getCoursePriceInfo(TRAINING_PRICE_PLACEHOLDER_COURSE_ID, Number(selectedCourse.price), 0);
-  }, [selectedCourse, getCoursePriceInfo]);
+    const markedBase = applyTrainingPlatformMarkupSar(Number(selectedCourse.price), trainingPlatformMarkupPct);
+    return getCoursePriceInfo(TRAINING_PRICE_PLACEHOLDER_COURSE_ID, markedBase, 0, {
+      vatPercent: trainingPlatformVatPct,
+    });
+  }, [selectedCourse, getCoursePriceInfo, trainingPlatformMarkupPct, trainingPlatformVatPct]);
 
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
   const pageReady =

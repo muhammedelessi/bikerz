@@ -1,7 +1,8 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,8 +15,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, X, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, X, Eye, Percent } from 'lucide-react';
 import BilingualInput from '@/components/admin/content/BilingualInput';
+import { Input } from '@/components/ui/input';
+import {
+  TRAINING_PLATFORM_MARKUP_MAX,
+  TRAINING_PLATFORM_VAT_MAX,
+  clampTrainingPlatformMarkupPercent,
+  clampTrainingVatPercent,
+} from '@/lib/trainingPlatformMarkup';
+import { useTrainingPlatformPricing } from '@/hooks/useTrainingPlatformPricing';
+
+const TRAINING_MARKUP_SETTING_KEY = 'training_platform_markup_percent';
+const TRAINING_VAT_SETTING_KEY = 'training_platform_vat_percent';
 
 
 interface Training {
@@ -29,10 +41,13 @@ interface Training {
   status: string;
   created_at: string;
   background_image: string | null;
+  default_sessions_count?: number;
+  default_session_duration_hours?: number;
 }
 
 const AdminTrainings: React.FC = () => {
   const { isRTL } = useLanguage();
+  const { user } = useAuth();
   const fieldDir = isRTL ? 'rtl' : 'ltr';
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -44,7 +59,15 @@ const AdminTrainings: React.FC = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
-    name_ar: '', name_en: '', type: 'practical' as 'theory' | 'practical', description_ar: '', description_en: '', level: 'beginner' as 'beginner' | 'intermediate' | 'advanced', status: 'active' as 'active' | 'archived',
+    name_ar: '',
+    name_en: '',
+    type: 'practical' as 'theory' | 'practical',
+    description_ar: '',
+    description_en: '',
+    level: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
+    status: 'active' as 'active' | 'archived',
+    default_sessions_count: 1,
+    default_session_duration_hours: 2,
   });
   const [typeFilter, setTypeFilter] = useState<'all' | 'practical' | 'theory'>('all');
 
@@ -74,6 +97,51 @@ const AdminTrainings: React.FC = () => {
     },
   });
 
+  const { data: pricing, isLoading: pricingLoading } = useTrainingPlatformPricing();
+  const [markupDraft, setMarkupDraft] = useState('0');
+  const [vatDraft, setVatDraft] = useState('15');
+  useEffect(() => {
+    if (pricing) {
+      setMarkupDraft(String(pricing.markupPercent));
+      setVatDraft(String(pricing.vatPercent));
+    }
+  }, [pricing]);
+
+  const savePricingMutation = useMutation({
+    mutationFn: async () => {
+      const markupPct = clampTrainingPlatformMarkupPercent(parseFloat(String(markupDraft).replace(',', '.')));
+      const vatPct = clampTrainingVatPercent(parseFloat(String(vatDraft).replace(',', '.')));
+      const ts = new Date().toISOString();
+      const uid = user?.id ?? null;
+      const { error } = await supabase.from('admin_settings').upsert(
+        [
+          {
+            key: TRAINING_MARKUP_SETTING_KEY,
+            category: 'training',
+            value: { percent: markupPct },
+            updated_by: uid,
+            updated_at: ts,
+          },
+          {
+            key: TRAINING_VAT_SETTING_KEY,
+            category: 'training',
+            value: { percent: vatPct },
+            updated_by: uid,
+            updated_at: ts,
+          },
+        ],
+        { onConflict: 'key' },
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-training-pricing'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-setting', TRAINING_MARKUP_SETTING_KEY] });
+      toast.success(isRTL ? 'تم حفظ إعدادات التسعير والضريبة' : 'Pricing & VAT settings saved');
+    },
+    onError: () => toast.error(isRTL ? 'تعذر الحفظ' : 'Save failed'),
+  });
+
   const saveMutation = useMutation({
     mutationFn: async (data: typeof form & { id?: string; background_image?: string | null }) => {
       const { id, ...rest } = data;
@@ -87,6 +155,7 @@ const AdminTrainings: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trainings'] });
+      queryClient.invalidateQueries({ queryKey: ['all-trainings-catalog'] });
       setFormOpen(false);
       setUploadingImage(false);
       toast.success(isRTL ? 'تم الحفظ بنجاح' : 'Saved successfully');
@@ -101,6 +170,7 @@ const AdminTrainings: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trainings'] });
+      queryClient.invalidateQueries({ queryKey: ['all-trainings-catalog'] });
       setDeleteId(null);
       toast.success(isRTL ? 'تم الحذف' : 'Deleted successfully');
     },
@@ -109,7 +179,17 @@ const AdminTrainings: React.FC = () => {
 
   const openAdd = () => {
     setEditingTraining(null);
-    setForm({ name_ar: '', name_en: '', type: 'practical', description_ar: '', description_en: '', level: 'beginner', status: 'active' });
+    setForm({
+      name_ar: '',
+      name_en: '',
+      type: 'practical',
+      description_ar: '',
+      description_en: '',
+      level: 'beginner',
+      status: 'active',
+      default_sessions_count: 1,
+      default_session_duration_hours: 2,
+    });
     setImageFile(null);
     setImagePreview(null);
     setFormOpen(true);
@@ -117,7 +197,17 @@ const AdminTrainings: React.FC = () => {
 
   const openEdit = (t: Training) => {
     setEditingTraining(t);
-    setForm({ name_ar: t.name_ar, name_en: t.name_en, type: t.type as typeof form.type, description_ar: t.description_ar, description_en: t.description_en, level: t.level as typeof form.level, status: t.status as typeof form.status });
+    setForm({
+      name_ar: t.name_ar,
+      name_en: t.name_en,
+      type: t.type as typeof form.type,
+      description_ar: t.description_ar,
+      description_en: t.description_en,
+      level: t.level as typeof form.level,
+      status: t.status as typeof form.status,
+      default_sessions_count: Math.max(1, Number(t.default_sessions_count ?? 1)),
+      default_session_duration_hours: Math.max(0.25, Number(t.default_session_duration_hours ?? 2)),
+    });
     setImageFile(null);
     setImagePreview(t.background_image || null);
     setFormOpen(true);
@@ -276,6 +366,56 @@ const AdminTrainings: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Default package (prefill when assigning to a trainer) */}
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider text-start">
+                {isRTL ? 'الجلسات (افتراضي للمدربين)' : 'Sessions (trainer defaults)'}
+              </h3>
+              <p className="text-xs text-muted-foreground text-start leading-relaxed">
+                {isRTL
+                  ? 'عند ربط هذا البرنامج بمدرب، تُعرض هذه القيم تلقائياً ويمكنه تعديلها لاحقاً.'
+                  : 'When this program is linked to a trainer, these values appear by default; the trainer can change them later.'}
+              </p>
+              <div dir={fieldDir} className="grid gap-4 md:grid-cols-2">
+                <div className="min-w-0 space-y-2">
+                  <Label className="block text-start">{isRTL ? 'عدد الجلسات' : 'Number of sessions'}</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    step={1}
+                    className="h-10"
+                    dir="ltr"
+                    value={form.default_sessions_count}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        default_sessions_count: Math.max(1, parseInt(e.target.value, 10) || 1),
+                      }))
+                    }
+                  />
+                </div>
+                <div className="min-w-0 space-y-2">
+                  <Label className="block text-start">{isRTL ? 'مدة كل جلسة (ساعات)' : 'Hours per session'}</Label>
+                  <Input
+                    type="number"
+                    min={0.25}
+                    step={0.25}
+                    className="h-10"
+                    dir="ltr"
+                    value={form.default_session_duration_hours}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        default_session_duration_hours: Math.max(0.25, parseFloat(e.target.value) || 0.25),
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Bottom Save */}
           <div className="flex justify-end gap-3 pb-6">
             <Button variant="outline" onClick={() => setFormOpen(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
@@ -318,6 +458,73 @@ const AdminTrainings: React.FC = () => {
             </Button>
           </div>
         </div>
+
+        <Card className="border-primary/25 bg-primary/[0.03]">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-1 min-w-0">
+                <div className="flex items-center gap-2 text-primary">
+                  <Percent className="h-5 w-5 shrink-0" />
+                  <h2 className="text-lg font-semibold text-foreground">
+                    {isRTL ? 'تسعير حجوزات التدريب العملي مع المدرب' : 'Practical training booking pricing'}
+                  </h2>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {isRTL
+                    ? 'سعر المدرب الأساسي + نسبة عمولة بايكرز + ضريبة القيمة المضافة السعودية = السعر النهائي الذي يدفعه العميل. يظهر للزائر المبلغ الشامل (بعد العمولة وبعد الضريبة).'
+                    : 'Trainer base + Bikerz commission % + Saudi VAT % = final amount the customer pays. Visitors see the all-inclusive total (markup and VAT included).'}
+                </p>
+                <p className="text-xs text-muted-foreground rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+                  {isRTL
+                    ? `مثال تقريبي: أساس 100 ر.س + عمولة ${markupDraft || '0'}% ثم ضريبة ${vatDraft || '15'}% على المجموع — يُقرب للريال الصحيح عند الدفع.`
+                    : `Example: 100 SAR base + ${markupDraft || '0'}% commission, then ${vatDraft || '15'}% VAT on that subtotal — rounded up to the nearest halala at checkout.`}
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 shrink-0 w-full max-w-md" dir="ltr">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-start block">
+                      {isRTL ? 'عمولة بايكرز (%)' : 'Bikerz commission (%)'}
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={TRAINING_PLATFORM_MARKUP_MAX}
+                      step={0.1}
+                      value={markupDraft}
+                      onChange={(e) => setMarkupDraft(e.target.value)}
+                      className="h-10"
+                      disabled={savePricingMutation.isPending || pricingLoading}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-start block">
+                      {isRTL ? 'ضريبة القيمة المضافة السعودية (%)' : 'Saudi VAT (%)'}
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={TRAINING_PLATFORM_VAT_MAX}
+                      step={0.1}
+                      value={vatDraft}
+                      onChange={(e) => setVatDraft(e.target.value)}
+                      className="h-10"
+                      disabled={savePricingMutation.isPending || pricingLoading}
+                    />
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => savePricingMutation.mutate()}
+                  disabled={savePricingMutation.isPending || pricingLoading}
+                  className="h-10 w-full sm:w-auto"
+                >
+                  {savePricingMutation.isPending ? '…' : isRTL ? 'حفظ التسعير والضريبة' : 'Save pricing & VAT'}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardContent className="p-0">

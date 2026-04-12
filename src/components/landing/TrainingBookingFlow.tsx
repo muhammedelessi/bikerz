@@ -46,6 +46,8 @@ import { Loader2, CreditCard, Check, ChevronLeft, ChevronRight, CalendarRange } 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useTrainingPlatformPricing } from '@/hooks/useTrainingPlatformPricing';
+import { applyTrainingPlatformMarkupSar, trainingCustomerChargeTotalSar } from '@/lib/trainingPlatformMarkup';
 
 export type TrainingBookingTrainingMini = { id: string; name_ar: string; name_en: string };
 
@@ -142,7 +144,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
 }) => {
   const { isRTL, language } = useLanguage();
   const { user, profile, isLoading: authLoading } = useAuth();
-  const { getCoursePriceInfo, isSAR, exchangeRate, formatPriceValueThenCurrencyName } = useCurrency();
+  const { getCoursePriceInfo, formatPriceValueThenCurrencyName } = useCurrency();
   const tap = useTapPayment();
 
   const [step, setStep] = useState<'pick' | 'details'>('pick');
@@ -417,9 +419,16 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
 
   const calendarLocale = isRTL ? arSA : undefined;
 
+  const { data: pricing } = useTrainingPlatformPricing();
+  const trainingPlatformMarkupPct = pricing?.markupPercent ?? 0;
+  const trainingPlatformVatPct = pricing?.vatPercent ?? 15;
+
   const priceInfo = useMemo(() => {
-    return getCoursePriceInfo(TRAINING_PRICE_PLACEHOLDER_COURSE_ID, Number(selectedCourse.price), 0);
-  }, [selectedCourse, getCoursePriceInfo]);
+    const markedBase = applyTrainingPlatformMarkupSar(Number(selectedCourse.price), trainingPlatformMarkupPct);
+    return getCoursePriceInfo(TRAINING_PRICE_PLACEHOLDER_COURSE_ID, markedBase, 0, {
+      vatPercent: trainingPlatformVatPct,
+    });
+  }, [selectedCourse, getCoursePriceInfo, trainingPlatformMarkupPct, trainingPlatformVatPct]);
 
   const summaryPhoneE164 = useMemo(() => buildE164Phone(phoneDialCode, phoneNational), [phoneDialCode, phoneNational]);
   const summaryPhoneDisplay = useMemo(
@@ -489,18 +498,12 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
       return;
     }
 
-    const TAP_SUPPORTED = ['SAR', 'KWD', 'AED', 'USD', 'BHD', 'QAR', 'OMR', 'EGP'];
-    const localCurrency = priceInfo.currency as string;
-    const base = priceInfo.finalPrice;
-    let paymentCurrency: string;
-    let paymentAmount: number;
-    if (TAP_SUPPORTED.includes(localCurrency)) {
-      paymentCurrency = localCurrency;
-      paymentAmount = base;
-    } else {
-      paymentCurrency = 'SAR';
-      paymentAmount = isSAR || exchangeRate <= 0 ? base : Math.ceil(base / exchangeRate);
-    }
+    const paymentCurrency = 'SAR';
+    const paymentAmount = trainingCustomerChargeTotalSar(
+      Number(selectedCourse.price),
+      trainingPlatformMarkupPct,
+      trainingPlatformVatPct,
+    );
 
     const endTime = slotEndTimePg(selectedSlot, selectedCourse.duration_hours);
 

@@ -1968,6 +1968,7 @@ export type Database = {
           location: string
           price: number
           services: string[] | null
+          sessions_count: number
           trainer_id: string
           training_id: string
         }
@@ -1979,6 +1980,7 @@ export type Database = {
           location?: string
           price?: number
           services?: string[] | null
+          sessions_count?: number
           trainer_id: string
           training_id: string
         }
@@ -1990,6 +1992,7 @@ export type Database = {
           location?: string
           price?: number
           services?: string[] | null
+          sessions_count?: number
           trainer_id?: string
           training_id?: string
         }
@@ -2270,6 +2273,8 @@ export type Database = {
         Row: {
           background_image: string | null
           created_at: string
+          default_session_duration_hours: number
+          default_sessions_count: number
           description_ar: string
           description_en: string
           id: string
@@ -2282,6 +2287,8 @@ export type Database = {
         Insert: {
           background_image?: string | null
           created_at?: string
+          default_session_duration_hours?: number
+          default_sessions_count?: number
           description_ar?: string
           description_en?: string
           id?: string
@@ -2294,6 +2301,8 @@ export type Database = {
         Update: {
           background_image?: string | null
           created_at?: string
+          default_session_duration_hours?: number
+          default_sessions_count?: number
           description_ar?: string
           description_en?: string
           id?: string

@@ -16,6 +16,8 @@ import { cn } from "@/lib/utils";
 import type { TrainerCourseRow } from "@/lib/trainingBookingUtils";
 import { translateTrainerCourseLocation } from "@/lib/trainerCourseLocation";
 import TrainerShowcaseCard from "@/components/landing/TrainerShowcaseCard";
+import { useTrainingPlatformPricing } from "@/hooks/useTrainingPlatformPricing";
+import { applyTrainingPlatformMarkupSar } from "@/lib/trainingPlatformMarkup";
 
 const levelConfig: Record<string, { color: string; label: { en: string; ar: string } }> = {
   beginner: {
@@ -76,6 +78,10 @@ const TrainingDetail: React.FC = () => {
       return (data || []) as TrainerCourseRow[];
     },
   });
+
+  const { data: pricing } = useTrainingPlatformPricing();
+  const platformMarkupPct = pricing?.markupPercent ?? 0;
+  const platformVatPct = pricing?.vatPercent ?? 15;
 
   const { data: reviewStats } = useQuery({
     queryKey: ["public-trainer-review-stats"],
@@ -267,8 +273,12 @@ const TrainingDetail: React.FC = () => {
                         if (!tr) return null;
                         const stats = reviewStats?.[tr.id];
                         const hours = Number(tc.duration_hours);
+                        const sess = Math.max(1, Number(tc.sessions_count ?? 1));
                         const loc = translateTrainerCourseLocation(tc.location, isRTL) || tc.location;
                         const BookIcon = isRTL ? ChevronLeft : ChevronRight;
+                        const sessionLabel = isRTL
+                          ? `${sess} ${sess === 1 ? "جلسة" : "جلسات"} · ${hours} ${hours === 1 ? "س/جلسة" : "ساعات/جلسة"}`
+                          : `${sess} ${sess === 1 ? "session" : "sessions"} · ${hours} ${hours === 1 ? "hr/sess" : "hrs/sess"}`;
                         return (
                           <TrainerShowcaseCard
                             key={tc.id}
@@ -280,10 +290,11 @@ const TrainingDetail: React.FC = () => {
                               {
                                 id: "dur",
                                 icon: "clock",
-                                text: `${hours} ${isRTL ? (hours === 1 ? "ساعة" : "ساعات") : hours === 1 ? "hr" : "hrs"}`,
+                                text: sessionLabel,
                               },
                             ]}
-                            priceSar={Number(tc.price)}
+                            priceSar={applyTrainingPlatformMarkupSar(Number(tc.price), platformMarkupPct)}
+                            trainingVatPercent={platformVatPct}
                             footer={
                               !user ? (
                                 <Button className="w-full font-semibold" asChild>

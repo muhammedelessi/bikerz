@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, MapPin, BookOpen, Plus, Images, Pencil, CalendarDays, Users, Wallet, Percent } from 'lucide-react';
+import { Star, MapPin, BookOpen, Plus, Images, Pencil, CalendarDays, Users, Wallet, Percent, CreditCard } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { TrainerScheduleManager } from '@/components/admin/trainer/TrainerScheduleManager';
 import { TrainerBookingsManager } from '@/components/admin/trainer/TrainerBookingsManager';
@@ -29,6 +29,7 @@ import {
   type TrainingStudentRow,
   type TrainerReviewRow,
 } from '@/components/admin/trainerProfileTrainingBlocks';
+import { TrainerAdminPaymentsSection } from '@/components/admin/trainer/TrainerAdminPaymentsSection';
 
 type BikeEntryRow = { type: string; brand: string; photos: string[] };
 
@@ -108,12 +109,15 @@ const AddTrainingForTrainerDialog: React.FC<{
   isRTL: boolean;
 }> = ({ open, onOpenChange, trainerId, existingTrainingIds, isRTL }) => {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({ training_id: '', price: 0, duration_hours: 0, location: '' });
+  const emptyForm = { training_id: '', price: 0, sessions_count: 1, duration_hours: 2, location: '' };
+  const [form, setForm] = useState(emptyForm);
 
   const { data: allTrainings } = useQuery({
-    queryKey: ['all-trainings-list'],
+    queryKey: ['all-trainings-catalog'],
     queryFn: async () => {
-      const { data } = await supabase.from('trainings').select('id, name_ar, name_en');
+      const { data } = await supabase
+        .from('trainings')
+        .select('id, name_ar, name_en, type, default_sessions_count, default_session_duration_hours');
       return data || [];
     },
   });
@@ -131,7 +135,7 @@ const AddTrainingForTrainerDialog: React.FC<{
       queryClient.invalidateQueries({ queryKey: ['trainer-profile-bookings', trainerId] });
       queryClient.invalidateQueries({ queryKey: ['admin-trainer-courses-summary'] });
       onOpenChange(false);
-      setForm({ training_id: '', price: 0, duration_hours: 0, location: '' });
+      setForm(emptyForm);
       toast.success(isRTL ? 'تم إضافة التدريب' : 'Training added');
     },
     onError: () => toast.error(isRTL ? 'خطأ' : 'Error'),
@@ -151,7 +155,23 @@ const AddTrainingForTrainerDialog: React.FC<{
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>{isRTL ? 'التدريب' : 'Training'}</Label>
-            <Select value={form.training_id} onValueChange={(v) => setForm((f) => ({ ...f, training_id: v }))}>
+            <Select
+              value={form.training_id}
+              onValueChange={(v) => {
+                const tr = allTrainings?.find((x) => x.id === v) as
+                  | {
+                      default_sessions_count?: number | null;
+                      default_session_duration_hours?: number | null;
+                    }
+                  | undefined;
+                setForm((f) => ({
+                  ...f,
+                  training_id: v,
+                  sessions_count: Math.max(1, Number(tr?.default_sessions_count ?? 1)),
+                  duration_hours: Math.max(0.25, Number(tr?.default_session_duration_hours ?? 2)),
+                }));
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder={isRTL ? 'اختر تدريب' : 'Select training'} />
               </SelectTrigger>
@@ -164,7 +184,7 @@ const AddTrainingForTrainerDialog: React.FC<{
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label>{isRTL ? 'السعر (ر.س)' : 'Price (SAR)'}</Label>
               <Input
@@ -174,11 +194,27 @@ const AddTrainingForTrainerDialog: React.FC<{
               />
             </div>
             <div className="space-y-2">
-              <Label>{isRTL ? 'المدة (ساعات)' : 'Duration (hrs)'}</Label>
+              <Label>{isRTL ? 'عدد الجلسات' : 'Sessions'}</Label>
               <Input
                 type="number"
+                min={1}
+                step={1}
+                value={form.sessions_count}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, sessions_count: Math.max(1, parseInt(e.target.value, 10) || 1) }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{isRTL ? 'مدة كل جلسة (ساعات)' : 'Hours / session'}</Label>
+              <Input
+                type="number"
+                min={0.25}
+                step={0.25}
                 value={form.duration_hours}
-                onChange={(e) => setForm((f) => ({ ...f, duration_hours: parseFloat(e.target.value) || 0 }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, duration_hours: Math.max(0.25, parseFloat(e.target.value) || 0.25) }))
+                }
               />
             </div>
           </div>
@@ -321,7 +357,7 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
     queryFn: async () => {
       const { data } = await supabase
         .from('trainer_courses')
-        .select('id, trainer_id, training_id, price, duration_hours, location, trainings(name_ar, name_en)')
+        .select('id, trainer_id, training_id, price, sessions_count, duration_hours, location, trainings(name_ar, name_en)')
         .eq('trainer_id', trainerId);
       return (data || []) as TrainerCourseRow[];
     },
@@ -363,10 +399,10 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
     return (
       <div className="space-y-3 py-2" dir={fieldDir}>
         <Skeleton className="h-20 w-full max-w-md rounded-md" />
-        <Skeleton className="h-4 w-full max-w-xl rounded-md" />
-        <Skeleton className="h-4 w-[72%] max-w-xl rounded-md" />
+        <Skeleton className="h-4 w-full max-w-none rounded-md" />
+        <Skeleton className="h-4 w-[72%] max-w-none rounded-md" />
         <Skeleton className="h-4 w-full rounded-md" />
-        <Skeleton className="h-4 w-[60%] max-w-lg rounded-md" />
+        <Skeleton className="h-4 w-[60%] max-w-none rounded-md" />
       </div>
     );
   }
@@ -645,6 +681,13 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
                     {isRTL ? 'الحجوزات' : 'Bookings'}
                   </TabsTrigger>
                   <TabsTrigger
+                    value="payments"
+                    className="shrink-0 gap-1.5 rounded-none border-0 border-b-2 border-transparent bg-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none"
+                  >
+                    <CreditCard className="h-3.5 w-3.5 opacity-80" aria-hidden />
+                    {isRTL ? 'المدفوعات' : 'Payments'}
+                  </TabsTrigger>
+                  <TabsTrigger
                     value="album"
                     className="shrink-0 rounded-none border-0 border-b-2 border-transparent bg-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none"
                   >
@@ -666,7 +709,7 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
                     >
                       <section dir="rtl" lang="ar" className="space-y-4">
                         <ProfileSectionTitle>{isRTL ? 'البيانات بالعربية' : 'Arabic profile'}</ProfileSectionTitle>
-                        <dl className="grid max-w-3xl grid-cols-[auto_1fr] gap-x-8 gap-y-0 [&_dt]:text-start [&_dd]:min-w-0 [&_dd]:text-start">
+                        <dl className="grid max-w-none grid-cols-[auto_1fr] gap-x-8 gap-y-0 [&_dt]:text-start [&_dd]:min-w-0 [&_dd]:text-start">
                           <React.Fragment key="ar-name">
                             <dt className="border-b border-border/40 py-3 text-xs text-muted-foreground">الاسم الكامل</dt>
                             <dd className="border-b border-border/40 py-3 text-sm font-medium text-foreground" dir="rtl" lang="ar">
@@ -721,13 +764,13 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
                             </dd>
                           </React.Fragment>
                         </dl>
-                        <div className="max-w-3xl space-y-2 border-b border-border/40 pb-6">
+                        <div className="max-w-none space-y-2 border-b border-border/40 pb-6">
                           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">نبذة</p>
                           <p className="text-start text-sm leading-relaxed text-muted-foreground" dir="rtl" lang="ar">
                             {(t.bio_ar || '').trim() ? t.bio_ar : <EmptyField isRTL={isRTL} />}
                           </p>
                         </div>
-                        <div className="max-w-3xl space-y-2">
+                        <div className="max-w-none space-y-2">
                           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">الخدمات</p>
                           {servicesList.length > 0 ? (
                             <div className="flex flex-wrap justify-start gap-1.5">
@@ -745,7 +788,7 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
 
                       <section dir="ltr" lang="en" className="space-y-4 border-t border-border/40 pt-8">
                         <ProfileSectionTitle>{isRTL ? 'البيانات بالإنجليزية' : 'English profile'}</ProfileSectionTitle>
-                        <dl className="grid max-w-3xl grid-cols-[auto_1fr] gap-x-8 gap-y-0 [&_dt]:text-start [&_dd]:min-w-0 [&_dd]:text-start">
+                        <dl className="grid max-w-none grid-cols-[auto_1fr] gap-x-8 gap-y-0 [&_dt]:text-start [&_dd]:min-w-0 [&_dd]:text-start">
                           <React.Fragment key="en-name">
                             <dt className="border-b border-border/40 py-3 text-xs text-muted-foreground">Full name</dt>
                             <dd className="border-b border-border/40 py-3 text-sm font-medium text-foreground" dir="ltr" lang="en">
@@ -791,13 +834,13 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
                             </dd>
                           </React.Fragment>
                         </dl>
-                        <div className="max-w-3xl space-y-2 border-b border-border/40 pb-6">
+                        <div className="max-w-none space-y-2 border-b border-border/40 pb-6">
                           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Bio</p>
                           <p className="text-start text-sm leading-relaxed text-muted-foreground" dir="ltr" lang="en">
                             {(t.bio_en || '').trim() ? t.bio_en : <EmptyField isRTL={false} />}
                           </p>
                         </div>
-                        <div className="max-w-3xl space-y-2">
+                        <div className="max-w-none space-y-2">
                           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Services</p>
                           {servicesList.length > 0 ? (
                             <div className="flex flex-wrap justify-start gap-1.5">
@@ -958,6 +1001,10 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
                   <TrainerBookingsManager trainerId={trainerId} isRTL={isRTL} />
                 </TabsContent>
 
+                <TabsContent value="payments" className="mt-0 text-start focus-visible:outline-none">
+                  <TrainerAdminPaymentsSection trainerId={trainerId} embed />
+                </TabsContent>
+
                 <TabsContent value="album" className="mt-0 text-start focus-visible:outline-none">
                   {albumPhotos.length > 0 ? (
                     <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
@@ -996,7 +1043,7 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
 
 
       <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
-        <DialogContent className="max-w-3xl border-0 bg-background/95 p-2" aria-describedby={undefined}>
+        <DialogContent className="max-w-5xl border-0 bg-background/95 p-2" aria-describedby={undefined}>
           <DialogHeader className="sr-only">
             <DialogTitle>{isRTL ? 'معاينة الصورة' : 'Image preview'}</DialogTitle>
           </DialogHeader>

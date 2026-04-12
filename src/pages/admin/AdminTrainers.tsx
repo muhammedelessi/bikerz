@@ -206,6 +206,7 @@ interface Trainer {
 interface TrainerCourse {
   training_id: string;
   price: number;
+  sessions_count: number;
   duration_hours: number;
   location: string;
   available_schedule: Json;
@@ -217,6 +218,7 @@ function toTrainerCourseInsertRow(trainerId: string, at: TrainerCourse) {
     trainer_id: trainerId,
     training_id: at.training_id,
     price: at.price,
+    sessions_count: at.sessions_count,
     duration_hours: at.duration_hours,
     location: at.location ?? '',
     available_schedule: at.available_schedule ?? {},
@@ -288,9 +290,11 @@ const AdminTrainers: React.FC = () => {
   });
 
   const { data: allTrainings } = useQuery({
-    queryKey: ['all-trainings-list'],
+    queryKey: ['all-trainings-catalog'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('trainings').select('id, name_ar, name_en, type');
+      const { data, error } = await supabase
+        .from('trainings')
+        .select('id, name_ar, name_en, type, default_sessions_count, default_session_duration_hours');
       if (error) throw error;
       return data;
     },
@@ -600,11 +604,15 @@ const AdminTrainers: React.FC = () => {
     setBikeTypeInput('');
     setPhotoFile(null);
     setPhotoPreview(t.photo_url);
-    const { data } = await supabase.from('trainer_courses').select('training_id, price, duration_hours, location, available_schedule, services').eq('trainer_id', t.id);
+    const { data } = await supabase
+      .from('trainer_courses')
+      .select('training_id, price, sessions_count, duration_hours, location, available_schedule, services')
+      .eq('trainer_id', t.id);
     setAssignedTrainings(
       (data || []).map((d) => ({
         training_id: d.training_id,
         price: Number(d.price),
+        sessions_count: Math.max(1, Number((d as { sessions_count?: number }).sessions_count ?? 1)),
         duration_hours: Number(d.duration_hours),
         location: d.location,
         available_schedule: d.available_schedule,
@@ -838,6 +846,9 @@ const AdminTrainers: React.FC = () => {
   const toggleTraining = (trainingId: string, checked: boolean) => {
     if (checked) {
       const f = formRef.current;
+      const meta = allTrainings?.find((tr) => tr.id === trainingId);
+      const defSessions = Math.max(1, Number((meta as { default_sessions_count?: number })?.default_sessions_count ?? 1));
+      const defDur = Math.max(0.25, Number((meta as { default_session_duration_hours?: number })?.default_session_duration_hours ?? 2));
       setAssignedTrainings((prev) => {
         if (prev.some((a) => a.training_id === trainingId)) return prev;
         return [
@@ -845,7 +856,8 @@ const AdminTrainers: React.FC = () => {
           {
             training_id: trainingId,
             price: 0,
-            duration_hours: 0,
+            sessions_count: defSessions,
+            duration_hours: defDur,
             location: defaultTrainerAssignmentLocation(f.country, f.city),
             available_schedule: {},
             services: [...f.services],
@@ -1489,9 +1501,16 @@ const AdminTrainers: React.FC = () => {
                               className="overflow-hidden border-t border-border/50"
                             >
                               <div className="space-y-3 bg-muted/10 p-4">
-                                <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="grid gap-3 sm:grid-cols-3">
                                   <div className="space-y-1">
-                                    <Label className="text-xs text-start">{isRTL ? 'السعر (ر.س)' : 'Price (SAR)'}</Label>
+                                    <Label className="text-xs text-start">
+                                      {isRTL ? 'سعر المدرب الأساسي (ر.س)' : 'Trainer base price (SAR)'}
+                                    </Label>
+                                    <p className="text-[10px] text-muted-foreground leading-snug">
+                                      {isRTL
+                                        ? 'ما يستحقه المدرب؛ عمولة المنصة تُضاف من إعدادات التدريبات.'
+                                        : 'Amount the trainer keeps; Bikerz commission is added in Trainings admin.'}
+                                    </p>
                                     <div className="relative" dir="ltr">
                                       <Input
                                         type="number"
@@ -1507,13 +1526,38 @@ const AdminTrainers: React.FC = () => {
                                     </div>
                                   </div>
                                   <div className="space-y-1">
-                                    <Label className="text-xs text-start">{isRTL ? 'المدة (ساعات)' : 'Duration (hrs)'}</Label>
+                                    <Label className="text-xs text-start">{isRTL ? 'عدد الجلسات' : 'Sessions'}</Label>
                                     <Input
                                       type="number"
+                                      min={1}
+                                      step={1}
+                                      className="h-9 text-start"
+                                      value={assignment.sessions_count}
+                                      onChange={(e) =>
+                                        updateAssignment(
+                                          training.id,
+                                          'sessions_count',
+                                          Math.max(1, parseInt(e.target.value, 10) || 1),
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs text-start">
+                                      {isRTL ? 'مدة كل جلسة (ساعات)' : 'Hours / session'}
+                                    </Label>
+                                    <Input
+                                      type="number"
+                                      min={0.25}
+                                      step={0.25}
                                       className="h-9 text-start"
                                       value={assignment.duration_hours}
                                       onChange={(e) =>
-                                        updateAssignment(training.id, 'duration_hours', parseFloat(e.target.value) || 0)
+                                        updateAssignment(
+                                          training.id,
+                                          'duration_hours',
+                                          Math.max(0.25, parseFloat(e.target.value) || 0.25),
+                                        )
                                       }
                                     />
                                   </div>

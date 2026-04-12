@@ -11,6 +11,7 @@ export type TrainerCourseRow = {
   id: string;
   trainer_id: string;
   training_id: string;
+  sessions_count?: number | null;
   duration_hours: number;
   location: string;
   price: number;

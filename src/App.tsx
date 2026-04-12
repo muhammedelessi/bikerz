@@ -76,6 +76,7 @@ const AdminTrainings = lazy(() => import("./pages/admin/AdminTrainings"));
 const AdminTrainingProfile = lazy(() => import("./pages/admin/AdminTrainingProfile"));
 const AdminTrainers = lazy(() => import("./pages/admin/AdminTrainers"));
 const AdminTrainerProfile = lazy(() => import("./pages/admin/AdminTrainerProfile"));
+const AdminTrainerPayments = lazy(() => import("./pages/admin/AdminTrainerPayments"));
 const AdminTrainingStudents = lazy(() => import("./pages/admin/AdminTrainingStudents"));
 const AdminTrainerReviews = lazy(() => import("./pages/admin/AdminTrainerReviews"));
 
@@ -211,6 +212,7 @@ const AppRoutes = () => (
         <Route path="/admin/trainings/:id" element={<AdminRoute><AdminTrainingProfile /></AdminRoute>} />
         <Route path="/admin/trainers" element={<AdminRoute><AdminTrainers /></AdminRoute>} />
         <Route path="/admin/trainers/:id" element={<AdminRoute><AdminTrainerProfile /></AdminRoute>} />
+        <Route path="/admin/trainers/:id/payments" element={<AdminRoute><AdminTrainerPayments /></AdminRoute>} />
         <Route path="/admin/training-students" element={<AdminRoute><AdminTrainingStudents /></AdminRoute>} />
         <Route path="/admin/trainer-reviews" element={<AdminRoute><AdminTrainerReviews /></AdminRoute>} />
 

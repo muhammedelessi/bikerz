@@ -13,7 +13,7 @@ const AdminTrainerProfile = () => {
 
   return (
     <AdminLayout>
-      <div className="mx-auto w-full min-w-0 min-h-0 max-w-[1600px] space-y-4 px-2 sm:px-4 lg:px-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="mx-auto w-full min-w-0 min-h-0 max-w-none space-y-4 px-2 sm:px-4 lg:px-6" dir={isRTL ? 'rtl' : 'ltr'}>
         <Button variant="ghost" size="sm" className="gap-2 -ms-2" onClick={() => navigate('/admin/trainers')}>
           {isRTL ? <ArrowRight className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
           {isRTL ? 'العودة لقائمة المدربين' : 'Back to trainers'}

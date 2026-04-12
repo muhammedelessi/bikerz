@@ -9,6 +9,43 @@ const corsHeaders = {
 
 const PAYMENT_TIMEOUT = 30000; // 30s timeout for Tap API
 
+async function getTrainingPlatformMarkupPercent(
+  adminClient: ReturnType<typeof createClient>,
+): Promise<number> {
+  const { data } = await adminClient
+    .from("admin_settings")
+    .select("value")
+    .eq("key", "training_platform_markup_percent")
+    .maybeSingle();
+  const v = data?.value as unknown;
+  let n = 0;
+  if (typeof v === "number") n = v;
+  else if (v && typeof v === "object" && "percent" in (v as Record<string, unknown>)) {
+    n = Number((v as Record<string, unknown>).percent);
+  }
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.min(500, n);
+}
+
+/** Saudi VAT % on practical training charges (admin_settings, default 15). */
+async function getTrainingPlatformVatPercent(
+  adminClient: ReturnType<typeof createClient>,
+): Promise<number> {
+  const { data } = await adminClient
+    .from("admin_settings")
+    .select("value")
+    .eq("key", "training_platform_vat_percent")
+    .maybeSingle();
+  const v = data?.value as unknown;
+  let n = 15;
+  if (typeof v === "number") n = v;
+  else if (v && typeof v === "object" && "percent" in (v as Record<string, unknown>)) {
+    n = Number((v as Record<string, unknown>).percent);
+  }
+  if (!Number.isFinite(n) || n < 0) return 15;
+  return Math.min(30, n);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -214,6 +251,9 @@ Deno.serve(async (req) => {
 
     let course: CourseLike;
     let basePriceSar: number;
+    /** Trainer-listed SAR from `trainer_courses.price` (before platform markup), for metadata */
+    let trainerPayoutBaseSar: number | null = null;
+    let trainingPlatformMarkupPercent: number | null = null;
     let localizedDisplayPrice: number | null = null;
     let localizedDisplayCurrency: string | null = null;
     /** null when charging for a training booking (not a video course from `courses`) */
@@ -266,14 +306,20 @@ Deno.serve(async (req) => {
       const trainings = tr.trainings as { name_en?: string; name_ar?: string } | null;
       const title = trainings?.name_en || trainings?.name_ar || "Training session";
 
+      const trainerListedSar = Number(tr.price);
+      trainerPayoutBaseSar = Number.isFinite(trainerListedSar) ? trainerListedSar : 0;
+      const markupPct = await getTrainingPlatformMarkupPercent(adminClient);
+      trainingPlatformMarkupPercent = markupPct;
+      const markedUpSar = Math.round(trainerPayoutBaseSar * (1 + markupPct / 100) * 100) / 100;
+
       course = {
         id: String(tr.id),
-        price: Number(tr.price),
+        price: markedUpSar,
         currency: "SAR",
         title,
         discount_percentage: 0,
       };
-      basePriceSar = Number(tr.price);
+      basePriceSar = markedUpSar;
     } else {
       const { data: c, error: courseError } = await adminClient
         .from("courses")
@@ -360,10 +406,24 @@ Deno.serve(async (req) => {
       }
     }
 
+    const vatPercentPoints = await getTrainingPlatformVatPercent(adminClient);
+    const vatFactor = 1 + vatPercentPoints / 100;
+
     const clientRequestedAmount = Number(requestedAmount);
     const hasClientAmount = Number.isFinite(clientRequestedAmount) && clientRequestedAmount > 0;
-    const finalAmount = hasClientAmount ? Math.ceil(clientRequestedAmount) : Math.ceil(fallbackPriceBeforeTax * 1.15);
-    const priceBeforeTax = Math.max(0, Math.round((finalAmount / 1.15) * 100) / 100);
+    /** Practical training: always server SAR (markup + VAT). Never trust client `amount` or FX. */
+    const finalAmount = isTrainingBooking
+      ? Math.ceil(fallbackPriceBeforeTax * vatFactor)
+      : hasClientAmount
+        ? Math.ceil(clientRequestedAmount)
+        : Math.ceil(fallbackPriceBeforeTax * vatFactor);
+
+    let priceBeforeTax = Math.max(0, Math.round((finalAmount / vatFactor) * 100) / 100);
+    if (isTrainingBooking) {
+      priceBeforeTax = Math.round(Number(basePriceSar) * 100) / 100;
+    }
+
+    const tapChargeCurrency = isTrainingBooking ? "SAR" : chargeCurrency;
 
     if (finalAmount <= 0) {
       return new Response(
@@ -371,8 +431,6 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const vatRate = 0.15;
 
     const phoneForTap = resolveTapPhone(customer_phone, profileData.phone, profileData.country);
     const storedPhoneForCheck = String(customer_phone || profileData.phone || "").trim();
@@ -391,13 +449,14 @@ Deno.serve(async (req) => {
       `basePriceSar=${basePriceSar}`,
       `requestedCurrency=${requestedCurrency}`,
       `chargeCurrency=${chargeCurrency}`,
+      `tapChargeCurrency=${tapChargeCurrency}`,
       `courseDiscount=${courseDiscountPct}%`,
       `afterCourseDiscount=${priceAfterCourseDiscount}`,
       `couponDiscount=${couponDiscount}`,
-      `clientRequestedAmount=${hasClientAmount ? clientRequestedAmount : 'none'}`,
+      `clientRequestedAmount=${isTrainingBooking ? "ignored(training)" : hasClientAmount ? clientRequestedAmount : "none"}`,
       `priceBeforeTax=${priceBeforeTax}`,
-      `vatRate=${vatRate * 100}%`,
-      `finalAmountSar=${finalAmount}`
+      `vatRate=${vatPercentPoints}%`,
+      `finalAmountSar=${finalAmount}`,
     );
 
     // ── Check if already enrolled (video courses only) ──
@@ -421,6 +480,21 @@ Deno.serve(async (req) => {
     // Sanitize device_info: plain string, max 200 chars
     const safeDeviceInfo = typeof device_info === "string" ? device_info.substring(0, 200) : null;
 
+    const trainingMarkedUpSubtotalSar =
+      isTrainingBooking && trainerPayoutBaseSar != null ? Math.round(basePriceSar * 100) / 100 : null;
+    const trainingPlatformMarkupSar =
+      trainingMarkedUpSubtotalSar != null && trainerPayoutBaseSar != null
+        ? Math.round((trainingMarkedUpSubtotalSar - trainerPayoutBaseSar) * 100) / 100
+        : null;
+    const trainingVatAmountSar =
+      isTrainingBooking && trainingMarkedUpSubtotalSar != null
+        ? Math.round((finalAmount - trainingMarkedUpSubtotalSar) * 100) / 100
+        : null;
+    const trainingBikerzRevenueSar =
+      isTrainingBooking && trainerPayoutBaseSar != null
+        ? Math.round((finalAmount - trainerPayoutBaseSar) * 100) / 100
+        : null;
+
     const { data: chargeRecord, error: insertError } = await adminClient
       .from("tap_charges")
       .insert({
@@ -428,7 +502,7 @@ Deno.serve(async (req) => {
         course_id: dbCourseId,
         training_id: dbTrainingId,
         amount: finalAmount,
-        currency: chargeCurrency,
+        currency: tapChargeCurrency,
         status: "pending",
         customer_name: customer_name || profileData.full_name || "",
         customer_email: customer_email || userEmail,
@@ -441,16 +515,22 @@ Deno.serve(async (req) => {
           payment_kind: isTrainingBooking ? "training_booking" : "course",
           training_id: isTrainingBooking ? dbTrainingId : null,
           trainer_course_id: isTrainingBooking ? trainerCourseIdTrim : null,
+          trainer_payout_base_sar: isTrainingBooking ? trainerPayoutBaseSar : null,
+          platform_markup_percent: isTrainingBooking ? trainingPlatformMarkupPercent : null,
           coupon_id: coupon_id || null,
           original_price: basePriceSar,
           course_discount_pct: courseDiscountPct,
           price_after_course_discount: priceAfterCourseDiscount,
           coupon_discount: couponDiscount,
           price_before_tax: priceBeforeTax,
-          vat_rate: vatRate * 100,
+          vat_rate: vatPercentPoints,
           final_amount: finalAmount,
+          training_marked_up_subtotal_sar: trainingMarkedUpSubtotalSar,
+          training_platform_markup_sar: trainingPlatformMarkupSar,
+          training_vat_amount_sar: trainingVatAmountSar,
+          training_bikerz_revenue_sar: trainingBikerzRevenueSar,
           requested_currency: requestedCurrency,
-          charge_currency: chargeCurrency,
+          charge_currency: tapChargeCurrency,
           localized_display_price: localizedDisplayPrice,
           localized_display_currency: localizedDisplayCurrency,
           detected_country: detected_country || null,
@@ -486,10 +566,10 @@ Deno.serve(async (req) => {
       ? `${origin}/tap-3ds-callback.html?booking=1&tc=${encodeURIComponent(trainerCourseIdTrim)}`
       : `${origin}/tap-3ds-callback.html?course=${encodeURIComponent(courseIdTrim)}`;
 
-    // ── Create Tap charge (always in SAR) ──
+    // ── Create Tap charge (practical training: always SAR + server amount; courses may use localized Tap currency) ──
     const chargePayload: Record<string, unknown> = {
       amount: finalAmount,
-      currency: chargeCurrency,
+      currency: tapChargeCurrency,
       threeDSecure: true,
       save_card: false,
       description: isTrainingBooking ? `Training: ${course.title}` : `Course: ${course.title}`,
@@ -524,7 +604,15 @@ Deno.serve(async (req) => {
       },
     };
 
-    console.log("Creating Tap charge for user:", userId, "amount:", finalAmount, chargeCurrency, "(requested:", requestedCurrency + ")");
+    console.log(
+      "Creating Tap charge for user:",
+      userId,
+      "amount:",
+      finalAmount,
+      tapChargeCurrency,
+      "(requested:",
+      requestedCurrency + ")",
+    );
 
     let tapData: Record<string, any>;
     let tapResponse: Response;
@@ -638,7 +726,7 @@ Deno.serve(async (req) => {
         status: chargeStatus,
         redirect_url: tapRedirectUrl,
         amount: finalAmount,
-        currency: chargeCurrency,
+        currency: tapChargeCurrency,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

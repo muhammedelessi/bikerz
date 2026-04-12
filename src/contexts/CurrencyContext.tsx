@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { clampTrainingVatPercent } from "@/lib/trainingPlatformMarkup";
 
 export type CurrencyCode =
   | "SAR"
@@ -195,7 +196,7 @@ interface CurrencyContextType {
     courseId: string,
     sarPrice: number,
     courseDiscountPct?: number,
-    _unused?: any,
+    opts?: { vatPercent?: number | null },
   ) => CoursePriceInfo;
   /** Get the currency code for a course price (may differ from user currency if country price exists) */
   getCourseCurrency: (courseId: string) => CurrencyCode;
@@ -225,8 +226,8 @@ interface CurrencyContextType {
   getCurrencySymbol: (code: CurrencyCode, isRTL?: boolean) => string;
   /** Formatted as "{amount} {currency name}" using user locale; SAR → "… ريال سعودي" in Arabic, "… SAR" in English */
   formatPriceValueThenCurrencyName: (info: CoursePriceInfo, isRTL?: boolean) => string;
-  /** Training offer list price: SAR base → user currency / country pricing via placeholder course id */
-  formatTrainingOfferPrice: (sarPrice: number, isRTL?: boolean) => string;
+  /** Training offer: pass SAR subtotal after platform markup (before VAT); VAT% from admin when provided */
+  formatTrainingOfferPrice: (sarPrice: number, isRTL?: boolean, opts?: { vatPercent?: number | null }) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -480,7 +481,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   /** Get full price info for display — uses country pricing when available */
   const getCoursePriceInfo = useCallback(
-    (courseId: string, sarPrice: number, courseDiscountPct = 0, _unused?: any): CoursePriceInfo => {
+    (courseId: string, sarPrice: number, courseDiscountPct = 0, opts?: { vatPercent?: number | null }): CoursePriceInfo => {
       const entry = getCountryPriceEntry(courseId);
       if (entry) {
         const ccy = currencyCode;
@@ -496,10 +497,24 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           vatPct: entryVat,
         };
       }
-      const convertedBase = currencyCode === "SAR" ? Math.ceil(sarPrice) : Math.ceil(sarPrice * rate);
+      const trainingVat =
+        courseId === TRAINING_PRICE_PLACEHOLDER_COURSE_ID && opts?.vatPercent != null && Number.isFinite(Number(opts.vatPercent))
+          ? clampTrainingVatPercent(opts.vatPercent)
+          : null;
+      /** Training subtotal after markup is 2dp SAR; VAT matches Tap `ceil(subtotal * (1+vat/100))` without an extra `ceil` on subtotal. */
+      const useTrainingSubtotalPrecision =
+        courseId === TRAINING_PRICE_PLACEHOLDER_COURSE_ID && trainingVat != null;
+      const convertedBase = useTrainingSubtotalPrecision
+        ? currencyCode === "SAR"
+          ? Math.max(0, Math.round(Number(sarPrice) * 100) / 100)
+          : Math.max(0, Math.round(Number(sarPrice) * rate * 100) / 100)
+        : currencyCode === "SAR"
+          ? Math.ceil(sarPrice)
+          : Math.ceil(sarPrice * rate);
       const dPct = courseDiscountPct > 0 ? courseDiscountPct : 0;
       const finalBeforeVat = dPct > 0 ? Math.ceil(convertedBase * (1 - dPct / 100)) : convertedBase;
-      const vatForFallback = currencyCode === "SAR" ? VAT_RATE : 0;
+      const vatForFallback =
+        trainingVat != null ? trainingVat : currencyCode === "SAR" ? VAT_RATE : 0;
       const finalPrice = vatForFallback > 0 ? Math.ceil(finalBeforeVat * (1 + vatForFallback / 100)) : finalBeforeVat;
       return {
         originalPrice: convertedBase,
@@ -604,8 +619,8 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const formatTrainingOfferPrice = useCallback(
-    (sarPrice: number, isRTL = false): string => {
-      const info = getCoursePriceInfo(TRAINING_PRICE_PLACEHOLDER_COURSE_ID, Number(sarPrice), 0);
+    (sarPrice: number, isRTL = false, opts?: { vatPercent?: number | null }): string => {
+      const info = getCoursePriceInfo(TRAINING_PRICE_PLACEHOLDER_COURSE_ID, Number(sarPrice), 0, opts);
       return formatPriceValueThenCurrencyName(info, isRTL);
     },
     [getCoursePriceInfo, formatPriceValueThenCurrencyName],

@@ -20,6 +20,8 @@ import { translateTrainerCourseLocation } from '@/lib/trainerCourseLocation';
 import { COUNTRIES } from '@/data/countryCityData';
 import { cn } from '@/lib/utils';
 import TrainerProfileReviews from '@/components/training/TrainerProfileReviews';
+import { useTrainingPlatformPricing } from '@/hooks/useTrainingPlatformPricing';
+import { applyTrainingPlatformMarkupSar } from '@/lib/trainingPlatformMarkup';
 
 type TrainingEmbed = {
   id: string;
@@ -35,6 +37,7 @@ type TrainerCoursePublic = {
   id: string;
   training_id: string;
   price: number;
+  sessions_count?: number | null;
   duration_hours: number;
   location: string;
   trainings: TrainingEmbed;
@@ -114,7 +117,9 @@ const TrainerProfile: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('trainer_courses')
-        .select('id, training_id, price, duration_hours, location, trainings(id, name_ar, name_en, description_ar, description_en, level, type)')
+        .select(
+          'id, training_id, price, sessions_count, duration_hours, location, trainings(id, name_ar, name_en, description_ar, description_en, level, type)',
+        )
         .eq('trainer_id', id!);
       if (error) throw error;
       return (data || []) as TrainerCoursePublic[];
@@ -129,6 +134,10 @@ const TrainerProfile: React.FC = () => {
       return count || 0;
     },
   });
+
+  const { data: pricing } = useTrainingPlatformPricing();
+  const platformMarkupPct = pricing?.markupPercent ?? 0;
+  const platformVatPct = pricing?.vatPercent ?? 15;
 
   const { data: reviewAgg } = useQuery({
     queryKey: ['trainer-review-agg', id],
@@ -419,6 +428,7 @@ const TrainerProfile: React.FC = () => {
                       const desc = (isRTL ? tr.description_ar : tr.description_en) || '';
                       const loc = translateTrainerCourseLocation(tc.location, isRTL) || tc.location;
                       const hours = Number(tc.duration_hours);
+                      const sessions = Math.max(1, Number(tc.sessions_count ?? 1));
                       const TypeIcon = tr.type === 'theory' ? GraduationCap : Wrench;
                       return (
                         <Card key={tc.id} className="overflow-hidden border-border/60 shadow-sm flex flex-col">
@@ -441,7 +451,10 @@ const TrainerProfile: React.FC = () => {
                               <div className="flex items-center gap-2">
                                 <Clock className="h-4 w-4 shrink-0 text-primary/80" />
                                 <span>
-                                  {hours} {isRTL ? (hours === 1 ? 'ساعة' : 'ساعات') : hours === 1 ? 'hr' : 'hrs'}
+                                  {sessions}{' '}
+                                  {isRTL ? (sessions === 1 ? 'جلسة' : 'جلسات') : sessions === 1 ? 'session' : 'sessions'}
+                                  {' · '}
+                                  {hours} {isRTL ? (hours === 1 ? 'ساعة/جلسة' : 'ساعات/جلسة') : hours === 1 ? 'hr/session' : 'hrs/session'}
                                 </span>
                               </div>
                               <div className="flex items-start gap-2">
@@ -453,7 +466,11 @@ const TrainerProfile: React.FC = () => {
                                 dir={isRTL ? 'rtl' : 'ltr'}
                                 lang={isRTL ? 'ar' : 'en'}
                               >
-                                {formatTrainingOfferPrice(Number(tc.price), isRTL)}
+                                {formatTrainingOfferPrice(
+                                  applyTrainingPlatformMarkupSar(Number(tc.price), platformMarkupPct),
+                                  isRTL,
+                                  { vatPercent: platformVatPct },
+                                )}
                               </p>
                             </div>
                             <Button className="w-full mt-auto gap-2 font-semibold" asChild>
