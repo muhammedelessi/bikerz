@@ -59,6 +59,37 @@ const CURRENCY_META: Record<CurrencyCode, CurrencyMeta> = {
   GBP: { symbol: "GBP", symbolAr: "£" },
 };
 
+/** Placeholder course id for `getCoursePriceInfo` when pricing SAR training offers like video courses */
+export const TRAINING_PRICE_PLACEHOLDER_COURSE_ID = "00000000-0000-4000-8000-000000000001";
+
+/** Arabic full currency name after amount (value first, then name) */
+const CURRENCY_FULL_NAME_AR: Record<CurrencyCode, string> = {
+  SAR: "ريال سعودي",
+  AED: "درهم إماراتي",
+  KWD: "دينار كويتي",
+  BHD: "دينار بحريني",
+  QAR: "ريال قطري",
+  OMR: "ريال عماني",
+  JOD: "دينار أردني",
+  EGP: "جنيه مصري",
+  IQD: "دينار عراقي",
+  SYP: "ليرة سورية",
+  LBP: "ليرة لبنانية",
+  YER: "ريال يمني",
+  LYD: "دينار ليبي",
+  TND: "دينار تونسي",
+  DZD: "دينار جزائري",
+  MAD: "درهم مغربي",
+  SDG: "جنيه سوداني",
+  SOS: "شلن صومالي",
+  MRU: "أوقية موريتانية",
+  KMF: "فرنك قمري",
+  DJF: "فرنك جيبوتي",
+  ILS: "شيكل إسرائيلي",
+  USD: "دولار أمريكي",
+  GBP: "جنيه إسترليني",
+};
+
 const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
   SA: "SAR",
   AE: "AED",
@@ -192,6 +223,10 @@ interface CurrencyContextType {
   hasCountryPrice: (courseId: string) => boolean;
   /** Get the display symbol for a given CurrencyCode based on locale */
   getCurrencySymbol: (code: CurrencyCode, isRTL?: boolean) => string;
+  /** Formatted as "{amount} {currency name}" using user locale; SAR → "… ريال سعودي" in Arabic, "… SAR" in English */
+  formatPriceValueThenCurrencyName: (info: CoursePriceInfo, isRTL?: boolean) => string;
+  /** Training offer list price: SAR base → user currency / country pricing via placeholder course id */
+  formatTrainingOfferPrice: (sarPrice: number, isRTL?: boolean) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -559,6 +594,23 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return isRTL ? m.symbolAr : m.symbol;
   }, []);
 
+  const formatPriceValueThenCurrencyName = useCallback((info: CoursePriceInfo, isRTL = false): string => {
+    const n = Math.round(Number(info.finalPrice));
+    const formatted = n.toLocaleString(isRTL ? "ar-SA" : "en-US");
+    const currencyName = isRTL
+      ? CURRENCY_FULL_NAME_AR[info.currency] ?? CURRENCY_META[info.currency]?.symbolAr ?? info.currency
+      : info.currency;
+    return `${formatted} ${currencyName}`;
+  }, []);
+
+  const formatTrainingOfferPrice = useCallback(
+    (sarPrice: number, isRTL = false): string => {
+      const info = getCoursePriceInfo(TRAINING_PRICE_PLACEHOLDER_COURSE_ID, Number(sarPrice), 0);
+      return formatPriceValueThenCurrencyName(info, isRTL);
+    },
+    [getCoursePriceInfo, formatPriceValueThenCurrencyName],
+  );
+
   return (
     <CurrencyContext.Provider
       value={{
@@ -585,6 +637,8 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         exchangeRate: rate,
         hasCountryPrice,
         getCurrencySymbol,
+        formatPriceValueThenCurrencyName,
+        formatTrainingOfferPrice,
       }}
     >
       {children}

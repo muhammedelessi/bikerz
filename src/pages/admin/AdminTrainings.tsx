@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -33,6 +33,7 @@ interface Training {
 
 const AdminTrainings: React.FC = () => {
   const { isRTL } = useLanguage();
+  const fieldDir = isRTL ? 'rtl' : 'ltr';
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [formOpen, setFormOpen] = useState(false);
@@ -43,8 +44,9 @@ const AdminTrainings: React.FC = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
-    name_ar: '', name_en: '', type: 'theory' as 'theory' | 'practical', description_ar: '', description_en: '', level: 'beginner' as 'beginner' | 'intermediate' | 'advanced', status: 'active' as 'active' | 'archived',
+    name_ar: '', name_en: '', type: 'practical' as 'theory' | 'practical', description_ar: '', description_en: '', level: 'beginner' as 'beginner' | 'intermediate' | 'advanced', status: 'active' as 'active' | 'archived',
   });
+  const [typeFilter, setTypeFilter] = useState<'all' | 'practical' | 'theory'>('all');
 
   const { data: trainings, isLoading } = useQuery({
     queryKey: ['admin-trainings'],
@@ -54,6 +56,12 @@ const AdminTrainings: React.FC = () => {
       return data as Training[];
     },
   });
+
+  const filteredTrainings = useMemo(() => {
+    if (!trainings) return [];
+    if (typeFilter === 'all') return trainings;
+    return trainings.filter((t) => t.type === typeFilter);
+  }, [trainings, typeFilter]);
 
   const { data: trainerCounts } = useQuery({
     queryKey: ['training-trainer-counts'],
@@ -101,7 +109,7 @@ const AdminTrainings: React.FC = () => {
 
   const openAdd = () => {
     setEditingTraining(null);
-    setForm({ name_ar: '', name_en: '', type: 'theory', description_ar: '', description_en: '', level: 'beginner', status: 'active' });
+    setForm({ name_ar: '', name_en: '', type: 'practical', description_ar: '', description_en: '', level: 'beginner', status: 'active' });
     setImageFile(null);
     setImagePreview(null);
     setFormOpen(true);
@@ -162,7 +170,7 @@ const AdminTrainings: React.FC = () => {
   if (formOpen) {
     return (
       <AdminLayout>
-        <div className="space-y-6 max-w-4xl mx-auto">
+        <div className="space-y-6 max-w-4xl mx-auto" dir={fieldDir}>
           {/* Header */}
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => setFormOpen(false)}>
@@ -220,23 +228,35 @@ const AdminTrainings: React.FC = () => {
           {/* Section: Classification */}
           <Card>
             <CardContent className="p-6 space-y-5">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'التصنيف' : 'Classification'}</h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>{isRTL ? 'النوع' : 'Type'}</Label>
-                  <Select value={form.type} onValueChange={v => setForm(f => ({...f, type: v as typeof f.type}))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider text-start">{isRTL ? 'التصنيف' : 'Classification'}</h3>
+              <div dir={fieldDir} className="grid gap-4 md:grid-cols-2">
+                <div className="min-w-0 space-y-2">
+                  <Label className="block text-start">{isRTL ? 'النوع' : 'Type'}</Label>
+                  <Select
+                    dir={fieldDir}
+                    value={form.type}
+                    onValueChange={(v) => setForm((f) => ({ ...f, type: v as typeof f.type }))}
+                  >
+                    <SelectTrigger dir={fieldDir}>
+                      <SelectValue placeholder={isRTL ? 'اختر النوع' : 'Select type'} />
+                    </SelectTrigger>
+                    <SelectContent dir={fieldDir}>
                       <SelectItem value="theory">{isRTL ? 'نظري' : 'Theory'}</SelectItem>
                       <SelectItem value="practical">{isRTL ? 'عملي' : 'Practical'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>{isRTL ? 'المستوى' : 'Level'}</Label>
-                  <Select value={form.level} onValueChange={v => setForm(f => ({...f, level: v as typeof f.level}))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
+                <div className="min-w-0 space-y-2">
+                  <Label className="block text-start">{isRTL ? 'المستوى' : 'Level'}</Label>
+                  <Select
+                    dir={fieldDir}
+                    value={form.level}
+                    onValueChange={(v) => setForm((f) => ({ ...f, level: v as typeof f.level }))}
+                  >
+                    <SelectTrigger dir={fieldDir}>
+                      <SelectValue placeholder={isRTL ? 'اختر المستوى' : 'Select level'} />
+                    </SelectTrigger>
+                    <SelectContent dir={fieldDir}>
                       <SelectItem value="beginner">{isRTL ? 'مبتدئ' : 'Beginner'}</SelectItem>
                       <SelectItem value="intermediate">{isRTL ? 'متوسط' : 'Intermediate'}</SelectItem>
                       <SelectItem value="advanced">{isRTL ? 'متقدم' : 'Advanced'}</SelectItem>
@@ -246,8 +266,8 @@ const AdminTrainings: React.FC = () => {
               </div>
 
               {/* Status */}
-              <div className="flex items-center justify-between rounded-lg border border-border p-4">
-                <div>
+              <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-4">
+                <div className="min-w-0 text-start">
                   <Label className="text-sm font-medium">{isRTL ? 'الحالة' : 'Status'}</Label>
                   <p className="text-xs text-muted-foreground mt-0.5">{isRTL ? 'تفعيل أو تعطيل هذا التدريب' : 'Enable or disable this training'}</p>
                 </div>
@@ -272,12 +292,31 @@ const AdminTrainings: React.FC = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold">{isRTL ? 'إدارة التدريبات' : 'Trainings Management'}</h1>
-            <p className="text-sm text-muted-foreground">{isRTL ? 'إدارة جميع التدريبات المتاحة' : 'Manage all available trainings'}</p>
+            <p className="text-sm text-muted-foreground">
+              {isRTL
+                ? 'العملي والنظري منفصلان؛ معرّف كل صف هو trainings.id (فريد لكل برنامج).'
+                : 'Practical vs theory are separate; each row ID is trainings.id (unique per program).'}
+            </p>
           </div>
-          <Button onClick={openAdd} size="sm"><Plus className="w-4 h-4 me-2" />{isRTL ? 'إضافة تدريب' : 'Add Training'}</Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
+              <SelectTrigger className="w-[200px]" dir={fieldDir}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent dir={fieldDir}>
+                <SelectItem value="all">{isRTL ? 'الكل' : 'All'}</SelectItem>
+                <SelectItem value="practical">{isRTL ? 'عملي فقط' : 'Practical only'}</SelectItem>
+                <SelectItem value="theory">{isRTL ? 'نظري فقط' : 'Theory only'}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={openAdd} size="sm">
+              <Plus className="w-4 h-4 me-2" />
+              {isRTL ? 'إضافة تدريب' : 'Add Training'}
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -294,7 +333,7 @@ const AdminTrainings: React.FC = () => {
                   </div>
                 ))}
               </div>
-            ) : trainings?.length === 0 ? (
+            ) : (trainings?.length ?? 0) === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 px-4">
                 <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                   <BookOpen className="w-8 h-8 text-muted-foreground" />
@@ -303,10 +342,20 @@ const AdminTrainings: React.FC = () => {
                 <p className="text-sm text-muted-foreground mb-4">{isRTL ? 'ابدأ بإضافة أول تدريب' : 'Get started by adding your first training'}</p>
                 <Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 me-2" />{isRTL ? 'إضافة تدريب' : 'Add Training'}</Button>
               </div>
+            ) : filteredTrainings.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-14 px-4">
+                <p className="text-sm text-muted-foreground mb-3">
+                  {isRTL ? 'لا توجد برامج ضمن التصفية الحالية.' : 'No programs match the current filter.'}
+                </p>
+                <Button variant="outline" size="sm" onClick={() => setTypeFilter('all')}>
+                  {isRTL ? 'عرض الكل' : 'Show all'}
+                </Button>
+              </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-[220px] font-mono text-xs">{isRTL ? 'المعرّف (ID)' : 'Program ID'}</TableHead>
                     <TableHead>{isRTL ? 'الاسم' : 'Name'}</TableHead>
                     <TableHead>{isRTL ? 'النوع' : 'Type'}</TableHead>
                     <TableHead>{isRTL ? 'المستوى' : 'Level'}</TableHead>
@@ -316,8 +365,11 @@ const AdminTrainings: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {trainings?.map(t => (
+                  {filteredTrainings.map(t => (
                     <TableRow key={t.id} className="group">
+                      <TableCell className="align-top">
+                        <code className="text-[11px] leading-snug break-all text-muted-foreground" title={t.id}>{t.id}</code>
+                      </TableCell>
                       <TableCell>
                         <div className="font-medium">{isRTL ? t.name_ar : t.name_en}</div>
                         <div className="text-xs text-muted-foreground mt-0.5">{isRTL ? t.name_en : t.name_ar}</div>

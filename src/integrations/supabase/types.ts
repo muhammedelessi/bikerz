@@ -1712,6 +1712,7 @@ export type Database = {
           card_last_four: string | null
           charge_id: string | null
           course_id: string | null
+          training_id: string | null
           created_at: string
           currency: string
           customer_email: string | null
@@ -1735,6 +1736,7 @@ export type Database = {
           card_last_four?: string | null
           charge_id?: string | null
           course_id?: string | null
+          training_id?: string | null
           created_at?: string
           currency?: string
           customer_email?: string | null
@@ -1758,6 +1760,7 @@ export type Database = {
           card_last_four?: string | null
           charge_id?: string | null
           course_id?: string | null
+          training_id?: string | null
           created_at?: string
           currency?: string
           customer_email?: string | null
@@ -1781,6 +1784,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tap_charges_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
             referencedColumns: ["id"]
           },
         ]
@@ -1911,6 +1921,44 @@ export type Database = {
           },
         ]
       }
+      trainer_availability: {
+        Row: {
+          id: string
+          trainer_id: string
+          day_of_week: number
+          start_time: string
+          end_time: string
+          is_available: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          trainer_id: string
+          day_of_week: number
+          start_time: string
+          end_time: string
+          is_available?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          trainer_id?: string
+          day_of_week?: number
+          start_time?: string
+          end_time?: string
+          is_available?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_availability_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trainer_courses: {
         Row: {
           available_schedule: Json | null
@@ -2009,6 +2057,12 @@ export type Database = {
       }
       trainers: {
         Row: {
+          album_photos: string[] | null
+          availability_blocked_dates: string[]
+          availability_settings: Json
+          availability_special_hours: Json
+          bike_entries: Json | null
+          bike_photos: string[] | null
           bike_type: string
           bio_ar: string
           bio_en: string
@@ -2016,6 +2070,7 @@ export type Database = {
           country: string
           created_at: string
           id: string
+          language_levels: Json
           license_type: string
           motorbike_brand: string
           name_ar: string
@@ -2027,6 +2082,12 @@ export type Database = {
           years_of_experience: number
         }
         Insert: {
+          album_photos?: string[] | null
+          availability_blocked_dates?: string[]
+          availability_settings?: Json
+          availability_special_hours?: Json
+          bike_entries?: Json | null
+          bike_photos?: string[] | null
           bike_type?: string
           bio_ar?: string
           bio_en?: string
@@ -2034,6 +2095,7 @@ export type Database = {
           country?: string
           created_at?: string
           id?: string
+          language_levels?: Json
           license_type?: string
           motorbike_brand?: string
           name_ar?: string
@@ -2045,6 +2107,12 @@ export type Database = {
           years_of_experience?: number
         }
         Update: {
+          album_photos?: string[] | null
+          availability_blocked_dates?: string[]
+          availability_settings?: Json
+          availability_special_hours?: Json
+          bike_entries?: Json | null
+          bike_photos?: string[] | null
           bike_type?: string
           bio_ar?: string
           bio_en?: string
@@ -2052,6 +2120,7 @@ export type Database = {
           country?: string
           created_at?: string
           id?: string
+          language_levels?: Json
           license_type?: string
           motorbike_brand?: string
           name_ar?: string
@@ -2105,6 +2174,94 @@ export type Database = {
             columns: ["training_id"]
             isOneToOne: false
             referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_bookings: {
+        Row: {
+          id: string
+          user_id: string
+          training_id: string
+          trainer_id: string
+          trainer_course_id: string | null
+          full_name: string
+          phone: string
+          email: string
+          notes: string | null
+          preferred_date: string | null
+          booking_date: string | null
+          start_time: string | null
+          end_time: string | null
+          amount: number
+          currency: string
+          payment_status: string
+          payment_id: string | null
+          status: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          training_id: string
+          trainer_id: string
+          trainer_course_id?: string | null
+          full_name: string
+          phone: string
+          email: string
+          notes?: string | null
+          preferred_date?: string | null
+          booking_date?: string | null
+          start_time?: string | null
+          end_time?: string | null
+          amount?: number
+          currency?: string
+          payment_status?: string
+          payment_id?: string | null
+          status?: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          training_id?: string
+          trainer_id?: string
+          trainer_course_id?: string | null
+          full_name?: string
+          phone?: string
+          email?: string
+          notes?: string | null
+          preferred_date?: string | null
+          booking_date?: string | null
+          start_time?: string | null
+          end_time?: string | null
+          amount?: number
+          currency?: string
+          payment_status?: string
+          payment_id?: string | null
+          status?: string
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_bookings_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_bookings_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_bookings_trainer_course_id_fkey"
+            columns: ["trainer_course_id"]
+            isOneToOne: false
+            referencedRelation: "trainer_courses"
             referencedColumns: ["id"]
           },
         ]
@@ -3154,6 +3311,14 @@ export type Database = {
         Returns: {
           courses_json: string
           total_purchased: number
+        }[]
+      }
+      get_trainer_booked_slots: {
+        Args: { p_trainer_id: string; p_start_date: string; p_end_date: string }
+        Returns: {
+          booking_date: string
+          start_time: string
+          status: string | null
         }[]
       }
       grade_lesson_activity: {

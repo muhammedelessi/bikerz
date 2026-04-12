@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Star, Award, Calendar, Users, ChevronRight, ChevronLeft, Gauge } from 'lucide-react';
-import TrainerProfileModal from '@/components/landing/TrainerProfileModal';
-import { cn } from '@/lib/utils';
+import { Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import TrainerShowcaseCard from '@/components/landing/TrainerShowcaseCard';
+import { translateTrainerHomeLocation } from '@/lib/trainerCourseLocation';
+import { Button } from '@/components/ui/button';
 
 const TrainersSection: React.FC = () => {
   const { isRTL } = useLanguage();
-  const [selectedTrainerId, setSelectedTrainerId] = useState<string | null>(null);
 
-  const { data: trainers, isLoading } = useQuery({
+  const { data: trainers, isLoading, isError } = useQuery({
     queryKey: ['public-trainers'],
     queryFn: async () => {
       const { data, error } = await supabase.from('trainers').select('*').eq('status', 'active');
@@ -26,36 +27,35 @@ const TrainersSection: React.FC = () => {
       const { data } = await supabase.from('trainer_reviews').select('trainer_id, rating');
       const stats: Record<string, { avg: number; count: number }> = {};
       const grouped: Record<string, number[]> = {};
-      data?.forEach(r => { if (!grouped[r.trainer_id]) grouped[r.trainer_id] = []; grouped[r.trainer_id].push(r.rating); });
-      Object.entries(grouped).forEach(([id, ratings]) => { stats[id] = { avg: ratings.reduce((a, b) => a + b, 0) / ratings.length, count: ratings.length }; });
+      data?.forEach((r) => {
+        if (!grouped[r.trainer_id]) grouped[r.trainer_id] = [];
+        grouped[r.trainer_id].push(r.rating);
+      });
+      Object.entries(grouped).forEach(([tid, ratings]) => {
+        stats[tid] = {
+          avg: ratings.reduce((a, b) => a + b, 0) / ratings.length,
+          count: ratings.length,
+        };
+      });
       return stats;
     },
   });
 
-  const { data: studentCounts } = useQuery({
-    queryKey: ['public-trainer-student-counts'],
-    queryFn: async () => {
-      const { data } = await supabase.from('training_students').select('trainer_id');
-      const counts: Record<string, number> = {};
-      data?.forEach(s => { counts[s.trainer_id] = (counts[s.trainer_id] || 0) + 1; });
-      return counts;
-    },
-  });
-
-  if (isLoading) return (
-    <section className="py-12 sm:py-16 bg-muted/30">
-      <div className="container mx-auto px-4 max-w-[1200px]">
-        <Skeleton className="h-10 w-60 mx-auto mb-8" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-[280px] rounded-2xl" />)}
+  if (isLoading)
+    return (
+      <section className="py-12 sm:py-16 bg-muted/30">
+        <div className="container mx-auto px-4 max-w-[1200px]">
+          <Skeleton className="h-10 w-60 mx-auto mb-8" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-[280px] rounded-2xl" />
+            ))}
+          </div>
         </div>
-      </div>
-    </section>
-  );
+      </section>
+    );
 
-  if (!trainers?.length) return null;
-
-  const Arrow = isRTL ? ChevronLeft : ChevronRight;
+  const showGrid = !isError && !!trainers?.length;
 
   return (
     <section className="py-12 sm:py-16 bg-muted/30">
@@ -70,89 +70,63 @@ const TrainersSection: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {trainers.map(t => {
-            const stats = reviewStats?.[t.id];
-            const students = studentCounts?.[t.id] || 0;
-            const name = isRTL ? t.name_ar : t.name_en;
-            const initials = name?.charAt(0) || '?';
-            const bio = isRTL ? (t.bio_ar || t.bio_en) : (t.bio_en || '');
+        {isError && (
+          <div className="text-center py-14 px-4">
+            <p className="text-muted-foreground">
+              {isRTL ? 'تعذر تحميل المدربين. حاول مرة أخرى لاحقاً.' : 'Could not load trainers. Please try again later.'}
+            </p>
+          </div>
+        )}
 
-            return (
-              <div
-                key={t.id}
-                onClick={() => setSelectedTrainerId(t.id)}
-                className={cn(
-                  "group relative bg-card rounded-2xl border border-border/60 overflow-hidden cursor-pointer flex flex-col",
-                  "transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 hover:border-primary/30"
-                )}
-              >
-                <div className="p-5 flex-1 flex flex-col">
-                  {/* Avatar + Name row */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-14 h-14 rounded-full overflow-hidden bg-muted shrink-0 ring-2 ring-primary/10">
-                      {t.photo_url ? (
-                        <img src={t.photo_url} alt={name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary text-xl font-bold">
-                          {initials}
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-base font-bold text-foreground line-clamp-1">{name}</h3>
-                      {stats && (
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                          <span className="text-xs font-semibold text-foreground">{stats.avg.toFixed(1)}</span>
-                          <span className="text-xs text-muted-foreground">({stats.count} {isRTL ? 'تقييم' : 'reviews'})</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+        {!isError && !trainers?.length && (
+          <div className="text-center py-14 px-4">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
+              <Users className="w-10 h-10 text-muted-foreground" />
+            </div>
+            <h3 className="text-xl font-bold text-foreground mb-2">
+              {isRTL ? 'لا يوجد مدربون معروضون حالياً' : 'No trainers listed yet'}
+            </h3>
+            <p className="text-muted-foreground max-w-md mx-auto text-sm sm:text-base">
+              {isRTL ? 'سيتم إضافة المدربين قريباً.' : 'Trainers will appear here once they are added.'}
+            </p>
+          </div>
+        )}
 
-                  {/* Bio - 2 lines */}
-                  {bio && (
-                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed mb-4">{bio}</p>
-                  )}
+        {showGrid && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {trainers!.map((t) => {
+              const stats = reviewStats?.[t.id];
+              const bio = isRTL ? t.bio_ar || t.bio_en : t.bio_en || t.bio_ar || '';
+              const loc = translateTrainerHomeLocation(t.country, t.city, isRTL) || [t.city, t.country].filter(Boolean).join(' - ');
+              const y = Number(t.years_of_experience);
+              const expText = isRTL
+                ? `${y} ${y === 1 ? 'سنة خبرة' : 'سنوات خبرة'}`
+                : `${y} ${y === 1 ? 'yr exp' : 'yrs exp'}`;
+              const ProfileIcon = isRTL ? ChevronLeft : ChevronRight;
 
-                  {/* Stats */}
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground mt-auto mb-0">
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-primary/70" />
-                      <span>{t.years_of_experience} {isRTL ? 'سنة خبرة' : 'yrs exp'}</span>
-                    </div>
-                    <div className="w-px h-3 bg-border" />
-                    <div className="flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-primary/70" />
-                      <span>{students} {isRTL ? 'متدرب' : 'students'}</span>
-                    </div>
-                    {t.bike_type && (
-                      <>
-                        <div className="w-px h-3 bg-border" />
-                        <div className="flex items-center gap-1.5">
-                          <Gauge className="w-3.5 h-3.5 text-primary/70" />
-                          <span>{t.bike_type}</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* CTA - always at bottom */}
-                <div className="px-5 pb-5">
-                  <button className="w-full flex items-center justify-center gap-1 py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-semibold transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                    {isRTL ? 'عرض الملف الشخصي' : 'View Profile'}
-                    <Arrow className="w-4 h-4 transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              return (
+                <TrainerShowcaseCard
+                  key={t.id}
+                  trainer={{ name_ar: t.name_ar, name_en: t.name_en, photo_url: t.photo_url }}
+                  isRTL={isRTL}
+                  reviewStats={stats}
+                  headline={loc}
+                  bioPreview={bio || null}
+                  metaRows={[{ id: 'exp', icon: 'clock', text: expText }]}
+                  footer={
+                    <Button type="button" className="w-full font-semibold gap-2" asChild>
+                      <Link to={`/trainers/${t.id}`}>
+                        {isRTL ? 'عرض الملف الشخصي' : 'View Profile'}
+                        <ProfileIcon className="h-4 w-4 opacity-90" />
+                      </Link>
+                    </Button>
+                  }
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
-
-      <TrainerProfileModal trainerId={selectedTrainerId} onClose={() => setSelectedTrainerId(null)} />
     </section>
   );
 };

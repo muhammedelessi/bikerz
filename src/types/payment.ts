@@ -1,8 +1,11 @@
 export type PaymentMethod = 'card' | 'apple_pay' | 'google_pay';
 export type PaymentStatus = 'idle' | 'processing' | 'verifying' | 'succeeded' | 'failed';
 
+export type TapPaymentKind = 'course' | 'training_booking';
+
 export interface TapPaymentConfig {
-  courseId: string;
+  /** Video course id (omit when paymentKind is training_booking) */
+  courseId?: string;
   currency: string;
   customerName: string;
   customerEmail: string;
@@ -13,6 +16,11 @@ export interface TapPaymentConfig {
   amount?: number;
   courseName?: string;
   isRTL?: boolean;
+  paymentKind?: TapPaymentKind;
+  /** Required when paymentKind is training_booking */
+  trainerCourseId?: string;
+  /** `trainings.id` for this practical session (sent as course_id / training_id to the payment API) */
+  trainingId?: string;
 }
 
 export interface CheckoutCourse {

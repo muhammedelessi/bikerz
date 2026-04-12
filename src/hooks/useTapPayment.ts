@@ -79,6 +79,14 @@ export function useTapPayment(): UseTapPaymentReturn {
         popupRef.current = null;
         if (tapId) {
           setChargeId(tapId);
+          const isBooking = Boolean(event.data?.booking);
+          const tc = typeof event.data?.trainer_course_id === 'string' ? event.data.trainer_course_id : '';
+          if (isBooking && tc) {
+            window.location.assign(
+              `/booking-payment-complete?tap_id=${encodeURIComponent(tapId)}&tc=${encodeURIComponent(tc)}`,
+            );
+            return;
+          }
           if (courseId) {
             window.location.assign(`/payment-success?course=${encodeURIComponent(courseId)}&tap_id=${encodeURIComponent(tapId)}`);
             return;
@@ -103,6 +111,7 @@ export function useTapPayment(): UseTapPaymentReturn {
     const { data: { session: currentSession } } = await supabase.auth.getSession();
     if (!currentSession?.access_token) {
       setError('Please sign in to make a payment');
+      updateStatus('failed');
       return;
     }
 

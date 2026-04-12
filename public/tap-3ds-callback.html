@@ -13,20 +13,29 @@
   var params = new URLSearchParams(window.location.search);
   var tapId = params.get('tap_id') || '';
   var courseId = params.get('course') || '';
-  var msg = {type:'TAP_3DS_COMPLETE', tap_id:tapId, course_id:courseId};
+  var booking = params.get('booking') === '1';
+  var trainerCourseId = params.get('tc') || '';
+  var msg = {
+    type: 'TAP_3DS_COMPLETE',
+    tap_id: tapId,
+    course_id: courseId,
+    booking: booking,
+    trainer_course_id: trainerCourseId
+  };
 
-  // If opened as popup, notify opener
   if(window.opener && !window.opener.closed){
     window.opener.postMessage(msg,'*');
     setTimeout(function(){ window.close(); }, 1500);
   }
-  // If inside iframe, notify parent
   else if(window.parent && window.parent !== window){
     window.parent.postMessage(msg,'*');
   }
-  // Standalone fallback
   else {
-    window.location.href='/payment-success?course='+encodeURIComponent(courseId)+'&tap_id='+encodeURIComponent(tapId);
+    if (booking && trainerCourseId && tapId) {
+      window.location.href = '/booking-payment-complete?tap_id=' + encodeURIComponent(tapId) + '&tc=' + encodeURIComponent(trainerCourseId);
+    } else {
+      window.location.href = '/payment-success?course=' + encodeURIComponent(courseId) + '&tap_id=' + encodeURIComponent(tapId);
+    }
   }
 })();
 </script>

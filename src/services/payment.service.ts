@@ -1,5 +1,21 @@
+import { FunctionsHttpError } from '@supabase/functions-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { TapPaymentConfig } from '@/types/payment';
+
+async function messageFromFunctionsHttpError(error: unknown): Promise<string | null> {
+  if (!(error instanceof FunctionsHttpError)) return null;
+  const ctx = error.context;
+  if (!(ctx instanceof Response)) return null;
+  try {
+    const text = await ctx.clone().text();
+    if (!text?.trim()) return null;
+    const parsed = JSON.parse(text) as { error?: unknown };
+    if (typeof parsed?.error === 'string' && parsed.error.trim()) return parsed.error.trim();
+  } catch {
+    return null;
+  }
+  return null;
+}
 
 export function parseDeviceInfo(): string {
   try {
@@ -29,26 +45,79 @@ export async function createCharge(
   userId: string,
   detectedCountry: string | null,
 ) {
-  const idempotencyKey = `${config.courseId}_${userId}_${Date.now()}`;
+  const trainerId = config.trainerCourseId?.trim();
+  const courseId = config.courseId?.trim();
+  const trainingId = config.trainingId?.trim();
+  const explicitKind = String(config.paymentKind || '').trim().toLowerCase();
+  // Practical booking: explicit kind, or trainer offer + program id (covers lost `paymentKind` in transit).
+  // Never treat as video-only when a trainer offer id is present (proxies sometimes force `payment_kind: "course"`).
+  const kind: 'course' | 'training_booking' =
+    explicitKind === 'course' && !trainerId
+      ? 'course'
+      : explicitKind === 'training_booking' || (Boolean(trainerId) && Boolean(trainingId))
+        ? 'training_booking'
+        : 'course';
+
+  if (kind === 'course' && !courseId) {
+    throw new Error('courseId is required for course payments');
+  }
+  if (kind === 'training_booking' && !trainerId) {
+    throw new Error('trainerCourseId is required for training booking payments');
+  }
+  if (kind === 'training_booking' && !trainingId) {
+    throw new Error('trainingId is required for training booking payments');
+  }
+  const idPart =
+    kind === 'training_booking'
+      ? `tb_${trainerId || 'unknown'}`
+      : String(courseId || 'unknown');
+  const idempotencyKey = `${kind}_${idPart}_${userId}_${Date.now()}`;
+
+  // Some proxies require `course_id` on every charge request. For trainer bookings we send
+  // `trainings.id` here; `tap-create-charge` still stores `tap_charges.course_id` as null and
+  // uses `trainer_courses` + `training_id` for pricing (see edge `dbCourseId`).
+  const common = {
+    currency: config.currency,
+    amount: config.amount ?? null,
+    customer_name: config.customerName,
+    customer_email: config.customerEmail,
+    customer_phone: config.customerPhone,
+    idempotency_key: idempotencyKey,
+    idempotencyKey: idempotencyKey,
+    coupon_id: config.couponId || null,
+    payment_method: config.paymentMethod || 'card',
+    detected_country: detectedCountry || null,
+    device_info: parseDeviceInfo(),
+    token_id: config.tokenId || null,
+    payment_kind: kind,
+    paymentKind: kind,
+    booking_type: kind,
+    bookingType: kind,
+  };
+
+  const body =
+    kind === 'training_booking'
+      ? {
+          ...common,
+          course_id: trainingId,
+          training_id: trainingId,
+          trainer_course_id: trainerId,
+          trainerCourseId: trainerId,
+          tc: trainerId,
+        }
+      : {
+          ...common,
+          course_id: courseId,
+        };
 
   const { data, error } = await supabase.functions.invoke('tap-create-charge', {
-    body: {
-      course_id: config.courseId,
-      currency: config.currency,
-      amount: config.amount ?? null,
-      customer_name: config.customerName,
-      customer_email: config.customerEmail,
-      customer_phone: config.customerPhone,
-      idempotency_key: idempotencyKey,
-      coupon_id: config.couponId || null,
-      payment_method: config.paymentMethod || 'card',
-      detected_country: detectedCountry || null,
-      device_info: parseDeviceInfo(),
-      token_id: config.tokenId || null,
-    },
+    body,
   });
 
-  if (error) throw new Error(error.message || 'Payment request failed');
+  if (error) {
+    const detail = await messageFromFunctionsHttpError(error);
+    throw new Error(detail || error.message || 'Payment request failed');
+  }
   if (data?.error) throw new Error(data.error);
 
   return data;
@@ -58,6 +127,9 @@ export async function verifyChargeOnce(chargeId: string) {
   const { data, error } = await supabase.functions.invoke('tap-verify-charge', {
     body: { charge_id: chargeId },
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    const detail = await messageFromFunctionsHttpError(error);
+    throw new Error(detail || error.message || 'Verification request failed');
+  }
   return data;
 }

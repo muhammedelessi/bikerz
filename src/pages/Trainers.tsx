@@ -1,11 +1,11 @@
 import React, { useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import TrainingsSection from "@/components/landing/TrainingsSection";
+import TrainersSection from "@/components/landing/TrainersSection";
 import SEOHead from "@/components/common/SEOHead";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-const Trainings: React.FC = () => {
+const Trainers: React.FC = () => {
   const { isRTL, language } = useLanguage();
 
   useEffect(() => {
@@ -16,22 +16,22 @@ const Trainings: React.FC = () => {
   return (
     <div className="min-h-screen bg-background transition-all duration-300" dir={isRTL ? "rtl" : "ltr"}>
       <SEOHead
-        title={isRTL ? "التدريب العملي" : "Practical Training"}
+        title={isRTL ? "المدربون" : "Trainers"}
         description={
           isRTL
-            ? "برامج عملية ونظريّة في أقسام منفصلة؛ كل برنامج عملي له معرّف فريد للحجز والدفع."
-            : "Practical and theory programs in separate sections; each practical program has a unique ID for booking and payments."
+            ? "تعرّف على مدربي بايكرز المعتمدين، خبراتهم وتقييمات المتدربين واحجز تدريبك العملي."
+            : "Meet BIKERZ certified trainers, their experience and student reviews, and book your practical training."
         }
-        canonical="/trainings"
+        canonical="/trainers"
         breadcrumbs={[
           { name: isRTL ? "الرئيسية" : "Home", url: "/" },
-          { name: isRTL ? "التدريب العملي" : "Practical Training", url: "/trainings" },
+          { name: isRTL ? "المدربون" : "Trainers", url: "/trainers" },
         ]}
       />
       <Navbar />
       <div className="pt-[var(--navbar-h)]">
         <main>
-          <TrainingsSection />
+          <TrainersSection />
         </main>
         <Footer />
       </div>
@@ -39,4 +39,4 @@ const Trainings: React.FC = () => {
   );
 };
 
-export default Trainings;
+export default Trainers;
