@@ -354,6 +354,8 @@ const TestQuestionManager: React.FC<TestQuestionManagerProps> = ({
                       <p className="text-xs text-muted-foreground">
                         {question.question_type === 'true_false'
                           ? (isRTL ? 'صح/خطأ' : 'True/False')
+                          : question.question_type === 'yes_no'
+                          ? (isRTL ? 'نعم / لا' : 'Yes / No')
                           : (isRTL ? 'اختيار متعدد' : 'Multiple Choice')}
                         {' • '}
                         {question.points} {isRTL ? 'نقطة' : 'pt'}
@@ -446,6 +448,9 @@ const TestQuestionManager: React.FC<TestQuestionManagerProps> = ({
                     <SelectItem value="true_false">
                       {isRTL ? 'صح/خطأ' : 'True/False'}
                     </SelectItem>
+                    <SelectItem value="yes_no">
+                      {isRTL ? 'نعم / لا' : 'Yes / No'}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -481,6 +486,12 @@ const TestQuestionManager: React.FC<TestQuestionManagerProps> = ({
               </div>
             )}
 
+            {questionForm.question_type === 'yes_no' && (
+              <div className="p-3 rounded-lg bg-muted/30 text-sm text-muted-foreground">
+                {isRTL ? 'سيتم عرض زري "نعم" و"لا" تلقائياً للمستخدم' : 'Yes and No buttons will be shown automatically to the user'}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>{isRTL ? 'الإجابة الصحيحة' : 'Correct Answer'}</Label>
               <Select
@@ -491,7 +502,12 @@ const TestQuestionManager: React.FC<TestQuestionManagerProps> = ({
                   <SelectValue placeholder={isRTL ? 'اختر الإجابة الصحيحة' : 'Select correct answer'} />
                 </SelectTrigger>
                 <SelectContent>
-                  {questionForm.question_type === 'true_false' ? (
+                {questionForm.question_type === 'yes_no' ? (
+                    <>
+                      <SelectItem value="yes">{isRTL ? 'نعم' : 'Yes'}</SelectItem>
+                      <SelectItem value="no">{isRTL ? 'لا' : 'No'}</SelectItem>
+                    </>
+                  ) : questionForm.question_type === 'true_false' ? (
                     <>
                       <SelectItem value="true">{isRTL ? 'صح' : 'True'}</SelectItem>
                       <SelectItem value="false">{isRTL ? 'خطأ' : 'False'}</SelectItem>

@@ -485,6 +485,27 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
           {isRTL && currentQuestion.question_ar ? currentQuestion.question_ar : currentQuestion.question}
         </h2>
 
+        {currentQuestion.question_type === 'yes_no' ? (
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { value: 'yes', labelAr: 'نعم', labelEn: 'Yes', icon: '✓' },
+              { value: 'no', labelAr: 'لا', labelEn: 'No', icon: '✗' },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => handleAnswer(opt.value)}
+                className={`flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 text-lg font-bold transition-all ${
+                  answers[currentQuestion.id] === opt.value
+                    ? 'border-primary bg-primary/10 text-primary scale-[1.02]'
+                    : 'border-border hover:border-primary/50 text-foreground'
+                }`}
+              >
+                <span className="text-2xl">{opt.icon}</span>
+                <span>{isRTL ? opt.labelAr : opt.labelEn}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
         <RadioGroup
           value={answers[currentQuestion.id] || ''}
           onValueChange={handleAnswer}
@@ -507,6 +528,7 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
             </div>
           ))}
         </RadioGroup>
+        )}
       </motion.div>
 
       {/* Navigation */}

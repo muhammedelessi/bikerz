@@ -40,7 +40,7 @@ import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
 
 // Question types
-type QuestionType = 'single_choice' | 'multiple_choice' | 'dropdown';
+type QuestionType = 'single_choice' | 'multiple_choice' | 'dropdown' | 'yes_no';
 
 interface QuestionOption {
   id: string;
@@ -405,6 +405,8 @@ const LessonQuizManager: React.FC<LessonQuizManagerProps> = ({
         return <ListChecks className="w-4 h-4" />;
       case 'dropdown':
         return <ChevronDownSquare className="w-4 h-4" />;
+      case 'yes_no':
+        return <CheckCircle2 className="w-4 h-4" />;
     }
   };
 
@@ -416,6 +418,8 @@ const LessonQuizManager: React.FC<LessonQuizManagerProps> = ({
         return isRTL ? 'اختيار متعدد' : 'Multiple Choice';
       case 'dropdown':
         return isRTL ? 'قائمة منسدلة' : 'Dropdown';
+      case 'yes_no':
+        return isRTL ? 'نعم / لا' : 'Yes / No';
     }
   };
 
@@ -636,6 +640,12 @@ const LessonQuizManager: React.FC<LessonQuizManagerProps> = ({
                         {isRTL ? 'قائمة منسدلة' : 'Dropdown'}
                       </div>
                     </SelectItem>
+                    <SelectItem value="yes_no">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4" />
+                        {isRTL ? 'نعم / لا' : 'Yes / No'}
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -651,6 +661,36 @@ const LessonQuizManager: React.FC<LessonQuizManagerProps> = ({
             </div>
 
             {/* Options */}
+            {questionForm.question_type === 'yes_no' ? (
+              <div className="space-y-3">
+                <Label>{isRTL ? 'الخيارات' : 'Options'}</Label>
+                <div className="p-3 rounded-lg bg-muted/30 text-sm text-muted-foreground">
+                  {isRTL ? 'سيتم عرض زري "نعم" و"لا" تلقائياً للمستخدم' : 'Yes and No buttons will be shown automatically to the user'}
+                </div>
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'الإجابة الصحيحة' : 'Correct Answer'}</Label>
+                  <div className="flex gap-3">
+                    {[
+                      { value: 'yes', label: isRTL ? 'نعم' : 'Yes' },
+                      { value: 'no', label: isRTL ? 'لا' : 'No' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setQuestionForm({ ...questionForm, correct_answers: [opt.value] })}
+                        className={`flex-1 p-3 rounded-lg border-2 font-medium transition-all ${
+                          questionForm.correct_answers.includes(opt.value)
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border hover:border-primary/50 text-foreground'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label>{isRTL ? 'الخيارات' : 'Options'}</Label>
@@ -711,6 +751,7 @@ const LessonQuizManager: React.FC<LessonQuizManagerProps> = ({
                 </div>
               ))}
             </div>
+            )}
 
             {/* Explanation */}
             <div className="grid grid-cols-2 gap-4">
