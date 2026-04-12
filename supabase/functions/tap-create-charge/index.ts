@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { parsePhoneNumberFromString } from "https://esm.sh/libphonenumber-js@1.11.17/min";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,43 +7,6 @@ const corsHeaders = {
 };
 
 const PAYMENT_TIMEOUT = 30000; // 30s timeout for Tap API
-
-async function getTrainingPlatformMarkupPercent(
-  adminClient: ReturnType<typeof createClient>,
-): Promise<number> {
-  const { data } = await adminClient
-    .from("admin_settings")
-    .select("value")
-    .eq("key", "training_platform_markup_percent")
-    .maybeSingle();
-  const v = data?.value as unknown;
-  let n = 0;
-  if (typeof v === "number") n = v;
-  else if (v && typeof v === "object" && "percent" in (v as Record<string, unknown>)) {
-    n = Number((v as Record<string, unknown>).percent);
-  }
-  if (!Number.isFinite(n) || n < 0) return 0;
-  return Math.min(500, n);
-}
-
-/** Saudi VAT % on practical training charges (admin_settings, default 15). */
-async function getTrainingPlatformVatPercent(
-  adminClient: ReturnType<typeof createClient>,
-): Promise<number> {
-  const { data } = await adminClient
-    .from("admin_settings")
-    .select("value")
-    .eq("key", "training_platform_vat_percent")
-    .maybeSingle();
-  const v = data?.value as unknown;
-  let n = 15;
-  if (typeof v === "number") n = v;
-  else if (v && typeof v === "object" && "percent" in (v as Record<string, unknown>)) {
-    n = Number((v as Record<string, unknown>).percent);
-  }
-  if (!Number.isFinite(n) || n < 0) return 15;
-  return Math.min(30, n);
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -107,62 +69,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    const b = body as Record<string, unknown>;
-    const course_id = (b.course_id ?? b.courseId) as string | undefined;
-    const rawCurrency = (b.currency as string | undefined) ?? "SAR";
-    const requestedAmount = b.amount as unknown;
-    const customer_name = b.customer_name;
-    const customer_email = b.customer_email;
-    const customer_phone = b.customer_phone;
-    const idempotency_key = (b.idempotency_key ?? b.idempotencyKey) as string | undefined;
-    const coupon_id = b.coupon_id;
-    const payment_method = (b.payment_method as string | undefined) ?? "card";
-    const detected_country = b.detected_country;
-    const device_info = b.device_info;
-    const token_id = b.token_id;
-    const payment_kind_raw =
-      b.payment_kind ?? b.paymentKind ?? b.booking_type ?? b.bookingType;
-    const payment_kind = String(payment_kind_raw ?? "").trim().toLowerCase();
-    // Short alias `tc`: some gateways strip long snake_case keys from JSON bodies
-    const trainerCourseIdBody = (b.trainer_course_id ?? b.trainerCourseId ?? b.tc) as string | undefined;
-    const trainerCourseIdTrim = String(trainerCourseIdBody ?? "").trim();
-    const courseIdTrim = course_id != null ? String(course_id).trim() : "";
-    const training_id_body = (b.training_id ?? b.trainingId) as string | undefined;
-    const trainingIdBodyTrim = String(training_id_body ?? "").trim();
-    /** Client sends the same UUID as `course_id` and `training_id` for trainer bookings (program id). */
-    const trainingProgramIdPair =
-      trainingIdBodyTrim.length > 0 && courseIdTrim.length > 0 && courseIdTrim === trainingIdBodyTrim;
+    const {
+      course_id,
+      currency: rawCurrency = "SAR",
+      amount: requestedAmount,
+      customer_name,
+      customer_email,
+      customer_phone,
+      idempotency_key,
+      coupon_id,
+      payment_method = "card",
+      detected_country,
+      device_info,
+      token_id,
+    } = body as Record<string, any>;
 
-    if (!idempotency_key || !String(idempotency_key).trim()) {
+    if (!course_id || !idempotency_key) {
       return new Response(
-        JSON.stringify({ error: "Missing required field: idempotency_key" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const hasCourse = courseIdTrim.length > 0;
-    const hasTrainerCourse = trainerCourseIdTrim.length > 0;
-    const paymentKindIsTraining = payment_kind === "training_booking";
-    // Trainer session: trainer row id, explicit kind, or program id sent as both course_id + training_id.
-    const isTrainingBooking =
-      hasTrainerCourse || paymentKindIsTraining || trainingProgramIdPair;
-
-    if (isTrainingBooking && !hasTrainerCourse) {
-      return new Response(
-        JSON.stringify({ error: "Missing trainer_course_id for training booking" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // When `trainer_course_id` (or `tc`) is present, always use the trainer/practical path — even if a
-    // proxy or client default sent `payment_kind: "course"` (that mismatch used to block real bookings).
-
-    if (!isTrainingBooking && !hasCourse) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "Missing course_id for course payment. For training bookings, send payment_kind \"training_booking\" and trainer_course_id (omit course_id).",
-        }),
+        JSON.stringify({ error: "Missing required fields: course_id, idempotency_key" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -241,137 +165,42 @@ Deno.serve(async (req) => {
     }
 
     // ── SERVER-AUTHORITATIVE PRICING (always in SAR) ──
-    type CourseLike = {
-      id: string;
-      price: number;
-      currency: string | null;
-      title: string;
-      discount_percentage: number | null;
-    };
+    // Fetch course SAR price from DB — never trust client amount
+    const { data: course, error: courseError } = await adminClient
+      .from("courses")
+      .select("id, price, currency, title, discount_percentage")
+      .eq("id", course_id)
+      .single();
 
-    let course: CourseLike;
-    let basePriceSar: number;
-    /** Trainer-listed SAR from `trainer_courses.price` (before platform markup), for metadata */
-    let trainerPayoutBaseSar: number | null = null;
-    let trainingPlatformMarkupPercent: number | null = null;
+    if (courseError || !course) {
+      return new Response(
+        JSON.stringify({ error: "Course not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Base SAR price is the source of truth for fallback charging
+    const basePriceSar = Number(course.price);
+
+    // Country-specific pricing is for display and may also define the intended payable amount.
     let localizedDisplayPrice: number | null = null;
     let localizedDisplayCurrency: string | null = null;
-    /** null when charging for a training booking (not a video course from `courses`) */
-    let dbCourseId: string | null = isTrainingBooking ? null : courseIdTrim;
-    /** `trainings.id` for trainer bookings; persisted on tap_charges.training_id */
-    let dbTrainingId: string | null = null;
+    if (detected_country) {
+      const { data: countryPrice } = await adminClient
+        .from("course_country_prices")
+        .select("price, currency")
+        .eq("course_id", course_id)
+        .eq("country_code", detected_country)
+        .maybeSingle();
 
-    if (isTrainingBooking) {
-      const { data: tc, error: tcErr } = await adminClient
-        .from("trainer_courses")
-        .select("id, price, duration_hours, training_id, trainer_id, trainings(name_en, name_ar)")
-        .eq("id", trainerCourseIdTrim)
-        .single();
-
-      if (tcErr || !tc) {
-        return new Response(
-          JSON.stringify({ error: "Trainer course not found" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const tr = tc as Record<string, unknown>;
-      const resolvedTrainingId = String(tr.training_id ?? "").trim();
-      if (!resolvedTrainingId) {
-        return new Response(
-          JSON.stringify({ error: "Trainer course is missing training program id" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      dbTrainingId = resolvedTrainingId;
-
-      if (courseIdTrim && courseIdTrim !== resolvedTrainingId) {
-        return new Response(
-          JSON.stringify({
-            error:
-              "course_id must be the practical training id (trainings.id) for this booking, matching the selected trainer offer.",
-          }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (trainingIdBodyTrim && trainingIdBodyTrim !== resolvedTrainingId) {
-        return new Response(
-          JSON.stringify({
-            error: "training_id does not match the training program for this trainer offer.",
-          }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const trainings = tr.trainings as { name_en?: string; name_ar?: string } | null;
-      const title = trainings?.name_en || trainings?.name_ar || "Training session";
-
-      const trainerListedSar = Number(tr.price);
-      trainerPayoutBaseSar = Number.isFinite(trainerListedSar) ? trainerListedSar : 0;
-      const markupPct = await getTrainingPlatformMarkupPercent(adminClient);
-      trainingPlatformMarkupPercent = markupPct;
-      const markedUpSar = Math.round(trainerPayoutBaseSar * (1 + markupPct / 100) * 100) / 100;
-
-      course = {
-        id: String(tr.id),
-        price: markedUpSar,
-        currency: "SAR",
-        title,
-        discount_percentage: 0,
-      };
-      basePriceSar = markedUpSar;
-    } else {
-      const { data: c, error: courseError } = await adminClient
-        .from("courses")
-        .select("id, price, currency, title, discount_percentage")
-        .eq("id", courseIdTrim)
-        .single();
-
-      if (courseError || !c) {
-        const { data: trainingProbe } = await adminClient
-          .from("trainings")
-          .select("id")
-          .eq("id", courseIdTrim)
-          .maybeSingle();
-        if (trainingProbe) {
-          return new Response(
-            JSON.stringify({
-              error:
-                "This payment id is a practical training program, not a video course. Open the training booking page again, or include trainer_course_id (or tc) and payment_kind \"training_booking\" in the charge request.",
-            }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        return new Response(
-          JSON.stringify({ error: "Course not found" }),
-          // 400 (not 404): avoids confusion with "Edge Function URL not found" in the browser Network tab.
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      course = c as CourseLike;
-      basePriceSar = Number(course.price);
-
-      if (detected_country) {
-        const { data: countryPrice } = await adminClient
-          .from("course_country_prices")
-          .select("price, currency")
-          .eq("course_id", courseIdTrim)
-          .eq("country_code", detected_country)
-          .maybeSingle();
-
-        if (countryPrice) {
-          localizedDisplayPrice = Number(countryPrice.price);
-          localizedDisplayCurrency = countryPrice.currency || requestedCurrency;
-          console.log(`Localized display pricing: ${detected_country} → ${localizedDisplayPrice} ${localizedDisplayCurrency} (charging in SAR)`);
-        }
+      if (countryPrice) {
+        localizedDisplayPrice = Number(countryPrice.price);
+        localizedDisplayCurrency = countryPrice.currency || requestedCurrency;
+        console.log(`Localized display pricing: ${detected_country} → ${localizedDisplayPrice} ${localizedDisplayCurrency} (charging in SAR)`);
       }
     }
 
-    const courseDiscountPct =
-      !isTrainingBooking && course.discount_percentage && Number(course.discount_percentage) > 0
-        ? Number(course.discount_percentage)
-        : 0;
+    const courseDiscountPct = course.discount_percentage && Number(course.discount_percentage) > 0 ? Number(course.discount_percentage) : 0;
     let fallbackPriceBeforeTax = courseDiscountPct > 0
       ? Math.ceil(basePriceSar * (1 - courseDiscountPct / 100))
       : basePriceSar;
@@ -379,7 +208,7 @@ Deno.serve(async (req) => {
 
     // Apply coupon discount on the fallback server-side amount (for validation/minimum checks)
     let couponDiscount = 0;
-    if (!isTrainingBooking && coupon_id) {
+    if (coupon_id) {
       const { data: coupon } = await adminClient
         .from("coupons")
         .select("id, type, value, status, is_deleted, start_date, expiry_date, used_count, max_usage, course_id, is_global, minimum_amount")
@@ -390,7 +219,7 @@ Deno.serve(async (req) => {
           && new Date() >= new Date(coupon.start_date)
           && new Date() <= new Date(coupon.expiry_date)
           && coupon.used_count < coupon.max_usage) {
-        const scopeValid = coupon.is_global || !coupon.course_id || coupon.course_id === courseIdTrim;
+        const scopeValid = coupon.is_global || !coupon.course_id || coupon.course_id === course_id;
         const minValid = !coupon.minimum_amount || fallbackPriceBeforeTax >= Number(coupon.minimum_amount);
 
         if (scopeValid && minValid) {
@@ -406,24 +235,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    const vatPercentPoints = await getTrainingPlatformVatPercent(adminClient);
-    const vatFactor = 1 + vatPercentPoints / 100;
-
     const clientRequestedAmount = Number(requestedAmount);
     const hasClientAmount = Number.isFinite(clientRequestedAmount) && clientRequestedAmount > 0;
-    /** Practical training: always server SAR (markup + VAT). Never trust client `amount` or FX. */
-    const finalAmount = isTrainingBooking
-      ? Math.ceil(fallbackPriceBeforeTax * vatFactor)
-      : hasClientAmount
-        ? Math.ceil(clientRequestedAmount)
-        : Math.ceil(fallbackPriceBeforeTax * vatFactor);
-
-    let priceBeforeTax = Math.max(0, Math.round((finalAmount / vatFactor) * 100) / 100);
-    if (isTrainingBooking) {
-      priceBeforeTax = Math.round(Number(basePriceSar) * 100) / 100;
-    }
-
-    const tapChargeCurrency = isTrainingBooking ? "SAR" : chargeCurrency;
+    const finalAmount = hasClientAmount ? Math.ceil(clientRequestedAmount) : Math.ceil(fallbackPriceBeforeTax * 1.15);
+    const priceBeforeTax = Math.max(0, Math.round((finalAmount / 1.15) * 100) / 100);
 
     if (finalAmount <= 0) {
       return new Response(
@@ -432,77 +247,48 @@ Deno.serve(async (req) => {
       );
     }
 
-    const phoneForTap = resolveTapPhone(customer_phone, profileData.phone, profileData.country);
-    const storedPhoneForCheck = String(customer_phone || profileData.phone || "").trim();
-    if (storedPhoneForCheck && !phoneForTap) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "Invalid phone number. Please use a valid number with country code (for example +966501234567 or +970599123456).",
-        }),
-        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    const vatRate = 0.15;
 
     console.log(
       "Server-authoritative SAR pricing:",
       `basePriceSar=${basePriceSar}`,
       `requestedCurrency=${requestedCurrency}`,
       `chargeCurrency=${chargeCurrency}`,
-      `tapChargeCurrency=${tapChargeCurrency}`,
       `courseDiscount=${courseDiscountPct}%`,
       `afterCourseDiscount=${priceAfterCourseDiscount}`,
       `couponDiscount=${couponDiscount}`,
-      `clientRequestedAmount=${isTrainingBooking ? "ignored(training)" : hasClientAmount ? clientRequestedAmount : "none"}`,
+      `clientRequestedAmount=${hasClientAmount ? clientRequestedAmount : 'none'}`,
       `priceBeforeTax=${priceBeforeTax}`,
-      `vatRate=${vatPercentPoints}%`,
-      `finalAmountSar=${finalAmount}`,
+      `vatRate=${vatRate * 100}%`,
+      `finalAmountSar=${finalAmount}`
     );
 
-    // ── Check if already enrolled (video courses only) ──
-    if (!isTrainingBooking) {
-      const { data: existingEnrollment } = await adminClient
-        .from("course_enrollments")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("course_id", courseIdTrim)
-        .maybeSingle();
+    // ── Check if already enrolled ──
+    const { data: existingEnrollment } = await adminClient
+      .from("course_enrollments")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("course_id", course_id)
+      .maybeSingle();
 
-      if (existingEnrollment) {
-        return new Response(
-          JSON.stringify({ error: "You are already enrolled in this course" }),
-          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+    if (existingEnrollment) {
+      return new Response(
+        JSON.stringify({ error: "You are already enrolled in this course" }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // ── Insert pending charge record ──
     // Sanitize device_info: plain string, max 200 chars
     const safeDeviceInfo = typeof device_info === "string" ? device_info.substring(0, 200) : null;
 
-    const trainingMarkedUpSubtotalSar =
-      isTrainingBooking && trainerPayoutBaseSar != null ? Math.round(basePriceSar * 100) / 100 : null;
-    const trainingPlatformMarkupSar =
-      trainingMarkedUpSubtotalSar != null && trainerPayoutBaseSar != null
-        ? Math.round((trainingMarkedUpSubtotalSar - trainerPayoutBaseSar) * 100) / 100
-        : null;
-    const trainingVatAmountSar =
-      isTrainingBooking && trainingMarkedUpSubtotalSar != null
-        ? Math.round((finalAmount - trainingMarkedUpSubtotalSar) * 100) / 100
-        : null;
-    const trainingBikerzRevenueSar =
-      isTrainingBooking && trainerPayoutBaseSar != null
-        ? Math.round((finalAmount - trainerPayoutBaseSar) * 100) / 100
-        : null;
-
     const { data: chargeRecord, error: insertError } = await adminClient
       .from("tap_charges")
       .insert({
         user_id: userId,
-        course_id: dbCourseId,
-        training_id: dbTrainingId,
+        course_id,
         amount: finalAmount,
-        currency: tapChargeCurrency,
+        currency: chargeCurrency,
         status: "pending",
         customer_name: customer_name || profileData.full_name || "",
         customer_email: customer_email || userEmail,
@@ -512,25 +298,16 @@ Deno.serve(async (req) => {
         metadata: {
           internal_order_id: idempotency_key,
           user_id: userId,
-          payment_kind: isTrainingBooking ? "training_booking" : "course",
-          training_id: isTrainingBooking ? dbTrainingId : null,
-          trainer_course_id: isTrainingBooking ? trainerCourseIdTrim : null,
-          trainer_payout_base_sar: isTrainingBooking ? trainerPayoutBaseSar : null,
-          platform_markup_percent: isTrainingBooking ? trainingPlatformMarkupPercent : null,
           coupon_id: coupon_id || null,
           original_price: basePriceSar,
           course_discount_pct: courseDiscountPct,
           price_after_course_discount: priceAfterCourseDiscount,
           coupon_discount: couponDiscount,
           price_before_tax: priceBeforeTax,
-          vat_rate: vatPercentPoints,
+          vat_rate: vatRate * 100,
           final_amount: finalAmount,
-          training_marked_up_subtotal_sar: trainingMarkedUpSubtotalSar,
-          training_platform_markup_sar: trainingPlatformMarkupSar,
-          training_vat_amount_sar: trainingVatAmountSar,
-          training_bikerz_revenue_sar: trainingBikerzRevenueSar,
           requested_currency: requestedCurrency,
-          charge_currency: tapChargeCurrency,
+          charge_currency: chargeCurrency,
           localized_display_price: localizedDisplayPrice,
           localized_display_currency: localizedDisplayCurrency,
           detected_country: detected_country || null,
@@ -562,37 +339,35 @@ Deno.serve(async (req) => {
     // Always redirect to the static 3DS callback page — it sends postMessage
     // back to the parent/opener window for seamless popup flow.
     // Tap appends ?tap_id=chg_xxx automatically to the redirect URL.
-    const redirectBackUrl = isTrainingBooking
-      ? `${origin}/tap-3ds-callback.html?booking=1&tc=${encodeURIComponent(trainerCourseIdTrim)}`
-      : `${origin}/tap-3ds-callback.html?course=${encodeURIComponent(courseIdTrim)}`;
+    const redirectBackUrl = `${origin}/tap-3ds-callback.html?course=${course_id}`;
 
-    // ── Create Tap charge (practical training: always SAR + server amount; courses may use localized Tap currency) ──
+    // ── Create Tap charge (always in SAR) ──
     const chargePayload: Record<string, unknown> = {
       amount: finalAmount,
-      currency: tapChargeCurrency,
+      currency: chargeCurrency,
       threeDSecure: true,
       save_card: false,
-      description: isTrainingBooking ? `Training: ${course.title}` : `Course: ${course.title}`,
+      description: `Course: ${course.title}`,
       statement_descriptor: "BIKERZ",
       reference: {
-        transaction: String(idempotency_key || "").slice(0, 64),
-        order: String(chargeRecord.id || "").slice(0, 64),
+        transaction: idempotency_key,
+        order: chargeRecord.id,
       },
       receipt: {
         email: true,
-        sms: !!phoneForTap,
+        sms: !!customer_phone,
       },
       customer: {
         first_name: (customer_name || profileData.full_name || "Customer").split(" ")[0],
         last_name: (customer_name || profileData.full_name || "").split(" ").slice(1).join(" ") || "",
         email: customer_email || userEmail,
-        phone: phoneForTap,
+        phone: (customer_phone || profileData.phone)
+          ? { country_code: "966", number: (customer_phone || profileData.phone || "").replace(/^(\+?966|0)/, "") }
+          : undefined,
       },
       metadata: {
         user_id: userId,
-        course_id: dbCourseId,
-        training_id: isTrainingBooking ? dbTrainingId : null,
-        trainer_course_id: isTrainingBooking ? trainerCourseIdTrim : null,
+        course_id,
         internal_id: chargeRecord.id,
         requested_currency: requestedCurrency,
       },
@@ -604,15 +379,7 @@ Deno.serve(async (req) => {
       },
     };
 
-    console.log(
-      "Creating Tap charge for user:",
-      userId,
-      "amount:",
-      finalAmount,
-      tapChargeCurrency,
-      "(requested:",
-      requestedCurrency + ")",
-    );
+    console.log("Creating Tap charge for user:", userId, "amount:", finalAmount, chargeCurrency, "(requested:", requestedCurrency + ")");
 
     let tapData: Record<string, any>;
     let tapResponse: Response;
@@ -702,8 +469,8 @@ Deno.serve(async (req) => {
       })
       .eq("id", chargeRecord.id);
 
-    if (chargeStatus === "succeeded" && !isTrainingBooking) {
-      await enrollUser(adminClient, userId, courseIdTrim);
+    if (chargeStatus === "succeeded") {
+      await enrollUser(adminClient, userId, course_id);
     }
 
     const tapRedirectUrl = tapData.transaction?.url || null;
@@ -726,7 +493,7 @@ Deno.serve(async (req) => {
         status: chargeStatus,
         redirect_url: tapRedirectUrl,
         amount: finalAmount,
-        currency: tapChargeCurrency,
+        currency: chargeCurrency,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -760,46 +527,6 @@ function sanitizeTapResponse(data: Record<string, unknown>): Record<string, unkn
   }
   delete sanitized.card;
   return sanitized;
-}
-
-/** Tap expects `country_code` + national `number` (no leading 0). Uses profile country as default region when ISO-2. */
-function resolveTapPhone(
-  customerPhone: unknown,
-  profilePhone: unknown,
-  profileCountry: unknown,
-): { country_code: string; number: string } | undefined {
-  const raw = String(customerPhone || profilePhone || "").trim();
-  if (!raw) return undefined;
-
-  const countryStr = String(profileCountry || "").trim();
-  const defaultRegion = /^[A-Z]{2}$/i.test(countryStr) ? countryStr.toUpperCase() : "SA";
-
-  const attempts: Array<{ input: string; region?: string }> = [
-    { input: raw, region: defaultRegion },
-    { input: raw, region: "SA" },
-  ];
-
-  const digits = raw.replace(/\D/g, "");
-  if (!raw.trim().startsWith("+") && digits.length >= 10) {
-    attempts.push({ input: `+${digits}` });
-  }
-  if (!raw.includes("+") && digits.length === 10 && digits.startsWith("05")) {
-    attempts.push({ input: `+966${digits.slice(1)}` });
-  }
-  if (!raw.includes("+") && digits.length === 9 && digits.startsWith("5")) {
-    attempts.push({ input: `+966${digits}` });
-  }
-
-  for (const { input, region } of attempts) {
-    const p = region
-      ? parsePhoneNumberFromString(input, region as never)
-      : parsePhoneNumberFromString(input);
-    if (p?.isValid()) {
-      return { country_code: String(p.countryCallingCode), number: String(p.nationalNumber) };
-    }
-  }
-
-  return undefined;
 }
 
 async function enrollUser(

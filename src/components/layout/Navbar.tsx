@@ -1,16 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 
-import { ChevronRight, LogOut, Menu, X, LayoutDashboard, CalendarCheck } from "lucide-react";
+import { ChevronRight, LogOut, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import LanguageToggle from "@/components/common/LanguageToggle";
 import LogoutConfirmDialog from "@/components/common/LogoutConfirmDialog";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -50,26 +44,6 @@ interface HeaderContent {
     is_visible: boolean;
   };
 }
-
-/** Injected after /courses when CMS header menu omits these links */
-const EXTRA_PUBLIC_NAV_ITEMS: MenuItem[] = [
-  {
-    id: "trainings",
-    title_en: "Practical Training",
-    title_ar: "التدريب العملي",
-    link: "/trainings",
-    is_visible: true,
-    open_in_new_tab: false,
-  },
-  {
-    id: "trainers",
-    title_en: "Trainers",
-    title_ar: "المدربين",
-    link: "/trainers",
-    is_visible: true,
-    open_in_new_tab: false,
-  },
-];
 
 const Navbar: React.FC = () => {
   const { t } = useTranslation();
@@ -135,8 +109,8 @@ const Navbar: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
-  const menuItems = useMemo(() => {
-    const defaultItems: MenuItem[] = [
+  const menuItems =
+    headerContent?.menu_items?.filter((item) => item.is_visible) || [
       {
         id: "home",
         title_en: t("nav.home", { lng: "en" }),
@@ -153,7 +127,6 @@ const Navbar: React.FC = () => {
         is_visible: true,
         open_in_new_tab: false,
       },
-      ...EXTRA_PUBLIC_NAV_ITEMS,
       {
         id: "mentors",
         title_en: t("nav.mentors", { lng: "en" }),
@@ -171,21 +144,6 @@ const Navbar: React.FC = () => {
         open_in_new_tab: false,
       },
     ];
-
-    const cmsItems = headerContent?.menu_items?.filter((item) => item.is_visible);
-    if (!cmsItems?.length) return defaultItems;
-
-    const merged = [...cmsItems];
-    const links = new Set(merged.map((item) => item.link));
-    const missing = EXTRA_PUBLIC_NAV_ITEMS.filter((item) => !links.has(item.link));
-    if (missing.length === 0) return merged;
-
-    const coursesIdx = merged.findIndex((item) => item.link === "/courses");
-    if (coursesIdx >= 0) merged.splice(coursesIdx + 1, 0, ...missing);
-    else merged.push(...missing);
-
-    return merged;
-  }, [headerContent?.menu_items, t]);
 
   const ctaButton = headerContent?.cta_button || {
     text_en: "Start Now",
@@ -296,36 +254,20 @@ const Navbar: React.FC = () => {
                 {user
                   ? (
                     <>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="gap-2">
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-                              <span className="text-xs font-bold text-primary-foreground">
-                                {profile?.full_name?.charAt(0) ||
-                                  user.email?.charAt(0) || "U"}
-                              </span>
-                            </div>
-                            <span className="hidden xl:inline text-sm">
-                              {profile?.full_name?.split(" ")[0] ||
-                                t("nav.dashboard")}
+                      <Link to="/dashboard">
+                        <Button variant="ghost" size="sm" className="gap-2">
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                            <span className="text-xs font-bold text-primary-foreground">
+                              {profile?.full_name?.charAt(0) ||
+                                user.email?.charAt(0) || "U"}
                             </span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className={`min-w-[200px] ${isRTL ? "text-right" : "text-left"}`}>
-                          <DropdownMenuItem asChild>
-                            <Link to="/dashboard" className="cursor-pointer flex gap-2">
-                              <LayoutDashboard className="h-4 w-4" />
-                              {isRTL ? "لوحة التحكم" : "Dashboard"}
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link to="/my-bookings" className="cursor-pointer flex gap-2">
-                              <CalendarCheck className="h-4 w-4" />
-                              {isRTL ? "حجوزاتي" : "My bookings"}
-                            </Link>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                          </div>
+                          <span className="hidden xl:inline text-sm">
+                            {profile?.full_name?.split(" ")[0] ||
+                              t("nav.dashboard")}
+                          </span>
+                        </Button>
+                      </Link>
                       <LogoutConfirmDialog onConfirm={handleSignOut}>
                         <Button
                           variant="ghost"
@@ -492,18 +434,13 @@ const Navbar: React.FC = () => {
                       variant="outline"
                       className="w-full h-12 text-base gap-3 border-border/50"
                     >
-                      <LayoutDashboard className="h-5 w-5 shrink-0" />
-                      {isRTL ? "لوحة التحكم" : "Dashboard"}
-                    </Button>
-                  </Link>
-                  <Link
-                    to="/my-bookings"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block"
-                  >
-                    <Button variant="outline" className="w-full h-12 text-base gap-3 border-border/50">
-                      <CalendarCheck className="h-5 w-5 shrink-0" />
-                      {isRTL ? "حجوزاتي" : "My bookings"}
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                        <span className="text-sm font-bold text-primary-foreground">
+                          {profile?.full_name?.charAt(0) ||
+                            user.email?.charAt(0) || "U"}
+                        </span>
+                      </div>
+                      {profile?.full_name || t("nav.dashboard")}
                     </Button>
                   </Link>
                   <LogoutConfirmDialog onConfirm={handleSignOut}>

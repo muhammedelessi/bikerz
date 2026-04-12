@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient } from "@tanstack/query-core";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -26,11 +26,6 @@ const SocialProofNotification = lazy(() => lazyRetry(() => import("@/components/
 // Critical routes - loaded eagerly (above-the-fold / high-traffic)
 import Index from "./pages/Index";
 import Courses from "./pages/Courses";
-import Trainings from "./pages/Trainings";
-import TrainingDetail from "./pages/TrainingDetail";
-import TrainingBooking from "./pages/TrainingBooking";
-import Trainers from "./pages/Trainers";
-import TrainerProfile from "./pages/TrainerProfile";
 import CourseDetail from "./pages/CourseDetail";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -48,9 +43,6 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Profile = lazy(() => import("./pages/Profile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
-const BookingPaymentComplete = lazy(() => import("./pages/BookingPaymentComplete"));
-const BookingSuccess = lazy(() => import("./pages/BookingSuccess"));
-const MyBookings = lazy(() => import("./pages/MyBookings"));
 const JoinCommunity = lazy(() => import("./pages/JoinCommunity"));
 
 // Admin Pages - lazy loaded
@@ -76,7 +68,6 @@ const AdminTrainings = lazy(() => import("./pages/admin/AdminTrainings"));
 const AdminTrainingProfile = lazy(() => import("./pages/admin/AdminTrainingProfile"));
 const AdminTrainers = lazy(() => import("./pages/admin/AdminTrainers"));
 const AdminTrainerProfile = lazy(() => import("./pages/admin/AdminTrainerProfile"));
-const AdminTrainerPayments = lazy(() => import("./pages/admin/AdminTrainerPayments"));
 const AdminTrainingStudents = lazy(() => import("./pages/admin/AdminTrainingStudents"));
 const AdminTrainerReviews = lazy(() => import("./pages/admin/AdminTrainerReviews"));
 
@@ -144,13 +135,6 @@ const DeferredSocialProof = () => {
   );
 };
 
-/** Floating WhatsApp CTA is for public / learner UX only, not admin consoles. */
-const WhatsAppFloatingButtonGate = () => {
-  const { pathname } = useLocation();
-  if (pathname.startsWith("/admin")) return null;
-  return <WhatsAppFloatingButton />;
-};
-
 const AppRoutes = () => (
   <>
     <AnalyticsTracker />
@@ -159,11 +143,6 @@ const AppRoutes = () => (
         {/* Critical eager-loaded routes */}
         <Route path="/" element={<Index />} />
         <Route path="/courses" element={<Courses />} />
-        <Route path="/trainings" element={<Trainings />} />
-        <Route path="/trainings/:trainingId/book/:trainerCourseId" element={<TrainingBooking />} />
-        <Route path="/trainings/:id" element={<TrainingDetail />} />
-        <Route path="/trainers" element={<Trainers />} />
-        <Route path="/trainers/:id" element={<TrainerProfile />} />
         <Route path="/courses/:id" element={<CourseDetail />} />
         <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
         <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
@@ -179,9 +158,6 @@ const AppRoutes = () => (
         <Route path="/courses/:id/lessons/:lessonId" element={<CourseLearn />} />
         <Route path="/mentors" element={<Mentors />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
-        <Route path="/booking-payment-complete" element={<ProtectedRoute><BookingPaymentComplete /></ProtectedRoute>} />
-        <Route path="/booking-success" element={<ProtectedRoute><BookingSuccess /></ProtectedRoute>} />
-        <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
         <Route path="/join-community" element={<JoinCommunity />} />
 
         {/* Protected Routes */}
@@ -212,7 +188,6 @@ const AppRoutes = () => (
         <Route path="/admin/trainings/:id" element={<AdminRoute><AdminTrainingProfile /></AdminRoute>} />
         <Route path="/admin/trainers" element={<AdminRoute><AdminTrainers /></AdminRoute>} />
         <Route path="/admin/trainers/:id" element={<AdminRoute><AdminTrainerProfile /></AdminRoute>} />
-        <Route path="/admin/trainers/:id/payments" element={<AdminRoute><AdminTrainerPayments /></AdminRoute>} />
         <Route path="/admin/training-students" element={<AdminRoute><AdminTrainingStudents /></AdminRoute>} />
         <Route path="/admin/trainer-reviews" element={<AdminRoute><AdminTrainerReviews /></AdminRoute>} />
 
@@ -238,7 +213,7 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <ScrollToTop />
-                <WhatsAppFloatingButtonGate />
+                <WhatsAppFloatingButton />
                 <DeferredSocialProof />
                 <AppRoutes />
               </BrowserRouter>

@@ -1,12 +1,10 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
-import type { Json } from '@/integrations/supabase/types';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,164 +19,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Star, Upload, X, ArrowLeft, ArrowRight, Users, Bike, MapPin, Clock, AlertTriangle, TrendingUp, Eye, Camera, Images, Check, Minus, Languages } from 'lucide-react';
+import { Plus, Pencil, Trash2, Star, Upload, X, ArrowLeft, ArrowRight, Users, Bike, MapPin, Clock, AlertTriangle, TrendingUp, Eye } from 'lucide-react';
 import BilingualInput from '@/components/admin/content/BilingualInput';
 import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
 import { format } from 'date-fns';
-
-const COMMON_BIKE_TYPES = ['Sport', 'Cruiser', 'Adventure', 'Touring', 'Naked', 'Dual Sport', 'Scooter'] as const;
-
-const MAX_BIKE_PHOTO_BYTES = 2 * 1024 * 1024;
-const MAX_ALBUM_PHOTO_BYTES = 3 * 1024 * 1024;
-const MAX_PHOTOS_PER_BIKE_ENTRY = 5;
-const MAX_ALBUM_PHOTOS = 10;
-
-/** Stored in `trainers.language_levels` as JSON array */
-export type TrainerLanguageEntry = {
-  language: string;
-  level: string;
-};
-
-const TRAINER_LANGUAGE_OPTIONS = [
-  { code: 'ar', label_en: 'Arabic', label_ar: 'العربية' },
-  { code: 'en', label_en: 'English', label_ar: 'الإنجليزية' },
-  { code: 'fr', label_en: 'French', label_ar: 'الفرنسية' },
-  { code: 'es', label_en: 'Spanish', label_ar: 'الإسبانية' },
-  { code: 'de', label_en: 'German', label_ar: 'الألمانية' },
-  { code: 'it', label_en: 'Italian', label_ar: 'الإيطالية' },
-  { code: 'tr', label_en: 'Turkish', label_ar: 'التركية' },
-  { code: 'ur', label_en: 'Urdu', label_ar: 'الأردية' },
-  { code: 'hi', label_en: 'Hindi', label_ar: 'الهندية' },
-  { code: 'pt', label_en: 'Portuguese', label_ar: 'البرتغالية' },
-] as const;
-
-const LANGUAGE_LEVEL_OPTIONS = [
-  { value: 'native', label_en: 'Native', label_ar: 'لغة أم' },
-  { value: 'fluent', label_en: 'Fluent', label_ar: 'طلاقة' },
-  { value: 'professional', label_en: 'Professional working', label_ar: 'مهنية' },
-  { value: 'conversational', label_en: 'Conversational', label_ar: 'محادثة' },
-  { value: 'basic', label_en: 'Basic', label_ar: 'مبتدئ' },
-] as const;
-
-function parseLanguageLevels(raw: unknown): TrainerLanguageEntry[] {
-  if (!raw || !Array.isArray(raw)) return [];
-  const out: TrainerLanguageEntry[] = [];
-  for (const x of raw) {
-    if (!x || typeof x !== 'object') continue;
-    const o = x as Record<string, unknown>;
-    const language = String(o.language ?? o.code ?? '').trim().toLowerCase();
-    const level = String(o.level ?? '').trim().toLowerCase();
-    if (!language || !level) continue;
-    out.push({ language, level });
-  }
-  return out;
-}
-
-function languageOptionLabel(code: string, isRTL: boolean): string {
-  const o = TRAINER_LANGUAGE_OPTIONS.find((x) => x.code === code);
-  if (!o) return code.toUpperCase();
-  return isRTL ? o.label_ar : o.label_en;
-}
-
-export type BikeEntry = {
-  type: string;
-  brand: string;
-  photos: string[];
-};
-
-function typeStorageSlug(type: string): string {
-  const s = encodeURIComponent(type.trim()).replace(/%/g, '_');
-  return s.slice(0, 96) || 'bike';
-}
-
-function parseBikeEntries(raw: unknown): BikeEntry[] {
-  if (!raw || !Array.isArray(raw)) return [];
-  return (raw as unknown[])
-    .map((x) => {
-      const o = x as Record<string, unknown>;
-      return {
-        type: String(o.type ?? '').trim(),
-        brand: String(o.brand ?? ''),
-        photos: Array.isArray(o.photos) ? (o.photos as unknown[]).map(String) : [],
-      };
-    })
-    .filter((e) => e.type);
-}
-
-function summarizeMotorbikeBrand(entries: BikeEntry[]): string {
-  return entries
-    .map((e) => (e.brand ? `${e.type}: ${e.brand}` : e.type))
-    .filter(Boolean)
-    .join(' · ');
-}
-
-function flattenBikePhotos(entries: BikeEntry[]): string[] {
-  return entries.flatMap((e) => e.photos);
-}
-
-function trainerBikeCellLabel(t: Trainer, isRTL: boolean): string {
-  const entries = parseBikeEntries(t.bike_entries);
-  if (entries.length > 0) {
-    return entries.map((e) => (e.brand ? `${e.type}: ${e.brand}` : e.type)).join(' · ');
-  }
-  const legacy = [t.bike_type?.trim(), t.motorbike_brand?.trim()].filter(Boolean).join(' · ');
-  return legacy || (isRTL ? '—' : '—');
-}
-
-function trainerTableLocationDisplay(t: Trainer, isRTL: boolean): string {
-  const countryEntry = COUNTRIES.find((c) => c.code === t.country);
-  const displayCountry = countryEntry ? (isRTL ? countryEntry.ar : countryEntry.en) : (t.country || '').trim();
-  const cityEntry = countryEntry?.cities.find((c) => c.en === t.city || c.ar === t.city);
-  const displayCity = cityEntry ? (isRTL ? cityEntry.ar : cityEntry.en) : (t.city || '').trim();
-  const parts = [displayCity, displayCountry].filter(Boolean);
-  if (parts.length === 0) return '—';
-  return parts.join(isRTL ? '، ' : ', ');
-}
-
-function splitFullName(full: string): { first: string; last: string } {
-  const s = (full || '').trim();
-  const i = s.indexOf(' ');
-  if (i === -1) return { first: s, last: '' };
-  return { first: s.slice(0, i).trim(), last: s.slice(i + 1).trim() };
-}
-
-function joinFullName(first: string, last: string): string {
-  return [first, last].map((p) => p.trim()).filter(Boolean).join(' ');
-}
-
-function parseAssignmentLocation(location: string): { countryCode: string; city: string } {
-  const loc = (location || '').trim();
-  if (!loc) return { countryCode: '', city: '' };
-  const idx = loc.indexOf(' - ');
-  if (idx === -1) return { countryCode: '', city: loc };
-  const countryPart = loc.slice(0, idx).trim();
-  const cityPart = loc.slice(idx + 3).trim();
-  const country = COUNTRIES.find((c) => c.en === countryPart || c.ar === countryPart);
-  return { countryCode: country?.code || '', city: cityPart };
-}
-
-function buildTrainerCourseLocation(countryCode: string, city: string): string {
-  const country = COUNTRIES.find((c) => c.code === countryCode);
-  if (!country) return (city || '').trim();
-  return `${country.en} - ${(city || '').trim()}`;
-}
-
-/** Default `location` for a new trainer_course from the trainer form (country code + city EN name). */
-function defaultTrainerAssignmentLocation(countryCode: string, city: string): string {
-  const code = (countryCode || '').trim();
-  const cityPart = (city || '').trim();
-  if (code) return buildTrainerCourseLocation(code, cityPart);
-  return cityPart;
-}
-
-function trainingTypeLabel(type: string | null | undefined, isRTL: boolean): string {
-  if (type === 'theory') return isRTL ? 'نظري' : 'Theory';
-  if (type === 'practical') return isRTL ? 'عملي' : 'Practical';
-  return type || '';
-}
-
-type PendingImage = { file: File; preview: string };
 
 interface Trainer {
   id: string;
@@ -190,9 +36,6 @@ interface Trainer {
   country: string;
   city: string;
   bike_type: string;
-  bike_entries?: unknown;
-  bike_photos?: string[] | null;
-  album_photos?: string[] | null;
   motorbike_brand: string;
   license_type: string;
   years_of_experience: number;
@@ -200,85 +43,202 @@ interface Trainer {
   status: string;
   created_at: string;
   profit_ratio: number;
-  language_levels?: unknown;
 }
 
 interface TrainerCourse {
   training_id: string;
   price: number;
-  sessions_count: number;
   duration_hours: number;
   location: string;
-  available_schedule: Json;
+  available_schedule: any;
   services: string[];
 }
 
-function toTrainerCourseInsertRow(trainerId: string, at: TrainerCourse) {
-  return {
-    trainer_id: trainerId,
-    training_id: at.training_id,
-    price: at.price,
-    sessions_count: at.sessions_count,
-    duration_hours: at.duration_hours,
-    location: at.location ?? '',
-    available_schedule: at.available_schedule ?? {},
-    services: at.services ?? [],
-  };
-}
+// ─── Expandable Row Detail ───────────────────────────────────────────
+
+// ─── Add Student Dialog ──────────────────────────────────────────────
+const AddStudentDialog: React.FC<{
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  trainerId: string;
+  isRTL: boolean;
+}> = ({ open, onOpenChange, trainerId, isRTL }) => {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState({ full_name: '', phone: '', email: '', training_id: '' });
+
+  const { data: trainerCourses } = useQuery({
+    queryKey: ['trainer-courses-for', trainerId],
+    queryFn: async () => {
+      const { data } = await supabase.from('trainer_courses').select('training_id').eq('trainer_id', trainerId);
+      return data || [];
+    },
+    enabled: !!trainerId,
+  });
+
+  const { data: trainings } = useQuery({
+    queryKey: ['all-trainings-list'],
+    queryFn: async () => {
+      const { data } = await supabase.from('trainings').select('id, name_ar, name_en');
+      return data || [];
+    },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('training_students').insert({ ...form, trainer_id: trainerId });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trainer-students', trainerId] });
+      queryClient.invalidateQueries({ queryKey: ['trainer-student-counts'] });
+      onOpenChange(false);
+      setForm({ full_name: '', phone: '', email: '', training_id: '' });
+      toast.success(isRTL ? 'تم إضافة الطالب' : 'Student added');
+    },
+    onError: () => toast.error(isRTL ? 'خطأ' : 'Error'),
+  });
+
+  const availableTrainings = trainings?.filter(t => trainerCourses?.some(tc => tc.training_id === t.id)) || [];
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>{isRTL ? 'إضافة طالب' : 'Add Student'}</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2"><Label>{isRTL ? 'الاسم الكامل' : 'Full Name'}</Label><Input value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} /></div>
+          <div className="grid gap-4 grid-cols-2">
+            <div className="space-y-2"><Label>{isRTL ? 'الهاتف' : 'Phone'}</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} dir="ltr" /></div>
+            <div className="space-y-2"><Label>{isRTL ? 'الإيميل' : 'Email'}</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} dir="ltr" /></div>
+          </div>
+          <div className="space-y-2">
+            <Label>{isRTL ? 'التدريب' : 'Training'}</Label>
+            <Select value={form.training_id} onValueChange={v => setForm(f => ({ ...f, training_id: v }))}>
+              <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر تدريب' : 'Select training'} /></SelectTrigger>
+              <SelectContent>
+                {availableTrainings.map(t => <SelectItem key={t.id} value={t.id}>{isRTL ? t.name_ar : t.name_en}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
+          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !form.full_name || !form.training_id}>
+            {saveMutation.isPending ? '...' : (isRTL ? 'حفظ' : 'Save')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// ─── Add Review Dialog ───────────────────────────────────────────────
+const AddReviewDialog: React.FC<{
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  trainerId: string;
+  isRTL: boolean;
+}> = ({ open, onOpenChange, trainerId, isRTL }) => {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState({ student_name: '', rating: 5, comment: '', training_id: '' });
+
+  const { data: trainerCourses } = useQuery({
+    queryKey: ['trainer-courses-for', trainerId],
+    queryFn: async () => {
+      const { data } = await supabase.from('trainer_courses').select('training_id').eq('trainer_id', trainerId);
+      return data || [];
+    },
+    enabled: !!trainerId,
+  });
+
+  const { data: trainings } = useQuery({
+    queryKey: ['all-trainings-list'],
+    queryFn: async () => {
+      const { data } = await supabase.from('trainings').select('id, name_ar, name_en');
+      return data || [];
+    },
+  });
+
+  const availableTrainings = trainings?.filter(t => trainerCourses?.some(tc => tc.training_id === t.id)) || [];
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload: any = { student_name: form.student_name, rating: form.rating, comment: form.comment, trainer_id: trainerId };
+      if (form.training_id) payload.training_id = form.training_id;
+      const { error } = await supabase.from('trainer_reviews').insert(payload);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trainer-reviews-detail', trainerId] });
+      queryClient.invalidateQueries({ queryKey: ['trainer-review-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['trainer-profile-reviews', trainerId] });
+      onOpenChange(false);
+      setForm({ student_name: '', rating: 5, comment: '', training_id: '' });
+      toast.success(isRTL ? 'تم إضافة التقييم' : 'Review added');
+    },
+    onError: () => toast.error(isRTL ? 'خطأ' : 'Error'),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>{isRTL ? 'إضافة تقييم' : 'Add Review'}</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2"><Label>{isRTL ? 'اسم الطالب' : 'Student Name'}</Label><Input value={form.student_name} onChange={e => setForm(f => ({ ...f, student_name: e.target.value }))} /></div>
+          <div className="space-y-2">
+            <Label>{isRTL ? 'التدريب' : 'Training'}</Label>
+            <Select value={form.training_id} onValueChange={v => setForm(f => ({ ...f, training_id: v }))}>
+              <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر تدريب (اختياري)' : 'Select training (optional)'} /></SelectTrigger>
+              <SelectContent>
+                {availableTrainings.map(t => <SelectItem key={t.id} value={t.id}>{isRTL ? t.name_ar : t.name_en}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{isRTL ? 'التقييم' : 'Rating'}</Label>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map(v => (
+                <button key={v} type="button" onClick={() => setForm(f => ({ ...f, rating: v }))} className="p-1 hover:scale-110 transition-transform">
+                  <Star className={`w-7 h-7 ${v <= form.rating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'}`} />
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2"><Label>{isRTL ? 'التعليق' : 'Comment'}</Label><Textarea value={form.comment} onChange={e => setForm(f => ({ ...f, comment: e.target.value }))} rows={3} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
+          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !form.student_name}>
+            {saveMutation.isPending ? '...' : (isRTL ? 'حفظ' : 'Save')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 // ─── Main Page ───────────────────────────────────────────────────────
 const AdminTrainers: React.FC = () => {
   const { isRTL } = useLanguage();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const locationFieldDir = isRTL ? 'rtl' : 'ltr';
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
-  const bikePhotoFileRef = useRef<HTMLInputElement>(null);
-  const bikePhotoPickTypeRef = useRef<string | null>(null);
-  const albumPhotosInputRef = useRef<HTMLInputElement>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingTrainer, setEditingTrainer] = useState<Trainer | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [serviceInput, setServiceInput] = useState('');
+  const [trainingServiceInputs, setTrainingServiceInputs] = useState<Record<string, string>>({});
   const [isOtherCity, setIsOtherCity] = useState(false);
   const [assignedTrainings, setAssignedTrainings] = useState<TrainerCourse[]>([]);
   
-  const [bikeTypeInput, setBikeTypeInput] = useState('');
-  const [pendingBikeByType, setPendingBikeByType] = useState<Record<string, PendingImage[]>>({});
-  const [pendingAlbumImages, setPendingAlbumImages] = useState<PendingImage[]>([]);
+  const [addStudentTrainerId, setAddStudentTrainerId] = useState<string | null>(null);
+  const [addReviewTrainerId, setAddReviewTrainerId] = useState<string | null>(null);
+  
 
-  const defaultForm = {
-    first_name_ar: '',
-    first_name_en: '',
-    last_name_ar: '',
-    last_name_en: '',
-    bio_ar: '',
-    bio_en: '',
-    country: '',
-    city: '',
-    bike_types: [] as string[],
-    bike_entries: [] as BikeEntry[],
-    album_photos: [] as string[],
-    license_type: '',
-    years_of_experience: 0,
-    profit_ratio: 0,
-    services: [] as string[],
-    status: 'active' as 'active' | 'inactive',
-    photo_url: null as string | null,
-    language_levels: [] as TrainerLanguageEntry[],
-  };
+  const [isOtherBikeType, setIsOtherBikeType] = useState(false);
+  const defaultForm = { name_ar: '', name_en: '', bio_ar: '', bio_en: '', country: '', city: '', bike_type: '', motorbike_brand: '', license_type: '', years_of_experience: 0, profit_ratio: 0, services: [] as string[], status: 'active' as 'active' | 'inactive', photo_url: null as string | null };
   const [form, setForm] = useState(defaultForm);
-  const [languageAddCode, setLanguageAddCode] = useState('');
-  const [languageAddLevel, setLanguageAddLevel] = useState<string>(LANGUAGE_LEVEL_OPTIONS[1]!.value);
-  const formRef = useRef(form);
-  formRef.current = form;
-
-  const revokePendingList = (list: PendingImage[]) => {
-    list.forEach((p) => URL.revokeObjectURL(p.preview));
-  };
 
   const { data: trainers, isLoading } = useQuery({
     queryKey: ['admin-trainers'],
@@ -290,11 +250,9 @@ const AdminTrainers: React.FC = () => {
   });
 
   const { data: allTrainings } = useQuery({
-    queryKey: ['all-trainings-catalog'],
+    queryKey: ['all-trainings-list'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('trainings')
-        .select('id, name_ar, name_en, type, default_sessions_count, default_session_duration_hours');
+      const { data, error } = await supabase.from('trainings').select('id, name_ar, name_en');
       if (error) throw error;
       return data;
     },
@@ -326,79 +284,9 @@ const AdminTrainers: React.FC = () => {
     },
   });
 
-  const { data: studentTrainerTrainingRows } = useQuery({
-    queryKey: ['admin-training-students-by-pair'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('training_students').select('trainer_id, training_id');
-      if (error) throw error;
-      return (data || []) as { trainer_id: string; training_id: string }[];
-    },
-  });
-
-  const { data: trainerCourseRows } = useQuery({
-    queryKey: ['admin-trainer-courses-summary'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('trainer_courses').select('trainer_id, training_id, price');
-      if (error) throw error;
-      return (data || []) as { trainer_id: string; training_id: string; price: number | string }[];
-    },
-  });
-
-  const studentsPerTrainerTraining = useMemo(() => {
-    const m: Record<string, Record<string, number>> = {};
-    studentTrainerTrainingRows?.forEach(({ trainer_id, training_id }) => {
-      if (!m[trainer_id]) m[trainer_id] = {};
-      m[trainer_id][training_id] = (m[trainer_id][training_id] || 0) + 1;
-    });
-    return m;
-  }, [studentTrainerTrainingRows]);
-
-  const trainingCountByTrainer = useMemo(() => {
-    const c: Record<string, number> = {};
-    trainerCourseRows?.forEach((r) => {
-      c[r.trainer_id] = (c[r.trainer_id] || 0) + 1;
-    });
-    return c;
-  }, [trainerCourseRows]);
-
-  const revenueByTrainer = useMemo(() => {
-    const rev: Record<string, number> = {};
-    if (!trainerCourseRows || !trainers) return rev;
-    const grossByTrainer: Record<string, number> = {};
-    trainerCourseRows.forEach((tc) => {
-      const n = studentsPerTrainerTraining[tc.trainer_id]?.[tc.training_id] || 0;
-      const price = Number(tc.price) || 0;
-      grossByTrainer[tc.trainer_id] = (grossByTrainer[tc.trainer_id] || 0) + price * n;
-    });
-    trainers.forEach((t) => {
-      const gross = grossByTrainer[t.id] || 0;
-      const ratio = (Number(t.profit_ratio) || 0) / 100;
-      rev[t.id] = gross * ratio;
-    });
-    return rev;
-  }, [trainerCourseRows, trainers, studentsPerTrainerTraining]);
-
   const uploadPhoto = async (file: File): Promise<string> => {
     const ext = file.name.split('.').pop();
     const path = `${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from('trainer-photos').upload(path, file);
-    if (error) throw error;
-    const { data } = supabase.storage.from('trainer-photos').getPublicUrl(path);
-    return data.publicUrl;
-  };
-
-  const uploadTrainerBikeFile = async (trainerId: string, bikeType: string, file: File): Promise<string> => {
-    const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '') || 'jpg';
-    const path = `bikes/${trainerId}/${typeStorageSlug(bikeType)}/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from('trainer-photos').upload(path, file);
-    if (error) throw error;
-    const { data } = supabase.storage.from('trainer-photos').getPublicUrl(path);
-    return data.publicUrl;
-  };
-
-  const uploadTrainerAlbumFile = async (trainerId: string, file: File): Promise<string> => {
-    const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '') || 'jpg';
-    const path = `album/${trainerId}/${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage.from('trainer-photos').upload(path, file);
     if (error) throw error;
     const { data } = supabase.storage.from('trainer-photos').getPublicUrl(path);
@@ -409,112 +297,35 @@ const AdminTrainers: React.FC = () => {
     mutationFn: async () => {
       let photoUrl = form.photo_url;
       if (photoFile) photoUrl = await uploadPhoto(photoFile);
-
-      const name_en = joinFullName(form.first_name_en, form.last_name_en);
-      const name_ar = joinFullName(form.first_name_ar, form.last_name_ar);
-      const bike_type = form.bike_types.join(', ');
-
-      const albumPhotos = [...form.album_photos];
-
-      const bikeEntries: BikeEntry[] = form.bike_types.map((typ) => {
-        const e = form.bike_entries.find((x) => x.type === typ) ?? { type: typ, brand: '', photos: [] };
-        return { type: e.type, brand: e.brand, photos: [...e.photos] };
-      });
-
-      let trainerId: string;
-
-      const rowBeforeUploads = {
-        name_en,
-        name_ar,
-        bio_ar: form.bio_ar,
-        bio_en: form.bio_en,
-        country: form.country,
-        city: form.city,
-        bike_type,
-        bike_entries: bikeEntries as unknown as Json,
-        bike_photos: flattenBikePhotos(bikeEntries),
-        album_photos: albumPhotos,
-        motorbike_brand: summarizeMotorbikeBrand(bikeEntries),
-        license_type: form.license_type,
-        years_of_experience: form.years_of_experience,
-        profit_ratio: form.profit_ratio,
-        services: form.services,
-        status: form.status,
-        photo_url: photoUrl,
-        language_levels: form.language_levels as unknown as Json,
-      };
+      const payload = { ...form, photo_url: photoUrl };
 
       if (editingTrainer) {
-        trainerId = editingTrainer.id;
-        const { error } = await supabase.from('trainers').update(rowBeforeUploads).eq('id', trainerId);
+        const { error } = await supabase.from('trainers').update(payload).eq('id', editingTrainer.id);
         if (error) throw error;
-      } else {
-        const { data, error } = await supabase.from('trainers').insert(rowBeforeUploads).select('id').single();
-        if (error) throw error;
-        trainerId = data.id;
-      }
-
-      let pendingBikeChanged = false;
-      for (const entry of bikeEntries) {
-        const pend = pendingBikeByType[entry.type] || [];
-        for (const { file } of pend) {
-          entry.photos.push(await uploadTrainerBikeFile(trainerId, entry.type, file));
-          pendingBikeChanged = true;
-        }
-      }
-
-      for (const { file } of pendingAlbumImages) {
-        albumPhotos.push(await uploadTrainerAlbumFile(trainerId, file));
-      }
-
-      if (pendingBikeChanged || pendingAlbumImages.length > 0) {
-        const { error: upErr } = await supabase
-          .from('trainers')
-          .update({
-            bike_entries: bikeEntries as unknown as Json,
-            bike_photos: flattenBikePhotos(bikeEntries),
-            motorbike_brand: summarizeMotorbikeBrand(bikeEntries),
-            album_photos: albumPhotos,
-          })
-          .eq('id', trainerId);
-        if (upErr) throw upErr;
-      }
-
-      if (editingTrainer) {
         await supabase.from('trainer_courses').delete().eq('trainer_id', editingTrainer.id);
         if (assignedTrainings.length > 0) {
-          const { error: tcError } = await supabase
-            .from('trainer_courses')
-            .insert(assignedTrainings.map((at) => toTrainerCourseInsertRow(trainerId, at)));
+          const { error: tcError } = await supabase.from('trainer_courses').insert(
+            assignedTrainings.map(at => ({ trainer_id: editingTrainer.id, ...at }))
+          );
           if (tcError) throw tcError;
         }
-      } else if (assignedTrainings.length > 0) {
-        const { error: tcError } = await supabase
-          .from('trainer_courses')
-          .insert(assignedTrainings.map((at) => toTrainerCourseInsertRow(trainerId, at)));
-        if (tcError) throw tcError;
+      } else {
+        const { data, error } = await supabase.from('trainers').insert(payload).select().single();
+        if (error) throw error;
+        if (assignedTrainings.length > 0) {
+          await supabase.from('trainer_courses').insert(
+            assignedTrainings.map(at => ({ trainer_id: data.id, ...at }))
+          );
+        }
       }
     },
     onSuccess: () => {
-      Object.values(pendingBikeByType).forEach((list) => revokePendingList(list));
-      setPendingBikeByType({});
-      revokePendingList(pendingAlbumImages);
-      setPendingAlbumImages([]);
       queryClient.invalidateQueries({ queryKey: ['admin-trainers'] });
       queryClient.invalidateQueries({ queryKey: ['training-trainer-counts'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-trainer-courses-summary'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-training-students-by-pair'] });
-      queryClient.invalidateQueries({ queryKey: ['trainer-profile-view'] });
       setFormOpen(false);
       toast.success(isRTL ? 'تم الحفظ بنجاح' : 'Saved successfully');
     },
-    onError: (error) => {
-      console.error('[AdminTrainers] saveMutation failed', error);
-      const err = error as { message?: string; details?: string; hint?: string; code?: string };
-      const parts = [err.message, err.details, err.hint].filter(Boolean);
-      const msg = parts.length ? parts.join(' — ') : String(error);
-      toast.error(isRTL ? `حدث خطأ: ${msg}` : `Save failed: ${msg}`);
-    },
+    onError: () => toast.error(isRTL ? 'حدث خطأ' : 'An error occurred'),
   });
 
   const deleteMutation = useMutation({
@@ -524,9 +335,6 @@ const AdminTrainers: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trainers'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-trainer-courses-summary'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-training-students-by-pair'] });
-      queryClient.invalidateQueries({ queryKey: ['trainer-student-counts'] });
       setDeleteId(null);
       toast.success(isRTL ? 'تم الحذف' : 'Deleted');
     },
@@ -538,120 +346,29 @@ const AdminTrainers: React.FC = () => {
     setForm(defaultForm);
     setPhotoFile(null);
     setPhotoPreview(null);
-    setPendingBikeByType((prev) => {
-      Object.values(prev).forEach((list) => revokePendingList(list));
-      return {};
-    });
-    setPendingAlbumImages((prev) => {
-      revokePendingList(prev);
-      return [];
-    });
-    setBikeTypeInput('');
     setAssignedTrainings([]);
+    setTrainingServiceInputs({});
     setIsOtherCity(false);
-    setLanguageAddCode('');
-    setLanguageAddLevel(LANGUAGE_LEVEL_OPTIONS[1]!.value);
+    setIsOtherBikeType(false);
     setFormOpen(true);
   };
 
   const openEdit = async (t: Trainer) => {
     setEditingTrainer(t);
-    const ar = splitFullName(t.name_ar);
-    const en = splitFullName(t.name_en);
-    const bike_types = t.bike_type
-      ? t.bike_type.split(',').map((s) => s.trim()).filter(Boolean)
-      : [];
-    let bike_entries = parseBikeEntries(t.bike_entries);
-    if (bike_entries.length === 0 && bike_types.length > 0) {
-      bike_entries = bike_types.map((typ, i) => ({
-        type: typ,
-        brand: i === 0 ? (t.motorbike_brand || '') : '',
-        photos: i === 0 && Array.isArray(t.bike_photos) ? [...t.bike_photos] : [],
-      }));
-    }
-    bike_entries = bike_types.map((typ) => bike_entries.find((e) => e.type === typ) ?? { type: typ, brand: '', photos: [] });
-    setForm({
-      ...defaultForm,
-      first_name_ar: ar.first,
-      last_name_ar: ar.last,
-      first_name_en: en.first,
-      last_name_en: en.last,
-      bio_ar: t.bio_ar,
-      bio_en: t.bio_en,
-      country: t.country,
-      city: t.city,
-      bike_types,
-      bike_entries,
-      album_photos: Array.isArray(t.album_photos) ? [...t.album_photos] : [],
-      license_type: t.license_type || '',
-      years_of_experience: t.years_of_experience,
-      profit_ratio: t.profit_ratio || 0,
-      services: t.services || [],
-      status: t.status as 'active' | 'inactive',
-      photo_url: t.photo_url,
-      language_levels: parseLanguageLevels(t.language_levels),
-    });
-    setLanguageAddCode('');
-    setLanguageAddLevel(LANGUAGE_LEVEL_OPTIONS[1]!.value);
-    setPendingBikeByType((prev) => {
-      Object.values(prev).forEach((list) => revokePendingList(list));
-      return {};
-    });
-    setPendingAlbumImages((prev) => {
-      revokePendingList(prev);
-      return [];
-    });
-    setBikeTypeInput('');
+    const bikeTypes = ['Sport', 'Cruiser', 'Adventure', 'Touring', 'Naked', 'Dual Sport', 'Scooter'];
+    const isBikeOther = t.bike_type && !bikeTypes.includes(t.bike_type);
+    setIsOtherBikeType(isBikeOther);
+    setForm({ name_ar: t.name_ar, name_en: t.name_en, bio_ar: t.bio_ar, bio_en: t.bio_en, country: t.country, city: t.city, bike_type: t.bike_type, motorbike_brand: t.motorbike_brand || '', license_type: t.license_type || '', years_of_experience: t.years_of_experience, profit_ratio: t.profit_ratio || 0, services: t.services || [], status: t.status as 'active' | 'inactive', photo_url: t.photo_url });
     setPhotoFile(null);
     setPhotoPreview(t.photo_url);
-    const { data } = await supabase
-      .from('trainer_courses')
-      .select('training_id, price, sessions_count, duration_hours, location, available_schedule, services')
-      .eq('trainer_id', t.id);
-    setAssignedTrainings(
-      (data || []).map((d) => ({
-        training_id: d.training_id,
-        price: Number(d.price),
-        sessions_count: Math.max(1, Number((d as { sessions_count?: number }).sessions_count ?? 1)),
-        duration_hours: Number(d.duration_hours),
-        location: d.location,
-        available_schedule: d.available_schedule,
-        services: (d as { services?: string[] }).services ?? [],
-      })),
-    );
+    const { data } = await supabase.from('trainer_courses').select('training_id, price, duration_hours, location, available_schedule, services').eq('trainer_id', t.id);
+    setAssignedTrainings((data || []).map(d => ({ training_id: d.training_id, price: Number(d.price), duration_hours: Number(d.duration_hours), location: d.location, available_schedule: d.available_schedule, services: (d as any).services || [] })));
     // Check if stored city is in the country's city list
     const countryEntry = COUNTRIES.find(c => c.code === t.country);
     const cityInList = countryEntry?.cities.some(c => c.en === t.city);
     setIsOtherCity(!!countryEntry && !cityInList && !!t.city);
     setFormOpen(true);
   };
-
-  const openEditRef = useRef(openEdit);
-  openEditRef.current = openEdit;
-
-  useEffect(() => {
-    const editId = searchParams.get('edit');
-    if (!editId) return;
-
-    const clearParam = () => setSearchParams({}, { replace: true });
-
-    const run = async () => {
-      const fromList = trainers?.find((x) => x.id === editId);
-      if (fromList) {
-        await openEditRef.current(fromList);
-        clearParam();
-        return;
-      }
-      if (trainers === undefined) return;
-      const { data, error } = await supabase.from('trainers').select('*').eq('id', editId).single();
-      if (!error && data) {
-        await openEditRef.current(data as Trainer);
-      }
-      clearParam();
-    };
-
-    void run();
-  }, [searchParams, trainers, setSearchParams]);
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -668,259 +385,23 @@ const AdminTrainers: React.FC = () => {
     }
   };
 
-  const addTrainerLanguage = () => {
-    if (!languageAddCode) {
-      toast.error(isRTL ? 'اختر لغة' : 'Choose a language');
-      return;
-    }
-    if (form.language_levels.some((x) => x.language === languageAddCode)) {
-      toast.error(isRTL ? 'هذه اللغة مضافة بالفعل' : 'That language is already added');
-      return;
-    }
-    setForm((f) => ({
-      ...f,
-      language_levels: [...f.language_levels, { language: languageAddCode, level: languageAddLevel }],
-    }));
-    setLanguageAddCode('');
-  };
-
-  const clearPendingForBikeType = (bikeType: string) => {
-    setPendingBikeByType((pb) => {
-      const list = pb[bikeType];
-      if (list?.length) revokePendingList(list);
-      const { [bikeType]: _, ...rest } = pb;
-      return rest;
-    });
-  };
-
-  const toggleBikeType = (type: string) => {
-    const f = formRef.current;
-    const removing = f.bike_types.includes(type);
-    if (removing) clearPendingForBikeType(type);
-    setForm((prev) => {
-      const nextTypes = removing ? prev.bike_types.filter((t) => t !== type) : [...prev.bike_types, type];
-      const nextEntries = nextTypes.map(
-        (t) => prev.bike_entries.find((e) => e.type === t) ?? { type: t, brand: '', photos: [] },
-      );
-      return { ...prev, bike_types: nextTypes, bike_entries: nextEntries };
-    });
-  };
-
-  const addCustomBikeType = () => {
-    const v = bikeTypeInput.trim();
-    if (!v) return;
-    const f = formRef.current;
-    if (f.bike_types.includes(v)) {
-      setBikeTypeInput('');
-      return;
-    }
-    setForm((prev) => ({
-      ...prev,
-      bike_types: [...prev.bike_types, v],
-      bike_entries: [...prev.bike_entries, { type: v, brand: '', photos: [] }],
-    }));
-    setBikeTypeInput('');
-  };
-
-  const removeBikeTypeBadge = (bikeType: string) => {
-    clearPendingForBikeType(bikeType);
-    setForm((prev) => ({
-      ...prev,
-      bike_types: prev.bike_types.filter((x) => x !== bikeType),
-      bike_entries: prev.bike_entries.filter((e) => e.type !== bikeType),
-    }));
-  };
-
-  const setBikeEntryBrand = (bikeType: string, brand: string) => {
-    setForm((f) => ({
-      ...f,
-      bike_entries: f.bike_entries.some((e) => e.type === bikeType)
-        ? f.bike_entries.map((e) => (e.type === bikeType ? { ...e, brand } : e))
-        : [...f.bike_entries, { type: bikeType, brand, photos: [] }],
-    }));
-  };
-
-  const triggerBikePhotoPick = (bikeType: string) => {
-    bikePhotoPickTypeRef.current = bikeType;
-    bikePhotoFileRef.current?.click();
-  };
-
-  const addBikePhotoFilesForType = (bikeType: string, files: FileList | null) => {
-    if (!files?.length || !bikeType) return;
-    setPendingBikeByType((prev) => {
-      const pending = prev[bikeType] || [];
-      const entry = formRef.current.bike_entries.find((e) => e.type === bikeType);
-      const urlCount = entry?.photos.length ?? 0;
-      const next = [...pending];
-      for (const file of Array.from(files)) {
-        if (file.size > MAX_BIKE_PHOTO_BYTES) {
-          toast.error(
-            isRTL
-              ? `الملف أكبر من ${MAX_BIKE_PHOTO_BYTES / (1024 * 1024)} ميجابايت`
-              : `File exceeds ${MAX_BIKE_PHOTO_BYTES / (1024 * 1024)} MB`,
-          );
-          continue;
-        }
-        if (urlCount + next.length >= MAX_PHOTOS_PER_BIKE_ENTRY) {
-          toast.error(
-            isRTL
-              ? `الحد الأقصى ${MAX_PHOTOS_PER_BIKE_ENTRY} صور لكل دراجة`
-              : `Maximum ${MAX_PHOTOS_PER_BIKE_ENTRY} photos per bike`,
-          );
-          break;
-        }
-        next.push({ file, preview: URL.createObjectURL(file) });
-      }
-      return { ...prev, [bikeType]: next };
-    });
-    if (bikePhotoFileRef.current) bikePhotoFileRef.current.value = '';
-  };
-
-  const onBikePhotoFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const type = bikePhotoPickTypeRef.current;
-    bikePhotoPickTypeRef.current = null;
-    if (type) addBikePhotoFilesForType(type, e.target.files);
-    e.target.value = '';
-  };
-
-  const removeBikePhotoUrlForType = (bikeType: string, url: string) => {
-    setForm((f) => ({
-      ...f,
-      bike_entries: f.bike_entries.map((e) =>
-        e.type === bikeType ? { ...e, photos: e.photos.filter((u) => u !== url) } : e,
-      ),
-    }));
-  };
-
-  const removePendingBikeAtForType = (bikeType: string, index: number) => {
-    setPendingBikeByType((prev) => {
-      const list = prev[bikeType] || [];
-      const row = list[index];
-      if (row) URL.revokeObjectURL(row.preview);
-      const nextList = list.filter((_, i) => i !== index);
-      const { [bikeType]: _, ...rest } = prev;
-      return nextList.length ? { ...rest, [bikeType]: nextList } : rest;
-    });
-  };
-
-  const addAlbumPhotoFiles = (files: FileList | null) => {
-    if (!files?.length) return;
-    setPendingAlbumImages((prev) => {
-      const next = [...prev];
-      for (const file of Array.from(files)) {
-        if (file.size > MAX_ALBUM_PHOTO_BYTES) {
-          toast.error(
-            isRTL
-              ? `الملف أكبر من ${MAX_ALBUM_PHOTO_BYTES / (1024 * 1024)} ميجابايت`
-              : `File exceeds ${MAX_ALBUM_PHOTO_BYTES / (1024 * 1024)} MB`,
-          );
-          continue;
-        }
-        if (formRef.current.album_photos.length + next.length >= MAX_ALBUM_PHOTOS) {
-          toast.error(isRTL ? `الحد الأقصى ${MAX_ALBUM_PHOTOS} صور` : `Maximum ${MAX_ALBUM_PHOTOS} album photos`);
-          break;
-        }
-        next.push({ file, preview: URL.createObjectURL(file) });
-      }
-      return next;
-    });
-    if (albumPhotosInputRef.current) albumPhotosInputRef.current.value = '';
-  };
-
-  const removeAlbumPhotoUrl = (url: string) => {
-    setForm((f) => ({ ...f, album_photos: f.album_photos.filter((u) => u !== url) }));
-  };
-
-  const removePendingAlbumAt = (index: number) => {
-    setPendingAlbumImages((prev) => {
-      const row = prev[index];
-      if (row) URL.revokeObjectURL(row.preview);
-      return prev.filter((_, i) => i !== index);
-    });
-  };
-
-  /**
-   * Add/remove a training assignment. New rows snapshot trainer country/city/services from the form;
-   * changing trainer location later does not update existing assignments.
-   */
   const toggleTraining = (trainingId: string, checked: boolean) => {
     if (checked) {
-      const f = formRef.current;
-      const meta = allTrainings?.find((tr) => tr.id === trainingId);
-      const defSessions = Math.max(1, Number((meta as { default_sessions_count?: number })?.default_sessions_count ?? 1));
-      const defDur = Math.max(0.25, Number((meta as { default_session_duration_hours?: number })?.default_session_duration_hours ?? 2));
-      setAssignedTrainings((prev) => {
-        if (prev.some((a) => a.training_id === trainingId)) return prev;
-        return [
-          ...prev,
-          {
-            training_id: trainingId,
-            price: 0,
-            sessions_count: defSessions,
-            duration_hours: defDur,
-            location: defaultTrainerAssignmentLocation(f.country, f.city),
-            available_schedule: {},
-            services: [...f.services],
-          },
-        ];
-      });
+      setAssignedTrainings(prev => [...prev, { training_id: trainingId, price: 0, duration_hours: 0, location: '', available_schedule: {}, services: [] }]);
     } else {
-      setAssignedTrainings((prev) => prev.filter((at) => at.training_id !== trainingId));
+      setAssignedTrainings(prev => prev.filter(at => at.training_id !== trainingId));
     }
   };
 
-  const updateAssignment = (trainingId: string, field: keyof TrainerCourse, value: unknown) => {
-    setAssignedTrainings((prev) =>
-      prev.map((at) => (at.training_id === trainingId ? { ...at, [field]: value } : at)),
-    );
-  };
-
-  const setAssignmentCountry = (trainingId: string, countryCode: string) => {
-    const country = COUNTRIES.find((c) => c.code === countryCode);
-    if (!country) return;
-    setAssignedTrainings((prev) =>
-      prev.map((at) => {
-        if (at.training_id !== trainingId) return at;
-        const { city } = parseAssignmentLocation(at.location);
-        const cityOk = country.cities.some((c) => c.en === city);
-        const newCity = cityOk ? city : '';
-        return { ...at, location: buildTrainerCourseLocation(country.code, newCity) };
-      }),
-    );
-  };
-
-  const setAssignmentCityFromSelect = (trainingId: string, cityEn: string) => {
-    setAssignedTrainings((prev) =>
-      prev.map((at) => {
-        if (at.training_id !== trainingId) return at;
-        const { countryCode } = parseAssignmentLocation(at.location);
-        const country = COUNTRIES.find((c) => c.code === countryCode);
-        if (!country) return at;
-        if (cityEn === 'Other') {
-          return { ...at, location: `${country.en} - ` };
-        }
-        return { ...at, location: `${country.en} - ${cityEn}` };
-      }),
-    );
-  };
-
-  const setAssignmentCityManual = (trainingId: string, cityText: string) => {
-    setAssignedTrainings((prev) =>
-      prev.map((at) => {
-        if (at.training_id !== trainingId) return at;
-        const { countryCode } = parseAssignmentLocation(at.location);
-        const country = COUNTRIES.find((c) => c.code === countryCode);
-        if (!country) return at;
-        return { ...at, location: `${country.en} - ${cityText}` };
-      }),
-    );
+  const updateAssignment = (trainingId: string, field: string, value: any) => {
+    setAssignedTrainings(prev => prev.map(at => at.training_id === trainingId ? { ...at, [field]: value } : at));
   };
 
   // ─── Full-page form view ────────────────────────────────────────
   if (formOpen) {
     return (
       <AdminLayout>
-        <div className="space-y-6 max-w-4xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="space-y-6 max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => setFormOpen(false)}>
@@ -955,78 +436,7 @@ const AdminTrainers: React.FC = () => {
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
               </div>
 
-              {/* Photo album */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">{isRTL ? 'ألبوم الصور' : 'Photo album'}</Label>
-                <p className="text-xs text-muted-foreground">
-                  {isRTL ? `حتى ${MAX_ALBUM_PHOTOS} صور، حتى ${MAX_ALBUM_PHOTO_BYTES / (1024 * 1024)} ميجابايت لكل صورة` : `Up to ${MAX_ALBUM_PHOTOS} images, ${MAX_ALBUM_PHOTO_BYTES / (1024 * 1024)} MB each`}
-                </p>
-                <div className="flex flex-wrap gap-2 items-start">
-                  {form.album_photos.map((url) => (
-                    <div key={url} className="relative w-20 h-20 rounded-md border border-border overflow-hidden shrink-0 group/thumb">
-                      <img src={url} alt="" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        className="absolute top-0.5 end-0.5 w-5 h-5 rounded-full bg-background/90 border text-xs flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity"
-                        onClick={() => removeAlbumPhotoUrl(url)}
-                        aria-label={isRTL ? 'حذف' : 'Remove'}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                  {pendingAlbumImages.map((p, i) => (
-                    <div key={p.preview} className="relative w-20 h-20 rounded-md border border-border overflow-hidden shrink-0 group/thumb">
-                      <img src={p.preview} alt="" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        className="absolute top-0.5 end-0.5 w-5 h-5 rounded-full bg-background/90 border text-xs flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity"
-                        onClick={() => removePendingAlbumAt(i)}
-                        aria-label={isRTL ? 'حذف' : 'Remove'}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => albumPhotosInputRef.current?.click()}
-                    disabled={form.album_photos.length + pendingAlbumImages.length >= MAX_ALBUM_PHOTOS}
-                    className="w-20 h-20 rounded-md border border-dashed border-muted-foreground/40 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors disabled:opacity-50"
-                  >
-                    <Images className="w-5 h-5" />
-                    <span className="text-[10px]">{isRTL ? 'إضافة' : 'Add'}</span>
-                  </button>
-                  <input
-                    ref={albumPhotosInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => addAlbumPhotoFiles(e.target.files)}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{isRTL ? 'الاسم الأول (عربي)' : 'First Name (AR)'}</Label>
-                  <Input value={form.first_name_ar} onChange={(e) => setForm((f) => ({ ...f, first_name_ar: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>{isRTL ? 'الاسم الأخير (عربي)' : 'Last Name (AR)'}</Label>
-                  <Input value={form.last_name_ar} onChange={(e) => setForm((f) => ({ ...f, last_name_ar: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>{isRTL ? 'الاسم الأول (إنجليزي)' : 'First Name (EN)'}</Label>
-                  <Input value={form.first_name_en} onChange={(e) => setForm((f) => ({ ...f, first_name_en: e.target.value }))} dir="ltr" className="text-start" />
-                </div>
-                <div className="space-y-2">
-                  <Label>{isRTL ? 'الاسم الأخير (إنجليزي)' : 'Last Name (EN)'}</Label>
-                  <Input value={form.last_name_en} onChange={(e) => setForm((f) => ({ ...f, last_name_en: e.target.value }))} dir="ltr" className="text-start" />
-                </div>
-              </div>
-
+              <BilingualInput labelEn="Name" labelAr="الاسم" valueEn={form.name_en} valueAr={form.name_ar} onChangeEn={v => setForm(f => ({ ...f, name_en: v }))} onChangeAr={v => setForm(f => ({ ...f, name_ar: v }))} />
               <BilingualInput labelEn="Bio" labelAr="السيرة" valueEn={form.bio_en} valueAr={form.bio_ar} onChangeEn={v => setForm(f => ({ ...f, bio_en: v }))} onChangeAr={v => setForm(f => ({ ...f, bio_ar: v }))} isTextarea rows={3} />
             </CardContent>
           </Card>
@@ -1035,233 +445,91 @@ const AdminTrainers: React.FC = () => {
           <Card>
             <CardContent className="p-6 space-y-5">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'الموقع والتخصص' : 'Location & Specialization'}</h3>
-              <div dir={locationFieldDir} className="grid gap-4 md:grid-cols-2">
-                <div className="min-w-0 space-y-2">
-                  <Label className="block text-start">{isRTL ? 'الدولة' : 'Country'}</Label>
-                  <Select
-                    dir={locationFieldDir}
-                    value={form.country}
-                    onValueChange={(v) => setForm((f) => ({ ...f, country: v, city: '' }))}
-                  >
-                    <SelectTrigger dir={locationFieldDir}>
-                      <SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} />
-                    </SelectTrigger>
-                    <SelectContent dir={locationFieldDir}>
-                      {COUNTRIES.map((c) => (
-                        <SelectItem key={c.code} value={c.code}>
-                          {isRTL ? c.ar : c.en}
-                        </SelectItem>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'الدولة' : 'Country'}</Label>
+                  <Select value={form.country} onValueChange={v => setForm(f => ({ ...f, country: v, city: '' }))}>
+                    <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} /></SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map(c => (
+                        <SelectItem key={c.code} value={c.code}>{isRTL ? c.ar : c.en}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="min-w-0 space-y-2">
-                  <Label className="block text-start">{isRTL ? 'المدينة' : 'City'}</Label>
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'المدينة' : 'City'}</Label>
                   {(() => {
-                    const selectedCountry = COUNTRIES.find((c) => c.code === form.country);
+                    const selectedCountry = COUNTRIES.find(c => c.code === form.country);
                     const cities = selectedCountry ? [...selectedCountry.cities, OTHER_OPTION] : [];
                     if (!selectedCountry) {
-                      return (
-                        <Input
-                          dir={locationFieldDir}
-                          className="text-start"
-                          value={form.city}
-                          onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-                          placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
-                        />
-                      );
+                      return <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'} />;
                     }
-                    const cityInList = cities.some((c) => c.en === form.city);
+                    const cityInList = cities.some(c => c.en === form.city);
                     return (
                       <div className="space-y-2">
                         <Select
-                          dir={locationFieldDir}
-                          value={cityInList ? form.city : isOtherCity ? 'Other' : ''}
-                          onValueChange={(v) => {
+                          value={cityInList ? form.city : (isOtherCity ? 'Other' : '')}
+                          onValueChange={v => {
                             if (v === 'Other') {
                               setIsOtherCity(true);
-                              setForm((f) => ({ ...f, city: '' }));
+                              setForm(f => ({ ...f, city: '' }));
                             } else {
                               setIsOtherCity(false);
-                              setForm((f) => ({ ...f, city: v }));
+                              setForm(f => ({ ...f, city: v }));
                             }
                           }}
                         >
-                          <SelectTrigger dir={locationFieldDir}>
-                            <SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} />
-                          </SelectTrigger>
-                          <SelectContent dir={locationFieldDir}>
-                            {cities.map((c) => (
-                              <SelectItem key={c.en} value={c.en}>
-                                {isRTL ? c.ar : c.en}
-                              </SelectItem>
+                          <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} /></SelectTrigger>
+                          <SelectContent>
+                            {cities.map(c => (
+                              <SelectItem key={c.en} value={c.en}>{isRTL ? c.ar : c.en}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         {isOtherCity && (
-                          <Input
-                            dir={locationFieldDir}
-                            className="text-start"
-                            value={form.city}
-                            onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-                            placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
-                          />
+                          <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'} />
                         )}
                       </div>
                     );
                   })()}
                 </div>
               </div>
-              <div className="space-y-3">
-                <Label>{isRTL ? 'أنواع الدراجات' : 'Bike types'}</Label>
-                <div className="flex flex-wrap gap-4">
-                  {COMMON_BIKE_TYPES.map((type) => (
-                    <label key={type} className="flex items-center gap-2 cursor-pointer text-sm">
-                      <Checkbox checked={form.bike_types.includes(type)} onCheckedChange={() => toggleBikeType(type)} />
-                      <span>{type}</span>
-                    </label>
-                  ))}
-                </div>
-                <div className="flex gap-2 max-w-md">
-                  <Input
-                    value={bikeTypeInput}
-                    onChange={(e) => setBikeTypeInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomBikeType())}
-                    placeholder={isRTL ? 'نوع مخصص...' : 'Custom type...'}
-                    className="flex-1"
-                  />
-                  <Button type="button" variant="outline" size="icon" onClick={addCustomBikeType}>
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {form.bike_types.map((t) => (
-                    <Badge key={t} variant="secondary" className="gap-1 px-3 py-1.5">
-                      {t}
-                      <X className="w-3 h-3 cursor-pointer hover:text-destructive" onClick={() => removeBikeTypeBadge(t)} />
-                    </Badge>
-                  ))}
-                  {form.bike_types.length === 0 && (
-                    <p className="text-xs text-muted-foreground">{isRTL ? 'لم يتم اختيار نوع بعد' : 'No bike types selected'}</p>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'نوع الدراجة' : 'Motorbike Type'}</Label>
+                  <Select
+                    value={isOtherBikeType ? '__other__' : form.bike_type}
+                    onValueChange={v => {
+                      if (v === '__other__') {
+                        setIsOtherBikeType(true);
+                        setForm(f => ({ ...f, bike_type: '' }));
+                      } else {
+                        setIsOtherBikeType(false);
+                        setForm(f => ({ ...f, bike_type: v }));
+                      }
+                    }}
+                  >
+                    <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر النوع' : 'Select type'} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Sport">{isRTL ? 'رياضية' : 'Sport'}</SelectItem>
+                      <SelectItem value="Cruiser">{isRTL ? 'كروزر' : 'Cruiser'}</SelectItem>
+                      <SelectItem value="Adventure">{isRTL ? 'مغامرة' : 'Adventure'}</SelectItem>
+                      <SelectItem value="Touring">{isRTL ? 'سياحية' : 'Touring'}</SelectItem>
+                      <SelectItem value="Naked">{isRTL ? 'نيكد' : 'Naked'}</SelectItem>
+                      <SelectItem value="Dual Sport">{isRTL ? 'ثنائية الاستخدام' : 'Dual Sport'}</SelectItem>
+                      <SelectItem value="Scooter">{isRTL ? 'سكوتر' : 'Scooter'}</SelectItem>
+                      <SelectItem value="__other__">{isRTL ? 'أخرى' : 'Other'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {isOtherBikeType && (
+                    <Input value={form.bike_type} onChange={e => setForm(f => ({ ...f, bike_type: e.target.value }))} placeholder={isRTL ? 'أدخل نوع الدراجة' : 'Enter motorbike type'} className="mt-2" />
                   )}
                 </div>
-              </div>
-
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">{isRTL ? 'تفاصيل كل دراجة' : 'Per-bike details'}</Label>
-                <p className="text-xs text-muted-foreground">
-                  {isRTL
-                    ? `ماركة وصور لكل نوع. حتى ${MAX_PHOTOS_PER_BIKE_ENTRY} صور لكل نوع، حتى ${MAX_BIKE_PHOTO_BYTES / (1024 * 1024)} ميجابايت لكل صورة`
-                    : `Brand and photos per bike type. Up to ${MAX_PHOTOS_PER_BIKE_ENTRY} images per type, ${MAX_BIKE_PHOTO_BYTES / (1024 * 1024)} MB each`}
-                </p>
-                <input
-                  ref={bikePhotoFileRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={onBikePhotoFileInputChange}
-                />
-                {form.bike_types.length === 0 ? (
-                  <p className="text-xs text-muted-foreground border border-dashed rounded-lg p-4 text-center">
-                    {isRTL ? 'اختر أنواع الدراجات أعلاه لإضافة التفاصيل' : 'Select bike types above to add brand and photos'}
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    {form.bike_types.map((bikeType) => {
-                      const entry =
-                        form.bike_entries.find((e) => e.type === bikeType) ?? { type: bikeType, brand: '', photos: [] };
-                      const pending = pendingBikeByType[bikeType] || [];
-                      const totalPhotos = entry.photos.length + pending.length;
-                      return (
-                        <div key={bikeType} dir={isRTL ? 'rtl' : 'ltr'}>
-                          <Card className="border-border/80 shadow-sm">
-                            <CardHeader className="py-3 px-4 space-y-0">
-                              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                <Bike className="w-4 h-4 text-muted-foreground shrink-0" />
-                                {bikeType}
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3 pt-0 px-4 pb-4">
-                              <div className="min-w-0 space-y-2">
-                                <Label className="block w-full text-start text-xs">
-                                  {isRTL ? 'الماركة والطراز' : 'Brand & Model'}
-                                </Label>
-                                {/* Isolate LTR so English brand/model is not affected by card RTL */}
-                                <div
-                                  dir="ltr"
-                                  lang="en"
-                                  className="min-w-0"
-                                  style={{ unicodeBidi: 'isolate' }}
-                                >
-                                  <Input
-                                    dir="ltr"
-                                    lang="en"
-                                    spellCheck={false}
-                                    autoComplete="off"
-                                    value={entry.brand}
-                                    onChange={(e) => setBikeEntryBrand(bikeType, e.target.value)}
-                                    placeholder="e.g. Yamaha R1 2023"
-                                    className="w-full text-left [text-align:left] placeholder:text-left"
-                                  />
-                                </div>
-                              </div>
-                              <div className="space-y-2">
-                                <Label className="text-xs">{isRTL ? 'صور هذه الدراجة' : 'Photos for this bike'}</Label>
-                                <div className="flex flex-wrap gap-2 items-start">
-                                {entry.photos.map((url) => (
-                                  <div
-                                    key={url}
-                                    className="relative w-20 h-20 rounded-md border border-border overflow-hidden shrink-0 group/bthumb"
-                                  >
-                                    <img src={url} alt="" className="w-full h-full object-cover" />
-                                    <button
-                                      type="button"
-                                      className="absolute top-0.5 end-0.5 w-5 h-5 rounded-full bg-background/90 border text-xs flex items-center justify-center opacity-0 group-hover/bthumb:opacity-100 transition-opacity"
-                                      onClick={() => removeBikePhotoUrlForType(bikeType, url)}
-                                      aria-label={isRTL ? 'حذف' : 'Remove'}
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ))}
-                                {pending.map((p, i) => (
-                                  <div
-                                    key={p.preview}
-                                    className="relative w-20 h-20 rounded-md border border-border overflow-hidden shrink-0 group/bthumb"
-                                  >
-                                    <img src={p.preview} alt="" className="w-full h-full object-cover" />
-                                    <button
-                                      type="button"
-                                      className="absolute top-0.5 end-0.5 w-5 h-5 rounded-full bg-background/90 border text-xs flex items-center justify-center opacity-0 group-hover/bthumb:opacity-100 transition-opacity"
-                                      onClick={() => removePendingBikeAtForType(bikeType, i)}
-                                      aria-label={isRTL ? 'حذف' : 'Remove'}
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ))}
-                                <button
-                                  type="button"
-                                  onClick={() => triggerBikePhotoPick(bikeType)}
-                                  disabled={totalPhotos >= MAX_PHOTOS_PER_BIKE_ENTRY}
-                                  className="w-20 h-20 rounded-md border border-dashed border-muted-foreground/40 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors disabled:opacity-50"
-                                >
-                                  <Camera className="w-5 h-5" />
-                                  <span className="text-[10px]">{isRTL ? 'إضافة' : 'Add'}</span>
-                                </button>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label>{isRTL ? 'ماركة الدراجة' : 'Motorbike Brand'}</Label>
+                  <Input value={form.motorbike_brand} onChange={e => setForm(f => ({ ...f, motorbike_brand: e.target.value }))} placeholder={isRTL ? 'مثال: Yamaha' : 'e.g. Yamaha'} />
+                </div>
                 <div className="space-y-2">
                   <Label>{isRTL ? 'نوع الرخصة' : 'License Type'}</Label>
                   <Input value={form.license_type} onChange={e => setForm(f => ({ ...f, license_type: e.target.value }))} placeholder={isRTL ? 'مثال: A2' : 'e.g. A2'} />
@@ -1279,115 +547,6 @@ const AdminTrainers: React.FC = () => {
                   <p className="text-xs text-muted-foreground mt-0.5">{isRTL ? 'تفعيل أو تعطيل هذا المدرب' : 'Enable or disable this trainer'}</p>
                 </div>
                 <Switch checked={form.status === 'active'} onCheckedChange={v => setForm(f => ({ ...f, status: v ? 'active' : 'inactive' }))} />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Section: Languages & proficiency */}
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                <Languages className="h-4 w-4 shrink-0" aria-hidden />
-                {isRTL ? 'اللغات والمستوى' : 'Languages & level'}
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                {isRTL
-                  ? 'أضف كل لغة يتحدثها المدرب واختر مستوى الإتقان لكل لغة.'
-                  : 'Add each language the trainer speaks and set proficiency for every language.'}
-              </p>
-
-              <div className="flex flex-col gap-3 rounded-lg border border-border/60 bg-muted/20 p-3 sm:flex-row sm:flex-wrap sm:items-end">
-                <div className="min-w-0 flex-1 space-y-1.5 sm:min-w-[12rem]">
-                  <Label className="text-xs">{isRTL ? 'لغة' : 'Language'}</Label>
-                  <Select value={languageAddCode || '__none__'} onValueChange={(v) => setLanguageAddCode(v === '__none__' ? '' : v)}>
-                    <SelectTrigger className="h-9 w-full">
-                      <SelectValue placeholder={isRTL ? 'اختر لغة' : 'Select language'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">{isRTL ? '— اختر —' : '— Select —'}</SelectItem>
-                      {TRAINER_LANGUAGE_OPTIONS.filter(
-                        (opt) => !form.language_levels.some((e) => e.language === opt.code),
-                      ).map((opt) => (
-                        <SelectItem key={opt.code} value={opt.code}>
-                          {isRTL ? opt.label_ar : opt.label_en}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="min-w-0 flex-1 space-y-1.5 sm:min-w-[12rem]">
-                  <Label className="text-xs">{isRTL ? 'المستوى' : 'Level'}</Label>
-                  <Select value={languageAddLevel} onValueChange={setLanguageAddLevel}>
-                    <SelectTrigger className="h-9 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGE_LEVEL_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {isRTL ? opt.label_ar : opt.label_en}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button type="button" variant="secondary" className="h-9 gap-1 shrink-0" onClick={addTrainerLanguage}>
-                  <Plus className="h-4 w-4" />
-                  {isRTL ? 'إضافة' : 'Add'}
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                {form.language_levels.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">{isRTL ? 'لم تُضف لغات بعد' : 'No languages added yet'}</p>
-                ) : (
-                  <ul className="divide-y divide-border/60 rounded-lg border border-border/60">
-                    {form.language_levels.map((row, i) => {
-                      const levelVal = LANGUAGE_LEVEL_OPTIONS.some((x) => x.value === row.level) ? row.level : LANGUAGE_LEVEL_OPTIONS[4]!.value;
-                      return (
-                        <li key={`${row.language}-${i}`} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
-                          <span className="text-sm font-medium">{languageOptionLabel(row.language, isRTL)}</span>
-                          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                            <Select
-                              value={levelVal}
-                              onValueChange={(v) =>
-                                setForm((f) => ({
-                                  ...f,
-                                  language_levels: f.language_levels.map((e, idx) => (idx === i ? { ...e, level: v } : e)),
-                                }))
-                              }
-                            >
-                              <SelectTrigger className="h-9 w-full min-w-[10rem] sm:w-[14rem]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {LANGUAGE_LEVEL_OPTIONS.map((opt) => (
-                                  <SelectItem key={opt.value} value={opt.value}>
-                                    {isRTL ? opt.label_ar : opt.label_en}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
-                              onClick={() =>
-                                setForm((f) => ({
-                                  ...f,
-                                  language_levels: f.language_levels.filter((_, idx) => idx !== i),
-                                }))
-                              }
-                              aria-label={isRTL ? 'إزالة اللغة' : 'Remove language'}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
               </div>
             </CardContent>
           </Card>
@@ -1415,263 +574,174 @@ const AdminTrainers: React.FC = () => {
           {/* Section: Training Assignments */}
           <Card>
             <CardContent className="p-6 space-y-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider text-start">
-                  {isRTL ? 'التدريبات المعينة' : 'Training Assignments'}
-                </h3>
-                {allTrainings && allTrainings.length > 0 && (
-                  <Badge variant="secondary" className="w-fit shrink-0">
-                    {isRTL
-                      ? `التدريبات المختارة: ${assignedTrainings.length} / ${allTrainings.length}`
-                      : `Selected: ${assignedTrainings.length} / ${allTrainings.length}`}
-                  </Badge>
-                )}
-              </div>
-
-              {!allTrainings?.length ? (
-                <div className="space-y-4 rounded-lg border border-dashed border-border py-10 text-center">
-                  <p className="text-sm text-muted-foreground px-4">
-                    {isRTL ? 'لا توجد تدريبات متاحة، أضف تدريبات أولاً' : 'No trainings available. Add trainings first.'}
-                  </p>
-                  <Button asChild variant="outline" size="sm">
-                    <Link to="/admin/trainings">{isRTL ? 'الانتقال إلى التدريبات' : 'Go to Trainings'}</Link>
-                  </Button>
-                </div>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {allTrainings.map((training) => {
-                    const isAssigned = assignedTrainings.some((at) => at.training_id === training.id);
-                    const assignment = assignedTrainings.find((at) => at.training_id === training.id);
-                    const name = isRTL ? training.name_ar : training.name_en;
-                    const typeBadge = trainingTypeLabel(training.type, isRTL);
-                    return (
-                      <div
-                        key={training.id}
-                        className={`rounded-xl border transition-colors ${
-                          isAssigned ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3 p-4">
-                          <div className="min-w-0 flex-1 space-y-2">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-start text-sm font-medium leading-snug">{name}</span>
-                              <Badge variant="outline" className="shrink-0 px-2 py-0 text-[10px] font-normal">
-                                {typeBadge}
-                              </Badge>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'التدريبات المعينة' : 'Training Assignments'}</h3>
+              {allTrainings?.map(training => {
+                const isAssigned = assignedTrainings.some(at => at.training_id === training.id);
+                const assignment = assignedTrainings.find(at => at.training_id === training.id);
+                return (
+                  <div key={training.id} className={`rounded-lg border transition-colors ${isAssigned ? 'border-primary/50 bg-primary/5' : 'border-border'}`}>
+                    <div className="flex items-center gap-3 p-4">
+                      <Checkbox checked={isAssigned} onCheckedChange={(checked) => toggleTraining(training.id, !!checked)} />
+                      <span className="font-medium text-sm">{isRTL ? training.name_ar : training.name_en}</span>
+                    </div>
+                    {isAssigned && assignment && (
+                      <div className="px-4 pb-4 pt-0 space-y-3">
+                        <div className="grid gap-3 md:grid-cols-2 ps-7">
+                          <div className="space-y-1">
+                            <Label className="text-xs">{isRTL ? 'السعر (ر.س)' : 'Price (SAR)'}</Label>
+                            <div className="relative">
+                              <Input type="number" value={assignment.price} onChange={e => updateAssignment(training.id, 'price', parseFloat(e.target.value) || 0)} className="pe-12" />
+                              <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{isRTL ? 'ر.س' : 'SAR'}</span>
                             </div>
                           </div>
-                          <div className="flex shrink-0 items-center gap-1">
-                            {isAssigned && assignment ? (
-                              <>
-                                <Check className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden />
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                  onClick={() => toggleTraining(training.id, false)}
-                                  aria-label={isRTL ? 'إزالة التدريب' : 'Remove training'}
-                                >
-                                  <Minus className="h-4 w-4" />
-                                </Button>
-                              </>
-                            ) : (
+                          <div className="space-y-1"><Label className="text-xs">{isRTL ? 'المدة (ساعات)' : 'Duration (hrs)'}</Label><Input type="number" value={assignment.duration_hours} onChange={e => updateAssignment(training.id, 'duration_hours', parseFloat(e.target.value) || 0)} /></div>
+                        </div>
+                        <div className="grid gap-3 md:grid-cols-2 ps-7">
+                          <div className="space-y-1">
+                            <Label className="text-xs">{isRTL ? 'الدولة' : 'Country'}</Label>
+                            <Select
+                              value={(() => {
+                                const loc = assignment.location || '';
+                                const parts = loc.split(' - ');
+                                const countryPart = parts[0] || '';
+                                return COUNTRIES.find(c => c.en === countryPart || c.ar === countryPart)?.code || '';
+                              })()}
+                              onValueChange={v => {
+                                const country = COUNTRIES.find(c => c.code === v);
+                                if (country) {
+                                  updateAssignment(training.id, 'location', country.en);
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="h-9 text-xs"><SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} /></SelectTrigger>
+                              <SelectContent>
+                                {COUNTRIES.map(c => (
+                                  <SelectItem key={c.code} value={c.code}>{isRTL ? c.ar : c.en}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">{isRTL ? 'المدينة' : 'City'}</Label>
+                            {(() => {
+                              const loc = assignment.location || '';
+                              const parts = loc.split(' - ');
+                              const countryPart = parts[0] || '';
+                              const cityPart = parts[1] || '';
+                              const selectedCountry = COUNTRIES.find(c => c.en === countryPart || c.ar === countryPart);
+                              if (!selectedCountry) return <Input className="h-9 text-xs" disabled placeholder={isRTL ? 'اختر الدولة أولاً' : 'Select country first'} />;
+                              const cities = [...selectedCountry.cities, OTHER_OPTION];
+                              const cityInList = cities.some(c => c.en === cityPart);
+                              const isOtherCityForTraining = cityPart && !cityInList;
+                              return (
+                                <div className="space-y-1.5">
+                                  <Select
+                                    value={cityInList ? cityPart : (isOtherCityForTraining ? 'Other' : '')}
+                                    onValueChange={v => {
+                                      if (v === 'Other') {
+                                        updateAssignment(training.id, 'location', selectedCountry.en + ' - ');
+                                      } else {
+                                        updateAssignment(training.id, 'location', selectedCountry.en + ' - ' + v);
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-9 text-xs"><SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} /></SelectTrigger>
+                                    <SelectContent>
+                                      {cities.map(c => (
+                                        <SelectItem key={c.en} value={c.en}>{isRTL ? c.ar : c.en}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  {(isOtherCityForTraining || (!cityInList && cityPart === '')) && cityPart !== '' ? null : null}
+                                  {(() => {
+                                    const showManual = !cityInList && loc.includes(' - ');
+                                    if (!showManual) return null;
+                                    return <Input className="h-9 text-xs" value={cityPart} onChange={e => updateAssignment(training.id, 'location', selectedCountry.en + ' - ' + e.target.value)} placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'} />;
+                                  })()}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                        {/* Per-training Services */}
+                        <div className="ps-7 space-y-2">
+                          <Label className="text-xs">{isRTL ? 'الخدمات لهذا التدريب' : 'Services for this training'}</Label>
+                          <div className="flex gap-2">
+                            <Select
+                              value=""
+                              onValueChange={(v) => {
+                                if (!assignment.services.includes(v)) {
+                                  updateAssignment(training.id, 'services', [...assignment.services, v]);
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="flex-1 h-9 text-xs">
+                                <SelectValue placeholder={isRTL ? 'اختر من خدماتك...' : 'Pick from your services...'} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {form.services.filter(s => !assignment.services.includes(s)).map(s => (
+                                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                                ))}
+                                {form.services.filter(s => !assignment.services.includes(s)).length === 0 && (
+                                  <div className="px-2 py-1.5 text-xs text-muted-foreground">{isRTL ? 'لا توجد خدمات متاحة' : 'No services available'}</div>
+                                )}
+                              </SelectContent>
+                            </Select>
+                            <div className="flex gap-1">
+                              <Input
+                                value={trainingServiceInputs[training.id] || ''}
+                                onChange={e => setTrainingServiceInputs(prev => ({ ...prev, [training.id]: e.target.value }))}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const val = (trainingServiceInputs[training.id] || '').trim();
+                                    if (val && !assignment.services.includes(val)) {
+                                      updateAssignment(training.id, 'services', [...assignment.services, val]);
+                                      if (!form.services.includes(val)) {
+                                        setForm(f => ({ ...f, services: [...f.services, val] }));
+                                      }
+                                      setTrainingServiceInputs(prev => ({ ...prev, [training.id]: '' }));
+                                    }
+                                  }
+                                }}
+                                placeholder={isRTL ? 'أو أضف جديدة...' : 'Or add new...'}
+                                className="h-9 text-xs w-36"
+                              />
                               <Button
                                 type="button"
                                 variant="outline"
                                 size="icon"
-                                className="h-8 w-8"
-                                onClick={() => toggleTraining(training.id, true)}
-                                aria-label={isRTL ? 'إضافة تدريب' : 'Add training'}
+                                className="h-9 w-9 shrink-0"
+                                onClick={() => {
+                                  const val = (trainingServiceInputs[training.id] || '').trim();
+                                  if (val && !assignment.services.includes(val)) {
+                                    updateAssignment(training.id, 'services', [...assignment.services, val]);
+                                    if (!form.services.includes(val)) {
+                                      setForm(f => ({ ...f, services: [...f.services, val] }));
+                                    }
+                                    setTrainingServiceInputs(prev => ({ ...prev, [training.id]: '' }));
+                                  }
+                                }}
                               >
-                                <Plus className="h-4 w-4" />
+                                <Plus className="w-3.5 h-3.5" />
                               </Button>
-                            )}
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {assignment.services.map((s, i) => (
+                              <Badge key={i} variant="secondary" className="gap-1 px-2 py-1 text-xs">
+                                {s}
+                                <X className="w-3 h-3 cursor-pointer hover:text-destructive" onClick={() => updateAssignment(training.id, 'services', assignment.services.filter((_, idx) => idx !== i))} />
+                              </Badge>
+                            ))}
                           </div>
                         </div>
-
-                        <AnimatePresence initial={false}>
-                          {isAssigned && assignment ? (
-                            <motion.div
-                              key={`assign-${training.id}`}
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-                              className="overflow-hidden border-t border-border/50"
-                            >
-                              <div className="space-y-3 bg-muted/10 p-4">
-                                <div className="grid gap-3 sm:grid-cols-3">
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-start">
-                                      {isRTL ? 'سعر المدرب الأساسي (ر.س)' : 'Trainer base price (SAR)'}
-                                    </Label>
-                                    <p className="text-[10px] text-muted-foreground leading-snug">
-                                      {isRTL
-                                        ? 'ما يستحقه المدرب؛ عمولة المنصة تُضاف من إعدادات التدريبات.'
-                                        : 'Amount the trainer keeps; Bikerz commission is added in Trainings admin.'}
-                                    </p>
-                                    <div className="relative" dir="ltr">
-                                      <Input
-                                        type="number"
-                                        className="pe-12 text-start"
-                                        value={assignment.price}
-                                        onChange={(e) =>
-                                          updateAssignment(training.id, 'price', parseFloat(e.target.value) || 0)
-                                        }
-                                      />
-                                      <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                                        {isRTL ? 'ر.س' : 'SAR'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-start">{isRTL ? 'عدد الجلسات' : 'Sessions'}</Label>
-                                    <Input
-                                      type="number"
-                                      min={1}
-                                      step={1}
-                                      className="h-9 text-start"
-                                      value={assignment.sessions_count}
-                                      onChange={(e) =>
-                                        updateAssignment(
-                                          training.id,
-                                          'sessions_count',
-                                          Math.max(1, parseInt(e.target.value, 10) || 1),
-                                        )
-                                      }
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-start">
-                                      {isRTL ? 'مدة كل جلسة (ساعات)' : 'Hours / session'}
-                                    </Label>
-                                    <Input
-                                      type="number"
-                                      min={0.25}
-                                      step={0.25}
-                                      className="h-9 text-start"
-                                      value={assignment.duration_hours}
-                                      onChange={(e) =>
-                                        updateAssignment(
-                                          training.id,
-                                          'duration_hours',
-                                          Math.max(0.25, parseFloat(e.target.value) || 0.25),
-                                        )
-                                      }
-                                    />
-                                  </div>
-                                </div>
-
-                                {(() => {
-                                  const { countryCode, city } = parseAssignmentLocation(assignment.location);
-                                  const country = COUNTRIES.find((c) => c.code === countryCode);
-                                  const cities = country ? [...country.cities, OTHER_OPTION] : [];
-                                  const cityInList = !!(country && cities.some((c) => c.en === city));
-                                  const locTrim = assignment.location.trim();
-                                  const openEnded = !!(country && locTrim === `${country.en} -`.trim());
-                                  const showManualCity = !!(country && !cityInList && (city !== '' || openEnded));
-                                  const citySelectValue = cityInList ? city : openEnded || city ? 'Other' : '';
-
-                                  return (
-                                    <div dir={locationFieldDir} className="grid gap-3 sm:grid-cols-2">
-                                      <div className="min-w-0 space-y-1">
-                                        <Label className="block text-xs text-start">{isRTL ? 'الدولة' : 'Country'}</Label>
-                                        <Select
-                                          dir={locationFieldDir}
-                                          value={countryCode}
-                                          onValueChange={(v) => setAssignmentCountry(training.id, v)}
-                                        >
-                                          <SelectTrigger dir={locationFieldDir} className="h-9 text-xs">
-                                            <SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} />
-                                          </SelectTrigger>
-                                          <SelectContent dir={locationFieldDir}>
-                                            {COUNTRIES.map((c) => (
-                                              <SelectItem key={c.code} value={c.code}>
-                                                {isRTL ? c.ar : c.en}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
-                                      <div className="min-w-0 space-y-1">
-                                        <Label className="block text-xs text-start">{isRTL ? 'المدينة' : 'City'}</Label>
-                                        {!country ? (
-                                          <p className="text-xs text-muted-foreground text-start">
-                                            {isRTL ? 'اختر الدولة أولاً' : 'Select a country first'}
-                                          </p>
-                                        ) : (
-                                          <div className="space-y-2">
-                                            <Select
-                                              dir={locationFieldDir}
-                                              value={citySelectValue}
-                                              onValueChange={(v) => setAssignmentCityFromSelect(training.id, v)}
-                                            >
-                                              <SelectTrigger dir={locationFieldDir} className="h-9 text-xs">
-                                                <SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} />
-                                              </SelectTrigger>
-                                              <SelectContent dir={locationFieldDir}>
-                                                {cities.map((c) => (
-                                                  <SelectItem key={c.en} value={c.en}>
-                                                    {isRTL ? c.ar : c.en}
-                                                  </SelectItem>
-                                                ))}
-                                              </SelectContent>
-                                            </Select>
-                                            {showManualCity && (
-                                              <Input
-                                                dir={locationFieldDir}
-                                                className="h-9 text-xs text-start"
-                                                value={city}
-                                                onChange={(e) => setAssignmentCityManual(training.id, e.target.value)}
-                                                placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
-                                              />
-                                            )}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })()}
-
-                                <div className="space-y-2">
-                                  <Label className="text-xs text-start">{isRTL ? 'الخدمات' : 'Services'}</Label>
-                                  {form.services.length === 0 ? (
-                                    <p className="text-xs text-muted-foreground text-start">
-                                      {isRTL ? 'أضف خدمات للمدرب في القسم أعلاه' : 'Add trainer services in the section above.'}
-                                    </p>
-                                  ) : (
-                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                      {form.services.map((svc) => (
-                                        <label
-                                          key={svc}
-                                          className="flex cursor-pointer items-center gap-2 rounded-md border border-border/60 bg-background/60 px-2 py-1.5 text-xs"
-                                        >
-                                          <Checkbox
-                                            checked={assignment.services.includes(svc)}
-                                            onCheckedChange={(checked) => {
-                                              const next =
-                                                checked === true
-                                                  ? [...assignment.services, svc].filter((x, i, a) => a.indexOf(x) === i)
-                                                  : assignment.services.filter((s) => s !== svc);
-                                              updateAssignment(training.id, 'services', next);
-                                            }}
-                                          />
-                                          <span className="truncate text-start">{svc}</span>
-                                        </label>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </motion.div>
-                          ) : null}
-                        </AnimatePresence>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    )}
+                  </div>
+                );
+              })}
+              {!allTrainings?.length && <p className="text-xs text-muted-foreground text-center py-4">{isRTL ? 'لا توجد تدريبات متاحة' : 'No trainings available'}</p>}
             </CardContent>
           </Card>
 
@@ -1784,98 +854,119 @@ const AdminTrainers: React.FC = () => {
                 <Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 me-2" />{isRTL ? 'إضافة مدرب' : 'Add Trainer'}</Button>
               </div>
             ) : (
-              <div className="overflow-x-auto" dir={isRTL ? 'rtl' : 'ltr'}>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="w-[52px]">{isRTL ? 'الصورة / Photo' : 'Photo / الصورة'}</TableHead>
-                      <TableHead>{isRTL ? 'الاسم / Name' : 'Name / الاسم'}</TableHead>
-                      <TableHead>{isRTL ? 'الموقع / Location' : 'Location / الموقع'}</TableHead>
-                      <TableHead>{isRTL ? 'الخبرة / Exp' : 'Exp / الخبرة'}</TableHead>
-                      <TableHead>{isRTL ? 'التقييم / Rating' : 'Rating / التقييم'}</TableHead>
-                      <TableHead>{isRTL ? 'الطلاب / Students' : 'Students / الطلاب'}</TableHead>
-                      <TableHead>{isRTL ? 'التدريبات / Trainings' : 'Trainings / التدريبات'}</TableHead>
-                      <TableHead>{isRTL ? 'الأرباح / Revenue' : 'Revenue / الأرباح'}</TableHead>
-                      <TableHead>{isRTL ? 'الحالة / Status' : 'Status / الحالة'}</TableHead>
-                      <TableHead className="min-w-[120px]">{isRTL ? 'الإجراءات / Actions' : 'Actions / الإجراءات'}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {trainers?.map((t) => {
-                      const stats = reviewStats?.[t.id];
-                      const ratingText = stats ? `★ ${stats.avg.toFixed(1)}` : '★ —';
-                      const rev = revenueByTrainer[t.id] ?? 0;
-                      const revLabel = `${rev.toFixed(0)} ${isRTL ? 'ر.س' : 'SAR'}`;
-                      const initial = (isRTL ? t.name_ar : t.name_en || t.name_ar || '?').trim().charAt(0) || '?';
-                      return (
-                        <TableRow key={t.id}>
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    
+                    <TableHead>{isRTL ? 'المدرب' : 'Trainer'}</TableHead>
+                    <TableHead>{isRTL ? 'الموقع' : 'Location'}</TableHead>
+                    <TableHead>{isRTL ? 'الدراجة' : 'Bike'}</TableHead>
+                    <TableHead>{isRTL ? 'الخبرة' : 'Experience'}</TableHead>
+                    <TableHead>{isRTL ? 'الطلاب' : 'Students'}</TableHead>
+                    <TableHead>{isRTL ? 'التقييم' : 'Rating'}</TableHead>
+                    <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
+                    <TableHead className="w-[140px]">{isRTL ? 'إجراءات' : 'Actions'}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {trainers?.map(t => {
+                    const stats = reviewStats?.[t.id];
+                    return (
+                      <React.Fragment key={t.id}>
+                        <TableRow className="group">
                           <TableCell>
-                            <Avatar className="h-10 w-10 border border-border">
-                              <AvatarImage src={t.photo_url || ''} className="object-cover" />
-                              <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">{initial}</AvatarFallback>
-                            </Avatar>
-                          </TableCell>
-                          <TableCell>
-                            <div className="min-w-0 max-w-[200px]">
-                              <div className="font-semibold text-sm truncate">{isRTL ? t.name_ar : t.name_en}</div>
-                              <div className="text-xs text-muted-foreground truncate">{isRTL ? t.name_en : t.name_ar}</div>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-9 w-9 border border-border">
+                                <AvatarImage src={t.photo_url || ''} />
+                                <AvatarFallback className="text-xs bg-primary/10 text-primary">{t.name_en.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-medium text-sm">{isRTL ? t.name_ar : t.name_en}</div>
+                                <div className="text-xs text-muted-foreground">{isRTL ? t.name_en : t.name_ar}</div>
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-1 text-sm max-w-[180px]">
+                            <div className="flex items-center gap-1 text-sm">
                               <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                              <span className="truncate" title={trainerTableLocationDisplay(t, isRTL)}>
-                                {trainerTableLocationDisplay(t, isRTL)}
-                              </span>
+                              <span className="truncate max-w-[120px]">{t.city}, {t.country}</span>
                             </div>
                           </TableCell>
-                          <TableCell className="whitespace-nowrap text-sm">
-                            {t.years_of_experience} {isRTL ? 'سنة' : 'yrs'}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap text-sm tabular-nums">{ratingText}</TableCell>
-                          <TableCell className="tabular-nums text-sm">{studentCounts?.[t.id] ?? 0}</TableCell>
-                          <TableCell className="tabular-nums text-sm">{trainingCountByTrainer[t.id] ?? 0}</TableCell>
-                          <TableCell className="whitespace-nowrap text-sm font-medium text-emerald-600 tabular-nums">{revLabel}</TableCell>
                           <TableCell>
-                            {t.status === 'active' ? (
-                              <Badge className="bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500/20 text-xs">
-                                {isRTL ? 'نشط' : 'Active'}
-                              </Badge>
+                            <div className="flex items-center gap-1 text-sm">
+                              <Bike className="w-3.5 h-3.5 text-muted-foreground" />
+                              {t.bike_type}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="bg-secondary/30 text-xs">
+                              {t.years_of_experience} {isRTL ? 'سنة' : 'yrs'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="text-xs">
+                              <Users className="w-3 h-3 me-1" />
+                              {studentCounts?.[t.id] || 0}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {stats ? (
+                              <div className="flex items-center gap-1">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(stats.avg) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'}`} />
+                                ))}
+                                <span className="text-xs text-muted-foreground ms-1">({stats.count})</span>
+                              </div>
                             ) : (
-                              <Badge variant="outline" className="text-muted-foreground text-xs">
-                                {isRTL ? 'غير نشط' : 'Inactive'}
-                              </Badge>
+                              <span className="text-xs text-muted-foreground">—</span>
                             )}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 shrink-0"
-                                title={isRTL ? 'عرض التفاصيل' : 'View details'}
-                                onClick={() => navigate(`/admin/trainers/${t.id}`)}
-                              >
+                            {t.status === 'active' ? (
+                              <Badge className="bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500/20 text-xs">{isRTL ? 'نشط' : 'Active'}</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-muted-foreground text-xs">{isRTL ? 'غير نشط' : 'Inactive'}</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" title={isRTL ? 'عرض الملف' : 'View Profile'} onClick={() => navigate(`/admin/trainers/${t.id}`)}>
                                 <Eye className="w-3.5 h-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" title={isRTL ? 'تعديل' : 'Edit'} onClick={() => openEdit(t)}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" title={isRTL ? 'إضافة طالب' : 'Add Student'} onClick={() => setAddStudentTrainerId(t.id)}>
+                                <Plus className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" title={isRTL ? 'إضافة تقييم' : 'Add Review'} onClick={() => setAddReviewTrainerId(t.id)}>
+                                <Star className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}>
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" title={isRTL ? 'حذف' : 'Delete'} onClick={() => setDeleteId(t.id)}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteId(t.id)}>
                                 <Trash2 className="w-3.5 h-3.5 text-destructive" />
                               </Button>
                             </div>
                           </TableCell>
                         </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+                      </React.Fragment>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Add Student Dialog */}
+      {addStudentTrainerId && (
+        <AddStudentDialog open={!!addStudentTrainerId} onOpenChange={() => setAddStudentTrainerId(null)} trainerId={addStudentTrainerId} isRTL={isRTL} />
+      )}
+
+      {/* Add Review Dialog */}
+      {addReviewTrainerId && (
+        <AddReviewDialog open={!!addReviewTrainerId} onOpenChange={() => setAddReviewTrainerId(null)} trainerId={addReviewTrainerId} isRTL={isRTL} />
+      )}
 
       {/* Delete Confirm */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

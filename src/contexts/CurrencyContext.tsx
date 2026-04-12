@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { clampTrainingVatPercent } from "@/lib/trainingPlatformMarkup";
 
 export type CurrencyCode =
   | "SAR"
@@ -58,37 +57,6 @@ const CURRENCY_META: Record<CurrencyCode, CurrencyMeta> = {
   ILS: { symbol: "ILS", symbolAr: "₪" },
   USD: { symbol: "USD", symbolAr: "$" },
   GBP: { symbol: "GBP", symbolAr: "£" },
-};
-
-/** Placeholder course id for `getCoursePriceInfo` when pricing SAR training offers like video courses */
-export const TRAINING_PRICE_PLACEHOLDER_COURSE_ID = "00000000-0000-4000-8000-000000000001";
-
-/** Arabic full currency name after amount (value first, then name) */
-const CURRENCY_FULL_NAME_AR: Record<CurrencyCode, string> = {
-  SAR: "ريال سعودي",
-  AED: "درهم إماراتي",
-  KWD: "دينار كويتي",
-  BHD: "دينار بحريني",
-  QAR: "ريال قطري",
-  OMR: "ريال عماني",
-  JOD: "دينار أردني",
-  EGP: "جنيه مصري",
-  IQD: "دينار عراقي",
-  SYP: "ليرة سورية",
-  LBP: "ليرة لبنانية",
-  YER: "ريال يمني",
-  LYD: "دينار ليبي",
-  TND: "دينار تونسي",
-  DZD: "دينار جزائري",
-  MAD: "درهم مغربي",
-  SDG: "جنيه سوداني",
-  SOS: "شلن صومالي",
-  MRU: "أوقية موريتانية",
-  KMF: "فرنك قمري",
-  DJF: "فرنك جيبوتي",
-  ILS: "شيكل إسرائيلي",
-  USD: "دولار أمريكي",
-  GBP: "جنيه إسترليني",
 };
 
 const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
@@ -196,7 +164,7 @@ interface CurrencyContextType {
     courseId: string,
     sarPrice: number,
     courseDiscountPct?: number,
-    opts?: { vatPercent?: number | null },
+    _unused?: any,
   ) => CoursePriceInfo;
   /** Get the currency code for a course price (may differ from user currency if country price exists) */
   getCourseCurrency: (courseId: string) => CurrencyCode;
@@ -224,10 +192,6 @@ interface CurrencyContextType {
   hasCountryPrice: (courseId: string) => boolean;
   /** Get the display symbol for a given CurrencyCode based on locale */
   getCurrencySymbol: (code: CurrencyCode, isRTL?: boolean) => string;
-  /** Formatted as "{amount} {currency name}" using user locale; SAR → "… ريال سعودي" in Arabic, "… SAR" in English */
-  formatPriceValueThenCurrencyName: (info: CoursePriceInfo, isRTL?: boolean) => string;
-  /** Training offer: pass SAR subtotal after platform markup (before VAT); VAT% from admin when provided */
-  formatTrainingOfferPrice: (sarPrice: number, isRTL?: boolean, opts?: { vatPercent?: number | null }) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -481,7 +445,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   /** Get full price info for display — uses country pricing when available */
   const getCoursePriceInfo = useCallback(
-    (courseId: string, sarPrice: number, courseDiscountPct = 0, opts?: { vatPercent?: number | null }): CoursePriceInfo => {
+    (courseId: string, sarPrice: number, courseDiscountPct = 0, _unused?: any): CoursePriceInfo => {
       const entry = getCountryPriceEntry(courseId);
       if (entry) {
         const ccy = currencyCode;
@@ -497,24 +461,10 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           vatPct: entryVat,
         };
       }
-      const trainingVat =
-        courseId === TRAINING_PRICE_PLACEHOLDER_COURSE_ID && opts?.vatPercent != null && Number.isFinite(Number(opts.vatPercent))
-          ? clampTrainingVatPercent(opts.vatPercent)
-          : null;
-      /** Training subtotal after markup is 2dp SAR; VAT matches Tap `ceil(subtotal * (1+vat/100))` without an extra `ceil` on subtotal. */
-      const useTrainingSubtotalPrecision =
-        courseId === TRAINING_PRICE_PLACEHOLDER_COURSE_ID && trainingVat != null;
-      const convertedBase = useTrainingSubtotalPrecision
-        ? currencyCode === "SAR"
-          ? Math.max(0, Math.round(Number(sarPrice) * 100) / 100)
-          : Math.max(0, Math.round(Number(sarPrice) * rate * 100) / 100)
-        : currencyCode === "SAR"
-          ? Math.ceil(sarPrice)
-          : Math.ceil(sarPrice * rate);
+      const convertedBase = currencyCode === "SAR" ? Math.ceil(sarPrice) : Math.ceil(sarPrice * rate);
       const dPct = courseDiscountPct > 0 ? courseDiscountPct : 0;
       const finalBeforeVat = dPct > 0 ? Math.ceil(convertedBase * (1 - dPct / 100)) : convertedBase;
-      const vatForFallback =
-        trainingVat != null ? trainingVat : currencyCode === "SAR" ? VAT_RATE : 0;
+      const vatForFallback = currencyCode === "SAR" ? VAT_RATE : 0;
       const finalPrice = vatForFallback > 0 ? Math.ceil(finalBeforeVat * (1 + vatForFallback / 100)) : finalBeforeVat;
       return {
         originalPrice: convertedBase,
@@ -609,23 +559,6 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return isRTL ? m.symbolAr : m.symbol;
   }, []);
 
-  const formatPriceValueThenCurrencyName = useCallback((info: CoursePriceInfo, isRTL = false): string => {
-    const n = Math.round(Number(info.finalPrice));
-    const formatted = n.toLocaleString(isRTL ? "ar-SA" : "en-US");
-    const currencyName = isRTL
-      ? CURRENCY_FULL_NAME_AR[info.currency] ?? CURRENCY_META[info.currency]?.symbolAr ?? info.currency
-      : info.currency;
-    return `${formatted} ${currencyName}`;
-  }, []);
-
-  const formatTrainingOfferPrice = useCallback(
-    (sarPrice: number, isRTL = false, opts?: { vatPercent?: number | null }): string => {
-      const info = getCoursePriceInfo(TRAINING_PRICE_PLACEHOLDER_COURSE_ID, Number(sarPrice), 0, opts);
-      return formatPriceValueThenCurrencyName(info, isRTL);
-    },
-    [getCoursePriceInfo, formatPriceValueThenCurrencyName],
-  );
-
   return (
     <CurrencyContext.Provider
       value={{
@@ -652,8 +585,6 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         exchangeRate: rate,
         hasCountryPrice,
         getCurrencySymbol,
-        formatPriceValueThenCurrencyName,
-        formatTrainingOfferPrice,
       }}
     >
       {children}

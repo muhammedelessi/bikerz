@@ -1725,7 +1725,6 @@ export type Database = {
           payment_method: string | null
           status: string
           tap_response: Json | null
-          training_id: string | null
           updated_at: string
           user_id: string
           webhook_verified: boolean | null
@@ -1749,7 +1748,6 @@ export type Database = {
           payment_method?: string | null
           status?: string
           tap_response?: Json | null
-          training_id?: string | null
           updated_at?: string
           user_id: string
           webhook_verified?: boolean | null
@@ -1773,7 +1771,6 @@ export type Database = {
           payment_method?: string | null
           status?: string
           tap_response?: Json | null
-          training_id?: string | null
           updated_at?: string
           user_id?: string
           webhook_verified?: boolean | null
@@ -1784,13 +1781,6 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tap_charges_training_id_fkey"
-            columns: ["training_id"]
-            isOneToOne: false
-            referencedRelation: "trainings"
             referencedColumns: ["id"]
           },
         ]
@@ -1921,44 +1911,6 @@ export type Database = {
           },
         ]
       }
-      trainer_availability: {
-        Row: {
-          created_at: string
-          day_of_week: number
-          end_time: string
-          id: string
-          is_available: boolean
-          start_time: string
-          trainer_id: string
-        }
-        Insert: {
-          created_at?: string
-          day_of_week: number
-          end_time: string
-          id?: string
-          is_available?: boolean
-          start_time: string
-          trainer_id: string
-        }
-        Update: {
-          created_at?: string
-          day_of_week?: number
-          end_time?: string
-          id?: string
-          is_available?: boolean
-          start_time?: string
-          trainer_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "trainer_availability_trainer_id_fkey"
-            columns: ["trainer_id"]
-            isOneToOne: false
-            referencedRelation: "trainers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       trainer_courses: {
         Row: {
           available_schedule: Json | null
@@ -1968,7 +1920,6 @@ export type Database = {
           location: string
           price: number
           services: string[] | null
-          sessions_count: number
           trainer_id: string
           training_id: string
         }
@@ -1980,7 +1931,6 @@ export type Database = {
           location?: string
           price?: number
           services?: string[] | null
-          sessions_count?: number
           trainer_id: string
           training_id: string
         }
@@ -1992,7 +1942,6 @@ export type Database = {
           location?: string
           price?: number
           services?: string[] | null
-          sessions_count?: number
           trainer_id?: string
           training_id?: string
         }
@@ -2060,12 +2009,6 @@ export type Database = {
       }
       trainers: {
         Row: {
-          album_photos: string[] | null
-          availability_blocked_dates: string[]
-          availability_settings: Json
-          availability_special_hours: Json
-          bike_entries: Json | null
-          bike_photos: string[] | null
           bike_type: string
           bio_ar: string
           bio_en: string
@@ -2073,7 +2016,6 @@ export type Database = {
           country: string
           created_at: string
           id: string
-          language_levels: Json
           license_type: string
           motorbike_brand: string
           name_ar: string
@@ -2085,12 +2027,6 @@ export type Database = {
           years_of_experience: number
         }
         Insert: {
-          album_photos?: string[] | null
-          availability_blocked_dates?: string[]
-          availability_settings?: Json
-          availability_special_hours?: Json
-          bike_entries?: Json | null
-          bike_photos?: string[] | null
           bike_type?: string
           bio_ar?: string
           bio_en?: string
@@ -2098,7 +2034,6 @@ export type Database = {
           country?: string
           created_at?: string
           id?: string
-          language_levels?: Json
           license_type?: string
           motorbike_brand?: string
           name_ar?: string
@@ -2110,12 +2045,6 @@ export type Database = {
           years_of_experience?: number
         }
         Update: {
-          album_photos?: string[] | null
-          availability_blocked_dates?: string[]
-          availability_settings?: Json
-          availability_special_hours?: Json
-          bike_entries?: Json | null
-          bike_photos?: string[] | null
           bike_type?: string
           bio_ar?: string
           bio_en?: string
@@ -2123,7 +2052,6 @@ export type Database = {
           country?: string
           created_at?: string
           id?: string
-          language_levels?: Json
           license_type?: string
           motorbike_brand?: string
           name_ar?: string
@@ -2135,94 +2063,6 @@ export type Database = {
           years_of_experience?: number
         }
         Relationships: []
-      }
-      training_bookings: {
-        Row: {
-          amount: number
-          booking_date: string | null
-          created_at: string | null
-          currency: string
-          email: string
-          end_time: string | null
-          full_name: string
-          id: string
-          notes: string | null
-          payment_id: string | null
-          payment_status: string
-          phone: string
-          preferred_date: string | null
-          start_time: string | null
-          status: string
-          trainer_course_id: string | null
-          trainer_id: string
-          training_id: string
-          user_id: string
-        }
-        Insert: {
-          amount?: number
-          booking_date?: string | null
-          created_at?: string | null
-          currency?: string
-          email: string
-          end_time?: string | null
-          full_name: string
-          id?: string
-          notes?: string | null
-          payment_id?: string | null
-          payment_status?: string
-          phone: string
-          preferred_date?: string | null
-          start_time?: string | null
-          status?: string
-          trainer_course_id?: string | null
-          trainer_id: string
-          training_id: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          booking_date?: string | null
-          created_at?: string | null
-          currency?: string
-          email?: string
-          end_time?: string | null
-          full_name?: string
-          id?: string
-          notes?: string | null
-          payment_id?: string | null
-          payment_status?: string
-          phone?: string
-          preferred_date?: string | null
-          start_time?: string | null
-          status?: string
-          trainer_course_id?: string | null
-          trainer_id?: string
-          training_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "training_bookings_trainer_course_id_fkey"
-            columns: ["trainer_course_id"]
-            isOneToOne: false
-            referencedRelation: "trainer_courses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "training_bookings_trainer_id_fkey"
-            columns: ["trainer_id"]
-            isOneToOne: false
-            referencedRelation: "trainers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "training_bookings_training_id_fkey"
-            columns: ["training_id"]
-            isOneToOne: false
-            referencedRelation: "trainings"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       training_students: {
         Row: {
@@ -2273,8 +2113,6 @@ export type Database = {
         Row: {
           background_image: string | null
           created_at: string
-          default_session_duration_hours: number
-          default_sessions_count: number
           description_ar: string
           description_en: string
           id: string
@@ -2287,8 +2125,6 @@ export type Database = {
         Insert: {
           background_image?: string | null
           created_at?: string
-          default_session_duration_hours?: number
-          default_sessions_count?: number
           description_ar?: string
           description_en?: string
           id?: string
@@ -2301,8 +2137,6 @@ export type Database = {
         Update: {
           background_image?: string | null
           created_at?: string
-          default_session_duration_hours?: number
-          default_sessions_count?: number
           description_ar?: string
           description_en?: string
           id?: string
@@ -3315,14 +3149,6 @@ export type Database = {
       }
       get_auth_providers: { Args: { p_email: string }; Returns: Json }
       get_email_by_phone: { Args: { p_phone: string }; Returns: string }
-      get_trainer_booked_slots: {
-        Args: { p_end_date: string; p_start_date: string; p_trainer_id: string }
-        Returns: {
-          booking_date: string
-          start_time: string
-          status: string
-        }[]
-      }
       get_user_course_statuses: {
         Args: { p_user_id: string }
         Returns: {

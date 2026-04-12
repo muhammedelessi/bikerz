@@ -204,11 +204,7 @@ const TrainingProfileDialog: React.FC<TrainingProfileDialogProps> = ({ training,
                                 <div className="flex flex-wrap gap-2 mt-1">
                                   <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{trainer.city}, {trainer.country}</span>
                                   <span className="text-xs text-muted-foreground flex items-center gap-1"><DollarSign className="w-3 h-3" />{tc.price} {isRTL ? 'ر.س' : 'SAR'}</span>
-                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    {Math.max(1, Number(tc.sessions_count ?? 1))}×{isRTL ? ' جلسات ' : ' sess '}
-                                    {tc.duration_hours} {isRTL ? 'س/جلسة' : 'h/sess'}
-                                  </span>
+                                  <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" />{tc.duration_hours} {isRTL ? 'ساعات' : 'hrs'}</span>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
