@@ -18,7 +18,7 @@ import { Json } from '@/integrations/supabase/types';
 import confetti from 'canvas-confetti';
 import { useGamification } from '@/hooks/useGamification';
 
-type QuestionType = 'single_choice' | 'multiple_choice' | 'dropdown';
+type QuestionType = 'single_choice' | 'multiple_choice' | 'dropdown' | 'yes_no';
 
 interface QuestionOption {
   id: string;
@@ -375,7 +375,34 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
                 </div>
 
                 {/* Options */}
-                {question.data.question_type === 'dropdown' ? (
+                {question.data.question_type === 'yes_no' ? (
+                  <div className="grid grid-cols-2 gap-3 ps-11">
+                    {[
+                      { value: 'yes', labelAr: 'نعم', labelEn: 'Yes', icon: '✓' },
+                      { value: 'no', labelAr: 'لا', labelEn: 'No', icon: '✗' },
+                    ].map(opt => {
+                      const isSelected = currentAnswers.includes(opt.value);
+                      const optClass = !isSubmitted || !gradedResults[question.id]
+                        ? (isSelected ? 'border-primary bg-primary/10 text-primary scale-[1.02]' : 'border-border hover:border-primary/50 text-foreground')
+                        : gradedResults[question.id].isCorrect && isSelected
+                        ? 'border-green-500 bg-green-500/10 text-green-600 scale-[1.02]'
+                        : !gradedResults[question.id].isCorrect && isSelected
+                        ? 'border-destructive bg-destructive/10 text-destructive scale-[1.02]'
+                        : 'border-border opacity-50';
+                      return (
+                        <button
+                          key={opt.value}
+                          onClick={() => handleSelectAnswer(question.id, opt.value, question.data.question_type)}
+                          disabled={isSubmitted}
+                          className={`flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 text-lg font-bold transition-all ${optClass} ${!isSubmitted ? 'cursor-pointer' : 'cursor-default'}`}
+                        >
+                          <span className="text-2xl">{opt.icon}</span>
+                          <span>{isRTL ? opt.labelAr : opt.labelEn}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : question.data.question_type === 'dropdown' ? (
                   <Select
                     value={currentAnswers[0] || ''}
                     onValueChange={(value) => handleSelectAnswer(question.id, value, question.data.question_type)}
