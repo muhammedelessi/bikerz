@@ -35,12 +35,13 @@ import {
   ListChecks,
   ChevronDownSquare,
   CircleDot,
+  Gift,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
 
 // Question types
-type QuestionType = 'single_choice' | 'multiple_choice' | 'dropdown' | 'yes_no';
+type QuestionType = 'single_choice' | 'multiple_choice' | 'dropdown' | 'yes_no' | 'informational';
 
 interface QuestionOption {
   id: string;
@@ -343,7 +344,8 @@ const LessonQuizManager: React.FC<LessonQuizManagerProps> = ({
       toast.error(isRTL ? 'عنوان السؤال مطلوب' : 'Question title is required');
       return;
     }
-    if (questionForm.correct_answers.length === 0) {
+    // Informational questions don't need correct answers
+    if (questionForm.question_type !== 'informational' && questionForm.correct_answers.length === 0) {
       toast.error(isRTL ? 'الإجابة الصحيحة مطلوبة' : 'Correct answer is required');
       return;
     }
@@ -407,6 +409,8 @@ const LessonQuizManager: React.FC<LessonQuizManagerProps> = ({
         return <ChevronDownSquare className="w-4 h-4" />;
       case 'yes_no':
         return <CheckCircle2 className="w-4 h-4" />;
+      case 'informational':
+        return <Gift className="w-4 h-4" />;
     }
   };
 
@@ -420,6 +424,8 @@ const LessonQuizManager: React.FC<LessonQuizManagerProps> = ({
         return isRTL ? 'قائمة منسدلة' : 'Dropdown';
       case 'yes_no':
         return isRTL ? 'نعم / لا' : 'Yes / No';
+      case 'informational':
+        return isRTL ? 'معلوماتي' : 'Informational';
     }
   };
 
@@ -510,10 +516,17 @@ const LessonQuizManager: React.FC<LessonQuizManagerProps> = ({
                         {isRTL ? 'مسودة' : 'Draft'}
                       </Badge>
                     )}
-                    <Badge variant="outline" className="text-xs">
-                      <CheckCircle2 className="w-3 h-3 me-1" />
-                      {question.data.correct_answers.join(', ').toUpperCase()}
-                    </Badge>
+                    {question.data.question_type === 'informational' ? (
+                      <Badge variant="outline" className="text-xs text-primary">
+                        <Gift className="w-3 h-3 me-1" />
+                        {isRTL ? 'نقاط مكافأة' : 'Bonus'}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">
+                        <CheckCircle2 className="w-3 h-3 me-1" />
+                        {question.data.correct_answers.join(', ').toUpperCase()}
+                      </Badge>
+                    )}
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
                         variant="ghost"
@@ -646,6 +659,12 @@ const LessonQuizManager: React.FC<LessonQuizManagerProps> = ({
                         {isRTL ? 'نعم / لا' : 'Yes / No'}
                       </div>
                     </SelectItem>
+                    <SelectItem value="informational">
+                      <div className="flex items-center gap-2">
+                        <Gift className="w-4 h-4" />
+                        {isRTL ? 'معلوماتي' : 'Informational'}
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -699,31 +718,45 @@ const LessonQuizManager: React.FC<LessonQuizManagerProps> = ({
                   {isRTL ? 'إضافة خيار' : 'Add Option'}
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {questionForm.question_type === 'multiple_choice'
-                  ? (isRTL ? 'حدد جميع الإجابات الصحيحة' : 'Select all correct answers')
-                  : (isRTL ? 'حدد الإجابة الصحيحة' : 'Select the correct answer')}
-              </p>
+              {questionForm.question_type === 'informational' ? (
+                <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm text-primary">
+                  <Gift className="w-4 h-4 inline me-1" />
+                  {isRTL ? 'جميع الإجابات صحيحة — النقاط تُمنح عند الإجابة فقط' : 'All answers are correct — points awarded just for answering'}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  {questionForm.question_type === 'multiple_choice'
+                    ? (isRTL ? 'حدد جميع الإجابات الصحيحة' : 'Select all correct answers')
+                    : (isRTL ? 'حدد الإجابة الصحيحة' : 'Select the correct answer')}
+                </p>
+              )}
               {questionForm.options.map((option, index) => (
                 <div key={option.id} className="flex items-center gap-2">
-                  <div 
-                    className={`
-                      w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer transition-colors
-                      ${questionForm.correct_answers.includes(option.id)
-                        ? 'bg-green-500 text-white'
-                        : 'bg-muted hover:bg-muted/80'}
-                    `}
-                    onClick={() => toggleCorrectAnswer(option.id)}
-                  >
-                    {questionForm.question_type === 'multiple_choice' ? (
-                      <Checkbox 
-                        checked={questionForm.correct_answers.includes(option.id)}
-                        className="pointer-events-none"
-                      />
-                    ) : (
+                  {questionForm.question_type !== 'informational' && (
+                    <div 
+                      className={`
+                        w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer transition-colors
+                        ${questionForm.correct_answers.includes(option.id)
+                          ? 'bg-green-500 text-white'
+                          : 'bg-muted hover:bg-muted/80'}
+                      `}
+                      onClick={() => toggleCorrectAnswer(option.id)}
+                    >
+                      {questionForm.question_type === 'multiple_choice' ? (
+                        <Checkbox 
+                          checked={questionForm.correct_answers.includes(option.id)}
+                          className="pointer-events-none"
+                        />
+                      ) : (
+                        <span className="font-bold">{option.id.toUpperCase()}</span>
+                      )}
+                    </div>
+                  )}
+                  {questionForm.question_type === 'informational' && (
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10 text-primary">
                       <span className="font-bold">{option.id.toUpperCase()}</span>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   <Input
                     value={option.text}
                     onChange={(e) => updateOption(index, 'text', e.target.value)}
