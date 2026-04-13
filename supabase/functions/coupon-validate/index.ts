@@ -154,7 +154,8 @@ function res(status: number, body: Record<string, unknown>) {
 }
 
 async function logAttempt(
-  client: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  client: any,
   couponId: string | null,
   userId: string,
   courseId: string | null,

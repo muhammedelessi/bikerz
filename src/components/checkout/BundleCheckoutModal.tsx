@@ -124,6 +124,7 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
       currency: 'SAR',
       amount: calc.finalPrice,
       currencyCodeForPricing: currencyCode,
+      exchangeRatePerSar: exchangeRate > 0 ? exchangeRate : undefined,
       customerName: form.fullName,
       customerEmail: form.email,
       customerPhone: form.fullPhone,

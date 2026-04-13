@@ -221,7 +221,8 @@ function mapToGHLOrderStatus(status: string): string {
 }
 
 async function upsertAndSendGHLWebhook(
-  adminClient: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  adminClient: any,
   charge: { user_id: string; course_id: string | null; amount: number; metadata: unknown },
   verifiedCharge: Record<string, unknown>,
   status: string
@@ -245,7 +246,7 @@ async function upsertAndSendGHLWebhook(
         .select("title")
         .eq("id", charge.course_id)
         .maybeSingle();
-      courseName = course?.title || "";
+      courseName = course?.title ?? "";
     }
 
     const ghlOrderStatus = mapToGHLOrderStatus(status);
@@ -259,10 +260,10 @@ async function upsertAndSendGHLWebhook(
         p_course_id: charge.course_id,
         p_course_name: courseName,
         p_order_status: ghlOrderStatus,
-      });
+      } as any);
       const row = Array.isArray(upsertResult) ? upsertResult[0] : upsertResult;
-      coursesJson = row?.courses_json || "[]";
-      totalPurchased = row?.total_purchased ?? 0;
+      coursesJson = (row as any)?.courses_json || "[]";
+      totalPurchased = (row as any)?.total_purchased ?? 0;
     }
 
     const address = [profile?.city, profile?.country, profile?.postal_code].filter(Boolean).join(", ");

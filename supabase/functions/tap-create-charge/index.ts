@@ -19,7 +19,8 @@ const corsHeaders = {
 const PAYMENT_TIMEOUT = 30000; // 30s timeout for Tap API
 
 async function getTrainingPlatformMarkupPercent(
-  adminClient: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  adminClient: any,
 ): Promise<number> {
   const { data } = await adminClient
     .from("admin_settings")
@@ -38,7 +39,8 @@ async function getTrainingPlatformMarkupPercent(
 
 /** Saudi VAT % on practical training charges (admin_settings; default 0% until configured). */
 async function getTrainingPlatformVatPercent(
-  adminClient: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  adminClient: any,
 ): Promise<number> {
   const { data } = await adminClient
     .from("admin_settings")
@@ -939,7 +941,8 @@ function resolveTapPhone(
 }
 
 async function enrollUser(
-  client: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  client: any,
   userId: string,
   courseId: string
 ) {
@@ -957,7 +960,8 @@ type BundleCtx = {
   b: Record<string, unknown>;
   userId: string;
   userEmail: string;
-  adminClient: ReturnType<typeof createClient>;
+  // deno-lint-ignore no-explicit-any
+  adminClient: any;
   profileData: Record<string, unknown>;
   corsHeaders: Record<string, string>;
   tapSecretKey: string;
