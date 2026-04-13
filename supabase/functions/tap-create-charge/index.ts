@@ -643,14 +643,14 @@ Deno.serve(async (req) => {
         email: customer_email || userEmail,
         phone: phoneForTap,
       },
-      metadata: {
+      metadata: buildTapMetadata({
         user_id: userId,
         course_id: dbCourseId,
         training_id: isTrainingBooking ? dbTrainingId : null,
         trainer_course_id: isTrainingBooking ? trainerCourseIdTrim : null,
         internal_id: chargeRecord.id,
         requested_currency: requestedCurrency,
-      },
+      }),
       source: {
         id: token_id || "src_all",
       },
@@ -833,6 +833,32 @@ function buildTapCustomerDetails(rawName: unknown, fallbackName: unknown): {
 
 function compactTapPayload(value: Record<string, unknown>): Record<string, unknown> {
   return (stripEmptyTapValues(value) as Record<string, unknown> | undefined) ?? {};
+}
+
+function buildTapMetadata(value: Record<string, unknown>): Record<string, string> | undefined {
+  const entries = Object.entries(value)
+    .map(([key, rawValue]) => {
+      if (rawValue == null) return null;
+
+      if (Array.isArray(rawValue)) {
+        const joined = rawValue
+          .map((item) => String(item ?? "").trim())
+          .filter(Boolean)
+          .join(",");
+        return joined ? ([key, joined] as const) : null;
+      }
+
+      if (typeof rawValue === "object") {
+        const json = JSON.stringify(rawValue);
+        return json && json !== "{}" && json !== "[]" ? ([key, json] as const) : null;
+      }
+
+      const text = String(rawValue).trim();
+      return text ? ([key, text] as const) : null;
+    })
+    .filter((entry): entry is readonly [string, string] => Boolean(entry));
+
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
 function stripEmptyTapValues(value: unknown): unknown {
@@ -1133,13 +1159,13 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
       email: customer_email || userEmail,
       phone: phoneForTap,
     },
-    metadata: {
+    metadata: buildTapMetadata({
       user_id: userId,
-      course_id: null,
-      bundle_course_ids: ids,
+      bundle_course_ids: ids.join(","),
+      bundle_courses_count: ids.length,
       internal_id: chargeRecord.id,
       payment_kind: "course_bundle",
-    },
+    }),
     source: {
       id: token_id || "src_all",
     },
