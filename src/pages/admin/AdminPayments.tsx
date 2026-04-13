@@ -42,10 +42,27 @@ const AdminPayments = () => {
   const { data: payments, isLoading } = useQuery({
     queryKey: ["admin-payments-unified"],
     queryFn: async () => {
-      const [manualRes, tapRes] = await Promise.all([
+      const [manualRes, tapRes, bookingRes] = await Promise.all([
         supabase.from("manual_payments").select("*").order("created_at", { ascending: false }),
         supabase.from("tap_charges").select("*").order("created_at", { ascending: false }),
+        supabase
+          .from("training_bookings")
+          .select(
+            `
+            id, user_id, training_id, amount, currency, payment_id, payment_status, status, created_at,
+            full_name, email, phone,
+            trainings(name_ar, name_en),
+            trainers(name_ar, name_en)
+          `,
+          )
+          .eq("payment_status", "paid")
+          .order("created_at", { ascending: false }),
       ]);
+
+      if (bookingRes.error) {
+        console.error("booking payments fetch:", bookingRes.error);
+        throw bookingRes.error;
+      }
 
       const manualData: UnifiedPayment[] = (manualRes.data || []).map((p) => ({
         id: p.id,
@@ -87,7 +104,50 @@ const AdminPayments = () => {
         device_info: (p as any).device_info || null,
       }));
 
-      const all = [...manualData, ...tapData].sort(
+      type BookingJoin = {
+        id: string;
+        user_id: string;
+        training_id: string;
+        amount: number | string;
+        currency: string;
+        payment_id: string | null;
+        payment_status: string;
+        status: string;
+        created_at: string;
+        full_name: string;
+        email: string;
+        phone: string;
+        trainings: { name_ar: string; name_en: string } | null;
+        trainers: { name_ar: string; name_en: string } | null;
+      };
+
+      const bookingRows = (bookingRes.data || []) as BookingJoin[];
+      const bookingPayments: UnifiedPayment[] = bookingRows.map((b) => ({
+        id: b.id,
+        user_id: b.user_id,
+        course_id: null,
+        training_id: b.training_id,
+        amount: Number(b.amount),
+        currency: b.currency || "SAR",
+        status: b.payment_status,
+        created_at: b.created_at,
+        source: "training_booking" as const,
+        charge_id: b.payment_id,
+        customer_name: b.full_name,
+        customer_email: b.email,
+        customer_phone: b.phone,
+        payment_method: "Tap",
+        training_booking_meta: {
+          booking_status: b.status,
+          payment_status: b.payment_status,
+          training_name_ar: b.trainings?.name_ar ?? null,
+          training_name_en: b.trainings?.name_en ?? null,
+          trainer_name_ar: b.trainers?.name_ar ?? null,
+          trainer_name_en: b.trainers?.name_en ?? null,
+        },
+      }));
+
+      const all = [...manualData, ...tapData, ...bookingPayments].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
 
@@ -160,12 +220,19 @@ const AdminPayments = () => {
 
   const filteredPayments = payments?.filter((payment) => {
     const displayName =
-      payment.source === "tap" ? payment.customer_name || payment.profile?.full_name : payment.profile?.full_name;
+      payment.source === "tap" || payment.source === "training_booking"
+        ? payment.customer_name || payment.profile?.full_name
+        : payment.profile?.full_name;
+    const trainingQ =
+      payment.source === "training_booking"
+        ? `${payment.training_booking_meta?.training_name_ar ?? ""} ${payment.training_booking_meta?.training_name_en ?? ""}`
+        : "";
     const matchesSearch =
       displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       payment.reference_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       payment.charge_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      payment.customer_email?.toLowerCase().includes(searchQuery.toLowerCase());
+      payment.customer_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      trainingQ.toLowerCase().includes(searchQuery.toLowerCase());
     const normalized = normalizeStatus(payment.status, payment.source);
     const matchesStatus = statusFilter === "all" || normalized === statusFilter;
     return matchesSearch && matchesStatus;
@@ -232,7 +299,14 @@ const AdminPayments = () => {
       "Profile Complete",
     ];
     const rows = filteredPayments.map((p) => {
-      const displayName = p.source === "tap" ? p.customer_name || p.profile?.full_name : p.profile?.full_name;
+      const displayName =
+        p.source === "tap" || p.source === "training_booking"
+          ? p.customer_name || p.profile?.full_name
+          : p.profile?.full_name;
+      const courseTitle =
+        p.source === "training_booking" && p.training_booking_meta
+          ? (isRTL ? p.training_booking_meta.training_name_ar : p.training_booking_meta.training_name_en) || ""
+          : p.course?.title || "";
       return [
         format(new Date(p.created_at), "yyyy-MM-dd HH:mm:ss"),
         displayName || "",
@@ -240,7 +314,7 @@ const AdminPayments = () => {
         p.customer_phone || p.profile?.phone || "",
         p.profile?.city || "",
         p.profile?.country || "",
-        p.course?.title || "",
+        courseTitle,
         p.amount.toFixed(2),
         p.currency,
         normalizeStatus(p.status, p.source),
@@ -267,7 +341,7 @@ const AdminPayments = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-6" dir={isRTL ? "rtl" : "ltr"}>
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -358,9 +432,17 @@ const AdminPayments = () => {
                 <TableBody>
                   {filteredPayments?.map((payment) => {
                     const displayName =
-                      payment.source === "tap"
+                      payment.source === "tap" || payment.source === "training_booking"
                         ? payment.customer_name || payment.profile?.full_name || "Unknown"
                         : payment.profile?.full_name || "Unknown";
+                    const courseOrTrainingLabel =
+                      payment.source === "training_booking" && payment.training_booking_meta
+                        ? isRTL
+                          ? payment.training_booking_meta.training_name_ar || payment.training_booking_meta.training_name_en || "N/A"
+                          : payment.training_booking_meta.training_name_en || payment.training_booking_meta.training_name_ar || "N/A"
+                        : isRTL
+                          ? payment.course?.title_ar || payment.course?.title || "N/A"
+                          : payment.course?.title || "N/A";
                     const isFailed = normalizeStatus(payment.status, payment.source) === "rejected";
                     return (
                       <TableRow
@@ -379,11 +461,7 @@ const AdminPayments = () => {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          {isRTL
-                            ? payment.course?.title_ar || payment.course?.title || "N/A"
-                            : payment.course?.title || "N/A"}
-                        </TableCell>
+                        <TableCell>{courseOrTrainingLabel}</TableCell>
                         <TableCell>
                           {payment.amount.toFixed(2)} {payment.currency}
                         </TableCell>

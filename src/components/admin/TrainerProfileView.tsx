@@ -7,7 +7,6 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -30,6 +29,9 @@ import {
   type TrainerReviewRow,
 } from '@/components/admin/trainerProfileTrainingBlocks';
 import { TrainerAdminPaymentsSection } from '@/components/admin/trainer/TrainerAdminPaymentsSection';
+import BookingTimeDisplay from '@/components/common/BookingTimeDisplay';
+import { normalizeBookingSessions } from '@/lib/trainingBookingSessions';
+import { getNextSession } from '@/lib/bookingTime';
 
 type BikeEntryRow = { type: string; brand: string; photos: string[] };
 
@@ -40,6 +42,7 @@ type TrainerTrainingBookingRow = {
   booking_date: string | null;
   start_time: string | null;
   end_time: string | null;
+  sessions: unknown;
   amount: number | string | null;
   currency: string | null;
   status: string;
@@ -48,6 +51,10 @@ type TrainerTrainingBookingRow = {
   phone: string;
   email: string;
   created_at: string | null;
+};
+
+type UpcomingTrainerBooking = TrainerTrainingBookingRow & {
+  bookingAtMs: number;
 };
 
 function parseBikeEntriesProfile(raw: unknown): BikeEntryRow[] {
@@ -66,7 +73,10 @@ function parseBikeEntriesProfile(raw: unknown): BikeEntryRow[] {
 
 const EmptyField: React.FC<{ isRTL: boolean }> = ({ isRTL }) => (
   <span
-    className="block w-full text-start text-muted-foreground/50 italic text-xs"
+    className={cn(
+      'block w-full text-muted-foreground/50 italic text-xs',
+      isRTL ? 'text-right' : 'text-left',
+    )}
     dir={isRTL ? 'rtl' : 'ltr'}
     lang={isRTL ? 'ar' : 'en'}
   >
@@ -370,7 +380,7 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
       const { data, error } = await supabase
         .from('training_bookings')
         .select(
-          'id, trainer_course_id, training_id, booking_date, start_time, end_time, amount, currency, status, payment_status, full_name, phone, email, created_at',
+          'id, trainer_course_id, training_id, booking_date, start_time, end_time, sessions, amount, currency, status, payment_status, full_name, phone, email, created_at',
         )
         .eq('trainer_id', trainerId)
         .order('booking_date', { ascending: false, nullsFirst: false })
@@ -391,6 +401,25 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
     return rows
       .filter((b) => String(b.payment_status).toLowerCase() === 'paid' && String(b.status).toLowerCase() !== 'cancelled')
       .reduce((acc, b) => acc + Number(b.amount || 0), 0);
+  }, [trainerBookings]);
+
+  const upcomingBookings = useMemo<UpcomingTrainerBooking[]>(() => {
+    const nowMs = Date.now();
+    const rows = (trainerBookings || []) as TrainerTrainingBookingRow[];
+
+    return rows
+      .filter((b) => String(b.status).toLowerCase() !== 'cancelled' && String(b.status).toLowerCase() !== 'completed')
+      .map((b) => {
+        const ns = normalizeBookingSessions(b.sessions, b.booking_date, b.start_time, b.end_time, b.status);
+        const next = getNextSession(ns);
+        if (!next) return null;
+        const atMs = new Date(`${next.date}T${next.start_time}`).getTime();
+        if (!Number.isFinite(atMs) || atMs < nowMs) return null;
+        return { ...b, bookingAtMs: atMs };
+      })
+      .filter((x): x is UpcomingTrainerBooking => x != null)
+      .sort((a, b) => a.bookingAtMs - b.bookingAtMs)
+      .slice(0, 6);
   }, [trainerBookings]);
 
   if (!trainerId) return null;
@@ -446,6 +475,12 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
   const locationLineEn = [displayCityEn, displayCountryEn].filter(Boolean).join(', ');
 
   const headerLocationLine = [displayCityOnly, displayCountryOnly].filter(Boolean).join(isRTL ? '، ' : ', ');
+  const trainingNameById = new Map(
+    ((trainerCourses || []) as TrainerCourseRow[]).map((tc) => [
+      tc.training_id,
+      isRTL ? tc.trainings?.name_ar || '—' : tc.trainings?.name_en || '—',
+    ]),
+  );
 
   const textOrEmpty = (value: string | null | undefined) => {
     const s = (value ?? '').trim();
@@ -459,47 +494,7 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
 
         <h1 className="sr-only">{isRTL ? 'لوحة المدرب' : 'Trainer dashboard'}</h1>
 
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
-          <aside className="order-1 space-y-4 lg:order-2 lg:sticky lg:top-4 lg:w-72 lg:shrink-0">
-            <div className="rounded-xl bg-muted/20 p-4">
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {isRTL ? 'إجراءات سريعة' : 'Quick actions'}
-              </p>
-              <div className="flex flex-col gap-2">
-                {onEdit ? (
-                  <Button variant="secondary" size="sm" className="w-full justify-start gap-2" onClick={() => onEdit(t)}>
-                    <Pencil className="h-4 w-4" />
-                    {isRTL ? 'تعديل الملف' : 'Edit profile'}
-                  </Button>
-                ) : null}
-                <Button variant="secondary" size="sm" className="w-full justify-start gap-2" onClick={() => { setProfileTab('trainings'); setAddTrainingOpen(true); }}>
-                  <Plus className="h-4 w-4" />
-                  {isRTL ? 'إضافة تدريب' : 'Add training'}
-                </Button>
-                <Button variant="secondary" size="sm" className="w-full justify-start gap-2" onClick={() => setProfileTab('schedule')}>
-                  <CalendarDays className="h-4 w-4" />
-                  {isRTL ? 'تعديل الجدول' : 'Edit schedule'}
-                </Button>
-              </div>
-              <Separator className="my-4" />
-              <div className="space-y-2 text-xs text-muted-foreground">
-                <p>
-                  <span className="block font-medium text-foreground">{isRTL ? 'تاريخ الانضمام' : 'Joined'}</span>
-                  {joinedDateLabel ?? '—'}
-                </p>
-                <p>
-                  <span className="block font-medium text-foreground">{isRTL ? 'الحالة' : 'Status'}</span>
-                  {t.status === 'active' ? (isRTL ? 'نشط' : 'Active') : isRTL ? 'غير نشط' : 'Inactive'}
-                </p>
-                <p>
-                  <span className="block font-medium text-foreground">{isRTL ? 'نسبة الربح' : 'Profit ratio'}</span>
-                  {t.profit_ratio != null && !Number.isNaN(Number(t.profit_ratio)) ? `${t.profit_ratio}%` : '—'}
-                </p>
-              </div>
-            </div>
-          </aside>
-
-          <div className="order-2 min-w-0 flex-1 space-y-6 lg:order-1">
+        <div className="w-full min-w-0 space-y-6">
             <section
               className={cn(
                 'overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/[0.06] via-muted/20 to-background shadow-sm',
@@ -645,6 +640,109 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
               </div>
             </section>
 
+            <div className="rounded-xl border border-border/60 bg-muted/15 p-4 shadow-sm sm:p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
+                <div className="min-w-0 space-y-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {isRTL ? 'إجراءات سريعة' : 'Quick actions'}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {onEdit ? (
+                      <Button variant="secondary" size="sm" className="gap-2" onClick={() => onEdit(t)}>
+                        <Pencil className="h-4 w-4 shrink-0" />
+                        {isRTL ? 'تعديل الملف' : 'Edit profile'}
+                      </Button>
+                    ) : null}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => {
+                        setProfileTab('trainings');
+                        setAddTrainingOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 shrink-0" />
+                      {isRTL ? 'إضافة تدريب' : 'Add training'}
+                    </Button>
+                    <Button variant="secondary" size="sm" className="gap-2" onClick={() => setProfileTab('schedule')}>
+                      <CalendarDays className="h-4 w-4 shrink-0" />
+                      {isRTL ? 'تعديل الجدول' : 'Edit schedule'}
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-x-8 gap-y-2 border-t border-border/50 pt-3 text-xs text-muted-foreground lg:border-t-0 lg:pt-0">
+                  <p className="min-w-0">
+                    <span className="mb-0.5 block font-medium text-foreground">{isRTL ? 'تاريخ الانضمام' : 'Joined'}</span>
+                    {joinedDateLabel ?? '—'}
+                  </p>
+                  <p className="min-w-0">
+                    <span className="mb-0.5 block font-medium text-foreground">{isRTL ? 'الحالة' : 'Status'}</span>
+                    {t.status === 'active' ? (isRTL ? 'نشط' : 'Active') : isRTL ? 'غير نشط' : 'Inactive'}
+                  </p>
+                  <p className="min-w-0">
+                    <span className="mb-0.5 block font-medium text-foreground">{isRTL ? 'نسبة الربح' : 'Profit ratio'}</span>
+                    {t.profit_ratio != null && !Number.isNaN(Number(t.profit_ratio)) ? `${t.profit_ratio}%` : '—'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <section className="rounded-2xl border border-border/60 bg-background/80 p-4 shadow-sm sm:p-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {isRTL ? 'الجدول القادم' : 'Upcoming schedule'}
+                  </p>
+                  <h3 className="text-base font-semibold text-foreground">
+                    {isRTL ? 'الحجوزات القادمة' : 'Upcoming bookings'}
+                  </h3>
+                </div>
+                <Badge variant="outline" className="tabular-nums">
+                  {upcomingBookings.length}
+                </Badge>
+              </div>
+
+              {upcomingBookings.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {isRTL ? 'لا توجد حجوزات قادمة حالياً.' : 'No upcoming bookings right now.'}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {upcomingBookings.map((b) => (
+                    <div
+                      key={b.id}
+                      className="flex flex-col gap-2 rounded-xl border border-border/60 bg-muted/10 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0 space-y-0.5">
+                        <p className="truncate text-sm font-medium text-foreground">{b.full_name}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {trainingNameById.get(b.training_id) || '—'}
+                        </p>
+                      </div>
+                      <div className="text-xs sm:text-sm">
+                        {(() => {
+                          const ns = normalizeBookingSessions(b.sessions, b.booking_date, b.start_time, b.end_time, b.status);
+                          const next = getNextSession(ns);
+                          return next ? (
+                            <BookingTimeDisplay
+                              date={next.date}
+                              startTime={next.start_time}
+                              endTime={next.end_time}
+                              compact
+                              showCountdown
+                            />
+                          ) : (
+                            <span>—</span>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
             <Tabs
               value={profileTab}
               onValueChange={(v) => {
@@ -770,10 +868,10 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
                             {(t.bio_ar || '').trim() ? t.bio_ar : <EmptyField isRTL={isRTL} />}
                           </p>
                         </div>
-                        <div className="max-w-none space-y-2">
+                        <div className="max-w-none space-y-2 text-right" dir="rtl" lang="ar">
                           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">الخدمات</p>
                           {servicesList.length > 0 ? (
-                            <div className="flex flex-wrap justify-start gap-1.5">
+                            <div className="flex flex-wrap justify-end gap-1.5">
                               {servicesList.map((s, i) => (
                                 <Badge key={i} variant="secondary" className="text-xs font-normal">
                                   {s}
@@ -1028,7 +1126,6 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
                 </TabsContent>
               </div>
             </Tabs>
-          </div>
         </div>
       </div>
 

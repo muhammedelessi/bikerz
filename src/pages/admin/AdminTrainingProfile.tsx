@@ -1,96 +1,247 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import TrainingCurriculumAccordion from '@/components/training/TrainingCurriculumAccordion';
+import { parseTrainingSessions } from '@/lib/trainingSessionCurriculum';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { ar } from 'date-fns/locale';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowLeft, ArrowRight, BookOpen, ChevronDown, Dumbbell, Shield, Star, User, Users, Award, Bike, Clock, MapPin, Pencil, Wrench } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Users, MapPin, Bike, Clock, BookOpen, DollarSign, ChevronDown, ChevronUp, ArrowLeft, ArrowRight, Briefcase, Shield } from 'lucide-react';
-import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { COUNTRIES } from '@/data/countryCityData';
+import { ProfileSectionTitle } from '@/components/admin/trainerProfileTrainingBlocks';
+import { normalizeBookingSessions, sessionCountLabel } from '@/lib/trainingBookingSessions';
 
-const AdminTrainingProfile = () => {
+type TrainerLite = {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  photo_url: string | null;
+  city: string;
+  country: string;
+  bike_type: string;
+  motorbike_brand: string;
+  license_type: string;
+  years_of_experience: number;
+  status: string;
+  services: string[] | null;
+  bio_ar: string;
+  bio_en: string;
+  profit_ratio: number;
+};
+
+type TrainerCourseRow = {
+  id: string;
+  trainer_id: string;
+  price: number;
+  sessions_count: number;
+  duration_hours: number;
+  location: string;
+  services: string[] | null;
+  trainers: TrainerLite | null;
+};
+
+type TrainingBookingStudentRow = {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  created_at: string | null;
+  booking_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  status: string;
+  payment_status: string;
+  sessions: unknown;
+  amount: number | string | null;
+  currency: string | null;
+  trainer_id: string;
+  trainers: { name_ar: string; name_en: string } | null;
+};
+
+function payBadgeStudent(ps: string, isRTL: boolean) {
+  const map: Record<string, { className: string; ar: string; en: string }> = {
+    paid: { className: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30', ar: 'مدفوع', en: 'Paid' },
+    unpaid: { className: 'bg-muted text-muted-foreground', ar: 'غير مدفوع', en: 'Unpaid' },
+    refunded: { className: 'bg-violet-500/15 text-violet-700', ar: 'مسترد', en: 'Refunded' },
+  };
+  const m = map[ps] || map.unpaid;
+  return (
+    <Badge variant="outline" className={m.className}>
+      {isRTL ? m.ar : m.en}
+    </Badge>
+  );
+}
+
+function bookingStatusBadgeStudent(status: string, isRTL: boolean) {
+  const map: Record<string, { className: string; ar: string; en: string }> = {
+    pending: { className: 'bg-amber-500/15 text-amber-700 border-amber-500/30', ar: 'معلق', en: 'Pending' },
+    confirmed: { className: 'bg-blue-500/15 text-blue-700 border-blue-500/30', ar: 'مؤكد', en: 'Confirmed' },
+    completed: { className: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30', ar: 'مكتمل', en: 'Completed' },
+    cancelled: { className: 'bg-red-500/15 text-red-700 border-red-500/30', ar: 'ملغي', en: 'Cancelled' },
+  };
+  const m = map[status] || map.pending;
+  return (
+    <Badge variant="outline" className={m.className}>
+      {isRTL ? m.ar : m.en}
+    </Badge>
+  );
+}
+
+const levelLabel = (level: string, isRTL: boolean) =>
+  isRTL
+    ? { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم' }[level] || level
+    : level.charAt(0).toUpperCase() + level.slice(1);
+
+const statusLabel = (status: string, isRTL: boolean) => {
+  const map: Record<string, { ar: string; en: string }> = {
+    active: { ar: 'نشط', en: 'Active' },
+    archived: { ar: 'مؤرشف', en: 'Archived' },
+    pending: { ar: 'معلق', en: 'Pending' },
+    confirmed: { ar: 'مؤكد', en: 'Confirmed' },
+    completed: { ar: 'مكتمل', en: 'Completed' },
+    cancelled: { ar: 'ملغي', en: 'Cancelled' },
+  };
+  return isRTL ? map[status]?.ar || status : map[status]?.en || status;
+};
+
+type TrainerSupply = { name_ar: string; name_en: string };
+
+function parseTrainerSupplies(raw: unknown): TrainerSupply[] {
+  if (!raw || !Array.isArray(raw)) return [];
+  return (raw as unknown[])
+    .map((x) => {
+      const o = x as Record<string, unknown>;
+      return {
+        name_ar: String(o.name_ar ?? '').trim(),
+        name_en: String(o.name_en ?? '').trim(),
+      };
+    })
+    .filter((x) => x.name_ar && x.name_en);
+}
+
+const AdminTrainingProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
   const [expandedTrainerId, setExpandedTrainerId] = useState<string | null>(null);
+  const [studentSearch, setStudentSearch] = useState('');
 
   const { data: training, isLoading: loadingTraining } = useQuery({
     queryKey: ['admin-training-detail', id],
+    enabled: !!id,
     queryFn: async () => {
       const { data, error } = await supabase.from('trainings').select('*').eq('id', id!).single();
       if (error) throw error;
       return data;
     },
-    enabled: !!id,
   });
 
-  const { data: trainerCourses, isLoading: loadingTrainers } = useQuery({
+  const { data: trainerCourses = [], isLoading: loadingTrainers } = useQuery({
     queryKey: ['training-profile-trainers', id],
+    enabled: !!id,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('trainer_courses')
-        .select('*, trainers(id, name_ar, name_en, photo_url, city, country, bike_type, motorbike_brand, license_type, years_of_experience, status, services, bio_ar, bio_en, profit_ratio)')
+        .select(
+          'id, trainer_id, price, sessions_count, duration_hours, location, services, trainers(id, name_ar, name_en, photo_url, city, country, bike_type, motorbike_brand, license_type, years_of_experience, status, services, bio_ar, bio_en, profit_ratio)',
+        )
         .eq('training_id', id!);
-      return data || [];
+      if (error) throw error;
+      return (data || []) as TrainerCourseRow[];
     },
-    enabled: !!id,
   });
 
-  const { data: students, isLoading: loadingStudents } = useQuery({
+  const { data: students = [], isLoading: loadingStudents } = useQuery({
     queryKey: ['training-profile-students', id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('training_students')
-        .select('*')
-        .eq('training_id', id!)
-        .order('enrolled_at', { ascending: false });
-      return data || [];
-    },
     enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('training_bookings')
+        .select(
+          'id, full_name, email, phone, created_at, booking_date, start_time, end_time, status, payment_status, sessions, amount, currency, trainer_id, trainers(name_ar, name_en)',
+        )
+        .eq('training_id', id!)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as TrainingBookingStudentRow[];
+    },
   });
 
-  const trainerIds = trainerCourses?.map((tc: any) => tc.trainers?.id).filter(Boolean) || [];
-  const { data: allReviews } = useQuery({
-    queryKey: ['training-profile-reviews', id, trainerIds],
+  const trainerIds = useMemo(() => trainerCourses.map((tc) => tc.trainers?.id).filter(Boolean) as string[], [trainerCourses]);
+
+  const { data: allReviews = [] } = useQuery({
+    queryKey: ['training-profile-reviews', id, trainerIds.join(',')],
+    enabled: !!id && trainerIds.length > 0,
     queryFn: async () => {
-      if (!trainerIds.length) return [];
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('trainer_reviews')
         .select('*')
         .in('trainer_id', trainerIds)
         .order('created_at', { ascending: false });
+      if (error) throw error;
       return data || [];
     },
-    enabled: !!id && trainerIds.length > 0,
   });
 
-  const { data: trainerStudentCounts } = useQuery({
-    queryKey: ['training-profile-trainer-students', id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('training_students')
-        .select('trainer_id')
-        .eq('training_id', id!);
-      const counts: Record<string, number> = {};
-      data?.forEach(s => { counts[s.trainer_id] = (counts[s.trainer_id] || 0) + 1; });
-      return counts;
-    },
-    enabled: !!id,
-  });
+  const trainerStudentCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    students.forEach((s) => {
+      counts[s.trainer_id] = (counts[s.trainer_id] || 0) + 1;
+    });
+    return counts;
+  }, [students]);
+
+  const reviewCount = allReviews.length;
+
+  const curriculumSessions = useMemo(
+    () => parseTrainingSessions(training?.sessions),
+    [training?.sessions],
+  );
+
+  const filteredStudents = useMemo(() => {
+    const q = studentSearch.trim().toLowerCase();
+    if (!q) return students;
+    return students.filter(
+      (s) =>
+        s.full_name.toLowerCase().includes(q) ||
+        s.email.toLowerCase().includes(q) ||
+        (s.phone || '').toLowerCase().includes(q),
+    );
+  }, [students, studentSearch]);
+
+  const translateLocation = (countryCode: string, city: string) => {
+    const c = COUNTRIES.find((x) => x.code === countryCode);
+    const countryName = c ? (isRTL ? c.ar : c.en) : countryCode;
+    const cityObj = c?.cities.find((ct) => ct.en === city || ct.ar === city);
+    const cityName = cityObj ? (isRTL ? cityObj.ar : cityObj.en) : city;
+    return [cityName, countryName].filter(Boolean).join(isRTL ? '، ' : ', ');
+  };
+
+  const getTrainerReviews = (trainerId: string) => allReviews.filter((r: any) => r.trainer_id === trainerId);
+  const getTrainerAvgRating = (trainerId: string) => {
+    const rows = getTrainerReviews(trainerId);
+    if (!rows.length) return '0.0';
+    return (rows.reduce((a: number, r: any) => a + Number(r.rating || 0), 0) / rows.length).toFixed(1);
+  };
 
   if (loadingTraining) {
     return (
       <AdminLayout>
-        <div className="space-y-6">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-60 w-full" />
+        <div className="mx-auto w-full min-w-0 min-h-0 max-w-none space-y-4 px-2 sm:px-4 lg:px-6">
+          <Skeleton className="h-9 w-48" />
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <Skeleton className="h-64 w-full rounded-xl" />
         </div>
       </AdminLayout>
     );
@@ -99,301 +250,232 @@ const AdminTrainingProfile = () => {
   if (!training) {
     return (
       <AdminLayout>
-        <div className="flex flex-col items-center justify-center py-20 space-y-4">
-          <p className="text-lg text-muted-foreground">{isRTL ? 'لم يتم العثور على التدريب' : 'Training not found'}</p>
-          <Button variant="outline" onClick={() => navigate('/admin/trainings')}>
-            {isRTL ? 'العودة' : 'Go Back'}
+        <div className="mx-auto w-full min-w-0 min-h-0 max-w-none px-2 py-16 text-center sm:px-4 lg:px-6">
+          <p className="text-muted-foreground">{isRTL ? 'لم يتم العثور على التدريب' : 'Training not found'}</p>
+          <Button className="mt-4" variant="outline" onClick={() => navigate('/admin/trainings')}>
+            {isRTL ? 'العودة' : 'Back'}
           </Button>
         </div>
       </AdminLayout>
     );
   }
 
-  const levelLabel = (level: string) => isRTL
-    ? { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم' }[level] || level
-    : level.charAt(0).toUpperCase() + level.slice(1);
-
-  const getTrainerReviews = (trainerId: string) => allReviews?.filter(r => r.trainer_id === trainerId) || [];
-  const getTrainerAvgRating = (trainerId: string) => {
-    const reviews = getTrainerReviews(trainerId);
-    return reviews.length ? (reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1) : '0.0';
-  };
+  const TypeIcon = training.type === 'practical' ? Dumbbell : BookOpen;
+  const typeLabel = training.type === 'practical' ? (isRTL ? 'عملي' : 'Practical') : (isRTL ? 'نظري' : 'Theory');
+  const supplies = parseTrainerSupplies(training.trainer_supplies);
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Back button */}
-        <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/admin/trainings')}>
-          {isRTL ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-          {isRTL ? 'العودة لقائمة التدريبات' : 'Back to Trainings'}
+      <div className="mx-auto w-full min-w-0 min-h-0 max-w-none space-y-6 px-2 sm:px-4 lg:px-6" dir={isRTL ? 'rtl' : 'ltr'}>
+        <Button variant="ghost" size="sm" className="gap-2 -ms-2" onClick={() => navigate('/admin/trainings')}>
+          {isRTL ? <ArrowRight className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
+          {isRTL ? 'العودة لقائمة التدريبات' : 'Back to trainings'}
         </Button>
 
-        {/* Header with background image */}
-        {training.background_image && (
-          <div className="relative rounded-xl overflow-hidden h-40">
-            <img src={training.background_image} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
-          </div>
-        )}
-
-        {/* Title & Badges */}
-        <Card>
-          <CardContent className="p-6">
-            <h1 className="text-2xl font-bold">{isRTL ? training.name_ar : training.name_en}</h1>
-            <p className="text-sm text-muted-foreground mt-1">{isRTL ? training.name_en : training.name_ar}</p>
-            <div className="flex flex-wrap gap-2 mt-3">
-              <Badge variant="outline" className={training.type === 'theory' ? 'bg-purple-500/15 text-purple-600 border-purple-500/30 dark:text-purple-400' : 'bg-orange-500/15 text-orange-600 border-orange-500/30 dark:text-orange-400'}>
-                {training.type === 'theory' ? (isRTL ? 'نظري' : 'Theory') : (isRTL ? 'عملي' : 'Practical')}
-              </Badge>
-              <Badge variant="outline" className={
-                training.level === 'beginner' ? 'bg-blue-500/15 text-blue-600 border-blue-500/30 dark:text-blue-400' :
-                training.level === 'intermediate' ? 'bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400' :
-                'bg-red-500/15 text-red-600 border-red-500/30 dark:text-red-400'
-              }>
-                {levelLabel(training.level)}
-              </Badge>
-              <Badge className={training.status === 'active' ? 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:text-emerald-400' : ''} variant={training.status === 'active' ? 'outline' : 'secondary'}>
-                {training.status === 'active' ? (isRTL ? 'نشط' : 'Active') : (isRTL ? 'مؤرشف' : 'Archived')}
-              </Badge>
+        <Card className="border-border/60">
+          <CardContent className="p-5 sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-start gap-4 min-w-0">
+                <div className={cn('flex h-16 w-16 shrink-0 items-center justify-center rounded-full', training.type === 'practical' ? 'bg-orange-500/10 text-orange-600' : 'bg-purple-500/10 text-purple-600')}>
+                  <TypeIcon className="h-8 w-8" />
+                </div>
+                <div className="min-w-0 space-y-2 text-start">
+                  <h1 className="text-2xl font-black leading-tight">{training.name_ar}</h1>
+                  <p className="text-sm text-muted-foreground">{training.name_en}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline" className={training.status === 'active' ? 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30' : 'bg-muted text-muted-foreground'}>
+                      {statusLabel(training.status, isRTL)}
+                    </Badge>
+                    <Badge variant="outline">{typeLabel}</Badge>
+                    <Badge variant="outline">{levelLabel(training.level, isRTL)}</Badge>
+                  </div>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" className="gap-2 self-start" onClick={() => navigate('/admin/trainings')}>
+                <Pencil className="h-4 w-4" />
+                {isRTL ? 'تعديل' : 'Edit'}
+              </Button>
             </div>
+          </CardContent>
+        </Card>
 
-            {(training.description_ar || training.description_en) && (
-              <div className="mt-4 pt-4 border-t border-border">
-                <p className="text-xs text-muted-foreground mb-1">{isRTL ? 'الوصف' : 'Description'}</p>
-                <p className="text-sm leading-relaxed">{isRTL ? training.description_ar : training.description_en}</p>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <Card><CardContent className="p-4 flex items-center gap-3"><div className="p-2.5 rounded-full bg-primary/10"><Bike className="w-5 h-5 text-primary" /></div><div><p className="text-xs text-muted-foreground">{isRTL ? 'المدربين' : 'Trainers'}</p><p className="text-xl font-bold">{trainerCourses.length}</p></div></CardContent></Card>
+          <Card><CardContent className="p-4 flex items-center gap-3"><div className="p-2.5 rounded-full bg-blue-500/10"><Users className="w-5 h-5 text-blue-500" /></div><div><p className="text-xs text-muted-foreground">{isRTL ? 'الطلاب' : 'Students'}</p><p className="text-xl font-bold">{students.length}</p></div></CardContent></Card>
+          <Card><CardContent className="p-4 flex items-center gap-3"><div className="p-2.5 rounded-full bg-amber-500/10"><Star className="w-5 h-5 text-amber-500" /></div><div><p className="text-xs text-muted-foreground">{isRTL ? 'التقييمات' : 'Reviews'}</p><p className="text-xl font-bold">{reviewCount}</p></div></CardContent></Card>
+        </div>
+
+        <Card className="border-border/60">
+          <CardContent className="p-5 sm:p-6 space-y-4">
+            <ProfileSectionTitle>{isRTL ? 'تفاصيل التدريب' : 'Training details'}</ProfileSectionTitle>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex items-start gap-2 text-sm"><BookOpen className="h-4 w-4 mt-0.5 text-primary" /><div><p className="text-xs text-muted-foreground">{isRTL ? 'الوصف (عربي)' : 'Description (AR)'}</p><p>{training.description_ar || '—'}</p></div></div>
+              <div className="flex items-start gap-2 text-sm"><BookOpen className="h-4 w-4 mt-0.5 text-primary" /><div><p className="text-xs text-muted-foreground">{isRTL ? 'الوصف (إنجليزي)' : 'Description (EN)'}</p><p>{training.description_en || '—'}</p></div></div>
+              <div className="flex items-start gap-2 text-sm"><BookOpen className="h-4 w-4 mt-0.5 text-primary" /><div><p className="text-xs text-muted-foreground">{isRTL ? 'النوع' : 'Type'}</p><p>{typeLabel}</p></div></div>
+              <div className="flex items-start gap-2 text-sm"><Award className="h-4 w-4 mt-0.5 text-primary" /><div><p className="text-xs text-muted-foreground">{isRTL ? 'المستوى' : 'Level'}</p><p>{levelLabel(training.level, isRTL)}</p></div></div>
+              <div className="flex items-start gap-2 text-sm"><Shield className="h-4 w-4 mt-0.5 text-primary" /><div><p className="text-xs text-muted-foreground">{isRTL ? 'الحالة' : 'Status'}</p><p>{statusLabel(training.status, isRTL)}</p></div></div>
+              <div className="flex items-start gap-2 text-sm"><User className="h-4 w-4 mt-0.5 text-primary" /><div><p className="text-xs text-muted-foreground">{isRTL ? 'تاريخ الإنشاء' : 'Created'}</p><p>{training.created_at ? format(new Date(training.created_at), isRTL ? 'd MMM yyyy' : 'MMM d, yyyy', { locale: isRTL ? ar : undefined }) : '—'}</p></div></div>
+            </div>
+            {supplies.length > 0 ? (
+              <div className="space-y-2 rounded-lg border border-border/60 bg-muted/20 p-3">
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <Wrench className="h-4 w-4 text-primary" />
+                  {isRTL ? 'ما يوفره المدرب' : 'Trainer Supplies'}
+                </p>
+                <ul className="space-y-1.5">
+                  {supplies.map((item, idx) => (
+                    <li key={`${item.name_en}-${idx}`} className="text-sm flex items-center gap-2">
+                      <Wrench className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span>{isRTL ? item.name_ar : item.name_en}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        {curriculumSessions.length > 0 ? (
+          <TrainingCurriculumAccordion sessions={curriculumSessions} isRTL={isRTL} />
+        ) : null}
+
+        <Card className="border-border/60">
+          <CardContent className="p-5 sm:p-6 space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <ProfileSectionTitle>{isRTL ? `المدربون (${trainerCourses.length})` : `Trainers (${trainerCourses.length})`}</ProfileSectionTitle>
+              <Button size="sm" variant="secondary" onClick={() => navigate('/admin/trainers')}>{isRTL ? 'إضافة مدرب' : 'Add trainer'}</Button>
+            </div>
+            {loadingTrainers ? (
+              <div className="space-y-3">{[1, 2].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+            ) : trainerCourses.length === 0 ? (
+              <p className="py-10 text-center text-muted-foreground">{isRTL ? 'لا يوجد مدربون' : 'No trainers assigned'}</p>
+            ) : (
+              <div className="divide-y divide-border/40 border-t border-border/40">
+                {trainerCourses.map((tc) => {
+                  const trainer = tc.trainers;
+                  if (!trainer) return null;
+                  const expanded = expandedTrainerId === trainer.id;
+                  const reviews = getTrainerReviews(trainer.id);
+                  return (
+                    <div key={tc.id}>
+                      <button type="button" onClick={() => setExpandedTrainerId(expanded ? null : trainer.id)} className="flex w-full items-center gap-3 py-4 text-start hover:bg-muted/20">
+                        <Avatar className="h-11 w-11"><AvatarImage src={trainer.photo_url || undefined} /><AvatarFallback>{trainer.name_en?.charAt(0)}</AvatarFallback></Avatar>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold">{isRTL ? trainer.name_ar : trainer.name_en}</p>
+                          <p className="text-xs text-muted-foreground">{isRTL ? trainer.name_en : trainer.name_ar}</p>
+                        </div>
+                        <div className="hidden md:flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-amber-400 text-amber-400" />{getTrainerAvgRating(trainer.id)}</span>
+                          <span>{trainerStudentCounts[trainer.id] || 0} {isRTL ? 'طلاب' : 'students'}</span>
+                          <span>{Math.round(Number(tc.price || 0))} ﷼</span>
+                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{Number(tc.duration_hours)} {isRTL ? 'س/جلسة' : 'h/session'}</span>
+                          <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{translateLocation(trainer.country, trainer.city)}</span>
+                        </div>
+                        <ChevronDown className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')} />
+                      </button>
+                      <AnimatePresence initial={false}>
+                        {expanded && (
+                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden pb-4">
+                            <div className="space-y-4 rounded-lg bg-muted/20 p-4">
+                              <div className="flex justify-end">
+                                <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/trainers/${trainer.id}`)}>{isRTL ? 'عرض الملف الكامل' : 'View full profile'}</Button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                                <div><p className="text-xs text-muted-foreground">{isRTL ? 'نوع الدراجة' : 'Bike type'}</p><p>{trainer.bike_type || '—'}</p></div>
+                                <div><p className="text-xs text-muted-foreground">{isRTL ? 'الماركة' : 'Brand'}</p><p>{trainer.motorbike_brand || '—'}</p></div>
+                                <div><p className="text-xs text-muted-foreground">{isRTL ? 'الرخصة' : 'License'}</p><p dir="ltr">{trainer.license_type || '—'}</p></div>
+                                <div><p className="text-xs text-muted-foreground">{isRTL ? 'الخبرة' : 'Experience'}</p><p>{trainer.years_of_experience}</p></div>
+                              </div>
+                              <div className="space-y-2">
+                                <p className="text-xs font-semibold text-muted-foreground">{isRTL ? `التقييمات (${reviews.length})` : `Reviews (${reviews.length})`}</p>
+                                {reviews.length === 0 ? <p className="text-sm text-muted-foreground">{isRTL ? 'لا توجد تقييمات' : 'No reviews'}</p> : (
+                                  <div className="grid gap-2 sm:grid-cols-2">
+                                    {reviews.slice(0, 4).map((r: any) => (
+                                      <Card key={r.id}><CardContent className="p-3"><div className="flex justify-between text-xs"><span>{r.student_name || '—'}</span><span>{format(new Date(r.created_at), 'yyyy-MM-dd')}</span></div><p className="mt-1 text-xs text-muted-foreground">{r.comment || '—'}</p></CardContent></Card>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2.5 rounded-full bg-primary/10">
-                <Bike className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{isRTL ? 'المدربين' : 'Trainers'}</p>
-                <p className="text-xl font-bold">{trainerCourses?.length || 0}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2.5 rounded-full bg-blue-500/10">
-                <Users className="w-5 h-5 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{isRTL ? 'الطلاب' : 'Students'}</p>
-                <p className="text-xl font-bold">{students?.length || 0}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2.5 rounded-full bg-amber-500/10">
-                <Star className="w-5 h-5 text-amber-500" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{isRTL ? 'التقييمات' : 'Reviews'}</p>
-                <p className="text-xl font-bold">{allReviews?.length || 0}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabs: Trainers / Students */}
-        <Tabs defaultValue="trainers">
-          <TabsList className="w-full justify-start">
-            <TabsTrigger value="trainers" className="gap-1.5">
-              <Bike className="w-4 h-4" />
-              {isRTL ? 'المدربين' : 'Trainers'}
-              <Badge variant="secondary" className="h-5 px-1.5 text-xs ms-1">{trainerCourses?.length || 0}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="students" className="gap-1.5">
-              <Users className="w-4 h-4" />
-              {isRTL ? 'الطلاب' : 'Students'}
-              <Badge variant="secondary" className="h-5 px-1.5 text-xs ms-1">{students?.length || 0}</Badge>
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Trainers Tab */}
-          <TabsContent value="trainers" className="mt-4">
-            {loadingTrainers ? (
-              <div className="space-y-3">{[1, 2].map(i => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}</div>
-            ) : !trainerCourses?.length ? (
-              <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  {isRTL ? 'لا يوجد مدربين معينين' : 'No trainers assigned'}
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {trainerCourses.map((tc: any) => {
-                  const trainer = tc.trainers;
-                  if (!trainer) return null;
-                  const isExpanded = expandedTrainerId === trainer.id;
-                  const trainerReviews = getTrainerReviews(trainer.id);
-                  const avgRating = getTrainerAvgRating(trainer.id);
-                  const stuCount = trainerStudentCounts?.[trainer.id] || 0;
-
-                  return (
-                    <Card key={tc.id || trainer.id} className="overflow-hidden">
-                      <CardContent className="p-0">
-                        <button
-                          className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors text-start"
-                          onClick={() => setExpandedTrainerId(isExpanded ? null : trainer.id)}
-                        >
-                          <Avatar className="h-12 w-12 border border-border shrink-0">
-                            <AvatarImage src={trainer.photo_url || ''} />
-                            <AvatarFallback className="bg-primary/10 text-primary">{trainer.name_en?.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold">{isRTL ? trainer.name_ar : trainer.name_en}</div>
-                            <div className="flex flex-wrap gap-3 mt-1.5 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{trainer.city}, {trainer.country}</span>
-                              <span className="flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" />{tc.price} {isRTL ? 'ر.س' : 'SAR'}</span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3.5 h-3.5" />
-                                {Math.max(1, Number(tc.sessions_count ?? 1))}×{isRTL ? ' جلسات، ' : ' sessions, '}
-                                {tc.duration_hours} {isRTL ? 'س/جلسة' : 'h/sess'}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <Badge variant="secondary" className="gap-1"><Star className="w-3 h-3 fill-amber-400 text-amber-400" />{avgRating}</Badge>
-                            <Badge variant="secondary" className="gap-1"><Users className="w-3 h-3" />{stuCount}</Badge>
-                            {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                          </div>
-                        </button>
-
-                        {isExpanded && (
-                          <div className="border-t border-border p-5 space-y-5 bg-muted/20">
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                              <div>
-                                <span className="text-xs text-muted-foreground">{isRTL ? 'نوع الدراجة' : 'Bike Type'}</span>
-                                <p className="font-medium">{trainer.bike_type || '—'}</p>
-                              </div>
-                              <div>
-                                <span className="text-xs text-muted-foreground">{isRTL ? 'ماركة الدراجة' : 'Brand'}</span>
-                                <p className="font-medium">{trainer.motorbike_brand || '—'}</p>
-                              </div>
-                              <div>
-                                <span className="text-xs text-muted-foreground">{isRTL ? 'نوع الرخصة' : 'License'}</span>
-                                <p className="font-medium">{trainer.license_type || '—'}</p>
-                              </div>
-                              <div>
-                                <span className="text-xs text-muted-foreground">{isRTL ? 'الخبرة' : 'Experience'}</span>
-                                <p className="font-medium">{trainer.years_of_experience} {isRTL ? 'سنة' : 'years'}</p>
-                              </div>
-                              <div>
-                                <span className="text-xs text-muted-foreground">{isRTL ? 'نسبة الربح' : 'Profit'}</span>
-                                <p className="font-medium">{trainer.profit_ratio}%</p>
-                              </div>
-                              <div>
-                                <span className="text-xs text-muted-foreground">{isRTL ? 'الحالة' : 'Status'}</span>
-                                <p className="font-medium">{trainer.status === 'active' ? (isRTL ? 'نشط' : 'Active') : (isRTL ? 'غير نشط' : 'Inactive')}</p>
-                              </div>
-                            </div>
-
-                            {tc.location && (
-                              <div className="text-sm">
-                                <span className="text-xs text-muted-foreground">{isRTL ? 'موقع التدريب' : 'Training Location'}: </span>
-                                <span className="font-medium">{tc.location}</span>
-                              </div>
-                            )}
-
-                            {tc.services?.length > 0 && (
-                              <div>
-                                <span className="text-xs text-muted-foreground">{isRTL ? 'الخدمات' : 'Services'}</span>
-                                <div className="flex flex-wrap gap-1.5 mt-1.5">
-                                  {tc.services.map((s: string, i: number) => <Badge key={i} variant="secondary" className="text-xs">{s}</Badge>)}
-                                </div>
-                              </div>
-                            )}
-
-                            <div>
-                              <span className="text-xs text-muted-foreground font-semibold">{isRTL ? 'التقييمات' : 'Reviews'} ({trainerReviews.length})</span>
-                              {trainerReviews.length === 0 ? (
-                                <p className="text-sm text-muted-foreground mt-2">{isRTL ? 'لا توجد تقييمات' : 'No reviews'}</p>
-                              ) : (
-                                <div className="grid gap-2 sm:grid-cols-2 mt-2">
-                                  {trainerReviews.slice(0, 6).map(r => (
-                                    <Card key={r.id}>
-                                      <CardContent className="p-3 space-y-1.5">
-                                        <div className="flex items-center justify-between">
-                                          <span className="text-sm font-medium">{r.student_name}</span>
-                                          <span className="text-xs text-muted-foreground">{format(new Date(r.created_at), 'yyyy-MM-dd')}</span>
-                                        </div>
-                                        <div className="flex gap-0.5">
-                                          {Array.from({ length: 5 }).map((_, i) => (
-                                            <Star key={i} className={`w-3.5 h-3.5 ${i < r.rating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'}`} />
-                                          ))}
-                                        </div>
-                                        {r.comment && <p className="text-xs text-muted-foreground">{r.comment}</p>}
-                                      </CardContent>
-                                    </Card>
-                                  ))}
-                                  {trainerReviews.length > 6 && (
-                                    <p className="text-xs text-muted-foreground text-center col-span-2">+{trainerReviews.length - 6} {isRTL ? 'المزيد' : 'more'}</p>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Students Tab */}
-          <TabsContent value="students" className="mt-4">
+        <Card className="border-border/60">
+          <CardContent className="p-5 sm:p-6 space-y-4">
+            <ProfileSectionTitle>{isRTL ? `الطلاب (${students.length})` : `Students (${students.length})`}</ProfileSectionTitle>
+            <div className="max-w-md">
+              <Input
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
+                placeholder={isRTL ? '🔍 بحث بالاسم أو الإيميل أو الهاتف...' : '🔍 Search by name, email, or phone...'}
+              />
+            </div>
             {loadingStudents ? (
-              <div className="space-y-3">{[1, 2].map(i => <Skeleton key={i} className="h-10 w-full" />)}</div>
-            ) : !students?.length ? (
-              <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  {isRTL ? 'لا يوجد طلاب' : 'No students yet'}
-                </CardContent>
-              </Card>
+              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+            ) : filteredStudents.length === 0 ? (
+              <p className="py-10 text-center text-muted-foreground">{isRTL ? 'لا يوجد طلاب' : 'No students yet'}</p>
             ) : (
-              <Card>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{isRTL ? 'الاسم' : 'Name'}</TableHead>
-                        <TableHead>{isRTL ? 'الهاتف' : 'Phone'}</TableHead>
-                        <TableHead>{isRTL ? 'الإيميل' : 'Email'}</TableHead>
-                        <TableHead>{isRTL ? 'المدرب' : 'Trainer'}</TableHead>
-                        <TableHead>{isRTL ? 'التاريخ' : 'Date'}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {students.map(s => {
-                        const trainerName = trainerCourses?.find((tc: any) => tc.trainers?.id === s.trainer_id)?.trainers;
-                        return (
-                          <TableRow key={s.id}>
-                            <TableCell>{s.full_name}</TableCell>
-                            <TableCell dir="ltr" className="rtl:text-right">{s.phone}</TableCell>
-                            <TableCell>{s.email}</TableCell>
-                            <TableCell>{trainerName ? (isRTL ? trainerName.name_ar : trainerName.name_en) : '—'}</TableCell>
-                            <TableCell>{format(new Date(s.enrolled_at), 'yyyy-MM-dd')}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{isRTL ? 'الاسم' : 'Name'}</TableHead>
+                      <TableHead>{isRTL ? 'الهاتف' : 'Phone'}</TableHead>
+                      <TableHead>{isRTL ? 'الإيميل' : 'Email'}</TableHead>
+                      <TableHead>{isRTL ? 'المدرب' : 'Trainer'}</TableHead>
+                      <TableHead>{isRTL ? 'الجلسات' : 'Sessions'}</TableHead>
+                      <TableHead>{isRTL ? 'الدفع' : 'Payment'}</TableHead>
+                      <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
+                      <TableHead>{isRTL ? 'تاريخ التسجيل' : 'Enrolled'}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredStudents.map((s) => {
+                      const trainer = s.trainers ?? trainerCourses.find((tc) => tc.trainer_id === s.trainer_id)?.trainers;
+                      const sessionCount = normalizeBookingSessions(
+                        s.sessions,
+                        s.booking_date,
+                        s.start_time,
+                        s.end_time,
+                        s.status,
+                      ).length;
+                      return (
+                        <TableRow key={s.id}>
+                          <TableCell>{s.full_name}</TableCell>
+                          <TableCell dir="ltr">{s.phone || '—'}</TableCell>
+                          <TableCell dir="ltr">{s.email || '—'}</TableCell>
+                          <TableCell>
+                            {trainer ? (isRTL ? trainer.name_ar : trainer.name_en) : '—'}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {sessionCountLabel(Math.max(1, sessionCount), isRTL)}
+                          </TableCell>
+                          <TableCell>{payBadgeStudent(s.payment_status, isRTL)}</TableCell>
+                          <TableCell>{bookingStatusBadgeStudent(s.status, isRTL)}</TableCell>
+                          <TableCell>
+                            {s.created_at
+                              ? format(new Date(s.created_at), isRTL ? 'd MMM yyyy' : 'MMM d, yyyy', {
+                                  locale: isRTL ? ar : undefined,
+                                })
+                              : '—'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             )}
-          </TabsContent>
-        </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );

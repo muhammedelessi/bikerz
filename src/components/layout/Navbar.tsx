@@ -71,6 +71,20 @@ const EXTRA_PUBLIC_NAV_ITEMS: MenuItem[] = [
   },
 ];
 
+function extraAfterCoursesNav(t: (key: string, opts?: { lng?: string }) => string): MenuItem[] {
+  return [
+    {
+      id: "bundles",
+      title_en: t("nav.bundles", { lng: "en" }),
+      title_ar: t("nav.bundles", { lng: "ar" }),
+      link: "/bundles",
+      is_visible: true,
+      open_in_new_tab: false,
+    },
+    ...EXTRA_PUBLIC_NAV_ITEMS,
+  ];
+}
+
 const Navbar: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
@@ -153,7 +167,7 @@ const Navbar: React.FC = () => {
         is_visible: true,
         open_in_new_tab: false,
       },
-      ...EXTRA_PUBLIC_NAV_ITEMS,
+      ...extraAfterCoursesNav(t),
       {
         id: "mentors",
         title_en: t("nav.mentors", { lng: "en" }),
@@ -177,7 +191,7 @@ const Navbar: React.FC = () => {
 
     const merged = [...cmsItems];
     const links = new Set(merged.map((item) => item.link));
-    const missing = EXTRA_PUBLIC_NAV_ITEMS.filter((item) => !links.has(item.link));
+    const missing = extraAfterCoursesNav(t).filter((item) => !links.has(item.link));
     if (missing.length === 0) return merged;
 
     const coursesIdx = merged.findIndex((item) => item.link === "/courses");

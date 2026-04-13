@@ -1,6 +1,6 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle, XCircle, CreditCard, Banknote } from "lucide-react";
+import { Clock, CheckCircle, XCircle, CreditCard, Banknote, GraduationCap } from "lucide-react";
 
 export interface UnifiedPayment {
   id: string;
@@ -12,7 +12,6 @@ export interface UnifiedPayment {
   currency: string;
   status: string;
   created_at: string;
-  source: "manual" | "tap";
   payment_method?: string;
   reference_number?: string | null;
   notes?: string | null;
@@ -43,9 +42,24 @@ export interface UnifiedPayment {
     price: number | null;
     discount_percentage: number | null;
   } | null;
+  source: "manual" | "tap" | "training_booking";
+  /** Populated when source is training_booking (paid practical training). */
+  training_booking_meta?: {
+    booking_status: string;
+    payment_status: string;
+    training_name_ar: string | null;
+    training_name_en: string | null;
+    trainer_name_ar: string | null;
+    trainer_name_en: string | null;
+  } | null;
 }
 
-export const normalizeStatus = (status: string, source: "manual" | "tap"): string => {
+export const normalizeStatus = (status: string, source: "manual" | "tap" | "training_booking"): string => {
+  if (source === "training_booking") {
+    if (status === "paid" || status === "succeeded" || status === "captured") return "approved";
+    if (status === "failed" || status === "refunded" || status === "cancelled") return "rejected";
+    return "pending";
+  }
   if (source === "tap") {
     if (status === "succeeded" || status === "captured") return "approved";
     if (status === "failed" || status === "cancelled" || status === "expired" || status === "declined")
@@ -129,6 +143,7 @@ export const getFailureDetails = (payment: UnifiedPayment, isRTL: boolean) => {
 
 export const getPaymentMethodLabel = (payment: UnifiedPayment) => {
   if (payment.source === "manual") return payment.payment_method || "-";
+  if (payment.source === "training_booking") return payment.payment_method || "Tap";
   const method = payment.payment_method?.toLowerCase() || "";
   if (method.includes("apple")) return "Apple Pay";
   if (method.includes("google")) return "Google Pay";
@@ -138,9 +153,9 @@ export const getPaymentMethodLabel = (payment: UnifiedPayment) => {
   return method || "Card";
 };
 
-export const getStatusBadge = (status: string, source: "manual" | "tap", isRTL: boolean) => {
+export const getStatusBadge = (status: string, source: "manual" | "tap" | "training_booking", isRTL: boolean) => {
   const norm = normalizeStatus(status, source);
-  const original = source === "tap" && norm !== status ? ` (${status})` : "";
+  const original = (source === "tap" || source === "training_booking") && norm !== status ? ` (${status})` : "";
   switch (norm) {
     case "pending":
       return (
@@ -171,7 +186,15 @@ export const getStatusBadge = (status: string, source: "manual" | "tap", isRTL: 
   }
 };
 
-export const getSourceBadge = (source: "manual" | "tap", isRTL: boolean) => {
+export const getSourceBadge = (source: "manual" | "tap" | "training_booking", isRTL: boolean) => {
+  if (source === "training_booking") {
+    return (
+      <Badge variant="outline" className="bg-violet-500/10 text-violet-700 border-violet-500/25 dark:text-violet-300">
+        <GraduationCap className="w-3 h-3 me-1" />
+        {isRTL ? "تدريب" : "Training"}
+      </Badge>
+    );
+  }
   if (source === "tap") {
     return (
       <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">

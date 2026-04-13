@@ -129,7 +129,6 @@ const CourseDetail: React.FC = () => {
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ArrowLeft : ArrowRight;
   const [showCheckout, setShowCheckout] = useState(false);
-
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
@@ -285,7 +284,8 @@ const CourseDetail: React.FC = () => {
           `
           id, title, title_ar, description, description_ar,
           thumbnail_url, difficulty_level, price, is_published,
-          discount_percentage, discount_expires_at,
+          discount_percentage, discount_expires_at, vat_percentage,
+          preview_video_thumbnail,
           base_rating, base_review_count,
           chapters (
             id, is_published,
@@ -1111,10 +1111,17 @@ const CourseDetail: React.FC = () => {
                             </Button>
                           )}
 
-                          {/* Divider */}
+                          {course.price > 0 && id && (
+                            <Button type="button" variant="outline" className="w-full border-primary/40" asChild>
+                              <Link to={`/bundles?selected=${encodeURIComponent(id)}`}>
+                                <Gift className="w-4 h-4 me-2 shrink-0" />
+                                {isRTL ? "اصنع باقتك ووفر على نفسك" : "Build your bundle and save"}
+                              </Link>
+                            </Button>
+                          )}
+
                           <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
-                          {/* Course includes */}
                           <div className="space-y-3">
                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                               {t("courseDetail.thisCourseIncludes")}

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { BookOpen, Loader2 } from "lucide-react";
@@ -12,13 +13,14 @@ import SEOHead from "@/components/common/SEOHead";
 import CourseCard from "@/components/course/CourseCard";
 import { fetchEnrollmentsWithLiveProgress, type EnrollmentWithProgress } from "@/lib/enrollmentProgress";
 import PromoPopup from "@/components/common/PromoPopup";
+import { Gift } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Courses: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
-  const handlePlayVideo = useCallback((id: string) => setActiveVideoId((prev) => (prev === id ? null : id)), []);
 
   const { data: courses = [], isLoading } = useQuery({
     queryKey: ["courses-with-stats"],
@@ -30,6 +32,7 @@ const Courses: React.FC = () => {
           id, title, title_ar, description, description_ar,
           thumbnail_url, difficulty_level, price, is_published,
           discount_percentage, discount_expires_at, vat_percentage,
+          preview_video_thumbnail,
           base_rating, base_review_count,
           preview_video_url, preview_video_thumbnail,
           chapters (
@@ -73,6 +76,8 @@ const Courses: React.FC = () => {
   });
 
   const getEnrollment = (courseId: string) => enrollments.find((e) => e.course_id === courseId);
+
+  const handlePlayVideo = useCallback((id: string) => setActiveVideoId((prev) => (prev === id ? null : id)), []);
 
   return (
     <>
@@ -129,6 +134,27 @@ const Courses: React.FC = () => {
                     onPlayVideo={handlePlayVideo}
                   />
                 ))}
+              </div>
+            )}
+
+            {!isLoading && courses.length > 0 && (
+              <div className="mt-16 space-y-4">
+                <div className="text-center sm:text-start space-y-1">
+                  <h2 className="text-xl font-bold flex items-center justify-center sm:justify-start gap-2">
+                    <Gift className="w-6 h-6 text-primary" />
+                    {isRTL ? "اصنع باقتك الخاصة" : "Build your bundle"}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {isRTL
+                      ? "وفّر أموالك عند شراء أكثر من كورس في صفحة الباقات"
+                      : "Save money when buying multiple courses from the bundles page"}
+                  </p>
+                </div>
+                <div className="flex justify-center sm:justify-start">
+                  <Button asChild size="lg" className="px-8">
+                    <Link to="/bundles">{isRTL ? "اصنع باقتك ووفر أموالك" : "Build your bundle and save"}</Link>
+                  </Button>
+                </div>
               </div>
             )}
           </section>

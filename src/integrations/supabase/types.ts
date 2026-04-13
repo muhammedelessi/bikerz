@@ -617,6 +617,117 @@ export type Database = {
           },
         ]
       }
+      bundle_tiers: {
+        Row: {
+          id: string
+          min_courses: number
+          discount_percentage: number
+          label_ar: string | null
+          label_en: string | null
+          is_active: boolean | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          min_courses: number
+          discount_percentage?: number
+          label_ar?: string | null
+          label_en?: string | null
+          is_active?: boolean | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          min_courses?: number
+          discount_percentage?: number
+          label_ar?: string | null
+          label_en?: string | null
+          is_active?: boolean | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      course_bundles: {
+        Row: {
+          id: string
+          user_id: string | null
+          course_ids: string[]
+          courses_count: number
+          original_price_sar: number
+          discount_percentage: number
+          final_price_sar: number
+          currency: string | null
+          payment_id: string | null
+          status: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          course_ids: string[]
+          courses_count: number
+          original_price_sar: number
+          discount_percentage: number
+          final_price_sar: number
+          currency?: string | null
+          payment_id?: string | null
+          status?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          course_ids?: string[]
+          courses_count?: number
+          original_price_sar?: number
+          discount_percentage?: number
+          final_price_sar?: number
+          currency?: string | null
+          payment_id?: string | null
+          status?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      course_bundle_enrollments: {
+        Row: {
+          id: string
+          bundle_id: string
+          course_id: string
+          user_id: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          bundle_id: string
+          course_id: string
+          user_id: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          bundle_id?: string
+          course_id?: string
+          user_id?: string
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_bundle_enrollments_bundle_id_fkey"
+            columns: ["bundle_id"]
+            isOneToOne: false
+            referencedRelation: "course_bundles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_bundle_enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_enrollments: {
         Row: {
           completed_at: string | null
@@ -2072,12 +2183,15 @@ export type Database = {
           city: string
           country: string
           created_at: string
+          email: string
           id: string
+          user_id: string | null
           language_levels: Json
           license_type: string
           motorbike_brand: string
           name_ar: string
           name_en: string
+          phone: string
           photo_url: string | null
           profit_ratio: number
           services: string[] | null
@@ -2097,12 +2211,15 @@ export type Database = {
           city?: string
           country?: string
           created_at?: string
+          email?: string
           id?: string
+          user_id?: string | null
           language_levels?: Json
           license_type?: string
           motorbike_brand?: string
           name_ar?: string
           name_en?: string
+          phone?: string
           photo_url?: string | null
           profit_ratio?: number
           services?: string[] | null
@@ -2122,12 +2239,15 @@ export type Database = {
           city?: string
           country?: string
           created_at?: string
+          email?: string
           id?: string
+          user_id?: string | null
           language_levels?: Json
           license_type?: string
           motorbike_brand?: string
           name_ar?: string
           name_en?: string
+          phone?: string
           photo_url?: string | null
           profit_ratio?: number
           services?: string[] | null
@@ -2151,6 +2271,7 @@ export type Database = {
           payment_status: string
           phone: string
           preferred_date: string | null
+          sessions: Json
           start_time: string | null
           status: string
           trainer_course_id: string | null
@@ -2172,6 +2293,7 @@ export type Database = {
           payment_status?: string
           phone: string
           preferred_date?: string | null
+          sessions?: Json
           start_time?: string | null
           status?: string
           trainer_course_id?: string | null
@@ -2193,6 +2315,7 @@ export type Database = {
           payment_status?: string
           phone?: string
           preferred_date?: string | null
+          sessions?: Json
           start_time?: string | null
           status?: string
           trainer_course_id?: string | null
@@ -2281,6 +2404,7 @@ export type Database = {
           level: Database["public"]["Enums"]["training_level"]
           name_ar: string
           name_en: string
+          sessions: Json
           status: Database["public"]["Enums"]["training_status"]
           type: Database["public"]["Enums"]["training_type"]
         }
@@ -2295,6 +2419,7 @@ export type Database = {
           level?: Database["public"]["Enums"]["training_level"]
           name_ar?: string
           name_en?: string
+          sessions?: Json
           status?: Database["public"]["Enums"]["training_status"]
           type?: Database["public"]["Enums"]["training_type"]
         }
@@ -2309,6 +2434,7 @@ export type Database = {
           level?: Database["public"]["Enums"]["training_level"]
           name_ar?: string
           name_en?: string
+          sessions?: Json
           status?: Database["public"]["Enums"]["training_status"]
           type?: Database["public"]["Enums"]["training_type"]
         }

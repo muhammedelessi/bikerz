@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { parsePhoneNumberFromString } from "https://esm.sh/libphonenumber-js@1.11.17/min";
+import { completeCourseBundleAfterPayment } from "../_shared/courseBundle.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -114,7 +115,7 @@ Deno.serve(async (req) => {
     const customer_name = b.customer_name;
     const customer_email = b.customer_email;
     const customer_phone = b.customer_phone;
-    const idempotency_key = (b.idempotency_key ?? b.idempotencyKey) as string | undefined;
+    let idempotency_key = String((b.idempotency_key ?? b.idempotencyKey) ?? "").trim();
     const coupon_id = b.coupon_id;
     const payment_method = (b.payment_method as string | undefined) ?? "card";
     const detected_country = b.detected_country;
@@ -133,12 +134,10 @@ Deno.serve(async (req) => {
     const trainingProgramIdPair =
       trainingIdBodyTrim.length > 0 && courseIdTrim.length > 0 && courseIdTrim === trainingIdBodyTrim;
 
-    if (!idempotency_key || !String(idempotency_key).trim()) {
-      return new Response(
-        JSON.stringify({ error: "Missing required field: idempotency_key" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const rawBundleIdsEarly = (b.bundle_course_ids ?? b.bundleCourseIds) as unknown;
+    const bundleIdsEarly = Array.isArray(rawBundleIdsEarly)
+      ? [...new Set(rawBundleIdsEarly.map((x) => String(x).trim()).filter(Boolean))]
+      : [];
 
     const hasCourse = courseIdTrim.length > 0;
     const hasTrainerCourse = trainerCourseIdTrim.length > 0;
@@ -157,11 +156,28 @@ Deno.serve(async (req) => {
     // When `trainer_course_id` (or `tc`) is present, always use the trainer/practical path — even if a
     // proxy or client default sent `payment_kind: "course"` (that mismatch used to block real bookings).
 
-    if (!isTrainingBooking && !hasCourse) {
+    // Bundle: explicit kind, or ≥2 course ids (some proxies strip `payment_kind`).
+    const isBundlePayment =
+      payment_kind === "course_bundle" ||
+      (bundleIdsEarly.length >= 2 && !isTrainingBooking);
+
+    if (!idempotency_key && isBundlePayment && bundleIdsEarly.length >= 2) {
+      idempotency_key =
+        `course_bundle_${userId}_${[...bundleIdsEarly].sort().join("_")}_${Date.now()}`;
+    }
+
+    if (!idempotency_key || !String(idempotency_key).trim()) {
+      return new Response(
+        JSON.stringify({ error: "Missing required field: idempotency_key" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!isTrainingBooking && !hasCourse && !isBundlePayment) {
       return new Response(
         JSON.stringify({
           error:
-            "Missing course_id for course payment. For training bookings, send payment_kind \"training_booking\" and trainer_course_id (omit course_id).",
+            "Missing course_id for course payment. For training bookings, send payment_kind \"training_booking\" and trainer_course_id (omit course_id). For bundles, send payment_kind \"course_bundle\" and bundle_course_ids.",
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -207,6 +223,28 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (isBundlePayment) {
+      return await processCourseBundlePayment({
+        b,
+        userId,
+        userEmail,
+        adminClient,
+        profileData,
+        corsHeaders,
+        tapSecretKey,
+        idempotency_key,
+        device_info,
+        token_id,
+        payment_method,
+        detected_country,
+        requestedCurrency,
+        chargeCurrency,
+        customer_name,
+        customer_email,
+        customer_phone,
+        req,
+      });
+    }
 
     // ── Idempotency check ──
     const { data: existingCharge } = await adminClient
@@ -328,6 +366,20 @@ Deno.serve(async (req) => {
         .single();
 
       if (courseError || !c) {
+        const { data: tcMisused } = await adminClient
+          .from("trainer_courses")
+          .select("id")
+          .eq("id", courseIdTrim)
+          .maybeSingle();
+        if (tcMisused) {
+          return new Response(
+            JSON.stringify({
+              error:
+                "This id is a trainer offer (trainer_courses), not a video course. Use the training booking flow with payment_kind \"training_booking\", trainer_course_id (or tc), and training_id.",
+            }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
         const { data: trainingProbe } = await adminClient
           .from("trainings")
           .select("id")
@@ -426,8 +478,11 @@ Deno.serve(async (req) => {
     const tapChargeCurrency = isTrainingBooking ? "SAR" : chargeCurrency;
 
     if (finalAmount <= 0) {
+      const zeroMsg = isTrainingBooking
+        ? "This session is free (0 SAR). Confirm the booking in the app; payment is not required."
+        : "Final amount is zero. Use free enrollment instead.";
       return new Response(
-        JSON.stringify({ error: "Final amount is zero. Use free enrollment instead." }),
+        JSON.stringify({ error: zeroMsg }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -815,4 +870,352 @@ async function enrollUser(
   if (error && !error.message.includes("duplicate")) {
     console.error("Enrollment error:", error.message);
   }
+}
+
+type BundleCtx = {
+  b: Record<string, unknown>;
+  userId: string;
+  userEmail: string;
+  adminClient: ReturnType<typeof createClient>;
+  profileData: Record<string, unknown>;
+  corsHeaders: Record<string, string>;
+  tapSecretKey: string;
+  idempotency_key: string;
+  device_info: unknown;
+  token_id: unknown;
+  payment_method: string;
+  detected_country: unknown;
+  requestedCurrency: string;
+  chargeCurrency: string;
+  customer_name: unknown;
+  customer_email: unknown;
+  customer_phone: unknown;
+  req: Request;
+};
+
+async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
+  const {
+    b,
+    userId,
+    userEmail,
+    adminClient,
+    profileData,
+    corsHeaders,
+    tapSecretKey,
+    idempotency_key,
+    device_info,
+    token_id,
+    payment_method,
+    detected_country,
+    customer_name,
+    customer_email,
+    customer_phone,
+    req,
+  } = ctx;
+
+  const rawIds = (b.bundle_course_ids ?? b.bundleCourseIds) as unknown;
+  const ids = Array.isArray(rawIds)
+    ? [...new Set(rawIds.map((x) => String(x).trim()).filter(Boolean))]
+    : [];
+  if (ids.length < 2) {
+    return new Response(
+      JSON.stringify({ error: "Select at least two courses for a bundle" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  const { data: existingCharge } = await adminClient
+    .from("tap_charges")
+    .select("id, charge_id, status")
+    .eq("idempotency_key", idempotency_key)
+    .maybeSingle();
+
+  if (existingCharge) {
+    if (existingCharge.status === "succeeded" || existingCharge.status === "processing") {
+      return new Response(
+        JSON.stringify({
+          charge_id: existingCharge.charge_id,
+          status: existingCharge.status,
+          duplicate: true,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    if (existingCharge.status === "failed" || existingCharge.status === "cancelled") {
+      await adminClient.from("tap_charges").delete().eq("id", existingCharge.id);
+    } else {
+      return new Response(
+        JSON.stringify({
+          charge_id: existingCharge.charge_id,
+          status: existingCharge.status,
+          duplicate: true,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+  }
+
+  const vatPct = await getTrainingPlatformVatPercent(adminClient);
+  const vatFactor = 1 + vatPct / 100;
+  let totalOriginalSar = 0;
+  for (const id of ids) {
+    const { data: c, error: cErr } = await adminClient
+      .from("courses")
+      .select("id, price, discount_percentage, title, title_ar")
+      .eq("id", id)
+      .single();
+    if (cErr || !c) {
+      return new Response(
+        JSON.stringify({ error: "One or more courses were not found" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const base = Number(c.price);
+    const d =
+      c.discount_percentage && Number(c.discount_percentage) > 0 ? Number(c.discount_percentage) : 0;
+    const beforeTax = d > 0 ? Math.ceil(base * (1 - d / 100)) : Math.ceil(base);
+    totalOriginalSar += Math.ceil(beforeTax * vatFactor);
+
+    const { data: enr } = await adminClient
+      .from("course_enrollments")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("course_id", id)
+      .maybeSingle();
+    if (enr) {
+      return new Response(
+        JSON.stringify({ error: "You are already enrolled in one of the selected courses" }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+  }
+
+  const { data: tierRows } = await adminClient
+    .from("bundle_tiers")
+    .select("min_courses, discount_percentage, label_en, label_ar")
+    .eq("is_active", true)
+    .order("min_courses", { ascending: false });
+
+  const applicable = tierRows?.find((t) => ids.length >= t.min_courses);
+  const discountPct = applicable ? Number(applicable.discount_percentage) : 0;
+  const discountAmount = Math.round(totalOriginalSar * (discountPct / 100));
+  const finalSar = Math.max(0, totalOriginalSar - discountAmount);
+  const finalAmount = Math.ceil(finalSar);
+
+  const safeDeviceInfo = typeof device_info === "string" ? device_info.substring(0, 200) : null;
+  const bundleMeta = {
+    payment_kind: "course_bundle",
+    bundle_course_ids: ids,
+    bundle_original_price_sar: totalOriginalSar,
+    bundle_discount_pct: discountPct,
+    bundle_final_price_sar: finalAmount,
+    vat_rate: vatPct,
+    final_amount: finalAmount,
+    detected_country: detected_country || null,
+    environment: tapSecretKey.startsWith("sk_test") ? "test" : "live",
+    billing_city: profileData.city,
+    billing_country: profileData.country,
+  };
+
+  const { data: chargeRecord, error: insertError } = await adminClient
+    .from("tap_charges")
+    .insert({
+      user_id: userId,
+      course_id: null,
+      amount: finalAmount,
+      currency: "SAR",
+      status: "pending",
+      customer_name: customer_name || profileData.full_name || "",
+      customer_email: customer_email || userEmail,
+      customer_phone: customer_phone || profileData.phone || "",
+      idempotency_key,
+      device_info: safeDeviceInfo,
+      metadata: bundleMeta,
+    })
+    .select("id")
+    .single();
+
+  if (insertError) {
+    console.error("DB insert error (bundle):", insertError.message);
+    return new Response(
+      JSON.stringify({ error: "Failed to create payment record" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  const requestOrigin = req.headers.get("origin") || "";
+  const isKnownOrigin =
+    requestOrigin === "https://academy.bikerz.com" ||
+    requestOrigin === "https://bikerz.lovable.app" ||
+    requestOrigin.endsWith(".lovable.app") ||
+    requestOrigin.endsWith(".lovableproject.com");
+  const origin = isKnownOrigin ? requestOrigin : "https://academy.bikerz.com";
+  const redirectBackUrl = `${origin}/tap-3ds-callback.html?bundle=1`;
+
+  const phoneForTap = resolveTapPhone(customer_phone, profileData.phone, profileData.country);
+  const storedPhoneForCheck = String(customer_phone || profileData.phone || "").trim();
+  if (storedPhoneForCheck && !phoneForTap) {
+    return new Response(
+      JSON.stringify({
+        error:
+          "Invalid phone number. Please use a valid number with country code (for example +966501234567 or +970599123456).",
+      }),
+      { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  const desc = `Bundle: ${ids.length} courses`;
+
+  const chargePayload: Record<string, unknown> = {
+    amount: finalAmount,
+    currency: "SAR",
+    threeDSecure: true,
+    save_card: false,
+    description: desc,
+    statement_descriptor: "BIKERZ",
+    reference: {
+      transaction: String(idempotency_key || "").slice(0, 64),
+      order: String(chargeRecord.id || "").slice(0, 64),
+    },
+    receipt: {
+      email: true,
+      sms: !!phoneForTap,
+    },
+    customer: {
+      first_name: (String(customer_name || profileData.full_name || "Customer")).split(" ")[0],
+      last_name: (String(customer_name || profileData.full_name || "")).split(" ").slice(1).join(" ") || "",
+      email: customer_email || userEmail,
+      phone: phoneForTap,
+    },
+    metadata: {
+      user_id: userId,
+      course_id: null,
+      bundle_course_ids: ids,
+      internal_id: chargeRecord.id,
+      payment_kind: "course_bundle",
+    },
+    source: {
+      id: token_id || "src_all",
+    },
+    redirect: {
+      url: redirectBackUrl,
+    },
+  };
+
+  let tapData: Record<string, any>;
+  let tapResponse: Response;
+  try {
+    tapResponse = await fetch("https://api.tap.company/v2/charges", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tapSecretKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "x-idempotency-key": idempotency_key,
+      },
+      body: JSON.stringify(chargePayload),
+      signal: AbortSignal.timeout(PAYMENT_TIMEOUT),
+    });
+  } catch (fetchErr: any) {
+    console.error("Tap API network error (bundle):", fetchErr.message);
+    await adminClient
+      .from("tap_charges")
+      .update({ status: "failed", error_message: "Payment gateway timeout or network error" })
+      .eq("id", chargeRecord.id);
+    return new Response(
+      JSON.stringify({ error: "Payment gateway is temporarily unavailable. Please try again." }),
+      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  const contentType = tapResponse.headers.get("content-type");
+  if (!contentType?.includes("application/json")) {
+    await adminClient
+      .from("tap_charges")
+      .update({ status: "failed", error_message: "Gateway returned invalid response" })
+      .eq("id", chargeRecord.id);
+    return new Response(
+      JSON.stringify({ error: "Payment gateway returned an invalid response. Please try again." }),
+      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  try {
+    tapData = await tapResponse.json();
+  } catch {
+    await adminClient
+      .from("tap_charges")
+      .update({ status: "failed", error_message: "Malformed gateway response" })
+      .eq("id", chargeRecord.id);
+    return new Response(
+      JSON.stringify({ error: "Payment gateway returned a malformed response. Please try again." }),
+      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  if (!tapResponse.ok) {
+    await adminClient
+      .from("tap_charges")
+      .update({
+        status: "failed",
+        error_message: tapData?.errors?.[0]?.description || "Payment gateway error",
+        tap_response: sanitizeTapResponse(tapData),
+      })
+      .eq("id", chargeRecord.id);
+    return new Response(
+      JSON.stringify({
+        error: tapData?.errors?.[0]?.description || "Payment failed",
+        code: tapData?.errors?.[0]?.code,
+      }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  const chargeStatus = mapTapStatus(tapData.status);
+  await adminClient
+    .from("tap_charges")
+    .update({
+      charge_id: tapData.id,
+      status: chargeStatus,
+      payment_method: tapData.source?.payment_method || "card",
+      card_brand: tapData.source?.payment_type || null,
+      card_last_four: tapData.source?.payment?.last_four || null,
+      tap_response: sanitizeTapResponse(tapData),
+    })
+    .eq("id", chargeRecord.id);
+
+  if (chargeStatus === "succeeded") {
+    await completeCourseBundleAfterPayment(
+      adminClient,
+      userId,
+      tapData.id,
+      bundleMeta,
+      finalAmount,
+      "SAR",
+    );
+  }
+
+  const tapRedirectUrl = tapData.transaction?.url || null;
+
+  if (!tapRedirectUrl && chargeStatus !== "succeeded") {
+    await adminClient
+      .from("tap_charges")
+      .update({ status: "failed", error_message: "No payment page URL received" })
+      .eq("id", chargeRecord.id);
+    return new Response(
+      JSON.stringify({ error: "Payment gateway did not provide a payment page. Please try again." }),
+      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  return new Response(
+    JSON.stringify({
+      charge_id: tapData.id,
+      status: chargeStatus,
+      redirect_url: tapRedirectUrl,
+      amount: finalAmount,
+      currency: "SAR",
+    }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
 }

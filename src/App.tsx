@@ -52,6 +52,7 @@ const BookingPaymentComplete = lazy(() => import("./pages/BookingPaymentComplete
 const BookingSuccess = lazy(() => import("./pages/BookingSuccess"));
 const MyBookings = lazy(() => import("./pages/MyBookings"));
 const JoinCommunity = lazy(() => import("./pages/JoinCommunity"));
+const Bundles = lazy(() => lazyRetry(() => import("./pages/Bundles")));
 
 // Admin Pages - lazy loaded
 const AdminHome = lazy(() => import("./pages/admin/AdminHome"));
@@ -159,6 +160,14 @@ const AppRoutes = () => (
         {/* Critical eager-loaded routes */}
         <Route path="/" element={<Index />} />
         <Route path="/courses" element={<Courses />} />
+        <Route
+          path="/bundles"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <Bundles />
+            </Suspense>
+          }
+        />
         <Route path="/trainings" element={<Trainings />} />
         <Route path="/trainings/:trainingId/book/:trainerCourseId" element={<TrainingBooking />} />
         <Route path="/trainings/:id" element={<TrainingDetail />} />

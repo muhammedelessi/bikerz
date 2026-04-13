@@ -22,12 +22,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Star, Upload, X, ArrowLeft, ArrowRight, Users, Bike, MapPin, Clock, AlertTriangle, TrendingUp, Eye, Camera, Images, Check, Minus, Languages } from 'lucide-react';
+import { Plus, Pencil, Trash2, Star, Upload, X, ArrowLeft, ArrowRight, Users, Bike, MapPin, Clock, Timer, AlertTriangle, TrendingUp, Eye, Camera, Images, Check, Minus, Languages } from 'lucide-react';
 import BilingualInput from '@/components/admin/content/BilingualInput';
 import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { parseTrainingSessions } from '@/lib/trainingSessionCurriculum';
 
 const COMMON_BIKE_TYPES = ['Sport', 'Cruiser', 'Adventure', 'Touring', 'Naked', 'Dual Sport', 'Scooter'] as const;
+const BIKE_TYPE_LABELS: Record<string, { ar: string; en: string }> = {
+  Sport: { ar: 'رياضية', en: 'Sport' },
+  Cruiser: { ar: 'كروزر', en: 'Cruiser' },
+  Adventure: { ar: 'مغامرات', en: 'Adventure' },
+  Touring: { ar: 'رحلات', en: 'Touring' },
+  Naked: { ar: 'عارية', en: 'Naked' },
+  'Dual Sport': { ar: 'مزدوجة الاستخدام', en: 'Dual Sport' },
+  Scooter: { ar: 'سكوتر', en: 'Scooter' },
+};
+
+function bikeTypeDisplayLabel(type: string, isRTL: boolean): string {
+  const m = BIKE_TYPE_LABELS[type];
+  if (!m) return type;
+  return isRTL ? m.ar : m.en;
+}
 
 const MAX_BIKE_PHOTO_BYTES = 2 * 1024 * 1024;
 const MAX_ALBUM_PHOTO_BYTES = 3 * 1024 * 1024;
@@ -154,7 +171,7 @@ function parseAssignmentLocation(location: string): { countryCode: string; city:
   if (idx === -1) return { countryCode: '', city: loc };
   const countryPart = loc.slice(0, idx).trim();
   const cityPart = loc.slice(idx + 3).trim();
-  const country = COUNTRIES.find((c) => c.en === countryPart || c.ar === countryPart);
+  const country = COUNTRIES.find((c) => c.en === countryPart || c.ar === countryPart || c.code === countryPart);
   return { countryCode: country?.code || '', city: cityPart };
 }
 
@@ -162,14 +179,6 @@ function buildTrainerCourseLocation(countryCode: string, city: string): string {
   const country = COUNTRIES.find((c) => c.code === countryCode);
   if (!country) return (city || '').trim();
   return `${country.en} - ${(city || '').trim()}`;
-}
-
-/** Default `location` for a new trainer_course from the trainer form (country code + city EN name). */
-function defaultTrainerAssignmentLocation(countryCode: string, city: string): string {
-  const code = (countryCode || '').trim();
-  const cityPart = (city || '').trim();
-  if (code) return buildTrainerCourseLocation(code, cityPart);
-  return cityPart;
 }
 
 function trainingTypeLabel(type: string | null | undefined, isRTL: boolean): string {
@@ -184,6 +193,8 @@ interface Trainer {
   id: string;
   name_ar: string;
   name_en: string;
+  phone?: string;
+  email?: string;
   photo_url: string | null;
   bio_ar: string;
   bio_en: string;
@@ -206,11 +217,28 @@ interface Trainer {
 interface TrainerCourse {
   training_id: string;
   price: number;
+  /** Locked from `trainings.default_sessions_count` — not user-editable. */
   sessions_count: number;
+  /** Locked from `trainings.default_session_duration_hours` — not user-editable. */
   duration_hours: number;
-  location: string;
+  location_country: string;
+  location_city: string;
   available_schedule: Json;
   services: string[];
+}
+
+type TrainingDetailsCache = {
+  default_sessions_count: number;
+  default_session_duration_hours: number;
+  sessions: unknown;
+};
+
+function assignmentMissingKeys(at: TrainerCourse): Array<'price' | 'country' | 'city'> {
+  const missing: Array<'price' | 'country' | 'city'> = [];
+  if (!(Number(at.price) > 0)) missing.push('price');
+  if (!(at.location_country || '').trim()) missing.push('country');
+  if (!(at.location_city || '').trim()) missing.push('city');
+  return missing;
 }
 
 function toTrainerCourseInsertRow(trainerId: string, at: TrainerCourse) {
@@ -220,9 +248,45 @@ function toTrainerCourseInsertRow(trainerId: string, at: TrainerCourse) {
     price: at.price,
     sessions_count: at.sessions_count,
     duration_hours: at.duration_hours,
-    location: at.location ?? '',
+    location: buildTrainerCourseLocation(at.location_country, at.location_city),
     available_schedule: at.available_schedule ?? {},
     services: at.services ?? [],
+  };
+}
+
+type TrainingCatalogRow = {
+  id: string;
+  default_sessions_count?: number | null;
+  default_session_duration_hours?: number | null;
+  sessions?: unknown;
+};
+
+/** Force session count & duration from training defaults (never stale user input). */
+function resolveLockedTrainerCourse(
+  at: TrainerCourse,
+  details: Record<string, TrainingDetailsCache>,
+  catalog: TrainingCatalogRow[] | undefined,
+): TrainerCourse {
+  const det = details[at.training_id];
+  const meta = catalog?.find((x) => x.id === at.training_id);
+  if (det) {
+    return {
+      ...at,
+      sessions_count: Math.max(1, Number(det.default_sessions_count)),
+      duration_hours: Math.max(0.25, Number(det.default_session_duration_hours)),
+    };
+  }
+  if (meta) {
+    return {
+      ...at,
+      sessions_count: Math.max(1, Number(meta.default_sessions_count ?? 1)),
+      duration_hours: Math.max(0.25, Number(meta.default_session_duration_hours ?? 2)),
+    };
+  }
+  return {
+    ...at,
+    sessions_count: Math.max(1, Number(at.sessions_count) || 1),
+    duration_hours: Math.max(0.25, Number(at.duration_hours) || 0.25),
   };
 }
 
@@ -245,6 +309,7 @@ const AdminTrainers: React.FC = () => {
   const [serviceInput, setServiceInput] = useState('');
   const [isOtherCity, setIsOtherCity] = useState(false);
   const [assignedTrainings, setAssignedTrainings] = useState<TrainerCourse[]>([]);
+  const [trainingDetails, setTrainingDetails] = useState<Record<string, TrainingDetailsCache>>({});
   
   const [bikeTypeInput, setBikeTypeInput] = useState('');
   const [pendingBikeByType, setPendingBikeByType] = useState<Record<string, PendingImage[]>>({});
@@ -255,6 +320,8 @@ const AdminTrainers: React.FC = () => {
     first_name_en: '',
     last_name_ar: '',
     last_name_en: '',
+    phone: '',
+    email: '',
     bio_ar: '',
     bio_en: '',
     country: '',
@@ -294,7 +361,7 @@ const AdminTrainers: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('trainings')
-        .select('id, name_ar, name_en, type, default_sessions_count, default_session_duration_hours');
+        .select('id, name_ar, name_en, type, default_sessions_count, default_session_duration_hours, sessions');
       if (error) throw error;
       return data;
     },
@@ -426,6 +493,8 @@ const AdminTrainers: React.FC = () => {
       const rowBeforeUploads = {
         name_en,
         name_ar,
+        phone: form.phone.trim(),
+        email: form.email.trim(),
         bio_ar: form.bio_ar,
         bio_en: form.bio_en,
         country: form.country,
@@ -447,10 +516,44 @@ const AdminTrainers: React.FC = () => {
       if (editingTrainer) {
         trainerId = editingTrainer.id;
         const { error } = await supabase.from('trainers').update(rowBeforeUploads).eq('id', trainerId);
-        if (error) throw error;
+        if (error) {
+          const msg = String(error.message || '');
+          const missingPhoneOrEmailColumn =
+            msg.includes("Could not find the 'email' column of 'trainers'") ||
+            msg.includes("Could not find the 'phone' column of 'trainers'");
+          if (!missingPhoneOrEmailColumn) throw error;
+          const legacyRow = { ...rowBeforeUploads } as Record<string, unknown>;
+          delete legacyRow.phone;
+          delete legacyRow.email;
+          const { error: retryError } = await supabase.from('trainers').update(legacyRow).eq('id', trainerId);
+          if (retryError) throw retryError;
+          toast.warning(
+            isRTL
+              ? 'تم الحفظ بدون البريد/الهاتف لأن قاعدة البيانات لم تُحدَّث بعد.'
+              : 'Saved without phone/email because DB migration is not applied yet.',
+          );
+        }
       } else {
-        const { data, error } = await supabase.from('trainers').insert(rowBeforeUploads).select('id').single();
-        if (error) throw error;
+        let { data, error } = await supabase.from('trainers').insert(rowBeforeUploads).select('id').single();
+        if (error) {
+          const msg = String(error.message || '');
+          const missingPhoneOrEmailColumn =
+            msg.includes("Could not find the 'email' column of 'trainers'") ||
+            msg.includes("Could not find the 'phone' column of 'trainers'");
+          if (!missingPhoneOrEmailColumn) throw error;
+          const legacyRow = { ...rowBeforeUploads } as Record<string, unknown>;
+          delete legacyRow.phone;
+          delete legacyRow.email;
+          const retry = await supabase.from('trainers').insert(legacyRow).select('id').single();
+          data = retry.data;
+          error = retry.error;
+          if (error) throw error;
+          toast.warning(
+            isRTL
+              ? 'تم الحفظ بدون البريد/الهاتف لأن قاعدة البيانات لم تُحدَّث بعد.'
+              : 'Saved without phone/email because DB migration is not applied yet.',
+          );
+        }
         trainerId = data.id;
       }
 
@@ -483,15 +586,25 @@ const AdminTrainers: React.FC = () => {
       if (editingTrainer) {
         await supabase.from('trainer_courses').delete().eq('trainer_id', editingTrainer.id);
         if (assignedTrainings.length > 0) {
-          const { error: tcError } = await supabase
-            .from('trainer_courses')
-            .insert(assignedTrainings.map((at) => toTrainerCourseInsertRow(trainerId, at)));
+          const { error: tcError } = await supabase.from('trainer_courses').insert(
+            assignedTrainings.map((at) =>
+              toTrainerCourseInsertRow(
+                trainerId,
+                resolveLockedTrainerCourse(at, trainingDetails, allTrainings as TrainingCatalogRow[] | undefined),
+              ),
+            ),
+          );
           if (tcError) throw tcError;
         }
       } else if (assignedTrainings.length > 0) {
-        const { error: tcError } = await supabase
-          .from('trainer_courses')
-          .insert(assignedTrainings.map((at) => toTrainerCourseInsertRow(trainerId, at)));
+        const { error: tcError } = await supabase.from('trainer_courses').insert(
+          assignedTrainings.map((at) =>
+            toTrainerCourseInsertRow(
+              trainerId,
+              resolveLockedTrainerCourse(at, trainingDetails, allTrainings as TrainingCatalogRow[] | undefined),
+            ),
+          ),
+        );
         if (tcError) throw tcError;
       }
     },
@@ -548,6 +661,7 @@ const AdminTrainers: React.FC = () => {
     });
     setBikeTypeInput('');
     setAssignedTrainings([]);
+    setTrainingDetails({});
     setIsOtherCity(false);
     setLanguageAddCode('');
     setLanguageAddLevel(LANGUAGE_LEVEL_OPTIONS[1]!.value);
@@ -576,6 +690,8 @@ const AdminTrainers: React.FC = () => {
       last_name_ar: ar.last,
       first_name_en: en.first,
       last_name_en: en.last,
+      phone: (t.phone ?? '').trim(),
+      email: (t.email ?? '').trim(),
       bio_ar: t.bio_ar,
       bio_en: t.bio_en,
       country: t.country,
@@ -604,20 +720,64 @@ const AdminTrainers: React.FC = () => {
     setBikeTypeInput('');
     setPhotoFile(null);
     setPhotoPreview(t.photo_url);
-    const { data } = await supabase
+    const { data: courseRows } = await supabase
       .from('trainer_courses')
       .select('training_id, price, sessions_count, duration_hours, location, available_schedule, services')
       .eq('trainer_id', t.id);
+
+    const rows = courseRows || [];
+    const trainingIds = [...new Set(rows.map((r) => r.training_id))];
+    let detailsMap: Record<string, TrainingDetailsCache> = {};
+    if (trainingIds.length > 0) {
+    const withSessions = await supabase
+      .from('trainings')
+      .select('id, default_sessions_count, default_session_duration_hours, sessions')
+      .in('id', trainingIds);
+    if (withSessions.error && String(withSessions.error.code) === '42703') {
+      // Backward-compat for DBs where `trainings.sessions` isn't migrated yet.
+      const legacy = await supabase
+        .from('trainings')
+        .select('id, default_sessions_count, default_session_duration_hours')
+        .in('id', trainingIds);
+      if (legacy.error) {
+        console.error('[AdminTrainers] openEdit training details', legacy.error);
+      }
+      legacy.data?.forEach((tr) => {
+        detailsMap[tr.id] = {
+          default_sessions_count: Math.max(1, Number(tr.default_sessions_count ?? 1)),
+          default_session_duration_hours: Math.max(0.25, Number(tr.default_session_duration_hours ?? 2)),
+          sessions: [],
+        };
+      });
+    } else {
+      if (withSessions.error) console.error('[AdminTrainers] openEdit training details', withSessions.error);
+      withSessions.data?.forEach((tr) => {
+        detailsMap[tr.id] = {
+          default_sessions_count: Math.max(1, Number(tr.default_sessions_count ?? 1)),
+          default_session_duration_hours: Math.max(0.25, Number(tr.default_session_duration_hours ?? 2)),
+          sessions: tr.sessions ?? [],
+        };
+      });
+    }
+    }
+    setTrainingDetails(detailsMap);
+
     setAssignedTrainings(
-      (data || []).map((d) => ({
-        training_id: d.training_id,
-        price: Number(d.price),
-        sessions_count: Math.max(1, Number((d as { sessions_count?: number }).sessions_count ?? 1)),
-        duration_hours: Number(d.duration_hours),
-        location: d.location,
-        available_schedule: d.available_schedule,
-        services: (d as { services?: string[] }).services ?? [],
-      })),
+      rows.map((d) => {
+        const det = detailsMap[d.training_id];
+        return {
+          training_id: d.training_id,
+          price: Number(d.price),
+          sessions_count: det
+            ? det.default_sessions_count
+            : Math.max(1, Number((d as { sessions_count?: number }).sessions_count ?? 1)),
+          duration_hours: det ? det.default_session_duration_hours : Number(d.duration_hours),
+          location_country: parseAssignmentLocation(d.location).countryCode,
+          location_city: parseAssignmentLocation(d.location).city,
+          available_schedule: d.available_schedule,
+          services: (d as { services?: string[] }).services ?? [],
+        };
+      }),
     );
     // Check if stored city is in the country's city list
     const countryEntry = COUNTRIES.find(c => c.code === t.country);
@@ -842,31 +1002,76 @@ const AdminTrainers: React.FC = () => {
   /**
    * Add/remove a training assignment. New rows snapshot trainer country/city/services from the form;
    * changing trainer location later does not update existing assignments.
+   * Session count and duration are locked from `trainings` defaults (fetched on add).
    */
-  const toggleTraining = (trainingId: string, checked: boolean) => {
-    if (checked) {
-      const f = formRef.current;
-      const meta = allTrainings?.find((tr) => tr.id === trainingId);
-      const defSessions = Math.max(1, Number((meta as { default_sessions_count?: number })?.default_sessions_count ?? 1));
-      const defDur = Math.max(0.25, Number((meta as { default_session_duration_hours?: number })?.default_session_duration_hours ?? 2));
-      setAssignedTrainings((prev) => {
-        if (prev.some((a) => a.training_id === trainingId)) return prev;
-        return [
-          ...prev,
-          {
-            training_id: trainingId,
-            price: 0,
-            sessions_count: defSessions,
-            duration_hours: defDur,
-            location: defaultTrainerAssignmentLocation(f.country, f.city),
-            available_schedule: {},
-            services: [...f.services],
-          },
-        ];
-      });
-    } else {
+  const toggleTraining = async (trainingId: string, checked: boolean) => {
+    if (!checked) {
       setAssignedTrainings((prev) => prev.filter((at) => at.training_id !== trainingId));
+      return;
     }
+
+    let training: {
+      id: string;
+      default_sessions_count: number | null;
+      default_session_duration_hours: number | null;
+      sessions?: unknown;
+    } | null = null;
+
+    const withSessions = await supabase
+      .from('trainings')
+      .select('id, default_sessions_count, default_session_duration_hours, sessions')
+      .eq('id', trainingId)
+      .single();
+
+    if (withSessions.error && String(withSessions.error.code) === '42703') {
+      const legacy = await supabase
+        .from('trainings')
+        .select('id, default_sessions_count, default_session_duration_hours')
+        .eq('id', trainingId)
+        .single();
+      if (legacy.error || !legacy.data) {
+        console.error('[AdminTrainers] toggleTraining fetch', legacy.error);
+        toast.error(isRTL ? 'تعذر تحميل بيانات التدريب' : 'Could not load training details');
+        return;
+      }
+      training = { ...legacy.data, sessions: [] };
+    } else if (withSessions.error || !withSessions.data) {
+      console.error('[AdminTrainers] toggleTraining fetch', withSessions.error);
+      toast.error(isRTL ? 'تعذر تحميل بيانات التدريب' : 'Could not load training details');
+      return;
+    } else {
+      training = withSessions.data;
+    }
+
+    const defSessions = Math.max(1, Number(training.default_sessions_count ?? 1));
+    const defDur = Math.max(0.25, Number(training.default_session_duration_hours ?? 2));
+
+    setTrainingDetails((prev) => ({
+      ...prev,
+      [trainingId]: {
+        default_sessions_count: defSessions,
+        default_session_duration_hours: defDur,
+        sessions: training.sessions ?? [],
+      },
+    }));
+
+    const f = formRef.current;
+    setAssignedTrainings((prev) => {
+      if (prev.some((a) => a.training_id === trainingId)) return prev;
+      return [
+        ...prev,
+        {
+          training_id: trainingId,
+          price: 0,
+          sessions_count: defSessions,
+          duration_hours: defDur,
+          location_country: f.country,
+          location_city: f.city,
+          available_schedule: {},
+          services: [...f.services],
+        },
+      ];
+    });
   };
 
   const updateAssignment = (trainingId: string, field: keyof TrainerCourse, value: unknown) => {
@@ -876,15 +1081,10 @@ const AdminTrainers: React.FC = () => {
   };
 
   const setAssignmentCountry = (trainingId: string, countryCode: string) => {
-    const country = COUNTRIES.find((c) => c.code === countryCode);
-    if (!country) return;
     setAssignedTrainings((prev) =>
       prev.map((at) => {
         if (at.training_id !== trainingId) return at;
-        const { city } = parseAssignmentLocation(at.location);
-        const cityOk = country.cities.some((c) => c.en === city);
-        const newCity = cityOk ? city : '';
-        return { ...at, location: buildTrainerCourseLocation(country.code, newCity) };
+        return { ...at, location_country: countryCode, location_city: '' };
       }),
     );
   };
@@ -893,13 +1093,10 @@ const AdminTrainers: React.FC = () => {
     setAssignedTrainings((prev) =>
       prev.map((at) => {
         if (at.training_id !== trainingId) return at;
-        const { countryCode } = parseAssignmentLocation(at.location);
-        const country = COUNTRIES.find((c) => c.code === countryCode);
-        if (!country) return at;
         if (cityEn === 'Other') {
-          return { ...at, location: `${country.en} - ` };
+          return { ...at, location_city: '' };
         }
-        return { ...at, location: `${country.en} - ${cityEn}` };
+        return { ...at, location_city: cityEn };
       }),
     );
   };
@@ -908,12 +1105,39 @@ const AdminTrainers: React.FC = () => {
     setAssignedTrainings((prev) =>
       prev.map((at) => {
         if (at.training_id !== trainingId) return at;
-        const { countryCode } = parseAssignmentLocation(at.location);
-        const country = COUNTRIES.find((c) => c.code === countryCode);
-        if (!country) return at;
-        return { ...at, location: `${country.en} - ${cityText}` };
+        return { ...at, location_city: cityText };
       }),
     );
+  };
+
+  const validateAssignedTrainings = () => {
+    for (const at of assignedTrainings) {
+      const missing = assignmentMissingKeys(at);
+      if (missing.length === 0) continue;
+      const tr = allTrainings?.find((x) => x.id === at.training_id);
+      const trainingName = tr ? (isRTL ? tr.name_ar : tr.name_en) : at.training_id;
+      const labels = missing.map((k) => {
+        if (k === 'price') return isRTL ? 'السعر' : 'Price';
+        if (k === 'country') return isRTL ? 'الدولة' : 'Country';
+        return isRTL ? 'المدينة' : 'City';
+      });
+      return {
+        ok: false as const,
+        message: isRTL
+          ? `أكمل بيانات التدريب "${trainingName}": ${labels.join('، ')}`
+          : `Complete "${trainingName}" fields: ${labels.join(', ')}`,
+      };
+    }
+    return { ok: true as const, message: '' };
+  };
+
+  const onSaveTrainer = () => {
+    const v = validateAssignedTrainings();
+    if (!v.ok) {
+      toast.error(v.message);
+      return;
+    }
+    saveMutation.mutate();
   };
 
   // ─── Full-page form view ────────────────────────────────────────
@@ -929,7 +1153,7 @@ const AdminTrainers: React.FC = () => {
             <div className="flex-1">
               <h1 className="text-2xl font-bold">{editingTrainer ? (isRTL ? 'تعديل مدرب' : 'Edit Trainer') : (isRTL ? 'إضافة مدرب' : 'Add Trainer')}</h1>
             </div>
-            <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+            <Button onClick={onSaveTrainer} disabled={saveMutation.isPending}>
               {saveMutation.isPending ? '...' : (isRTL ? 'حفظ' : 'Save')}
             </Button>
           </div>
@@ -1019,11 +1243,58 @@ const AdminTrainers: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>{isRTL ? 'الاسم الأول (إنجليزي)' : 'First Name (EN)'}</Label>
-                  <Input value={form.first_name_en} onChange={(e) => setForm((f) => ({ ...f, first_name_en: e.target.value }))} dir="ltr" className="text-start" />
+                  <Input
+                    value={form.first_name_en}
+                    onChange={(e) => setForm((f) => ({ ...f, first_name_en: e.target.value }))}
+                    dir="ltr"
+                    className={cn(
+                      '[direction:ltr] [unicode-bidi:plaintext]',
+                      isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left',
+                    )}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>{isRTL ? 'الاسم الأخير (إنجليزي)' : 'Last Name (EN)'}</Label>
-                  <Input value={form.last_name_en} onChange={(e) => setForm((f) => ({ ...f, last_name_en: e.target.value }))} dir="ltr" className="text-start" />
+                  <Input
+                    value={form.last_name_en}
+                    onChange={(e) => setForm((f) => ({ ...f, last_name_en: e.target.value }))}
+                    dir="ltr"
+                    className={cn(
+                      '[direction:ltr] [unicode-bidi:plaintext]',
+                      isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left',
+                    )}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>{isRTL ? 'رقم الجوال / الهاتف' : 'Phone number'}</Label>
+                  <Input
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder={isRTL ? '+9665xxxxxxxx' : '+9665xxxxxxxx'}
+                    value={form.phone}
+                    onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                    dir="ltr"
+                    className={cn(
+                      'font-mono text-sm [direction:ltr] [unicode-bidi:plaintext]',
+                      isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left',
+                    )}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>{isRTL ? 'البريد الإلكتروني' : 'Email'}</Label>
+                  <Input
+                    type="email"
+                    autoComplete="email"
+                    placeholder={isRTL ? 'name@example.com' : 'name@example.com'}
+                    value={form.email}
+                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                    dir="ltr"
+                    className={cn(
+                      '[direction:ltr] [unicode-bidi:plaintext]',
+                      isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left',
+                    )}
+                  />
                 </div>
               </div>
 
@@ -1118,7 +1389,7 @@ const AdminTrainers: React.FC = () => {
                   {COMMON_BIKE_TYPES.map((type) => (
                     <label key={type} className="flex items-center gap-2 cursor-pointer text-sm">
                       <Checkbox checked={form.bike_types.includes(type)} onCheckedChange={() => toggleBikeType(type)} />
-                      <span>{type}</span>
+                      <span>{bikeTypeDisplayLabel(type, isRTL)}</span>
                     </label>
                   ))}
                 </div>
@@ -1137,7 +1408,7 @@ const AdminTrainers: React.FC = () => {
                 <div className="flex flex-wrap gap-2">
                   {form.bike_types.map((t) => (
                     <Badge key={t} variant="secondary" className="gap-1 px-3 py-1.5">
-                      {t}
+                      {bikeTypeDisplayLabel(t, isRTL)}
                       <X className="w-3 h-3 cursor-pointer hover:text-destructive" onClick={() => removeBikeTypeBadge(t)} />
                     </Badge>
                   ))}
@@ -1179,7 +1450,7 @@ const AdminTrainers: React.FC = () => {
                             <CardHeader className="py-3 px-4 space-y-0">
                               <CardTitle className="text-base font-semibold flex items-center gap-2">
                                 <Bike className="w-4 h-4 text-muted-foreground shrink-0" />
-                                {bikeType}
+                                {bikeTypeDisplayLabel(bikeType, isRTL)}
                               </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3 pt-0 px-4 pb-4">
@@ -1202,7 +1473,10 @@ const AdminTrainers: React.FC = () => {
                                     value={entry.brand}
                                     onChange={(e) => setBikeEntryBrand(bikeType, e.target.value)}
                                     placeholder="e.g. Yamaha R1 2023"
-                                    className="w-full text-left [text-align:left] placeholder:text-left"
+                                    className={cn(
+                                      'w-full [direction:ltr] [unicode-bidi:plaintext]',
+                                      isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left',
+                                    )}
                                   />
                                 </div>
                               </div>
@@ -1297,7 +1571,7 @@ const AdminTrainers: React.FC = () => {
               </p>
 
               <div className="flex flex-col gap-3 rounded-lg border border-border/60 bg-muted/20 p-3 sm:flex-row sm:flex-wrap sm:items-end">
-                <div className="min-w-0 flex-1 space-y-1.5 sm:min-w-[12rem]">
+                <div className="min-w-0 flex-[1.2] space-y-1.5 sm:min-w-[12rem]">
                   <Label className="text-xs">{isRTL ? 'لغة' : 'Language'}</Label>
                   <Select value={languageAddCode || '__none__'} onValueChange={(v) => setLanguageAddCode(v === '__none__' ? '' : v)}>
                     <SelectTrigger className="h-9 w-full">
@@ -1330,10 +1604,41 @@ const AdminTrainers: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button type="button" variant="secondary" className="h-9 gap-1 shrink-0" onClick={addTrainerLanguage}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="h-9 gap-1 shrink-0 sm:min-w-[7.5rem]"
+                  onClick={addTrainerLanguage}
+                  disabled={!languageAddCode}
+                >
                   <Plus className="h-4 w-4" />
                   {isRTL ? 'إضافة' : 'Add'}
                 </Button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] text-muted-foreground">{isRTL ? 'إضافة سريعة:' : 'Quick add:'}</span>
+                {TRAINER_LANGUAGE_OPTIONS.filter(
+                  (opt) =>
+                    ['ar', 'en', 'ur'].includes(opt.code) &&
+                    !form.language_levels.some((e) => e.language === opt.code),
+                ).map((opt) => (
+                  <Button
+                    key={opt.code}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2.5 text-xs"
+                    onClick={() =>
+                      setForm((f) => ({
+                        ...f,
+                        language_levels: [...f.language_levels, { language: opt.code, level: languageAddLevel }],
+                      }))
+                    }
+                  >
+                    {isRTL ? opt.label_ar : opt.label_en}
+                  </Button>
+                ))}
               </div>
 
               <div className="space-y-2">
@@ -1442,6 +1747,8 @@ const AdminTrainers: React.FC = () => {
                   {allTrainings.map((training) => {
                     const isAssigned = assignedTrainings.some((at) => at.training_id === training.id);
                     const assignment = assignedTrainings.find((at) => at.training_id === training.id);
+                    const missingInAssignment = assignment ? assignmentMissingKeys(assignment) : [];
+                    const hasMissing = missingInAssignment.length > 0;
                     const name = isRTL ? training.name_ar : training.name_en;
                     const typeBadge = trainingTypeLabel(training.type, isRTL);
                     return (
@@ -1469,7 +1776,7 @@ const AdminTrainers: React.FC = () => {
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                  onClick={() => toggleTraining(training.id, false)}
+                                  onClick={() => void toggleTraining(training.id, false)}
                                   aria-label={isRTL ? 'إزالة التدريب' : 'Remove training'}
                                 >
                                   <Minus className="h-4 w-4" />
@@ -1481,7 +1788,7 @@ const AdminTrainers: React.FC = () => {
                                 variant="outline"
                                 size="icon"
                                 className="h-8 w-8"
-                                onClick={() => toggleTraining(training.id, true)}
+                                onClick={() => void toggleTraining(training.id, true)}
                                 aria-label={isRTL ? 'إضافة تدريب' : 'Add training'}
                               >
                                 <Plus className="h-4 w-4" />
@@ -1501,77 +1808,129 @@ const AdminTrainers: React.FC = () => {
                               className="overflow-hidden border-t border-border/50"
                             >
                               <div className="space-y-3 bg-muted/10 p-4">
-                                <div className="grid gap-3 sm:grid-cols-3">
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-start">
-                                      {isRTL ? 'سعر المدرب الأساسي (ر.س)' : 'Trainer base price (SAR)'}
-                                    </Label>
-                                    <p className="text-[10px] text-muted-foreground leading-snug">
-                                      {isRTL
-                                        ? 'ما يستحقه المدرب؛ عمولة المنصة تُضاف من إعدادات التدريبات.'
-                                        : 'Amount the trainer keeps; Bikerz commission is added in Trainings admin.'}
-                                    </p>
-                                    <div className="relative" dir="ltr">
-                                      <Input
-                                        type="number"
-                                        className="pe-12 text-start"
-                                        value={assignment.price}
-                                        onChange={(e) =>
-                                          updateAssignment(training.id, 'price', parseFloat(e.target.value) || 0)
-                                        }
-                                      />
-                                      <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                                        {isRTL ? 'ر.س' : 'SAR'}
-                                      </span>
+                                {hasMissing && (
+                                  <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                                    {isRTL
+                                      ? 'يرجى تعبئة جميع الحقول المطلوبة لهذا التدريب قبل الحفظ.'
+                                      : 'Please fill all required fields for this training before saving.'}
+                                  </div>
+                                )}
+
+                                {(() => {
+                                  const td = trainingDetails[training.id];
+                                  const meta = allTrainings?.find((x) => x.id === training.id) as TrainingCatalogRow | undefined;
+                                  const defaultSessions = td
+                                    ? td.default_sessions_count
+                                    : Math.max(1, Number(meta?.default_sessions_count ?? assignment.sessions_count ?? 1));
+                                  const defaultDur = td
+                                    ? td.default_session_duration_hours
+                                    : Math.max(0.25, Number(meta?.default_session_duration_hours ?? assignment.duration_hours ?? 2));
+                                  const curriculum = parseTrainingSessions(td?.sessions ?? meta?.sessions);
+                                  if (!td && !meta) {
+                                    return (
+                                      <div
+                                        className="mb-1 rounded-xl border border-border/50 bg-muted/30 p-3 sm:mx-0"
+                                        dir={isRTL ? 'rtl' : 'ltr'}
+                                      >
+                                        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                          {isRTL ? 'تفاصيل التدريب' : 'Training Details'}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {isRTL ? 'عدد الجلسات:' : 'Sessions:'}{' '}
+                                          <span className="font-semibold text-foreground">{defaultSessions}</span>
+                                          {' · '}
+                                          {isRTL ? 'المدة/جلسة:' : 'Hrs/session:'}{' '}
+                                          <span className="font-semibold text-foreground">{defaultDur}</span>
+                                        </p>
+                                      </div>
+                                    );
+                                  }
+                                  return (
+                                    <div
+                                      className="mb-1 rounded-xl border border-border/50 bg-muted/30 p-3 sm:mx-0"
+                                      dir={isRTL ? 'rtl' : 'ltr'}
+                                    >
+                                      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                        {isRTL ? 'تفاصيل التدريب' : 'Training Details'}
+                                      </p>
+                                      <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                          <span className="text-xs text-muted-foreground">
+                                            {isRTL ? 'عدد الجلسات' : 'Sessions'}
+                                          </span>
+                                          <span className="font-semibold tabular-nums">
+                                            {defaultSessions}
+                                            {isRTL ? ' جلسات' : ' sessions'}
+                                          </span>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <Timer className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                          <span className="text-xs text-muted-foreground">
+                                            {isRTL ? 'مدة كل جلسة' : 'Per session'}
+                                          </span>
+                                          <span className="font-semibold tabular-nums">
+                                            {defaultDur}
+                                            {isRTL ? ' ساعة' : ' hrs'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      {curriculum.length > 0 ? (
+                                        <div className="mt-2 space-y-1 border-t border-border/40 pt-2">
+                                          {curriculum.map((s, i) => (
+                                            <div
+                                              key={`${s.session_number}-${i}`}
+                                              className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"
+                                            >
+                                              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                                                {s.session_number || i + 1}
+                                              </span>
+                                              <span className="min-w-0 flex-1 text-start">
+                                                {isRTL ? s.title_ar || s.title_en : s.title_en || s.title_ar}
+                                              </span>
+                                              <span className="ms-auto shrink-0 tabular-nums" dir="ltr">
+                                                {s.duration_hours}h · {s.points}pts
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : null}
                                     </div>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-start">{isRTL ? 'عدد الجلسات' : 'Sessions'}</Label>
+                                  );
+                                })()}
+
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-start">
+                                    {isRTL ? 'سعر المدرب الأساسي (ر.س)' : 'Trainer base price (SAR)'}
+                                  </Label>
+                                  <p className="text-[10px] text-muted-foreground leading-snug">
+                                    {isRTL
+                                      ? 'ما يستحقه المدرب؛ عمولة المنصة تُضاف من إعدادات التدريبات.'
+                                      : 'Amount the trainer keeps; Bikerz commission is added in Trainings admin.'}
+                                  </p>
+                                  <div className="relative max-w-md" dir="ltr">
                                     <Input
                                       type="number"
-                                      min={1}
-                                      step={1}
-                                      className="h-9 text-start"
-                                      value={assignment.sessions_count}
+                                      className={cn('pe-12 text-start', Number(assignment.price) > 0 ? '' : 'border-amber-500/60')}
+                                      value={assignment.price}
                                       onChange={(e) =>
-                                        updateAssignment(
-                                          training.id,
-                                          'sessions_count',
-                                          Math.max(1, parseInt(e.target.value, 10) || 1),
-                                        )
+                                        updateAssignment(training.id, 'price', parseFloat(e.target.value) || 0)
                                       }
                                     />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-start">
-                                      {isRTL ? 'مدة كل جلسة (ساعات)' : 'Hours / session'}
-                                    </Label>
-                                    <Input
-                                      type="number"
-                                      min={0.25}
-                                      step={0.25}
-                                      className="h-9 text-start"
-                                      value={assignment.duration_hours}
-                                      onChange={(e) =>
-                                        updateAssignment(
-                                          training.id,
-                                          'duration_hours',
-                                          Math.max(0.25, parseFloat(e.target.value) || 0.25),
-                                        )
-                                      }
-                                    />
+                                    <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                                      {isRTL ? 'ر.س' : 'SAR'}
+                                    </span>
                                   </div>
                                 </div>
 
                                 {(() => {
-                                  const { countryCode, city } = parseAssignmentLocation(assignment.location);
+                                  const countryCode = (assignment.location_country || '').trim();
+                                  const city = (assignment.location_city || '').trim();
                                   const country = COUNTRIES.find((c) => c.code === countryCode);
                                   const cities = country ? [...country.cities, OTHER_OPTION] : [];
                                   const cityInList = !!(country && cities.some((c) => c.en === city));
-                                  const locTrim = assignment.location.trim();
-                                  const openEnded = !!(country && locTrim === `${country.en} -`.trim());
-                                  const showManualCity = !!(country && !cityInList && (city !== '' || openEnded));
-                                  const citySelectValue = cityInList ? city : openEnded || city ? 'Other' : '';
+                                  const showManualCity = !!(country && !cityInList && city !== '');
+                                  const citySelectValue = cityInList ? city : showManualCity ? 'Other' : '';
 
                                   return (
                                     <div dir={locationFieldDir} className="grid gap-3 sm:grid-cols-2">
@@ -1582,7 +1941,10 @@ const AdminTrainers: React.FC = () => {
                                           value={countryCode}
                                           onValueChange={(v) => setAssignmentCountry(training.id, v)}
                                         >
-                                          <SelectTrigger dir={locationFieldDir} className="h-9 text-xs">
+                                          <SelectTrigger
+                                            dir={locationFieldDir}
+                                            className={cn('h-9 text-xs', countryCode ? '' : 'border-amber-500/60')}
+                                          >
                                             <SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} />
                                           </SelectTrigger>
                                           <SelectContent dir={locationFieldDir}>
@@ -1596,39 +1958,34 @@ const AdminTrainers: React.FC = () => {
                                       </div>
                                       <div className="min-w-0 space-y-1">
                                         <Label className="block text-xs text-start">{isRTL ? 'المدينة' : 'City'}</Label>
-                                        {!country ? (
-                                          <p className="text-xs text-muted-foreground text-start">
-                                            {isRTL ? 'اختر الدولة أولاً' : 'Select a country first'}
-                                          </p>
-                                        ) : (
-                                          <div className="space-y-2">
-                                            <Select
+                                        <div className="space-y-2">
+                                          <Select
+                                            dir={locationFieldDir}
+                                            value={citySelectValue}
+                                            onValueChange={(v) => setAssignmentCityFromSelect(training.id, v)}
+                                            disabled={!country}
+                                          >
+                                            <SelectTrigger dir={locationFieldDir} className="h-9 text-xs">
+                                              <SelectValue placeholder={!country ? (isRTL ? 'اختر الدولة أولاً' : 'Select country first') : isRTL ? 'اختر المدينة' : 'Select city'} />
+                                            </SelectTrigger>
+                                            <SelectContent dir={locationFieldDir}>
+                                              {cities.map((c) => (
+                                                <SelectItem key={c.en} value={c.en}>
+                                                  {isRTL ? c.ar : c.en}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                          {country && (citySelectValue === 'Other' || showManualCity) && (
+                                            <Input
                                               dir={locationFieldDir}
-                                              value={citySelectValue}
-                                              onValueChange={(v) => setAssignmentCityFromSelect(training.id, v)}
-                                            >
-                                              <SelectTrigger dir={locationFieldDir} className="h-9 text-xs">
-                                                <SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} />
-                                              </SelectTrigger>
-                                              <SelectContent dir={locationFieldDir}>
-                                                {cities.map((c) => (
-                                                  <SelectItem key={c.en} value={c.en}>
-                                                    {isRTL ? c.ar : c.en}
-                                                  </SelectItem>
-                                                ))}
-                                              </SelectContent>
-                                            </Select>
-                                            {showManualCity && (
-                                              <Input
-                                                dir={locationFieldDir}
-                                                className="h-9 text-xs text-start"
-                                                value={city}
-                                                onChange={(e) => setAssignmentCityManual(training.id, e.target.value)}
-                                                placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
-                                              />
-                                            )}
-                                          </div>
-                                        )}
+                                              className={cn('h-9 text-xs text-start', city ? '' : 'border-amber-500/60')}
+                                              value={city}
+                                              onChange={(e) => setAssignmentCityManual(training.id, e.target.value)}
+                                              placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
+                                            />
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
                                   );
@@ -1678,7 +2035,7 @@ const AdminTrainers: React.FC = () => {
           {/* Bottom Save */}
           <div className="flex justify-end gap-3 pb-6">
             <Button variant="outline" onClick={() => setFormOpen(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
-            <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+            <Button onClick={onSaveTrainer} disabled={saveMutation.isPending}>
               {saveMutation.isPending ? '...' : (isRTL ? 'حفظ' : 'Save')}
             </Button>
           </div>

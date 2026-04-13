@@ -49,14 +49,57 @@ export async function createCharge(
   const courseId = config.courseId?.trim();
   const trainingId = config.trainingId?.trim();
   const explicitKind = String(config.paymentKind || '').trim().toLowerCase();
+  const bundleIds = (config.bundleCourseIds ?? []).map((x) => String(x).trim()).filter(Boolean);
+  /** Bundle path if kind is set or we have ≥2 ids (covers lost `paymentKind` in some clients/proxies). */
+  const isBundleCharge =
+    explicitKind === 'course_bundle' ||
+    (bundleIds.length >= 2 && explicitKind !== 'training_booking');
+
+  if (isBundleCharge) {
+    if (bundleIds.length < 2) {
+      throw new Error('At least two courses are required for a bundle payment');
+    }
+    const idPart = `bundle_${[...new Set(bundleIds)].sort().join('_')}`;
+    const idempotencyKey = `course_bundle_${idPart}_${userId}_${Date.now()}`;
+    const body = {
+      currency: config.currency,
+      amount: config.amount ?? null,
+      customer_name: config.customerName,
+      customer_email: config.customerEmail,
+      customer_phone: config.customerPhone,
+      idempotency_key: idempotencyKey,
+      idempotencyKey,
+      coupon_id: null,
+      payment_method: config.paymentMethod || 'card',
+      detected_country: detectedCountry || null,
+      device_info: parseDeviceInfo(),
+      token_id: config.tokenId || null,
+      payment_kind: 'course_bundle' as const,
+      paymentKind: 'course_bundle',
+      booking_type: 'course_bundle',
+      bookingType: 'course_bundle',
+      bundle_course_ids: bundleIds,
+      bundleCourseIds: bundleIds,
+      bundle_original_sar: config.bundleOriginalSar ?? null,
+      bundle_discount_pct: config.bundleDiscountPct ?? null,
+      bundle_final_sar: config.bundleFinalSar ?? null,
+    };
+    const { data, error } = await supabase.functions.invoke('tap-create-charge', { body });
+    if (data && typeof data === 'object' && 'error' in data && data.error) {
+      throw new Error(String(data.error));
+    }
+    if (error) {
+      const detail = await messageFromFunctionsHttpError(error);
+      throw new Error(detail || error.message || 'Payment request failed');
+    }
+    return data;
+  }
+
   // Practical booking: explicit kind, or trainer offer + program id (covers lost `paymentKind` in transit).
-  // Never treat as video-only when a trainer offer id is present (proxies sometimes force `payment_kind: "course"`).
-  const kind: 'course' | 'training_booking' =
-    explicitKind === 'course' && !trainerId
-      ? 'course'
-      : explicitKind === 'training_booking' || (Boolean(trainerId) && Boolean(trainingId))
-        ? 'training_booking'
-        : 'course';
+  // Some proxies force `payment_kind: "course"` — if both trainer offer + program ids are present, always use training path.
+  const wantsTrainingBooking =
+    explicitKind === 'training_booking' || (Boolean(trainerId) && Boolean(trainingId));
+  const kind: 'course' | 'training_booking' = wantsTrainingBooking ? 'training_booking' : 'course';
 
   if (kind === 'course' && !courseId) {
     throw new Error('courseId is required for course payments');
@@ -114,11 +157,33 @@ export async function createCharge(
     body,
   });
 
+  if (data && typeof data === 'object' && 'error' in data && data.error) {
+    const msg = String(data.error);
+    if (
+      msg === 'Course not found' &&
+      (explicitKind === 'training_booking' || Boolean(trainerId || trainingId))
+    ) {
+      throw new Error(
+        'Training payment was routed as a video course (missing or stripped trainer_course_id / payment_kind). ' +
+          'Try again, or deploy the latest tap-create-charge edge function.',
+      );
+    }
+    throw new Error(msg);
+  }
   if (error) {
     const detail = await messageFromFunctionsHttpError(error);
-    throw new Error(detail || error.message || 'Payment request failed');
+    const msg = detail || error.message || 'Payment request failed';
+    if (
+      msg === 'Course not found' &&
+      (explicitKind === 'training_booking' || Boolean(trainerId || trainingId))
+    ) {
+      throw new Error(
+        'Training payment was routed as a video course (missing or stripped trainer_course_id / payment_kind). ' +
+          'Try again, or deploy the latest tap-create-charge edge function.',
+      );
+    }
+    throw new Error(msg);
   }
-  if (data?.error) throw new Error(data.error);
 
   return data;
 }
@@ -127,6 +192,9 @@ export async function verifyChargeOnce(chargeId: string) {
   const { data, error } = await supabase.functions.invoke('tap-verify-charge', {
     body: { charge_id: chargeId },
   });
+  if (data && typeof data === 'object' && 'error' in data && data.error) {
+    throw new Error(String(data.error));
+  }
   if (error) {
     const detail = await messageFromFunctionsHttpError(error);
     throw new Error(detail || error.message || 'Verification request failed');

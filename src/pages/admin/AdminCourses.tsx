@@ -49,9 +49,13 @@ import {
   X,
   Loader2,
   Star,
+  Gift,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import BundleTiersDialog from "@/components/admin/BundleTiersDialog";
 
 interface Course {
   id: string;
@@ -643,6 +647,8 @@ const AdminCourses: React.FC = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isPricesOpen, setIsPricesOpen] = useState(false);
+  const [bundleTiersOpen, setBundleTiersOpen] = useState(false);
+  const [coursesAdminTab, setCoursesAdminTab] = useState<"courses" | "bundles">("courses");
   const navigate = useNavigate();
 
   // Form state
@@ -737,6 +743,33 @@ const AdminCourses: React.FC = () => {
 
       if (error) throw error;
       return data as Course[];
+    },
+  });
+
+  const { data: bundlePurchases = [], isLoading: bundlePurchasesLoading } = useQuery({
+    queryKey: ["admin-course-bundles"],
+    queryFn: async () => {
+      const { data: bundles, error } = await supabase
+        .from("course_bundles")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const list = bundles ?? [];
+      const userIds = [...new Set(list.map((b) => b.user_id).filter(Boolean))] as string[];
+      const allCourseIds = [...new Set(list.flatMap((b) => b.course_ids || []))];
+      const [profilesRes, coursesRes] = await Promise.all([
+        userIds.length
+          ? supabase.from("profiles").select("user_id, full_name").in("user_id", userIds)
+          : Promise.resolve({ data: [] as { user_id: string; full_name: string | null }[] }),
+        allCourseIds.length
+          ? supabase.from("courses").select("id, title, title_ar").in("id", allCourseIds)
+          : Promise.resolve({ data: [] as { id: string; title: string; title_ar: string | null }[] }),
+      ]);
+      return list.map((b) => ({
+        ...b,
+        profile: profilesRes.data?.find((p) => p.user_id === b.user_id) ?? null,
+        courseTitles: (b.course_ids || []).map((cid) => coursesRes.data?.find((c) => c.id === cid)),
+      }));
     },
   });
 
@@ -1097,10 +1130,14 @@ const AdminCourses: React.FC = () => {
               {isRTL ? "إنشاء وتعديل وإدارة جميع الدورات" : "Create, edit, and manage all courses"}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setIsPricesOpen(true)} className="gap-2">
               <DollarSign className="w-4 h-4" />
               {isRTL ? "إدارة الأسعار" : "Manage Prices"}
+            </Button>
+            <Button variant="outline" onClick={() => setBundleTiersOpen(true)} className="gap-2">
+              <Gift className="w-4 h-4" />
+              {isRTL ? "خصم الباقات" : "Bundle Discounts"}
             </Button>
             <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
               <Plus className="w-4 h-4" />
@@ -1109,6 +1146,17 @@ const AdminCourses: React.FC = () => {
           </div>
         </div>
 
+        <Tabs
+          value={coursesAdminTab}
+          onValueChange={(v) => setCoursesAdminTab(v as "courses" | "bundles")}
+          className="space-y-6"
+        >
+          <TabsList className={isRTL ? "flex-row-reverse" : ""}>
+            <TabsTrigger value="courses">{isRTL ? "الدورات" : "Courses"}</TabsTrigger>
+            <TabsTrigger value="bundles">{isRTL ? "مشتريات الباقات" : "Bundle purchases"}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="courses" className="space-y-6 mt-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
@@ -1300,6 +1348,70 @@ const AdminCourses: React.FC = () => {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="bundles" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>{isRTL ? "مشتريات الباقات" : "Bundle purchases"}</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {bundlePurchasesLoading ? (
+                  <div className="p-6 space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} className="h-14 w-full" />
+                    ))}
+                  </div>
+                ) : bundlePurchases.length === 0 ? (
+                  <div className="p-12 text-center text-muted-foreground">
+                    {isRTL ? "لا توجد مشتريات باقات بعد." : "No bundle purchases yet."}
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{isRTL ? "المستخدم" : "User"}</TableHead>
+                        <TableHead>{isRTL ? "الكورسات" : "Courses"}</TableHead>
+                        <TableHead>{isRTL ? "العدد" : "Count"}</TableHead>
+                        <TableHead>{isRTL ? "الخصم" : "Discount"}</TableHead>
+                        <TableHead>{isRTL ? "المبلغ" : "Amount"}</TableHead>
+                        <TableHead>{isRTL ? "التاريخ" : "Date"}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {bundlePurchases.map((row: (typeof bundlePurchases)[number]) => (
+                        <TableRow key={row.id}>
+                          <TableCell className="font-medium">
+                            {row.profile?.full_name ||
+                              (row.user_id ? `${String(row.user_id).slice(0, 8)}…` : "—")}
+                          </TableCell>
+                          <TableCell className="max-w-[280px]">
+                            <span className="line-clamp-2 text-sm">
+                              {row.courseTitles
+                                .filter(Boolean)
+                                .map((c: any) => (isRTL && c.title_ar ? c.title_ar : c.title))
+                                .join(isRTL ? "، " : ", ")}
+                            </span>
+                          </TableCell>
+                          <TableCell>{row.courses_count}</TableCell>
+                          <TableCell>{Number(row.discount_percentage).toFixed(0)}%</TableCell>
+                          <TableCell>
+                            {Number(row.final_price_sar).toFixed(0)} {row.currency || "SAR"}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                            {row.created_at
+                              ? format(new Date(row.created_at), "yyyy-MM-dd HH:mm")
+                              : "—"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Create/Edit Dialog */}
         <Dialog
@@ -1945,6 +2057,7 @@ const AdminCourses: React.FC = () => {
         </Dialog>
 
         <AllCoursePricesDialog open={isPricesOpen} onOpenChange={setIsPricesOpen} />
+        <BundleTiersDialog open={bundleTiersOpen} onOpenChange={setBundleTiersOpen} />
       </div>
     </AdminLayout>
   );

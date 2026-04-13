@@ -18,6 +18,23 @@ import { translateTrainerCourseLocation } from "@/lib/trainerCourseLocation";
 import TrainerShowcaseCard from "@/components/landing/TrainerShowcaseCard";
 import { useTrainingPlatformPricing } from "@/hooks/useTrainingPlatformPricing";
 import { applyTrainingPlatformMarkupSar } from "@/lib/trainingPlatformMarkup";
+import TrainingCurriculumAccordion from "@/components/training/TrainingCurriculumAccordion";
+import { parseTrainingSessions } from "@/lib/trainingSessionCurriculum";
+
+type TrainerSupply = { name_ar: string; name_en: string };
+
+function parseTrainerSupplies(raw: unknown): TrainerSupply[] {
+  if (!raw || !Array.isArray(raw)) return [];
+  return (raw as unknown[])
+    .map((x) => {
+      const o = x as Record<string, unknown>;
+      return {
+        name_ar: String(o.name_ar ?? "").trim(),
+        name_en: String(o.name_en ?? "").trim(),
+      };
+    })
+    .filter((x) => x.name_ar && x.name_en);
+}
 
 const levelConfig: Record<string, { color: string; label: { en: string; ar: string } }> = {
   beginner: {
@@ -124,6 +141,12 @@ const TrainingDetail: React.FC = () => {
 
   const level = training ? levelConfig[training.level] || levelConfig.beginner : levelConfig.beginner;
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
+  const supplies = parseTrainerSupplies(training?.trainer_supplies);
+
+  const curriculumSessions = useMemo(
+    () => parseTrainingSessions(training?.sessions),
+    [training?.sessions],
+  );
 
   const trainingTitle = training ? (isRTL ? training.name_ar : training.name_en) : "";
   const seoDescription = useMemo(() => {
@@ -219,8 +242,32 @@ const TrainingDetail: React.FC = () => {
                       </Badge>
                     </div>
                   </div>
+                  {supplies.length > 0 ? (
+                    <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                      <p className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                        <Wrench className="h-4 w-4 text-primary" />
+                        {isRTL ? "ما يوفره المدرب" : "Trainer Supplies"}
+                      </p>
+                      <ul className="space-y-1.5 text-sm">
+                        {supplies.map((item, idx) => (
+                          <li key={`${item.name_en}-${idx}`} className="flex items-center gap-2">
+                            <Wrench className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span>{isRTL ? item.name_ar : item.name_en}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
                 </CardHeader>
               </Card>
+
+              {curriculumSessions.length > 0 ? (
+                <TrainingCurriculumAccordion
+                  sessions={curriculumSessions}
+                  isRTL={isRTL}
+                  className="max-w-3xl mx-auto mb-12"
+                />
+              ) : null}
 
               {training.type === "theory" ? (
                 <section className="rounded-2xl border border-border/70 bg-muted/20 p-6 sm:p-8 text-center">

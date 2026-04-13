@@ -286,6 +286,19 @@ export function formatTime12hClock(isoTime: string, isRTL: boolean): string {
   return `${h12}:${mm} ${isPM ? 'PM' : 'AM'}`;
 }
 
+/** 12h for booking summaries; omits `:00` minutes when on the hour (ص/م or AM/PM). */
+export function formatTimeAMPM(time: string, isRTL: boolean): string {
+  const t = normalizeDbTime(time).slice(0, 5);
+  const [hs, ms] = t.split(':');
+  const hours = parseInt(hs, 10) || 0;
+  const minutes = parseInt(ms, 10) || 0;
+  const isPM = hours >= 12;
+  const period = isPM ? (isRTL ? 'م' : 'PM') : isRTL ? 'ص' : 'AM';
+  const displayHours = hours % 12 || 12;
+  const displayMins = minutes > 0 ? `:${minutes.toString().padStart(2, '0')}` : '';
+  return `${displayHours}${displayMins} ${period}`;
+}
+
 /** Time without trailing period label (for two-line slot UI). */
 export function formatTimeClockOnly(isoTime: string, isRTL: boolean): string {
   return formatTime12hClock(isoTime, isRTL).replace(/\s+(ص|م|AM|PM)$/u, '').trim();

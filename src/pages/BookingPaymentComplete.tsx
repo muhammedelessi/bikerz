@@ -6,17 +6,11 @@ import {
   readPendingTrainingBooking,
   clearPendingTrainingBooking,
 } from '@/lib/trainingBookingStorage';
+import { insertUserTrainingBooking } from '@/lib/trainingBookingInsert';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Skeleton } from '@/components/ui/skeleton';
-
-function toPgTime(t: string): string {
-  const p = t.trim().split(':');
-  if (p.length === 2) return `${p[0].padStart(2, '0')}:${p[1].padStart(2, '0')}:00`;
-  if (p.length >= 3) return `${p[0].padStart(2, '0')}:${p[1].padStart(2, '0')}:${(p[2] || '00').padStart(2, '0').slice(0, 2)}`;
-  return '09:00:00';
-}
 
 const BookingPaymentComplete: React.FC = () => {
   const { isRTL, language } = useLanguage();
@@ -83,38 +77,21 @@ const BookingPaymentComplete: React.FC = () => {
         return;
       }
 
-      const { data: inserted, error } = await supabase
-        .from('training_bookings')
-        .insert({
-          user_id: session.user.id,
-          trainer_id: pending.trainer_id,
-          training_id: pending.training_id,
-          trainer_course_id: pending.trainer_course_id,
-          booking_date: pending.booking_date,
-          start_time: toPgTime(pending.start_time),
-          end_time: toPgTime(pending.end_time),
-          amount: pending.payment_amount,
-          currency: pending.payment_currency || 'SAR',
-          status: 'confirmed',
-          payment_status: 'paid',
-          payment_id: tapId,
-          notes: pending.notes?.trim() || null,
-          full_name: pending.full_name.trim(),
-          phone: pending.phone.trim(),
-          email: pending.email.trim(),
-          preferred_date: pending.booking_date,
-        })
-        .select('id')
-        .single();
+      const inserted = await insertUserTrainingBooking({
+        userId: session.user.id,
+        pending,
+        paymentId: tapId,
+        paymentStatus: 'paid',
+        bookingStatus: 'confirmed',
+      });
 
-      if (error) {
-        console.error(error);
-        setMessage(error.message || (isRTL ? 'تعذر حفظ الحجز' : 'Could not save booking'));
+      if ('error' in inserted) {
+        setMessage(inserted.error || (isRTL ? 'تعذر حفظ الحجز' : 'Could not save booking'));
         return;
       }
 
       clearPendingTrainingBooking();
-      if (!cancelled && inserted?.id) {
+      if (!cancelled && inserted.id) {
         navigate(`/booking-success?id=${encodeURIComponent(inserted.id)}`, { replace: true });
       }
     };

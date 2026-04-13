@@ -12,6 +12,7 @@ import confetti from "canvas-confetti";
 import bikerLogo from "@/assets/bikerz-logo.webp";
 import { trackPurchase } from "@/utils/metaPixel";
 import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
+import { clearBundleSelection } from "@/lib/bundleSelectionStorage";
 import type { User } from "@supabase/supabase-js";
 import { COUNTRIES } from "@/data/countryCityData";
 function useAuthReady() {
@@ -45,6 +46,7 @@ const PaymentSuccess: React.FC = () => {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const courseId = searchParams.get("course");
+  const isBundle = searchParams.get("bundle") === "1";
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
   const { user, isReady } = useAuthReady();
@@ -69,11 +71,12 @@ const PaymentSuccess: React.FC = () => {
         .single();
       return data;
     },
-    enabled: !!courseId,
+    enabled: !!courseId && !isBundle,
   });
 
   // Meta Pixel + n8n webhook on successful verification
   useEffect(() => {
+    if (verifyStatus === "succeeded" && isBundle) return;
     if (verifyStatus === "succeeded" && course && courseId) {
       trackPurchase({
         content_name: course.title,
@@ -136,7 +139,7 @@ const PaymentSuccess: React.FC = () => {
         }).catch(() => {});
       }
     }
-  }, [verifyStatus, course, courseId]);
+  }, [verifyStatus, course, courseId, isBundle]);
 
   // Verify payment with retry/polling logic
   useEffect(() => {
@@ -159,7 +162,11 @@ const PaymentSuccess: React.FC = () => {
 
         if (data?.status === "succeeded") {
           setVerifyStatus("succeeded");
-          if (user) {
+          if (isBundle) {
+            clearBundleSelection();
+            queryClient.invalidateQueries({ queryKey: ["user-enrollments", user?.id] });
+            queryClient.invalidateQueries({ queryKey: ["courses-with-stats"] });
+          } else if (user && courseId) {
             queryClient.invalidateQueries({ queryKey: ["enrollment", courseId, user.id] });
           }
           return;
@@ -184,7 +191,10 @@ const PaymentSuccess: React.FC = () => {
           // Max retries — still show success-ish if the charge exists
           // The webhook will handle final enrollment
           setVerifyStatus("processing");
-          if (user) {
+          if (isBundle) {
+            queryClient.invalidateQueries({ queryKey: ["user-enrollments", user?.id] });
+            queryClient.invalidateQueries({ queryKey: ["courses-with-stats"] });
+          } else if (user && courseId) {
             queryClient.invalidateQueries({ queryKey: ["enrollment", courseId, user.id] });
           }
         }
@@ -201,7 +211,7 @@ const PaymentSuccess: React.FC = () => {
     };
 
     verify();
-  }, [tapId, isReady]);
+  }, [tapId, isReady, isBundle, courseId, user, queryClient]);
 
   // Fire confetti on success
   useEffect(() => {
@@ -221,7 +231,13 @@ const PaymentSuccess: React.FC = () => {
     setTimeout(fire, 900);
   }, [verifyStatus, confettiFired]);
 
-  const courseTitle = isRTL && course?.title_ar ? course.title_ar : course?.title;
+  const courseTitle = isBundle
+    ? isRTL
+      ? "باقة الكورسات"
+      : "Course bundle"
+    : isRTL && course?.title_ar
+      ? course.title_ar
+      : course?.title;
 
   // Wait for auth to be ready
   if (!isReady) {
@@ -246,8 +262,8 @@ const PaymentSuccess: React.FC = () => {
           </div>
           <h2 className="text-2xl font-bold text-foreground mb-4">{t("payment.cancelled")}</h2>
           <p className="text-muted-foreground">{t("payment.cancelledDescription")}</p>
-          <Button onClick={() => navigate(`/courses/${courseId}`)} variant="cta" className="h-12 px-8 rounded-2xl">
-            {t("payment.backToCourse")}
+          <Button onClick={() => navigate(isBundle ? "/bundles" : `/courses/${courseId}`)} variant="cta" className="h-12 px-8 rounded-2xl">
+            {isBundle ? (isRTL ? "العودة للباقات" : "Back to bundles") : t("payment.backToCourse")}
           </Button>
         </motion.div>
       </div>
@@ -268,8 +284,8 @@ const PaymentSuccess: React.FC = () => {
           </div>
           <h2 className="text-2xl font-bold text-foreground mb-4">{t("payment.failed")}</h2>
           <p className="text-muted-foreground">{t("payment.failedDescription")}</p>
-          <Button onClick={() => navigate(`/courses/${courseId}`)} variant="cta" className="h-12 px-8 rounded-2xl">
-            {t("payment.backToCourse")}
+          <Button onClick={() => navigate(isBundle ? "/bundles" : `/courses/${courseId}`)} variant="cta" className="h-12 px-8 rounded-2xl">
+            {isBundle ? (isRTL ? "العودة للباقات" : "Back to bundles") : t("payment.backToCourse")}
           </Button>
         </motion.div>
       </div>
@@ -303,8 +319,8 @@ const PaymentSuccess: React.FC = () => {
           </div>
           <h2 className="text-2xl font-bold text-foreground mb-4">{t("payment.processing")}</h2>
           <p className="text-muted-foreground">{t("payment.processingDescription")}</p>
-          <Button onClick={() => navigate(`/courses/${courseId}`)} variant="cta" className="h-12 px-8 rounded-2xl">
-            {t("payment.backToCourse")}
+          <Button onClick={() => navigate(isBundle ? "/bundles" : `/courses/${courseId}`)} variant="cta" className="h-12 px-8 rounded-2xl">
+            {isBundle ? (isRTL ? "العودة للباقات" : "Back to bundles") : t("payment.backToCourse")}
           </Button>
         </motion.div>
       </div>
@@ -387,7 +403,7 @@ const PaymentSuccess: React.FC = () => {
               </h3>
               <p className="text-xl font-bold text-foreground leading-tight">{courseTitle || "..."}</p>
               <div className="flex items-center justify-center gap-6 pt-2">
-                {course?.total_lessons && (
+                {!isBundle && course?.total_lessons && (
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <BookOpen className="w-4 h-4 text-primary" />
                     <span className="font-semibold text-foreground">{course.title}</span>
@@ -418,8 +434,8 @@ const PaymentSuccess: React.FC = () => {
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.0 }}>
               <Button className="w-full btn-cta h-12 text-base font-bold shadow-xl shadow-primary/20" asChild>
-                <Link to={`/courses/${courseId}/learn?welcome=1`}>
-                  {t("payment.startLearning")}
+                <Link to={isBundle ? "/dashboard" : `/courses/${courseId}/learn?welcome=1`}>
+                  {isBundle ? (isRTL ? "اذهب إلى لوحة التعلم" : "Go to dashboard") : t("payment.startLearning")}
                   <ArrowIcon className="w-5 h-5 ms-2" />
                 </Link>
               </Button>

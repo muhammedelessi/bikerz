@@ -15,6 +15,7 @@ import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 import { useTheme } from '@/components/ThemeProvider';
 import SEOHead from "@/components/common/SEOHead";
+import { consumeReturnUrl } from "@/lib/authReturnUrl";
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
@@ -95,7 +96,8 @@ const Login: React.FC = () => {
     }
 
     toast.success(t("auth.login.success"));
-    navigate(returnTo || "/dashboard");
+    const redirectAfterAuth = consumeReturnUrl() || returnTo;
+    navigate(redirectAfterAuth || "/dashboard");
   };
 
   return (

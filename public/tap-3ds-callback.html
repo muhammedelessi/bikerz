@@ -14,12 +14,14 @@
   var tapId = params.get('tap_id') || '';
   var courseId = params.get('course') || '';
   var booking = params.get('booking') === '1';
+  var bundle = params.get('bundle') === '1';
   var trainerCourseId = params.get('tc') || '';
   var msg = {
     type: 'TAP_3DS_COMPLETE',
     tap_id: tapId,
     course_id: courseId,
     booking: booking,
+    bundle: bundle,
     trainer_course_id: trainerCourseId
   };
 
@@ -31,7 +33,9 @@
     window.parent.postMessage(msg,'*');
   }
   else {
-    if (booking && trainerCourseId && tapId) {
+    if (bundle && tapId) {
+      window.location.href = '/payment-success?bundle=1&tap_id=' + encodeURIComponent(tapId);
+    } else if (booking && trainerCourseId && tapId) {
       window.location.href = '/booking-payment-complete?tap_id=' + encodeURIComponent(tapId) + '&tc=' + encodeURIComponent(trainerCourseId);
     } else {
       window.location.href = '/payment-success?course=' + encodeURIComponent(courseId) + '&tap_id=' + encodeURIComponent(tapId);

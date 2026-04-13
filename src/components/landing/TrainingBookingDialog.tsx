@@ -1,15 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { format, addDays, startOfDay } from 'date-fns';
-import { arSA } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrency, TRAINING_PRICE_PLACEHOLDER_COURSE_ID } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useTapPayment } from '@/hooks/useTapPayment';
-import { writePendingTrainingBooking } from '@/lib/trainingBookingStorage';
+import { writePendingTrainingBooking, clearPendingTrainingBooking } from '@/lib/trainingBookingStorage';
+import { insertUserTrainingBooking } from '@/lib/trainingBookingInsert';
 import {
   type TrainerCourseRow,
   type AvailRow,
@@ -20,9 +20,6 @@ import {
   buildAvailabilityByDow,
   slotBooked,
   slotEndTimePg,
-  formatTime12hClock,
-  formatTimeClockOnly,
-  slotPeriodLabel,
   durationBookingLabel,
   dayHasFreeSlot,
 } from '@/lib/trainingBookingUtils';
@@ -41,11 +38,13 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, CreditCard, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, CreditCard, Check, ChevronLeft, ChevronRight, Clock, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTrainingPlatformPricing } from '@/hooks/useTrainingPlatformPricing';
 import { applyTrainingPlatformMarkupSar, trainingCustomerChargeTotalSar } from '@/lib/trainingPlatformMarkup';
+import BookingTimeDisplay from '@/components/common/BookingTimeDisplay';
+import { formatBookingTime, formatTimeFromMinutesSinceMidnight, pgTimeStringToMinutes } from '@/utils/formatDateTime';
 
 type TrainingMini = { id: string; name_ar: string; name_en: string } | null;
 
@@ -58,6 +57,7 @@ type Props = {
 };
 
 const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, selectedCourse, returnTo }) => {
+  const navigate = useNavigate();
   const { isRTL, language } = useLanguage();
   const { user, profile, isLoading: authLoading } = useAuth();
   const { getCoursePriceInfo, formatPriceValueThenCurrencyName } = useCurrency();
@@ -77,9 +77,9 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
   const bookingRangeStart = useMemo(() => format(startOfDay(new Date()), 'yyyy-MM-dd'), [open]);
   const bookingRangeEnd = useMemo(() => format(addDays(startOfDay(new Date()), 24), 'yyyy-MM-dd'), [open]);
 
-  const next14Days = useMemo(() => {
+  const next30Days = useMemo(() => {
     const today = startOfDay(new Date());
-    return Array.from({ length: 14 }, (_, i) => addDays(today, i));
+    return Array.from({ length: 30 }, (_, i) => addDays(today, i + 1));
   }, [open]);
 
   const availabilityQuery = useQuery({
@@ -156,7 +156,7 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
   const slotsScheduleError =
     open && !!trainerId && (availabilityQuery.isError || extrasQuery.isError || bookedSlotsQuery.isError);
 
-  const hasBookableSlotNext14Days = useMemo(() => {
+  const hasBookableSlotNext30Days = useMemo(() => {
     if (!selectedCourse || !open) return true;
     if (slotsDataLoading) return true;
     return hasUnbookedSlotInRange(
@@ -165,7 +165,7 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
       blockedDateSet,
       specialHoursByDate,
       bookedSlots,
-      14,
+      31,
       weeklySlotRanges,
     );
   }, [
@@ -193,11 +193,19 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
       : trainerForDialog.name_en
     : '';
 
-  const calendarLocale = isRTL ? arSA : undefined;
-
   const { data: pricing } = useTrainingPlatformPricing();
   const trainingPlatformMarkupPct = pricing?.markupPercent ?? 0;
   const trainingPlatformVatPct = pricing?.vatPercent ?? 15;
+
+  const chargeSarTotal = useMemo(() => {
+    if (!selectedCourse) return 0;
+    return trainingCustomerChargeTotalSar(
+      Number(selectedCourse.price),
+      trainingPlatformMarkupPct,
+      trainingPlatformVatPct,
+    );
+  }, [selectedCourse, trainingPlatformMarkupPct, trainingPlatformVatPct]);
+  const isFreeBooking = chargeSarTotal <= 0;
 
   const priceInfo = useMemo(() => {
     if (!selectedCourse) return null;
@@ -206,6 +214,15 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
       vatPercent: trainingPlatformVatPct,
     });
   }, [selectedCourse, getCoursePriceInfo, trainingPlatformMarkupPct, trainingPlatformVatPct]);
+
+  const durationMins = useMemo(
+    () => (selectedCourse ? Math.round(Number(selectedCourse.duration_hours) * 60) : 0),
+    [selectedCourse],
+  );
+  const sessionDurationLabel = useMemo(
+    () => (selectedCourse ? durationBookingLabel(Number(selectedCourse.duration_hours), isRTL) : ''),
+    [selectedCourse, isRTL],
+  );
 
   useEffect(() => {
     if (!open || !user) return;
@@ -257,15 +274,11 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
 
     /** Tap + edge always charge practical training in SAR (server-authoritative total). */
     const paymentCurrency = 'SAR';
-    const paymentAmount = trainingCustomerChargeTotalSar(
-      Number(selectedCourse.price),
-      trainingPlatformMarkupPct,
-      trainingPlatformVatPct,
-    );
+    const paymentAmount = chargeSarTotal;
 
     const endTime = slotEndTimePg(selectedSlot, selectedCourse.duration_hours);
 
-    writePendingTrainingBooking({
+    const pendingPayload = {
       trainer_course_id: selectedCourse.id,
       trainer_id: selectedCourse.trainer_id,
       training_id: training.id,
@@ -278,7 +291,39 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
       email: email.trim(),
       payment_amount: paymentAmount,
       payment_currency: paymentCurrency,
-    });
+    };
+
+    if (paymentAmount <= 0) {
+      setPaying(true);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session?.user) {
+          toast.error(isRTL ? 'يرجى تسجيل الدخول' : 'Please sign in');
+          return;
+        }
+        const inserted = await insertUserTrainingBooking({
+          userId: session.user.id,
+          pending: pendingPayload,
+          paymentId: null,
+          paymentStatus: 'paid',
+          bookingStatus: 'confirmed',
+        });
+        if ('error' in inserted) {
+          toast.error(inserted.error);
+          return;
+        }
+        clearPendingTrainingBooking();
+        onOpenChange(false);
+        navigate(`/booking-success?id=${encodeURIComponent(inserted.id)}`);
+      } finally {
+        setPaying(false);
+      }
+      return;
+    }
+
+    writePendingTrainingBooking(pendingPayload);
 
     setPaying(true);
     try {
@@ -298,15 +343,6 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
       setPaying(false);
     }
   };
-
-  const dayChipLabel = useCallback(
-    (d: Date) => {
-      const dow = format(d, 'EEE', { locale: calendarLocale });
-      const dm = format(d, 'd/M');
-      return { dow, dm };
-    },
-    [calendarLocale],
-  );
 
   const isDateSelected = (d: Date) => selectedDate && format(d, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
 
@@ -378,10 +414,10 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
                       ? 'تعذر تحميل جدول المواعيد. حدّث الصفحة أو حاول لاحقاً.'
                       : 'Could not load the schedule. Refresh the page or try again later.'}
                   </p>
-                ) : !hasBookableSlotNext14Days ? (
+                ) : !hasBookableSlotNext30Days ? (
                   <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 px-4 py-8 text-center text-sm leading-relaxed text-muted-foreground space-y-2">
                     <p className="font-medium text-foreground">
-                      {isRTL ? 'لا توجد أوقات حجز متاحة خلال الأيام الـ14 القادمة' : 'No bookable times in the next 14 days'}
+                      {isRTL ? 'لا توجد أوقات حجز متاحة خلال الـ30 يوماً القادمة' : 'No bookable times in the next 30 days'}
                     </p>
                     <p>
                       {isRTL
@@ -394,12 +430,15 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
                     <div>
                       <Label className="mb-2 block text-muted-foreground">{isRTL ? 'اليوم' : 'Day'}</Label>
                       <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin">
-                        {next14Days.map((date) => {
+                        {next30Days.map((date) => {
                           const ds = format(date, 'yyyy-MM-dd');
                           const enabled =
                             selectedCourse &&
                             dayHasFreeSlot(date, selectedCourse, availByDow, blockedDateSet, specialHoursByDate, bookedSlots, weeklySlotRanges);
-                          const { dow, dm } = dayChipLabel(date);
+                          const preview = formatBookingTime(ds, '00:00', '00:00', isRTL);
+                          const parts = preview.dateLine.split(isRTL ? '،' : ',');
+                          const dow = parts[0]?.trim() || preview.dateLine;
+                          const dm = (parts.slice(1).join(isRTL ? '،' : ',').trim() || preview.dateLine).replace(/\b\d{4}\b/g, '').trim();
                           const sel = isDateSelected(date);
                           return (
                             <button
@@ -434,39 +473,94 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -6 }}
                           transition={{ duration: 0.2 }}
-                          className="space-y-2"
+                          className="space-y-4"
                         >
-                          <Label>{isRTL ? 'الوقت' : 'Time'}</Label>
                           {slotsForSelectedDay.length === 0 ? (
                             <p className="text-sm text-muted-foreground py-2">
                               {isRTL ? 'لا توجد أوقات في هذا اليوم.' : 'No slots on this day.'}
                             </p>
                           ) : (
-                            <div className="grid grid-cols-3 gap-2">
-                              {slotsForSelectedDay.map((slot) => {
-                                const booked = slotBooked(dateStr, slot, bookedSlots);
-                                const selected = selectedSlot === slot;
-                                return (
-                                  <button
-                                    key={slot}
-                                    type="button"
-                                    disabled={booked}
-                                    onClick={() => {
-                                      if (!booked) setSelectedSlot(slot);
-                                    }}
-                                    className={cn(
-                                      'p-3 rounded-xl border text-center transition-colors min-h-[72px] flex flex-col items-center justify-center',
-                                      booked && 'opacity-40 cursor-not-allowed line-through',
-                                      !booked && !selected && 'hover:border-primary/50 border-border bg-card',
-                                      !booked && selected && 'bg-primary text-primary-foreground border-primary',
-                                    )}
-                                  >
-                                    <div className="font-bold tabular-nums text-sm">{formatTimeClockOnly(slot, isRTL)}</div>
-                                    <div className="text-[11px] opacity-70">{slotPeriodLabel(slot, isRTL)}</div>
-                                  </button>
-                                );
-                              })}
-                            </div>
+                            <>
+                              <div className="space-y-1">
+                                <h4 className="font-semibold text-sm">
+                                  {isRTL ? 'اختر وقت الجلسة' : 'Choose Session Time'}
+                                </h4>
+                                <p className="text-xs text-muted-foreground">
+                                  {isRTL
+                                    ? `مدة كل جلسة ${sessionDurationLabel} — اختر وقت البدء`
+                                    : `Each session is ${sessionDurationLabel} — select a start time`}
+                                </p>
+                              </div>
+                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                {slotsForSelectedDay.map((slot) => {
+                                  const booked = slotBooked(dateStr, slot, bookedSlots);
+                                  const selected = selectedSlot === slot;
+                                  const startMin = pgTimeStringToMinutes(slot);
+                                  const endMin = startMin + durationMins;
+                                  const startTime = formatTimeFromMinutesSinceMidnight(startMin, isRTL);
+                                  const endTime = formatTimeFromMinutesSinceMidnight(endMin, isRTL);
+                                  return (
+                                    <button
+                                      key={slot}
+                                      type="button"
+                                      disabled={booked}
+                                      onClick={() => {
+                                        if (!booked) setSelectedSlot(slot);
+                                      }}
+                                      className={cn(
+                                        'flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-200 ease-out min-w-[100px] space-y-1',
+                                        selected
+                                          ? 'border-primary bg-primary/10 shadow-md scale-[1.02]'
+                                          : booked
+                                            ? 'border-border bg-muted/30 opacity-40 cursor-not-allowed'
+                                            : 'border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer',
+                                      )}
+                                    >
+                                      <span
+                                        className={cn(
+                                          'text-base font-bold tabular-nums',
+                                          selected ? 'text-primary' : 'text-foreground',
+                                        )}
+                                        dir="ltr"
+                                      >
+                                        {startTime}
+                                      </span>
+                                      <span className="text-muted-foreground text-xs leading-none">↓</span>
+                                      <span className="text-sm text-muted-foreground tabular-nums" dir="ltr">
+                                        {endTime}
+                                      </span>
+                                      <div
+                                        className={cn(
+                                          'flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full mt-1 font-medium',
+                                          selected ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground',
+                                        )}
+                                      >
+                                        <Clock className="w-2.5 h-2.5 shrink-0" aria-hidden />
+                                        <span>{sessionDurationLabel}</span>
+                                      </div>
+                                      {booked ? (
+                                        <span className="text-[10px] text-muted-foreground">{isRTL ? 'محجوز' : 'Booked'}</span>
+                                      ) : null}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              {selectedSlot !== null && (
+                                <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
+                                  <CheckCircle2 className="w-5 h-5 text-primary shrink-0" aria-hidden />
+                                  <div className="text-sm min-w-0">
+                                    <span className="font-semibold text-primary">
+                                      {isRTL ? 'الجلسة ستكون من' : 'Session will be from'}
+                                    </span>
+                                    <span className="mx-2 tabular-nums" dir="ltr">
+                                      {formatTimeFromMinutesSinceMidnight(pgTimeStringToMinutes(selectedSlot), isRTL)} —{' '}
+                                      {formatTimeFromMinutesSinceMidnight(pgTimeStringToMinutes(selectedSlot) + durationMins, isRTL)}
+                                    </span>
+                                    <span className="text-muted-foreground text-xs">({sessionDurationLabel})</span>
+                                  </div>
+                                </div>
+                              )}
+                            </>
                           )}
                         </motion.div>
                       )}
@@ -518,19 +612,14 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
                           <span className="font-medium">{isRTL ? training.name_ar : training.name_en}</span>
                         </div>
                         <div className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[7rem_1fr] sm:gap-x-3">
-                          <span className="text-muted-foreground">{isRTL ? 'التاريخ' : 'Date'}</span>
-                          <span className="font-medium">
-                            {format(selectedDate, isRTL ? 'EEEE، d MMMM yyyy' : 'EEEE, d MMMM yyyy', {
-                              locale: calendarLocale,
-                            })}
-                          </span>
-                        </div>
-                        <div className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[7rem_1fr] sm:gap-x-3">
-                          <span className="text-muted-foreground">{isRTL ? 'الوقت' : 'Time'}</span>
-                          <span className="font-medium tabular-nums" dir="ltr">
-                            {formatTime12hClock(selectedSlot, isRTL)} —{' '}
-                            {formatTime12hClock(slotEndTimePg(selectedSlot, selectedCourse.duration_hours), isRTL)}
-                          </span>
+                          <span className="text-muted-foreground">{isRTL ? 'الموعد' : 'Schedule'}</span>
+                          <BookingTimeDisplay
+                            date={dateStr}
+                            startTime={selectedSlot}
+                            endTime={slotEndTimePg(selectedSlot, selectedCourse.duration_hours)}
+                            showCountdown
+                            compact={false}
+                          />
                         </div>
                         <div className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[7rem_1fr] sm:gap-x-3">
                           <span className="text-muted-foreground">{isRTL ? 'المدة' : 'Duration'}</span>
@@ -538,13 +627,20 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
                         </div>
                         <div className="flex flex-col gap-0.5 sm:grid sm:grid-cols-[7rem_1fr] sm:gap-x-3">
                           <span className="text-muted-foreground">{isRTL ? 'السعر' : 'Price'}</span>
-                          <span
-                            className="font-semibold tabular-nums text-primary"
-                            dir={isRTL ? 'rtl' : 'ltr'}
-                            lang={isRTL ? 'ar' : 'en'}
-                          >
-                            {priceInfo ? formatPriceValueThenCurrencyName(priceInfo, isRTL) : ''}
-                          </span>
+                          <div className="space-y-1">
+                            <span
+                              className="font-semibold tabular-nums text-primary"
+                              dir={isRTL ? 'rtl' : 'ltr'}
+                              lang={isRTL ? 'ar' : 'en'}
+                            >
+                              {priceInfo ? formatPriceValueThenCurrencyName(priceInfo, isRTL) : ''}
+                            </span>
+                            {isFreeBooking ? (
+                              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                                {isRTL ? 'لا يلزم فتح صفحة الدفع.' : 'No payment page — confirm below.'}
+                              </p>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -615,10 +711,18 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
                   >
                     {paying || tap.status === 'processing' ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : isFreeBooking ? (
+                      <Check className="h-4 w-4" />
                     ) : (
                       <CreditCard className="h-4 w-4" />
                     )}
-                    {isRTL ? 'تأكيد الحجز والدفع →' : 'Confirm booking & pay →'}
+                    {isFreeBooking
+                      ? isRTL
+                        ? 'تأكيد الحجز (مجاني) →'
+                        : 'Confirm free booking →'
+                      : isRTL
+                        ? 'تأكيد الحجز والدفع →'
+                        : 'Confirm booking & pay →'}
                   </Button>
                 </DialogFooter>
               </motion.div>

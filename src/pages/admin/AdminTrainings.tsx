@@ -15,8 +15,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, X, Eye, Percent } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, X, Eye, Percent, Wrench, Trophy, Clock, ChevronDown } from 'lucide-react';
 import BilingualInput from '@/components/admin/content/BilingualInput';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import type { TrainingSessionCurriculum } from '@/lib/trainingSessionCurriculum';
+import { parseTrainingSessions } from '@/lib/trainingSessionCurriculum';
 import { Input } from '@/components/ui/input';
 import {
   TRAINING_PLATFORM_MARKUP_MAX,
@@ -25,6 +28,7 @@ import {
   clampTrainingVatPercent,
 } from '@/lib/trainingPlatformMarkup';
 import { useTrainingPlatformPricing } from '@/hooks/useTrainingPlatformPricing';
+import type { Json } from '@/integrations/supabase/types';
 
 const TRAINING_MARKUP_SETTING_KEY = 'training_platform_markup_percent';
 const TRAINING_VAT_SETTING_KEY = 'training_platform_vat_percent';
@@ -43,6 +47,35 @@ interface Training {
   background_image: string | null;
   default_sessions_count?: number;
   default_session_duration_hours?: number;
+  trainer_supplies?: unknown;
+  sessions?: unknown;
+}
+
+type TrainerSupply = { name_ar: string; name_en: string };
+
+function trainingsJsonify(value: unknown): Json {
+  return JSON.parse(JSON.stringify(value ?? null)) as Json;
+}
+
+/** PostgREST when a column is missing or schema cache is stale */
+function isMissingTrainingsColumnError(err: unknown, column: string): boolean {
+  const msg =
+    err && typeof err === 'object' && 'message' in err ? String((err as { message: string }).message) : '';
+  if (!msg) return false;
+  return msg.includes(`'${column}'`) || (msg.includes('schema cache') && msg.includes(column));
+}
+
+function parseTrainerSupplies(raw: unknown): TrainerSupply[] {
+  if (!raw || !Array.isArray(raw)) return [];
+  return (raw as unknown[])
+    .map((x) => {
+      const o = x as Record<string, unknown>;
+      return {
+        name_ar: String(o.name_ar ?? '').trim(),
+        name_en: String(o.name_en ?? '').trim(),
+      };
+    })
+    .filter((x) => x.name_ar && x.name_en);
 }
 
 const AdminTrainings: React.FC = () => {
@@ -70,6 +103,10 @@ const AdminTrainings: React.FC = () => {
     default_session_duration_hours: 2,
   });
   const [typeFilter, setTypeFilter] = useState<'all' | 'practical' | 'theory'>('all');
+  const [supplies, setSupplies] = useState<TrainerSupply[]>([]);
+  const [newSupply, setNewSupply] = useState({ name_ar: '', name_en: '' });
+  const [sessions, setSessions] = useState<TrainingSessionCurriculum[]>([]);
+  const [openSessionIndex, setOpenSessionIndex] = useState<number | null>(null);
 
   const { data: trainings, isLoading } = useQuery({
     queryKey: ['admin-trainings'],
@@ -143,14 +180,56 @@ const AdminTrainings: React.FC = () => {
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (data: typeof form & { id?: string; background_image?: string | null }) => {
+    mutationFn: async (data: typeof form & { id?: string; background_image?: string | null; trainer_supplies?: TrainerSupply[]; sessions?: TrainingSessionCurriculum[] }) => {
       const { id, ...rest } = data;
-      if (id) {
-        const { error } = await supabase.from('trainings').update(rest as any).eq('id', id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('trainings').insert(rest as any);
-        if (error) throw error;
+      const payload: Record<string, unknown> = {
+        name_ar: rest.name_ar,
+        name_en: rest.name_en,
+        type: rest.type,
+        description_ar: rest.description_ar,
+        description_en: rest.description_en,
+        level: rest.level,
+        status: rest.status,
+        default_sessions_count: rest.default_sessions_count,
+        default_session_duration_hours: rest.default_session_duration_hours,
+        background_image: rest.background_image ?? null,
+        trainer_supplies: trainingsJsonify(rest.trainer_supplies ?? []),
+        sessions: trainingsJsonify(rest.sessions ?? []),
+      };
+
+      const upsert = async (body: Record<string, unknown>) => {
+        if (id) {
+          return supabase.from('trainings').update(body).eq('id', id);
+        }
+        return supabase.from('trainings').insert(body);
+      };
+
+      const body: Record<string, unknown> = { ...payload };
+      let { error } = await upsert(body);
+
+      if (error && isMissingTrainingsColumnError(error, 'sessions')) {
+        toast.warning(
+          isRTL
+            ? 'تم الحفظ بدون منهج الجلسات — طبّق migration لعمود sessions على قاعدة البيانات، أو أعد تحميل مخطط PostgREST.'
+            : 'Saved without session curriculum — apply the trainings.sessions migration (or reload PostgREST schema cache).',
+        );
+        delete body.sessions;
+        ({ error } = await upsert(body));
+      }
+
+      if (error && isMissingTrainingsColumnError(error, 'trainer_supplies')) {
+        toast.warning(
+          isRTL
+            ? 'تم الحفظ بدون قائمة مستلزمات المدرب — طبّق migration لعمود trainer_supplies.'
+            : 'Saved without trainer supplies — apply the trainer_supplies migration.',
+        );
+        delete body.trainer_supplies;
+        ({ error } = await upsert(body));
+      }
+
+      if (error) {
+        const msg = error.message || String(error);
+        throw new Error(msg);
       }
     },
     onSuccess: () => {
@@ -160,7 +239,11 @@ const AdminTrainings: React.FC = () => {
       setUploadingImage(false);
       toast.success(isRTL ? 'تم الحفظ بنجاح' : 'Saved successfully');
     },
-    onError: () => { setUploadingImage(false); toast.error(isRTL ? 'حدث خطأ' : 'An error occurred'); },
+    onError: (err: unknown) => {
+      setUploadingImage(false);
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(isRTL ? `تعذر الحفظ: ${msg}` : msg);
+    },
   });
 
   const deleteMutation = useMutation({
@@ -190,6 +273,10 @@ const AdminTrainings: React.FC = () => {
       default_sessions_count: 1,
       default_session_duration_hours: 2,
     });
+    setSupplies([]);
+    setSessions([]);
+    setOpenSessionIndex(null);
+    setNewSupply({ name_ar: '', name_en: '' });
     setImageFile(null);
     setImagePreview(null);
     setFormOpen(true);
@@ -208,6 +295,10 @@ const AdminTrainings: React.FC = () => {
       default_sessions_count: Math.max(1, Number(t.default_sessions_count ?? 1)),
       default_session_duration_hours: Math.max(0.25, Number(t.default_session_duration_hours ?? 2)),
     });
+    setSupplies(parseTrainerSupplies(t.trainer_supplies));
+    setSessions(parseTrainingSessions(t.sessions));
+    setOpenSessionIndex(null);
+    setNewSupply({ name_ar: '', name_en: '' });
     setImageFile(null);
     setImagePreview(t.background_image || null);
     setFormOpen(true);
@@ -234,11 +325,104 @@ const AdminTrainings: React.FC = () => {
     try {
       setUploadingImage(true);
       const bgUrl = await uploadImage();
-      saveMutation.mutate({ ...form, background_image: bgUrl, id: editingTraining?.id });
+      saveMutation.mutate({
+        ...form,
+        background_image: bgUrl,
+        id: editingTraining?.id,
+        trainer_supplies: supplies,
+        sessions,
+      } as typeof form & { id?: string; background_image?: string | null; trainer_supplies: TrainerSupply[]; sessions: TrainingSessionCurriculum[] });
     } catch {
       toast.error(isRTL ? 'فشل رفع الصورة' : 'Image upload failed');
       setUploadingImage(false);
     }
+  };
+
+  const addSupply = () => {
+    const name_ar = newSupply.name_ar.trim();
+    const name_en = newSupply.name_en.trim();
+    if (!name_ar || !name_en) {
+      toast.error(isRTL ? 'أدخل الاسم بالعربية والإنجليزية' : 'Enter Arabic and English names');
+      return;
+    }
+    const dup = supplies.some(
+      (s) => s.name_ar.toLowerCase() === name_ar.toLowerCase() || s.name_en.toLowerCase() === name_en.toLowerCase(),
+    );
+    if (dup) {
+      toast.error(isRTL ? 'هذا العنصر مضاف مسبقاً' : 'This supply is already added');
+      return;
+    }
+    setSupplies((prev) => [...prev, { name_ar, name_en }]);
+    setNewSupply({ name_ar: '', name_en: '' });
+  };
+
+  const addSession = () => {
+    setSessions((prev) => {
+      const nextIndex = prev.length;
+      setOpenSessionIndex(nextIndex);
+      return [
+        ...prev,
+        {
+          session_number: prev.length + 1,
+          title_ar: '',
+          title_en: '',
+          duration_hours: 1,
+          points: 10,
+          objectives: [],
+        },
+      ];
+    });
+  };
+
+  const removeSession = (index: number) => {
+    setSessions((prev) =>
+      prev
+        .filter((_, i) => i !== index)
+        .map((s, i) => ({ ...s, session_number: i + 1 })),
+    );
+    setOpenSessionIndex((prev) => {
+      if (prev === null) return null;
+      if (prev === index) return null;
+      if (prev > index) return prev - 1;
+      return prev;
+    });
+  };
+
+  const updateSession = (index: number, field: keyof TrainingSessionCurriculum, value: string | number) => {
+    setSessions((prev) =>
+      prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)),
+    );
+  };
+
+  const addObjective = (sessionIndex: number) => {
+    setSessions((prev) =>
+      prev.map((s, i) =>
+        i === sessionIndex ? { ...s, objectives: [...s.objectives, { ar: '', en: '' }] } : s,
+      ),
+    );
+  };
+
+  const removeObjective = (sessionIndex: number, objIndex: number) => {
+    setSessions((prev) =>
+      prev.map((s, i) =>
+        i === sessionIndex ? { ...s, objectives: s.objectives.filter((_, oi) => oi !== objIndex) } : s,
+      ),
+    );
+  };
+
+  const updateObjective = (sessionIndex: number, objIndex: number, lang: 'ar' | 'en', value: string) => {
+    setSessions((prev) =>
+      prev.map((s, i) =>
+        i === sessionIndex
+          ? {
+              ...s,
+              objectives: s.objectives.map((obj, oi) =>
+                oi === objIndex ? { ...obj, [lang]: value } : obj,
+              ),
+            }
+          : s,
+      ),
+    );
   };
 
   const levelBadgeClasses: Record<string, string> = {
@@ -260,7 +444,7 @@ const AdminTrainings: React.FC = () => {
   if (formOpen) {
     return (
       <AdminLayout>
-        <div className="space-y-6 max-w-4xl mx-auto" dir={fieldDir}>
+        <div className="flex flex-col gap-6 max-w-4xl mx-auto" dir={fieldDir}>
           {/* Header */}
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => setFormOpen(false)}>
@@ -275,23 +459,280 @@ const AdminTrainings: React.FC = () => {
           </div>
 
           {/* Section: Basic Info */}
-          <Card>
+          <Card className="order-1">
             <CardContent className="p-6 space-y-5">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'المعلومات الأساسية' : 'Basic Information'}</h3>
               <BilingualInput labelEn="Name" labelAr="الاسم" valueEn={form.name_en} valueAr={form.name_ar} onChangeEn={v => setForm(f => ({...f, name_en: v}))} onChangeAr={v => setForm(f => ({...f, name_ar: v}))} placeholderEn="Training name" placeholderAr="اسم التدريب" />
             </CardContent>
           </Card>
 
+          {/* Section: Sessions curriculum */}
+          <Card className="order-4">
+            <CardContent className="p-6 space-y-5" dir={fieldDir}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider text-start">
+                  {isRTL ? 'الجلسات' : 'Sessions'}
+                </h3>
+                <Button type="button" variant="outline" size="sm" className="gap-1.5 shrink-0 self-end sm:self-auto" onClick={addSession}>
+                  <Plus className="h-4 w-4" />
+                  {isRTL ? 'إضافة جلسة' : 'Add session'}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {isRTL
+                  ? 'أضف الجلسات بالترتيب. كل جلسة تحتوي على عنوان، مدة، نقاط، وأهداف تعليمية واضحة.'
+                  : 'Add sessions in order. Each session includes title, duration, points, and clear learning objectives.'}
+              </p>
+
+              <div className="space-y-3">
+                {sessions.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">
+                    <p>{isRTL ? 'لا توجد جلسات بعد.' : 'No sessions added yet.'}</p>
+                    <Button type="button" variant="secondary" size="sm" className="mt-3 gap-1.5" onClick={addSession}>
+                      <Plus className="h-4 w-4" />
+                      {isRTL ? 'ابدأ بإضافة أول جلسة' : 'Add your first session'}
+                    </Button>
+                  </div>
+                ) : null}
+                {sessions.map((session, i) => (
+                  <Collapsible
+                    key={i}
+                    open={openSessionIndex === i}
+                    onOpenChange={(next) => setOpenSessionIndex(next ? i : null)}
+                    className="rounded-xl border border-border bg-card overflow-hidden"
+                  >
+                    <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2 sm:px-4">
+                      <CollapsibleTrigger asChild>
+                        <button
+                          type="button"
+                          className="group flex flex-1 min-w-0 items-center gap-2 text-start py-1"
+                        >
+                          <ChevronDown
+                            className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${openSessionIndex === i ? 'rotate-180' : ''}`}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2 text-sm">
+                              <span className="font-semibold text-primary">
+                                {isRTL ? `الجلسة ${session.session_number}` : `Session ${session.session_number}`}
+                              </span>
+                              {(isRTL ? session.title_ar : session.title_en) ? (
+                                <>
+                                  <span className="text-muted-foreground">·</span>
+                                  <span className="truncate max-w-[200px] text-foreground">
+                                    {isRTL ? session.title_ar : session.title_en}
+                                  </span>
+                                </>
+                              ) : null}
+                              <span className="text-muted-foreground">·</span>
+                              <span className="flex items-center gap-1 text-muted-foreground">
+                                <Clock className="w-3.5 h-3.5" />
+                                {session.duration_hours} {isRTL ? 'ساعة' : 'hrs'}
+                              </span>
+                              <span className="text-muted-foreground">·</span>
+                              <span className="flex items-center gap-1 text-amber-500">
+                                <Trophy className="w-3.5 h-3.5" />
+                                {session.points} {isRTL ? 'نقطة' : 'pts'}
+                              </span>
+                              {session.objectives.length > 0 ? (
+                                <>
+                                  <span className="text-muted-foreground">·</span>
+                                  <span className="text-muted-foreground text-xs">
+                                    {session.objectives.length} {isRTL ? 'أهداف' : 'objectives'}
+                                  </span>
+                                </>
+                              ) : null}
+                            </div>
+                          </div>
+                        </button>
+                      </CollapsibleTrigger>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0 text-destructive hover:bg-destructive/10"
+                        onClick={() => removeSession(i)}
+                        aria-label={isRTL ? 'حذف الجلسة' : 'Remove session'}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <CollapsibleContent>
+                      <div className="space-y-4 p-4 sm:p-5">
+                        <BilingualInput
+                          labelAr="عنوان الجلسة"
+                          labelEn="Session Title"
+                          valueAr={session.title_ar}
+                          valueEn={session.title_en}
+                          onChangeAr={(v) => updateSession(i, 'title_ar', v)}
+                          onChangeEn={(v) => updateSession(i, 'title_en', v)}
+                          placeholderAr="مثال: مقدمة في قيادة الدراجة"
+                          placeholderEn="e.g. Introduction to Motorcycle Riding"
+                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>{isRTL ? 'عدد الساعات' : 'Duration (hours)'}</Label>
+                            <Input
+                              type="number"
+                              min={0.5}
+                              step={0.5}
+                              dir="ltr"
+                              value={session.duration_hours}
+                              onChange={(e) =>
+                                updateSession(i, 'duration_hours', parseFloat(e.target.value) || 0)
+                              }
+                              placeholder="2"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="flex items-center gap-1.5 flex-wrap">
+                              {isRTL ? 'النقاط' : 'Points'}
+                              <span className="text-[10px] text-muted-foreground font-normal">
+                                {isRTL ? '(تُمنح عند إتمام الجلسة)' : '(awarded on completion)'}
+                              </span>
+                            </Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              dir="ltr"
+                              value={session.points}
+                              onChange={(e) =>
+                                updateSession(i, 'points', parseInt(e.target.value, 10) || 0)
+                              }
+                              placeholder="10"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{isRTL ? 'ماذا ستتعلم في هذه الجلسة' : "What You'll Learn"}</Label>
+                          {session.objectives.map((obj, oi) => (
+                            <div
+                              key={oi}
+                              className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-center"
+                            >
+                              <Input
+                                value={obj.ar}
+                                onChange={(e) => updateObjective(i, oi, 'ar', e.target.value)}
+                                placeholder="مثال: تعلم وضعية الجلوس الصحيحة"
+                                dir="rtl"
+                              />
+                              <Input
+                                value={obj.en}
+                                onChange={(e) => updateObjective(i, oi, 'en', e.target.value)}
+                                placeholder="e.g. Learn correct sitting posture"
+                                dir="ltr"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:bg-destructive/10 h-9 w-9 sm:h-8 sm:w-8 justify-self-start"
+                                onClick={() => removeObjective(i, oi)}
+                                aria-label={isRTL ? 'حذف الهدف' : 'Remove objective'}
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          ))}
+                          {session.objectives.length === 0 ? (
+                            <p className="text-xs text-muted-foreground">
+                              {isRTL ? 'لا توجد أهداف تعليمية بعد. أضف هدفاً واحداً على الأقل.' : 'No objectives yet. Add at least one learning objective.'}
+                            </p>
+                          ) : null}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 h-8 text-xs"
+                            onClick={() => addObjective(i)}
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            {isRTL ? 'إضافة هدف تعليمي' : 'Add Learning Objective'}
+                          </Button>
+                        </div>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                ))}
+              </div>
+
+              {sessions.length > 0 ? (
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 px-4 py-3 rounded-xl bg-muted/30 text-sm">
+                  <span className="text-muted-foreground">
+                    {isRTL ? `${sessions.length} جلسات` : `${sessions.length} sessions`}
+                  </span>
+                  <span className="text-muted-foreground hidden sm:inline">·</span>
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Clock className="w-3.5 h-3.5" />
+                    {sessions.reduce((t, s) => t + s.duration_hours, 0)} {isRTL ? 'ساعة' : 'hrs'}
+                  </span>
+                  <span className="text-muted-foreground hidden sm:inline">·</span>
+                  <span className="flex items-center gap-1 text-amber-500 font-semibold">
+                    <Trophy className="w-3.5 h-3.5" />
+                    {sessions.reduce((t, s) => t + s.points, 0)} {isRTL ? 'نقطة' : 'pts'}
+                  </span>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+
           {/* Section: Description */}
-          <Card>
+          <Card className="order-2">
             <CardContent className="p-6 space-y-5">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'الوصف' : 'Description'}</h3>
               <BilingualInput labelEn="Description" labelAr="الوصف" valueEn={form.description_en} valueAr={form.description_ar} onChangeEn={v => setForm(f => ({...f, description_en: v}))} onChangeAr={v => setForm(f => ({...f, description_ar: v}))} isTextarea rows={3} />
             </CardContent>
           </Card>
 
+          <Card className="order-5">
+            <CardContent className="p-6 space-y-4" dir={fieldDir}>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                {isRTL ? 'ما يوفره المدرب' : 'Trainer Supplies'}
+              </h3>
+              <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                <div className="space-y-1">
+                  <Label>{isRTL ? 'الاسم (عربي)' : 'Name (AR)'}</Label>
+                  <Input
+                    dir="rtl"
+                    placeholder="مثال: حامي اليدين"
+                    value={newSupply.name_ar}
+                    onChange={(e) => setNewSupply((p) => ({ ...p, name_ar: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>{isRTL ? 'الاسم (إنجليزي)' : 'Name (EN)'}</Label>
+                  <Input
+                    dir="ltr"
+                    placeholder="e.g. Hand Guards"
+                    value={newSupply.name_en}
+                    onChange={(e) => setNewSupply((p) => ({ ...p, name_en: e.target.value }))}
+                  />
+                </div>
+                <Button type="button" onClick={addSupply} className="gap-1">
+                  <Plus className="h-4 w-4" />
+                  {isRTL ? 'إضافة' : 'Add'}
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {supplies.map((item, idx) => (
+                  <Badge key={`${item.name_en}-${idx}`} variant="secondary" className="gap-1 px-3 py-1.5">
+                    <Wrench className="h-3.5 w-3.5" />
+                    {item.name_ar} / {item.name_en}
+                    <button
+                      type="button"
+                      className="ms-1 inline-flex"
+                      onClick={() => setSupplies((prev) => prev.filter((_, i) => i !== idx))}
+                      aria-label={isRTL ? 'حذف' : 'Remove'}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Section: Background Image */}
-          <Card>
+          <Card className="order-6">
             <CardContent className="p-6 space-y-4">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'صورة الخلفية' : 'Background Image'}</h3>
               <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleImageSelect} />
@@ -316,7 +757,7 @@ const AdminTrainings: React.FC = () => {
           </Card>
 
           {/* Section: Classification */}
-          <Card>
+          <Card className="order-3">
             <CardContent className="p-6 space-y-5">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider text-start">{isRTL ? 'التصنيف' : 'Classification'}</h3>
               <div dir={fieldDir} className="grid gap-4 md:grid-cols-2">
@@ -366,58 +807,8 @@ const AdminTrainings: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Default package (prefill when assigning to a trainer) */}
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider text-start">
-                {isRTL ? 'الجلسات (افتراضي للمدربين)' : 'Sessions (trainer defaults)'}
-              </h3>
-              <p className="text-xs text-muted-foreground text-start leading-relaxed">
-                {isRTL
-                  ? 'عند ربط هذا البرنامج بمدرب، تُعرض هذه القيم تلقائياً ويمكنه تعديلها لاحقاً.'
-                  : 'When this program is linked to a trainer, these values appear by default; the trainer can change them later.'}
-              </p>
-              <div dir={fieldDir} className="grid gap-4 md:grid-cols-2">
-                <div className="min-w-0 space-y-2">
-                  <Label className="block text-start">{isRTL ? 'عدد الجلسات' : 'Number of sessions'}</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    step={1}
-                    className="h-10"
-                    dir="ltr"
-                    value={form.default_sessions_count}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        default_sessions_count: Math.max(1, parseInt(e.target.value, 10) || 1),
-                      }))
-                    }
-                  />
-                </div>
-                <div className="min-w-0 space-y-2">
-                  <Label className="block text-start">{isRTL ? 'مدة كل جلسة (ساعات)' : 'Hours per session'}</Label>
-                  <Input
-                    type="number"
-                    min={0.25}
-                    step={0.25}
-                    className="h-10"
-                    dir="ltr"
-                    value={form.default_session_duration_hours}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        default_session_duration_hours: Math.max(0.25, parseFloat(e.target.value) || 0.25),
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Bottom Save */}
-          <div className="flex justify-end gap-3 pb-6">
+          <div className="order-7 flex justify-end gap-3 pb-6">
             <Button variant="outline" onClick={() => setFormOpen(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
             <Button onClick={handleSave} disabled={saveMutation.isPending}>
               {saveMutation.isPending ? '...' : (isRTL ? 'حفظ' : 'Save')}
@@ -435,11 +826,6 @@ const AdminTrainings: React.FC = () => {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold">{isRTL ? 'إدارة التدريبات' : 'Trainings Management'}</h1>
-            <p className="text-sm text-muted-foreground">
-              {isRTL
-                ? 'العملي والنظري منفصلان؛ معرّف كل صف هو trainings.id (فريد لكل برنامج).'
-                : 'Practical vs theory are separate; each row ID is trainings.id (unique per program).'}
-            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
@@ -471,8 +857,8 @@ const AdminTrainings: React.FC = () => {
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {isRTL
-                    ? 'سعر المدرب الأساسي + نسبة عمولة بايكرز + ضريبة القيمة المضافة السعودية = السعر النهائي الذي يدفعه العميل. يظهر للزائر المبلغ الشامل (بعد العمولة وبعد الضريبة).'
-                    : 'Trainer base + Bikerz commission % + Saudi VAT % = final amount the customer pays. Visitors see the all-inclusive total (markup and VAT included).'}
+                    ? 'أدخل نسب العمولة والضريبة لتطبيقها تلقائياً على أسعار حجوزات التدريب العملي.'
+                    : 'Set commission and VAT percentages to apply automatically to practical booking prices.'}
                 </p>
                 <p className="text-xs text-muted-foreground rounded-md border border-border/60 bg-muted/30 px-3 py-2">
                   {isRTL
@@ -562,7 +948,6 @@ const AdminTrainings: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-[220px] font-mono text-xs">{isRTL ? 'المعرّف (ID)' : 'Program ID'}</TableHead>
                     <TableHead>{isRTL ? 'الاسم' : 'Name'}</TableHead>
                     <TableHead>{isRTL ? 'النوع' : 'Type'}</TableHead>
                     <TableHead>{isRTL ? 'المستوى' : 'Level'}</TableHead>
@@ -574,9 +959,6 @@ const AdminTrainings: React.FC = () => {
                 <TableBody>
                   {filteredTrainings.map(t => (
                     <TableRow key={t.id} className="group">
-                      <TableCell className="align-top">
-                        <code className="text-[11px] leading-snug break-all text-muted-foreground" title={t.id}>{t.id}</code>
-                      </TableCell>
                       <TableCell>
                         <div className="font-medium">{isRTL ? t.name_ar : t.name_en}</div>
                         <div className="text-xs text-muted-foreground mt-0.5">{isRTL ? t.name_en : t.name_ar}</div>

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { completeCourseBundleAfterPayment } from "../_shared/courseBundle.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -225,8 +226,20 @@ Deno.serve(async (req) => {
       })
       .eq("id", dbCharge.id);
 
+    const metaBundle = dbCharge.metadata as Record<string, unknown> | null;
+    const isBundle = String(metaBundle?.payment_kind || "").toLowerCase() === "course_bundle";
+
     // Enroll on success
-    if (status === "succeeded" && dbCharge.course_id) {
+    if (status === "succeeded" && isBundle) {
+      await completeCourseBundleAfterPayment(
+        adminClient,
+        chargeUserId,
+        charge_id,
+        metaBundle,
+        tapCharge.amount || 0,
+        tapCharge.currency || "SAR",
+      );
+    } else if (status === "succeeded" && dbCharge.course_id) {
       const { error: enrollError } = await adminClient
         .from("course_enrollments")
         .insert({ user_id: chargeUserId, course_id: dbCharge.course_id });
@@ -248,10 +261,9 @@ Deno.serve(async (req) => {
       }
 
       // Increment coupon usage if a coupon was applied
-      const meta = dbCharge.metadata as Record<string, unknown> | null;
-      const couponId = meta?.coupon_id as string | null;
+      const couponId = metaBundle?.coupon_id as string | null;
       if (couponId) {
-        const originalAmount = (meta?.original_amount as number) || tapCharge.amount || 0;
+        const originalAmount = (metaBundle?.original_amount as number) || tapCharge.amount || 0;
         const finalAmount = tapCharge.amount || 0;
         const discountAmount = originalAmount - finalAmount;
 

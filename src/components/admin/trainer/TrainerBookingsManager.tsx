@@ -25,8 +25,12 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { arSA, enUS } from 'date-fns/locale';
+import { normalizeBookingSessions, sessionCountLabel } from '@/lib/trainingBookingSessions';
+import { getNextSession } from '@/lib/bookingTime';
 import { Check, CheckCheck, X, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import BookingTimeDisplay from '@/components/common/BookingTimeDisplay';
+import type { Json } from '@/integrations/supabase/types';
 
 type BookingRow = {
   id: string;
@@ -37,6 +41,7 @@ type BookingRow = {
   booking_date: string | null;
   start_time: string | null;
   end_time: string | null;
+  sessions: unknown;
   amount: number | string | null;
   currency: string | null;
   status: string;
@@ -96,7 +101,7 @@ export const TrainerBookingsManager: React.FC<{ trainerId: string; isRTL: boolea
       const { data, error } = await supabase
         .from('training_bookings')
         .select(
-          'id, user_id, trainer_id, training_id, trainer_course_id, booking_date, start_time, end_time, amount, currency, status, payment_status, payment_id, notes, full_name, phone, email, created_at, trainings(name_ar, name_en)',
+          'id, user_id, trainer_id, training_id, trainer_course_id, booking_date, start_time, end_time, sessions, amount, currency, status, payment_status, payment_id, notes, full_name, phone, email, created_at, trainings(name_ar, name_en)',
         )
         .eq('trainer_id', trainerId)
         .order('booking_date', { ascending: false, nullsFirst: false })
@@ -138,9 +143,63 @@ export const TrainerBookingsManager: React.FC<{ trainerId: string; isRTL: boolea
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trainer-admin-bookings', trainerId] });
       queryClient.invalidateQueries({ queryKey: ['trainer-profile-bookings', trainerId] });
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       toast.success(isRTL ? 'تم التحديث' : 'Updated');
     },
-    onError: () => toast.error(isRTL ? 'خطأ' : 'Error'),
+    onError: (e) => {
+      console.error(e);
+      toast.error(isRTL ? 'خطأ' : 'Error');
+    },
+  });
+
+  const completeSession = useMutation({
+    mutationFn: async ({ bookingId, sessionNumber }: { bookingId: string; sessionNumber: number }) => {
+      const { data: row, error: fetchErr } = await supabase
+        .from('training_bookings')
+        .select('sessions, status')
+        .eq('id', bookingId)
+        .single();
+      if (fetchErr) {
+        console.error(fetchErr);
+        throw fetchErr;
+      }
+      const raw = row?.sessions;
+      if (!Array.isArray(raw) || raw.length === 0) {
+        const err = new Error('No sessions on booking');
+        console.error(err);
+        throw err;
+      }
+      const updated = raw.map((item) => {
+        const o = item as Record<string, unknown>;
+        if (Number(o.session_number) === sessionNumber) {
+          return { ...o, status: 'completed', completed_at: new Date().toISOString() };
+        }
+        return item;
+      });
+      const allCompleted = updated.every((x) => String((x as Record<string, unknown>).status) === 'completed');
+      const { error: upErr } = await supabase
+        .from('training_bookings')
+        .update({
+          sessions: updated as unknown as Json,
+          status: allCompleted ? 'completed' : row.status,
+        })
+        .eq('id', bookingId);
+      if (upErr) {
+        console.error(upErr);
+        throw upErr;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trainer-admin-bookings', trainerId] });
+      queryClient.invalidateQueries({ queryKey: ['trainer-profile-bookings', trainerId] });
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      setDetailRow(null);
+      toast.success(isRTL ? 'تم تسجيل الجلسة كمكتملة' : 'Session marked complete');
+    },
+    onError: (e) => {
+      console.error(e);
+      toast.error(isRTL ? 'فشل تحديث الجلسة' : 'Could not update session');
+    },
   });
 
   const formatDate = (d: string | null) => {
@@ -152,10 +211,18 @@ export const TrainerBookingsManager: React.FC<{ trainerId: string; isRTL: boolea
     }
   };
 
-  const formatTimeRange = (s: string | null, e: string | null) => {
-    if (!s || !e) return '—';
-    const short = (t: string) => t.slice(0, 5);
-    return `${short(s)} — ${short(e)}`;
+  const normalizedSessions = (b: BookingRow) =>
+    normalizeBookingSessions(b.sessions, b.booking_date, b.start_time, b.end_time, b.status);
+
+  const nextSession = (b: BookingRow) => {
+    const ns = normalizedSessions(b);
+    return getNextSession(ns);
+  };
+
+  const sessionStatusDot = (status: string) => {
+    if (status === 'cancelled') return '🔴';
+    if (status === 'pending') return '🟡';
+    return '🟢';
   };
 
   const trainingLabel = (b: BookingRow) =>
@@ -254,10 +321,11 @@ export const TrainerBookingsManager: React.FC<{ trainerId: string; isRTL: boolea
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{isRTL ? 'التاريخ' : 'Date'}</TableHead>
-              <TableHead>{isRTL ? 'الوقت' : 'Time'}</TableHead>
               <TableHead>{isRTL ? 'الطالب' : 'Student'}</TableHead>
+              <TableHead>{isRTL ? 'الهاتف' : 'Phone'}</TableHead>
               <TableHead>{isRTL ? 'التدريب' : 'Training'}</TableHead>
+              <TableHead>{isRTL ? 'عدد الجلسات' : 'Sessions'}</TableHead>
+              <TableHead>{isRTL ? 'الجلسة القادمة' : 'Next session'}</TableHead>
               <TableHead>{isRTL ? 'المبلغ' : 'Amount'}</TableHead>
               <TableHead>{isRTL ? 'حالة الدفع' : 'Payment'}</TableHead>
               <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
@@ -267,24 +335,37 @@ export const TrainerBookingsManager: React.FC<{ trainerId: string; isRTL: boolea
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-10">
+                <TableCell colSpan={9} className="text-center text-muted-foreground py-10">
                   {isRTL ? 'لا توجد حجوزات' : 'No bookings'}
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((b) => (
                 <TableRow key={b.id}>
-                  <TableCell className="whitespace-nowrap">{formatDate(b.booking_date)}</TableCell>
-                  <TableCell className="whitespace-nowrap" dir="ltr">
-                    {formatTimeRange(b.start_time, b.end_time)}
-                  </TableCell>
                   <TableCell>
                     <div className="text-sm font-medium">{b.full_name}</div>
-                    <div className="text-xs text-muted-foreground" dir="ltr">
-                      {b.phone}
-                    </div>
                   </TableCell>
+                  <TableCell dir="ltr">{b.phone}</TableCell>
                   <TableCell className="max-w-[140px] truncate">{trainingLabel(b)}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {sessionCountLabel(normalizedSessions(b).length, isRTL)}
+                  </TableCell>
+                  <TableCell className="max-w-[200px]">
+                    {(() => {
+                      const next = nextSession(b);
+                      if (!next) return '—';
+                      const hasUpcoming = new Date(`${next.date}T${next.start_time}`) > new Date();
+                      return (
+                        <BookingTimeDisplay
+                          compact
+                          showCountdown={hasUpcoming}
+                          date={next.date}
+                          startTime={next.start_time}
+                          endTime={next.end_time}
+                        />
+                      );
+                    })()}
+                  </TableCell>
                   <TableCell dir="ltr">
                     {Number(b.amount || 0).toLocaleString(isRTL ? 'ar-SA' : 'en-US')} {b.currency === 'SAR' ? '﷼' : b.currency}
                   </TableCell>
@@ -357,18 +438,16 @@ export const TrainerBookingsManager: React.FC<{ trainerId: string; isRTL: boolea
             <DialogTitle>{isRTL ? 'تفاصيل الحجز' : 'Booking details'}</DialogTitle>
           </DialogHeader>
           {detailRow ? (
-            <div className="space-y-2 text-sm">
+            <div className="space-y-4 text-sm">
               <div className="grid grid-cols-2 gap-2">
-                <span className="text-muted-foreground">{isRTL ? 'التاريخ' : 'Date'}</span>
-                <span>{formatDate(detailRow.booking_date)}</span>
-                <span className="text-muted-foreground">{isRTL ? 'الوقت' : 'Time'}</span>
-                <span dir="ltr">{formatTimeRange(detailRow.start_time, detailRow.end_time)}</span>
                 <span className="text-muted-foreground">{isRTL ? 'الطالب' : 'Student'}</span>
                 <span>{detailRow.full_name}</span>
                 <span className="text-muted-foreground">{isRTL ? 'الهاتف' : 'Phone'}</span>
                 <span dir="ltr">{detailRow.phone}</span>
                 <span className="text-muted-foreground">{isRTL ? 'البريد' : 'Email'}</span>
-                <span className="break-all">{detailRow.email}</span>
+                <span className="break-all" dir="ltr">
+                  {detailRow.email}
+                </span>
                 <span className="text-muted-foreground">{isRTL ? 'التدريب' : 'Training'}</span>
                 <span>{trainingLabel(detailRow)}</span>
                 <span className="text-muted-foreground">{isRTL ? 'المبلغ' : 'Amount'}</span>
@@ -384,8 +463,52 @@ export const TrainerBookingsManager: React.FC<{ trainerId: string; isRTL: boolea
                 <span dir="ltr" className="break-all text-xs">
                   {detailRow.payment_id || '—'}
                 </span>
+                <span className="text-muted-foreground">{isRTL ? 'تاريخ الحجز' : 'Booked on'}</span>
+                <span>{detailRow.created_at ? formatDate(detailRow.created_at.slice(0, 10)) : '—'}</span>
                 <span className="text-muted-foreground">{isRTL ? 'ملاحظات' : 'Notes'}</span>
                 <span className="col-span-2">{detailRow.notes || '—'}</span>
+              </div>
+              <div className="rounded-lg border border-border/60 p-3 space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  {isRTL ? 'جدول الجلسات' : 'Session schedule'}
+                </p>
+                <ul className="space-y-2">
+                  {normalizedSessions(detailRow).length === 0 ? (
+                    <li className="text-muted-foreground text-xs py-1">{isRTL ? 'لا توجد جلسات' : 'No sessions'}</li>
+                  ) : (
+                    normalizedSessions(detailRow).map((s) => {
+                      const sessDone = String(s.status) === 'completed';
+                      return (
+                        <li
+                          key={`${s.session_number}-${s.date}`}
+                          className="flex flex-wrap items-center gap-x-2 gap-y-2 rounded-md bg-muted/20 px-2 py-2"
+                        >
+                          <span className="shrink-0" aria-hidden>
+                            {sessionStatusDot(String(s.status || 'pending'))}
+                          </span>
+                          <Badge variant="secondary" className="tabular-nums shrink-0">
+                            {isRTL ? `جلسة ${s.session_number}` : `Session ${s.session_number}`}
+                          </Badge>
+                          <BookingTimeDisplay date={s.date} startTime={s.start_time} endTime={s.end_time} />
+                          {detailRow.status === 'confirmed' && !sessDone ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="ms-auto h-8"
+                              disabled={completeSession.isPending}
+                              onClick={() =>
+                                completeSession.mutate({ bookingId: detailRow.id, sessionNumber: s.session_number })
+                              }
+                            >
+                              {isRTL ? 'إكمال الجلسة' : 'Complete session'}
+                            </Button>
+                          ) : null}
+                        </li>
+                      );
+                    })
+                  )}
+                </ul>
               </div>
             </div>
           ) : null}

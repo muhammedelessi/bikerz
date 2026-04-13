@@ -332,7 +332,11 @@ const TrainerProfile: React.FC = () => {
               {trainer.license_type ? (
                 <section>
                   <SectionHeader>{isRTL ? 'نوع الرخصة' : 'License'}</SectionHeader>
-                  <p className="text-sm font-medium text-start" dir="ltr">
+                  <p
+                    className={cn('w-full text-sm font-medium tabular-nums', isRTL ? 'text-end' : 'text-start')}
+                    dir="ltr"
+                    translate="no"
+                  >
                     {trainer.license_type}
                   </p>
                 </section>

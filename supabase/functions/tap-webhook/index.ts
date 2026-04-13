@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { completeCourseBundleAfterPayment } from "../_shared/courseBundle.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -96,8 +97,20 @@ Deno.serve(async (req) => {
     // ── Upsert course status and send GHL webhook on every status change ──
     await upsertAndSendGHLWebhook(adminClient, existingCharge, verifiedCharge, verifiedStatus);
 
+    const metaWh = existingCharge.metadata as Record<string, unknown> | null;
+    const isBundle = String(metaWh?.payment_kind || "").toLowerCase() === "course_bundle";
+
     // ── Handle successful payment: enroll user & increment coupon usage ──
-    if (verifiedStatus === "succeeded" && existingCharge.course_id) {
+    if (verifiedStatus === "succeeded" && isBundle) {
+      await completeCourseBundleAfterPayment(
+        adminClient,
+        existingCharge.user_id,
+        chargeId,
+        metaWh,
+        verifiedCharge.amount || 0,
+        verifiedCharge.currency || "SAR",
+      );
+    } else if (verifiedStatus === "succeeded" && existingCharge.course_id) {
       const { error: enrollError } = await adminClient
         .from("course_enrollments")
         .insert({

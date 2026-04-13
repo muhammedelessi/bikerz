@@ -19,6 +19,7 @@ import CheckoutInfoStep from "@/components/checkout/CheckoutInfoStep";
 import CheckoutPaymentStep from "@/components/checkout/CheckoutPaymentStep";
 import CheckoutStatusOverlay from "@/components/checkout/CheckoutStatusOverlay";
 import type { CheckoutCourse } from "@/types/payment";
+import { navigateToSignup } from "@/lib/authReturnUrl";
 
 interface CheckoutModalProps {
   open: boolean;
@@ -83,6 +84,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   }, [open, user]);
 
+  useEffect(() => {
+    if (!open || user) return;
+    onOpenChange(false);
+    navigateToSignup(navigate);
+  }, [open, user, navigate, onOpenChange]);
+
   const handleNextStep = useCallback(() => {
     if (!form.validateInfo()) return;
     form.saveProfileData();
@@ -91,7 +98,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const handleSubmitPayment = useCallback(async () => {
     if (!user) {
-      toast.error(t("checkout.loginRequired", "Please log in to proceed"));
+      navigateToSignup(navigate);
       return;
     }
 
@@ -207,6 +214,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     onSuccess,
     sendCourseStatus,
     t,
+    navigate,
   ]);
 
   useEffect(() => {
@@ -221,6 +229,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
   const BackArrowIcon = isRTL ? ArrowRight : ArrowLeft;
+
+  if (open && !user) {
+    return null;
+  }
 
   if (isStatusOverlay) {
     return (

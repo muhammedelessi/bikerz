@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -8,8 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Pencil, Trash2, ChevronDown, Star } from 'lucide-react';
-import { format } from 'date-fns';
+import { Pencil, Trash2, ChevronDown, Star, Eye, CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { differenceInHours, format } from 'date-fns';
+import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
@@ -19,6 +20,9 @@ import {
   courseLocationDisplayLine,
 } from '@/components/admin/trainerProfileLocationHelpers';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { normalizeBookingSessions } from '@/lib/trainingBookingSessions';
+import { getNextSession } from '@/lib/bookingTime';
+import BookingTimeDisplay from '@/components/common/BookingTimeDisplay';
 
 export type TrainerCourseRow = {
   id: string;
@@ -47,6 +51,23 @@ export type TrainerReviewRow = {
   rating: number;
   comment: string;
   created_at: string;
+};
+
+type BookingRow = {
+  id: string;
+  training_id: string;
+  trainer_id: string;
+  status: string;
+  payment_status: string;
+  amount: number | string | null;
+  currency: string | null;
+  full_name: string;
+  phone: string;
+  email: string;
+  booking_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  sessions: unknown;
 };
 
 export const ProfileSectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -209,6 +230,8 @@ export const TrainingCourseAccordionRow: React.FC<{
   const { formatPriceValueThenCurrencyName } = useCurrency();
   const queryClient = useQueryClient();
   const [subTab, setSubTab] = useState<'students' | 'reviews'>('students');
+  const [selectedStudent, setSelectedStudent] = useState<TrainingStudentRow | null>(null);
+  const [confirmSessionNumber, setConfirmSessionNumber] = useState<number | null>(null);
   const cardDir = isRTL ? 'rtl' : 'ltr';
   const trainingStudents = students.filter((s) => s.training_id === tc.training_id);
   const trainingReviews = reviews.filter((r) => r.training_id === tc.training_id);
@@ -232,6 +255,68 @@ export const TrainingCourseAccordionRow: React.FC<{
       onDeleted();
     },
     onError: () => toast.error(isRTL ? 'خطأ' : 'Error'),
+  });
+
+  const { data: trainingBookings = [] } = useQuery({
+    queryKey: ['trainer-course-bookings', tc.trainer_id, tc.training_id],
+    enabled: isExpanded,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('training_bookings')
+        .select(
+          'id, training_id, trainer_id, status, payment_status, amount, currency, full_name, phone, email, booking_date, start_time, end_time, sessions',
+        )
+        .eq('trainer_id', tc.trainer_id)
+        .eq('training_id', tc.training_id)
+        .neq('status', 'cancelled');
+      if (error) throw error;
+      return (data || []) as BookingRow[];
+    },
+  });
+
+  const findStudentBooking = (student: TrainingStudentRow) => {
+    const byPhone = trainingBookings.find((b) => b.phone && student.phone && b.phone === student.phone);
+    if (byPhone) return byPhone;
+    const byEmail = trainingBookings.find((b) => b.email && student.email && b.email.toLowerCase() === student.email.toLowerCase());
+    if (byEmail) return byEmail;
+    return trainingBookings.find((b) => b.full_name.trim() === student.full_name.trim()) || null;
+  };
+
+  const completeSessionMutation = useMutation({
+    mutationFn: async ({ bookingId, sessionNumber }: { bookingId: string; sessionNumber: number }) => {
+      const { data: booking, error: fetchError } = await supabase
+        .from('training_bookings')
+        .select('sessions')
+        .eq('id', bookingId)
+        .single();
+      if (fetchError) throw fetchError;
+
+      const rawSessions = Array.isArray(booking?.sessions) ? booking.sessions : [];
+      const updatedSessions = rawSessions.map((s: any) =>
+        Number(s?.session_number) === sessionNumber ? { ...s, status: 'completed', completed_at: new Date().toISOString() } : s,
+      );
+      const allCompleted = updatedSessions.every((s: any) => String(s?.status) === 'completed');
+
+      const { error: updateError } = await supabase
+        .from('training_bookings')
+        .update({
+          sessions: updatedSessions,
+          ...(allCompleted ? { status: 'completed' } : {}),
+        })
+        .eq('id', bookingId);
+      if (updateError) throw updateError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trainer-course-bookings', tc.trainer_id, tc.training_id] });
+      queryClient.invalidateQueries({ queryKey: ['trainer-admin-bookings', tc.trainer_id] });
+      queryClient.invalidateQueries({ queryKey: ['trainer-profile-bookings', tc.trainer_id] });
+      toast.success(isRTL ? 'تم إنهاء الجلسة بنجاح ✓' : 'Session completed successfully ✓');
+      setConfirmSessionNumber(null);
+    },
+    onError: () => {
+      toast.error(isRTL ? 'تعذر تحديث الجلسة' : 'Could not update session');
+      setConfirmSessionNumber(null);
+    },
   });
 
   const subTabBtn = (tabKey: 'students' | 'reviews', labelAr: string, labelEn: string, count: number) => (
@@ -339,6 +424,7 @@ export const TrainingCourseAccordionRow: React.FC<{
                           <TableHead className="h-9 text-xs font-semibold">{isRTL ? 'الهاتف' : 'Phone'}</TableHead>
                           <TableHead className="h-9 text-xs font-semibold">{isRTL ? 'البريد' : 'Email'}</TableHead>
                           <TableHead className="h-9 text-xs font-semibold">{isRTL ? 'التسجيل' : 'Enrolled'}</TableHead>
+                          <TableHead className="h-9 text-xs font-semibold text-end">{isRTL ? 'الجلسات' : 'Sessions'}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -351,6 +437,11 @@ export const TrainingCourseAccordionRow: React.FC<{
                             <TableCell className="max-w-[140px] truncate py-2">{s.email}</TableCell>
                             <TableCell className="py-2 tabular-nums" dir="ltr">
                               {format(new Date(s.enrolled_at), 'yyyy-MM-dd')}
+                            </TableCell>
+                            <TableCell className="py-2 text-end">
+                              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedStudent(s)}>
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -387,6 +478,126 @@ export const TrainingCourseAccordionRow: React.FC<{
           </motion.div>
         ) : null}
       </AnimatePresence>
+
+      <Dialog open={!!selectedStudent} onOpenChange={(o) => !o && setSelectedStudent(null)}>
+        <DialogContent className="max-w-lg" dir={cardDir}>
+          {(() => {
+            if (!selectedStudent) return null;
+            const booking = findStudentBooking(selectedStudent);
+            const sessions = booking
+              ? normalizeBookingSessions(booking.sessions, booking.booking_date, booking.start_time, booking.end_time, booking.status)
+              : [];
+            const completedCount = sessions.filter((s) => s.status === 'completed').length;
+            const progress = sessions.length ? (completedCount / sessions.length) * 100 : 0;
+            const nextPending = sessions.find((s) => s.status !== 'completed') || null;
+            const nextPendingNumber = nextPending?.session_number ?? null;
+            const canComplete = nextPending
+              ? differenceInHours(new Date(`${nextPending.date}T${nextPending.start_time}`), new Date()) <= 2
+              : false;
+
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle>{selectedStudent.full_name}</DialogTitle>
+                </DialogHeader>
+                {!booking ? (
+                  <p className="text-sm text-muted-foreground">{isRTL ? 'لا يوجد حجز لهذا الطالب.' : 'No booking found for this student.'}</p>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-1 text-sm">
+                      <p>{trainingName || '—'}</p>
+                      <p className="text-muted-foreground">{isRTL ? `${sess} جلسات` : `${sess} sessions`} · {booking.payment_status}</p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>
+                          {isRTL
+                            ? `${completedCount} من ${sessions.length} جلسات مكتملة`
+                            : `${completedCount} of ${sessions.length} sessions completed`}
+                        </span>
+                        <span>{Math.round(progress)}%</span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-muted">
+                        <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      {sessions.map((s) => {
+                        const isCompleted = s.status === 'completed';
+                        const isCurrentNext = !isCompleted && s.session_number === nextPendingNumber;
+                        const isFuturePending = !isCompleted && !isCurrentNext;
+                        return (
+                          <div key={`${booking.id}-${s.session_number}`} className="rounded-md border border-border/50 p-2.5">
+                            <div className="flex items-start gap-2">
+                              {isCompleted ? (
+                                <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
+                              ) : isCurrentNext ? (
+                                <span className="mt-1 inline-flex h-3 w-3 animate-pulse rounded-full bg-blue-500" />
+                              ) : (
+                                <Circle className="mt-0.5 h-4 w-4 text-muted-foreground/60" />
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className={cn('text-xs font-semibold', isCompleted && 'text-muted-foreground')}>
+                                  {isRTL ? `الجلسة ${s.session_number}` : `Session ${s.session_number}`}
+                                </p>
+                                <BookingTimeDisplay
+                                  date={s.date}
+                                  startTime={s.start_time}
+                                  endTime={s.end_time}
+                                  showCountdown={isCurrentNext}
+                                />
+                                {isCompleted && s.completed_at ? (
+                                  <p className="mt-1 text-[11px] text-muted-foreground">
+                                    {isRTL ? 'اكتملت:' : 'Completed:'}{' '}
+                                    {format(new Date(s.completed_at), isRTL ? 'EEEE d MMMM - HH:mm' : 'EEE MMM d - HH:mm', {
+                                      locale: isRTL ? ar : undefined,
+                                    })}
+                                  </p>
+                                ) : null}
+
+                                {isCurrentNext ? (
+                                  <div className="mt-2">
+                                    {confirmSessionNumber === s.session_number ? (
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <span>{isRTL ? 'هل تأكد؟' : 'Are you sure?'}</span>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => completeSessionMutation.mutate({ bookingId: booking.id, sessionNumber: s.session_number })}
+                                          disabled={!canComplete || completeSessionMutation.isPending}
+                                        >
+                                          {completeSessionMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isRTL ? 'نعم ✓' : 'Yes ✓'}
+                                        </Button>
+                                        <Button size="sm" variant="ghost" onClick={() => setConfirmSessionNumber(null)}>
+                                          {isRTL ? 'إلغاء' : 'Cancel'}
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <Button size="sm" onClick={() => setConfirmSessionNumber(s.session_number)} disabled={!canComplete}>
+                                        {isRTL ? '✓ إنهاء هذه الجلسة' : '✓ Complete this session'}
+                                      </Button>
+                                    )}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setSelectedStudent(null)}>
+                    {isRTL ? 'إغلاق' : 'Close'}
+                  </Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

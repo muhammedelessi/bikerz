@@ -62,8 +62,9 @@ interface NavItem {
   { icon: LayoutDashboard, labelKey: 'dashboard', href: '/admin' },
   { icon: BookOpen, labelKey: 'courses', href: '/admin/courses' },
   { icon: Users, labelKey: 'users', href: '/admin/users' },
-  { icon: GraduationCap, labelKey: 'instructors', href: '/admin/instructors' },
   { icon: CreditCard, labelKey: 'payments', href: '/admin/payments' },
+  { icon: Dumbbell, labelKey: 'trainings', href: '/admin/trainings' },
+  { icon: UserCheck, labelKey: 'trainers', href: '/admin/trainers' },
   { icon: Tag, labelKey: 'coupons', href: '/admin/coupons' },
   { icon: BarChart3, labelKey: 'analytics', href: '/admin/analytics' },
   { icon: FileText, labelKey: 'content', href: '/admin/content' },
@@ -72,8 +73,6 @@ interface NavItem {
   { icon: MessagesSquare, labelKey: 'discussions', href: '/admin/discussions' },
   { icon: MessageSquare, labelKey: 'support', href: '/admin/support' },
   { icon: Shield, labelKey: 'roles', href: '/admin/roles' },
-  { icon: Dumbbell, labelKey: 'trainings', href: '/admin/trainings' },
-  { icon: UserCheck, labelKey: 'trainers', href: '/admin/trainers' },
   { icon: Settings, labelKey: 'settings', href: '/admin/settings' },
 ];
 

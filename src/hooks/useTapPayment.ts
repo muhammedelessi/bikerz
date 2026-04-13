@@ -79,8 +79,13 @@ export function useTapPayment(): UseTapPaymentReturn {
         popupRef.current = null;
         if (tapId) {
           setChargeId(tapId);
+          const isBundle = Boolean(event.data?.bundle);
           const isBooking = Boolean(event.data?.booking);
           const tc = typeof event.data?.trainer_course_id === 'string' ? event.data.trainer_course_id : '';
+          if (isBundle) {
+            window.location.assign(`/payment-success?bundle=1&tap_id=${encodeURIComponent(tapId)}`);
+            return;
+          }
           if (isBooking && tc) {
             window.location.assign(
               `/booking-payment-complete?tap_id=${encodeURIComponent(tapId)}&tc=${encodeURIComponent(tc)}`,

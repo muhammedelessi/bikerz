@@ -118,7 +118,7 @@ export function AdminPaymentDetailDialog({ payment, onOpenChange, isRTL, manualA
                     icon={User}
                     label={isRTL ? "الاسم" : "Name"}
                     value={
-                      payment.source === "tap"
+                      payment.source === "tap" || payment.source === "training_booking"
                         ? payment.customer_name || payment.profile?.full_name
                         : payment.profile?.full_name
                     }
@@ -156,6 +156,41 @@ export function AdminPaymentDetailDialog({ payment, onOpenChange, isRTL, manualA
               </div>
 
               <Separator />
+
+              {payment.source === "training_booking" && payment.training_booking_meta && (
+                <>
+                  <div>
+                    <h4 className="text-sm font-semibold mb-3">{isRTL ? "حجز التدريب" : "Training booking"}</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <DetailRow
+                        label={isRTL ? "التدريب" : "Training"}
+                        value={
+                          isRTL
+                            ? payment.training_booking_meta.training_name_ar ||
+                              payment.training_booking_meta.training_name_en
+                            : payment.training_booking_meta.training_name_en ||
+                              payment.training_booking_meta.training_name_ar
+                        }
+                      />
+                      <DetailRow
+                        label={isRTL ? "المدرب" : "Trainer"}
+                        value={
+                          isRTL
+                            ? payment.training_booking_meta.trainer_name_ar ||
+                              payment.training_booking_meta.trainer_name_en
+                            : payment.training_booking_meta.trainer_name_en ||
+                              payment.training_booking_meta.trainer_name_ar
+                        }
+                      />
+                      <DetailRow
+                        label={isRTL ? "حالة الحجز" : "Booking status"}
+                        value={payment.training_booking_meta.booking_status}
+                      />
+                    </div>
+                  </div>
+                  <Separator />
+                </>
+              )}
 
               <div>
                 <h4 className="text-sm font-semibold mb-3">{isRTL ? "تفاصيل الدفع" : "Payment Details"}</h4>
@@ -234,12 +269,15 @@ export function AdminPaymentDetailDialog({ payment, onOpenChange, isRTL, manualA
                     value={getSourceBadge(payment.source, isRTL)}
                   />
 
+                  {(payment.source === "tap" || payment.source === "training_booking") && (
+                    <DetailRow
+                      label={isRTL ? "رقم العملية" : "Transaction ID"}
+                      value={<span className="font-mono text-xs">{payment.charge_id || "-"}</span>}
+                    />
+                  )}
+
                   {payment.source === "tap" && (
                     <>
-                      <DetailRow
-                        label={isRTL ? "رقم العملية" : "Transaction ID"}
-                        value={<span className="font-mono text-xs">{payment.charge_id || "-"}</span>}
-                      />
                       <DetailRow
                         label={isRTL ? "تم التحقق من الويب هوك" : "Webhook Verified"}
                         value={
