@@ -256,10 +256,32 @@ function toTrainerCourseInsertRow(trainerId: string, at: TrainerCourse) {
 
 type TrainingCatalogRow = {
   id: string;
+  name_ar?: string | null;
+  name_en?: string | null;
+  type?: string | null;
   default_sessions_count?: number | null;
   default_session_duration_hours?: number | null;
   sessions?: unknown;
 };
+
+type TrainingCatalogBaseRow = Omit<TrainingCatalogRow, 'sessions'>;
+
+type TrainingCatalogWithRequiredDefaults = {
+  id: string;
+  default_sessions_count: number | null;
+  default_session_duration_hours: number | null;
+  sessions?: unknown;
+};
+
+function withTrainingSessions(row: unknown): TrainingCatalogRow | null {
+  if (!row || typeof row !== 'object' || !("id" in row)) return null;
+
+  const typedRow = row as TrainingCatalogBaseRow & { sessions?: unknown };
+  return {
+    ...typedRow,
+    sessions: typedRow.sessions ?? [],
+  };
+}
 
 /** Force session count & duration from training defaults (never stale user input). */
 function resolveLockedTrainerCourse(
@@ -359,11 +381,18 @@ const AdminTrainers: React.FC = () => {
   const { data: allTrainings } = useQuery({
     queryKey: ['all-trainings-catalog'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const withSessions = await supabase
         .from('trainings')
         .select('id, name_ar, name_en, type, default_sessions_count, default_session_duration_hours, sessions');
-      if (error) throw error;
-      return data;
+      if (withSessions.error && String(withSessions.error.code) === '42703') {
+        const legacy = await supabase
+          .from('trainings')
+          .select('id, name_ar, name_en, type, default_sessions_count, default_session_duration_hours');
+        if (legacy.error) throw legacy.error;
+        return (legacy.data || []).map(withTrainingSessions).filter((row): row is TrainingCatalogRow => row !== null);
+      }
+      if (withSessions.error) throw withSessions.error;
+      return (withSessions.data || []).map(withTrainingSessions).filter((row): row is TrainingCatalogRow => row !== null);
     },
   });
 
@@ -743,19 +772,23 @@ const AdminTrainers: React.FC = () => {
         console.error('[AdminTrainers] openEdit training details', legacy.error);
       }
       legacy.data?.forEach((tr) => {
-        detailsMap[tr.id] = {
-          default_sessions_count: Math.max(1, Number(tr.default_sessions_count ?? 1)),
-          default_session_duration_hours: Math.max(0.25, Number(tr.default_session_duration_hours ?? 2)),
+        const normalized = withTrainingSessions(tr);
+        if (!normalized) return;
+        detailsMap[normalized.id] = {
+          default_sessions_count: Math.max(1, Number(normalized.default_sessions_count ?? 1)),
+          default_session_duration_hours: Math.max(0.25, Number(normalized.default_session_duration_hours ?? 2)),
           sessions: [],
         };
       });
     } else {
       if (withSessions.error) console.error('[AdminTrainers] openEdit training details', withSessions.error);
       withSessions.data?.forEach((tr) => {
-        detailsMap[tr.id] = {
-          default_sessions_count: Math.max(1, Number(tr.default_sessions_count ?? 1)),
-          default_session_duration_hours: Math.max(0.25, Number(tr.default_session_duration_hours ?? 2)),
-          sessions: tr.sessions ?? [],
+        const normalized = withTrainingSessions(tr);
+        if (!normalized) return;
+        detailsMap[normalized.id] = {
+          default_sessions_count: Math.max(1, Number(normalized.default_sessions_count ?? 1)),
+          default_session_duration_hours: Math.max(0.25, Number(normalized.default_session_duration_hours ?? 2)),
+          sessions: normalized.sessions ?? [],
         };
       });
     }
@@ -1010,12 +1043,7 @@ const AdminTrainers: React.FC = () => {
       return;
     }
 
-    let training: {
-      id: string;
-      default_sessions_count: number | null;
-      default_session_duration_hours: number | null;
-      sessions?: unknown;
-    } | null = null;
+    let training: TrainingCatalogWithRequiredDefaults | null = null;
 
     const withSessions = await supabase
       .from('trainings')
@@ -1040,7 +1068,17 @@ const AdminTrainers: React.FC = () => {
       toast.error(isRTL ? 'تعذر تحميل بيانات التدريب' : 'Could not load training details');
       return;
     } else {
-      training = withSessions.data;
+      const normalized = withTrainingSessions(withSessions.data);
+      if (!normalized) {
+        toast.error(isRTL ? 'تعذر تحميل بيانات التدريب' : 'Could not load training details');
+        return;
+      }
+      training = {
+        id: normalized.id,
+        default_sessions_count: normalized.default_sessions_count ?? 1,
+        default_session_duration_hours: normalized.default_session_duration_hours ?? 2,
+        sessions: normalized.sessions ?? [],
+      };
     }
 
     const defSessions = Math.max(1, Number(training.default_sessions_count ?? 1));

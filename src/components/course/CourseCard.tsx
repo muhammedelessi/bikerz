@@ -55,7 +55,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   const isDiscountExpired = course.discount_expires_at && new Date(course.discount_expires_at).getTime() <= Date.now();
   const effectiveDiscount = isDiscountExpired ? 0 : (course.discount_percentage || 0);
   const courseVat = course.vat_percentage ?? 15;
-  const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount, courseVat);
+  const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveDiscount, {
+    vatPercent: courseVat,
+  });
   const sym = getCurrencySymbol(priceInfo.currency, isRTL);
   const formatAmount = (value: number) =>
     new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);

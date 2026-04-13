@@ -622,7 +622,8 @@ Deno.serve(async (req) => {
       : `${origin}/tap-3ds-callback.html?course=${encodeURIComponent(courseIdTrim)}`;
 
     // ── Create Tap charge (practical training: always SAR + server amount; courses may use localized Tap currency) ──
-    const chargePayload: Record<string, unknown> = {
+    const customerDetails = buildTapCustomerDetails(customer_name, profileData.full_name);
+    const chargePayload = compactTapPayload({
       amount: finalAmount,
       currency: tapChargeCurrency,
       threeDSecure: true,
@@ -638,8 +639,7 @@ Deno.serve(async (req) => {
         sms: !!phoneForTap,
       },
       customer: {
-        first_name: (customer_name || profileData.full_name || "Customer").split(" ")[0],
-        last_name: (customer_name || profileData.full_name || "").split(" ").slice(1).join(" ") || "",
+        ...customerDetails,
         email: customer_email || userEmail,
         phone: phoneForTap,
       },
@@ -657,7 +657,7 @@ Deno.serve(async (req) => {
       redirect: {
         url: redirectBackUrl,
       },
-    };
+    });
 
     console.log(
       "Creating Tap charge for user:",
@@ -815,6 +815,52 @@ function sanitizeTapResponse(data: Record<string, unknown>): Record<string, unkn
   }
   delete sanitized.card;
   return sanitized;
+}
+
+function buildTapCustomerDetails(rawName: unknown, fallbackName: unknown): {
+  first_name: string;
+  last_name: string;
+} {
+  const fullName = String(rawName || fallbackName || "Customer")
+    .trim()
+    .replace(/\s+/g, " ");
+  const nameParts = fullName.split(" ").filter(Boolean);
+  const first_name = nameParts[0] || "Customer";
+  const last_name = nameParts.slice(1).join(" ") || first_name;
+
+  return { first_name, last_name };
+}
+
+function compactTapPayload(value: Record<string, unknown>): Record<string, unknown> {
+  return (stripEmptyTapValues(value) as Record<string, unknown> | undefined) ?? {};
+}
+
+function stripEmptyTapValues(value: unknown): unknown {
+  if (value == null) return undefined;
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+
+  if (Array.isArray(value)) {
+    const next = value
+      .map((item) => stripEmptyTapValues(item))
+      .filter((item) => item !== undefined);
+    return next.length > 0 ? next : undefined;
+  }
+
+  if (typeof value === "object") {
+    const next = Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .map(([key, item]) => [key, stripEmptyTapValues(item)] as const)
+        .filter(([, item]) => item !== undefined),
+    );
+
+    return Object.keys(next).length > 0 ? next : undefined;
+  }
+
+  return value;
 }
 
 /** Tap expects `country_code` + national `number` (no leading 0). Uses profile country as default region when ISO-2. */
@@ -1066,7 +1112,8 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
 
   const desc = `Bundle: ${ids.length} courses`;
 
-  const chargePayload: Record<string, unknown> = {
+  const customerDetails = buildTapCustomerDetails(customer_name, profileData.full_name);
+  const chargePayload = compactTapPayload({
     amount: finalAmount,
     currency: "SAR",
     threeDSecure: true,
@@ -1082,8 +1129,7 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
       sms: !!phoneForTap,
     },
     customer: {
-      first_name: (String(customer_name || profileData.full_name || "Customer")).split(" ")[0],
-      last_name: (String(customer_name || profileData.full_name || "")).split(" ").slice(1).join(" ") || "",
+      ...customerDetails,
       email: customer_email || userEmail,
       phone: phoneForTap,
     },
@@ -1100,7 +1146,7 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
     redirect: {
       url: redirectBackUrl,
     },
-  };
+  });
 
   let tapData: Record<string, any>;
   let tapResponse: Response;

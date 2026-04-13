@@ -205,8 +205,8 @@ const AdminTrainingProfile: React.FC = () => {
   const reviewCount = allReviews.length;
 
   const curriculumSessions = useMemo(
-    () => parseTrainingSessions(training?.sessions),
-    [training?.sessions],
+    () => parseTrainingSessions((training as ({ sessions?: unknown } | null))?.sessions),
+    [training],
   );
 
   const filteredStudents = useMemo(() => {

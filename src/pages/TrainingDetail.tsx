@@ -144,8 +144,8 @@ const TrainingDetail: React.FC = () => {
   const supplies = parseTrainerSupplies(training?.trainer_supplies);
 
   const curriculumSessions = useMemo(
-    () => parseTrainingSessions(training?.sessions),
-    [training?.sessions],
+    () => parseTrainingSessions((training as ({ sessions?: unknown } | null))?.sessions),
+    [training],
   );
 
   const trainingTitle = training ? (isRTL ? training.name_ar : training.name_en) : "";
