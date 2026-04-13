@@ -941,7 +941,8 @@ function resolveTapPhone(
 }
 
 async function enrollUser(
-  client: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  client: any,
   userId: string,
   courseId: string
 ) {
@@ -959,7 +960,8 @@ type BundleCtx = {
   b: Record<string, unknown>;
   userId: string;
   userEmail: string;
-  adminClient: ReturnType<typeof createClient>;
+  // deno-lint-ignore no-explicit-any
+  adminClient: any;
   profileData: Record<string, unknown>;
   corsHeaders: Record<string, string>;
   tapSecretKey: string;
