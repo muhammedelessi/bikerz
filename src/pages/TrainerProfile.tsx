@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { ArrowLeft, ArrowRight, Bike, Calendar, Camera, ChevronLeft, ChevronRight, Clock, GraduationCap, MapPin, Star, Users, Wrench } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bike, Calendar, ChevronLeft, ChevronRight, Clock, GraduationCap, MapPin, Star, Users, Wrench } from 'lucide-react';
 import { translateTrainerCourseLocation } from '@/lib/trainerCourseLocation';
 import { COUNTRIES } from '@/data/countryCityData';
 import { cn } from '@/lib/utils';
@@ -88,6 +88,109 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
   );
 }
 
+type BikeCardProps = {
+  bike: BikeEntry;
+  displayType: string;
+  isRTL: boolean;
+  onPhotoClick: (url: string) => void;
+};
+
+function TrainerBikeCard({ bike, displayType, isRTL, onPhotoClick }: BikeCardProps) {
+  const typeLabel = isRTL ? 'النوع' : 'Type';
+  const brandLabel = isRTL ? 'الماركة' : 'Brand';
+  const noPhotosLabel = isRTL ? 'لا توجد صور' : 'No photos';
+  const photoHint = isRTL ? 'اضغط للتكبير' : 'Tap to enlarge';
+
+  return (
+    <Card
+      className={cn(
+        'overflow-hidden rounded-2xl border-border/70 bg-card shadow-sm transition-shadow duration-200',
+        'hover:shadow-md hover:border-primary/20',
+      )}
+    >
+      {/* Photo area — consistent aspect & alignment for RTL/LTR */}
+      <div className="relative border-b border-border/50 bg-muted/30">
+        {bike.photos.length === 0 ? (
+          <div
+            className={cn(
+              'flex aspect-[5/3] w-full flex-col items-center justify-center gap-2 px-4 text-center',
+              'bg-gradient-to-br from-muted/80 to-muted/30',
+            )}
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-background/80 shadow-sm ring-1 ring-border/60">
+              <Bike className="h-7 w-7 text-primary/70" />
+            </div>
+            <p className="text-xs font-medium text-muted-foreground">{noPhotosLabel}</p>
+          </div>
+        ) : bike.photos.length === 1 ? (
+          <button
+            type="button"
+            className="group/img relative block w-full overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            onClick={() => onPhotoClick(bike.photos[0])}
+            aria-label={photoHint}
+          >
+            <div className="aspect-[5/3] w-full">
+              <img
+                src={bike.photos[0]}
+                alt=""
+                className="h-full w-full object-cover transition-transform duration-300 group-hover/img:scale-[1.02]"
+              />
+            </div>
+            <span className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-black/5" />
+          </button>
+        ) : (
+          <div className="grid grid-cols-2 gap-1.5 p-1.5 sm:grid-cols-3 sm:gap-2 sm:p-2">
+            {bike.photos.map((url, i) => (
+              <button
+                key={`${url}-${i}`}
+                type="button"
+                className={cn(
+                  'relative aspect-square overflow-hidden rounded-xl border border-border/50 bg-muted outline-none',
+                  'transition-transform hover:brightness-[1.02] focus-visible:ring-2 focus-visible:ring-ring',
+                )}
+                onClick={() => onPhotoClick(url)}
+                aria-label={`${photoHint} ${i + 1}`}
+              >
+                <img src={url} alt="" className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-4">
+          <div
+            className={cn(
+              'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner',
+              'ring-1 ring-primary/15',
+            )}
+            aria-hidden
+          >
+            <Bike className="h-6 w-6" />
+          </div>
+
+          <div className="min-w-0 flex-1 space-y-3 text-start">
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{typeLabel}</p>
+              <p className="text-base font-bold leading-snug text-foreground">{displayType}</p>
+            </div>
+
+            {bike.brand ? (
+              <div className="space-y-1 border-t border-border/50 pt-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{brandLabel}</p>
+                <p className="text-sm font-medium leading-relaxed text-foreground/90 break-words" dir="auto" translate="no">
+                  {bike.brand}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 const TrainerProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { isRTL, language } = useLanguage();
@@ -137,7 +240,7 @@ const TrainerProfile: React.FC = () => {
 
   const { data: pricing } = useTrainingPlatformPricing();
   const platformMarkupPct = pricing?.markupPercent ?? 0;
-  const platformVatPct = pricing?.vatPercent ?? 15;
+  const platformVatPct = pricing?.vatPercent ?? 0;
 
   const { data: reviewAgg } = useQuery({
     queryKey: ['trainer-review-agg', id],
@@ -345,46 +448,17 @@ const TrainerProfile: React.FC = () => {
               {bikeEntries.length > 0 ? (
                 <section>
                   <SectionHeader>{isRTL ? 'الدراجات' : 'Bikes'}</SectionHeader>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6">
                     {bikeEntries.map((bike, idx) => {
                       const displayType = BIKE_LABELS[bike.type]?.[isRTL ? 'ar' : 'en'] || bike.type;
                       return (
-                        <Card key={`${bike.type}-${idx}`} className="overflow-hidden border-border/60 shadow-sm">
-                          <CardContent className="pt-5 pb-4 px-4 space-y-3">
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                                <Bike className="h-5 w-5" />
-                              </div>
-                              <div className="min-w-0 flex-1 space-y-0.5 text-start">
-                                <p className="text-sm font-bold leading-tight">{displayType}</p>
-                                {bike.brand ? (
-                                  <p className="text-sm text-muted-foreground truncate" dir="ltr" lang="en">
-                                    {bike.brand}
-                                  </p>
-                                ) : null}
-                              </div>
-                            </div>
-                            {bike.photos.length > 0 ? (
-                              <div className="flex flex-wrap gap-2">
-                                {bike.photos.map((url) => (
-                                  <button
-                                    key={url}
-                                    type="button"
-                                    className="h-20 w-20 shrink-0 overflow-hidden rounded-md border border-border/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                    onClick={() => setLightboxPhoto(url)}
-                                  >
-                                    <img src={url} alt="" className="h-full w-full object-cover" />
-                                  </button>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2 rounded-lg border border-dashed border-muted-foreground/25 bg-muted/25 px-3 py-3 text-xs text-muted-foreground">
-                                <Camera className="h-4 w-4 shrink-0 opacity-70" />
-                                <span>{isRTL ? 'لا توجد صور' : 'No photos'}</span>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
+                        <TrainerBikeCard
+                          key={`${bike.type}-${idx}`}
+                          bike={bike}
+                          displayType={displayType}
+                          isRTL={isRTL}
+                          onPhotoClick={setLightboxPhoto}
+                        />
                       );
                     })}
                   </div>

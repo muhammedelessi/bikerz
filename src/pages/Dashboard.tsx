@@ -236,6 +236,9 @@ const Dashboard: React.FC = () => {
   const navItems = [
     { icon: Home, label: t('nav.home'), to: '/' },
     { icon: BookOpen, label: t('nav.courses'), to: '/courses' },
+    { icon: GraduationCap, label: t('nav.trainings'), to: '/trainings' },
+    { icon: Clock, label: isRTL ? 'حجوزاتي' : 'My Bookings', to: '/my-bookings' },
+    { icon: Trophy, label: t('nav.bundles'), to: '/bundles' },
     { icon: GraduationCap, label: t('dashboard.myCourses'), to: '/dashboard', active: true },
     { icon: Users, label: t('nav.mentors'), to: '/mentors' },
     { icon: User, label: t('profile.title'), to: '/profile' },

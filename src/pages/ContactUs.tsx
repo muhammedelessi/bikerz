@@ -101,11 +101,17 @@ const ContactUs: React.FC = () => {
           country: countryEn,
           city: cityEn,
           address: [cityEn, countryEn].filter(Boolean).join(', '),
+          courseName: isRTL ? 'تواصل معنا / دعم' : 'Contact / support',
+          amount: '',
+          currency: '',
           orderStatus: totalPurchased > 0 ? 'purchased' : 'not purchased',
           courses: coursesJson,
           totalPurchased,
           dateOfBirth: user?.user_metadata?.date_of_birth || '',
           gender: user?.user_metadata?.gender || '',
+          ticket_subject: formData.subject,
+          ticket_message: formData.message,
+          ticket_category: formData.category,
           isRTL,
         });
       })();

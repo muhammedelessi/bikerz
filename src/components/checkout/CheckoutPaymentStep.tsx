@@ -65,6 +65,8 @@ interface CheckoutPaymentStepProps {
   exchangeRate?: number;
   isSAR?: boolean;
   onSubmitPayment: () => void;
+  /** Bundle checkout: hide promo + duplicate pricing; order box shows contact fields only */
+  bundleMode?: boolean;
 }
 
 const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
@@ -113,6 +115,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     exchangeRate = 1,
     isSAR = true,
     onSubmitPayment,
+    bundleMode = false,
   }) => {
     const [editOpen, setEditOpen] = useState(false);
 
@@ -152,7 +155,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="space-y-5"
+          className={bundleMode ? "space-y-4" : "space-y-5"}
         >
           {/* Payment Methods */}
           <div className="space-y-3">
@@ -185,6 +188,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
           </div>
 
           {/* Promo Code */}
+          {!bundleMode && (
           <div className="space-y-2">
             <Label className="text-sm font-medium flex items-center gap-1.5">
               <Gift className="w-3.5 h-3.5 text-primary" />
@@ -236,12 +240,19 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
               </p>
             )}
           </div>
+          )}
 
           {/* Order Summary */}
           <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
             <div className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between">
               <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                {isRTL ? "ملخص الطلب" : "Order Summary"}
+                {bundleMode
+                  ? isRTL
+                    ? "بياناتك للتواصل"
+                    : "Your details"
+                  : isRTL
+                    ? "ملخص الطلب"
+                    : "Order Summary"}
               </p>
               {/*  <button
                 onClick={() => setEditOpen(true)}
@@ -281,71 +292,75 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                   </span>
                 </div>
               )}
-              <Separator className="my-1" />
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{isRTL ? "الدورة" : "Course"}</span>
-                <span className="font-medium truncate max-w-[200px]">
-                  {isRTL && courseTitleAr ? courseTitleAr : courseTitle}
-                </span>
-              </div>
-              {promoApplied && appliedCoupon && (
-                <div className="flex justify-between text-sm text-primary">
-                  <span>
-                    {isRTL ? "الخصم" : "Discount"} ({discountLabel})
-                  </span>
-                  <span>-{formatLocal(discountAmount)}</span>
-                </div>
-              )}
-              <Separator className="my-1" />
-              <div className="flex justify-between font-bold text-base">
-                <span>
-                  {isRTL
-                    ? vatPct > 0
-                      ? "الإجمالي (شامل الضريبة)"
-                      : "الإجمالي"
-                    : vatPct > 0
-                      ? "Total (incl. VAT)"
-                      : "Total"}
-                </span>
-                <span className="text-primary">
-                  {totalWithVat} {currencyLabel}
-                </span>
-              </div>
-
-              {/* Equivalent amount info — for all non-SAR currencies */}
-              {!isSAR &&
-                exchangeRate > 0 &&
-                (() => {
-                  const TAP_SUPPORTED = ["KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
-                  const isSupported = TAP_SUPPORTED.some((c) => currencyLabel.includes(c));
-                  const sarEquivalent = Math.ceil(totalWithVat / exchangeRate);
-
-                  return (
-                    <div className="flex items-center justify-center gap-1.5 flex-wrap text-center px-2 py-2 rounded-lg bg-muted/40 mt-1">
-                      <span className="text-[12px] text-muted-foreground">
-                        {isRTL ? "سيتم خصم" : "You will be charged"}
+              {!bundleMode && (
+                <>
+                  <Separator className="my-1" />
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{isRTL ? "الدورة" : "Course"}</span>
+                    <span className="font-medium truncate max-w-[200px]">
+                      {isRTL && courseTitleAr ? courseTitleAr : courseTitle}
+                    </span>
+                  </div>
+                  {promoApplied && appliedCoupon && (
+                    <div className="flex justify-between text-sm text-primary">
+                      <span>
+                        {isRTL ? "الخصم" : "Discount"} ({discountLabel})
                       </span>
-                      <span className="text-[12px] font-bold text-primary flex items-center gap-1">
-                        {isSupported ? `${totalWithVat} ${currencyLabel}` : `${totalWithVat} ${currencyLabel}`}
-                      </span>
-                      <span className="text-[12px] text-muted-foreground">
-                        {isRTL ? " أي ما يعادل" : "equivalent to"}
-                      </span>
-                      <span className="text-[12px] font-bold text-foreground">
-                        {sarEquivalent}
-                        <span>{" SAR "}</span>
-                      </span>
+                      <span>-{formatLocal(discountAmount)}</span>
                     </div>
-                  );
-                })()}
+                  )}
+                  <Separator className="my-1" />
+                  <div className="flex justify-between font-bold text-base">
+                    <span>
+                      {isRTL
+                        ? vatPct > 0
+                          ? "الإجمالي (شامل الضريبة)"
+                          : "الإجمالي"
+                        : vatPct > 0
+                          ? "Total (incl. VAT)"
+                          : "Total"}
+                    </span>
+                    <span className="text-primary">
+                      {totalWithVat} {currencyLabel}
+                    </span>
+                  </div>
 
-              {vatPct > 0 && (
-                <div className="pt-2 border-t border-border/50">
-                  <p className="text-[11px] text-muted-foreground text-center">
-                    {isRTL ? "الرقم الضريبي" : "VAT Number"}:{" "}
-                    <span className="font-mono font-medium text-foreground/70">311508395300003</span>
-                  </p>
-                </div>
+                  {/* Equivalent amount info — for all non-SAR currencies */}
+                  {!isSAR &&
+                    exchangeRate > 0 &&
+                    (() => {
+                      const TAP_SUPPORTED = ["KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
+                      const isSupported = TAP_SUPPORTED.some((c) => currencyLabel.includes(c));
+                      const sarEquivalent = Math.ceil(totalWithVat / exchangeRate);
+
+                      return (
+                        <div className="flex items-center justify-center gap-1.5 flex-wrap text-center px-2 py-2 rounded-lg bg-muted/40 mt-1">
+                          <span className="text-[12px] text-muted-foreground">
+                            {isRTL ? "سيتم خصم" : "You will be charged"}
+                          </span>
+                          <span className="text-[12px] font-bold text-primary flex items-center gap-1">
+                            {isSupported ? `${totalWithVat} ${currencyLabel}` : `${totalWithVat} ${currencyLabel}`}
+                          </span>
+                          <span className="text-[12px] text-muted-foreground">
+                            {isRTL ? " أي ما يعادل" : "equivalent to"}
+                          </span>
+                          <span className="text-[12px] font-bold text-foreground">
+                            {sarEquivalent}
+                            <span>{" SAR "}</span>
+                          </span>
+                        </div>
+                      );
+                    })()}
+
+                  {vatPct > 0 && (
+                    <div className="pt-2 border-t border-border/50">
+                      <p className="text-[11px] text-muted-foreground text-center">
+                        {isRTL ? "الرقم الضريبي" : "VAT Number"}:{" "}
+                        <span className="font-mono font-medium text-foreground/70">311508395300003</span>
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -354,7 +369,15 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
           <div className="flex flex-col items-center gap-2 pt-2">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Lock className="w-3.5 h-3.5 text-primary" />
-              <span>{isRTL ? "مُؤمّن بواسطة Tap Payments" : "Secured by Tap Payments"}</span>
+              <span>
+                {bundleMode
+                  ? isRTL
+                    ? "دفع إلكتروني مؤمّن"
+                    : "Secure online payment"
+                  : isRTL
+                    ? "مُؤمّن بواسطة Tap Payments"
+                    : "Secured by Tap Payments"}
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">

@@ -26,6 +26,10 @@ export interface TapPaymentConfig {
   bundleOriginalSar?: number;
   bundleDiscountPct?: number;
   bundleFinalSar?: number;
+  /** User's display currency (must match bundle pricing on server) */
+  currencyCodeForPricing?: string;
+  /** Local currency units per 1 SAR — same as CurrencyContext `exchangeRate`; keeps Tap charge aligned with on-screen totals */
+  exchangeRatePerSar?: number;
 }
 
 export interface CheckoutCourse {

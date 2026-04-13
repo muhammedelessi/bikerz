@@ -1,6 +1,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Clock, CheckCircle, XCircle, CreditCard, Banknote, GraduationCap } from "lucide-react";
+import { parseTrainingBookingPaymentBreakdown } from "@/lib/trainingPaymentBreakdown";
 
 export interface UnifiedPayment {
   id: string;
@@ -97,8 +98,46 @@ export const getTranslatedErrorReason = (code: string | null, isRTL: boolean): s
   return null;
 };
 
-export const getPriceBreakdown = (payment: UnifiedPayment) => {
+export type AdminPriceBreakdown = {
+  originalAmount: number | null;
+  couponDiscount: number;
+  couponCode: string | null;
+  vatAmount: number;
+  amountBeforeVAT: number;
+  courseDiscount: number;
+  hasVat: boolean;
+  vatPct: number;
+  /** Set when Tap metadata is a practical training booking. */
+  isTrainingBooking?: boolean;
+  trainingTrainerSar?: number;
+  trainingPlatformCommissionSar?: number | null;
+  trainingSubtotalBeforeVatSar?: number | null;
+};
+
+export const getPriceBreakdown = (payment: UnifiedPayment): AdminPriceBreakdown => {
   const meta = payment.metadata || {};
+  const kind = String(meta.payment_kind ?? "").toLowerCase();
+  if (kind === "training_booking" || meta.trainer_payout_base_sar != null) {
+    const bd = parseTrainingBookingPaymentBreakdown(meta, payment.amount);
+    if (bd) {
+      const vatPct = Number(meta.vat_rate ?? meta.vat_percentage ?? 0);
+      return {
+        originalAmount: bd.trainerSar,
+        couponDiscount: 0,
+        couponCode: null,
+        vatAmount: bd.vatSar ?? 0,
+        amountBeforeVAT: bd.markedUpSubtotalSar ?? bd.totalSar - (bd.vatSar ?? 0),
+        courseDiscount: 0,
+        hasVat: (bd.vatSar ?? 0) > 0,
+        vatPct: Number.isFinite(vatPct) ? vatPct : 15,
+        isTrainingBooking: true,
+        trainingTrainerSar: bd.trainerSar,
+        trainingPlatformCommissionSar: bd.platformMarkupSar,
+        trainingSubtotalBeforeVatSar: bd.markedUpSubtotalSar,
+      };
+    }
+  }
+
   const originalAmount = (meta.original_amount as number) || (meta.price_before_tax as number) || null;
   const couponDiscount = (meta.coupon_discount as number) || 0;
   const couponCode = (meta.coupon_code as string) || null;

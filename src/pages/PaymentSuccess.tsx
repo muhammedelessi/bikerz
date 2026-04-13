@@ -53,11 +53,12 @@ const PaymentSuccess: React.FC = () => {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
   const tapId = searchParams.get("tap_id");
-  const { sendCourseStatus } = useGHLFormWebhook();
+  const { sendCourseStatus, sendWithCourses } = useGHLFormWebhook();
 
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>("verifying");
   const [confettiFired, setConfettiFired] = useState(false);
   const retryCountRef = useRef(0);
+  const crmSuccessSyncedRef = useRef(false);
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
   // Fetch course info
@@ -74,72 +75,156 @@ const PaymentSuccess: React.FC = () => {
     enabled: !!courseId && !isBundle,
   });
 
-  // Meta Pixel + n8n webhook on successful verification
+  // Meta Pixel + GHL + n8n on successful verification (once per success)
   useEffect(() => {
-    if (verifyStatus === "succeeded" && isBundle) return;
-    if (verifyStatus === "succeeded" && course && courseId) {
+    if (verifyStatus !== "succeeded" || !user || crmSuccessSyncedRef.current) return;
+
+    const countryCode =
+      COUNTRIES.find((c) => c.en === profile?.country || c.ar === profile?.country || c.code === profile?.country)
+        ?.code ||
+      profile?.country ||
+      "";
+
+    if (isBundle) {
+      crmSuccessSyncedRef.current = true;
+      let checkout: Record<string, string> = {};
+      try {
+        const raw = sessionStorage.getItem("bikerz_checkout_data");
+        if (raw) checkout = JSON.parse(raw) as Record<string, string>;
+      } catch {
+        /* ignore */
+      }
+
+      const bundleLabel = isRTL ? "باقة كورسات" : "Course bundle";
+      const amountStr = checkout.amount || "";
+      const currency = checkout.currency || "SAR";
+
+      void sendWithCourses(user.id, {
+        full_name: profile?.full_name || checkout.fullName || "",
+        email: user.email || "",
+        phone: profile?.phone || checkout.phone || "",
+        country: countryCode,
+        city: profile?.city || checkout.city || "",
+        address: [profile?.city, profile?.country].filter(Boolean).join(", "),
+        amount: amountStr,
+        currency,
+        orderStatus: "purchased",
+        courseName: bundleLabel,
+        dateOfBirth: profile?.date_of_birth || "",
+        gender: profile?.gender || "",
+        silent: true,
+      });
+
       trackPurchase({
-        content_name: course.title,
-        content_ids: [courseId],
+        content_name: bundleLabel,
+        content_ids: ["course_bundle"],
         content_type: "product",
-        value: course.price ?? 0,
+        value: Number(amountStr) || 0,
         currency: "SAR",
       });
-      if (user) {
-        sendCourseStatus(user.id, courseId, course.title, "purchased", {
-          full_name: profile?.full_name || "",
-          email: user.email || "",
-          phone: profile?.phone || "",
-          country:
-            COUNTRIES.find((c) => c.en === profile?.country || c.ar === profile?.country || c.code === profile?.country)
-              ?.code ||
-            profile?.country ||
-            "",
-          city: profile?.city || "",
-          address: [profile?.city, profile?.country].filter(Boolean).join(", "),
-          amount: String(course.price ?? 0),
-          dateOfBirth: profile?.date_of_birth || "",
-          gender: profile?.gender || "",
-          silent: true,
-        });
-        // Send order data to n8n webhook (fire-and-forget)
-        fetch("https://n8n.srv1504278.hstgr.cloud/webhook/new_order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: user.email || "",
-            full_name: profile?.full_name || "",
-            phone: profile?.phone || "",
-            courseName: course.title || "",
-            amount: String(course.price ?? 0),
-            currency: "SAR",
-            orderStatus: "purchased",
-            date: new Date().toISOString(),
-          }),
-        }).catch((err) => console.warn("[n8n webhook] failed:", err));
 
-        // Send purchase data to n8n test webhook (fire-and-forget)
-        fetch("https://n8n.srv1504278.hstgr.cloud/webhook-test/fec802fa-f0c5-45e9-b9c9-3ecb0ecbc5c3", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            full_name: profile?.full_name || "",
-            email: user.email || "",
-            phone: profile?.phone || "",
-            country: profile?.country || "",
-            city: profile?.city || "",
-            course_id: courseId,
-            course_name: course.title || "",
-            amount: course.price || 0,
-            currency: "SAR",
-            payment_id: tapId,
-            purchase_date: new Date().toISOString(),
-            order_status: "purchased",
-          }),
-        }).catch(() => {});
-      }
+      const n8nBase = {
+        email: user.email || "",
+        full_name: profile?.full_name || checkout.fullName || "",
+        phone: profile?.phone || checkout.phone || "",
+        courseName: bundleLabel,
+        amount: amountStr,
+        currency,
+        orderStatus: "purchased",
+        is_bundle: true,
+        payment_id: tapId,
+        date: new Date().toISOString(),
+      };
+      fetch("https://n8n.srv1504278.hstgr.cloud/webhook/new_order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(n8nBase),
+      }).catch((err) => console.warn("[n8n webhook] failed:", err));
+
+      fetch("https://n8n.srv1504278.hstgr.cloud/webhook-test/fec802fa-f0c5-45e9-b9c9-3ecb0ecbc5c3", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...n8nBase,
+          country: profile?.country || "",
+          city: profile?.city || "",
+          purchase_date: new Date().toISOString(),
+          order_status: "purchased",
+        }),
+      }).catch(() => {});
+      return;
     }
-  }, [verifyStatus, course, courseId, isBundle]);
+
+    if (!course || !courseId) return;
+    crmSuccessSyncedRef.current = true;
+
+    trackPurchase({
+      content_name: course.title,
+      content_ids: [courseId],
+      content_type: "product",
+      value: course.price ?? 0,
+      currency: "SAR",
+    });
+
+    void sendCourseStatus(user.id, courseId, course.title, "purchased", {
+      full_name: profile?.full_name || "",
+      email: user.email || "",
+      phone: profile?.phone || "",
+      country: countryCode,
+      city: profile?.city || "",
+      address: [profile?.city, profile?.country].filter(Boolean).join(", "),
+      amount: String(course.price ?? 0),
+      currency: "SAR",
+      dateOfBirth: profile?.date_of_birth || "",
+      gender: profile?.gender || "",
+      silent: true,
+    });
+
+    fetch("https://n8n.srv1504278.hstgr.cloud/webhook/new_order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: user.email || "",
+        full_name: profile?.full_name || "",
+        phone: profile?.phone || "",
+        courseName: course.title || "",
+        amount: String(course.price ?? 0),
+        currency: "SAR",
+        orderStatus: "purchased",
+        date: new Date().toISOString(),
+      }),
+    }).catch((err) => console.warn("[n8n webhook] failed:", err));
+
+    fetch("https://n8n.srv1504278.hstgr.cloud/webhook-test/fec802fa-f0c5-45e9-b9c9-3ecb0ecbc5c3", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        full_name: profile?.full_name || "",
+        email: user.email || "",
+        phone: profile?.phone || "",
+        country: profile?.country || "",
+        city: profile?.city || "",
+        course_id: courseId,
+        course_name: course.title || "",
+        amount: course.price || 0,
+        currency: "SAR",
+        payment_id: tapId,
+        purchase_date: new Date().toISOString(),
+        order_status: "purchased",
+      }),
+    }).catch(() => {});
+  }, [
+    verifyStatus,
+    course,
+    courseId,
+    isBundle,
+    user,
+    profile,
+    isRTL,
+    sendCourseStatus,
+    sendWithCourses,
+    tapId,
+  ]);
 
   // Verify payment with retry/polling logic
   useEffect(() => {

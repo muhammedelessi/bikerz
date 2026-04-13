@@ -308,7 +308,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
 
   const { data: pricing } = useTrainingPlatformPricing();
   const trainingPlatformMarkupPct = pricing?.markupPercent ?? 0;
-  const trainingPlatformVatPct = pricing?.vatPercent ?? 15;
+  const trainingPlatformVatPct = pricing?.vatPercent ?? 0;
 
   const priceInfo = useMemo(() => {
     const markedBase = applyTrainingPlatformMarkupSar(Number(selectedCourse.price), trainingPlatformMarkupPct);

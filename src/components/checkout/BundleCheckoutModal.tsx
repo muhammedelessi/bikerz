@@ -5,10 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCurrency } from '@/contexts/CurrencyContext';
 import { useCheckoutForm } from '@/hooks/checkout/useCheckoutForm';
 import { useTapPayment } from '@/hooks/useTapPayment';
 import { useGHLFormWebhook } from '@/hooks/useGHLFormWebhook';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { useBundleCalculator } from '@/hooks/useBundleCalculator';
 import type { CheckoutCourse } from '@/types/payment';
 import type { BundleTierRow } from '@/types/bundle';
@@ -22,7 +22,7 @@ type Props = {
   tiers: BundleTierRow[] | undefined;
 };
 
-function effectiveDiscount(c: CheckoutCourse): number {
+function effectiveCourseDiscountCheckout(c: CheckoutCourse): number {
   const ex = c.discount_expires_at;
   const expired = ex && new Date(ex).getTime() <= Date.now();
   return expired ? 0 : c.discount_percentage || 0;
@@ -32,9 +32,9 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
   const { isRTL } = useLanguage();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
-  const { getCoursePriceInfo, getCurrencySymbol, currencyCode, exchangeRate, isSAR } = useCurrency();
-  const { sendCourseStatus } = useGHLFormWebhook();
+  const { sendWithCourses } = useGHLFormWebhook();
   const tap = useTapPayment();
+  const { getCoursePriceInfo, getCurrencySymbol, currencyCode, exchangeRate } = useCurrency();
 
   const bundleInputs = useMemo(
     () =>
@@ -50,19 +50,11 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
 
   const calc = useBundleCalculator(bundleInputs, tiers);
 
+  /** Bundle charges are always computed and billed in SAR (same as edge function). */
+  const sarLabel = isRTL ? 'ر.س' : 'SAR';
+  const formatLocal = useCallback((amount: number) => `${amount} ${sarLabel}`, [sarLabel]);
   const currSym = getCurrencySymbol(currencyCode, isRTL);
-  const formatLocal = useCallback((amount: number) => `${amount} ${currSym}`, [currSym]);
-
-  /** Server recomputes SAR; client amount is ignored by edge — keep for Tap payload shape. */
-  const sarForTap = useMemo(() => {
-    if (isSAR || !exchangeRate || exchangeRate <= 0) return calc.finalPrice;
-    return Math.ceil(calc.finalPrice / exchangeRate);
-  }, [calc.finalPrice, exchangeRate, isSAR]);
-
-  const originalSar = useMemo(() => {
-    if (isSAR || !exchangeRate || exchangeRate <= 0) return calc.totalOriginal;
-    return Math.ceil(calc.totalOriginal / exchangeRate);
-  }, [calc.totalOriginal, exchangeRate, isSAR]);
+  const formatDisplay = useCallback((amount: number) => `${amount} ${currSym}`, [currSym]);
 
   const form = useCheckoutForm(open);
 
@@ -90,7 +82,6 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
     form.saveProfileData();
 
     const composedAddress = [form.effectiveCity, form.effectiveCountry].filter(Boolean).join(', ');
-    const first = courses[0];
 
     try {
       sessionStorage.setItem(
@@ -100,7 +91,7 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
           phone: form.fullPhone,
           country: form.effectiveCountry,
           city: form.effectiveCity,
-          amount: String(sarForTap),
+          amount: String(calc.finalPrice),
           currency: 'SAR',
         }),
       );
@@ -108,14 +99,17 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
       /* ignore */
     }
 
-    sendCourseStatus(user.id, first.id, 'Bundle purchase', 'pending', {
+    void sendWithCourses(user.id, {
       full_name: form.fullName,
       email: form.email,
       phone: form.fullPhone,
       country: form.effectiveCountry,
       city: form.effectiveCity,
       address: composedAddress,
-      amount: String(sarForTap),
+      amount: String(calc.finalPrice),
+      currency: 'SAR',
+      orderStatus: 'pending',
+      courseName: isRTL ? 'باقة كورسات' : 'Course bundle',
       dateOfBirth: profile?.date_of_birth || '',
       gender: profile?.gender || '',
       silent: true,
@@ -124,11 +118,12 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
     await tap.submitPayment({
       paymentKind: 'course_bundle',
       bundleCourseIds: courses.map((c) => c.id),
-      bundleOriginalSar: originalSar,
+      bundleOriginalSar: calc.totalOriginal,
       bundleDiscountPct: calc.discountPct,
-      bundleFinalSar: sarForTap,
+      bundleFinalSar: calc.finalPrice,
       currency: 'SAR',
-      amount: sarForTap,
+      amount: calc.finalPrice,
+      currencyCodeForPricing: currencyCode,
       customerName: form.fullName,
       customerEmail: form.email,
       customerPhone: form.fullPhone,
@@ -139,14 +134,16 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
     user,
     form,
     courses,
-    sarForTap,
-    originalSar,
+    calc.finalPrice,
+    calc.totalOriginal,
     calc.discountPct,
     tap,
-    sendCourseStatus,
+    sendWithCourses,
     profile,
     isRTL,
     navigate,
+    currencyCode,
+    exchangeRate,
   ]);
 
   const isPaymentReady = form.isInfoValid && !tap.error && tap.status !== 'processing' && tap.status !== 'verifying';
@@ -168,17 +165,22 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
             <DialogTitle className="text-lg font-bold">
               {isRTL ? 'باقتك المخصصة' : 'Your custom bundle'}
             </DialogTitle>
+            <p className="text-xs text-muted-foreground leading-relaxed mt-1.5 font-normal">
+              {isRTL
+                ? 'أسعار الكورسات بعملة العرض؛ المبلغ المستحق على البطاقة بالريال السعودي في الأسفل.'
+                : 'Course prices are in your display currency; the card charge in SAR is shown below.'}
+            </p>
           </DialogHeader>
-          <ul className="mt-3 space-y-2 text-sm max-h-40 overflow-y-auto">
+          <ul className="mt-3 space-y-2 text-sm max-h-36 overflow-y-auto">
             {courses.map((c) => {
               const title = isRTL && c.title_ar ? c.title_ar : c.title;
-              const pi = getCoursePriceInfo(c.id, c.price, effectiveDiscount(c), {
+              const pi = getCoursePriceInfo(c.id, c.price, effectiveCourseDiscountCheckout(c), {
                 vatPercent: c.vat_percentage ?? 15,
               });
               return (
                 <li key={c.id} className="flex justify-between gap-2">
                   <span className="truncate">{title}</span>
-                  <span className="tabular-nums shrink-0">{formatLocal(pi.finalPrice)}</span>
+                  <span className="tabular-nums shrink-0">{formatDisplay(pi.finalPrice)}</span>
                 </li>
               );
             })}
@@ -186,19 +188,26 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
           {calc.discountPct > 0 && calc.applicableTier && (
             <p className="text-xs text-primary mt-2">
               {isRTL ? calc.applicableTier.label_ar || calc.applicableTier.label_en : calc.applicableTier.label_en || calc.applicableTier.label_ar}{' '}
-              — −{formatLocal(calc.discountAmount)}
+              — −{formatDisplay(calc.display.discountAmount)}
             </p>
           )}
-          <p className="text-base font-bold text-primary mt-2">
-            {isRTL ? 'السعر النهائي (مرجعي): ' : 'Total (reference): '}
-            {formatLocal(calc.finalPrice)}
-          </p>
+          <div className="mt-3 rounded-xl border border-border/70 bg-card/60 px-3 py-3 space-y-2.5">
+            <div className="flex justify-between gap-3 text-sm">
+              <span className="text-muted-foreground shrink-0">{isRTL ? 'إجمالي العرض' : 'Display total'}</span>
+              <span className="tabular-nums font-semibold text-end">{formatDisplay(calc.display.finalPrice)}</span>
+            </div>
+            <div className="flex justify-between gap-3 text-base font-bold text-primary pt-2 border-t border-border/60">
+              <span className="leading-snug">{isRTL ? 'المبلغ المستحق (ريال سعودي)' : 'Amount due (SAR)'}</span>
+              <span className="tabular-nums shrink-0">{formatLocal(calc.finalPrice)}</span>
+            </div>
+          </div>
         </div>
 
         <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0">
           <CheckoutPaymentStep
+            bundleMode
             isRTL={isRTL}
-            currencyLabel={currSym}
+            currencyLabel={sarLabel}
             formatLocal={formatLocal}
             promoCode=""
             setPromoCode={() => {}}
@@ -237,9 +246,9 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
             courseTitleAr={courses[0]?.title_ar ?? null}
             paymentStatus={tap.status}
             isPaymentReady={isPaymentReady}
-            vatPct={0}
-            exchangeRate={exchangeRate}
-            isSAR={isSAR}
+            vatPct={calc.vatPercentApplied}
+            exchangeRate={1}
+            isSAR
             onSubmitPayment={() => void handleSubmitPayment()}
           />
         </div>

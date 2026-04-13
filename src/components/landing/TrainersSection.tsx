@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Star, MapPin, Bike, Clock, Users } from 'lucide-react';
-import TrainerProfileModal from '@/components/landing/TrainerProfileModal';
+import { Button } from '@/components/ui/button';
+import { Link, useNavigate } from 'react-router-dom';
+import { COUNTRIES } from '@/data/countryCityData';
+import TrainerShowcaseCard from '@/components/landing/TrainerShowcaseCard';
 
 const TrainersSection: React.FC = () => {
   const { isRTL } = useLanguage();
-  const [selectedTrainerId, setSelectedTrainerId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const { data: trainers, isLoading } = useQuery({
     queryKey: ['public-trainers'],
@@ -34,16 +33,6 @@ const TrainersSection: React.FC = () => {
     },
   });
 
-  const { data: studentCounts } = useQuery({
-    queryKey: ['public-trainer-student-counts'],
-    queryFn: async () => {
-      const { data } = await supabase.from('training_students').select('trainer_id');
-      const counts: Record<string, number> = {};
-      data?.forEach(s => { counts[s.trainer_id] = (counts[s.trainer_id] || 0) + 1; });
-      return counts;
-    },
-  });
-
   if (isLoading) return (
     <section className="py-16 bg-muted/30">
       <div className="container mx-auto px-4">
@@ -58,7 +47,7 @@ const TrainersSection: React.FC = () => {
   if (!trainers?.length) return null;
 
   return (
-    <section className="py-16 bg-muted/30">
+    <section className="py-16 bg-muted/30" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <div className="w-12 h-1 bg-primary mx-auto mb-4 rounded-full" />
@@ -67,35 +56,59 @@ const TrainersSection: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {trainers.map(t => {
-            const stats = reviewStats?.[t.id];
+            const countryEntry = COUNTRIES.find(
+              (c) => c.code === t.country || c.en === t.country,
+            );
+            const cityEntry = countryEntry?.cities.find((c) => c.en === t.city);
+            const displayLocation = [
+              cityEntry ? (isRTL ? cityEntry.ar : cityEntry.en) : t.city,
+              countryEntry ? (isRTL ? countryEntry.ar : countryEntry.en) : t.country,
+            ].filter(Boolean).join(isRTL ? '، ' : ', ');
+
+            const metaRows = [
+              {
+                id: 'exp',
+                icon: 'clock' as const,
+                text: isRTL
+                  ? `${t.years_of_experience} سنوات خبرة`
+                  : `${t.years_of_experience} years experience`,
+              },
+            ].filter(Boolean);
+
+            const footer = (
+              <div className="flex">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate(`/trainers/${t.id}`);
+                  }}
+                >
+                  {isRTL ? 'عرض الملف' : 'View Profile'}
+                </Button>
+              </div>
+            );
+
             return (
-              <Card key={t.id} className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow group" onClick={() => setSelectedTrainerId(t.id)}>
-                <CardContent className="p-6 text-center">
-                  <Avatar className="h-24 w-24 mx-auto mb-4 ring-2 ring-primary/20 group-hover:ring-primary/50 transition-all">
-                    <AvatarImage src={t.photo_url || ''} />
-                    <AvatarFallback className="text-2xl bg-primary/10 text-primary">{(isRTL ? t.name_ar : t.name_en).charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <h3 className="text-lg font-bold text-foreground mb-1">{isRTL ? t.name_ar : t.name_en}</h3>
-                  {stats && (
-                    <div className="flex items-center justify-center gap-1 mb-3">
-                      <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      <span className="text-sm font-medium">{stats.avg.toFixed(1)}</span>
-                      <span className="text-xs text-muted-foreground">({stats.count})</span>
-                    </div>
-                  )}
-                  <div className="flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{t.years_of_experience} {isRTL ? 'سنة' : 'yrs'}</div>
-                    <div className="flex items-center gap-1"><Bike className="w-3.5 h-3.5" />{t.bike_type}</div>
-                    <div className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{studentCounts?.[t.id] || 0}</div>
-                  </div>
-                </CardContent>
-              </Card>
+              <Link key={t.id} to={`/trainers/${t.id}`} className="block">
+                <TrainerShowcaseCard
+                  trainer={t}
+                  isRTL={isRTL}
+                  reviewStats={reviewStats?.[t.id] || null}
+                  headline={displayLocation}
+                  bioPreview={isRTL ? t.bio_ar : t.bio_en}
+                  metaRows={metaRows}
+                  footer={footer}
+                  className="cursor-pointer hover:border-primary/40 hover:shadow-lg"
+                />
+              </Link>
             );
           })}
         </div>
       </div>
 
-      <TrainerProfileModal trainerId={selectedTrainerId} onClose={() => setSelectedTrainerId(null)} />
     </section>
   );
 };

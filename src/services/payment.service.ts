@@ -83,6 +83,10 @@ export async function createCharge(
       bundle_original_sar: config.bundleOriginalSar ?? null,
       bundle_discount_pct: config.bundleDiscountPct ?? null,
       bundle_final_sar: config.bundleFinalSar ?? null,
+      currency_code_for_pricing: config.currencyCodeForPricing ?? null,
+      currencyCodeForPricing: config.currencyCodeForPricing ?? null,
+      exchange_rate_per_sar: config.exchangeRatePerSar ?? null,
+      exchangeRatePerSar: config.exchangeRatePerSar ?? null,
     };
     const { data, error } = await supabase.functions.invoke('tap-create-charge', { body });
     if (data && typeof data === 'object' && 'error' in data && data.error) {

@@ -11,10 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, GraduationCap, Wrench } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Clock, GraduationCap, Users, Wrench } from "lucide-react";
 import type { TrainerCourseRow } from "@/lib/trainingBookingUtils";
 import { translateTrainerCourseLocation } from "@/lib/trainerCourseLocation";
+import { COUNTRIES } from "@/data/countryCityData";
 import TrainerShowcaseCard from "@/components/landing/TrainerShowcaseCard";
 import { useTrainingPlatformPricing } from "@/hooks/useTrainingPlatformPricing";
 import { applyTrainingPlatformMarkupSar } from "@/lib/trainingPlatformMarkup";
@@ -98,7 +101,7 @@ const TrainingDetail: React.FC = () => {
 
   const { data: pricing } = useTrainingPlatformPricing();
   const platformMarkupPct = pricing?.markupPercent ?? 0;
-  const platformVatPct = pricing?.vatPercent ?? 15;
+  const platformVatPct = pricing?.vatPercent ?? 0;
 
   const { data: reviewStats } = useQuery({
     queryKey: ["public-trainer-review-stats"],
@@ -117,6 +120,19 @@ const TrainingDetail: React.FC = () => {
         };
       });
       return stats;
+    },
+  });
+  const { data: students = [] } = useQuery({
+    queryKey: ["training-students-public", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("training_bookings")
+        .select("id, full_name, created_at, status, trainers(name_ar, name_en, photo_url)")
+        .eq("training_id", id!)
+        .eq("status", "confirmed")
+        .order("created_at", { ascending: false });
+      return data || [];
     },
   });
 
@@ -219,151 +235,256 @@ const TrainingDetail: React.FC = () => {
 
           {training && (
             <>
-              <Card className="max-w-3xl mx-auto mb-12 overflow-hidden border-border/60 shadow-sm">
-                <CardHeader className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:justify-between">
-                    <div className="flex items-start gap-4">
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-primary text-primary-foreground shadow-md shrink-0">
-                        {training.type === "theory" ? <GraduationCap className="w-7 h-7" /> : <Wrench className="w-7 h-7" />}
-                      </div>
-                      <div className="text-start min-w-0">
-                        <CardTitle className="text-2xl sm:text-3xl font-black leading-tight">{trainingTitle}</CardTitle>
-                        <CardDescription className="text-base mt-2 text-muted-foreground leading-relaxed">
-                          {isRTL ? training.description_ar : training.description_en}
-                        </CardDescription>
-                      </div>
-                    </div>
-                    <div className={cn("flex flex-wrap gap-2", isRTL ? "sm:justify-end" : "sm:justify-end")}>
-                      <Badge variant="secondary">
-                        {training.type === "theory" ? (isRTL ? "نظري" : "Theory") : (isRTL ? "عملي" : "Practical")}
-                      </Badge>
-                      <Badge variant="outline" className={level.color}>
-                        {isRTL ? level.label.ar : level.label.en}
-                      </Badge>
-                    </div>
+              <div className="relative w-full h-56 sm:h-72 rounded-2xl overflow-hidden mb-8">
+                {training.background_image ? (
+                  <img
+                    src={training.background_image}
+                    alt={trainingTitle}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                    <Wrench className="w-20 h-20 text-primary/20" />
                   </div>
-                  {supplies.length > 0 ? (
-                    <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
-                      <p className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                        <Wrench className="h-4 w-4 text-primary" />
-                        {isRTL ? "ما يوفره المدرب" : "Trainer Supplies"}
-                      </p>
-                      <ul className="space-y-1.5 text-sm">
-                        {supplies.map((item, idx) => (
-                          <li key={`${item.name_en}-${idx}`} className="flex items-center gap-2">
-                            <Wrench className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span>{isRTL ? item.name_ar : item.name_en}</span>
-                          </li>
-                        ))}
-                      </ul>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+                <div className="absolute bottom-0 inset-x-0 p-6">
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <Badge variant="secondary">
+                      {training.type === "theory" ? (isRTL ? "نظري" : "Theory") : (isRTL ? "عملي" : "Practical")}
+                    </Badge>
+                    <Badge variant="outline" className={level.color}>
+                      {isRTL ? level.label.ar : level.label.en}
+                    </Badge>
+                    {Number(training.default_sessions_count) > 0 && (
+                      <Badge variant="outline" className="bg-background/50">
+                        <Clock className="w-3 h-3 me-1" />
+                        {training.default_sessions_count} {isRTL ? "جلسات" : "sessions"}
+                      </Badge>
+                    )}
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-black text-foreground leading-tight">
+                    {trainingTitle}
+                  </h1>
+                </div>
+              </div>
+
+              {(isRTL ? training.description_ar : training.description_en) && (
+                <p className="text-muted-foreground leading-relaxed mb-8 text-sm sm:text-base max-w-3xl">
+                  {isRTL ? training.description_ar : training.description_en}
+                </p>
+              )}
+
+              <section className="space-y-8">
+                <Card className="border-border/70 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      {isRTL ? "المعلومات" : "Information"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {supplies.length > 0 ? (
+                      <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                        <p className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                          <Wrench className="h-4 w-4 text-primary" />
+                          {isRTL ? "ما يوفره المدرب" : "Trainer Supplies"}
+                        </p>
+                        <ul className="space-y-1.5 text-sm">
+                          {supplies.map((item, idx) => (
+                            <li key={`${item.name_en}-${idx}`} className="flex items-center gap-2">
+                              <Wrench className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <span>{isRTL ? item.name_ar : item.name_en}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-base font-semibold">
+                          {isRTL ? "تفاصيل الجلسات" : "Session Details"}
+                        </h3>
+                        <Badge variant="secondary">{curriculumSessions.length}</Badge>
+                      </div>
+                      {curriculumSessions.length > 0 ? (
+                        <TrainingCurriculumAccordion
+                          sessions={curriculumSessions}
+                          isRTL={isRTL}
+                        />
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          {isRTL ? "لا توجد تفاصيل جلسات متاحة حالياً." : "No session details available yet."}
+                        </p>
+                      )}
                     </div>
-                  ) : null}
-                </CardHeader>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              {curriculumSessions.length > 0 ? (
-                <TrainingCurriculumAccordion
-                  sessions={curriculumSessions}
-                  isRTL={isRTL}
-                  className="max-w-3xl mx-auto mb-12"
-                />
-              ) : null}
-
-              {training.type === "theory" ? (
-                <section className="rounded-2xl border border-border/70 bg-muted/20 p-6 sm:p-8 text-center">
-                  <GraduationCap className="mx-auto mb-4 h-12 w-12 text-purple-600 dark:text-purple-400" />
-                  <h2 className="text-xl font-bold text-foreground mb-2">
-                    {isRTL ? "برنامج نظري" : "Theory program"}
-                  </h2>
-                  <p className="text-muted-foreground text-sm sm:text-base max-w-lg mx-auto mb-6">
-                    {isRTL
-                      ? "هذا البرنامج نظري ومنفصل عن التدريب العملي. لحجز جلسة مع مدرب، تصفح قسم التدريب العملي من صفحة التدريبات."
-                      : "This is a theory-only program, separate from practical training. To book a session with a trainer, browse the practical section on the trainings page."}
-                  </p>
-                  <Button asChild variant="default">
-                    <Link to="/trainings">{isRTL ? "العودة إلى التدريبات" : "Back to trainings"}</Link>
-                  </Button>
-                </section>
-              ) : (
-                <section>
-                  <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-                      {isRTL ? "المدربون المتاحون" : "Available trainers"}
+                {training.type === "theory" ? (
+                  <section className="rounded-2xl border border-border/70 bg-muted/20 p-6 sm:p-8 text-center">
+                    <GraduationCap className="mx-auto mb-4 h-12 w-12 text-purple-600 dark:text-purple-400" />
+                    <h2 className="text-xl font-bold text-foreground mb-2">
+                      {isRTL ? "برنامج نظري" : "Theory program"}
                     </h2>
-                    <p
-                      className="text-xs text-muted-foreground font-mono break-all max-w-full sm:max-w-[min(100%,28rem)] sm:text-end"
-                      title={training.id}
-                    >
-                      {isRTL ? "معرّف البرنامج العملي:" : "Practical program ID:"}{" "}
-                      <span className="text-foreground/80">{training.id}</span>
+                    <p className="text-muted-foreground text-sm sm:text-base max-w-lg mx-auto mb-6">
+                      {isRTL
+                        ? "هذا البرنامج نظري ومنفصل عن التدريب العملي. لحجز جلسة مع مدرب، تصفح قسم التدريب العملي من صفحة التدريبات."
+                        : "This is a theory-only program, separate from practical training. To book a session with a trainer, browse the practical section on the trainings page."}
                     </p>
-                  </div>
+                    <Button asChild variant="default">
+                      <Link to="/trainings">{isRTL ? "العودة إلى التدريبات" : "Back to trainings"}</Link>
+                    </Button>
+                  </section>
+                ) : (
+                  <section>
+                    <div className="mb-6 flex items-center justify-between">
+                      <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                        {isRTL ? "المدربون المتاحون" : "Available trainers"}
+                      </h2>
+                      <Badge variant="secondary">{trainerCourses.length}</Badge>
+                    </div>
 
-                  {coursesLoading && (
+                    {coursesLoading && (
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {[1, 2, 3].map((i) => (
+                          <Skeleton key={i} className="h-64 rounded-2xl" />
+                        ))}
+                      </div>
+                    )}
+                    {!coursesLoading && trainerCourses.length === 0 && (
+                      <p className="text-muted-foreground text-center py-12">
+                        {isRTL ? "لا يوجد مدربون لهذا التدريب حالياً." : "No trainers are available for this training yet."}
+                      </p>
+                    )}
+
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                      {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} className="h-64 rounded-2xl" />
+                      {!coursesLoading &&
+                        trainerCourses.map((tc) => {
+                          const tr = tc.trainers;
+                          if (!tr) return null;
+                          const stats = reviewStats?.[tr.id];
+                          const hours = Number(tc.duration_hours);
+                          const sess = Math.max(1, Number(tc.sessions_count ?? 1));
+                          const locRaw = translateTrainerCourseLocation(tc.location, isRTL) || String(tc.location ?? "").trim();
+                          const countryEntry = COUNTRIES.find((c) => c.code === tr.country || c.en === tr.country);
+                          const cityEntry = countryEntry?.cities.find((c) => c.en === tr.city);
+                          const trainerCityLine = [
+                            cityEntry ? (isRTL ? cityEntry.ar : cityEntry.en) : tr.city,
+                            countryEntry ? (isRTL ? countryEntry.ar : countryEntry.en) : tr.country,
+                          ]
+                            .filter(Boolean)
+                            .join(isRTL ? "، " : ", ");
+                          const headline = locRaw || trainerCityLine || null;
+                          const bioPreview = String((isRTL ? tr.bio_ar : tr.bio_en) ?? "").trim() || null;
+                          const yoe = Number(tr.years_of_experience);
+                          const metaRows: { id: string; icon: "clock" | "gauge" | "map" | "users"; text: string }[] = [];
+                          if (Number.isFinite(yoe) && yoe > 0) {
+                            metaRows.push({
+                              id: "exp",
+                              icon: "clock",
+                              text: isRTL
+                                ? `${yoe} ${yoe === 1 ? "سنة خبرة" : "سنوات خبرة"}`
+                                : `${yoe} ${yoe === 1 ? "year" : "years"} experience`,
+                            });
+                          }
+                          metaRows.push({
+                            id: "dur",
+                            icon: "gauge",
+                            text: isRTL
+                              ? `${sess} ${sess === 1 ? "جلسة" : "جلسات"} · ${hours} ${hours === 1 ? "س/جلسة" : "ساعات/جلسة"}`
+                              : `${sess} ${sess === 1 ? "session" : "sessions"} · ${hours} ${hours === 1 ? "hr/sess" : "hrs/sess"}`,
+                          });
+                          const BookIcon = isRTL ? ChevronLeft : ChevronRight;
+                          return (
+                            <TrainerShowcaseCard
+                              key={tc.id}
+                              trainer={{ name_ar: tr.name_ar, name_en: tr.name_en, photo_url: tr.photo_url }}
+                              isRTL={isRTL}
+                              reviewStats={stats && stats.count > 0 ? stats : null}
+                              headline={headline}
+                              bioPreview={bioPreview}
+                              profileHref={`/trainers/${tr.id}`}
+                              metaRows={metaRows}
+                              priceSar={applyTrainingPlatformMarkupSar(Number(tc.price), platformMarkupPct)}
+                              trainingVatPercent={platformVatPct}
+                              className="h-full border-border/60 shadow-sm hover:border-primary/40 hover:shadow-lg transition-shadow"
+                              footer={
+                                <div className="flex flex-col sm:flex-row gap-2 w-full">
+                                  <Button variant="outline" size="sm" className="w-full sm:flex-1 font-semibold" asChild>
+                                    <Link to={`/trainers/${tr.id}`}>{isRTL ? "عرض الملف" : "View Profile"}</Link>
+                                  </Button>
+                                  {!user ? (
+                                    <Button className="w-full sm:flex-1 font-semibold" asChild>
+                                      <Link to={`/login?returnTo=${loginBookingReturn(tc.id)}`}>
+                                        {isRTL ? "سجّل الدخول للحجز" : "Sign in to book"}
+                                      </Link>
+                                    </Button>
+                                  ) : (
+                                    <Button className="w-full sm:flex-1 font-semibold gap-2" asChild>
+                                      <Link to={bookingHref(tc.id)}>
+                                        {isRTL ? "احجز مع هذا المدرب" : "Book this Trainer"}
+                                        <BookIcon className="h-4 w-4 opacity-90" />
+                                      </Link>
+                                    </Button>
+                                  )}
+                                </div>
+                              }
+                            />
+                          );
+                        })}
+                    </div>
+                  </section>
+                )}
+
+                <section>
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                      {isRTL ? "الطلاب المنضمون" : "Enrolled Students"}
+                    </h2>
+                    <Badge variant="secondary">{students.length}</Badge>
+                  </div>
+                  {students.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+                      <Users className="w-12 h-12 text-muted-foreground/30" />
+                      <p className="text-muted-foreground">
+                        {isRTL ? "لا يوجد طلاب منضمون بعد" : "No students enrolled yet"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {isRTL ? "كن أول من ينضم لهذا التدريب!" : "Be the first to join this training!"}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {students.map((s: any) => (
+                        <div
+                          key={s.id}
+                          className="flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-muted/30 transition-colors border border-transparent hover:border-border/60"
+                        >
+                          <Avatar className="h-9 w-9 shrink-0">
+                            <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
+                              {s.full_name?.charAt(0) || "?"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{s.full_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {isRTL
+                                ? `انضم مع: ${s.trainers?.name_ar || "—"}`
+                                : `Joined with: ${s.trainers?.name_en || "—"}`}
+                            </p>
+                          </div>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {format(new Date(s.created_at), isRTL ? "d MMM" : "MMM d", {
+                              locale: isRTL ? ar : undefined,
+                            })}
+                          </span>
+                        </div>
                       ))}
                     </div>
                   )}
-
-                  {!coursesLoading && trainerCourses.length === 0 && (
-                    <p className="text-muted-foreground text-center py-12">
-                      {isRTL ? "لا يوجد مدربون لهذا التدريب حالياً." : "No trainers are available for this training yet."}
-                    </p>
-                  )}
-
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {!coursesLoading &&
-                      trainerCourses.map((tc) => {
-                        const tr = tc.trainers;
-                        if (!tr) return null;
-                        const stats = reviewStats?.[tr.id];
-                        const hours = Number(tc.duration_hours);
-                        const sess = Math.max(1, Number(tc.sessions_count ?? 1));
-                        const loc = translateTrainerCourseLocation(tc.location, isRTL) || tc.location;
-                        const BookIcon = isRTL ? ChevronLeft : ChevronRight;
-                        const sessionLabel = isRTL
-                          ? `${sess} ${sess === 1 ? "جلسة" : "جلسات"} · ${hours} ${hours === 1 ? "س/جلسة" : "ساعات/جلسة"}`
-                          : `${sess} ${sess === 1 ? "session" : "sessions"} · ${hours} ${hours === 1 ? "hr/sess" : "hrs/sess"}`;
-                        return (
-                          <TrainerShowcaseCard
-                            key={tc.id}
-                            trainer={{ name_ar: tr.name_ar, name_en: tr.name_en, photo_url: tr.photo_url }}
-                            isRTL={isRTL}
-                            reviewStats={stats && stats.count > 0 ? stats : null}
-                            headline={loc}
-                            metaRows={[
-                              {
-                                id: "dur",
-                                icon: "clock",
-                                text: sessionLabel,
-                              },
-                            ]}
-                            priceSar={applyTrainingPlatformMarkupSar(Number(tc.price), platformMarkupPct)}
-                            trainingVatPercent={platformVatPct}
-                            footer={
-                              !user ? (
-                                <Button className="w-full font-semibold" asChild>
-                                  <Link to={`/login?returnTo=${loginBookingReturn(tc.id)}`}>
-                                    {isRTL ? "سجّل الدخول للحجز" : "Sign in to book"}
-                                  </Link>
-                                </Button>
-                              ) : (
-                                <Button className="w-full font-semibold gap-2" asChild>
-                                  <Link to={bookingHref(tc.id)}>
-                                    {isRTL ? "احجز مع هذا المدرب" : "Book this Trainer"}
-                                    <BookIcon className="h-4 w-4 opacity-90" />
-                                  </Link>
-                                </Button>
-                              )
-                            }
-                          />
-                        );
-                      })}
-                  </div>
                 </section>
-              )}
+              </section>
             </>
           )}
         </main>

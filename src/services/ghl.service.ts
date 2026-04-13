@@ -61,12 +61,16 @@ export async function sendGHLFormData(data: FormWebhookData): Promise<boolean> {
     address: rest.address || "",
     courseName: rest.courseName || "",
     amount: rest.amount || "",
+    currency: rest.currency || "",
     orderStatus: rest.orderStatus || "not purchased",
     courses: rest.courses || "[]",
     totalPurchased: rest.totalPurchased ?? 0,
     dateOfBirth: rest.dateOfBirth || "",
     gender: rest.gender || "",
     source: getVisitSource(),
+    ticket_subject: rest.ticket_subject || "",
+    ticket_message: rest.ticket_message || "",
+    ticket_category: rest.ticket_category || "",
   };
 
   try {

@@ -136,7 +136,7 @@ const AdminTrainings: React.FC = () => {
 
   const { data: pricing, isLoading: pricingLoading } = useTrainingPlatformPricing();
   const [markupDraft, setMarkupDraft] = useState('0');
-  const [vatDraft, setVatDraft] = useState('15');
+  const [vatDraft, setVatDraft] = useState('0');
   useEffect(() => {
     if (pricing) {
       setMarkupDraft(String(pricing.markupPercent));

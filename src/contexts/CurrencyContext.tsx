@@ -497,24 +497,34 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           vatPct: entryVat,
         };
       }
-      const trainingVat =
-        courseId === TRAINING_PRICE_PLACEHOLDER_COURSE_ID && opts?.vatPercent != null && Number.isFinite(Number(opts.vatPercent))
-          ? clampTrainingVatPercent(opts.vatPercent)
-          : null;
-      /** Training subtotal after markup is 2dp SAR; VAT matches Tap `ceil(subtotal * (1+vat/100))` without an extra `ceil` on subtotal. */
-      const useTrainingSubtotalPrecision =
-        courseId === TRAINING_PRICE_PLACEHOLDER_COURSE_ID && trainingVat != null;
-      const convertedBase = useTrainingSubtotalPrecision
-        ? currencyCode === "SAR"
-          ? Math.max(0, Math.round(Number(sarPrice) * 100) / 100)
-          : Math.max(0, Math.round(Number(sarPrice) * rate * 100) / 100)
-        : currencyCode === "SAR"
+      /**
+       * Practical training: `sarPrice` is subtotal after platform commission (before VAT), always in SAR.
+       * Tap charges SAR — show the same SAR total to every user (no FX conversion on this price).
+       */
+      if (courseId === TRAINING_PRICE_PLACEHOLDER_COURSE_ID) {
+        const rawVat = opts?.vatPercent;
+        const trainingVat = clampTrainingVatPercent(
+          rawVat !== undefined && rawVat !== null && Number.isFinite(Number(rawVat)) ? Number(rawVat) : 0,
+        );
+        const subtotalSar = Math.max(0, Math.round(Number(sarPrice) * 100) / 100);
+        const finalSar =
+          subtotalSar <= 0 ? 0 : Math.ceil(subtotalSar * (1 + trainingVat / 100));
+        return {
+          originalPrice: subtotalSar,
+          discountPct: 0,
+          finalPrice: finalSar,
+          currency: "SAR",
+          isCountryPrice: false,
+          vatPct: trainingVat,
+        };
+      }
+      const convertedBase =
+        currencyCode === "SAR"
           ? Math.ceil(sarPrice)
           : Math.ceil(sarPrice * rate);
       const dPct = courseDiscountPct > 0 ? courseDiscountPct : 0;
       const finalBeforeVat = dPct > 0 ? Math.ceil(convertedBase * (1 - dPct / 100)) : convertedBase;
-      const vatForFallback =
-        trainingVat != null ? trainingVat : currencyCode === "SAR" ? VAT_RATE : 0;
+      const vatForFallback = currencyCode === "SAR" ? VAT_RATE : 0;
       const finalPrice = vatForFallback > 0 ? Math.ceil(finalBeforeVat * (1 + vatForFallback / 100)) : finalBeforeVat;
       return {
         originalPrice: convertedBase,

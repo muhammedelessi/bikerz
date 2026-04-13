@@ -74,13 +74,13 @@ function parseBikeEntriesProfile(raw: unknown): BikeEntryRow[] {
 const EmptyField: React.FC<{ isRTL: boolean }> = ({ isRTL }) => (
   <span
     className={cn(
-      'block w-full text-muted-foreground/50 italic text-xs',
+      'inline-flex max-w-full items-center rounded-md bg-muted/40 px-2 py-1 text-[11px] font-medium text-muted-foreground',
       isRTL ? 'text-right' : 'text-left',
     )}
     dir={isRTL ? 'rtl' : 'ltr'}
     lang={isRTL ? 'ar' : 'en'}
   >
-    {isRTL ? 'لم يتم الإضافة بعد' : 'Not added yet'}
+    {isRTL ? 'سيتم إضافته لاحقًا' : 'Will be added later'}
   </span>
 );
 

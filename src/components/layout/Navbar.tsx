@@ -45,28 +45,24 @@ interface HeaderContent {
   };
 }
 
-/** Injected after /courses when CMS header menu omits these links */
-const EXTRA_PUBLIC_NAV_ITEMS: MenuItem[] = [
-  {
-    id: "trainings",
-    title_en: "Practical Training",
-    title_ar: "التدريب العملي",
-    link: "/trainings",
-    is_visible: true,
-    open_in_new_tab: false,
-  },
-  {
-    id: "trainers",
-    title_en: "Trainers",
-    title_ar: "المدربين",
-    link: "/trainers",
-    is_visible: true,
-    open_in_new_tab: false,
-  },
-];
-
 function extraAfterCoursesNav(t: (key: string, opts?: { lng?: string }) => string): MenuItem[] {
   return [
+    {
+      id: "trainings",
+      title_en: t("nav.trainings", { lng: "en" }),
+      title_ar: t("nav.trainings", { lng: "ar" }),
+      link: "/trainings",
+      is_visible: true,
+      open_in_new_tab: false,
+    },
+    {
+      id: "trainers",
+      title_en: t("nav.trainers", { lng: "en" }),
+      title_ar: t("nav.trainers", { lng: "ar" }),
+      link: "/trainers",
+      is_visible: true,
+      open_in_new_tab: false,
+    },
     {
       id: "bundles",
       title_en: t("nav.bundles", { lng: "en" }),
@@ -75,7 +71,6 @@ function extraAfterCoursesNav(t: (key: string, opts?: { lng?: string }) => strin
       is_visible: true,
       open_in_new_tab: false,
     },
-    ...EXTRA_PUBLIC_NAV_ITEMS,
   ];
 }
 
@@ -233,13 +228,13 @@ const Navbar: React.FC = () => {
       >
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
           <div
-            className="flex items-center justify-between h-14 lg:h-16"
-            dir="ltr"
+            className="flex items-center justify-between h-14 lg:h-16 gap-2 lg:gap-4"
+            dir={isRTL ? "rtl" : "ltr"}
           >
             {/* Logo */}
             <Link
               to="/"
-              className="flex items-center flex-shrink-0 relative z-10"
+              className="flex items-center flex-shrink-0 relative z-10 lg:min-w-max"
             >
               <img
                 src={logoUrl}
@@ -253,49 +248,51 @@ const Navbar: React.FC = () => {
             </Link>
 
             {/* Desktop Nav Links — Centered */}
-            <div className="hidden lg:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
-              {menuItems.map((item) => {
-                const active = isActive(item.link);
-                const label = isRTL ? item.title_ar : item.title_en;
-                const className =
-                  `relative px-4 py-2 text-sm font-medium transition-colors duration-300 ${
-                    active
-                      ? "text-primary"
-                      : "text-foreground/80 hover:text-primary"
-                  }`;
+            <div className="hidden lg:flex flex-1 min-w-0 justify-center">
+              <div className="flex items-center gap-0.5 max-w-full overflow-x-auto no-scrollbar px-2">
+                {menuItems.map((item) => {
+                  const active = isActive(item.link);
+                  const label = isRTL ? item.title_ar : item.title_en;
+                  const className =
+                    `relative px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-300 ${
+                      active
+                        ? "text-primary"
+                        : "text-foreground/80 hover:text-primary"
+                    }`;
 
-                const content = (
-                  <>
-                    {label}
-                    {active && (
-                      <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-primary transition-all duration-300" />
-                    )}
-                  </>
-                );
-
-                if (item.open_in_new_tab) {
-                  return (
-                    <a
-                      key={item.id}
-                      href={item.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={className}
-                    >
-                      {content}
-                    </a>
+                  const content = (
+                    <>
+                      {label}
+                      {active && (
+                        <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-primary transition-all duration-300" />
+                      )}
+                    </>
                   );
-                }
-                return (
-                  <Link key={item.id} to={item.link} className={className}>
-                    {content}
-                  </Link>
-                );
-              })}
+
+                  if (item.open_in_new_tab) {
+                    return (
+                      <a
+                        key={item.id}
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={className}
+                      >
+                        {content}
+                      </a>
+                    );
+                  }
+                  return (
+                    <Link key={item.id} to={item.link} className={className}>
+                      {content}
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Right Side */}
-            <div className="flex items-center gap-2 sm:gap-3 relative z-10">
+            <div className="flex items-center gap-2 sm:gap-3 relative z-10 shrink-0">
               <div className="hidden lg:flex items-center gap-2">
                 <ThemeToggle />
                 {showLanguageToggle && <LanguageToggle />}
@@ -316,6 +313,11 @@ const Navbar: React.FC = () => {
                             {profile?.full_name?.split(" ")[0] ||
                               t("nav.dashboard")}
                           </span>
+                        </Button>
+                      </Link>
+                      <Link to="/my-bookings">
+                        <Button variant="ghost" size="sm" className="text-sm">
+                          {isRTL ? "حجوزاتي" : "My Bookings"}
                         </Button>
                       </Link>
                       <LogoutConfirmDialog onConfirm={handleSignOut}>
@@ -491,6 +493,18 @@ const Navbar: React.FC = () => {
                         </span>
                       </div>
                       {profile?.full_name || t("nav.dashboard")}
+                    </Button>
+                  </Link>
+                  <Link
+                    to="/my-bookings"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block"
+                  >
+                    <Button
+                      variant="outline"
+                      className="w-full h-12 text-base border-border/50"
+                    >
+                      {isRTL ? "حجوزاتي" : "My Bookings"}
                     </Button>
                   </Link>
                   <LogoutConfirmDialog onConfirm={handleSignOut}>

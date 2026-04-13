@@ -5,6 +5,12 @@ export type TrainerRow = {
   name_en: string;
   name_ar: string;
   photo_url: string | null;
+  /** Included when selecting full `trainers` row (e.g. `trainers(*)`) */
+  bio_ar?: string | null;
+  bio_en?: string | null;
+  city?: string | null;
+  country?: string | null;
+  years_of_experience?: number | null;
 };
 
 export type TrainerCourseRow = {

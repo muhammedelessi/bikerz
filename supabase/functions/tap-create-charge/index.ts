@@ -1,6 +1,14 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { parsePhoneNumberFromString } from "https://esm.sh/libphonenumber-js@1.11.17/min";
 import { completeCourseBundleAfterPayment } from "../_shared/courseBundle.ts";
+import {
+  BUNDLE_FALLBACK_RATES,
+  BUNDLE_VAT_RATE_SA,
+  computeBundleLineLocalFinal,
+  localBundleTotalToSar,
+  type CountryPriceRow,
+  type CourseRow,
+} from "../_shared/bundlePricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,7 +36,7 @@ async function getTrainingPlatformMarkupPercent(
   return Math.min(500, n);
 }
 
-/** Saudi VAT % on practical training charges (admin_settings, default 15). */
+/** Saudi VAT % on practical training charges (admin_settings; default 0% until configured). */
 async function getTrainingPlatformVatPercent(
   adminClient: ReturnType<typeof createClient>,
 ): Promise<number> {
@@ -38,12 +46,12 @@ async function getTrainingPlatformVatPercent(
     .eq("key", "training_platform_vat_percent")
     .maybeSingle();
   const v = data?.value as unknown;
-  let n = 15;
+  let n = 0;
   if (typeof v === "number") n = v;
   else if (v && typeof v === "object" && "percent" in (v as Record<string, unknown>)) {
     n = Number((v as Record<string, unknown>).percent);
   }
-  if (!Number.isFinite(n) || n < 0) return 15;
+  if (!Number.isFinite(n) || n < 0) return 0;
   return Math.min(30, n);
 }
 
@@ -541,9 +549,10 @@ Deno.serve(async (req) => {
       trainingMarkedUpSubtotalSar != null && trainerPayoutBaseSar != null
         ? Math.round((trainingMarkedUpSubtotalSar - trainerPayoutBaseSar) * 100) / 100
         : null;
+    /** VAT = configured % of marked-up subtotal (not `final − subtotal`, so it matches admin % even when total is ceiled). */
     const trainingVatAmountSar =
       isTrainingBooking && trainingMarkedUpSubtotalSar != null
-        ? Math.round((finalAmount - trainingMarkedUpSubtotalSar) * 100) / 100
+        ? Math.round((trainingMarkedUpSubtotalSar * vatPercentPoints) / 100 * 100) / 100
         : null;
     const trainingBikerzRevenueSar =
       isTrainingBooking && trainerPayoutBaseSar != null
@@ -1027,26 +1036,61 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
     }
   }
 
-  const vatPct = await getTrainingPlatformVatPercent(adminClient);
-  const vatFactor = 1 + vatPct / 100;
-  let totalOriginalSar = 0;
+  /** Same display rules as CurrencyContext + useBundleDisplayTotals; Tap amount is SAR. */
+  const rawPricingCcy = (b as Record<string, unknown>).currency_code_for_pricing ??
+    (b as Record<string, unknown>).currencyCodeForPricing;
+  const pricingCurrency = String(rawPricingCcy ?? "SAR").trim().toUpperCase() || "SAR";
+  const fallbackRate = BUNDLE_FALLBACK_RATES[pricingCurrency] ?? 1;
+  /** Same "local units per 1 SAR" as CurrencyContext on the client; avoids Tap vs UI mismatch when live FX ≠ static table */
+  const rawClientRate = Number(
+    (b as Record<string, unknown>).exchange_rate_per_sar ??
+      (b as Record<string, unknown>).exchangeRatePerSar ??
+      0,
+  );
+  let rate = fallbackRate;
+  if (Number.isFinite(rawClientRate) && rawClientRate > 0 && fallbackRate > 0) {
+    const ratio = rawClientRate / fallbackRate;
+    if (ratio >= 0.5 && ratio <= 2.0) {
+      rate = rawClientRate;
+    }
+  }
+  const countryUpper = detected_country != null ? String(detected_country).trim().toUpperCase() : "";
+
+  const { data: courseRows, error: coursesErr } = await adminClient
+    .from("courses")
+    .select("id, price, discount_percentage, discount_expires_at, title, title_ar")
+    .in("id", ids);
+
+  if (coursesErr || !courseRows?.length || courseRows.length !== ids.length) {
+    return new Response(
+      JSON.stringify({ error: "One or more courses were not found" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  const byId = new Map<string, CourseRow>(courseRows.map((c) => [String(c.id), c as CourseRow]));
+
+  const countryByCourse = new Map<string, CountryPriceRow>();
+  if (countryUpper) {
+    const { data: cps } = await adminClient
+      .from("course_country_prices")
+      .select("course_id, country_code, price, original_price, discount_percentage, vat_percentage, currency")
+      .in("course_id", ids)
+      .eq("country_code", countryUpper);
+    for (const row of cps ?? []) {
+      countryByCourse.set(String(row.course_id), row as CountryPriceRow);
+    }
+  }
+
+  let totalOriginalLocal = 0;
   for (const id of ids) {
-    const { data: c, error: cErr } = await adminClient
-      .from("courses")
-      .select("id, price, discount_percentage, title, title_ar")
-      .eq("id", id)
-      .single();
-    if (cErr || !c) {
+    const c = byId.get(id);
+    if (!c) {
       return new Response(
         JSON.stringify({ error: "One or more courses were not found" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    const base = Number(c.price);
-    const d =
-      c.discount_percentage && Number(c.discount_percentage) > 0 ? Number(c.discount_percentage) : 0;
-    const beforeTax = d > 0 ? Math.ceil(base * (1 - d / 100)) : Math.ceil(base);
-    totalOriginalSar += Math.ceil(beforeTax * vatFactor);
 
     const { data: enr } = await adminClient
       .from("course_enrollments")
@@ -1060,6 +1104,9 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
         { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
+    const countryRow = countryByCourse.get(id) ?? null;
+    totalOriginalLocal += computeBundleLineLocalFinal(c, countryRow, countryUpper, pricingCurrency, rate);
   }
 
   const { data: tierRows } = await adminClient
@@ -1070,18 +1117,24 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
 
   const applicable = tierRows?.find((t) => ids.length >= t.min_courses);
   const discountPct = applicable ? Number(applicable.discount_percentage) : 0;
-  const discountAmount = Math.round(totalOriginalSar * (discountPct / 100));
-  const finalSar = Math.max(0, totalOriginalSar - discountAmount);
-  const finalAmount = Math.ceil(finalSar);
+  const discountAmountLocal = Math.round(totalOriginalLocal * (discountPct / 100));
+  const finalLocal = Math.max(0, totalOriginalLocal - discountAmountLocal);
+
+  const subtotalSar = localBundleTotalToSar(totalOriginalLocal, pricingCurrency, rate);
+  const finalAmount = localBundleTotalToSar(finalLocal, pricingCurrency, rate);
+  const discountSar = Math.max(0, subtotalSar - finalAmount);
 
   const safeDeviceInfo = typeof device_info === "string" ? device_info.substring(0, 200) : null;
   const bundleMeta = {
     payment_kind: "course_bundle",
     bundle_course_ids: ids,
-    bundle_original_price_sar: totalOriginalSar,
+    bundle_pricing_currency: pricingCurrency,
+    bundle_original_display_local: totalOriginalLocal,
+    bundle_original_price_sar: subtotalSar,
     bundle_discount_pct: discountPct,
+    bundle_discount_amount_sar: discountSar,
     bundle_final_price_sar: finalAmount,
-    vat_rate: vatPct,
+    vat_rate: pricingCurrency === "SAR" ? BUNDLE_VAT_RATE_SA : 0,
     final_amount: finalAmount,
     detected_country: detected_country || null,
     environment: tapSecretKey.startsWith("sk_test") ? "test" : "live",

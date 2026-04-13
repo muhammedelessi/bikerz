@@ -7,6 +7,8 @@ export interface FormWebhookData {
   address?: string;
   courseName?: string;
   amount?: string;
+  /** ISO currency code for the amount (e.g. SAR) */
+  currency?: string;
   orderStatus?: string;
   courses?: string;
   totalPurchased?: number;
@@ -14,4 +16,8 @@ export interface FormWebhookData {
   gender?: string;
   isRTL?: boolean;
   silent?: boolean;
+  /** Contact / support ticket (Contact Us page) */
+  ticket_subject?: string;
+  ticket_message?: string;
+  ticket_category?: string;
 }

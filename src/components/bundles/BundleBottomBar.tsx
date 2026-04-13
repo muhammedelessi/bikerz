@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { useBundleCalculator } from '@/hooks/useBundleCalculator';
+import { useBundleDisplayTotals } from '@/hooks/useBundleCalculator';
 import type { BundleCourseInput } from '@/types/bundle';
 import type { BundleTierRow } from '@/types/bundle';
 import { cn } from '@/lib/utils';
@@ -27,9 +27,9 @@ export const BundleBottomBar: React.FC<Props> = ({
   courseLabels,
 }) => {
   const { isRTL } = useLanguage();
-  const { getCurrencySymbol, currencyCode } = useCurrency();
-  const calc = useBundleCalculator(selectedCourses, tiers);
-  const sym = getCurrencySymbol(currencyCode, isRTL);
+  const { getCurrencySymbol, currencyCode, isSAR } = useCurrency();
+  const display = useBundleDisplayTotals(selectedCourses, tiers);
+  const currSym = getCurrencySymbol(currencyCode, isRTL);
   const visible = selectedCourses.length > 0;
 
   const tierLabel = (t: BundleTierRow | undefined) => {
@@ -39,6 +39,10 @@ export const BundleBottomBar: React.FC<Props> = ({
       ? `${name} — خصم ${Number(t.discount_percentage)}%`
       : `${name} — ${Number(t.discount_percentage)}% off`;
   };
+
+  const checkoutSarNote = isRTL
+    ? 'عند الدفع يُحسب المبلغ بالريال السعودي وفق أسعار الموقع وسياسة الضريبة.'
+    : 'At checkout you are charged in SAR per site pricing and tax rules.';
 
   const lineTitles = selectedCourses.map((c) => {
     const row = courseLabels?.find((x) => x.id === c.id);
@@ -67,23 +71,26 @@ export const BundleBottomBar: React.FC<Props> = ({
                   {lineTitles.slice(0, 3).join(isRTL ? ' · ' : ' · ')}
                   {lineTitles.length > 3 ? (isRTL ? ` +${lineTitles.length - 3}` : ` +${lineTitles.length - 3}`) : ''}
                 </p>
-                {calc.applicableTier && (
-                  <p className="text-sm font-semibold text-primary">{tierLabel(calc.applicableTier)}</p>
+                {display.applicableTier && (
+                  <p className="text-sm font-semibold text-primary">{tierLabel(display.applicableTier)}</p>
                 )}
                 <div className="flex flex-wrap items-baseline gap-2 text-sm">
-                  {calc.discountPct > 0 ? (
+                  {display.discountPct > 0 ? (
                     <>
                       <span className="text-muted-foreground line-through tabular-nums">
-                        {calc.totalOriginal} {sym}
+                        {display.totalOriginal} {currSym}
                       </span>
                       <span className="text-muted-foreground">→</span>
                     </>
                   ) : null}
                   <span className="text-lg font-bold text-foreground tabular-nums">
-                    {calc.finalPrice} {sym}
+                    {display.finalPrice} {currSym}
                   </span>
-                  {calc.discountPct > 0 ? <Sparkles className="w-4 h-4 text-amber-500 shrink-0" /> : null}
+                  {display.discountPct > 0 ? <Sparkles className="w-4 h-4 text-amber-500 shrink-0" /> : null}
                 </div>
+                {!isSAR ? (
+                  <p className="text-[10px] text-muted-foreground leading-snug mt-1 max-w-prose">{checkoutSarNote}</p>
+                ) : null}
               </div>
               <Button type="button" variant="ghost" size="sm" className="shrink-0 text-muted-foreground" onClick={onClear}>
                 <X className="w-4 h-4 me-1" />
@@ -91,19 +98,19 @@ export const BundleBottomBar: React.FC<Props> = ({
               </Button>
             </div>
 
-            {calc.nextTier && calc.coursesNeededForNext > 0 && (
+            {display.nextTier && display.coursesNeededForNext > 0 && (
               <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
                 <p className="text-muted-foreground mb-1">
                   {isRTL
-                    ? `أضف ${calc.coursesNeededForNext} ${calc.coursesNeededForNext === 1 ? 'كورساً' : 'كورسات'} للحصول على خصم ${Number(calc.nextTier.discount_percentage)}%`
-                    : `Add ${calc.coursesNeededForNext} more course${calc.coursesNeededForNext > 1 ? 's' : ''} for ${Number(calc.nextTier.discount_percentage)}% off`}
+                    ? `أضف ${display.coursesNeededForNext} ${display.coursesNeededForNext === 1 ? 'كورساً' : 'كورسات'} للحصول على خصم ${Number(display.nextTier.discount_percentage)}%`
+                    : `Add ${display.coursesNeededForNext} more course${display.coursesNeededForNext > 1 ? 's' : ''} for ${Number(display.nextTier.discount_percentage)}% off`}
                 </p>
                 <Progress
-                  value={Math.min(100, (selectedCourses.length / calc.nextTier.min_courses) * 100)}
+                  value={Math.min(100, (selectedCourses.length / display.nextTier.min_courses) * 100)}
                   className="h-1.5"
                 />
                 <p className="mt-1 text-muted-foreground text-[10px]">
-                  {selectedCourses.length} / {calc.nextTier.min_courses}
+                  {selectedCourses.length} / {display.nextTier.min_courses}
                 </p>
               </div>
             )}

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -10,22 +10,13 @@ import TrainingBookingFlow from '@/components/landing/TrainingBookingFlow';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, ArrowRight, CalendarDays } from 'lucide-react';
 import type { TrainerCourseRow } from '@/lib/trainingBookingUtils';
-import { useCurrency, TRAINING_PRICE_PLACEHOLDER_COURSE_ID } from '@/contexts/CurrencyContext';
-import { useTrainingPlatformPricing } from '@/hooks/useTrainingPlatformPricing';
-import { applyTrainingPlatformMarkupSar } from '@/lib/trainingPlatformMarkup';
 
 const TrainingBooking: React.FC = () => {
   const { trainingId, trainerCourseId } = useParams<{ trainingId: string; trainerCourseId: string }>();
   const navigate = useNavigate();
   const { isRTL, language } = useLanguage();
-  const { getCoursePriceInfo, formatPriceValueThenCurrencyName } = useCurrency();
-  const { data: pricing } = useTrainingPlatformPricing();
-  const trainingPlatformMarkupPct = pricing?.markupPercent ?? 0;
-  const trainingPlatformVatPct = pricing?.vatPercent ?? 15;
-
   useEffect(() => {
     document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
@@ -93,16 +84,6 @@ const TrainingBooking: React.FC = () => {
     !trainingLoading && !trainingError && !!training && training.status === 'active' && trainingType === 'theory';
 
   const trainingTitle = training ? (isRTL ? training.name_ar : training.name_en) : '';
-  const trainer = selectedCourse?.trainers;
-  const trainerName = trainer ? (isRTL ? trainer.name_ar : trainer.name_en) : '';
-
-  const priceInfo = useMemo(() => {
-    if (!selectedCourse) return null;
-    const markedBase = applyTrainingPlatformMarkupSar(Number(selectedCourse.price), trainingPlatformMarkupPct);
-    return getCoursePriceInfo(TRAINING_PRICE_PLACEHOLDER_COURSE_ID, markedBase, 0, {
-      vatPercent: trainingPlatformVatPct,
-    });
-  }, [selectedCourse, getCoursePriceInfo, trainingPlatformMarkupPct, trainingPlatformVatPct]);
 
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
   const pageReady =
@@ -133,13 +114,10 @@ const TrainingBooking: React.FC = () => {
             </div>
 
             {(trainingLoading || courseLoading) && (
-              <div className="grid gap-8 lg:grid-cols-[1fr_300px]">
-                <div className="space-y-4">
-                  <Skeleton className="h-10 w-2/3 max-w-md rounded-xl" />
-                  <Skeleton className="h-24 w-full rounded-2xl" />
-                  <Skeleton className="h-64 w-full rounded-2xl" />
-                </div>
-                <Skeleton className="h-48 rounded-2xl hidden lg:block" />
+              <div className="space-y-4">
+                <Skeleton className="h-10 w-2/3 max-w-md rounded-xl" />
+                <Skeleton className="h-24 w-full rounded-2xl" />
+                <Skeleton className="h-64 w-full rounded-2xl" />
               </div>
             )}
 
@@ -182,62 +160,18 @@ const TrainingBooking: React.FC = () => {
             )}
 
             {pageReady && (
-              <div className="grid gap-10 lg:grid-cols-[1fr_minmax(260px,320px)] lg:gap-12 lg:items-start">
-                <div className="min-w-0 space-y-2">
-                  <p className="text-sm font-medium text-primary">{isRTL ? 'حجز موعد' : 'Book a session'}</p>
-                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground leading-tight">{trainingTitle}</h1>
-                  <p className="text-muted-foreground text-sm sm:text-base pb-4">
-                    {isRTL ? 'اختر التاريخ والوقت، ثم أكمل بياناتك والدفع بأمان.' : 'Choose your date and time, then enter your details and pay securely.'}
-                  </p>
-                  <TrainingBookingFlow
-                    training={{ id: training.id, name_ar: training.name_ar, name_en: training.name_en }}
-                    selectedCourse={selectedCourse}
-                    loginReturnPath={bookingPath}
-                    onCancel={() => navigate(returnPath)}
-                  />
-                </div>
-
-                <aside className="lg:sticky lg:top-[calc(var(--navbar-h)+1.5rem)] space-y-4">
-                  <Card className="overflow-hidden border-border/70 shadow-lg ring-1 ring-black/5 dark:ring-white/10">
-                    <div className="h-1.5 w-full bg-gradient-to-r from-primary via-primary/70 to-primary/40" />
-                    <CardContent className="p-5 space-y-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-14 w-14 border-2 border-background shadow-md">
-                          <AvatarImage src={trainer?.photo_url ?? undefined} alt="" className="object-cover" />
-                          <AvatarFallback className="text-lg font-bold bg-primary/10 text-primary">
-                            {trainerName.slice(0, 1).toUpperCase() || '?'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 text-start">
-                          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{isRTL ? 'المدرب' : 'Trainer'}</p>
-                          <p className="font-bold text-foreground truncate">{trainerName}</p>
-                        </div>
-                      </div>
-                      <SeparatorMini />
-                      <div className="text-sm space-y-1.5 text-start">
-                        <div className="flex justify-between gap-2">
-                          <span className="text-muted-foreground">{isRTL ? 'المدة' : 'Duration'}</span>
-                          <span className="font-semibold tabular-nums">
-                            {Number(selectedCourse.duration_hours)}{' '}
-                            {isRTL ? (Number(selectedCourse.duration_hours) === 1 ? 'ساعة' : 'ساعات') : Number(selectedCourse.duration_hours) === 1 ? 'hr' : 'hrs'}
-                          </span>
-                        </div>
-                        {priceInfo && (
-                          <div className="flex justify-between gap-2 items-baseline pt-1">
-                            <span className="text-muted-foreground">{isRTL ? 'السعر' : 'Price'}</span>
-                            <span
-                              className="text-lg font-black text-primary tabular-nums"
-                              dir={isRTL ? 'rtl' : 'ltr'}
-                              lang={isRTL ? 'ar' : 'en'}
-                            >
-                              {formatPriceValueThenCurrencyName(priceInfo, isRTL)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </aside>
+              <div className="min-w-0 space-y-2 max-w-3xl">
+                <p className="text-sm font-medium text-primary">{isRTL ? 'حجز موعد' : 'Book a session'}</p>
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground leading-tight">{trainingTitle}</h1>
+                <p className="text-muted-foreground text-sm sm:text-base pb-4">
+                  {isRTL ? 'اختر التاريخ والوقت، ثم أكمل بياناتك والدفع بأمان.' : 'Choose your date and time, then enter your details and pay securely.'}
+                </p>
+                <TrainingBookingFlow
+                  training={{ id: training.id, name_ar: training.name_ar, name_en: training.name_en }}
+                  selectedCourse={selectedCourse}
+                  loginReturnPath={bookingPath}
+                  onCancel={() => navigate(returnPath)}
+                />
               </div>
             )}
           </main>
@@ -247,9 +181,5 @@ const TrainingBooking: React.FC = () => {
     </div>
   );
 };
-
-function SeparatorMini() {
-  return <div className="h-px w-full bg-border/70" />;
-}
 
 export default TrainingBooking;

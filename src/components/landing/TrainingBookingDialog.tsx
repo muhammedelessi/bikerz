@@ -195,7 +195,7 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
 
   const { data: pricing } = useTrainingPlatformPricing();
   const trainingPlatformMarkupPct = pricing?.markupPercent ?? 0;
-  const trainingPlatformVatPct = pricing?.vatPercent ?? 15;
+  const trainingPlatformVatPct = pricing?.vatPercent ?? 0;
 
   const chargeSarTotal = useMemo(() => {
     if (!selectedCourse) return 0;

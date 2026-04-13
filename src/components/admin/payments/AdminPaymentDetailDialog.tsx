@@ -197,6 +197,41 @@ export function AdminPaymentDetailDialog({ payment, onOpenChange, isRTL, manualA
                 <div className="grid grid-cols-2 gap-3">
                   {(() => {
                     const breakdown = getPriceBreakdown(payment);
+                    if (breakdown.isTrainingBooking) {
+                      const trainerShare = breakdown.trainingTrainerSar ?? breakdown.originalAmount ?? 0;
+                      return (
+                        <>
+                          <DetailRow
+                            label={isRTL ? "حصة المدرب (أساس السعر)" : "Trainer share (listed price)"}
+                            value={`${trainerShare.toFixed(2)} ${payment.currency}`}
+                          />
+                          <DetailRow
+                            label={isRTL ? "عمولة بايكرز (قبل الضريبة)" : "Bikerz commission (ex VAT)"}
+                            value={`${(breakdown.trainingPlatformCommissionSar ?? 0).toFixed(2)} ${payment.currency}`}
+                          />
+                          <DetailRow
+                            label={isRTL ? "المجموع قبل ضريبة القيمة المضافة" : "Subtotal before VAT"}
+                            value={`${(breakdown.trainingSubtotalBeforeVatSar ?? breakdown.amountBeforeVAT).toFixed(2)} ${payment.currency}`}
+                          />
+                          <DetailRow
+                            label={
+                              isRTL
+                                ? `ضريبة القيمة المضافة (${breakdown.vatPct || 15}%)`
+                                : `VAT (${breakdown.vatPct || 15}%)`
+                            }
+                            value={`${breakdown.vatAmount.toFixed(2)} ${payment.currency}`}
+                          />
+                          <DetailRow
+                            label={isRTL ? "إجمالي المدفوع" : "Total charged"}
+                            value={
+                              <span className="font-semibold">
+                                {payment.amount.toFixed(2)} {payment.currency}
+                              </span>
+                            }
+                          />
+                        </>
+                      );
+                    }
                     return (
                       <>
                         {breakdown.originalAmount && (
