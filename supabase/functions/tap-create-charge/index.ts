@@ -19,7 +19,8 @@ const corsHeaders = {
 const PAYMENT_TIMEOUT = 30000; // 30s timeout for Tap API
 
 async function getTrainingPlatformMarkupPercent(
-  adminClient: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  adminClient: any,
 ): Promise<number> {
   const { data } = await adminClient
     .from("admin_settings")
@@ -36,9 +37,10 @@ async function getTrainingPlatformMarkupPercent(
   return Math.min(500, n);
 }
 
-/** Saudi VAT % on practical training charges (admin_settings; default 0% until configured). */
 async function getTrainingPlatformVatPercent(
-  adminClient: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  adminClient: any,
+): Promise<number> {
 ): Promise<number> {
   const { data } = await adminClient
     .from("admin_settings")
