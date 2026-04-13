@@ -266,7 +266,14 @@ type TrainingCatalogRow = {
 
 type TrainingCatalogBaseRow = Omit<TrainingCatalogRow, 'sessions'>;
 
-function withTrainingSessions<T extends TrainingCatalogBaseRow>(row: T): TrainingCatalogRow {
+type TrainingCatalogWithRequiredDefaults = {
+  id: string;
+  default_sessions_count: number | null;
+  default_session_duration_hours: number | null;
+  sessions?: unknown;
+};
+
+function withTrainingSessions<T extends TrainingCatalogBaseRow & { sessions?: unknown }>(row: T): TrainingCatalogRow {
   return {
     ...row,
     sessions: 'sessions' in row ? (row as T & { sessions?: unknown }).sessions ?? [] : [],
@@ -382,7 +389,7 @@ const AdminTrainers: React.FC = () => {
         return (legacy.data || []).map(withTrainingSessions);
       }
       if (withSessions.error) throw withSessions.error;
-      return (withSessions.data || []).map((row) => withTrainingSessions(row as TrainingCatalogRow));
+      return (withSessions.data || []).map((row) => withTrainingSessions(row));
     },
   });
 
@@ -772,7 +779,7 @@ const AdminTrainers: React.FC = () => {
     } else {
       if (withSessions.error) console.error('[AdminTrainers] openEdit training details', withSessions.error);
       withSessions.data?.forEach((tr) => {
-        const normalized = withTrainingSessions(tr as TrainingCatalogRow);
+        const normalized = withTrainingSessions(tr);
         detailsMap[normalized.id] = {
           default_sessions_count: Math.max(1, Number(normalized.default_sessions_count ?? 1)),
           default_session_duration_hours: Math.max(0.25, Number(normalized.default_session_duration_hours ?? 2)),
@@ -1031,12 +1038,7 @@ const AdminTrainers: React.FC = () => {
       return;
     }
 
-    let training: {
-      id: string;
-      default_sessions_count: number | null;
-      default_session_duration_hours: number | null;
-      sessions?: unknown;
-    } | null = null;
+    let training: TrainingCatalogWithRequiredDefaults | null = null;
 
     const withSessions = await supabase
       .from('trainings')
@@ -1061,7 +1063,13 @@ const AdminTrainers: React.FC = () => {
       toast.error(isRTL ? 'تعذر تحميل بيانات التدريب' : 'Could not load training details');
       return;
     } else {
-      training = withTrainingSessions(withSessions.data as TrainingCatalogRow);
+      const normalized = withTrainingSessions(withSessions.data);
+      training = {
+        id: normalized.id,
+        default_sessions_count: normalized.default_sessions_count ?? 1,
+        default_session_duration_hours: normalized.default_session_duration_hours ?? 2,
+        sessions: normalized.sessions ?? [],
+      };
     }
 
     const defSessions = Math.max(1, Number(training.default_sessions_count ?? 1));
