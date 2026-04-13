@@ -257,6 +257,36 @@ export type Database = {
         }
         Relationships: []
       }
+      bundle_tiers: {
+        Row: {
+          created_at: string | null
+          discount_percentage: number
+          id: string
+          is_active: boolean | null
+          label_ar: string | null
+          label_en: string | null
+          min_courses: number
+        }
+        Insert: {
+          created_at?: string | null
+          discount_percentage?: number
+          id?: string
+          is_active?: boolean | null
+          label_ar?: string | null
+          label_en?: string | null
+          min_courses: number
+        }
+        Update: {
+          created_at?: string | null
+          discount_percentage?: number
+          id?: string
+          is_active?: boolean | null
+          label_ar?: string | null
+          label_en?: string | null
+          min_courses?: number
+        }
+        Relationships: []
+      }
       chapter_tests: {
         Row: {
           chapter_id: string
@@ -567,6 +597,87 @@ export type Database = {
           },
         ]
       }
+      course_bundle_enrollments: {
+        Row: {
+          bundle_id: string | null
+          course_id: string | null
+          created_at: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          bundle_id?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          bundle_id?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_bundle_enrollments_bundle_id_fkey"
+            columns: ["bundle_id"]
+            isOneToOne: false
+            referencedRelation: "course_bundles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_bundle_enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_bundles: {
+        Row: {
+          course_ids: string[]
+          courses_count: number
+          created_at: string | null
+          currency: string | null
+          discount_percentage: number
+          final_price_sar: number
+          id: string
+          original_price_sar: number
+          payment_id: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          course_ids: string[]
+          courses_count: number
+          created_at?: string | null
+          currency?: string | null
+          discount_percentage: number
+          final_price_sar: number
+          id?: string
+          original_price_sar: number
+          payment_id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          course_ids?: string[]
+          courses_count?: number
+          created_at?: string | null
+          currency?: string | null
+          discount_percentage?: number
+          final_price_sar?: number
+          id?: string
+          original_price_sar?: number
+          payment_id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       course_country_prices: {
         Row: {
           country_code: string
@@ -610,117 +721,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "course_country_prices_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      bundle_tiers: {
-        Row: {
-          id: string
-          min_courses: number
-          discount_percentage: number
-          label_ar: string | null
-          label_en: string | null
-          is_active: boolean | null
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          min_courses: number
-          discount_percentage?: number
-          label_ar?: string | null
-          label_en?: string | null
-          is_active?: boolean | null
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          min_courses?: number
-          discount_percentage?: number
-          label_ar?: string | null
-          label_en?: string | null
-          is_active?: boolean | null
-          created_at?: string | null
-        }
-        Relationships: []
-      }
-      course_bundles: {
-        Row: {
-          id: string
-          user_id: string | null
-          course_ids: string[]
-          courses_count: number
-          original_price_sar: number
-          discount_percentage: number
-          final_price_sar: number
-          currency: string | null
-          payment_id: string | null
-          status: string | null
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          user_id?: string | null
-          course_ids: string[]
-          courses_count: number
-          original_price_sar: number
-          discount_percentage: number
-          final_price_sar: number
-          currency?: string | null
-          payment_id?: string | null
-          status?: string | null
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          user_id?: string | null
-          course_ids?: string[]
-          courses_count?: number
-          original_price_sar?: number
-          discount_percentage?: number
-          final_price_sar?: number
-          currency?: string | null
-          payment_id?: string | null
-          status?: string | null
-          created_at?: string | null
-        }
-        Relationships: []
-      }
-      course_bundle_enrollments: {
-        Row: {
-          id: string
-          bundle_id: string
-          course_id: string
-          user_id: string
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          bundle_id: string
-          course_id: string
-          user_id: string
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          bundle_id?: string
-          course_id?: string
-          user_id?: string
-          created_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "course_bundle_enrollments_bundle_id_fkey"
-            columns: ["bundle_id"]
-            isOneToOne: false
-            referencedRelation: "course_bundles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "course_bundle_enrollments_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
@@ -2185,7 +2185,6 @@ export type Database = {
           created_at: string
           email: string
           id: string
-          user_id: string | null
           language_levels: Json
           license_type: string
           motorbike_brand: string
@@ -2213,7 +2212,6 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
-          user_id?: string | null
           language_levels?: Json
           license_type?: string
           motorbike_brand?: string
@@ -2241,7 +2239,6 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
-          user_id?: string | null
           language_levels?: Json
           license_type?: string
           motorbike_brand?: string
@@ -2404,7 +2401,6 @@ export type Database = {
           level: Database["public"]["Enums"]["training_level"]
           name_ar: string
           name_en: string
-          sessions: Json
           status: Database["public"]["Enums"]["training_status"]
           trainer_supplies: Json | null
           type: Database["public"]["Enums"]["training_type"]
@@ -2420,7 +2416,6 @@ export type Database = {
           level?: Database["public"]["Enums"]["training_level"]
           name_ar?: string
           name_en?: string
-          sessions?: Json
           status?: Database["public"]["Enums"]["training_status"]
           trainer_supplies?: Json | null
           type?: Database["public"]["Enums"]["training_type"]
@@ -2436,7 +2431,6 @@ export type Database = {
           level?: Database["public"]["Enums"]["training_level"]
           name_ar?: string
           name_en?: string
-          sessions?: Json
           status?: Database["public"]["Enums"]["training_status"]
           trainer_supplies?: Json | null
           type?: Database["public"]["Enums"]["training_type"]
