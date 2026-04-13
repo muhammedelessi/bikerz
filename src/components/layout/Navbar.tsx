@@ -3,14 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 
-import { ChevronRight, LogOut, Menu, X, LayoutDashboard, CalendarCheck } from "lucide-react";
+import { ChevronRight, LogOut, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import LanguageToggle from "@/components/common/LanguageToggle";
 import LogoutConfirmDialog from "@/components/common/LogoutConfirmDialog";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -310,36 +304,20 @@ const Navbar: React.FC = () => {
                 {user
                   ? (
                     <>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="gap-2">
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-                              <span className="text-xs font-bold text-primary-foreground">
-                                {profile?.full_name?.charAt(0) ||
-                                  user.email?.charAt(0) || "U"}
-                              </span>
-                            </div>
-                            <span className="hidden xl:inline text-sm">
-                              {profile?.full_name?.split(" ")[0] ||
-                                t("nav.dashboard")}
+                      <Link to="/dashboard">
+                        <Button variant="ghost" size="sm" className="gap-2">
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                            <span className="text-xs font-bold text-primary-foreground">
+                              {profile?.full_name?.charAt(0) ||
+                                user.email?.charAt(0) || "U"}
                             </span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className={`min-w-[200px] ${isRTL ? "text-right" : "text-left"}`}>
-                          <DropdownMenuItem asChild>
-                            <Link to="/dashboard" className="cursor-pointer flex gap-2">
-                              <LayoutDashboard className="h-4 w-4" />
-                              {isRTL ? "لوحة التحكم" : "Dashboard"}
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link to="/my-bookings" className="cursor-pointer flex gap-2">
-                              <CalendarCheck className="h-4 w-4" />
-                              {isRTL ? "حجوزاتي" : "My bookings"}
-                            </Link>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                          </div>
+                          <span className="hidden xl:inline text-sm">
+                            {profile?.full_name?.split(" ")[0] ||
+                              t("nav.dashboard")}
+                          </span>
+                        </Button>
+                      </Link>
                       <LogoutConfirmDialog onConfirm={handleSignOut}>
                         <Button
                           variant="ghost"
@@ -506,18 +484,13 @@ const Navbar: React.FC = () => {
                       variant="outline"
                       className="w-full h-12 text-base gap-3 border-border/50"
                     >
-                      <LayoutDashboard className="h-5 w-5 shrink-0" />
-                      {isRTL ? "لوحة التحكم" : "Dashboard"}
-                    </Button>
-                  </Link>
-                  <Link
-                    to="/my-bookings"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block"
-                  >
-                    <Button variant="outline" className="w-full h-12 text-base gap-3 border-border/50">
-                      <CalendarCheck className="h-5 w-5 shrink-0" />
-                      {isRTL ? "حجوزاتي" : "My bookings"}
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                        <span className="text-sm font-bold text-primary-foreground">
+                          {profile?.full_name?.charAt(0) ||
+                            user.email?.charAt(0) || "U"}
+                        </span>
+                      </div>
+                      {profile?.full_name || t("nav.dashboard")}
                     </Button>
                   </Link>
                   <LogoutConfirmDialog onConfirm={handleSignOut}>

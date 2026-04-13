@@ -2406,6 +2406,7 @@ export type Database = {
           name_en: string
           sessions: Json
           status: Database["public"]["Enums"]["training_status"]
+          trainer_supplies: Json | null
           type: Database["public"]["Enums"]["training_type"]
         }
         Insert: {
@@ -2421,6 +2422,7 @@ export type Database = {
           name_en?: string
           sessions?: Json
           status?: Database["public"]["Enums"]["training_status"]
+          trainer_supplies?: Json | null
           type?: Database["public"]["Enums"]["training_type"]
         }
         Update: {
@@ -2436,6 +2438,7 @@ export type Database = {
           name_en?: string
           sessions?: Json
           status?: Database["public"]["Enums"]["training_status"]
+          trainer_supplies?: Json | null
           type?: Database["public"]["Enums"]["training_type"]
         }
         Relationships: []

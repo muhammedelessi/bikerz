@@ -23,5 +23,5 @@ dist-ssr
 *.sln
 *.sw?
 
-# Supabase CLI local cache (do not commit)
+# Supabase CLI local cache
 supabase/.temp/

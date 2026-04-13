@@ -11,14 +11,14 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  CheckCircle2, XCircle, Zap, HelpCircle, RotateCcw, Trophy, Lightbulb,
+  CheckCircle2, XCircle, Zap, HelpCircle, RotateCcw, Trophy, Lightbulb, Gift,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
 import confetti from 'canvas-confetti';
 import { useGamification } from '@/hooks/useGamification';
 
-type QuestionType = 'single_choice' | 'multiple_choice' | 'dropdown';
+type QuestionType = 'single_choice' | 'multiple_choice' | 'dropdown' | 'yes_no' | 'informational';
 
 interface QuestionOption {
   id: string;
@@ -371,11 +371,44 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
                     <p className="text-foreground font-medium leading-relaxed">
                       {isRTL && question.data.question_ar ? question.data.question_ar : question.data.question}
                     </p>
+                    {question.data.question_type === 'informational' && !isSubmitted && (
+                      <div className="flex items-center gap-1.5 mt-1.5 text-xs text-primary font-medium">
+                        <Gift className="w-3.5 h-3.5" />
+                        <span>{isRTL ? `🎁 +${question.xp_reward} نقاط عند الإجابة` : `🎁 +${question.xp_reward} points for answering`}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Options */}
-                {question.data.question_type === 'dropdown' ? (
+                {question.data.question_type === 'yes_no' ? (
+                  <div className="grid grid-cols-2 gap-3 ps-11">
+                    {[
+                      { value: 'yes', labelAr: 'نعم', labelEn: 'Yes', icon: '✓' },
+                      { value: 'no', labelAr: 'لا', labelEn: 'No', icon: '✗' },
+                    ].map(opt => {
+                      const isSelected = currentAnswers.includes(opt.value);
+                      const optClass = !isSubmitted || !gradedResults[question.id]
+                        ? (isSelected ? 'border-primary bg-primary/10 text-primary scale-[1.02]' : 'border-border hover:border-primary/50 text-foreground')
+                        : gradedResults[question.id].isCorrect && isSelected
+                        ? 'border-green-500 bg-green-500/10 text-green-600 scale-[1.02]'
+                        : !gradedResults[question.id].isCorrect && isSelected
+                        ? 'border-destructive bg-destructive/10 text-destructive scale-[1.02]'
+                        : 'border-border opacity-50';
+                      return (
+                        <button
+                          key={opt.value}
+                          onClick={() => handleSelectAnswer(question.id, opt.value, question.data.question_type)}
+                          disabled={isSubmitted}
+                          className={`flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 text-lg font-bold transition-all ${optClass} ${!isSubmitted ? 'cursor-pointer' : 'cursor-default'}`}
+                        >
+                          <span className="text-2xl">{opt.icon}</span>
+                          <span>{isRTL ? opt.labelAr : opt.labelEn}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : question.data.question_type === 'dropdown' ? (
                   <Select
                     value={currentAnswers[0] || ''}
                     onValueChange={(value) => handleSelectAnswer(question.id, value, question.data.question_type)}
@@ -467,8 +500,16 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
                   >
                     {isCorrectAnswer ? (
                       <>
-                        <Trophy className="w-5 h-5" />
-                        <span className="font-medium">{isRTL ? 'إجابة صحيحة!' : 'Correct!'}</span>
+                        {question.data.question_type === 'informational' ? (
+                          <Gift className="w-5 h-5 text-primary" />
+                        ) : (
+                          <Trophy className="w-5 h-5" />
+                        )}
+                        <span className="font-medium">
+                          {question.data.question_type === 'informational'
+                            ? (isRTL ? 'شكراً لإجابتك!' : 'Thanks for answering!')
+                            : (isRTL ? 'إجابة صحيحة!' : 'Correct!')}
+                        </span>
                         {gradedResults[question.id]?.xpEarned > 0 && (
                           <span className="ms-auto flex items-center gap-1 text-primary">
                             <Zap className="w-4 h-4" />+{gradedResults[question.id].xpEarned} XP
