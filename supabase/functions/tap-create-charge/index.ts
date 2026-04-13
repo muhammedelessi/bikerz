@@ -643,14 +643,14 @@ Deno.serve(async (req) => {
         email: customer_email || userEmail,
         phone: phoneForTap,
       },
-      metadata: {
+      metadata: buildTapMetadata({
         user_id: userId,
         course_id: dbCourseId,
         training_id: isTrainingBooking ? dbTrainingId : null,
         trainer_course_id: isTrainingBooking ? trainerCourseIdTrim : null,
         internal_id: chargeRecord.id,
         requested_currency: requestedCurrency,
-      },
+      }),
       source: {
         id: token_id || "src_all",
       },
@@ -1133,13 +1133,13 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
       email: customer_email || userEmail,
       phone: phoneForTap,
     },
-    metadata: {
+    metadata: buildTapMetadata({
       user_id: userId,
-      course_id: null,
-      bundle_course_ids: ids,
+      bundle_course_ids: ids.join(","),
+      bundle_courses_count: ids.length,
       internal_id: chargeRecord.id,
       payment_kind: "course_bundle",
-    },
+    }),
     source: {
       id: token_id || "src_all",
     },
