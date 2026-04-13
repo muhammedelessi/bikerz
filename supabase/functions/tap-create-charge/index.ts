@@ -37,10 +37,10 @@ async function getTrainingPlatformMarkupPercent(
   return Math.min(500, n);
 }
 
+/** Saudi VAT % on practical training charges (admin_settings; default 0% until configured). */
 async function getTrainingPlatformVatPercent(
   // deno-lint-ignore no-explicit-any
   adminClient: any,
-): Promise<number> {
 ): Promise<number> {
   const { data } = await adminClient
     .from("admin_settings")
