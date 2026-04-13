@@ -221,7 +221,8 @@ function mapToGHLOrderStatus(status: string): string {
 }
 
 async function upsertAndSendGHLWebhook(
-  adminClient: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  adminClient: any,
   charge: { user_id: string; course_id: string | null; amount: number; metadata: unknown },
   verifiedCharge: Record<string, unknown>,
   status: string
