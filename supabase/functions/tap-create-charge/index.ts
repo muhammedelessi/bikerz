@@ -1113,13 +1113,14 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
     totalOriginalLocal += computeBundleLineLocalFinal(c, countryRow, countryUpper, pricingCurrency, rate);
   }
 
-  const { data: tierRows } = await adminClient
+  /** Must match client `resolveBundleTierState`: `is_active !== false` (null/undefined = active; only explicit false is off). */
+  const { data: tierRowsRaw } = await adminClient
     .from("bundle_tiers")
-    .select("min_courses, discount_percentage, label_en, label_ar")
-    .eq("is_active", true)
+    .select("min_courses, discount_percentage, label_en, label_ar, is_active")
     .order("min_courses", { ascending: false });
 
-  const applicable = tierRows?.find((t) => ids.length >= t.min_courses);
+  const tierRows = (tierRowsRaw ?? []).filter((t: { is_active?: boolean | null }) => t.is_active !== false);
+  const applicable = tierRows.find((t) => ids.length >= t.min_courses);
   const discountPct = applicable ? Number(applicable.discount_percentage) : 0;
   const discountAmountLocal = Math.round(totalOriginalLocal * (discountPct / 100));
   const finalLocal = Math.max(0, totalOriginalLocal - discountAmountLocal);
