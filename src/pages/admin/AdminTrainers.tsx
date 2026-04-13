@@ -256,6 +256,9 @@ function toTrainerCourseInsertRow(trainerId: string, at: TrainerCourse) {
 
 type TrainingCatalogRow = {
   id: string;
+  name_ar?: string | null;
+  name_en?: string | null;
+  type?: string | null;
   default_sessions_count?: number | null;
   default_session_duration_hours?: number | null;
   sessions?: unknown;

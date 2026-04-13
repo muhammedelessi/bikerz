@@ -49,11 +49,12 @@ interface UnifiedPayment {
   id: string;
   user_id: string;
   course_id: string | null;
+  training_id?: string | null;
   amount: number;
   currency: string;
   status: string;
   created_at: string;
-  source: "manual" | "tap";
+  source: "manual" | "tap" | "training_booking";
   payment_method?: string;
   reference_number?: string | null;
   notes?: string | null;
@@ -84,10 +85,18 @@ interface UnifiedPayment {
     price: number | null;
     discount_percentage: number | null;
   } | null;
+  training_booking_meta?: {
+    booking_status: string;
+    payment_status: string;
+    training_name_ar: string | null;
+    training_name_en: string | null;
+    trainer_name_ar: string | null;
+    trainer_name_en: string | null;
+  } | null;
 }
 
-const normalizeStatus = (status: string, source: "manual" | "tap"): string => {
-  if (source === "tap") {
+const normalizeStatus = (status: string, source: UnifiedPayment["source"]): string => {
+  if (source === "tap" || source === "training_booking") {
     if (status === "succeeded" || status === "captured") return "approved";
     if (status === "failed" || status === "cancelled" || status === "expired" || status === "declined")
       return "rejected";
@@ -345,9 +354,9 @@ const AdminPayments = () => {
     },
   ];
 
-  const getStatusBadge = (status: string, source: "manual" | "tap") => {
+  const getStatusBadge = (status: string, source: UnifiedPayment["source"]) => {
     const norm = normalizeStatus(status, source);
-    const original = source === "tap" && norm !== status ? ` (${status})` : "";
+    const original = source !== "manual" && norm !== status ? ` (${status})` : "";
     switch (norm) {
       case "pending":
         return (
@@ -378,12 +387,20 @@ const AdminPayments = () => {
     }
   };
 
-  const getSourceBadge = (source: "manual" | "tap") => {
+  const getSourceBadge = (source: UnifiedPayment["source"]) => {
     if (source === "tap") {
       return (
         <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
           <CreditCard className="w-3 h-3 me-1" />
           {isRTL ? "بطاقة" : "Card"}
+        </Badge>
+      );
+    }
+    if (source === "training_booking") {
+      return (
+        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+          <CreditCard className="w-3 h-3 me-1" />
+          {isRTL ? "حجز تدريب" : "Training"}
         </Badge>
       );
     }
@@ -817,7 +834,7 @@ const AdminPayments = () => {
                         icon={User}
                         label={isRTL ? "الاسم" : "Name"}
                         value={
-                          selectedPayment.source === "tap"
+                          selectedPayment.source !== "manual"
                             ? selectedPayment.customer_name || selectedPayment.profile?.full_name
                             : selectedPayment.profile?.full_name
                         }
@@ -944,32 +961,34 @@ const AdminPayments = () => {
                       />
                       <DetailRow label={isRTL ? "المصدر" : "Source"} value={getSourceBadge(selectedPayment.source)} />
 
-                      {selectedPayment.source === "tap" && (
+                      {(selectedPayment.source === "tap" || selectedPayment.source === "training_booking") && (
                         <>
                           <DetailRow
                             label={isRTL ? "رقم العملية" : "Transaction ID"}
                             value={<span className="font-mono text-xs">{selectedPayment.charge_id || "-"}</span>}
                           />
-                          <DetailRow
-                            label={isRTL ? "تم التحقق من الويب هوك" : "Webhook Verified"}
-                            value={
-                              selectedPayment.webhook_verified ? (
-                                <Badge
-                                  variant="outline"
-                                  className="bg-green-500/10 text-green-500 border-green-500/20 text-xs"
-                                >
-                                  ✓ {isRTL ? "نعم" : "Yes"}
-                                </Badge>
-                              ) : (
-                                <Badge
-                                  variant="outline"
-                                  className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-xs"
-                                >
-                                  {isRTL ? "لا" : "No"}
-                                </Badge>
-                              )
-                            }
-                          />
+                          {selectedPayment.source === "tap" && (
+                            <DetailRow
+                              label={isRTL ? "تم التحقق من الويب هوك" : "Webhook Verified"}
+                              value={
+                                selectedPayment.webhook_verified ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-green-500/10 text-green-500 border-green-500/20 text-xs"
+                                  >
+                                    ✓ {isRTL ? "نعم" : "Yes"}
+                                  </Badge>
+                                ) : (
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-xs"
+                                  >
+                                    {isRTL ? "لا" : "No"}
+                                  </Badge>
+                                )
+                              }
+                            />
+                          )}
                           {selectedPayment.device_info && (
                             <DetailRow
                               label={isRTL ? "جهاز المستخدم" : "User Device"}

@@ -28,7 +28,7 @@ export function toDbSessionsJson(picks: BookingSessionDraft[]): TrainingBookingS
   }));
 }
 
-export type NormalizedBookingSession = TrainingBookingSessionRecord & { status?: string };
+export type NormalizedBookingSession = TrainingBookingSessionRecord;
 
 /**
  * Normalize sessions for display: prefer JSONB array; otherwise single row from legacy columns.
