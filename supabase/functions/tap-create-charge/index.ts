@@ -835,6 +835,32 @@ function compactTapPayload(value: Record<string, unknown>): Record<string, unkno
   return (stripEmptyTapValues(value) as Record<string, unknown> | undefined) ?? {};
 }
 
+function buildTapMetadata(value: Record<string, unknown>): Record<string, string> | undefined {
+  const entries = Object.entries(value)
+    .map(([key, rawValue]) => {
+      if (rawValue == null) return null;
+
+      if (Array.isArray(rawValue)) {
+        const joined = rawValue
+          .map((item) => String(item ?? "").trim())
+          .filter(Boolean)
+          .join(",");
+        return joined ? ([key, joined] as const) : null;
+      }
+
+      if (typeof rawValue === "object") {
+        const json = JSON.stringify(rawValue);
+        return json && json !== "{}" && json !== "[]" ? ([key, json] as const) : null;
+      }
+
+      const text = String(rawValue).trim();
+      return text ? ([key, text] as const) : null;
+    })
+    .filter((entry): entry is readonly [string, string] => Boolean(entry));
+
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
 function stripEmptyTapValues(value: unknown): unknown {
   if (value == null) return undefined;
 
