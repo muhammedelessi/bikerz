@@ -42,8 +42,8 @@ export function normalizeBookingSessions(
 ): NormalizedBookingSession[] {
   const st = bookingStatus ?? 'confirmed';
   if (sessions && Array.isArray(sessions) && sessions.length > 0) {
-    return (sessions as unknown[])
-      .map((raw, idx) => {
+    const normalized = (sessions as unknown[])
+      .map<NormalizedBookingSession | null>((raw, idx) => {
         const o = raw as Record<string, unknown>;
         const date = String(o.date ?? '').slice(0, 10);
         const start = String(o.start_time ?? o.start ?? '').trim();
@@ -57,9 +57,10 @@ export function normalizeBookingSessions(
           end_time: stripClockFromDbTime(end).slice(0, 8),
           status: String(o.status ?? st) === 'completed' ? 'completed' : 'pending',
           completed_at: o.completed_at ? String(o.completed_at) : null,
-        } satisfies NormalizedBookingSession;
+        };
       })
       .filter((x): x is NormalizedBookingSession => x != null);
+    return normalized;
   }
   if (booking_date && start_time && end_time) {
     return [
