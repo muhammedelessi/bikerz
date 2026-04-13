@@ -2072,12 +2072,14 @@ export type Database = {
           city: string
           country: string
           created_at: string
+          email: string
           id: string
           language_levels: Json
           license_type: string
           motorbike_brand: string
           name_ar: string
           name_en: string
+          phone: string
           photo_url: string | null
           profit_ratio: number
           services: string[] | null
@@ -2097,12 +2099,14 @@ export type Database = {
           city?: string
           country?: string
           created_at?: string
+          email?: string
           id?: string
           language_levels?: Json
           license_type?: string
           motorbike_brand?: string
           name_ar?: string
           name_en?: string
+          phone?: string
           photo_url?: string | null
           profit_ratio?: number
           services?: string[] | null
@@ -2122,12 +2126,14 @@ export type Database = {
           city?: string
           country?: string
           created_at?: string
+          email?: string
           id?: string
           language_levels?: Json
           license_type?: string
           motorbike_brand?: string
           name_ar?: string
           name_en?: string
+          phone?: string
           photo_url?: string | null
           profit_ratio?: number
           services?: string[] | null
@@ -2151,6 +2157,7 @@ export type Database = {
           payment_status: string
           phone: string
           preferred_date: string | null
+          sessions: Json
           start_time: string | null
           status: string
           trainer_course_id: string | null
@@ -2172,6 +2179,7 @@ export type Database = {
           payment_status?: string
           phone: string
           preferred_date?: string | null
+          sessions?: Json
           start_time?: string | null
           status?: string
           trainer_course_id?: string | null
@@ -2193,6 +2201,7 @@ export type Database = {
           payment_status?: string
           phone?: string
           preferred_date?: string | null
+          sessions?: Json
           start_time?: string | null
           status?: string
           trainer_course_id?: string | null
@@ -2282,6 +2291,7 @@ export type Database = {
           name_ar: string
           name_en: string
           status: Database["public"]["Enums"]["training_status"]
+          trainer_supplies: Json | null
           type: Database["public"]["Enums"]["training_type"]
         }
         Insert: {
@@ -2296,6 +2306,7 @@ export type Database = {
           name_ar?: string
           name_en?: string
           status?: Database["public"]["Enums"]["training_status"]
+          trainer_supplies?: Json | null
           type?: Database["public"]["Enums"]["training_type"]
         }
         Update: {
@@ -2310,6 +2321,7 @@ export type Database = {
           name_ar?: string
           name_en?: string
           status?: Database["public"]["Enums"]["training_status"]
+          trainer_supplies?: Json | null
           type?: Database["public"]["Enums"]["training_type"]
         }
         Relationships: []
