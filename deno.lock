@@ -28,6 +28,7 @@
     "https://esm.sh/@supabase/supabase-js@2.100.0/denonext/supabase-js.mjs": "c983ed2deea1adf4d6723a2b5630b28dc236929abd97fff6dc5a07d895308044",
     "https://esm.sh/iceberg-js@0.8.1/denonext/iceberg-js.mjs": "d839d81a2e3966500ca2cdd0c1cb458e9608bacfc91f7bb67a69b2e878dcdb4f",
     "https://esm.sh/iceberg-js@0.8.1?target=denonext": "58c849d7fe2bf4eca4a84eb501e83c161a7d8c34ca1bec15a962b3bec3062633",
+    "https://esm.sh/libphonenumber-js@1.11.17/min": "3beb030cf7cd5d8ecbc8eded7f8d3592f55b6d38d2170321b0b991b5386cf350",
     "https://esm.sh/tslib@2.8.1/denonext/tslib.mjs": "c38da5dd6da6281964435002ce204cd586634fe3bdfb24a0ee116f48cf3292e9"
   },
   "workspace": {
@@ -35,7 +36,7 @@
       "dependencies": [
         "npm:@eslint/js@^9.32.0",
         "npm:@hookform/resolvers@^3.10.0",
-        "npm:@lovable.dev/cloud-auth-js@^0.0.3",
+        "npm:@lovable.dev/cloud-auth-js@1",
         "npm:@radix-ui/react-accordion@^1.2.11",
         "npm:@radix-ui/react-alert-dialog@^1.1.14",
         "npm:@radix-ui/react-aspect-ratio@^1.1.7",
@@ -70,6 +71,7 @@
         "npm:@tiptap/extension-underline@^3.19.0",
         "npm:@tiptap/react@^3.19.0",
         "npm:@tiptap/starter-kit@^3.19.0",
+        "npm:@types/dompurify@^3.2.0",
         "npm:@types/node@^22.16.5",
         "npm:@types/react-dom@^18.3.7",
         "npm:@types/react@^18.3.28",
@@ -80,6 +82,7 @@
         "npm:clsx@^2.1.1",
         "npm:cmdk@^1.1.1",
         "npm:date-fns@^3.6.0",
+        "npm:dompurify@^3.3.3",
         "npm:embla-carousel-react@^8.6.0",
         "npm:eslint-plugin-react-hooks@^5.2.0",
         "npm:eslint-plugin-react-refresh@~0.4.20",
