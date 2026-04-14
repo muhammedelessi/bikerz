@@ -1,6 +1,7 @@
 /**
  * Mirrors CurrencyContext getCoursePriceInfo (video courses, non-training) for bundle charging.
  * `rate` = local units per 1 SAR (same as client FALLBACK_RATES / exchangeRate).
+ * Country prices are already stored as final localized prices, so VAT must not be added again here.
  */
 
 export const BUNDLE_VAT_RATE_SA = 15;
@@ -64,10 +65,8 @@ export function computeBundleLineLocalFinal(
   rate: number,
 ): number {
   if (countryRow) {
-    const entryVat = Number(countryRow.vat_percentage ?? 0) ||
-      (detectedCountryUpper === "SA" ? BUNDLE_VAT_RATE_SA : 0);
     const price = Number(countryRow.price ?? 0);
-    return entryVat > 0 ? Math.ceil(price * (1 + entryVat / 100)) : Math.ceil(price);
+    return Math.ceil(price);
   }
   const sarPrice = Number(course.price);
   const dPct = effectiveCourseDiscount(course);
