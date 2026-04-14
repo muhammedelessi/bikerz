@@ -1072,7 +1072,7 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
     );
   }
 
-  const byId = new Map<string, CourseRow>(courseRows.map((c) => [String(c.id), c as CourseRow]));
+  const byId = new Map<string, CourseRow>(courseRows.map((c: CourseRow) => [String(c.id), c]));
 
   const countryByCourse = new Map<string, CountryPriceRow>();
   if (countryUpper) {
@@ -1120,7 +1120,7 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
     .order("min_courses", { ascending: false });
 
   const tierRows = (tierRowsRaw ?? []).filter((t: { is_active?: boolean | null }) => t.is_active !== false);
-  const applicable = tierRows.find((t) => ids.length >= t.min_courses);
+  const applicable = tierRows.find((t: { min_courses: number; discount_percentage: number }) => ids.length >= t.min_courses);
   const discountPct = applicable ? Number(applicable.discount_percentage) : 0;
   const discountAmountLocal = Math.round(totalOriginalLocal * (discountPct / 100));
   const finalLocal = Math.max(0, totalOriginalLocal - discountAmountLocal);
