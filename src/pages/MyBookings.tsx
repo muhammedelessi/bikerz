@@ -10,14 +10,29 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { format } from 'date-fns';
+import { addDays, format, startOfDay } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { Calendar, CalendarDays, CheckCircle2 } from 'lucide-react';
+import { Calendar, CalendarDays, CheckCircle2, Clock3 } from 'lucide-react';
 import { normalizeBookingSessions } from '@/lib/trainingBookingSessions';
 import { getNextSession } from '@/lib/bookingTime';
 import BookingTimeDisplay from '@/components/common/BookingTimeDisplay';
 import { cn } from '@/lib/utils';
+import TrainerReviewForm from '@/components/training/TrainerReviewForm';
+import { toast } from 'sonner';
+import {
+  buildAvailabilityByDow,
+  dayHasFreeSlot,
+  getSlotsForDate,
+  parseTrainerBookingAvailability,
+  slotBooked,
+  slotEndTimePg,
+  timeToMinutes,
+  type AvailRow,
+  type BookedSlot,
+  type TrainerCourseRow,
+} from '@/lib/trainingBookingUtils';
 
 type BookingRow = {
   id: string;
@@ -35,12 +50,29 @@ type BookingRow = {
   trainings: { id: string; name_ar: string; name_en: string } | null;
 };
 
+type MyTrainerReview = {
+  id: string;
+  trainer_id: string;
+  rating: number;
+  comment: string | null;
+};
+
+type RescheduleState = {
+  booking: BookingRow;
+  sessionIndex: number;
+};
+
 const MyBookings: React.FC = () => {
   const { isRTL, language } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeFilter, setActiveFilter] = useState<'all' | 'upcoming' | 'completed' | 'cancelled'>('all');
+  const [reviewDialogBooking, setReviewDialogBooking] = useState<BookingRow | null>(null);
+  const [rescheduleState, setRescheduleState] = useState<RescheduleState | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState<Date | undefined>(undefined);
+  const [rescheduleSlot, setRescheduleSlot] = useState<string | null>(null);
+  const [isSavingReschedule, setIsSavingReschedule] = useState(false);
 
   useEffect(() => {
     document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
@@ -91,6 +123,179 @@ const MyBookings: React.FC = () => {
     return { all, upcoming, completed, cancelled };
   }, [bookings]);
 
+  const trainerIds = useMemo(() => [...new Set(bookings.map((b) => b.trainer_id).filter(Boolean))], [bookings]);
+  const { data: myReviews = [] } = useQuery({
+    queryKey: ['my-trainer-reviews', user?.id, trainerIds.join(',')],
+    enabled: !!user?.id && trainerIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('trainer_reviews')
+        .select('id, trainer_id, rating, comment')
+        .eq('user_id', user!.id)
+        .in('trainer_id', trainerIds);
+      if (error) throw error;
+      return (data || []) as MyTrainerReview[];
+    },
+  });
+
+  const activeRescheduleBooking = rescheduleState?.booking || null;
+  const activeRescheduleSessions = useMemo(
+    () =>
+      activeRescheduleBooking
+        ? normalizeBookingSessions(
+            activeRescheduleBooking.sessions,
+            activeRescheduleBooking.booking_date,
+            activeRescheduleBooking.start_time,
+            activeRescheduleBooking.end_time,
+            activeRescheduleBooking.status,
+          )
+        : [],
+    [activeRescheduleBooking],
+  );
+
+  const activeSession = useMemo(() => {
+    if (!rescheduleState) return null;
+    return activeRescheduleSessions[rescheduleState.sessionIndex] || null;
+  }, [activeRescheduleSessions, rescheduleState]);
+
+  useEffect(() => {
+    if (!activeSession) return;
+    const [y, m, d] = activeSession.date.split('-').map((v) => parseInt(v, 10));
+    setRescheduleDate(new Date(y, m - 1, d));
+    setRescheduleSlot(activeSession.start_time);
+  }, [activeSession?.date, activeSession?.start_time]);
+
+  const today = useMemo(() => startOfDay(new Date()), []);
+  const next30Days = useMemo(() => Array.from({ length: 30 }, (_, i) => addDays(today, i + 1)), [today]);
+  const rescheduleBounds = useMemo(
+    () => ({
+      start: format(today, 'yyyy-MM-dd'),
+      end: format(addDays(today, 60), 'yyyy-MM-dd'),
+    }),
+    [today],
+  );
+
+  const { data: trainerAvailability = [] } = useQuery({
+    queryKey: ['reschedule-trainer-availability', activeRescheduleBooking?.trainer_id],
+    enabled: !!activeRescheduleBooking?.trainer_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('trainer_availability')
+        .select('day_of_week, start_time, end_time, is_available')
+        .eq('trainer_id', activeRescheduleBooking!.trainer_id);
+      if (error) throw error;
+      return (data || []) as AvailRow[];
+    },
+  });
+
+  const { data: trainerExtras } = useQuery({
+    queryKey: ['reschedule-trainer-extras', activeRescheduleBooking?.trainer_id],
+    enabled: !!activeRescheduleBooking?.trainer_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('trainers')
+        .select('id, availability_settings, availability_blocked_dates, availability_special_hours')
+        .eq('id', activeRescheduleBooking!.trainer_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: trainerBookedSlots = [] } = useQuery({
+    queryKey: ['reschedule-booked-slots', activeRescheduleBooking?.trainer_id, rescheduleBounds.start, rescheduleBounds.end],
+    enabled: !!activeRescheduleBooking?.trainer_id,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_trainer_booked_slots', {
+        p_trainer_id: activeRescheduleBooking!.trainer_id,
+        p_start_date: rescheduleBounds.start,
+        p_end_date: rescheduleBounds.end,
+      });
+      if (error) throw error;
+      const rows = (data || []) as { booking_date: string; start_time: string; status: string | null }[];
+      return rows.map((r) => ({
+        booking_date: r.booking_date,
+        start_time: r.start_time,
+        status: r.status ?? '',
+      })) as BookedSlot[];
+    },
+  });
+
+  const { blockedDateSet, specialHoursByDate, weeklySlotRanges } = useMemo(
+    () => parseTrainerBookingAvailability(trainerExtras || null),
+    [trainerExtras],
+  );
+  const availabilityByDow = useMemo(() => buildAvailabilityByDow(trainerAvailability), [trainerAvailability]);
+
+  const sessionDurationHours = useMemo(() => {
+    if (!activeSession) return 2;
+    const mins = Math.max(30, timeToMinutes(activeSession.end_time) - timeToMinutes(activeSession.start_time));
+    return mins / 60;
+  }, [activeSession]);
+
+  const pseudoCourse: TrainerCourseRow | null = useMemo(() => {
+    if (!activeRescheduleBooking) return null;
+    return {
+      id: activeRescheduleBooking.id,
+      trainer_id: activeRescheduleBooking.trainer_id,
+      training_id: activeRescheduleBooking.trainings?.id || '',
+      duration_hours: sessionDurationHours,
+      location: '',
+      price: 0,
+      trainers: null,
+    };
+  }, [activeRescheduleBooking, sessionDurationHours]);
+
+  const activeRescheduleDateStr = rescheduleDate ? format(rescheduleDate, 'yyyy-MM-dd') : '';
+  const otherSessionDates = useMemo(() => {
+    if (!rescheduleState) return new Set<string>();
+    const set = new Set<string>();
+    activeRescheduleSessions.forEach((s, idx) => {
+      if (idx !== rescheduleState.sessionIndex) set.add(s.date);
+    });
+    return set;
+  }, [activeRescheduleSessions, rescheduleState]);
+
+  const prevSession = useMemo(() => {
+    if (!rescheduleState || rescheduleState.sessionIndex <= 0) return null;
+    return activeRescheduleSessions[rescheduleState.sessionIndex - 1] || null;
+  }, [activeRescheduleSessions, rescheduleState]);
+
+  const nextSession = useMemo(() => {
+    if (!rescheduleState) return null;
+    return activeRescheduleSessions[rescheduleState.sessionIndex + 1] || null;
+  }, [activeRescheduleSessions, rescheduleState]);
+
+  const canSelectRescheduleDate = (d: Date) => {
+    if (!pseudoCourse) return false;
+    if (d < today) return false;
+    const ds = format(d, 'yyyy-MM-dd');
+    if (otherSessionDates.has(ds)) return false;
+    if (prevSession && ds < prevSession.date) return false;
+    if (nextSession && ds > nextSession.date) return false;
+    return dayHasFreeSlot(
+      d,
+      pseudoCourse,
+      availabilityByDow,
+      blockedDateSet,
+      specialHoursByDate,
+      trainerBookedSlots,
+      weeklySlotRanges,
+    );
+  };
+
+  const rescheduleSlotsForDay = useMemo(() => {
+    if (!rescheduleDate || !pseudoCourse) return [];
+    return getSlotsForDate(
+      rescheduleDate,
+      pseudoCourse,
+      availabilityByDow,
+      blockedDateSet,
+      specialHoursByDate,
+      weeklySlotRanges,
+    );
+  }, [availabilityByDow, blockedDateSet, pseudoCourse, rescheduleDate, specialHoursByDate, weeklySlotRanges]);
+
   const activeBookingsCount = useMemo(
     () => bookings.filter((b) => b.status === 'confirmed' || b.status === 'pending').length,
     [bookings],
@@ -130,6 +335,68 @@ const MyBookings: React.FC = () => {
       void supabase.removeChannel(channel);
     };
   }, [queryClient, user?.id]);
+
+  const isRescheduleSlotAllowed = (slot: string) => {
+    if (!activeSession || !rescheduleDate || !pseudoCourse) return false;
+    const ds = format(rescheduleDate, 'yyyy-MM-dd');
+    const end = slotEndTimePg(slot, pseudoCourse.duration_hours);
+    const sameCurrent = ds === activeSession.date && slot === activeSession.start_time;
+    const isBooked = slotBooked(ds, slot, trainerBookedSlots);
+    if (isBooked && !sameCurrent) return false;
+    if (prevSession) {
+      const prevEndAt = new Date(`${prevSession.date}T${prevSession.end_time}`).getTime();
+      const candidateStartAt = new Date(`${ds}T${slot}`).getTime();
+      if (candidateStartAt <= prevEndAt) return false;
+    }
+    if (nextSession) {
+      const nextStartAt = new Date(`${nextSession.date}T${nextSession.start_time}`).getTime();
+      const candidateEndAt = new Date(`${ds}T${end}`).getTime();
+      if (candidateEndAt >= nextStartAt) return false;
+    }
+    return true;
+  };
+
+  const handleRescheduleSave = async () => {
+    if (!rescheduleState || !activeSession || !rescheduleDate || !rescheduleSlot) return;
+    if (!isRescheduleSlotAllowed(rescheduleSlot)) {
+      toast.error(isRTL ? 'الوقت المختار غير متاح' : 'Selected time is not available');
+      return;
+    }
+    const ds = format(rescheduleDate, 'yyyy-MM-dd');
+    if (otherSessionDates.has(ds)) {
+      toast.error(isRTL ? 'لا يمكن تكرار نفس يوم جلسة أخرى' : 'Cannot reuse the same date as another session');
+      return;
+    }
+    setIsSavingReschedule(true);
+    try {
+      const newEndTime = slotEndTimePg(rescheduleSlot, sessionDurationHours);
+      const updatedSessions = activeRescheduleSessions.map((s, idx) =>
+        idx === rescheduleState.sessionIndex
+          ? { ...s, date: ds, start_time: rescheduleSlot, end_time: newEndTime }
+          : s,
+      );
+
+      const updatePayload: Record<string, unknown> = { sessions: updatedSessions as any };
+      if (rescheduleState.sessionIndex === 0) {
+        updatePayload.booking_date = ds;
+        updatePayload.start_time = rescheduleSlot;
+        updatePayload.end_time = newEndTime;
+      }
+
+      const { error } = await supabase.from('training_bookings').update(updatePayload).eq('id', rescheduleState.booking.id);
+      if (error) throw error;
+
+      toast.success(isRTL ? 'تم تحديث موعد الجلسة بنجاح' : 'Session rescheduled successfully');
+      setRescheduleState(null);
+      setRescheduleDate(undefined);
+      setRescheduleSlot(null);
+      queryClient.invalidateQueries({ queryKey: ['my-bookings', user?.id] });
+    } catch (err: any) {
+      toast.error(err?.message || (isRTL ? 'تعذر تغيير الموعد' : 'Could not reschedule'));
+    } finally {
+      setIsSavingReschedule(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -217,6 +484,9 @@ const MyBookings: React.FC = () => {
                   b.status === 'cancelled' ? 'cancelled' : sessions.length > 0 && completedCount === sessions.length ? 'completed' : 'confirmed';
                 const statusV = statusBadge(statusView);
                 const payV = paymentBadge(b.payment_status);
+                const hasCompletedSession = sessions.some((session) => session.status === 'completed');
+                const canRateTrainer = (b.status === 'confirmed' || b.status === 'completed') && hasCompletedSession;
+                const existingReview = myReviews.find((review) => review.trainer_id === b.trainer_id) || null;
 
                 return (
                   <Card key={b.id} className="rounded-xl border border-border bg-card">
@@ -288,6 +558,18 @@ const MyBookings: React.FC = () => {
                                 {session.start_time.slice(0, 5)} — {session.end_time.slice(0, 5)}
                               </span>
 
+                              {session.status === 'pending' ? (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 shrink-0"
+                                  onClick={() => setRescheduleState({ booking: b, sessionIndex: i })}
+                                  aria-label={isRTL ? 'تغيير الموعد' : 'Reschedule'}
+                                >
+                                  <Clock3 className="h-4 w-4" />
+                                </Button>
+                              ) : null}
+
                               {isNext ? (
                                 <BookingTimeDisplay
                                   date={session.date}
@@ -313,6 +595,25 @@ const MyBookings: React.FC = () => {
                           </Button>
                         ) : null}
                       </div>
+
+                      {canRateTrainer ? (
+                        <div className="pt-2 border-t border-border/40 flex items-center justify-between gap-3">
+                          {existingReview ? (
+                            <>
+                              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/25">
+                                {isRTL ? 'تم التقييم ✓' : 'Reviewed ✓'}
+                              </Badge>
+                              <Button variant="link" size="sm" className="px-0 h-auto" onClick={() => setReviewDialogBooking(b)}>
+                                {isRTL ? 'تعديل' : 'Edit'}
+                              </Button>
+                            </>
+                          ) : (
+                            <Button variant="outline" size="sm" onClick={() => setReviewDialogBooking(b)}>
+                              {isRTL ? 'قيّم المدرب' : 'Rate Trainer'}
+                            </Button>
+                          )}
+                        </div>
+                      ) : null}
                     </CardContent>
                   </Card>
                 );
@@ -321,6 +622,133 @@ const MyBookings: React.FC = () => {
           )}
         </div>
       </main>
+
+      <Dialog
+        open={!!rescheduleState}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRescheduleState(null);
+            setRescheduleDate(undefined);
+            setRescheduleSlot(null);
+          }
+        }}
+      >
+        <DialogContent dir={isRTL ? 'rtl' : 'ltr'} className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{isRTL ? 'تغيير موعد الجلسة' : 'Reschedule session'}</DialogTitle>
+          </DialogHeader>
+          {activeSession ? (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border/60 p-3 text-sm">
+                <p className="text-muted-foreground">{isRTL ? 'الموعد الحالي' : 'Current schedule'}</p>
+                <div className="mt-1">
+                  <BookingTimeDisplay date={activeSession.date} startTime={activeSession.start_time} endTime={activeSession.end_time} compact />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">{isRTL ? 'اختر اليوم الجديد' : 'Select new date'}</p>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {next30Days.map((d) => {
+                    const ds = format(d, 'yyyy-MM-dd');
+                    const enabled = canSelectRescheduleDate(d);
+                    const selected = activeRescheduleDateStr === ds;
+                    return (
+                      <button
+                        key={ds}
+                        type="button"
+                        disabled={!enabled}
+                        onClick={() => {
+                          if (!enabled) return;
+                          setRescheduleDate(d);
+                          setRescheduleSlot(null);
+                        }}
+                        className={cn(
+                          'shrink-0 rounded-lg border px-3 py-2 text-start',
+                          selected ? 'border-primary bg-primary/10 text-primary' : 'border-border',
+                          !enabled && 'opacity-40 cursor-not-allowed',
+                        )}
+                      >
+                        <div className="text-xs text-muted-foreground">
+                          {format(d, isRTL ? 'EEEE' : 'EEE', { locale: isRTL ? ar : undefined })}
+                        </div>
+                        <div className="text-sm font-semibold">{format(d, isRTL ? 'd MMM' : 'MMM d', { locale: isRTL ? ar : undefined })}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {rescheduleDate ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">{isRTL ? 'اختر الوقت الجديد' : 'Select new time'}</p>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {rescheduleSlotsForDay.map((slot) => {
+                      const selected = rescheduleSlot === slot;
+                      const allowed = isRescheduleSlotAllowed(slot);
+                      const end = slotEndTimePg(slot, sessionDurationHours);
+                      return (
+                        <button
+                          key={slot}
+                          type="button"
+                          disabled={!allowed}
+                          onClick={() => setRescheduleSlot(slot)}
+                          className={cn(
+                            'rounded-lg border px-2 py-2 text-center text-sm',
+                            selected ? 'border-primary bg-primary/10 text-primary' : 'border-border',
+                            !allowed && 'opacity-40 cursor-not-allowed',
+                          )}
+                        >
+                          <span dir="ltr" className="tabular-nums">
+                            {slot.slice(0, 5)} — {end.slice(0, 5)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setRescheduleState(null);
+                    setRescheduleDate(undefined);
+                    setRescheduleSlot(null);
+                  }}
+                >
+                  {isRTL ? 'إلغاء' : 'Cancel'}
+                </Button>
+                <Button onClick={() => void handleRescheduleSave()} disabled={!rescheduleDate || !rescheduleSlot || isSavingReschedule}>
+                  {isSavingReschedule ? (isRTL ? 'جارٍ الحفظ...' : 'Saving...') : isRTL ? 'تأكيد التغيير' : 'Confirm reschedule'}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!reviewDialogBooking} onOpenChange={(open) => !open && setReviewDialogBooking(null)}>
+        <DialogContent dir={isRTL ? 'rtl' : 'ltr'} className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{isRTL ? 'تقييم المدرب' : 'Rate trainer'}</DialogTitle>
+          </DialogHeader>
+          {reviewDialogBooking ? (
+            <TrainerReviewForm
+              trainerId={reviewDialogBooking.trainer_id}
+              trainingId={reviewDialogBooking.trainings?.id ?? null}
+              existingReview={myReviews.find((r) => r.trainer_id === reviewDialogBooking.trainer_id) || null}
+              onSuccess={() => {
+                setReviewDialogBooking(null);
+                queryClient.invalidateQueries({ queryKey: ['my-trainer-reviews', user?.id] });
+                queryClient.invalidateQueries({ queryKey: ['trainer-profile-reviews', reviewDialogBooking.trainer_id] });
+                queryClient.invalidateQueries({ queryKey: ['trainer-review-agg', reviewDialogBooking.trainer_id] });
+              }}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
       <Footer />
     </div>
   );

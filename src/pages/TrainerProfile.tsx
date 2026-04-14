@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -22,6 +22,8 @@ import { cn } from '@/lib/utils';
 import TrainerProfileReviews from '@/components/training/TrainerProfileReviews';
 import { useTrainingPlatformPricing } from '@/hooks/useTrainingPlatformPricing';
 import { applyTrainingPlatformMarkupSar } from '@/lib/trainingPlatformMarkup';
+import { normalizeBookingSessions } from '@/lib/trainingBookingSessions';
+import TrainerReviewForm from '@/components/training/TrainerReviewForm';
 
 type TrainingEmbed = {
   id: string;
@@ -195,6 +197,8 @@ const TrainerProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { isRTL, language } = useLanguage();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { formatTrainingOfferPrice } = useCurrency();
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
   const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
@@ -252,6 +256,45 @@ const TrainerProfile: React.FC = () => {
       if (!rows.length) return { avg: 0, count: 0 };
       const avg = rows.reduce((s, r) => s + Number(r.rating), 0) / rows.length;
       return { avg, count: rows.length };
+    },
+  });
+
+  const { data: myReview } = useQuery({
+    queryKey: ['my-trainer-review', id, user?.id],
+    enabled: !!id && !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('trainer_reviews')
+        .select('id, trainer_id, rating, comment')
+        .eq('trainer_id', id!)
+        .eq('user_id', user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { id: string; trainer_id: string; rating: number; comment: string | null } | null;
+    },
+  });
+
+  const { data: canReviewTrainer = false } = useQuery({
+    queryKey: ['can-review-trainer', id, user?.id],
+    enabled: !!id && !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('training_bookings')
+        .select('status, sessions, booking_date, start_time, end_time')
+        .eq('trainer_id', id!)
+        .eq('user_id', user!.id)
+        .in('status', ['confirmed', 'completed']);
+      if (error) throw error;
+      return (data || []).some((booking) => {
+        const normalized = normalizeBookingSessions(
+          booking.sessions,
+          booking.booking_date,
+          booking.start_time,
+          booking.end_time,
+          booking.status,
+        );
+        return normalized.some((session) => session.status === 'completed');
+      });
     },
   });
 
@@ -566,6 +609,39 @@ const TrainerProfile: React.FC = () => {
               </section>
 
               <Separator />
+
+              <section className="space-y-3">
+                {!user ? (
+                  <Card>
+                    <CardContent className="p-4 flex items-center justify-between gap-3">
+                      <p className="text-sm text-muted-foreground">
+                        {isRTL ? 'سجل دخولك لتتمكن من التقييم' : 'Login to leave a review'}
+                      </p>
+                      <Button size="sm" onClick={() => navigate(`/login?returnTo=${encodeURIComponent(`/trainers/${id}`)}`)}>
+                        {isRTL ? 'تسجيل الدخول' : 'Login'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : canReviewTrainer ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">{isRTL ? 'شاركنا تجربتك مع هذا المدرب' : 'Share your experience with this trainer'}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <TrainerReviewForm
+                        trainerId={id!}
+                        existingReview={myReview}
+                        submitLabel={myReview ? (isRTL ? 'تعديل التقييم' : 'Update review') : undefined}
+                        onSuccess={() => {
+                          queryClient.invalidateQueries({ queryKey: ['my-trainer-review', id, user?.id] });
+                          queryClient.invalidateQueries({ queryKey: ['trainer-profile-reviews', id] });
+                          queryClient.invalidateQueries({ queryKey: ['trainer-review-agg', id] });
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                ) : null}
+              </section>
 
               {id && <TrainerProfileReviews trainerId={id} />}
 

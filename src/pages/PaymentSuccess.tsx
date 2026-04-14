@@ -15,6 +15,9 @@ import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
 import { clearBundleSelection } from "@/lib/bundleSelectionStorage";
 import type { User } from "@supabase/supabase-js";
 import { COUNTRIES } from "@/data/countryCityData";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import BookingTimeDisplay from "@/components/common/BookingTimeDisplay";
+import { normalizeBookingSessions } from "@/lib/trainingBookingSessions";
 function useAuthReady() {
   const [isReady, setIsReady] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -89,6 +92,43 @@ const PaymentSuccess: React.FC = () => {
         `)
         .eq("payment_id", tapId!)
         .maybeSingle();
+      return data;
+    },
+  });
+
+  const { data: verifiedTapCharge } = useQuery({
+    queryKey: ["tap-charge-verified", tapId],
+    enabled: verifyStatus === "succeeded" && !!tapId && tapId !== "free_enrollment",
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tap_charges")
+        .select("id, charge_id, metadata")
+        .eq("charge_id", tapId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const paymentKind = String((verifiedTapCharge?.metadata as any)?.payment_kind ?? "").toLowerCase();
+  const isTrainingBookingSuccess = paymentKind === "training_booking";
+
+  const { data: trainingBookingSuccess } = useQuery({
+    queryKey: ["training-booking-success", tapId],
+    enabled: verifyStatus === "succeeded" && isTrainingBookingSuccess && !!tapId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("training_bookings")
+        .select(
+          `
+          id, amount, currency, payment_id, sessions, booking_date, start_time, end_time,
+          trainers(name_ar, name_en, photo_url),
+          trainings(name_ar, name_en)
+        `,
+        )
+        .eq("payment_id", tapId!)
+        .maybeSingle();
+      if (error) throw error;
       return data;
     },
   });
@@ -431,6 +471,87 @@ const PaymentSuccess: React.FC = () => {
   }
 
   // Success state
+  if (isTrainingBookingSuccess && trainingBookingSuccess) {
+    const trainerName = isRTL
+      ? trainingBookingSuccess.trainers?.name_ar || trainingBookingSuccess.trainers?.name_en
+      : trainingBookingSuccess.trainers?.name_en || trainingBookingSuccess.trainers?.name_ar;
+    const trainingName = isRTL
+      ? trainingBookingSuccess.trainings?.name_ar || trainingBookingSuccess.trainings?.name_en
+      : trainingBookingSuccess.trainings?.name_en || trainingBookingSuccess.trainings?.name_ar;
+    const sessions = normalizeBookingSessions(
+      trainingBookingSuccess.sessions,
+      trainingBookingSuccess.booking_date,
+      trainingBookingSuccess.start_time,
+      trainingBookingSuccess.end_time,
+      "confirmed",
+    );
+
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 overflow-hidden relative">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-10 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-primary/8 rounded-full blur-3xl" />
+        </div>
+        <div className="relative z-10 w-full max-w-2xl bg-card border rounded-2xl p-6 space-y-5" dir={isRTL ? "rtl" : "ltr"}>
+          <div className="text-center space-y-1">
+            <h1 className="text-2xl font-black">{isRTL ? "تم تأكيد حجزك!" : "Booking Confirmed!"}</h1>
+            <p className="text-sm text-muted-foreground">{isRTL ? "شكراً لك، تم تأكيد الدفع بنجاح" : "Your payment was successful"}</p>
+          </div>
+
+          <div className="rounded-xl border p-4 flex items-center gap-3">
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={trainingBookingSuccess.trainers?.photo_url || undefined} alt={trainerName || "Trainer"} />
+              <AvatarFallback>{(trainerName || "T").charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="text-start min-w-0">
+              <p className="font-semibold truncate">{trainerName || "-"}</p>
+              <p className="text-sm text-muted-foreground truncate">{trainingName || "-"}</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border p-4 space-y-2">
+            <h3 className="font-semibold">{isRTL ? "جدول جلساتك" : "Your Sessions"}</h3>
+            {sessions.map((session) => (
+              <div key={`${session.session_number}-${session.date}`} className="flex items-center justify-between gap-3 text-sm border-b last:border-0 py-2">
+                <span className="font-medium">{isRTL ? `الجلسة ${session.session_number}` : `Session ${session.session_number}`}</span>
+                <BookingTimeDisplay date={session.date} startTime={session.start_time} endTime={session.end_time} compact showCountdown={false} />
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-xl border p-4 space-y-1 text-sm">
+            <p>
+              <span className="text-muted-foreground">{isRTL ? "المبلغ المدفوع: " : "Amount paid: "}</span>
+              <span dir="ltr" className="font-semibold tabular-nums">
+                {Number(trainingBookingSuccess.amount || 0).toFixed(2)} {trainingBookingSuccess.currency || "SAR"}
+              </span>
+            </p>
+            <p>
+              <span className="text-muted-foreground">{isRTL ? "رقم الحجز: " : "Booking ID: "}</span>
+              <span dir="ltr" className="font-mono text-xs">
+                {trainingBookingSuccess.id}
+              </span>
+            </p>
+          </div>
+
+          <div className="rounded-xl border p-4 space-y-2 text-sm">
+            <p className="font-semibold">{isRTL ? "ما الذي يحدث الآن؟" : "What happens next?"}</p>
+            <p>✓ {isRTL ? "المدرب سيتواصل معك" : "Trainer will contact you"}</p>
+            <p>✓ {isRTL ? "تذكير قبل الجلسة بـ 24 ساعة" : "Reminder 24h before session"}</p>
+            <p>✓ {isRTL ? "متابعة التقدم من حجوزاتي" : "Track progress in My Bookings"}</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Button onClick={() => navigate("/my-bookings")}>{isRTL ? "عرض حجوزاتي" : "View My Bookings"}</Button>
+            <Button variant="outline" onClick={() => navigate("/")}>
+              {isRTL ? "العودة للرئيسية" : "Back to Home"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 overflow-hidden relative">
       <div className="absolute inset-0 pointer-events-none">
