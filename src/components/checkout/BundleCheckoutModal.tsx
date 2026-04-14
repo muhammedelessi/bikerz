@@ -1,8 +1,9 @@
-import React, { useEffect, useCallback, useMemo } from 'react';
+import React, { useEffect, useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, CreditCard } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCheckoutForm } from '@/hooks/checkout/useCheckoutForm';
@@ -12,6 +13,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useBundleCalculator } from '@/hooks/useBundleCalculator';
 import type { CheckoutCourse } from '@/types/payment';
 import type { BundleTierRow } from '@/types/bundle';
+import CheckoutInfoStep from '@/components/checkout/CheckoutInfoStep';
 import CheckoutPaymentStep from '@/components/checkout/CheckoutPaymentStep';
 import { navigateToSignup } from '@/lib/authReturnUrl';
 
@@ -57,15 +59,22 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
   const formatDisplay = useCallback((amount: number) => `${amount} ${currSym}`, [currSym]);
 
   const form = useCheckoutForm(open);
+  const [step, setStep] = useState<'info' | 'payment'>('info');
 
   useEffect(() => {
     if (!open) {
+      setStep('info');
       tap.reset();
       form.resetForm();
       return;
     }
-    if (user) form.prefillAndAutoAdvance();
-  }, [open, user]);
+    if (user) {
+      form.prefillAndAutoAdvance();
+      if (form.fullName && form.effectiveCountry) {
+        setStep('payment');
+      }
+    }
+  }, [open, user, form, tap]);
 
   useEffect(() => {
     if (!open || user) return;
@@ -150,6 +159,11 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
   const isPaymentReady = form.isInfoValid && !tap.error && tap.status !== 'processing' && tap.status !== 'verifying';
 
   const firstTitle = courses[0] ? (isRTL && courses[0].title_ar ? courses[0].title_ar : courses[0].title) : '';
+  const handleNextToPayment = useCallback(() => {
+    if (!form.validateInfo()) return;
+    form.saveProfileData();
+    setStep('payment');
+  }, [form]);
 
   if (open && !user) {
     return null;
@@ -163,117 +177,210 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
       >
         <div className="bg-muted/30 p-4 sm:p-5 border-b-2 border-border flex-shrink-0">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold">
-              {isRTL ? 'باقتك المخصصة' : 'Your custom bundle'}
-            </DialogTitle>
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="text-lg font-bold">
+                {step === 'info'
+                  ? isRTL
+                    ? 'معلومات الدفع'
+                    : 'Billing Info'
+                  : isRTL
+                    ? 'إتمام الدفع'
+                    : 'Complete Payment'}
+              </DialogTitle>
+              {step === 'payment' && (
+                <Button variant="ghost" size="sm" onClick={() => setStep('info')}>
+                  {isRTL ? '← رجوع' : '← Back'}
+                </Button>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground leading-relaxed mt-1.5 font-normal">
               {isRTL
                 ? 'أسعار الكورسات بعملة العرض؛ المبلغ المستحق على البطاقة بالريال السعودي في الأسفل.'
                 : 'Course prices are in your display currency; the card charge in SAR is shown below.'}
             </p>
           </DialogHeader>
-          <ul className="mt-3 space-y-2 text-sm max-h-36 overflow-y-auto">
-            {courses.map((c) => {
-              const title = isRTL && c.title_ar ? c.title_ar : c.title;
-              const pi = getCoursePriceInfo(c.id, c.price, effectiveCourseDiscountCheckout(c), {
-                vatPercent: c.vat_percentage ?? 15,
-              });
-              return (
-                <li key={c.id} className="flex justify-between gap-2">
-                  <span className="truncate">{title}</span>
-                  <span className="tabular-nums shrink-0">{formatDisplay(pi.finalPrice)}</span>
-                </li>
-              );
-            })}
-          </ul>
-          {calc.discountPct > 0 && calc.applicableTier && (
-            <p className="text-xs text-primary mt-2">
-              {isRTL ? calc.applicableTier.label_ar || calc.applicableTier.label_en : calc.applicableTier.label_en || calc.applicableTier.label_ar}{' '}
-              — −{formatDisplay(calc.display.discountAmount)}
-            </p>
+          {step === 'info' && (
+            <>
+              <ul className="mt-3 space-y-2 text-sm max-h-36 overflow-y-auto">
+                {courses.map((c) => {
+                  const title = isRTL && c.title_ar ? c.title_ar : c.title;
+                  const pi = getCoursePriceInfo(c.id, c.price, effectiveCourseDiscountCheckout(c), {
+                    vatPercent: c.vat_percentage ?? 15,
+                  });
+                  return (
+                    <li key={c.id} className="flex justify-between gap-2">
+                      <span className="truncate">{title}</span>
+                      <span className="tabular-nums shrink-0">{formatDisplay(pi.finalPrice)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+              {calc.discountPct > 0 && calc.applicableTier && (
+                <p className="text-xs text-primary mt-2">
+                  {isRTL ? calc.applicableTier.label_ar || calc.applicableTier.label_en : calc.applicableTier.label_en || calc.applicableTier.label_ar}{' '}
+                  — −{formatDisplay(calc.display.discountAmount)}
+                </p>
+              )}
+              <div className="mt-3 rounded-xl border border-border/70 bg-card/60 px-3 py-3 space-y-2.5">
+                <div className="flex justify-between gap-3 text-sm">
+                  <span className="text-muted-foreground shrink-0">{isRTL ? 'إجمالي العرض' : 'Display total'}</span>
+                  <span className="tabular-nums font-semibold text-end">{formatDisplay(calc.display.finalPrice)}</span>
+                </div>
+                <div className="flex justify-between gap-3 text-base font-bold text-primary pt-2 border-t border-border/60">
+                  <span className="leading-snug">{isRTL ? 'المبلغ المستحق (ريال سعودي)' : 'Amount due (SAR)'}</span>
+                  <span className="tabular-nums shrink-0">{formatLocal(calc.finalPrice)}</span>
+                </div>
+              </div>
+            </>
           )}
-          <div className="mt-3 rounded-xl border border-border/70 bg-card/60 px-3 py-3 space-y-2.5">
-            <div className="flex justify-between gap-3 text-sm">
-              <span className="text-muted-foreground shrink-0">{isRTL ? 'إجمالي العرض' : 'Display total'}</span>
-              <span className="tabular-nums font-semibold text-end">{formatDisplay(calc.display.finalPrice)}</span>
-            </div>
-            <div className="flex justify-between gap-3 text-base font-bold text-primary pt-2 border-t border-border/60">
-              <span className="leading-snug">{isRTL ? 'المبلغ المستحق (ريال سعودي)' : 'Amount due (SAR)'}</span>
-              <span className="tabular-nums shrink-0">{formatLocal(calc.finalPrice)}</span>
-            </div>
-          </div>
         </div>
 
         <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0">
-          <CheckoutPaymentStep
-            bundleMode
-            isRTL={isRTL}
-            currencyLabel={sarLabel}
-            formatLocal={formatLocal}
-            promoCode=""
-            setPromoCode={() => {}}
-            promoApplied={false}
-            appliedCoupon={null}
-            handleApplyPromo={() => {}}
-            clearPromo={() => {}}
-            discountLabel=""
-            discountAmount={0}
-            discountedPrice={calc.finalPrice}
-            fullName={form.fullName}
-            setFullName={form.setFullName}
-            email={form.email}
-            phone={form.phone}
-            setPhone={form.setPhone}
-            phonePrefix={form.phonePrefix}
-            setPhonePrefix={form.setPhonePrefix}
-            phonePrefixOptions={form.phonePrefixOptions}
-            isOtherCountry={form.isOtherCountry}
-            isOtherCity={form.isOtherCity}
-            countryManual={form.countryManual}
-            setCountryManual={form.setCountryManual}
-            country={form.country}
-            setCountry={form.setCountry}
-            cityManual={form.cityManual}
-            setCityManual={form.setCityManual}
-            city={form.city}
-            countryOptions={form.countryOptions}
-            cityOptions={form.cityOptions}
-            selectedCountryCode={form.selectedCountryCode}
-            handleCountryChange={form.handleCountryChange}
-            handleCityChange={form.handleCityChange}
-            errors={form.errors}
-            setErrors={form.setErrors}
-            courseTitle={firstTitle || 'Bundle'}
-            courseTitleAr={courses[0]?.title_ar ?? null}
-            paymentStatus={tap.status}
-            isPaymentReady={isPaymentReady}
-            vatPct={calc.vatPercentApplied}
-            exchangeRate={1}
-            isSAR
-            onSubmitPayment={() => void handleSubmitPayment()}
-          />
+          {step === 'info' ? (
+            <CheckoutInfoStep
+              isRTL={isRTL}
+              user={user}
+              fullName={form.fullName}
+              setFullName={form.setFullName}
+              hasNamePrefilled={form.hasNamePrefilled}
+              isEditingName={form.isEditingName}
+              setIsEditingName={form.setIsEditingName}
+              email={form.email}
+              setEmail={form.setEmail}
+              phone={form.phone}
+              setPhone={form.setPhone}
+              phonePrefix={form.phonePrefix}
+              setPhonePrefix={form.setPhonePrefix}
+              phonePrefixOptions={form.phonePrefixOptions}
+              countryOptions={form.countryOptions}
+              cityOptions={form.cityOptions}
+              selectedCountryCode={form.selectedCountryCode}
+              isOtherCountry={form.isOtherCountry}
+              isOtherCity={form.isOtherCity}
+              countryManual={form.countryManual}
+              setCountryManual={form.setCountryManual}
+              setCountry={form.setCountry}
+              cityManual={form.cityManual}
+              setCityManual={form.setCityManual}
+              handleCountryChange={form.handleCountryChange}
+              handleCityChange={form.handleCityChange}
+              city={form.city}
+              errors={form.errors}
+              setErrors={form.setErrors}
+            />
+          ) : (
+            <>
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-2 mb-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                  {isRTL ? 'ملخص الباقة' : 'Bundle Summary'}
+                </p>
+                {courses.map((course) => {
+                  const priceInfo = getCoursePriceInfo(course.id, course.price, effectiveCourseDiscountCheckout(course), {
+                    vatPercent: course.vat_percentage ?? 0,
+                  });
+                  return (
+                    <div key={course.id} className="flex items-center justify-between text-sm">
+                      <span className="text-foreground truncate me-2">{isRTL ? course.title_ar || course.title : course.title}</span>
+                      <span className="shrink-0 tabular-nums text-muted-foreground">{formatLocal(priceInfo.finalPrice)}</span>
+                    </div>
+                  );
+                })}
+                <Separator className="my-2" />
+                {calc.discountPct > 0 && (
+                  <div className="flex justify-between text-sm text-emerald-600">
+                    <span>{isRTL ? `خصم الباقة (${calc.discountPct}%)` : `Bundle discount (${calc.discountPct}%)`}</span>
+                    <span className="tabular-nums">−{formatLocal(calc.discountAmount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-base pt-1">
+                  <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
+                  <span className="text-primary tabular-nums">{formatLocal(calc.finalPrice)}</span>
+                </div>
+              </div>
+              <CheckoutPaymentStep
+                bundleMode
+                isRTL={isRTL}
+                currencyLabel={sarLabel}
+                formatLocal={formatLocal}
+                promoCode=""
+                setPromoCode={() => {}}
+                promoApplied={false}
+                appliedCoupon={null}
+                handleApplyPromo={() => {}}
+                clearPromo={() => {}}
+                discountLabel=""
+                discountAmount={0}
+                discountedPrice={calc.finalPrice}
+                fullName={form.fullName}
+                setFullName={form.setFullName}
+                email={form.email}
+                phone={form.phone}
+                setPhone={form.setPhone}
+                phonePrefix={form.phonePrefix}
+                setPhonePrefix={form.setPhonePrefix}
+                phonePrefixOptions={form.phonePrefixOptions}
+                isOtherCountry={form.isOtherCountry}
+                isOtherCity={form.isOtherCity}
+                countryManual={form.countryManual}
+                setCountryManual={form.setCountryManual}
+                country={form.country}
+                setCountry={form.setCountry}
+                cityManual={form.cityManual}
+                setCityManual={form.setCityManual}
+                city={form.city}
+                countryOptions={form.countryOptions}
+                cityOptions={form.cityOptions}
+                selectedCountryCode={form.selectedCountryCode}
+                handleCountryChange={form.handleCountryChange}
+                handleCityChange={form.handleCityChange}
+                errors={form.errors}
+                setErrors={form.setErrors}
+                courseTitle={firstTitle || 'Bundle'}
+                courseTitleAr={courses[0]?.title_ar ?? null}
+                paymentStatus={tap.status}
+                isPaymentReady={isPaymentReady}
+                vatPct={calc.vatPercentApplied}
+                exchangeRate={1}
+                isSAR
+                onSubmitPayment={() => void handleSubmitPayment()}
+              />
+            </>
+          )}
         </div>
 
         <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-border flex-shrink-0">
-          <Button
-            type="button"
-            className="w-full h-11 rounded-xl text-sm font-bold"
-            variant="cta"
-            onClick={() => void handleSubmitPayment()}
-            disabled={tap.status === 'processing' || tap.status === 'verifying' || !isPaymentReady}
-          >
-            {tap.status === 'processing' || tap.status === 'verifying' ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin me-2" />
-                {isRTL ? 'جاري تجهيز الدفع...' : 'Preparing payment...'}
-              </>
-            ) : (
-              <>
-                <CreditCard className="w-4 h-4 me-2" />
-                {isRTL ? 'ادفع الآن' : 'Pay Now'}
-              </>
-            )}
-          </Button>
+          {step === 'info' ? (
+            <Button
+              type="button"
+              className="w-full h-11 rounded-xl text-sm font-bold"
+              variant="cta"
+              onClick={handleNextToPayment}
+              disabled={form.profileSaving || !form.isInfoValid}
+            >
+              {form.profileSaving && <Loader2 className="w-4 h-4 animate-spin me-2" />}
+              {isRTL ? 'التالي' : 'Next'}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              className="w-full h-11 rounded-xl text-sm font-bold"
+              variant="cta"
+              onClick={() => void handleSubmitPayment()}
+              disabled={tap.status === 'processing' || tap.status === 'verifying' || !isPaymentReady}
+            >
+              {tap.status === 'processing' || tap.status === 'verifying' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin me-2" />
+                  {isRTL ? 'جاري تجهيز الدفع...' : 'Preparing payment...'}
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-4 h-4 me-2" />
+                  {isRTL ? 'ادفع الآن' : 'Pay Now'}
+                </>
+              )}
+            </Button>
+          )}
         </div>
 
         {tap.status === 'failed' && (

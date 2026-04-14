@@ -75,6 +75,24 @@ const PaymentSuccess: React.FC = () => {
     enabled: !!courseId && !isBundle,
   });
 
+  const { data: bundleData } = useQuery({
+    queryKey: ["bundle-success", tapId],
+    enabled: isBundle && verifyStatus === "succeeded" && !!tapId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("course_bundles")
+        .select(`
+          id, courses_count, discount_percentage, final_price_sar,
+          course_bundle_enrollments(
+            courses(id, title, title_ar, thumbnail_url)
+          )
+        `)
+        .eq("payment_id", tapId!)
+        .maybeSingle();
+      return data;
+    },
+  });
+
   // Meta Pixel + GHL + n8n on successful verification (once per success)
   useEffect(() => {
     if (verifyStatus !== "succeeded" || !user || crmSuccessSyncedRef.current) return;
@@ -348,7 +366,7 @@ const PaymentSuccess: React.FC = () => {
           <h2 className="text-2xl font-bold text-foreground mb-4">{t("payment.cancelled")}</h2>
           <p className="text-muted-foreground">{t("payment.cancelledDescription")}</p>
           <Button onClick={() => navigate(isBundle ? "/bundles" : `/courses/${courseId}`)} variant="cta" className="h-12 px-8 rounded-2xl">
-            {isBundle ? (isRTL ? "العودة للباقات" : "Back to bundles") : t("payment.backToCourse")}
+            {isBundle ? (isRTL ? "العودة للباقات" : "Back to Bundles") : t("payment.backToCourse")}
           </Button>
         </motion.div>
       </div>
@@ -370,7 +388,7 @@ const PaymentSuccess: React.FC = () => {
           <h2 className="text-2xl font-bold text-foreground mb-4">{t("payment.failed")}</h2>
           <p className="text-muted-foreground">{t("payment.failedDescription")}</p>
           <Button onClick={() => navigate(isBundle ? "/bundles" : `/courses/${courseId}`)} variant="cta" className="h-12 px-8 rounded-2xl">
-            {isBundle ? (isRTL ? "العودة للباقات" : "Back to bundles") : t("payment.backToCourse")}
+            {isBundle ? (isRTL ? "العودة للباقات" : "Back to Bundles") : t("payment.backToCourse")}
           </Button>
         </motion.div>
       </div>
@@ -486,23 +504,54 @@ const PaymentSuccess: React.FC = () => {
               <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">
                 {t("payment.yourCourse")}
               </h3>
-              <p className="text-xl font-bold text-foreground leading-tight">{courseTitle || "..."}</p>
-              <div className="flex items-center justify-center gap-6 pt-2">
-                {!isBundle && course?.total_lessons && (
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <BookOpen className="w-4 h-4 text-primary" />
-                    <span className="font-semibold text-foreground">{course.title}</span>
-                    <span className="hidden sm:inline text-border">•</span>
-                    <span>
-                      {course.total_lessons} {t("courses.lesson")}
+              {!isBundle ? (
+                <>
+                  <p className="text-xl font-bold text-foreground leading-tight">{courseTitle || "..."}</p>
+                  <div className="flex items-center justify-center gap-6 pt-2">
+                    {course?.total_lessons && (
+                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <BookOpen className="w-4 h-4 text-primary" />
+                        <span className="font-semibold text-foreground">{course.title}</span>
+                        <span className="hidden sm:inline text-border">•</span>
+                        <span>
+                          {course.total_lessons} {t("courses.lesson")}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 text-green-500 text-xs font-bold border border-green-500/20">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>{t("payment.confirmed")}</span>
+                    </div>
+                  </div>
+                </>
+              ) : bundleData ? (
+                <div className="space-y-3 text-start">
+                  <p className="text-sm font-semibold text-muted-foreground">{isRTL ? "الكورسات المضافة:" : "Courses added:"}</p>
+                  {bundleData.course_bundle_enrollments?.map((e: any) => (
+                    <div key={e.courses?.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30">
+                      {e.courses?.thumbnail_url && (
+                        <img src={e.courses.thumbnail_url} className="w-10 h-10 rounded-lg object-cover shrink-0" alt={e.courses?.title || "course"} />
+                      )}
+                      <span className="text-sm font-medium">
+                        {isRTL ? e.courses?.title_ar || e.courses?.title : e.courses?.title}
+                      </span>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 ms-auto shrink-0" />
+                    </div>
+                  ))}
+                  <div className="flex justify-between text-sm pt-2 border-t border-border/40">
+                    <span className="text-muted-foreground">
+                      {isRTL
+                        ? `باقة ${bundleData.courses_count} كورسات — خصم ${bundleData.discount_percentage}%`
+                        : `${bundleData.courses_count}-course bundle — ${bundleData.discount_percentage}% off`}
+                    </span>
+                    <span className="font-bold text-primary">
+                      {bundleData.final_price_sar} {isRTL ? "ر.س" : "SAR"}
                     </span>
                   </div>
-                )}
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 text-green-500 text-xs font-bold border border-green-500/20">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>{t("payment.confirmed")}</span>
                 </div>
-              </div>
+              ) : (
+                <p className="text-xl font-bold text-foreground leading-tight">{courseTitle || "..."}</p>
+              )}
             </motion.div>
 
             <motion.div
@@ -518,12 +567,23 @@ const PaymentSuccess: React.FC = () => {
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.0 }}>
-              <Button className="w-full btn-cta h-12 text-base font-bold shadow-xl shadow-primary/20" asChild>
-                <Link to={isBundle ? "/dashboard" : `/courses/${courseId}/learn?welcome=1`}>
-                  {isBundle ? (isRTL ? "اذهب إلى لوحة التعلم" : "Go to dashboard") : t("payment.startLearning")}
-                  <ArrowIcon className="w-5 h-5 ms-2" />
-                </Link>
-              </Button>
+              {isBundle ? (
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button asChild className="flex-1">
+                    <Link to="/dashboard">{isRTL ? "ابدأ التعلم" : "Start Learning"}</Link>
+                  </Button>
+                  <Button asChild variant="outline" className="flex-1">
+                    <Link to="/courses">{isRTL ? "تصفح المزيد" : "Browse More"}</Link>
+                  </Button>
+                </div>
+              ) : (
+                <Button className="w-full btn-cta h-12 text-base font-bold shadow-xl shadow-primary/20" asChild>
+                  <Link to={`/courses/${courseId}/learn?welcome=1`}>
+                    {t("payment.startLearning")}
+                    <ArrowIcon className="w-5 h-5 ms-2" />
+                  </Link>
+                </Button>
+              )}
             </motion.div>
 
             <motion.p

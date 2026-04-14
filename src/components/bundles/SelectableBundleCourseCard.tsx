@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Eye } from 'lucide-react';
+import { Check, Eye, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -58,20 +58,27 @@ export const SelectableBundleCourseCard: React.FC<Props> = ({
         }
       }}
       className={cn(
-        'relative text-start rounded-2xl border transition-all w-full overflow-hidden cursor-pointer h-full',
+        'relative text-start rounded-2xl border transition-all duration-300 w-full overflow-hidden cursor-pointer h-full',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
         disabled && 'opacity-60 cursor-not-allowed',
         selected && !disabled && 'border-primary bg-primary/5 scale-[1.01] shadow-md',
-        !selected && !disabled && 'border-border/70 bg-card hover:border-primary/40',
+        !selected && !disabled && 'border-border/70 bg-card hover:border-primary/40 hover:shadow-sm',
       )}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       {selected && !disabled && (
-        <span className="absolute top-2 end-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md">
-          <Check className="w-4 h-4" />
-        </span>
+        <div className="absolute top-0 inset-x-0 z-10 flex items-center justify-center gap-1.5 bg-emerald-500 text-white text-xs font-bold py-1.5">
+          <Check className="w-3.5 h-3.5" />
+          {isRTL ? '✓ تمت الإضافة للباقة' : '✓ Added to bundle'}
+        </div>
       )}
-      <div className="relative aspect-video w-full bg-muted">
+      {!selected && !disabled && (
+        <div className="absolute top-2 end-2 z-10 flex items-center gap-1 px-2 py-1 rounded-full bg-background/80 backdrop-blur-sm border border-border text-[10px] text-muted-foreground">
+          <Plus className="w-3 h-3" />
+          {isRTL ? 'إضافة' : 'Add'}
+        </div>
+      )}
+      <div className={cn('relative aspect-video w-full bg-muted border-b border-border/50', selected ? 'mt-7' : '')}>
         <img src={thumb} alt="" className="h-full w-full object-cover" loading="lazy" />
       </div>
       <div className="p-3 pb-12 space-y-1">

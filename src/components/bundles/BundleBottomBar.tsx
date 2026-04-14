@@ -60,17 +60,30 @@ export const BundleBottomBar: React.FC<Props> = ({
           transition={{ type: 'spring', damping: 28, stiffness: 320 }}
           className={cn(
             'fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur-md shadow-[0_-8px_32px_rgba(0,0,0,0.12)]',
-            'pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 px-3 sm:px-6',
+            'pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2.5 px-3 sm:px-5',
           )}
           dir={isRTL ? 'rtl' : 'ltr'}
         >
-          <div className="mx-auto max-w-5xl space-y-3">
+          <div className="mx-auto max-w-6xl space-y-2.5">
             <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="min-w-0 flex-1 space-y-1">
-                <p className="text-xs text-muted-foreground line-clamp-2">
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="flex items-center justify-center w-5.5 h-5.5 rounded-full bg-primary text-primary-foreground text-[10px] font-black">
+                    {selectedCourses.length}
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold">
+                    {isRTL ? `${selectedCourses.length} كورسات مختارة` : `${selectedCourses.length} courses selected`}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                   {lineTitles.slice(0, 3).join(isRTL ? ' · ' : ' · ')}
                   {lineTitles.length > 3 ? (isRTL ? ` +${lineTitles.length - 3}` : ` +${lineTitles.length - 3}`) : ''}
                 </p>
+                {selectedCourses.length === 1 && (
+                  <p className="text-xs text-amber-500">
+                    {isRTL ? '⚡ أضف كورساً واحداً فقط لتفعيل الخصم!' : '⚡ Add just 1 more course to unlock discounts!'}
+                  </p>
+                )}
                 {display.applicableTier && (
                   <p className="text-sm font-semibold text-primary">{tierLabel(display.applicableTier)}</p>
                 )}
@@ -83,7 +96,7 @@ export const BundleBottomBar: React.FC<Props> = ({
                       <span className="text-muted-foreground">→</span>
                     </>
                   ) : null}
-                  <span className="text-lg font-bold text-foreground tabular-nums">
+                  <span className="text-base sm:text-lg font-bold text-foreground tabular-nums">
                     {display.finalPrice} {currSym}
                   </span>
                   {display.discountPct > 0 ? <Sparkles className="w-4 h-4 text-amber-500 shrink-0" /> : null}
@@ -92,14 +105,14 @@ export const BundleBottomBar: React.FC<Props> = ({
                   <p className="text-[10px] text-muted-foreground leading-snug mt-1 max-w-prose">{checkoutSarNote}</p>
                 ) : null}
               </div>
-              <Button type="button" variant="ghost" size="sm" className="shrink-0 text-muted-foreground" onClick={onClear}>
+              <Button type="button" variant="ghost" size="sm" className="shrink-0 text-muted-foreground h-8 px-2.5" onClick={onClear}>
                 <X className="w-4 h-4 me-1" />
                 {isRTL ? 'إلغاء' : 'Clear'}
               </Button>
             </div>
 
             {display.nextTier && display.coursesNeededForNext > 0 && (
-              <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
+              <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs">
                 <p className="text-muted-foreground mb-1">
                   {isRTL
                     ? `أضف ${display.coursesNeededForNext} ${display.coursesNeededForNext === 1 ? 'كورساً' : 'كورسات'} للحصول على خصم ${Number(display.nextTier.discount_percentage)}%`
@@ -118,12 +131,18 @@ export const BundleBottomBar: React.FC<Props> = ({
             <Button
               type="button"
               variant="cta"
-              className="w-full h-11 rounded-xl font-bold"
+              className="w-full h-10.5 rounded-xl font-bold text-sm"
               disabled={selectedCourses.length < 2}
               onClick={onCheckout}
             >
               <ShoppingBag className="w-4 h-4 me-2" />
-              {isRTL ? 'اشترِ الباقة الآن' : 'Buy bundle now'}
+              {selectedCourses.length < 2
+                ? isRTL
+                  ? `اختر ${2 - selectedCourses.length} كورس أكثر`
+                  : `Select ${2 - selectedCourses.length} more course`
+                : isRTL
+                  ? `🛍 اشترِ الباقة — ${display.finalPrice} ${currSym}`
+                  : `🛍 Buy Bundle — ${display.finalPrice} ${currSym}`}
             </Button>
           </div>
         </motion.div>
