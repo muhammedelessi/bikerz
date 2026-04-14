@@ -40,10 +40,6 @@ export const BundleBottomBar: React.FC<Props> = ({
       : `${name} — ${Number(t.discount_percentage)}% off`;
   };
 
-  const checkoutSarNote = isRTL
-    ? 'عند الدفع يُحسب المبلغ بالريال السعودي وفق أسعار الموقع وسياسة الضريبة.'
-    : 'At checkout you are charged in SAR per site pricing and tax rules.';
-
   const lineTitles = selectedCourses.map((c) => {
     const row = courseLabels?.find((x) => x.id === c.id);
     if (!row) return '…';
@@ -101,9 +97,6 @@ export const BundleBottomBar: React.FC<Props> = ({
                   </span>
                   {display.discountPct > 0 ? <Sparkles className="w-4 h-4 text-amber-500 shrink-0" /> : null}
                 </div>
-                {!isSAR ? (
-                  <p className="text-[10px] text-muted-foreground leading-snug mt-1 max-w-prose">{checkoutSarNote}</p>
-                ) : null}
               </div>
               <Button type="button" variant="ghost" size="sm" className="shrink-0 text-muted-foreground h-8 px-2.5" onClick={onClear}>
                 <X className="w-4 h-4 me-1" />
