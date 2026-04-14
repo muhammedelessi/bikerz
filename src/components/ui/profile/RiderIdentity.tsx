@@ -16,8 +16,8 @@ interface RiderIdentityProps {
 
 const RANKS = [
   { 
-    name: 'FUTURE RIDER', 
-    name_ar: 'الراكب القادم',
+    name: 'FUTURE LEADER', 
+    name_ar: 'القائد القادم',
     icon: Rocket, 
     color: 'text-muted-foreground',
     bgColor: 'bg-muted/50',

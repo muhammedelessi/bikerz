@@ -2,7 +2,7 @@ import React, { useState, Suspense } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAdminCourseEditor } from '@/hooks/admin/useAdminCourseEditor';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -112,7 +112,10 @@ interface Lesson {
 }
 
 const AdminCourseEditor: React.FC = () => {
-  const { useRQ, useRM, queryClient, dbFrom } = useAdminCourseEditor();
+  const useRQ = useQuery;
+  const useRM = useMutation;
+  const queryClient = useQueryClient();
+  const dbFrom = (table: string) => supabase.from(table as any);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
