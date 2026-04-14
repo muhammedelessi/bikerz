@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { useAdminStudentDetail } from '@/hooks/admin/useAdminStudentDetail';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -76,6 +76,7 @@ const fmtDuration = (seconds: number): string => {
 };
 
 const AdminStudentDetail: React.FC = () => {
+  const { useRQ, useRM, queryClient, dbFrom } = useAdminStudentDetail();
   const { id: courseId, userId } = useParams<{ id: string; userId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -96,13 +97,13 @@ const AdminStudentDetail: React.FC = () => {
   };
 
   // Fetch student profile + email
-  const { data: student, isLoading: studentLoading } = useQuery({
+  const { data: student, isLoading: studentLoading } = useRQ({
     queryKey: ['student-profile', userId],
     queryFn: async () => {
       if (!userId) return null;
       const [profileRes, emailRes] = await Promise.all([
-        supabase.from('profiles').select('full_name, phone, city, country, avatar_url').eq('user_id', userId).single(),
-        supabase.from('tap_charges').select('customer_email').eq('user_id', userId).not('customer_email', 'is', null).limit(1),
+        dbFrom('profiles').select('full_name, phone, city, country, avatar_url').eq('user_id', userId).single(),
+        dbFrom('tap_charges').select('customer_email').eq('user_id', userId).not('customer_email', 'is', null).limit(1),
       ]);
       return {
         profile: profileRes.data,
@@ -113,7 +114,7 @@ const AdminStudentDetail: React.FC = () => {
   });
 
   // Fetch all enrollments for this student
-  const { data: enrollments = [], isLoading: enrollmentsLoading } = useQuery({
+  const { data: enrollments = [], isLoading: enrollmentsLoading } = useRQ({
     queryKey: ['student-enrollments', userId],
     queryFn: async () => {
       if (!userId) return [];
@@ -125,11 +126,11 @@ const AdminStudentDetail: React.FC = () => {
 
       const courseIds = enrs.map(e => e.course_id);
       const [coursesRes, reviewsRes, tapRes, manualRes, progressRes] = await Promise.all([
-        supabase.from('courses').select('id, title, title_ar').in('id', courseIds),
-        supabase.from('course_reviews').select('course_id, rating, comment').eq('user_id', userId).in('course_id', courseIds),
-        supabase.from('tap_charges').select('course_id, amount, currency, created_at, payment_method, status').eq('user_id', userId).eq('status', 'CAPTURED').in('course_id', courseIds),
-        supabase.from('manual_payments').select('course_id, amount, currency, created_at, payment_method, status').eq('user_id', userId).eq('status', 'approved').in('course_id', courseIds),
-        supabase.from('lesson_progress').select('lesson_id, is_completed').eq('user_id', userId).eq('is_completed', true),
+        dbFrom('courses').select('id, title, title_ar').in('id', courseIds),
+        dbFrom('course_reviews').select('course_id, rating, comment').eq('user_id', userId).in('course_id', courseIds),
+        dbFrom('tap_charges').select('course_id, amount, currency, created_at, payment_method, status').eq('user_id', userId).eq('status', 'CAPTURED').in('course_id', courseIds),
+        dbFrom('manual_payments').select('course_id, amount, currency, created_at, payment_method, status').eq('user_id', userId).eq('status', 'approved').in('course_id', courseIds),
+        dbFrom('lesson_progress').select('lesson_id, is_completed').eq('user_id', userId).eq('is_completed', true),
       ]);
 
       const courseMap = new Map((coursesRes.data || []).map(c => [c.id, c]));
@@ -141,10 +142,10 @@ const AdminStudentDetail: React.FC = () => {
         }
       });
 
-      const { data: chapters } = await supabase.from('chapters').select('id, course_id').in('course_id', courseIds);
+      const { data: chapters } = await dbFrom('chapters').select('id, course_id').in('course_id', courseIds);
       const chapterIds = (chapters || []).map(ch => ch.id);
       const { data: lessons } = chapterIds.length
-        ? await supabase.from('lessons').select('id, chapter_id').in('chapter_id', chapterIds)
+        ? await dbFrom('lessons').select('id, chapter_id').in('chapter_id', chapterIds)
         : { data: [] };
 
       const chapterCourseMap = new Map((chapters || []).map(ch => [ch.id, ch.course_id]));
@@ -192,7 +193,7 @@ const AdminStudentDetail: React.FC = () => {
   });
 
   // Fetch watch session data for this student across all courses
-  const { data: watchSessions = [] } = useQuery({
+  const { data: watchSessions = [] } = useRQ({
     queryKey: ['student-watch-sessions', userId],
     queryFn: async () => {
       if (!userId) return [];
@@ -212,7 +213,7 @@ const AdminStudentDetail: React.FC = () => {
 
   const firstIP: string | null = watchSessions.length > 0 ? (watchSessions.find(s => s.ip_address && s.ip_address !== 'unknown')?.ip_address || null) : null;
 
-  const { data: lessonTitles = [] } = useQuery({
+  const { data: lessonTitles = [] } = useRQ({
     queryKey: ['lesson-titles-for-behavior', watchSessions.map(b => b.lesson_id).join(',')],
     queryFn: async () => {
       const ids = [...new Set(watchSessions.map(b => b.lesson_id))];
@@ -229,7 +230,7 @@ const AdminStudentDetail: React.FC = () => {
   const lessonTitleMap = new Map(lessonTitles.map(l => [l.id, l]));
 
   // Group behaviors by course
-  const { data: lessonCourseMapping = new Map() } = useQuery({
+  const { data: lessonCourseMapping = new Map() } = useRQ({
     queryKey: ['lesson-course-mapping', watchSessions.map(b => b.lesson_id).join(',')],
     queryFn: async () => {
       const ids = [...new Set(watchSessions.map(b => b.lesson_id))];

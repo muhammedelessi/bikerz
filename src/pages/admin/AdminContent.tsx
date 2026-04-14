@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { useAdminContent } from '@/hooks/admin/useAdminContent';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,14 +73,14 @@ interface TrustBadge {
 }
 
 const AdminContent: React.FC = () => {
+  const { useRQ, useRM, queryClient, dbFrom } = useAdminContent();
   const { isRTL } = useLanguage();
-  const queryClient = useQueryClient();
   const [editedContent, setEditedContent] = useState<Record<string, ContentValue>>({});
   const [activeSection, setActiveSection] = useState('header');
   const [showPreview, setShowPreview] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
-  const { data: landingContent, isLoading } = useQuery({
+  const { data: landingContent, isLoading } = useRQ({
     queryKey: ['admin-landing-content'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -104,7 +104,7 @@ const AdminContent: React.FC = () => {
     }
   }, [landingContent]);
 
-  const updateMutation = useMutation({
+  const updateMutation = useRM({
     mutationFn: async ({ key, value }: { key: string; value: ContentValue }) => {
       const { error } = await supabase
         .from('admin_settings')

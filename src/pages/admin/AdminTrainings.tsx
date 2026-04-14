@@ -1,10 +1,10 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { useAdminTrainings } from '@/hooks/admin/useAdminTrainings';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -16,11 +16,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, X, Eye, Percent, Wrench, Trophy, Clock, ChevronDown } from 'lucide-react';
-import BilingualInput from '@/components/admin/content/BilingualInput';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { TrainingSessionCurriculum } from '@/lib/trainingSessionCurriculum';
 import { parseTrainingSessions } from '@/lib/trainingSessionCurriculum';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   TRAINING_PLATFORM_MARKUP_MAX,
   TRAINING_PLATFORM_VAT_MAX,
@@ -79,10 +79,10 @@ function parseTrainerSupplies(raw: unknown): TrainerSupply[] {
 }
 
 const AdminTrainings: React.FC = () => {
+  const { useRQ, useRM, queryClient, dbFrom } = useAdminTrainings();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const fieldDir = isRTL ? 'rtl' : 'ltr';
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [formOpen, setFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -108,10 +108,10 @@ const AdminTrainings: React.FC = () => {
   const [sessions, setSessions] = useState<TrainingSessionCurriculum[]>([]);
   const [openSessionIndex, setOpenSessionIndex] = useState<number | null>(null);
 
-  const { data: trainings, isLoading } = useQuery({
+  const { data: trainings, isLoading } = useRQ({
     queryKey: ['admin-trainings'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('trainings').select('*').order('created_at', { ascending: false });
+      const { data, error } = await dbFrom('trainings').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       return data as Training[];
     },
@@ -123,10 +123,10 @@ const AdminTrainings: React.FC = () => {
     return trainings.filter((t) => t.type === typeFilter);
   }, [trainings, typeFilter]);
 
-  const { data: trainerCounts } = useQuery({
+  const { data: trainerCounts } = useRQ({
     queryKey: ['training-trainer-counts'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('trainer_courses').select('training_id');
+      const { data, error } = await dbFrom('trainer_courses').select('training_id');
       if (error) throw error;
       const counts: Record<string, number> = {};
       data?.forEach(tc => { counts[tc.training_id] = (counts[tc.training_id] || 0) + 1; });
@@ -144,13 +144,13 @@ const AdminTrainings: React.FC = () => {
     }
   }, [pricing]);
 
-  const savePricingMutation = useMutation({
+  const savePricingMutation = useRM({
     mutationFn: async () => {
       const markupPct = clampTrainingPlatformMarkupPercent(parseFloat(String(markupDraft).replace(',', '.')));
       const vatPct = clampTrainingVatPercent(parseFloat(String(vatDraft).replace(',', '.')));
       const ts = new Date().toISOString();
       const uid = user?.id ?? null;
-      const { error } = await supabase.from('admin_settings').upsert(
+      const { error } = await dbFrom('admin_settings').upsert(
         [
           {
             key: TRAINING_MARKUP_SETTING_KEY,
@@ -179,7 +179,7 @@ const AdminTrainings: React.FC = () => {
     onError: () => toast.error(isRTL ? 'تعذر الحفظ' : 'Save failed'),
   });
 
-  const saveMutation = useMutation({
+  const saveMutation = useRM({
     mutationFn: async (data: typeof form & { id?: string; background_image?: string | null; trainer_supplies?: TrainerSupply[]; sessions?: TrainingSessionCurriculum[] }) => {
       const { id, ...rest } = data;
       const payload: Record<string, unknown> = {
@@ -199,9 +199,9 @@ const AdminTrainings: React.FC = () => {
 
       const upsert = async (body: Record<string, unknown>) => {
         if (id) {
-          return supabase.from('trainings').update(body).eq('id', id);
+          return dbFrom('trainings').update(body).eq('id', id);
         }
-        return supabase.from('trainings').insert(body);
+        return dbFrom('trainings').insert(body);
       };
 
       const body: Record<string, unknown> = { ...payload };
@@ -246,9 +246,9 @@ const AdminTrainings: React.FC = () => {
     },
   });
 
-  const deleteMutation = useMutation({
+  const deleteMutation = useRM({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('trainings').delete().eq('id', id);
+      const { error } = await dbFrom('trainings').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -462,7 +462,26 @@ const AdminTrainings: React.FC = () => {
           <Card className="order-1">
             <CardContent className="p-6 space-y-5">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'المعلومات الأساسية' : 'Basic Information'}</h3>
-              <BilingualInput labelEn="Name" labelAr="الاسم" valueEn={form.name_en} valueAr={form.name_ar} onChangeEn={v => setForm(f => ({...f, name_en: v}))} onChangeAr={v => setForm(f => ({...f, name_ar: v}))} placeholderEn="Training name" placeholderAr="اسم التدريب" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" dir="ltr">
+                <div className="space-y-2 order-1 sm:order-2">
+                  <Label dir="rtl">اسم التدريب</Label>
+                  <Input
+                    value={form.name_ar}
+                    onChange={(e) => setForm((f) => ({ ...f, name_ar: e.target.value }))}
+                    placeholder="اسم التدريب"
+                    dir="rtl"
+                  />
+                </div>
+                <div className="space-y-2 order-2 sm:order-1">
+                  <Label dir="ltr">Training Name</Label>
+                  <Input
+                    value={form.name_en}
+                    onChange={(e) => setForm((f) => ({ ...f, name_en: e.target.value }))}
+                    placeholder="Training name"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -558,19 +577,34 @@ const AdminTrainings: React.FC = () => {
                     </div>
                     <CollapsibleContent>
                       <div className="space-y-4 p-4 sm:p-5">
-                        <BilingualInput
-                          labelAr="عنوان الجلسة"
-                          labelEn="Session Title"
-                          valueAr={session.title_ar}
-                          valueEn={session.title_en}
-                          onChangeAr={(v) => updateSession(i, 'title_ar', v)}
-                          onChangeEn={(v) => updateSession(i, 'title_en', v)}
-                          placeholderAr="مثال: مقدمة في قيادة الدراجة"
-                          placeholderEn="e.g. Introduction to Motorcycle Riding"
-                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" dir="ltr">
+                          <div className="space-y-2 order-1 sm:order-2 rounded-lg border border-border/60 p-3">
+                            <Label dir="rtl">عنوان الجلسة</Label>
+                            <Input
+                              value={session.title_ar}
+                              onChange={(e) => updateSession(i, 'title_ar', e.target.value)}
+                              placeholder="مثال: مقدمة في قيادة الدراجة"
+                              dir="rtl"
+                            />
+                          </div>
+                          <div className="space-y-2 order-2 sm:order-1 rounded-lg border border-border/60 p-3">
+                            <Label dir="ltr">Session Title</Label>
+                            <Input
+                              value={session.title_en}
+                              onChange={(e) => updateSession(i, 'title_en', e.target.value)}
+                              placeholder="e.g. Introduction to Motorcycle Riding"
+                              dir="ltr"
+                            />
+                          </div>
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>{isRTL ? 'عدد الساعات' : 'Duration (hours)'}</Label>
+                            <div className="space-y-0.5 min-h-[36px]">
+                              <Label>{isRTL ? 'عدد الساعات' : 'Duration (hours)'}</Label>
+                              <p className="text-[10px] text-muted-foreground">
+                                {isRTL ? '\u00a0' : '\u00a0'}
+                              </p>
+                            </div>
                             <Input
                               type="number"
                               min={0.5}
@@ -584,12 +618,12 @@ const AdminTrainings: React.FC = () => {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label className="flex items-center gap-1.5 flex-wrap">
-                              {isRTL ? 'النقاط' : 'Points'}
-                              <span className="text-[10px] text-muted-foreground font-normal">
+                            <div className="space-y-0.5 min-h-[36px]">
+                              <Label>{isRTL ? 'النقاط' : 'Points'}</Label>
+                              <p className="text-[10px] text-muted-foreground font-normal">
                                 {isRTL ? '(تُمنح عند إتمام الجلسة)' : '(awarded on completion)'}
-                              </span>
-                            </Label>
+                              </p>
+                            </div>
                             <Input
                               type="number"
                               min={0}
@@ -602,30 +636,38 @@ const AdminTrainings: React.FC = () => {
                             />
                           </div>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-2 rounded-lg border border-border/60 p-3">
                           <Label>{isRTL ? 'ماذا ستتعلم في هذه الجلسة' : "What You'll Learn"}</Label>
+                          <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-center text-xs text-muted-foreground" dir="ltr">
+                            <span className="order-2 sm:order-1" dir="ltr">{isRTL ? 'Objective (EN)' : 'Objective (EN)'}</span>
+                            <span className="order-1 sm:order-2 text-right" dir="rtl">{isRTL ? 'الهدف (AR)' : 'Objective (AR)'}</span>
+                            <span className="order-3">&nbsp;</span>
+                          </div>
                           {session.objectives.map((obj, oi) => (
                             <div
                               key={oi}
                               className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-center"
+                              dir="ltr"
                             >
-                              <Input
-                                value={obj.ar}
-                                onChange={(e) => updateObjective(i, oi, 'ar', e.target.value)}
-                                placeholder="مثال: تعلم وضعية الجلوس الصحيحة"
-                                dir="rtl"
-                              />
                               <Input
                                 value={obj.en}
                                 onChange={(e) => updateObjective(i, oi, 'en', e.target.value)}
                                 placeholder="e.g. Learn correct sitting posture"
                                 dir="ltr"
+                                className="order-2 sm:order-1"
+                              />
+                              <Input
+                                value={obj.ar}
+                                onChange={(e) => updateObjective(i, oi, 'ar', e.target.value)}
+                                placeholder="مثال: تعلم وضعية الجلوس الصحيحة"
+                                dir="rtl"
+                                className="order-1 sm:order-2"
                               />
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="text-destructive hover:bg-destructive/10 h-9 w-9 sm:h-8 sm:w-8 justify-self-start"
+                                className="text-destructive hover:bg-destructive/10 h-9 w-9 sm:h-8 sm:w-8 justify-self-start order-3"
                                 onClick={() => removeObjective(i, oi)}
                                 aria-label={isRTL ? 'حذف الهدف' : 'Remove objective'}
                               >
@@ -679,7 +721,28 @@ const AdminTrainings: React.FC = () => {
           <Card className="order-2">
             <CardContent className="p-6 space-y-5">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'الوصف' : 'Description'}</h3>
-              <BilingualInput labelEn="Description" labelAr="الوصف" valueEn={form.description_en} valueAr={form.description_ar} onChangeEn={v => setForm(f => ({...f, description_en: v}))} onChangeAr={v => setForm(f => ({...f, description_ar: v}))} isTextarea rows={3} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" dir="ltr">
+                <div className="space-y-2 order-1 sm:order-2">
+                  <Label dir="rtl">الوصف</Label>
+                  <Textarea
+                    value={form.description_ar}
+                    onChange={(e) => setForm((f) => ({ ...f, description_ar: e.target.value }))}
+                    placeholder="وصف التدريب"
+                    dir="rtl"
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-2 order-2 sm:order-1">
+                  <Label dir="ltr">Description</Label>
+                  <Textarea
+                    value={form.description_en}
+                    onChange={(e) => setForm((f) => ({ ...f, description_en: e.target.value }))}
+                    placeholder="Training description"
+                    dir="ltr"
+                    rows={3}
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -688,18 +751,9 @@ const AdminTrainings: React.FC = () => {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                 {isRTL ? 'ما يوفره المدرب' : 'Trainer Supplies'}
               </h3>
-              <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-                <div className="space-y-1">
-                  <Label>{isRTL ? 'الاسم (عربي)' : 'Name (AR)'}</Label>
-                  <Input
-                    dir="rtl"
-                    placeholder="مثال: حامي اليدين"
-                    value={newSupply.name_ar}
-                    onChange={(e) => setNewSupply((p) => ({ ...p, name_ar: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>{isRTL ? 'الاسم (إنجليزي)' : 'Name (EN)'}</Label>
+              <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end" dir="ltr">
+                <div className="space-y-1 order-2 sm:order-1">
+                  <Label dir="ltr">Name (EN)</Label>
                   <Input
                     dir="ltr"
                     placeholder="e.g. Hand Guards"
@@ -707,7 +761,16 @@ const AdminTrainings: React.FC = () => {
                     onChange={(e) => setNewSupply((p) => ({ ...p, name_en: e.target.value }))}
                   />
                 </div>
-                <Button type="button" onClick={addSupply} className="gap-1">
+                <div className="space-y-1 order-1 sm:order-2">
+                  <Label dir="rtl">الاسم (عربي)</Label>
+                  <Input
+                    dir="rtl"
+                    placeholder="مثال: حامي اليدين"
+                    value={newSupply.name_ar}
+                    onChange={(e) => setNewSupply((p) => ({ ...p, name_ar: e.target.value }))}
+                  />
+                </div>
+                <Button type="button" onClick={addSupply} className="gap-1 order-3">
                   <Plus className="h-4 w-4" />
                   {isRTL ? 'إضافة' : 'Add'}
                 </Button>

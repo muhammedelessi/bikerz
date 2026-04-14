@@ -1,9 +1,9 @@
 import React, { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { useAdminCourses } from '@/hooks/admin/useAdminCourses';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -190,8 +190,8 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
     if (!open) return;
     const load = async () => {
       // Just get SA defaults from first course
-      const { data: courses } = await supabase.from("courses").select("id, price, discount_percentage").limit(1);
-      const { data: prices } = await supabase.from("course_country_prices").select("*").limit(100);
+      const { data: courses } = await dbFrom("courses").select("id, price, discount_percentage").limit(1);
+      const { data: prices } = await dbFrom("course_country_prices").select("*").limit(100);
 
       setRows((prev) => {
         const updated = { ...prev };
@@ -275,7 +275,7 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
     }
     setSaving(true);
     try {
-      const { data: courses } = await supabase.from("courses").select("id");
+      const { data: courses } = await dbFrom("courses").select("id");
       if (!courses?.length) {
         setSaving(false);
         return;
@@ -323,7 +323,7 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
       });
 
       if (insertRows.length > 0) {
-        await supabase.from("course_country_prices").insert(insertRows);
+        await dbFrom("course_country_prices").insert(insertRows);
       }
 
       toast.success(isRTL ? "تم تطبيق الأسعار على جميع الكورسات" : "Prices applied to all courses");
@@ -635,9 +635,9 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
 // ─────────────────────────────────────────────────────────────────────────────
 
 const AdminCourses: React.FC = () => {
+  const { useRQ, useRM, queryClient, dbFrom } = useAdminCourses();
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -736,17 +736,17 @@ const AdminCourses: React.FC = () => {
   const [countryPrices, setCountryPrices] = useState<CountryPrice[]>([]);
 
   // Fetch courses
-  const { data: courses = [], isLoading } = useQuery({
+  const { data: courses = [], isLoading } = useRQ({
     queryKey: ["admin-courses"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
+      const { data, error } = await dbFrom("courses").select("*").order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as Course[];
     },
   });
 
-  const { data: bundlePurchases = [], isLoading: bundlePurchasesLoading } = useQuery({
+  const { data: bundlePurchases = [], isLoading: bundlePurchasesLoading } = useRQ({
     queryKey: ["admin-course-bundles"],
     queryFn: async () => {
       const { data: bundles, error } = await supabase
@@ -759,10 +759,10 @@ const AdminCourses: React.FC = () => {
       const allCourseIds = [...new Set(list.flatMap((b) => b.course_ids || []))];
       const [profilesRes, coursesRes] = await Promise.all([
         userIds.length
-          ? supabase.from("profiles").select("user_id, full_name").in("user_id", userIds)
+          ? dbFrom("profiles").select("user_id, full_name").in("user_id", userIds)
           : Promise.resolve({ data: [] as { user_id: string; full_name: string | null }[] }),
         allCourseIds.length
-          ? supabase.from("courses").select("id, title, title_ar").in("id", allCourseIds)
+          ? dbFrom("courses").select("id, title, title_ar").in("id", allCourseIds)
           : Promise.resolve({ data: [] as { id: string; title: string; title_ar: string | null }[] }),
       ]);
       return list.map((b) => ({
@@ -774,10 +774,10 @@ const AdminCourses: React.FC = () => {
   });
 
   // Create course mutation
-  const createMutation = useMutation({
+  const createMutation = useRM({
     mutationFn: async (data: typeof formData) => {
       const expiresAt = computeDiscountExpiry(data.discount_duration, data.discount_expires_at);
-      const { error } = await supabase.from("courses").insert({
+      const { error } = await dbFrom("courses").insert({
         title: data.title,
         title_ar: data.title_ar || null,
         description: data.description || null,
@@ -807,7 +807,7 @@ const AdminCourses: React.FC = () => {
   });
 
   // Update course mutation
-  const updateMutation = useMutation({
+  const updateMutation = useRM({
     mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
       const expiresAt = computeDiscountExpiry(data.discount_duration, data.discount_expires_at);
       const { error } = await supabase
@@ -843,9 +843,9 @@ const AdminCourses: React.FC = () => {
   });
 
   // Delete course mutation
-  const deleteMutation = useMutation({
+  const deleteMutation = useRM({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("courses").delete().eq("id", id);
+      const { error } = await dbFrom("courses").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -1028,7 +1028,7 @@ const AdminCourses: React.FC = () => {
 
   const saveCountryPrices = async (courseId: string) => {
     // Delete existing prices for this course
-    await supabase.from("course_country_prices").delete().eq("course_id", courseId);
+    await dbFrom("course_country_prices").delete().eq("course_id", courseId);
     // Insert new ones
     if (countryPrices.length > 0) {
       const rows = countryPrices.map((cp) => ({
@@ -1039,7 +1039,7 @@ const AdminCourses: React.FC = () => {
         price: cp.price,
         currency: cp.currency,
       }));
-      await supabase.from("course_country_prices").insert(rows);
+      await dbFrom("course_country_prices").insert(rows);
     }
   };
 

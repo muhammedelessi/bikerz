@@ -148,6 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const roleChecks = useMemo(() => {
     const isSuperAdmin = roles.includes('super_admin');
+    const isDeveloper = roles.includes('developer');
     const isAcademyAdmin = roles.includes('academy_admin');
     const isInstructor = roles.includes('instructor');
     const isModerator = roles.includes('moderator');
@@ -159,6 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return {
       isSuperAdmin,
+      isDeveloper,
       isAcademyAdmin,
       isInstructor,
       isModerator,

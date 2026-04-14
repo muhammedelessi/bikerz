@@ -1,11 +1,11 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { useAdminTrainers } from '@/hooks/admin/useAdminTrainers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -314,11 +314,11 @@ function resolveLockedTrainerCourse(
 
 // ─── Main Page ───────────────────────────────────────────────────────
 const AdminTrainers: React.FC = () => {
+  const { useRQ, useRM, queryClient, dbFrom } = useAdminTrainers();
   const { isRTL } = useLanguage();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const locationFieldDir = isRTL ? 'rtl' : 'ltr';
-  const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const bikePhotoFileRef = useRef<HTMLInputElement>(null);
   const bikePhotoPickTypeRef = useRef<string | null>(null);
@@ -369,16 +369,16 @@ const AdminTrainers: React.FC = () => {
     list.forEach((p) => URL.revokeObjectURL(p.preview));
   };
 
-  const { data: trainers, isLoading } = useQuery({
+  const { data: trainers, isLoading } = useRQ({
     queryKey: ['admin-trainers'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('trainers').select('*').order('created_at', { ascending: false });
+      const { data, error } = await dbFrom('trainers').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       return data as Trainer[];
     },
   });
 
-  const { data: allTrainings } = useQuery({
+  const { data: allTrainings } = useRQ({
     queryKey: ['all-trainings-catalog'],
     queryFn: async () => {
       const withSessions = await supabase
@@ -396,10 +396,10 @@ const AdminTrainers: React.FC = () => {
     },
   });
 
-  const { data: reviewStats } = useQuery({
+  const { data: reviewStats } = useRQ({
     queryKey: ['trainer-review-stats'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('trainer_reviews').select('trainer_id, rating');
+      const { data, error } = await dbFrom('trainer_reviews').select('trainer_id, rating');
       if (error) throw error;
       const stats: Record<string, { avg: number; count: number }> = {};
       const grouped: Record<string, number[]> = {};
@@ -411,10 +411,10 @@ const AdminTrainers: React.FC = () => {
     },
   });
 
-  const { data: studentCounts } = useQuery({
+  const { data: studentCounts } = useRQ({
     queryKey: ['trainer-student-counts'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('training_students').select('trainer_id');
+      const { data, error } = await dbFrom('training_students').select('trainer_id');
       if (error) throw error;
       const counts: Record<string, number> = {};
       data?.forEach(s => { counts[s.trainer_id] = (counts[s.trainer_id] || 0) + 1; });
@@ -422,19 +422,19 @@ const AdminTrainers: React.FC = () => {
     },
   });
 
-  const { data: studentTrainerTrainingRows } = useQuery({
+  const { data: studentTrainerTrainingRows } = useRQ({
     queryKey: ['admin-training-students-by-pair'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('training_students').select('trainer_id, training_id');
+      const { data, error } = await dbFrom('training_students').select('trainer_id, training_id');
       if (error) throw error;
       return (data || []) as { trainer_id: string; training_id: string }[];
     },
   });
 
-  const { data: trainerCourseRows } = useQuery({
+  const { data: trainerCourseRows } = useRQ({
     queryKey: ['admin-trainer-courses-summary'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('trainer_courses').select('trainer_id, training_id, price');
+      const { data, error } = await dbFrom('trainer_courses').select('trainer_id, training_id, price');
       if (error) throw error;
       return (data || []) as { trainer_id: string; training_id: string; price: number | string }[];
     },
@@ -501,7 +501,7 @@ const AdminTrainers: React.FC = () => {
     return data.publicUrl;
   };
 
-  const saveMutation = useMutation({
+  const saveMutation = useRM({
     mutationFn: async () => {
       let photoUrl = form.photo_url;
       if (photoFile) photoUrl = await uploadPhoto(photoFile);
@@ -544,7 +544,7 @@ const AdminTrainers: React.FC = () => {
 
       if (editingTrainer) {
         trainerId = editingTrainer.id;
-        const { error } = await supabase.from('trainers').update(rowBeforeUploads).eq('id', trainerId);
+        const { error } = await dbFrom('trainers').update(rowBeforeUploads).eq('id', trainerId);
         if (error) {
           const msg = String(error.message || '');
           const missingPhoneOrEmailColumn =
@@ -554,7 +554,7 @@ const AdminTrainers: React.FC = () => {
           const legacyRow = { ...rowBeforeUploads } as Record<string, unknown>;
           delete legacyRow.phone;
           delete legacyRow.email;
-          const { error: retryError } = await supabase.from('trainers').update(legacyRow).eq('id', trainerId);
+          const { error: retryError } = await dbFrom('trainers').update(legacyRow).eq('id', trainerId);
           if (retryError) throw retryError;
           toast.warning(
             isRTL
@@ -563,7 +563,7 @@ const AdminTrainers: React.FC = () => {
           );
         }
       } else {
-        let { data, error } = await supabase.from('trainers').insert(rowBeforeUploads).select('id').single();
+        let { data, error } = await dbFrom('trainers').insert(rowBeforeUploads).select('id').single();
         if (error) {
           const msg = String(error.message || '');
           const missingPhoneOrEmailColumn =
@@ -573,7 +573,7 @@ const AdminTrainers: React.FC = () => {
           const legacyRow = { ...rowBeforeUploads } as Record<string, unknown>;
           delete legacyRow.phone;
           delete legacyRow.email;
-          const retry = await supabase.from('trainers').insert(legacyRow).select('id').single();
+          const retry = await dbFrom('trainers').insert(legacyRow).select('id').single();
           data = retry.data;
           error = retry.error;
           if (error) throw error;
@@ -613,9 +613,9 @@ const AdminTrainers: React.FC = () => {
       }
 
       if (editingTrainer) {
-        await supabase.from('trainer_courses').delete().eq('trainer_id', editingTrainer.id);
+        await dbFrom('trainer_courses').delete().eq('trainer_id', editingTrainer.id);
         if (assignedTrainings.length > 0) {
-          const { error: tcError } = await supabase.from('trainer_courses').insert(
+          const { error: tcError } = await dbFrom('trainer_courses').insert(
             assignedTrainings.map((at) =>
               toTrainerCourseInsertRow(
                 trainerId,
@@ -626,7 +626,7 @@ const AdminTrainers: React.FC = () => {
           if (tcError) throw tcError;
         }
       } else if (assignedTrainings.length > 0) {
-        const { error: tcError } = await supabase.from('trainer_courses').insert(
+        const { error: tcError } = await dbFrom('trainer_courses').insert(
           assignedTrainings.map((at) =>
             toTrainerCourseInsertRow(
               trainerId,
@@ -659,9 +659,9 @@ const AdminTrainers: React.FC = () => {
     },
   });
 
-  const deleteMutation = useMutation({
+  const deleteMutation = useRM({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('trainers').delete().eq('id', id);
+      const { error } = await dbFrom('trainers').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -836,7 +836,7 @@ const AdminTrainers: React.FC = () => {
         return;
       }
       if (trainers === undefined) return;
-      const { data, error } = await supabase.from('trainers').select('*').eq('id', editId).single();
+      const { data, error } = await dbFrom('trainers').select('*').eq('id', editId).single();
       if (!error && data) {
         await openEditRef.current(data as Trainer);
       }
@@ -1421,28 +1421,49 @@ const AdminTrainers: React.FC = () => {
                   })()}
                 </div>
               </div>
-              <div className="space-y-3">
-                <Label>{isRTL ? 'أنواع الدراجات' : 'Bike types'}</Label>
-                <div className="flex flex-wrap gap-4">
-                  {COMMON_BIKE_TYPES.map((type) => (
-                    <label key={type} className="flex items-center gap-2 cursor-pointer text-sm">
-                      <Checkbox checked={form.bike_types.includes(type)} onCheckedChange={() => toggleBikeType(type)} />
-                      <span>{bikeTypeDisplayLabel(type, isRTL)}</span>
-                    </label>
-                  ))}
+              <div className="space-y-4 rounded-xl border border-border/70 bg-muted/10 p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-sm font-semibold">{isRTL ? 'أنواع الدراجات وتفاصيلها' : 'Bike Types & Details'}</Label>
+                  <Badge variant="outline" className="text-xs">
+                    {form.bike_types.length} {isRTL ? 'مختار' : 'selected'}
+                  </Badge>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  {isRTL
+                    ? 'اختر الأنواع التي يدرب عليها المدرب، ثم أضف الماركة والصور لكل نوع.'
+                    : 'Choose trainer bike types first, then add brand and photos for each type.'}
+                </p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {COMMON_BIKE_TYPES.map((type) => {
+                    const active = form.bike_types.includes(type);
+                    return (
+                      <Button
+                        key={type}
+                        type="button"
+                        variant={active ? 'default' : 'outline'}
+                        className="h-auto py-2 px-3 text-xs sm:text-sm justify-start"
+                        onClick={() => toggleBikeType(type)}
+                      >
+                        {bikeTypeDisplayLabel(type, isRTL)}
+                      </Button>
+                    );
+                  })}
+                </div>
+
                 <div className="flex gap-2 max-w-md">
                   <Input
                     value={bikeTypeInput}
                     onChange={(e) => setBikeTypeInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomBikeType())}
-                    placeholder={isRTL ? 'نوع مخصص...' : 'Custom type...'}
+                    placeholder={isRTL ? 'أضف نوعًا مخصصًا...' : 'Add custom bike type...'}
                     className="flex-1"
                   />
                   <Button type="button" variant="outline" size="icon" onClick={addCustomBikeType}>
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
+
                 <div className="flex flex-wrap gap-2">
                   {form.bike_types.map((t) => (
                     <Badge key={t} variant="secondary" className="gap-1 px-3 py-1.5">
@@ -1454,10 +1475,9 @@ const AdminTrainers: React.FC = () => {
                     <p className="text-xs text-muted-foreground">{isRTL ? 'لم يتم اختيار نوع بعد' : 'No bike types selected'}</p>
                   )}
                 </div>
-              </div>
 
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">{isRTL ? 'تفاصيل كل دراجة' : 'Per-bike details'}</Label>
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">{isRTL ? 'تفاصيل كل دراجة' : 'Per-bike details'}</Label>
                 <p className="text-xs text-muted-foreground">
                   {isRTL
                     ? `ماركة وصور لكل نوع. حتى ${MAX_PHOTOS_PER_BIKE_ENTRY} صور لكل نوع، حتى ${MAX_BIKE_PHOTO_BYTES / (1024 * 1024)} ميجابايت لكل صورة`
@@ -1471,12 +1491,12 @@ const AdminTrainers: React.FC = () => {
                   className="hidden"
                   onChange={onBikePhotoFileInputChange}
                 />
-                {form.bike_types.length === 0 ? (
-                  <p className="text-xs text-muted-foreground border border-dashed rounded-lg p-4 text-center">
-                    {isRTL ? 'اختر أنواع الدراجات أعلاه لإضافة التفاصيل' : 'Select bike types above to add brand and photos'}
-                  </p>
-                ) : (
-                  <div className="space-y-4">
+                  {form.bike_types.length === 0 ? (
+                    <p className="text-xs text-muted-foreground border border-dashed rounded-lg p-4 text-center">
+                      {isRTL ? 'اختر أنواع الدراجات أعلاه لإضافة التفاصيل' : 'Select bike types above to add brand and photos'}
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
                     {form.bike_types.map((bikeType) => {
                       const entry =
                         form.bike_entries.find((e) => e.type === bikeType) ?? { type: bikeType, brand: '', photos: [] };
@@ -1569,19 +1589,17 @@ const AdminTrainers: React.FC = () => {
                         </div>
                       );
                     })}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>{isRTL ? 'نوع الرخصة' : 'License Type'}</Label>
                   <Input value={form.license_type} onChange={e => setForm(f => ({ ...f, license_type: e.target.value }))} placeholder={isRTL ? 'مثال: A2' : 'e.g. A2'} />
                 </div>
-              </div>
-              <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2"><Label>{isRTL ? 'سنوات الخبرة' : 'Years of Experience'}</Label><Input type="number" value={form.years_of_experience} onChange={e => setForm(f => ({ ...f, years_of_experience: parseInt(e.target.value) || 0 }))} /></div>
-                <div className="space-y-2"><Label>{isRTL ? 'نسبة الربح (%)' : 'Profit Ratio (%)'}</Label><Input type="number" min={0} max={100} value={form.profit_ratio} onChange={e => setForm(f => ({ ...f, profit_ratio: parseFloat(e.target.value) || 0 }))} /></div>
               </div>
 
               {/* Status */}
@@ -1611,11 +1629,15 @@ const AdminTrainers: React.FC = () => {
               <div className="flex flex-col gap-3 rounded-lg border border-border/60 bg-muted/20 p-3 sm:flex-row sm:flex-wrap sm:items-end">
                 <div className="min-w-0 flex-[1.2] space-y-1.5 sm:min-w-[12rem]">
                   <Label className="text-xs">{isRTL ? 'لغة' : 'Language'}</Label>
-                  <Select value={languageAddCode || '__none__'} onValueChange={(v) => setLanguageAddCode(v === '__none__' ? '' : v)}>
-                    <SelectTrigger className="h-9 w-full">
+                  <Select
+                    dir={locationFieldDir}
+                    value={languageAddCode || '__none__'}
+                    onValueChange={(v) => setLanguageAddCode(v === '__none__' ? '' : v)}
+                  >
+                    <SelectTrigger dir={locationFieldDir} className="h-9 w-full">
                       <SelectValue placeholder={isRTL ? 'اختر لغة' : 'Select language'} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent dir={locationFieldDir}>
                       <SelectItem value="__none__">{isRTL ? '— اختر —' : '— Select —'}</SelectItem>
                       {TRAINER_LANGUAGE_OPTIONS.filter(
                         (opt) => !form.language_levels.some((e) => e.language === opt.code),
@@ -1629,11 +1651,11 @@ const AdminTrainers: React.FC = () => {
                 </div>
                 <div className="min-w-0 flex-1 space-y-1.5 sm:min-w-[12rem]">
                   <Label className="text-xs">{isRTL ? 'المستوى' : 'Level'}</Label>
-                  <Select value={languageAddLevel} onValueChange={setLanguageAddLevel}>
-                    <SelectTrigger className="h-9 w-full">
+                  <Select dir={locationFieldDir} value={languageAddLevel} onValueChange={setLanguageAddLevel}>
+                    <SelectTrigger dir={locationFieldDir} className="h-9 w-full">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent dir={locationFieldDir}>
                       {LANGUAGE_LEVEL_OPTIONS.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>
                           {isRTL ? opt.label_ar : opt.label_en}

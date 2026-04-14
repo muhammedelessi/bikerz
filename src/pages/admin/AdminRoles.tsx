@@ -49,7 +49,7 @@ import {
   Eye,
 } from 'lucide-react';
 
-type AppRole = 'super_admin' | 'academy_admin' | 'instructor' | 'moderator' | 'finance' | 'support' | 'student';
+type AppRole = 'super_admin' | 'developer' | 'academy_admin' | 'instructor' | 'moderator' | 'finance' | 'support' | 'student';
 
 const roleConfig: Record<AppRole, { icon: React.ElementType; color: string; labelEn: string; labelAr: string; descEn: string; descAr: string }> = {
   super_admin: {
@@ -59,6 +59,14 @@ const roleConfig: Record<AppRole, { icon: React.ElementType; color: string; labe
     labelAr: 'المشرف الأعلى',
     descEn: 'Full system access',
     descAr: 'صلاحيات كاملة',
+  },
+  developer: {
+    icon: Shield,
+    color: 'text-orange-500 bg-orange-500/10',
+    labelEn: 'Developer',
+    labelAr: 'مطور',
+    descEn: 'Developer-only maintenance access',
+    descAr: 'صلاحيات صيانة خاصة بالمطور',
   },
   academy_admin: {
     icon: ShieldCheck,

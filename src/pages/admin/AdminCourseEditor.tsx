@@ -1,7 +1,6 @@
 import React, { useState, Suspense } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -112,11 +111,11 @@ interface Lesson {
 }
 
 const AdminCourseEditor: React.FC = () => {
+  const { useRQ, useRM, queryClient, dbFrom } = useAdminCourseEditor();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const queryClient = useQueryClient();
 
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const BackArrow = isRTL ? ArrowRight : ArrowLeft;
@@ -173,7 +172,7 @@ const AdminCourseEditor: React.FC = () => {
   });
 
   // Fetch course
-  const { data: course, isLoading: courseLoading } = useQuery({
+  const { data: course, isLoading: courseLoading } = useRQ({
     queryKey: ['admin-course', id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -188,7 +187,7 @@ const AdminCourseEditor: React.FC = () => {
   });
 
   // Fetch chapters with lessons
-  const { data: chapters = [], isLoading: chaptersLoading } = useQuery({
+  const { data: chapters = [], isLoading: chaptersLoading } = useRQ({
     queryKey: ['admin-chapters', id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -203,7 +202,7 @@ const AdminCourseEditor: React.FC = () => {
   });
 
   // Fetch lessons
-  const { data: lessons = [] } = useQuery({
+  const { data: lessons = [] } = useRQ({
     queryKey: ['admin-lessons', id],
     queryFn: async () => {
       const chapterIds = chapters.map(c => c.id);
@@ -221,7 +220,7 @@ const AdminCourseEditor: React.FC = () => {
   });
 
   // Fetch chapter tests
-  const { data: chapterTests = [] } = useQuery({
+  const { data: chapterTests = [] } = useRQ({
     queryKey: ['admin-chapter-tests', id],
     queryFn: async () => {
       const chapterIds = chapters.map(c => c.id);
@@ -242,10 +241,10 @@ const AdminCourseEditor: React.FC = () => {
   };
 
   // Create chapter mutation
-  const createChapterMutation = useMutation({
+  const createChapterMutation = useRM({
     mutationFn: async (data: typeof chapterForm) => {
       const maxPosition = chapters.reduce((max, ch) => Math.max(max, ch.position), -1);
-      const { error } = await supabase.from('chapters').insert({
+      const { error } = await dbFrom('chapters').insert({
         course_id: id,
         title: data.title,
         title_ar: data.title_ar || null,
@@ -269,7 +268,7 @@ const AdminCourseEditor: React.FC = () => {
   });
 
   // Update chapter mutation
-  const updateChapterMutation = useMutation({
+  const updateChapterMutation = useRM({
     mutationFn: async ({ chapterId, data }: { chapterId: string; data: typeof chapterForm }) => {
       const { error } = await supabase
         .from('chapters')
@@ -297,9 +296,9 @@ const AdminCourseEditor: React.FC = () => {
   });
 
   // Delete chapter mutation
-  const deleteChapterMutation = useMutation({
+  const deleteChapterMutation = useRM({
     mutationFn: async (chapterId: string) => {
-      const { error } = await supabase.from('chapters').delete().eq('id', chapterId);
+      const { error } = await dbFrom('chapters').delete().eq('id', chapterId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -312,12 +311,12 @@ const AdminCourseEditor: React.FC = () => {
   });
 
   // Create lesson mutation
-  const createLessonMutation = useMutation({
+  const createLessonMutation = useRM({
     mutationFn: async ({ chapterId, data }: { chapterId: string; data: typeof lessonForm }) => {
       const chapterLessons = lessons.filter(l => l.chapter_id === chapterId);
       const maxPosition = chapterLessons.reduce((max, l) => Math.max(max, l.position), -1);
       
-      const { error } = await supabase.from('lessons').insert({
+      const { error } = await dbFrom('lessons').insert({
         chapter_id: chapterId,
         title: data.title,
         title_ar: data.title_ar || null,
@@ -345,7 +344,7 @@ const AdminCourseEditor: React.FC = () => {
   });
 
   // Update lesson mutation
-  const updateLessonMutation = useMutation({
+  const updateLessonMutation = useRM({
     mutationFn: async ({ lessonId, data }: { lessonId: string; data: typeof lessonForm }) => {
       const { error } = await supabase
         .from('lessons')
@@ -377,9 +376,9 @@ const AdminCourseEditor: React.FC = () => {
   });
 
   // Delete lesson mutation
-  const deleteLessonMutation = useMutation({
+  const deleteLessonMutation = useRM({
     mutationFn: async (lessonId: string) => {
-      const { error } = await supabase.from('lessons').delete().eq('id', lessonId);
+      const { error } = await dbFrom('lessons').delete().eq('id', lessonId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -392,10 +391,10 @@ const AdminCourseEditor: React.FC = () => {
   });
 
   // Reorder chapters mutation
-  const reorderChaptersMutation = useMutation({
+  const reorderChaptersMutation = useRM({
     mutationFn: async (reorderedChapters: Chapter[]) => {
       const updates = reorderedChapters.map((chapter, index) => 
-        supabase.from('chapters').update({ position: index }).eq('id', chapter.id)
+        dbFrom('chapters').update({ position: index }).eq('id', chapter.id)
       );
       const results = await Promise.all(updates);
       const error = results.find(r => r.error)?.error;
@@ -411,10 +410,10 @@ const AdminCourseEditor: React.FC = () => {
   });
 
   // Reorder lessons mutation
-  const reorderLessonsMutation = useMutation({
+  const reorderLessonsMutation = useRM({
     mutationFn: async ({ chapterId, reorderedLessons }: { chapterId: string; reorderedLessons: Lesson[] }) => {
       const updates = reorderedLessons.map((lesson, index) => 
-        supabase.from('lessons').update({ position: index }).eq('id', lesson.id)
+        dbFrom('lessons').update({ position: index }).eq('id', lesson.id)
       );
       const results = await Promise.all(updates);
       const error = results.find(r => r.error)?.error;
@@ -671,7 +670,7 @@ const AdminCourseEditor: React.FC = () => {
                   size="sm"
                   className="text-destructive"
                   onClick={async () => {
-                    await supabase.from('courses').update({ preview_video_url: null }).eq('id', id);
+                    await dbFrom('courses').update({ preview_video_url: null }).eq('id', id);
                     queryClient.invalidateQueries({ queryKey: ['admin-course', id] });
                     toast.success(isRTL ? 'تم حذف الفيديو التعريفي' : 'Preview video removed');
                   }}
@@ -685,7 +684,7 @@ const AdminCourseEditor: React.FC = () => {
             <div className="space-y-4">
               <BunnyVideoUploader
                 onUploadComplete={async (videoId, playbackUrl) => {
-                  await supabase.from('courses').update({ preview_video_url: playbackUrl }).eq('id', id);
+                  await dbFrom('courses').update({ preview_video_url: playbackUrl }).eq('id', id);
                   queryClient.invalidateQueries({ queryKey: ['admin-course', id] });
                   setPreviewVideoReplacing(false);
                   toast.success(isRTL ? 'تم رفع الفيديو التعريفي بنجاح' : 'Preview video uploaded successfully');
@@ -705,7 +704,7 @@ const AdminCourseEditor: React.FC = () => {
             <ImageUploader
               value={(course as any).preview_video_thumbnail || ''}
               onChange={async (url) => {
-                await supabase.from('courses').update({ preview_video_thumbnail: url }).eq('id', id);
+                await dbFrom('courses').update({ preview_video_thumbnail: url }).eq('id', id);
                 queryClient.invalidateQueries({ queryKey: ['admin-course', id] });
                 toast.success(isRTL ? 'تم تحديث صورة الفيديو المصغرة' : 'Video thumbnail updated');
               }}

@@ -13,13 +13,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Loader2 } from 'lucide-react';
 
@@ -27,6 +20,16 @@ interface AddInstructorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+const MOTORBIKE_TYPES = [
+  { value: 'Sport', labelEn: 'Sport', labelAr: 'رياضية' },
+  { value: 'Cruiser', labelEn: 'Cruiser', labelAr: 'كروزر' },
+  { value: 'Adventure', labelEn: 'Adventure', labelAr: 'مغامرة' },
+  { value: 'Touring', labelEn: 'Touring', labelAr: 'سياحية' },
+  { value: 'Naked', labelEn: 'Naked', labelAr: 'نيكد' },
+  { value: 'Dual Sport', labelEn: 'Dual Sport', labelAr: 'ثنائية الاستخدام' },
+  { value: 'Scooter', labelEn: 'Scooter', labelAr: 'سكوتر' },
+] as const;
 
 const AddInstructorDialog: React.FC<AddInstructorDialogProps> = ({ open, onOpenChange }) => {
   const { isRTL } = useLanguage();
@@ -167,9 +170,9 @@ const AddInstructorDialog: React.FC<AddInstructorDialogProps> = ({ open, onOpenC
           <DialogTitle className="text-start">{isRTL ? 'إضافة مدرب جديد' : 'Add New Instructor'}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5" dir={isRTL ? 'rtl' : 'ltr'}>
           {/* Email */}
-          <div className="space-y-2">
+          <div className="space-y-2 rounded-lg border border-border/60 p-3">
             <Label>{isRTL ? 'البريد الإلكتروني *' : 'Email *'}</Label>
             <Input
               type="email"
@@ -187,41 +190,58 @@ const AddInstructorDialog: React.FC<AddInstructorDialogProps> = ({ open, onOpenC
             </p>
           </div>
 
-          {/* Motorbike Type */}
-          <div className="space-y-2">
-            <Label>{isRTL ? 'نوع الدراجة *' : 'Motorbike Type *'}</Label>
-            <Select
-              value={form.motorbikeType}
-              onValueChange={(v) => setForm({ ...form, motorbikeType: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={isRTL ? 'اختر النوع' : 'Select type'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Sport">{isRTL ? 'رياضية' : 'Sport'}</SelectItem>
-                <SelectItem value="Cruiser">{isRTL ? 'كروزر' : 'Cruiser'}</SelectItem>
-                <SelectItem value="Adventure">{isRTL ? 'مغامرة' : 'Adventure'}</SelectItem>
-                <SelectItem value="Touring">{isRTL ? 'سياحية' : 'Touring'}</SelectItem>
-                <SelectItem value="Naked">{isRTL ? 'نيكد' : 'Naked'}</SelectItem>
-                <SelectItem value="Dual Sport">{isRTL ? 'ثنائية الاستخدام' : 'Dual Sport'}</SelectItem>
-                <SelectItem value="Scooter">{isRTL ? 'سكوتر' : 'Scooter'}</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Motorbike Type */}
+            <div className="space-y-2 rounded-lg border border-border/60 p-3">
+              <Label>{isRTL ? 'نوع الدراجة *' : 'Motorbike Type *'}</Label>
+              <div className="grid grid-cols-2 gap-2" dir={isRTL ? 'rtl' : 'ltr'}>
+                {MOTORBIKE_TYPES.map((type) => {
+                  const selected = form.motorbikeType === type.value;
+                  return (
+                    <Button
+                      key={type.value}
+                      type="button"
+                      variant={selected ? 'default' : 'outline'}
+                      className="h-auto py-2 px-3 justify-start"
+                      onClick={() => setForm({ ...form, motorbikeType: type.value })}
+                    >
+                      <span className="text-xs sm:text-sm whitespace-normal text-start leading-tight">
+                        {isRTL ? type.labelAr : type.labelEn}
+                      </span>
+                    </Button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {isRTL
+                  ? 'اختر النوع الأقرب لطبيعة التدريب. يمكنك تغييره لاحقًا.'
+                  : 'Select the type that best matches the instructor training style. You can change it later.'}
+              </p>
+            </div>
+
+            {/* Motorbike Brand */}
+            <div className="space-y-2 rounded-lg border border-border/60 p-3">
+              <Label>{isRTL ? 'ماركة الدراجة' : 'Motorbike Brand'}</Label>
+              <Input
+                value={form.motorbikeBrand}
+                onChange={(e) => setForm({ ...form, motorbikeBrand: e.target.value })}
+                placeholder={isRTL ? 'مثال: Yamaha' : 'e.g. Yamaha'}
+              />
+            </div>
           </div>
 
-          {/* Motorbike Brand */}
-          <div className="space-y-2">
-            <Label>{isRTL ? 'ماركة الدراجة' : 'Motorbike Brand'}</Label>
-            <Input
-              value={form.motorbikeBrand}
-              onChange={(e) => setForm({ ...form, motorbikeBrand: e.target.value })}
-              placeholder={isRTL ? 'مثال: Yamaha' : 'e.g. Yamaha'}
-            />
-          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* License Type */}
+            <div className="space-y-2 rounded-lg border border-border/60 p-3">
+              <Label>{isRTL ? 'نوع الرخصة' : 'License Type'}</Label>
+              <Input
+                value={form.licenseType}
+                onChange={(e) => setForm({ ...form, licenseType: e.target.value })}
+                placeholder={isRTL ? 'مثال: A2' : 'e.g. A2'}
+              />
+            </div>
 
-          {/* Experience & Fees */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-2 rounded-lg border border-border/60 p-3">
               <Label>{isRTL ? 'سنوات الخبرة' : 'Experience (years)'}</Label>
               <Input
                 type="number"
@@ -231,41 +251,21 @@ const AddInstructorDialog: React.FC<AddInstructorDialogProps> = ({ open, onOpenC
                 onChange={(e) => setForm({ ...form, experienceYears: parseInt(e.target.value) || 0 })}
               />
             </div>
-            <div className="space-y-2">
-              <Label>{isRTL ? 'الرسوم / ساعة' : 'Fees / Hour'}</Label>
-              <Input
-                type="number"
-                min={0}
-                value={form.feesPerHour}
-                onChange={(e) => setForm({ ...form, feesPerHour: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
           </div>
 
-          {/* License Type */}
-          <div className="space-y-2">
-            <Label>{isRTL ? 'نوع الرخصة' : 'License Type'}</Label>
-            <Input
-              value={form.licenseType}
-              onChange={(e) => setForm({ ...form, licenseType: e.target.value })}
-              placeholder={isRTL ? 'مثال: A2' : 'e.g. A2'}
-            />
-          </div>
-
-          {/* Revenue Share */}
-          <div className="space-y-2">
-            <Label>{isRTL ? 'نسبة الأرباح (%)' : 'Revenue Share (%)'}</Label>
+          {/* Fees */}
+          <div className="space-y-2 rounded-lg border border-border/60 p-3">
+            <Label>{isRTL ? 'الرسوم / ساعة' : 'Fees / Hour'}</Label>
             <Input
               type="number"
               min={0}
-              max={100}
-              value={form.revenueSharePercentage}
-              onChange={(e) => setForm({ ...form, revenueSharePercentage: parseInt(e.target.value) || 0 })}
+              value={form.feesPerHour}
+              onChange={(e) => setForm({ ...form, feesPerHour: parseFloat(e.target.value) || 0 })}
             />
           </div>
 
           {/* Bio */}
-          <div className="space-y-2">
+          <div className="space-y-2 rounded-lg border border-border/60 p-3">
             <Label>{isRTL ? 'نبذة' : 'Bio'}</Label>
             <Textarea
               value={form.bio}
@@ -276,7 +276,7 @@ const AddInstructorDialog: React.FC<AddInstructorDialogProps> = ({ open, onOpenC
           </div>
 
           {/* Available */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between rounded-lg border border-border/60 p-3">
             <Label>{isRTL ? 'متاح' : 'Available'}</Label>
             <Switch
               checked={form.isAvailable}

@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import TrainingCurriculumAccordion from '@/components/training/TrainingCurriculumAccordion';
 import { parseTrainingSessions } from '@/lib/trainingSessionCurriculum';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -10,6 +9,7 @@ import { ArrowLeft, ArrowRight, BookOpen, ChevronDown, Dumbbell, Shield, Star, U
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { useAdminTrainingProfile } from '@/hooks/admin/useAdminTrainingProfile';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -131,23 +131,24 @@ function parseTrainerSupplies(raw: unknown): TrainerSupply[] {
 }
 
 const AdminTrainingProfile: React.FC = () => {
+  const { useRQ, useRM, queryClient, dbFrom } = useAdminTrainingProfile();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isRTL } = useLanguage();
   const [expandedTrainerId, setExpandedTrainerId] = useState<string | null>(null);
   const [studentSearch, setStudentSearch] = useState('');
 
-  const { data: training, isLoading: loadingTraining } = useQuery({
+  const { data: training, isLoading: loadingTraining } = useRQ({
     queryKey: ['admin-training-detail', id],
     enabled: !!id,
     queryFn: async () => {
-      const { data, error } = await supabase.from('trainings').select('*').eq('id', id!).single();
+      const { data, error } = await dbFrom('trainings').select('*').eq('id', id!).single();
       if (error) throw error;
       return data;
     },
   });
 
-  const { data: trainerCourses = [], isLoading: loadingTrainers } = useQuery({
+  const { data: trainerCourses = [], isLoading: loadingTrainers } = useRQ({
     queryKey: ['training-profile-trainers', id],
     enabled: !!id,
     queryFn: async () => {
@@ -162,7 +163,7 @@ const AdminTrainingProfile: React.FC = () => {
     },
   });
 
-  const { data: students = [], isLoading: loadingStudents } = useQuery({
+  const { data: students = [], isLoading: loadingStudents } = useRQ({
     queryKey: ['training-profile-students', id],
     enabled: !!id,
     queryFn: async () => {
@@ -180,7 +181,7 @@ const AdminTrainingProfile: React.FC = () => {
 
   const trainerIds = useMemo(() => trainerCourses.map((tc) => tc.trainers?.id).filter(Boolean) as string[], [trainerCourses]);
 
-  const { data: allReviews = [] } = useQuery({
+  const { data: allReviews = [] } = useRQ({
     queryKey: ['training-profile-reviews', id, trainerIds.join(',')],
     enabled: !!id && trainerIds.length > 0,
     queryFn: async () => {

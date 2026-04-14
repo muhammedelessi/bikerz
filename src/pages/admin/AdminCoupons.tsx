@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { useAdminCoupons } from '@/hooks/admin/useAdminCoupons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -75,9 +75,9 @@ const defaultForm = {
 };
 
 const AdminCoupons: React.FC = () => {
+  const { useRQ, useRM, queryClient, dbFrom } = useAdminCoupons();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const { logAction } = useAuditLog();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,7 +89,7 @@ const AdminCoupons: React.FC = () => {
   const [formData, setFormData] = useState(defaultForm);
 
   // Fetch coupons
-  const { data: coupons, isLoading } = useQuery({
+  const { data: coupons, isLoading } = useRQ({
     queryKey: ['admin-coupons'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -103,7 +103,7 @@ const AdminCoupons: React.FC = () => {
   });
 
   // Fetch courses for scope dropdown
-  const { data: courses } = useQuery({
+  const { data: courses } = useRQ({
     queryKey: ['admin-courses-list'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -116,7 +116,7 @@ const AdminCoupons: React.FC = () => {
   });
 
   // Fetch usage logs for a coupon
-  const { data: usageLogs, isLoading: usageLoading } = useQuery({
+  const { data: usageLogs, isLoading: usageLoading } = useRQ({
     queryKey: ['coupon-usage', viewUsage],
     enabled: !!viewUsage,
     queryFn: async () => {
@@ -134,9 +134,9 @@ const AdminCoupons: React.FC = () => {
       const courseIds = [...new Set(logs.map(l => l.course_id).filter(Boolean))] as string[];
 
       const [profilesRes, coursesRes] = await Promise.all([
-        supabase.from('profiles').select('user_id, full_name, phone').in('user_id', userIds),
+        dbFrom('profiles').select('user_id, full_name, phone').in('user_id', userIds),
         courseIds.length > 0
-          ? supabase.from('courses').select('id, title, title_ar').in('id', courseIds)
+          ? dbFrom('courses').select('id, title, title_ar').in('id', courseIds)
           : Promise.resolve({ data: [] as any[] }),
       ]);
 
@@ -162,9 +162,9 @@ const AdminCoupons: React.FC = () => {
   });
 
   // Create coupon
-  const createMutation = useMutation({
+  const createMutation = useRM({
     mutationFn: async (data: typeof formData) => {
-      const { error } = await supabase.from('coupons').insert({
+      const { error } = await dbFrom('coupons').insert({
         code: data.code.trim(),
         type: data.type,
         value: data.value,
@@ -198,7 +198,7 @@ const AdminCoupons: React.FC = () => {
   });
 
   // Update coupon
-  const updateMutation = useMutation({
+  const updateMutation = useRM({
     mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
       const { error } = await supabase
         .from('coupons')
@@ -233,10 +233,10 @@ const AdminCoupons: React.FC = () => {
   });
 
   // Toggle status
-  const toggleMutation = useMutation({
+  const toggleMutation = useRM({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const newStatus = status === 'active' ? 'inactive' : 'active';
-      const { error } = await supabase.from('coupons').update({ status: newStatus }).eq('id', id);
+      const { error } = await dbFrom('coupons').update({ status: newStatus }).eq('id', id);
       if (error) throw error;
       return newStatus;
     },
@@ -250,7 +250,7 @@ const AdminCoupons: React.FC = () => {
   });
 
   // Soft delete
-  const deleteMutation = useMutation({
+  const deleteMutation = useRM({
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('coupons')

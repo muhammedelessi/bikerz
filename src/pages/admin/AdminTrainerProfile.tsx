@@ -1,19 +1,16 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useLanguage } from '@/contexts/LanguageContext';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { TrainerProfileView } from '@/components/admin/TrainerProfileView';
+import { useAdminTrainerProfile } from '@/hooks/admin/useAdminTrainerProfile';
 
 /**
  * Admin trainer detail route — renders the shared modern `TrainerProfileView`
  * (hero, stats, tabs, bike gallery, trainings, bookings, payments).
  */
 const AdminTrainerProfile = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { isRTL } = useLanguage();
+  const { id, navigate, isRTL } = useAdminTrainerProfile();
 
   if (!id) {
     return (

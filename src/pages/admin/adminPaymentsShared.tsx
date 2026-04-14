@@ -43,6 +43,16 @@ export interface UnifiedPayment {
     price: number | null;
     discount_percentage: number | null;
   } | null;
+  bundle_course_ids?: string[] | null;
+  bundle_courses?: Array<{
+    id: string;
+    title: string | null;
+    title_ar: string | null;
+    price: number | null;
+  }> | null;
+  bundle_discount_pct?: number | null;
+  bundle_original_price_sar?: number | null;
+  bundle_final_price_sar?: number | null;
   source: "manual" | "tap" | "training_booking";
   /** Populated when source is training_booking (paid practical training). */
   training_booking_meta?: {
@@ -112,6 +122,15 @@ export type AdminPriceBreakdown = {
   trainingTrainerSar?: number;
   trainingPlatformCommissionSar?: number | null;
   trainingSubtotalBeforeVatSar?: number | null;
+  isBundle?: boolean;
+  bundleDiscountPct?: number;
+  bundleOriginalPriceSar?: number | null;
+  bundleFinalPriceSar?: number | null;
+};
+
+const toNumber = (value: unknown): number | null => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 };
 
 export const getPriceBreakdown = (payment: UnifiedPayment): AdminPriceBreakdown => {
@@ -138,23 +157,68 @@ export const getPriceBreakdown = (payment: UnifiedPayment): AdminPriceBreakdown 
     }
   }
 
-  const originalAmount = (meta.original_amount as number) || (meta.price_before_tax as number) || null;
-  const couponDiscount = (meta.coupon_discount as number) || 0;
+  if (kind === "course_bundle") {
+    const bundleOriginalPriceSar =
+      toNumber(meta.bundle_original_price_sar) ?? payment.bundle_original_price_sar ?? null;
+    const bundleFinalPriceSar = toNumber(meta.bundle_final_price_sar) ?? payment.bundle_final_price_sar ?? payment.amount;
+    const bundleDiscountPct = toNumber(meta.bundle_discount_pct) ?? payment.bundle_discount_pct ?? 0;
+    const vatRate = toNumber(meta.vat_rate) ?? toNumber(meta.vat_percentage) ?? 0;
+    const explicitVatAmount = toNumber(meta.vat_amount);
+    const calculatedVatAmount =
+      explicitVatAmount ??
+      (vatRate > 0 ? Number(((bundleFinalPriceSar * vatRate) / (100 + vatRate)).toFixed(2)) : 0);
+    const amountBeforeVAT = Number((bundleFinalPriceSar - calculatedVatAmount).toFixed(2));
+
+    return {
+      originalAmount: bundleOriginalPriceSar,
+      couponDiscount: 0,
+      couponCode: null,
+      vatAmount: calculatedVatAmount,
+      amountBeforeVAT,
+      courseDiscount: 0,
+      hasVat: calculatedVatAmount > 0,
+      vatPct: vatRate,
+      isBundle: true,
+      bundleDiscountPct,
+      bundleOriginalPriceSar,
+      bundleFinalPriceSar,
+    };
+  }
+
+  const originalAmount = toNumber(meta.original_amount) ?? toNumber(meta.price_before_tax);
+  const couponDiscount = toNumber(meta.coupon_discount) ?? 0;
   const couponCode = (meta.coupon_code as string) || null;
-  const courseDiscount = (meta.course_discount as number) || 0;
+  const courseDiscount = toNumber(meta.course_discount) ?? 0;
 
-  const vatAmount = (meta.vat_amount as number) || null;
-  const vatPct = (meta.vat_percentage as number) || 0;
-  const hasVat = vatAmount !== null && vatAmount > 0;
+  const explicitVatAmount = toNumber(meta.vat_amount);
+  let calculatedVAT = explicitVatAmount && explicitVatAmount > 0 ? explicitVatAmount : 0;
+  let hasVat = calculatedVAT > 0;
+  let vatBase = toNumber(meta.original_amount);
 
-  const amountBeforeVAT = hasVat ? payment.amount - vatAmount! : payment.amount;
-  const calculatedVAT = hasVat ? vatAmount! : 0;
+  if (!hasVat) {
+    if (vatBase != null && vatBase < payment.amount) {
+      calculatedVAT = Number((payment.amount - vatBase).toFixed(2));
+      hasVat = calculatedVAT > 0;
+    } else {
+      vatBase = toNumber(meta.price_before_tax);
+      if (vatBase != null && vatBase < payment.amount) {
+        calculatedVAT = Number((payment.amount - vatBase).toFixed(2));
+        hasVat = calculatedVAT > 0;
+      }
+    }
+  }
+
+  const explicitVatPct = toNumber(meta.vat_percentage);
+  const computedVatPct =
+    hasVat && vatBase != null && vatBase > 0 ? Math.round((calculatedVAT / vatBase) * 100) : 0;
+  const vatPct = explicitVatPct && explicitVatPct > 0 ? explicitVatPct : computedVatPct;
+  const amountBeforeVAT = hasVat ? Number((payment.amount - calculatedVAT).toFixed(2)) : payment.amount;
 
   return {
     originalAmount,
     couponDiscount,
     couponCode,
-    vatAmount: calculatedVAT,
+    vatAmount: hasVat ? calculatedVAT : 0,
     amountBeforeVAT,
     courseDiscount,
     hasVat,

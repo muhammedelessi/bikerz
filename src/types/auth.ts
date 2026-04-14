@@ -2,6 +2,7 @@ import type { User, Session } from '@supabase/supabase-js';
 
 export type AppRole =
   | 'super_admin'
+  | 'developer'
   | 'academy_admin'
   | 'instructor'
   | 'moderator'
@@ -37,6 +38,7 @@ export interface AuthContextType {
   hasAnyRole: (roles: AppRole[]) => boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  isDeveloper: boolean;
   isAcademyAdmin: boolean;
   isInstructor: boolean;
   isModerator: boolean;
@@ -48,6 +50,7 @@ export interface AuthContextType {
 
 export const ADMIN_ROLES: AppRole[] = [
   'super_admin',
+  'developer',
   'academy_admin',
   'instructor',
   'moderator',

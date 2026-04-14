@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,36 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Eye, Upload, Loader2, Image as ImageIcon, GripVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, Loader2, Image as ImageIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-
-interface HeroAd {
-  id: string;
-  title: string;
-  target_url: string;
-  is_active: boolean;
-  position: number;
-  image_desktop_en: string | null;
-  image_desktop_ar: string | null;
-  image_mobile_en: string | null;
-  image_mobile_ar: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-type AdFormData = Omit<HeroAd, 'id' | 'created_at' | 'updated_at'>;
-
-const EMPTY_FORM: AdFormData = {
-  title: '',
-  target_url: '/courses',
-  is_active: true,
-  position: 0,
-  image_desktop_en: null,
-  image_desktop_ar: null,
-  image_mobile_en: null,
-  image_mobile_ar: null,
-};
+import { useAdminAds, type AdFormData } from '@/hooks/admin/useAdminAds';
 
 /* ── Image Upload Field ── */
 const AdImageUpload: React.FC<{
@@ -49,23 +21,18 @@ const AdImageUpload: React.FC<{
   value: string | null;
   onChange: (url: string) => void;
   aspectHint: string;
-}> = ({ label, value, onChange, aspectHint }) => {
+  uploadImage: (file: File) => Promise<string>;
+}> = ({ label, value, onChange, aspectHint, uploadImage }) => {
   const [uploading, setUploading] = useState(false);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { toast.error('Please select an image'); return; }
-    if (file.size > 10 * 1024 * 1024) { toast.error('Max 10MB'); return; }
 
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
-      const path = `ads/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from('hero-ads').upload(path, file, { cacheControl: '3600', upsert: true });
-      if (error) throw error;
-      const { data: { publicUrl } } = supabase.storage.from('hero-ads').getPublicUrl(path);
-      onChange(publicUrl);
+      const uploadedUrl = await uploadImage(file);
+      onChange(uploadedUrl);
       toast.success('Image uploaded');
     } catch (err: any) {
       toast.error(err.message || 'Upload failed');
@@ -126,100 +93,26 @@ const AdPreview: React.FC<{ ad: AdFormData }> = ({ ad }) => (
 /* ── Main Page ── */
 const AdminAds: React.FC = () => {
   const { isRTL } = useLanguage();
-  const queryClient = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewAd, setPreviewAd] = useState<AdFormData | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<AdFormData>(EMPTY_FORM);
-
-  const { data: ads = [], isLoading } = useQuery({
-    queryKey: ['admin-hero-ads'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('hero_ads')
-        .select('*')
-        .order('position', { ascending: true });
-      if (error) throw error;
-      return data as HeroAd[];
-    },
-  });
-
-  const { data: courses = [] } = useQuery({
-    queryKey: ['admin-courses-list'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('courses')
-        .select('id, title, title_ar')
-        .order('title');
-      if (error) throw error;
-      return data as { id: string; title: string; title_ar: string | null }[];
-    },
-  });
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (editingId) {
-        const { error } = await supabase.from('hero_ads').update({ ...form, updated_at: new Date().toISOString() }).eq('id', editingId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('hero_ads').insert({ ...form, position: ads.length });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-hero-ads'] });
-      queryClient.invalidateQueries({ queryKey: ['hero-ads-public'] });
-      toast.success(editingId ? 'Ad updated' : 'Ad created');
-      resetForm();
-    },
-    onError: (err: any) => toast.error(err.message),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('hero_ads').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-hero-ads'] });
-      queryClient.invalidateQueries({ queryKey: ['hero-ads-public'] });
-      toast.success('Ad deleted');
-    },
-    onError: (err: any) => toast.error(err.message),
-  });
-
-  const toggleMutation = useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase.from('hero_ads').update({ is_active }).eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-hero-ads'] });
-      queryClient.invalidateQueries({ queryKey: ['hero-ads-public'] });
-    },
-  });
-
-  const resetForm = () => {
-    setForm(EMPTY_FORM);
-    setEditingId(null);
-    setDialogOpen(false);
-  };
-
-  const openEdit = (ad: HeroAd) => {
-    setEditingId(ad.id);
-    setForm({
-      title: ad.title,
-      target_url: ad.target_url,
-      is_active: ad.is_active,
-      position: ad.position,
-      image_desktop_en: ad.image_desktop_en,
-      image_desktop_ar: ad.image_desktop_ar,
-      image_mobile_en: ad.image_mobile_en,
-      image_mobile_ar: ad.image_mobile_ar,
-    });
-    setDialogOpen(true);
-  };
+  const {
+    dialogOpen,
+    setDialogOpen,
+    previewOpen,
+    setPreviewOpen,
+    previewAd,
+    setPreviewAd,
+    editingId,
+    form,
+    setForm,
+    ads,
+    courses,
+    isLoading,
+    saveMutation,
+    deleteMutation,
+    toggleMutation,
+    resetForm,
+    openEdit,
+    uploadAdImage,
+  } = useAdminAds();
 
   return (
     <AdminLayout>
@@ -279,16 +172,16 @@ const AdminAds: React.FC = () => {
                 <div>
                   <h3 className="text-sm font-semibold mb-3 text-foreground">{isRTL ? 'صور سطح المكتب (9:16)' : 'Desktop Images (9:16 Portrait)'}</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <AdImageUpload label={isRTL ? 'الإنجليزية' : 'English'} value={form.image_desktop_en} onChange={(url) => setForm(f => ({ ...f, image_desktop_en: url }))} aspectHint="9:16" />
-                    <AdImageUpload label={isRTL ? 'العربية' : 'Arabic'} value={form.image_desktop_ar} onChange={(url) => setForm(f => ({ ...f, image_desktop_ar: url }))} aspectHint="9:16" />
+                    <AdImageUpload label={isRTL ? 'الإنجليزية' : 'English'} value={form.image_desktop_en} onChange={(url) => setForm(f => ({ ...f, image_desktop_en: url }))} aspectHint="9:16" uploadImage={uploadAdImage} />
+                    <AdImageUpload label={isRTL ? 'العربية' : 'Arabic'} value={form.image_desktop_ar} onChange={(url) => setForm(f => ({ ...f, image_desktop_ar: url }))} aspectHint="9:16" uploadImage={uploadAdImage} />
                   </div>
                 </div>
 
                 <div>
                   <h3 className="text-sm font-semibold mb-3 text-foreground">{isRTL ? 'صور الجوال (16:9)' : 'Mobile Images (16:9 Landscape)'}</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <AdImageUpload label={isRTL ? 'الإنجليزية' : 'English'} value={form.image_mobile_en} onChange={(url) => setForm(f => ({ ...f, image_mobile_en: url }))} aspectHint="16:9" />
-                    <AdImageUpload label={isRTL ? 'العربية' : 'Arabic'} value={form.image_mobile_ar} onChange={(url) => setForm(f => ({ ...f, image_mobile_ar: url }))} aspectHint="16:9" />
+                    <AdImageUpload label={isRTL ? 'الإنجليزية' : 'English'} value={form.image_mobile_en} onChange={(url) => setForm(f => ({ ...f, image_mobile_en: url }))} aspectHint="16:9" uploadImage={uploadAdImage} />
+                    <AdImageUpload label={isRTL ? 'العربية' : 'Arabic'} value={form.image_mobile_ar} onChange={(url) => setForm(f => ({ ...f, image_mobile_ar: url }))} aspectHint="16:9" uploadImage={uploadAdImage} />
                   </div>
                 </div>
 

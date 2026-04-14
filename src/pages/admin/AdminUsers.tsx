@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { useAdminUsers } from '@/hooks/admin/useAdminUsers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -101,9 +101,9 @@ const InfoItem = ({ label, value }: { label: string; value: string | null }) => 
 );
 
 const AdminUsers: React.FC = () => {
+  const { useRQ, useRM, queryClient, dbFrom } = useAdminUsers();
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const queryClient = useQueryClient();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -122,7 +122,7 @@ const AdminUsers: React.FC = () => {
   const [isGrantingCourse, setIsGrantingCourse] = useState(false);
 
   // Fetch all published courses for the free course dialog
-  const { data: allCourses = [] } = useQuery({
+  const { data: allCourses = [] } = useRQ({
     queryKey: ['admin-all-courses'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -136,7 +136,7 @@ const AdminUsers: React.FC = () => {
   });
 
   // Fetch users with roles
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [], isLoading } = useRQ({
     queryKey: ['admin-users'],
     queryFn: async () => {
       // Fetch profiles
@@ -202,9 +202,9 @@ const AdminUsers: React.FC = () => {
   });
 
   // Add role mutation
-  const addRoleMutation = useMutation({
+  const addRoleMutation = useRM({
     mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
-      const { error } = await supabase.from('user_roles').insert({
+      const { error } = await dbFrom('user_roles').insert({
         user_id: userId,
         role: role as any,
       });

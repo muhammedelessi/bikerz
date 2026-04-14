@@ -32,48 +32,51 @@ const BilingualInput: React.FC<BilingualInputProps> = ({
   rows = 3,
 }) => {
   return (
-    <div className={cn("grid gap-4 md:grid-cols-2", className)}>
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">
-          {labelEn} <span className="text-muted-foreground">(English)</span>
-        </Label>
-        {isTextarea ? (
-          <Textarea
-            value={valueEn}
-            onChange={(e) => onChangeEn(e.target.value)}
-            placeholder={placeholderEn}
-            dir="ltr"
-            rows={rows}
-          />
-        ) : (
-          <Input
-            value={valueEn}
-            onChange={(e) => onChangeEn(e.target.value)}
-            placeholder={placeholderEn}
-            dir="ltr"
-          />
-        )}
-      </div>
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">
-          {labelAr} <span className="text-muted-foreground">(العربية)</span>
-        </Label>
-        {isTextarea ? (
-          <Textarea
-            value={valueAr}
-            onChange={(e) => onChangeAr(e.target.value)}
-            placeholder={placeholderAr}
-            dir="rtl"
-            rows={rows}
-          />
-        ) : (
-          <Input
-            value={valueAr}
-            onChange={(e) => onChangeAr(e.target.value)}
-            placeholder={placeholderAr}
-            dir="rtl"
-          />
-        )}
+    <div className={cn('space-y-4', className)} dir="ltr">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2 order-1 sm:order-2">
+          <Label className="text-sm font-medium" dir="rtl">
+            {labelAr}
+          </Label>
+          {isTextarea ? (
+            <Textarea
+              value={valueAr}
+              onChange={(e) => onChangeAr(e.target.value)}
+              placeholder={placeholderAr}
+              dir="rtl"
+              rows={rows}
+            />
+          ) : (
+            <Input
+              value={valueAr}
+              onChange={(e) => onChangeAr(e.target.value)}
+              placeholder={placeholderAr}
+              dir="rtl"
+            />
+          )}
+        </div>
+
+        <div className="space-y-2 order-2 sm:order-1">
+          <Label className="text-sm font-medium" dir="ltr">
+            {labelEn}
+          </Label>
+          {isTextarea ? (
+            <Textarea
+              value={valueEn}
+              onChange={(e) => onChangeEn(e.target.value)}
+              placeholder={placeholderEn}
+              dir="ltr"
+              rows={rows}
+            />
+          ) : (
+            <Input
+              value={valueEn}
+              onChange={(e) => onChangeEn(e.target.value)}
+              placeholder={placeholderEn}
+              dir="ltr"
+            />
+          )}
+        </div>
       </div>
     </div>
   );
