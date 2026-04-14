@@ -162,9 +162,9 @@ const AddInstructorDialog: React.FC<AddInstructorDialogProps> = ({ open, onOpenC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
         <DialogHeader>
-          <DialogTitle>{isRTL ? 'إضافة مدرب جديد' : 'Add New Instructor'}</DialogTitle>
+          <DialogTitle className="text-start">{isRTL ? 'إضافة مدرب جديد' : 'Add New Instructor'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -177,9 +177,10 @@ const AddInstructorDialog: React.FC<AddInstructorDialogProps> = ({ open, onOpenC
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               placeholder={isRTL ? 'بريد المستخدم المسجل' : 'Registered user email'}
               dir="ltr"
+              className={isRTL ? 'text-right' : ''}
               required
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground text-start">
               {isRTL
                 ? 'يجب أن يكون المستخدم مسجلاً في المنصة'
                 : 'User must already be registered on the platform'}
@@ -284,7 +285,7 @@ const AddInstructorDialog: React.FC<AddInstructorDialogProps> = ({ open, onOpenC
           </div>
 
           {/* Submit */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-row-reverse gap-3 pt-2">
             <Button type="submit" disabled={isSubmitting} className="flex-1">
               {isSubmitting && <Loader2 className="w-4 h-4 me-2 animate-spin" />}
               {isRTL ? 'إضافة المدرب' : 'Add Instructor'}
