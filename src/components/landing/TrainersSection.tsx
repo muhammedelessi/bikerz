@@ -44,7 +44,30 @@ const TrainersSection: React.FC = () => {
     </section>
   );
 
-  if (!trainers?.length) return null;
+  if (!trainers?.length) {
+    return (
+      <section className="py-16 bg-muted/30" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card/60 px-6 py-12 text-center shadow-sm backdrop-blur-sm">
+            <div className="mb-5 text-6xl opacity-60" aria-hidden>
+              🏍️
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-foreground mb-2">
+              {isRTL ? 'نعمل على توسيع فريق المدربين' : "We're growing our trainer team"}
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              {isRTL
+                ? 'سيتم إضافة المدربين قريباً — ترقّب!'
+                : 'Trainers will be added soon — stay tuned!'}
+            </p>
+            <Button onClick={() => navigate('/contact')}>
+              {isRTL ? 'أشعرني عند الإطلاق' : 'Notify me'}
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-16 bg-muted/30" dir={isRTL ? 'rtl' : 'ltr'}>
