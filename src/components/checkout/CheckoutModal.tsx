@@ -197,7 +197,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       couponId: promo.appliedCoupon?.coupon_id,
       couponSeriesId: promo.appliedCoupon?.coupon_series_id || undefined,
       couponNumber: promo.appliedCoupon?.coupon_number ?? undefined,
-      couponCode: promo.appliedCoupon?.coupon_code || promoCode.trim().toUpperCase() || undefined,
+      couponCode: promo.appliedCoupon?.coupon_code || promo.promoCode?.trim().toUpperCase() || undefined,
       amount: paymentAmount,
       courseName: courseDisplayName,
       isRTL,

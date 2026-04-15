@@ -70,7 +70,7 @@ const TrainerReviewForm: React.FC<Props> = ({
           .eq('id', existingReview.id);
         if (updateError) throw updateError;
       } else {
-        const { data: duplicate } = await supabase
+        const { data: duplicate } = await (supabase as any)
           .from('trainer_reviews')
           .select('id')
           .eq('trainer_id', trainerId)

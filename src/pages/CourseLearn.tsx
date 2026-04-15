@@ -1722,8 +1722,8 @@ const CourseLearn: React.FC = () => {
         <GuestPreviewHardGate
           isRTL={isRTL}
           thumbnailUrl={course?.thumbnail_url}
-          originalPriceText={hardGatePriceInfo?.originalPrice || "0"}
-          finalPriceText={hardGatePriceInfo?.finalPrice || "0"}
+          originalPriceText={String(hardGatePriceInfo?.originalPrice || "0")}
+          finalPriceText={String(hardGatePriceInfo?.finalPrice || "0")}
           discountPercentage={course?.discount_percentage || 0}
           currencySymbol={hardGateCurrencySymbol}
           onCreateAccount={handleGuestCreateAccount}
