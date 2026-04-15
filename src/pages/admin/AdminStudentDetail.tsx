@@ -133,8 +133,8 @@ const AdminStudentDetail: React.FC = () => {
         dbFrom('lesson_progress').select('lesson_id, is_completed').eq('user_id', userId).eq('is_completed', true),
       ]);
 
-      const courseMap = new Map((coursesRes.data || []).map(c => [c.id, c]));
-      const reviewMap = new Map((reviewsRes.data || []).map(r => [r.course_id, r]));
+      const courseMap = new Map((coursesRes.data || []).map((c: any) => [c.id, c]));
+      const reviewMap = new Map((reviewsRes.data || []).map((r: any) => [r.course_id, r]));
       const paymentMap = new Map<string, { amount: number; currency: string; date: string; method: string }>();
       [...(tapRes.data || []), ...(manualRes.data || [])].forEach(p => {
         if (p.course_id && !paymentMap.has(p.course_id)) {
