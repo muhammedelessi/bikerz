@@ -336,7 +336,7 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
     },
     { key: "gender", icon: Shield, label: isRTL ? "الجنس" : "Gender", value: genderLabel || "-" },
     { key: "location", icon: Globe, label: isRTL ? "الموقع" : "Location", value: locationLabel || "-" },
-  ] as const satisfies readonly { key: string; icon: any; label: string; value: string; tabular?: boolean; dir?: string }[];
+  ] as { key: string; icon: any; label: string; value: string; tabular?: boolean; dir?: string }[];
 
   return (
     <div className="card-premium p-6 space-y-6" dir={isRTL ? "rtl" : "ltr"}>
