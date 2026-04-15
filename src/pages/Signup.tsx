@@ -37,6 +37,7 @@ import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
 import { COUNTRIES, OTHER_OPTION } from "@/data/countryCityData";
 import { getUserCourseStatuses } from "@/services/ghl.service";
 import { consumeReturnUrl } from "@/lib/authReturnUrl";
+import { activateFreeTrialForCourse, consumeTrialOfferPending } from "@/lib/guestPreview";
 
 const OTHER_VALUE = "__other__";
 
@@ -332,6 +333,11 @@ const Signup: React.FC = () => {
 
     toast.success(t("auth.signup.success"));
     setIsLoading(false);
+
+    const pendingTrial = consumeTrialOfferPending();
+    if (pendingTrial?.courseId) {
+      activateFreeTrialForCourse(pendingTrial.courseId);
+    }
 
     // If coming from checkout / saved return URL, skip profile wizard and redirect directly
     const redirectAfterAuth = consumeReturnUrl() || returnTo;

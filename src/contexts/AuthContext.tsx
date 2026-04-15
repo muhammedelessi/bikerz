@@ -10,6 +10,7 @@ import {
   getSession,
   onAuthStateChange,
 } from '@/services/auth.service';
+import { clearGuestPreviewStorage } from '@/lib/guestPreview';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -137,6 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = useCallback(async () => {
     await signOutUser();
+    clearGuestPreviewStorage();
     setUser(null);
     setSession(null);
     setProfile(null);

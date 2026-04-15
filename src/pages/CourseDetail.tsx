@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import SEOHead from "@/components/common/SEOHead";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -60,6 +60,14 @@ import CourseReviews from "@/components/course/CourseReviews";
 import StarRating from "@/components/course/StarRating";
 import CourseCard from "@/components/course/CourseCard";
 import { fetchEnrollmentsWithLiveProgress, type EnrollmentWithProgress } from "@/lib/enrollmentProgress";
+import { setReturnUrl } from "@/lib/authReturnUrl";
+import {
+  getGuestPreviewState,
+  setGuestPreviewState,
+  checkGuestPreviewOnServer,
+  recordGuestPreviewOnServer,
+  type GuestPreviewState,
+} from "@/lib/guestPreview";
 
 interface Lesson {
   id: string;
@@ -136,6 +144,13 @@ const CourseDetail: React.FC = () => {
   const [paymentVerifying, setPaymentVerifying] = useState(false);
   const [previewVideoPlaying, setPreviewVideoPlaying] = useState(false);
   const [showStickyBottom, setShowStickyBottom] = useState(false);
+  const [guestPreview, setGuestPreview] = useState<GuestPreviewState | null>(null);
+  const [activePreviewLessonId, setActivePreviewLessonId] = useState<string | null>(null);
+  const [activePreviewVideoId, setActivePreviewVideoId] = useState<string | null>(null);
+  const [hasMarkedPreviewUsed, setHasMarkedPreviewUsed] = useState(false);
+  const [showPreviewUsageHint, setShowPreviewUsageHint] = useState(false);
+  const [isGuestBlockedByIpLimit, setIsGuestBlockedByIpLimit] = useState(false);
+  const previewRecordInFlightRef = useRef(false);
   const ctaCardRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -390,6 +405,127 @@ const CourseDetail: React.FC = () => {
   const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
   const isEnrolled = !!enrollment;
   const isLoading = courseLoading || chaptersLoading;
+  const isGuest = !user;
+
+  useEffect(() => {
+    if (user || !id) {
+      setGuestPreview(null);
+      setIsGuestBlockedByIpLimit(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const checkGuestAccess = async () => {
+      const localState = getGuestPreviewState(id);
+      if (localState) {
+        if (!cancelled) setGuestPreview(localState);
+        return;
+      }
+
+      const serverResult = await checkGuestPreviewOnServer(id);
+      if (cancelled) return;
+
+      if (!serverResult.allowed) {
+        if (serverResult.reason === "ip_limit") {
+          setIsGuestBlockedByIpLimit(true);
+          return;
+        }
+
+        if (serverResult.video_id) {
+          const nextState: GuestPreviewState = {
+            watchedVideoId: serverResult.video_id,
+            startedAt: serverResult.started_at || new Date().toISOString(),
+          };
+          setGuestPreviewState(id, nextState);
+          setGuestPreview(nextState);
+        }
+      }
+    };
+
+    checkGuestAccess();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, id]);
+
+  useEffect(() => {
+    setHasMarkedPreviewUsed(false);
+  }, [activePreviewVideoId]);
+
+  useEffect(() => {
+    if (!isGuest || !course?.preview_video_url || activePreviewVideoId) return;
+    const introId = `course-preview-${course.id}`;
+    const remembered = guestPreview?.watchedVideoId === introId ? introId : null;
+    setActivePreviewVideoId(remembered || introId);
+    setActivePreviewLessonId(null);
+  }, [course?.id, course?.preview_video_url, isGuest, guestPreview, activePreviewVideoId]);
+
+  const selectedPreviewLesson = useMemo(() => {
+    if (!activePreviewLessonId) return null;
+    return chapters.flatMap((ch) => ch.lessons).find((l) => l.id === activePreviewLessonId) || null;
+  }, [chapters, activePreviewLessonId]);
+
+  const activePreviewUrl = selectedPreviewLesson?.video_url || course?.preview_video_url || null;
+  const activePreviewTitle = selectedPreviewLesson
+    ? isRTL && selectedPreviewLesson.title_ar
+      ? selectedPreviewLesson.title_ar
+      : selectedPreviewLesson.title
+    : t("courseDetail.courseIntroduction");
+
+  const markPreviewStartIfNeeded = useCallback(
+    (videoId: string) => {
+      if (!isGuest || user || !id || hasMarkedPreviewUsed || previewRecordInFlightRef.current) return;
+      previewRecordInFlightRef.current = true;
+      const nextState: GuestPreviewState = {
+        watchedVideoId: videoId,
+        startedAt: new Date().toISOString(),
+      };
+      recordGuestPreviewOnServer(id, videoId)
+        .then((result) => {
+          if (result.reason === "ip_limit") {
+            setIsGuestBlockedByIpLimit(true);
+            return;
+          }
+          setGuestPreviewState(id, nextState);
+          setGuestPreview(nextState);
+          setHasMarkedPreviewUsed(true);
+          setShowPreviewUsageHint(true);
+          window.setTimeout(() => setShowPreviewUsageHint(false), 3500);
+        })
+        .finally(() => {
+          previewRecordInFlightRef.current = false;
+        });
+    },
+    [hasMarkedPreviewUsed, id, isGuest, user],
+  );
+
+  const handlePreviewTimeUpdate = useCallback(
+    (timeSeconds: number) => {
+      if (!isGuest || user || !activePreviewVideoId) return;
+      if (timeSeconds >= 10) {
+        markPreviewStartIfNeeded(activePreviewVideoId);
+      }
+    },
+    [activePreviewVideoId, isGuest, markPreviewStartIfNeeded, user],
+  );
+
+  const isGuestVideoLocked = useCallback(
+    (lesson: Lesson) => {
+      if (!isGuest || user || !lesson.is_free) return false;
+      if (isGuestBlockedByIpLimit) return true;
+      if (!guestPreview) return false;
+      return guestPreview.watchedVideoId !== lesson.id;
+    },
+    [isGuest, user, guestPreview, isGuestBlockedByIpLimit],
+  );
+
+  const handlePreviewPromptSignup = useCallback(() => {
+    if (!id) return;
+    setReturnUrl(`/courses/${id}`);
+    navigate("/signup");
+  }, [id, navigate]);
 
   // Auto-expand chapters that contain free videos
   useEffect(() => {
@@ -665,9 +801,9 @@ const CourseDetail: React.FC = () => {
             <section className="relative overflow-hidden">
               {/* Mobile: stacked video on top */}
               <div className="md:hidden">
-                {course.preview_video_url ? (
+                {activePreviewUrl ? (
                   (() => {
-                    const ytEmbedUrl = getYouTubeEmbedUrl(course.preview_video_url);
+                    const ytEmbedUrl = getYouTubeEmbedUrl(activePreviewUrl);
                     if (ytEmbedUrl) {
                       return (
                         <div className="aspect-video w-full overflow-hidden">
@@ -686,10 +822,27 @@ const CourseDetail: React.FC = () => {
                     return (
                       <div className="aspect-video w-full relative">
                         <BunnyVideoEmbed
-                          videoUrl={course.preview_video_url}
-                          title={t("courseDetail.courseIntroduction")}
+                          videoUrl={activePreviewUrl}
+                          title={activePreviewTitle}
                           isPreview
+                          onTimeUpdate={handlePreviewTimeUpdate}
                         />
+                        {showPreviewUsageHint && isGuest && (
+                          <div className="absolute top-3 start-3 z-30 rounded-xl bg-black/65 text-white px-3 py-2 max-w-[280px]">
+                            <p className="text-xs font-medium">
+                              {isRTL
+                                ? `شاهدت 1 من أصل ${totalFreeLessons} فيديو مجاني`
+                                : `You've watched 1 of ${totalFreeLessons} free videos`}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={handlePreviewPromptSignup}
+                              className="mt-1 text-[11px] text-white/80 hover:text-white underline underline-offset-2"
+                            >
+                              {isRTL ? "أنشئ حساباً مجانياً لمتابعة المشاهدة" : "Create a free account to continue watching →"}
+                            </button>
+                          </div>
+                        )}
                         <motion.div
                           className="absolute inset-0 flex items-center justify-center pointer-events-none z-30"
                           initial={{ opacity: 1 }}
@@ -739,9 +892,9 @@ const CourseDetail: React.FC = () => {
                     >
                       {/* Desktop Video — inline in left column */}
                       <div className="hidden md:block">
-                        {course.preview_video_url ? (
+                        {activePreviewUrl ? (
                           (() => {
-                            const ytEmbedUrl = getYouTubeEmbedUrl(course.preview_video_url);
+                            const ytEmbedUrl = getYouTubeEmbedUrl(activePreviewUrl);
                             if (ytEmbedUrl) {
                               return (
                                 <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-lg ring-1 ring-border/50">
@@ -760,10 +913,29 @@ const CourseDetail: React.FC = () => {
                             return (
                               <div className="aspect-video w-full rounded-2xl overflow-hidden relative shadow-lg ring-1 ring-border/50">
                                 <BunnyVideoEmbed
-                                  videoUrl={course.preview_video_url}
-                                  title={t("courseDetail.courseIntroduction")}
+                                  videoUrl={activePreviewUrl}
+                                  title={activePreviewTitle}
                                   isPreview
+                                  onTimeUpdate={handlePreviewTimeUpdate}
                                 />
+                                {showPreviewUsageHint && isGuest && (
+                                  <div className="absolute top-3 start-3 z-30 rounded-xl bg-black/65 text-white px-3 py-2 max-w-[320px]">
+                                    <p className="text-xs font-medium">
+                                      {isRTL
+                                        ? `شاهدت 1 من أصل ${totalFreeLessons} فيديو مجاني`
+                                        : `You've watched 1 of ${totalFreeLessons} free videos`}
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={handlePreviewPromptSignup}
+                                      className="mt-1 text-[11px] text-white/80 hover:text-white underline underline-offset-2"
+                                    >
+                                      {isRTL
+                                        ? "أنشئ حساباً مجانياً لمتابعة المشاهدة"
+                                        : "Create a free account to continue watching →"}
+                                    </button>
+                                  </div>
+                                )}
                                 <motion.div
                                   className="absolute inset-0 flex items-center justify-center pointer-events-none z-30"
                                   initial={{ opacity: 1 }}
@@ -895,6 +1067,22 @@ const CourseDetail: React.FC = () => {
                               )}
                             </Button>
                           </motion.div>
+                        )}
+                        {isGuest && guestPreview && (
+                          <div className="inline-flex flex-col items-start rounded-xl border border-amber-400/30 bg-amber-500/10 text-amber-600 dark:text-amber-300 px-3 py-2 text-xs">
+                            <span className="font-medium">
+                              {isRTL
+                                ? `شاهدت 1 من أصل ${totalFreeLessons} فيديو مجاني`
+                                : `You've watched 1 of ${totalFreeLessons} free videos`}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handlePreviewPromptSignup}
+                              className="mt-1 text-[11px] text-amber-700 dark:text-amber-200 underline underline-offset-2"
+                            >
+                              {isRTL ? "أنشئ حساباً مجانياً لمتابعة المشاهدة" : "Create a free account to continue watching →"}
+                            </button>
+                          </div>
                         )}
 
                         {/* Description */}
@@ -1431,24 +1619,47 @@ const CourseDetail: React.FC = () => {
                                           })
                                           .map((lesson) => {
                                             const locked = isLessonLocked(lesson, chapter);
+                                            const guestLocked = isGuestVideoLocked(lesson);
                                             const state = getLessonState(lesson.id);
                                             const lTitle = isRTL && lesson.title_ar ? lesson.title_ar : lesson.title;
 
                                             return (
                                               <Link
                                                 key={lesson.id}
-                                                to={locked ? "#" : `/courses/${id}/lessons/${lesson.id}`}
+                                                to={locked || guestLocked ? "#" : `/courses/${id}/lessons/${lesson.id}`}
                                                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-colors ${
-                                                  locked
+                                                  locked || guestLocked
                                                     ? "opacity-60 cursor-not-allowed"
                                                     : lesson.is_free && !isEnrolled
                                                       ? "bg-green-500/5 hover:bg-green-500/10 border border-green-500/15"
                                                       : "hover:bg-muted/50"
                                                 }`}
-                                                onClick={(e) => locked && e.preventDefault()}
+                                                onClick={(e) => {
+                                                  if (locked) {
+                                                    e.preventDefault();
+                                                    return;
+                                                  }
+                                                  if (!isEnrolled && lesson.is_free) {
+                                                    e.preventDefault();
+                                                    if (guestLocked) {
+                                                      toast.error(
+                                                        isRTL
+                                                          ? "انتهت المعاينة المجانية. شاهد من داخل صفحة الدرس بعد إنشاء حساب."
+                                                          : "Free preview has ended. Continue from lesson page after creating an account.",
+                                                      );
+                                                      return;
+                                                    }
+                                                    if (!lesson.video_url) {
+                                                      toast.error(isRTL ? "هذا الدرس لا يحتوي فيديو متاح حالياً" : "This lesson has no playable video yet");
+                                                      return;
+                                                    }
+                                                    navigate(`/courses/${id}/lessons/${lesson.id}`);
+                                                    return;
+                                                  }
+                                                }}
                                               >
                                                 <div className="flex-shrink-0">
-                                                  {locked ? (
+                                                  {locked || guestLocked ? (
                                                     <Lock className="w-4 h-4 text-muted-foreground" />
                                                   ) : lesson.is_free && !isEnrolled ? (
                                                     <Unlock className="w-4 h-4 text-green-500" />
@@ -1476,7 +1687,7 @@ const CourseDetail: React.FC = () => {
                                                     <Eye className="w-3 h-3" />
                                                     {t("courseDetail.freePreview")}
                                                   </span>
-                                                ) : locked ? (
+                                                ) : locked || guestLocked ? (
                                                   <Lock className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
                                                 ) : null}
                                               </Link>

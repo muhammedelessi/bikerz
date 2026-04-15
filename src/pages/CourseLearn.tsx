@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -56,6 +57,18 @@ import NextLessonCountdown from '@/components/course/NextLessonCountdown';
 import PurchaseEncouragementModal from '@/components/course/PurchaseEncouragementModal';
 import ReviewPromptModal from '@/components/course/ReviewPromptModal';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
+import GuestPreviewSoftGate from '@/components/course/GuestPreviewSoftGate';
+import GuestPreviewHardGate from '@/components/course/GuestPreviewHardGate';
+import {
+  getGuestPreviewState,
+  getActiveFreeTrial,
+  setGuestPreviewState,
+  checkGuestPreviewOnServer,
+  recordGuestPreviewOnServer,
+  markTrialOfferPending,
+  type GuestPreviewState
+} from '@/lib/guestPreview';
+import { setReturnUrl } from '@/lib/authReturnUrl';
 
 interface Lesson {
   id: string;
@@ -127,6 +140,7 @@ const CourseLearn: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
+  const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
   const { user } = useAuth();
   const { checkBadges, gamificationData, addXP } = useGamification();
   const { theme } = useTheme();
@@ -141,6 +155,12 @@ const CourseLearn: React.FC = () => {
   const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
+  const [guestPreview, setGuestPreview] = useState<GuestPreviewState | null>(null);
+  const [showGuestSoftGate, setShowGuestSoftGate] = useState(false);
+  const [guestSoftDismissed, setGuestSoftDismissed] = useState(false);
+  const [showGuestHardGate, setShowGuestHardGate] = useState(false);
+  const [isGuestBlockedByIpLimit, setIsGuestBlockedByIpLimit] = useState(false);
+  const recordInFlightRef = React.useRef(false);
   const purchaseModalShownRef = React.useRef<Set<string>>(new Set());
   const autoCompletedRef = React.useRef<Set<string>>(new Set());
   const lessonProgressRef = React.useRef<LessonProgress[]>([]);
@@ -162,6 +182,49 @@ const CourseLearn: React.FC = () => {
       document.body.style.overflow = '';
     };
   }, [sidebarOpen]);
+
+  useEffect(() => {
+    if (user || !id) {
+      setGuestPreview(null);
+      setIsGuestBlockedByIpLimit(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const checkGuestAccess = async () => {
+      const localState = getGuestPreviewState(id);
+      if (localState) {
+        if (!cancelled) setGuestPreview(localState);
+        return;
+      }
+
+      const serverResult = await checkGuestPreviewOnServer(id);
+      if (cancelled) return;
+
+      if (!serverResult.allowed) {
+        if (serverResult.reason === "ip_limit") {
+          setIsGuestBlockedByIpLimit(true);
+          return;
+        }
+
+        if (serverResult.video_id) {
+          const nextState: GuestPreviewState = {
+            watchedVideoId: serverResult.video_id,
+            startedAt: serverResult.started_at || new Date().toISOString(),
+          };
+          setGuestPreviewState(id, nextState);
+          setGuestPreview(nextState);
+        }
+      }
+    };
+
+    checkGuestAccess();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, id]);
 
   // Fetch course details
   const { data: course, isLoading: courseLoading } = useQuery({
@@ -536,6 +599,30 @@ const CourseLearn: React.FC = () => {
     if (user && lessonId) {
       saveWatchTimeMutation.mutate({ lessonId, watchTimeSeconds: timeSeconds });
     }
+
+    // Guest limiter: first free lesson is "used" after 10 seconds watched.
+    if (!user && lessonId && timeSeconds >= 10 && id && !guestPreview && !recordInFlightRef.current) {
+      recordInFlightRef.current = true;
+
+      const nextState: GuestPreviewState = {
+        watchedVideoId: lessonId,
+        startedAt: new Date().toISOString(),
+      };
+
+      recordGuestPreviewOnServer(id, lessonId)
+        .then((result) => {
+          if (result.reason === "ip_limit") {
+            setIsGuestBlockedByIpLimit(true);
+            return;
+          }
+
+          setGuestPreviewState(id, nextState);
+          setGuestPreview(nextState);
+        })
+        .finally(() => {
+          recordInFlightRef.current = false;
+        });
+    }
   };
 
   // Set initial lesson from URL or default to first lesson
@@ -569,6 +656,12 @@ const CourseLearn: React.FC = () => {
     el.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentLessonId, showTest]);
 
+  useEffect(() => {
+    setShowGuestSoftGate(false);
+    setGuestSoftDismissed(false);
+    setShowGuestHardGate(false);
+  }, [currentLessonId]);
+
   // Current lesson
   const currentLesson = chapters
     .flatMap(ch => ch.lessons)
@@ -577,6 +670,16 @@ const CourseLearn: React.FC = () => {
   const currentChapter = chapters.find(ch => 
     ch.lessons.some(l => l.id === currentLessonId)
   );
+  const isGuestTrackedPreviewLesson =
+    !user &&
+    !!guestPreview &&
+    !!currentLesson &&
+    currentLesson.is_free &&
+    currentLesson.id === guestPreview.watchedVideoId;
+  const hardGatePriceInfo = course
+    ? getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0)
+    : null;
+  const hardGateCurrencySymbol = hardGatePriceInfo ? getCurrencySymbol(hardGatePriceInfo.currency, isRTL) : "";
 
   // Chapter for the currently shown test (may differ from currentChapter)
   const testChapter = showTest ? chapters.find(ch => ch.id === showTest) : null;
@@ -585,21 +688,40 @@ const CourseLearn: React.FC = () => {
   const totalLessons = chapters.reduce((acc, ch) => acc + ch.lessons.length, 0);
   const completedLessons = lessonProgress.filter(lp => lp.is_completed).length;
   const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+  const allLessons = chapters.flatMap(ch => ch.lessons);
 
   const isEnrolled = !!enrollment;
   const isLoading = courseLoading || chaptersLoading || enrollmentLoading;
+  const activeTrial = user ? getActiveFreeTrial() : null;
+  const firstFullLesson = allLessons.find((lesson) => !lesson.is_free) || null;
+  const has24hTrialAccess =
+    !!user &&
+    !!activeTrial &&
+    activeTrial.free_trial_course_id === id &&
+    !!firstFullLesson &&
+    currentLessonId === firstFullLesson.id;
 
   const isLessonCompleted = (lessonId: string) => {
     return lessonProgress.some(lp => lp.lesson_id === lessonId && lp.is_completed);
   };
 
   const isLessonLocked = (lesson: Lesson, _chapter: Chapter) => {
-    if (!isEnrolled && !lesson.is_free) return true;
+    if (!isEnrolled && !lesson.is_free) {
+      if (has24hTrialAccess && firstFullLesson?.id === lesson.id) {
+        return false;
+      }
+      return true;
+    }
+    if (!user && lesson.is_free && isGuestBlockedByIpLimit) {
+      return true;
+    }
+    if (!user && lesson.is_free && guestPreview) {
+      return guestPreview.watchedVideoId !== lesson.id;
+    }
     return false;
   };
 
   // Navigation
-  const allLessons = chapters.flatMap(ch => ch.lessons);
   const currentIndex = allLessons.findIndex(l => l.id === currentLessonId);
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
@@ -671,6 +793,38 @@ const CourseLearn: React.FC = () => {
   const handleVideoProgress = useCallback((_progress: number) => {
     // Progress tracking only — completion is handled in handleVideoEnded
   }, []);
+
+  const handleGuestPreviewProgress = useCallback((progress: number) => {
+    if (!isGuestTrackedPreviewLesson || guestSoftDismissed || showGuestHardGate) return;
+    if (progress >= 85) {
+      setShowGuestSoftGate(true);
+    }
+  }, [isGuestTrackedPreviewLesson, guestSoftDismissed, showGuestHardGate]);
+
+  const handleGuestPreviewEnded = useCallback(() => {
+    if (!isGuestTrackedPreviewLesson) return;
+    setShowGuestSoftGate(false);
+    setShowGuestHardGate(true);
+  }, [isGuestTrackedPreviewLesson]);
+
+  const handleGuestCreateAccount = useCallback(() => {
+    if (!id) return;
+    setReturnUrl(`/courses/${id}`);
+    markTrialOfferPending(id);
+    navigate('/signup');
+  }, [id, navigate]);
+
+  const handleGuestLogin = useCallback(() => {
+    if (!id) return;
+    setReturnUrl(`/courses/${id}`);
+    navigate('/login');
+  }, [id, navigate]);
+
+  const handleGuestBuyCourse = useCallback(() => {
+    if (!id) return;
+    setReturnUrl(`/courses/${id}?checkout=true`);
+    navigate('/signup');
+  }, [id, navigate]);
 
   // Interval-based ended fallback for .mp4 videos (triggers only when video fully ends)
   useEffect(() => {
@@ -1054,15 +1208,16 @@ const CourseLearn: React.FC = () => {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 variant="secondary"
                 className="font-semibold"
-                asChild
+                onClick={() => {
+                  setReturnUrl(`/courses/${id}`);
+                  navigate("/signup");
+                }}
               >
-                <Link to="/signup">
-                  {t('courseLearn.registerNow')}
-                </Link>
+                {t('courseLearn.registerNow')}
               </Button>
             </div>
           </div>
@@ -1162,6 +1317,21 @@ const CourseLearn: React.FC = () => {
                   {/* Video Player */}
                   {currentLesson?.video_url && (
                     <div className="relative bg-black w-full aspect-video sm:rounded-2xl overflow-hidden sm:mt-6 sm:mx-6 lg:mx-8">
+                    {showGuestHardGate && isGuestTrackedPreviewLesson && (
+                      <div className="absolute inset-0 z-40">
+                        <GuestPreviewHardGate
+                          isRTL={isRTL}
+                          thumbnailUrl={course?.thumbnail_url}
+                          originalPriceText={hardGatePriceInfo?.originalPrice || "0"}
+                          finalPriceText={hardGatePriceInfo?.finalPrice || "0"}
+                          discountPercentage={course?.discount_percentage || 0}
+                          currencySymbol={hardGateCurrencySymbol}
+                          onCreateAccount={handleGuestCreateAccount}
+                          onBuyCourse={handleGuestBuyCourse}
+                          onLogin={handleGuestLogin}
+                        />
+                      </div>
+                    )}
                     {/* Next Lesson Countdown - overlay on video */}
                     <AnimatePresence>
                       {showNextCountdown && nextLesson && (
@@ -1192,8 +1362,14 @@ const CourseLearn: React.FC = () => {
                         initialTime={initialTimeRef.current}
                         autoPlay={autoPlayNext}
                         onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
-                        onProgress={handleVideoProgress}
-                        onEnded={handleVideoEnded}
+                        onProgress={(progress) => {
+                          handleVideoProgress(progress);
+                          handleGuestPreviewProgress(progress);
+                        }}
+                        onEnded={() => {
+                          handleVideoEnded();
+                          handleGuestPreviewEnded();
+                        }}
                         lessonId={currentLesson.id}
                         courseId={id}
                       />
@@ -1205,11 +1381,26 @@ const CourseLearn: React.FC = () => {
                           title={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}
                           initialTime={initialTimeRef.current}
                           onTimeUpdate={(time) => handleWatchTimeUpdate(currentLesson.id, time)}
-                          onProgress={handleVideoProgress}
-                          onEnded={handleVideoEnded}
+                          onProgress={(progress) => {
+                            handleVideoProgress(progress);
+                            handleGuestPreviewProgress(progress);
+                          }}
+                          onEnded={() => {
+                            handleVideoEnded();
+                            handleGuestPreviewEnded();
+                          }}
                         />
                       </div>
                     )}
+                    <GuestPreviewSoftGate
+                      open={showGuestSoftGate && isGuestTrackedPreviewLesson}
+                      isRTL={isRTL}
+                      onContinueWatching={() => {
+                        setShowGuestSoftGate(false);
+                        setGuestSoftDismissed(true);
+                      }}
+                      onCreateAccount={handleGuestCreateAccount}
+                    />
                   </div>
                   )}
 
