@@ -121,6 +121,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             finalAmount: 0,
           });
         }
+        if (promo.appliedCoupon?.coupon_series_id && promo.appliedCoupon?.coupon_number != null && promo.appliedCoupon?.coupon_code) {
+          const { recordSeriesUsage } = await import('@/services/supabase.service');
+          await recordSeriesUsage({
+            seriesId: promo.appliedCoupon.coupon_series_id,
+            codeUsed: promo.appliedCoupon.coupon_code,
+            codeNumber: promo.appliedCoupon.coupon_number,
+            userId: user.id,
+            courseId: course.id,
+            discountAmount,
+            originalAmount: basePrice,
+            finalAmount: 0,
+          });
+        }
         sendCourseStatus(user.id, course.id, course.title, "purchased", {
           full_name: form.fullName,
           email: form.email,

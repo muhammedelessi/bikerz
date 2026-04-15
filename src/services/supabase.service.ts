@@ -62,6 +62,31 @@ export async function incrementCouponUsage(params: {
   });
 }
 
+export async function recordSeriesUsage(params: {
+  seriesId: string;
+  codeUsed: string;
+  codeNumber: number;
+  userId: string;
+  courseId: string | null;
+  discountAmount: number;
+  originalAmount: number;
+  finalAmount: number;
+}) {
+  const { error } = await (supabase as any).from('coupon_series_usage').insert({
+    series_id: params.seriesId,
+    code_used: params.codeUsed,
+    code_number: params.codeNumber,
+    user_id: params.userId,
+    course_id: params.courseId || null,
+    discount_amount: Math.max(params.discountAmount, 0),
+    original_amount: Math.max(params.originalAmount, 0),
+    final_amount: Math.max(params.finalAmount, 0),
+  });
+  if (error && !String(error.message || '').includes('duplicate')) {
+    console.error('Series usage insert error:', error.message);
+  }
+}
+
 export async function createGuestAccount(email: string, fullName: string, password: string) {
   const response = await supabase.functions.invoke('signup-user', {
     body: { email, password, full_name: fullName },
