@@ -447,6 +447,122 @@ export type Database = {
         }
         Relationships: []
       }
+      coupon_series: {
+        Row: {
+          course_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          expiry_date: string | null
+          id: string
+          is_global: boolean | null
+          max_uses_per_code: number
+          prefix: string
+          range_from: number
+          range_to: number
+          status: string
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          discount_type?: string
+          discount_value: number
+          expiry_date?: string | null
+          id?: string
+          is_global?: boolean | null
+          max_uses_per_code?: number
+          prefix: string
+          range_from: number
+          range_to: number
+          status?: string
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          expiry_date?: string | null
+          id?: string
+          is_global?: boolean | null
+          max_uses_per_code?: number
+          prefix?: string
+          range_from?: number
+          range_to?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_series_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_series_usage: {
+        Row: {
+          charge_id: string | null
+          code_number: number
+          code_used: string
+          course_id: string | null
+          discount_amount: number
+          final_amount: number
+          id: string
+          original_amount: number
+          series_id: string
+          used_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          charge_id?: string | null
+          code_number: number
+          code_used: string
+          course_id?: string | null
+          discount_amount?: number
+          final_amount?: number
+          id?: string
+          original_amount?: number
+          series_id: string
+          used_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          charge_id?: string | null
+          code_number?: number
+          code_used?: string
+          course_id?: string | null
+          discount_amount?: number
+          final_amount?: number
+          id?: string
+          original_amount?: number
+          series_id?: string
+          used_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_series_usage_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_series_usage_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "coupon_series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupon_usage_logs: {
         Row: {
           applied_at: string
@@ -1000,6 +1116,44 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "user_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guest_video_views: {
+        Row: {
+          course_id: string | null
+          fingerprint: string
+          id: string
+          ip_address: string | null
+          started_at: string | null
+          user_agent: string | null
+          video_id: string
+        }
+        Insert: {
+          course_id?: string | null
+          fingerprint: string
+          id?: string
+          ip_address?: string | null
+          started_at?: string | null
+          user_agent?: string | null
+          video_id: string
+        }
+        Update: {
+          course_id?: string | null
+          fingerprint?: string
+          id?: string
+          ip_address?: string | null
+          started_at?: string | null
+          user_agent?: string | null
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_video_views_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
             referencedColumns: ["id"]
           },
         ]
@@ -2133,7 +2287,6 @@ export type Database = {
           student_name: string
           trainer_id: string
           training_id: string | null
-          user_id: string | null
         }
         Insert: {
           comment?: string
@@ -2143,7 +2296,6 @@ export type Database = {
           student_name?: string
           trainer_id: string
           training_id?: string | null
-          user_id?: string | null
         }
         Update: {
           comment?: string
@@ -2153,7 +2305,6 @@ export type Database = {
           student_name?: string
           trainer_id?: string
           training_id?: string | null
-          user_id?: string | null
         }
         Relationships: [
           {
@@ -3526,13 +3677,13 @@ export type Database = {
     Enums: {
       app_role:
         | "super_admin"
-        | "developer"
         | "academy_admin"
         | "instructor"
         | "moderator"
         | "finance"
         | "support"
         | "student"
+        | "developer"
       ticket_category:
         | "technical"
         | "billing"
@@ -3681,13 +3832,13 @@ export const Constants = {
     Enums: {
       app_role: [
         "super_admin",
-        "developer",
         "academy_admin",
         "instructor",
         "moderator",
         "finance",
         "support",
         "student",
+        "developer",
       ],
       ticket_category: [
         "technical",
