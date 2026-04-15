@@ -196,6 +196,14 @@ Deno.serve(async (req) => {
             p_final_amount: tapCharge.amount || 0,
           });
         }
+
+        await recordSeriesUsage(adminClient, {
+          metadata: meta,
+          userId: chargeUserId,
+          courseId: chargeCourseId,
+          chargeId: charge_id,
+          tapAmount: tapCharge.amount || 0,
+        });
       }
 
       return new Response(
@@ -278,6 +286,14 @@ Deno.serve(async (req) => {
           p_final_amount: finalAmount,
         });
       }
+
+      await recordSeriesUsage(adminClient, {
+        metadata: metaBundle,
+        userId: chargeUserId,
+        courseId: dbCharge.course_id,
+        chargeId: charge_id,
+        tapAmount: tapCharge.amount || 0,
+      });
     }
 
     return new Response(
@@ -314,4 +330,45 @@ function sanitizeTapResponse(data: Record<string, unknown>): Record<string, unkn
   }
   delete sanitized.card;
   return sanitized;
+}
+
+async function recordSeriesUsage(
+  // deno-lint-ignore no-explicit-any
+  adminClient: any,
+  params: {
+    metadata: Record<string, unknown> | null;
+    userId: string;
+    courseId: string | null;
+    chargeId: string;
+    tapAmount: number;
+  },
+) {
+  const meta = params.metadata || {};
+  const seriesId = typeof meta.coupon_series_id === "string" ? meta.coupon_series_id : "";
+  const codeUsed = typeof meta.coupon_code === "string" ? meta.coupon_code.toUpperCase() : "";
+  const codeNumber = Number(meta.coupon_number);
+
+  if (!seriesId || !codeUsed || !Number.isFinite(codeNumber)) return;
+
+  const originalAmount = Number(meta.original_amount ?? meta.original_price ?? params.tapAmount) || params.tapAmount;
+  const finalAmount = Number(params.tapAmount) || 0;
+  const discountAmount = Number(meta.coupon_discount ?? (originalAmount - finalAmount)) || 0;
+
+  const { error } = await adminClient
+    .from("coupon_series_usage")
+    .insert({
+      series_id: seriesId,
+      code_used: codeUsed,
+      code_number: codeNumber,
+      user_id: params.userId,
+      course_id: params.courseId,
+      discount_amount: Math.max(discountAmount, 0),
+      original_amount: Math.max(originalAmount, 0),
+      final_amount: Math.max(finalAmount, 0),
+      charge_id: params.chargeId,
+    });
+
+  if (error && !String(error.message || "").toLowerCase().includes("duplicate")) {
+    console.error("Series usage insert error:", error.message);
+  }
 }

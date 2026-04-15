@@ -127,6 +127,9 @@ Deno.serve(async (req) => {
     const customer_phone = b.customer_phone;
     let idempotency_key = String((b.idempotency_key ?? b.idempotencyKey) ?? "").trim();
     const coupon_id = b.coupon_id;
+    const coupon_series_id = (b.coupon_series_id ?? b.couponSeriesId) as string | undefined;
+    const coupon_number = Number(b.coupon_number ?? b.couponNumber);
+    const coupon_code = String(b.coupon_code ?? b.couponCode ?? "").trim().toUpperCase() || null;
     const payment_method = (b.payment_method as string | undefined) ?? "card";
     const detected_country = b.detected_country;
     const device_info = b.device_info;
@@ -584,6 +587,9 @@ Deno.serve(async (req) => {
           trainer_payout_base_sar: isTrainingBooking ? trainerPayoutBaseSar : null,
           platform_markup_percent: isTrainingBooking ? trainingPlatformMarkupPercent : null,
           coupon_id: coupon_id || null,
+          coupon_series_id: coupon_series_id || null,
+          coupon_number: Number.isFinite(coupon_number) ? coupon_number : null,
+          coupon_code: coupon_code,
           original_price: basePriceSar,
           course_discount_pct: courseDiscountPct,
           price_after_course_discount: priceAfterCourseDiscount,

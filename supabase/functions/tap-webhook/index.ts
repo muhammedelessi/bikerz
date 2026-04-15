@@ -145,6 +145,14 @@ Deno.serve(async (req) => {
         console.log("Coupon usage incremented:", couponId, "result:", couponResult);
       }
 
+      await recordSeriesUsage(adminClient, {
+        metadata: meta,
+        userId: existingCharge.user_id,
+        courseId: existingCharge.course_id,
+        chargeId,
+        tapAmount: verifiedCharge.amount || 0,
+      });
+
       // Record revenue analytics (idempotent - unique index prevents duplicates)
       const { error: revenueError } = await adminClient.from("revenue_analytics").insert({
         user_id: existingCharge.user_id,
@@ -202,6 +210,47 @@ function sanitizeTapResponse(data: Record<string, unknown>): Record<string, unkn
   }
   delete sanitized.card;
   return sanitized;
+}
+
+async function recordSeriesUsage(
+  // deno-lint-ignore no-explicit-any
+  adminClient: any,
+  params: {
+    metadata: Record<string, unknown> | null;
+    userId: string;
+    courseId: string | null;
+    chargeId: string;
+    tapAmount: number;
+  },
+) {
+  const meta = params.metadata || {};
+  const seriesId = typeof meta.coupon_series_id === "string" ? meta.coupon_series_id : "";
+  const codeUsed = typeof meta.coupon_code === "string" ? meta.coupon_code.toUpperCase() : "";
+  const codeNumber = Number(meta.coupon_number);
+
+  if (!seriesId || !codeUsed || !Number.isFinite(codeNumber)) return;
+
+  const originalAmount = Number(meta.original_amount ?? meta.original_price ?? params.tapAmount) || params.tapAmount;
+  const finalAmount = Number(params.tapAmount) || 0;
+  const discountAmount = Number(meta.coupon_discount ?? (originalAmount - finalAmount)) || 0;
+
+  const { error } = await adminClient
+    .from("coupon_series_usage")
+    .insert({
+      series_id: seriesId,
+      code_used: codeUsed,
+      code_number: codeNumber,
+      user_id: params.userId,
+      course_id: params.courseId,
+      discount_amount: Math.max(discountAmount, 0),
+      original_amount: Math.max(originalAmount, 0),
+      final_amount: Math.max(finalAmount, 0),
+      charge_id: params.chargeId,
+    });
+
+  if (error && !String(error.message || "").toLowerCase().includes("duplicate")) {
+    console.error("Series usage insert error:", error.message);
+  }
 }
 
 const GHL_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/ddAvdgekc94cWL9NBHK1/webhook-trigger/9a3cf7c3-0405-4667-ad02-e9c89073feb4';

@@ -13,6 +13,7 @@ interface SearchableDropdownProps {
   onChange: (value: string) => void;
   placeholder: string;
   searchPlaceholder: string;
+  selectedLabelBuilder?: (option: DropdownOption | undefined) => string;
   hasError?: boolean;
   disabled?: boolean;
   dir?: 'ltr' | 'rtl';
@@ -24,6 +25,7 @@ var SearchableDropdown: React.FC<SearchableDropdownProps> = function (props) {
   var onChange = props.onChange;
   var placeholder = props.placeholder;
   var searchPlaceholder = props.searchPlaceholder;
+  var selectedLabelBuilder = props.selectedLabelBuilder;
   var hasError = props.hasError || false;
   var disabled = props.disabled || false;
   var dir = props.dir;
@@ -40,13 +42,14 @@ var SearchableDropdown: React.FC<SearchableDropdownProps> = function (props) {
   var searchRef = useRef<HTMLInputElement>(null);
   var listRef = useRef<HTMLDivElement>(null);
 
-  var selectedLabel = '';
+  var selectedOption: DropdownOption | undefined = undefined;
   for (var i = 0; i < options.length; i++) {
     if (options[i].value === value) {
-      selectedLabel = options[i].label;
+      selectedOption = options[i];
       break;
     }
   }
+  var selectedLabel = selectedLabelBuilder ? selectedLabelBuilder(selectedOption) : (selectedOption ? selectedOption.label : '');
 
   var filtered: DropdownOption[] = [];
   var q = search.toLowerCase().trim();

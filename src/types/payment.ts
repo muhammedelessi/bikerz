@@ -16,6 +16,9 @@ export interface TapPaymentConfig {
   amount?: number;
   courseName?: string;
   isRTL?: boolean;
+  couponSeriesId?: string;
+  couponNumber?: number;
+  couponCode?: string;
   paymentKind?: TapPaymentKind;
   /** Required when paymentKind is training_booking */
   trainerCourseId?: string;
@@ -44,11 +47,14 @@ export interface CheckoutCourse {
 }
 
 export interface AppliedCoupon {
-  coupon_id: string;
+  coupon_id?: string | null;
   discount_type: string;
   discount_value: number;
   discount_amount: number;
   final_amount: number;
+  coupon_series_id?: string | null;
+  coupon_number?: number | null;
+  coupon_code?: string | null;
 }
 
 export interface ValidationErrors {

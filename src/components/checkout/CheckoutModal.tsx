@@ -111,7 +111,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (discountedPrice === 0 && promo.appliedCoupon) {
       try {
         await enrollUserInCourse(user.id, course.id);
-        if (promo.appliedCoupon) {
+        if (promo.appliedCoupon?.coupon_id) {
           await incrementCouponUsage({
             couponId: promo.appliedCoupon.coupon_id,
             userId: user.id,
@@ -195,6 +195,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       customerEmail: form.email,
       customerPhone: form.fullPhone,
       couponId: promo.appliedCoupon?.coupon_id,
+      couponSeriesId: promo.appliedCoupon?.coupon_series_id || undefined,
+      couponNumber: promo.appliedCoupon?.coupon_number ?? undefined,
+      couponCode: promo.appliedCoupon?.coupon_code || promoCode.trim().toUpperCase() || undefined,
       amount: paymentAmount,
       courseName: courseDisplayName,
       isRTL,

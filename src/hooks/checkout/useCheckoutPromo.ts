@@ -31,7 +31,10 @@ export function useCheckoutPromo(courseId: string, basePrice: number) {
       }
       if (data?.valid) {
         setPromoApplied(true);
-        setAppliedCoupon(data);
+        setAppliedCoupon({
+          ...data,
+          coupon_code: data?.coupon_code || promoCode.trim().toUpperCase(),
+        });
         toast.success(t('checkout.discountApplied'));
       } else {
         toast.error(data?.error || t('checkout.invalidPromoCode'));

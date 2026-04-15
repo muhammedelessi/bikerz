@@ -93,52 +93,140 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Validate coupon via DB function (atomic, handles locking)
-    const { data: result, error: fnError } = await adminClient.rpc(
-      "validate_and_apply_coupon",
-      {
-        p_code: code.trim(),
-        p_user_id: userId,
-        p_course_id: course_id || null,
-        p_original_amount: Number(amount),
-      }
-    );
+    const normalizedCode = code.trim().toUpperCase();
+    const { data: existingCoupon } = await adminClient
+      .from("coupons")
+      .select("id")
+      .eq("is_deleted", false)
+      .ilike("code", normalizedCode)
+      .limit(1)
+      .maybeSingle();
 
-    if (fnError) {
-      console.error("Validation function error:", fnError.message);
-      return res(500, { error: "Validation failed" });
-    }
-
-    const validation = result?.[0];
-    if (!validation) {
-      return res(500, { error: "No validation result" });
-    }
-
-    if (!validation.valid) {
-      // Log failed attempt
-      await logAttempt(
-        adminClient,
-        validation.coupon_id,
-        userId,
-        course_id,
-        "failed",
-        validation.error_message
+    if (existingCoupon?.id) {
+      // Existing fixed coupon flow (unchanged behavior)
+      const { data: result, error: fnError } = await adminClient.rpc(
+        "validate_and_apply_coupon",
+        {
+          p_code: normalizedCode,
+          p_user_id: userId,
+          p_course_id: course_id || null,
+          p_original_amount: Number(amount),
+        }
       );
 
-      return res(400, {
-        valid: false,
-        error: validation.error_message,
+      if (fnError) {
+        console.error("Validation function error:", fnError.message);
+        return res(500, { error: "Validation failed" });
+      }
+
+      const validation = result?.[0];
+      if (!validation) {
+        return res(500, { error: "No validation result" });
+      }
+
+      if (!validation.valid) {
+        await logAttempt(
+          adminClient,
+          validation.coupon_id,
+          userId,
+          course_id,
+          "failed",
+          validation.error_message
+        );
+
+        return res(400, {
+          valid: false,
+          error: validation.error_message,
+        });
+      }
+
+      return res(200, {
+        valid: true,
+        coupon_id: validation.coupon_id,
+        discount_type: validation.discount_type,
+        discount_value: validation.discount_value,
+        discount_amount: validation.discount_amount,
+        final_amount: validation.final_amount,
       });
     }
 
-    // Success - return discount info (do NOT increment usage yet)
+    // Dynamic coupon series fallback
+    const parsed = parseSeriesCode(normalizedCode);
+    if (!parsed) {
+      return res(400, { valid: false, error: "Invalid coupon code" });
+    }
+
+    const { data: rawSeries, error: seriesErr } = await adminClient
+      .from("coupon_series")
+      .select("*")
+      .ilike("prefix", parsed.prefix)
+      .lte("range_from", parsed.number)
+      .gte("range_to", parsed.number)
+      .eq("status", "active")
+      .order("created_at", { ascending: false });
+
+    if (seriesErr) {
+      console.error("Series lookup error:", seriesErr.message);
+      return res(500, { error: "Validation failed" });
+    }
+
+    const nowIso = new Date().toISOString();
+    const series = (rawSeries || []).find((s: any) => {
+      const notExpired = !s.expiry_date || String(s.expiry_date) > nowIso;
+      const scopeValid = Boolean(s.is_global) || !s.course_id || s.course_id === (course_id || null);
+      return notExpired && scopeValid;
+    });
+
+    if (!series) {
+      return res(400, { valid: false, error: "Coupon not found" });
+    }
+
+    const { count: usageCount, error: usageCountErr } = await adminClient
+      .from("coupon_series_usage")
+      .select("id", { count: "exact", head: true })
+      .eq("series_id", series.id)
+      .eq("code_number", parsed.number);
+    if (usageCountErr) {
+      console.error("Series usage count error:", usageCountErr.message);
+      return res(500, { error: "Validation failed" });
+    }
+    if ((usageCount || 0) >= Number(series.max_uses_per_code || 1)) {
+      return res(400, { valid: false, error: "Code already used" });
+    }
+
+    const { data: alreadyUsedByUser, error: usedByUserErr } = await adminClient
+      .from("coupon_series_usage")
+      .select("id")
+      .eq("series_id", series.id)
+      .eq("code_number", parsed.number)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (usedByUserErr && usedByUserErr.code !== "PGRST116") {
+      console.error("Series user usage check error:", usedByUserErr.message);
+      return res(500, { error: "Validation failed" });
+    }
+    if (alreadyUsedByUser?.id) {
+      return res(400, { valid: false, error: "Already used by you" });
+    }
+
+    const originalAmount = Number(amount);
+    const discount = computeSeriesDiscount(
+      Number(series.discount_value || 0),
+      String(series.discount_type || "percentage"),
+      originalAmount,
+    );
+    const finalAmount = Math.max(originalAmount - discount, 0);
+
     return res(200, {
       valid: true,
-      coupon_id: validation.coupon_id,
-      discount_type: validation.discount_type,
-      discount_value: validation.discount_value,
-      discount_amount: validation.discount_amount,
-      final_amount: validation.final_amount,
+      coupon_id: null,
+      discount_type: series.discount_type === "fixed" ? "fixed_amount_discount" : "percentage_discount",
+      discount_value: Number(series.discount_value || 0),
+      discount_amount: discount,
+      final_amount: finalAmount,
+      coupon_series_id: series.id,
+      coupon_number: parsed.number,
+      coupon_code: normalizedCode,
     });
   } catch (error) {
     console.error("Unexpected error:", error.message);
@@ -151,6 +239,31 @@ function res(status: number, body: Record<string, unknown>) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function parseSeriesCode(code: string): { prefix: string; number: number } | null {
+  const match = code.match(/^([^\d]+)(\d+)$/);
+  if (!match) return null;
+  const number = Number.parseInt(match[2], 10);
+  if (!Number.isFinite(number)) return null;
+  return {
+    prefix: match[1].toUpperCase(),
+    number,
+  };
+}
+
+function computeSeriesDiscount(
+  value: number,
+  type: string,
+  originalAmount: number,
+): number {
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  if (type === "fixed") {
+    return Math.min(value, originalAmount);
+  }
+  // Default to percentage
+  const pct = Math.min(Math.max(value, 0), 100);
+  return Math.round(originalAmount * (pct / 100) * 100) / 100;
 }
 
 async function logAttempt(

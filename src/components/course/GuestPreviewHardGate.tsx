@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { ShoppingBag, UserPlus } from "lucide-react";
 
 interface GuestPreviewHardGateProps {
   isRTL: boolean;
@@ -43,69 +44,76 @@ const GuestPreviewHardGate: React.FC<GuestPreviewHardGateProps> = ({
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
-          className="w-full max-w-xl rounded-2xl border border-white/20 bg-black/55 backdrop-blur-md p-5 sm:p-7 text-white"
+          className="w-full max-w-sm rounded-2xl border border-border/60 bg-background/95 backdrop-blur-md p-6 text-foreground shadow-2xl"
         >
-          <div className="mb-4">
-            <h3 className="text-xl sm:text-2xl font-bold mb-1">{isRTL ? "🎬 شكراً لمشاهدتك!" : "🎬 Thank you for watching!"}</h3>
-            <p className="text-sm sm:text-base text-white/85">
+          <div className="pb-4 border-b border-border/70">
+            <h3 className="text-xl font-black mb-1">{isRTL ? "🎬 شكراً لمشاهدتك!" : "🎬 Thank you for watching!"}</h3>
+            <p className="text-sm text-muted-foreground">
               {isRTL ? "سعداء أنك استمتعت بالمشاهدة المجانية." : "Glad you enjoyed the free preview."}
             </p>
           </div>
 
-          <div className="my-4 h-px bg-white/20" />
-
-          <div className="mb-4">
-            <p className="text-sm sm:text-base font-semibold mb-1">
+          <section className="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2.5">
+            <div className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-500">
+              {isRTL ? "مجاني / FREE" : "FREE / مجاني"}
+            </div>
+            <p className="text-sm font-semibold">
               {isRTL ? "تريد مشاهدة المزيد من الفيديوهات المجانية؟" : "Want to watch more free videos?"}
             </p>
-            <p className="text-xs sm:text-sm text-white/85">
+            <p className="text-xs text-muted-foreground">
               {isRTL
                 ? "أنشئ حسابًا مجانيًا للمتابعة. بدون أي دفعة الآن."
                 : "Create a free account to continue. No payment required now."}
             </p>
+            <Button className="btn-cta w-full" onClick={onCreateAccount}>
+              <UserPlus className="size-4" />
+              {isRTL
+                ? "أنشئ حسابك وشاهد المقاطع المجانية"
+                : "Create Account & Watch Free Videos"}
+            </Button>
+          </section>
+
+          <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border/70" />
+            <span>{isRTL ? "— أو —" : "— or —"}</span>
+            <span className="h-px flex-1 bg-border/70" />
           </div>
 
-          <div className="my-4 h-px bg-white/20" />
-
-          <div className="mb-5">
-            <p className="text-sm sm:text-base font-semibold mb-2">
+          <section className="rounded-xl border border-border/70 bg-muted/20 p-4 space-y-3">
+            <p className="text-sm font-semibold">
               {isRTL ? "احصل على الوصول الكامل لهذه الدورة" : "Get full access to this course"}
             </p>
             <div className="flex items-center gap-2 flex-wrap">
               {hasDiscount && (
-                <span className="text-sm text-white/60 line-through">
+                <span className="text-sm text-muted-foreground line-through">
                   {originalPriceText} {currencySymbol}
                 </span>
               )}
-              <span className="text-xl sm:text-2xl font-black">
+              <span className="text-2xl font-black text-primary">
                 {finalPriceText} {currencySymbol}
               </span>
               {hasDiscount && (
-                <span className="inline-flex rounded-full bg-amber-300/20 text-amber-200 text-xs font-semibold px-2.5 py-1">
+                <span className="inline-flex rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">
                   {isRTL ? `خصم ${discountPercentage}%` : `${discountPercentage}% off`}
                 </span>
               )}
             </div>
-          </div>
+            <Button
+              variant="outline"
+              className="w-full border-emerald-500/90 bg-transparent font-semibold text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400"
+              onClick={onBuyCourse}
+            >
+              <ShoppingBag className="size-4" />
+              {isRTL ? "شراء الدورة الآن" : "Buy Course Now"}
+            </Button>
+          </section>
 
-          <div className="flex flex-col gap-2.5">
-            <Button className="btn-cta w-full" onClick={onCreateAccount}>
-              {isRTL
-                ? "أنشئ حسابك وشاهد باقي المقاطع المجانية"
-                : "Create your account and watch the remaining free clips"}
-            </Button>
-            <p className="text-xs sm:text-sm text-white/85 text-center">
-              {isRTL
-                ? "أو اشترِ الدورة بسعر العرض وشاهدها كاملة"
-                : "Or buy the course at the offer price and watch it in full"}
-            </p>
-            <Button variant="secondary" className="w-full font-semibold" onClick={onBuyCourse}>
-              {isRTL ? "شراء الدورة" : "Buy Course"}
-            </Button>
-            <Button variant="outline" className="w-full bg-transparent text-white border-white/40" onClick={onLogin}>
+          <p className="mt-5 text-center text-sm text-muted-foreground">
+            {isRTL ? "لديك حساب بالفعل؟ " : "Already have an account? "}
+            <button type="button" onClick={onLogin} className="text-primary underline underline-offset-4 hover:opacity-90">
               {isRTL ? "تسجيل الدخول" : "Login"}
-            </Button>
-          </div>
+            </button>
+          </p>
         </motion.div>
       </div>
     </div>
