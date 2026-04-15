@@ -143,24 +143,24 @@ const AdminStudentDetail: React.FC = () => {
       });
 
       const { data: chapters } = await dbFrom('chapters').select('id, course_id').in('course_id', courseIds);
-      const chapterIds = (chapters || []).map(ch => ch.id);
+      const chapterIds = (chapters || []).map((ch: any) => ch.id);
       const { data: lessons } = chapterIds.length
         ? await dbFrom('lessons').select('id, chapter_id').in('chapter_id', chapterIds)
-        : { data: [] };
+        : { data: [] as any[] };
 
-      const chapterCourseMap = new Map((chapters || []).map(ch => [ch.id, ch.course_id]));
+      const chapterCourseMap = new Map((chapters || []).map((ch: any) => [ch.id, ch.course_id]));
       const lessonCourseMap = new Map<string, string>();
-      (lessons || []).forEach(l => {
+      (lessons || []).forEach((l: any) => {
         const cId = chapterCourseMap.get(l.chapter_id);
-        if (cId) lessonCourseMap.set(l.id, cId);
+        if (cId) lessonCourseMap.set(l.id, cId as string);
       });
       const totalLessonsPerCourse = new Map<string, number>();
-      (lessons || []).forEach(l => {
+      (lessons || []).forEach((l: any) => {
         const cId = chapterCourseMap.get(l.chapter_id);
-        if (cId) totalLessonsPerCourse.set(cId, (totalLessonsPerCourse.get(cId) || 0) + 1);
+        if (cId) totalLessonsPerCourse.set(cId as string, (totalLessonsPerCourse.get(cId as string) || 0) + 1);
       });
       const completedPerCourse = new Map<string, number>();
-      (progressRes.data || []).forEach(p => {
+      (progressRes.data || []).forEach((p: any) => {
         const cId = lessonCourseMap.get(p.lesson_id);
         if (cId) completedPerCourse.set(cId, (completedPerCourse.get(cId) || 0) + 1);
       });
