@@ -1317,21 +1317,6 @@ const CourseLearn: React.FC = () => {
                   {/* Video Player */}
                   {currentLesson?.video_url && (
                     <div className="relative bg-black w-full aspect-video sm:rounded-2xl overflow-hidden sm:mt-6 sm:mx-6 lg:mx-8">
-                    {showGuestHardGate && isGuestTrackedPreviewLesson && (
-                      <div className="absolute inset-0 z-40">
-                        <GuestPreviewHardGate
-                          isRTL={isRTL}
-                          thumbnailUrl={course?.thumbnail_url}
-                          originalPriceText={hardGatePriceInfo?.originalPrice || "0"}
-                          finalPriceText={hardGatePriceInfo?.finalPrice || "0"}
-                          discountPercentage={course?.discount_percentage || 0}
-                          currencySymbol={hardGateCurrencySymbol}
-                          onCreateAccount={handleGuestCreateAccount}
-                          onBuyCourse={handleGuestBuyCourse}
-                          onLogin={handleGuestLogin}
-                        />
-                      </div>
-                    )}
                     {/* Next Lesson Countdown - overlay on video */}
                     <AnimatePresence>
                       {showNextCountdown && nextLesson && (
@@ -1730,6 +1715,20 @@ const CourseLearn: React.FC = () => {
             queryClient.invalidateQueries({ queryKey: ['enrollment-learn', id, user?.id] });
             navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
           }}
+        />
+      )}
+
+      {showGuestHardGate && isGuestTrackedPreviewLesson && (
+        <GuestPreviewHardGate
+          isRTL={isRTL}
+          thumbnailUrl={course?.thumbnail_url}
+          originalPriceText={hardGatePriceInfo?.originalPrice || "0"}
+          finalPriceText={hardGatePriceInfo?.finalPrice || "0"}
+          discountPercentage={course?.discount_percentage || 0}
+          currencySymbol={hardGateCurrencySymbol}
+          onCreateAccount={handleGuestCreateAccount}
+          onBuyCourse={handleGuestBuyCourse}
+          onLogin={handleGuestLogin}
         />
       )}
 

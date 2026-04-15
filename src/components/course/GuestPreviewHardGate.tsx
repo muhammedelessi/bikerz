@@ -28,7 +28,7 @@ const GuestPreviewHardGate: React.FC<GuestPreviewHardGateProps> = ({
   const hasDiscount = Boolean(discountPercentage && discountPercentage > 0);
 
   return (
-    <div className="relative w-full h-full min-h-[220px] overflow-hidden" dir={isRTL ? "rtl" : "ltr"}>
+    <div className="fixed inset-0 z-[120] overflow-hidden" dir={isRTL ? "rtl" : "ltr"}>
       {thumbnailUrl ? (
         <>
           <img src={thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover scale-105 blur-xl opacity-60" />
