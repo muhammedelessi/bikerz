@@ -235,8 +235,8 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
               <p className="text-xs text-primary flex items-center gap-1">
                 <Check className="w-3.5 h-3.5" />
                 {isRTL
-                  ? `تم تطبيق خصم ${discountLabel} (وفّرت ${formatLocal(discountAmount)})`
-                  : `${discountLabel} discount applied (saved ${formatLocal(discountAmount)})`}
+                  ? `تم تطبيق خصم ${discountLabel}`
+                  : `${discountLabel} discount applied`}
               </p>
             )}
           </div>
