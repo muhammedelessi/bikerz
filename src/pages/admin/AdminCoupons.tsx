@@ -155,7 +155,7 @@ const AdminCoupons: React.FC = () => {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return (data || []) as CouponSeries[];
+      return (data || []) as unknown as CouponSeries[];
     },
   });
 

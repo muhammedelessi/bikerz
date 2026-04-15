@@ -336,7 +336,7 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
     },
     { key: "gender", icon: Shield, label: isRTL ? "الجنس" : "Gender", value: genderLabel || "-" },
     { key: "location", icon: Globe, label: isRTL ? "الموقع" : "Location", value: locationLabel || "-" },
-  ] as const;
+  ] as { key: string; icon: any; label: string; value: string; tabular?: boolean; dir?: string }[];
 
   return (
     <div className="card-premium p-6 space-y-6" dir={isRTL ? "rtl" : "ltr"}>
@@ -500,14 +500,15 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
                 <SearchableDropdown
                   options={countryOptions}
                   value={profileDraft.countryCode}
-                  onChange={(val) =>
+                   onChange={(val) => {
                     setProfileDraft((prev) => ({
                       ...prev,
                       countryCode: val,
                       city: "",
                       customCity: "",
-                    })) ||
-                    setFieldErrors((prev) => ({ ...prev, country: undefined, city: undefined }))
+                    }));
+                    setFieldErrors((prev) => ({ ...prev, country: undefined, city: undefined }));
+                  }
                   }
                   placeholder={isRTL ? "الدولة" : "Country"}
                   searchPlaceholder={isRTL ? "ابحث..." : "Search..."}

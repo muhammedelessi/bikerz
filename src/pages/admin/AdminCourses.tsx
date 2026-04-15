@@ -190,8 +190,8 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
     if (!open) return;
     const load = async () => {
       // Just get SA defaults from first course
-      const { data: courses } = await dbFrom("courses").select("id, price, discount_percentage").limit(1);
-      const { data: prices } = await dbFrom("course_country_prices").select("*").limit(100);
+      const { data: courses } = await (supabase as any).from("courses").select("id, price, discount_percentage").limit(1);
+      const { data: prices } = await (supabase as any).from("course_country_prices").select("*").limit(100);
 
       setRows((prev) => {
         const updated = { ...prev };
@@ -275,7 +275,7 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
     }
     setSaving(true);
     try {
-      const { data: courses } = await dbFrom("courses").select("id");
+      const { data: courses } = await (supabase as any).from("courses").select("id");
       if (!courses?.length) {
         setSaving(false);
         return;
@@ -323,7 +323,7 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
       });
 
       if (insertRows.length > 0) {
-        await dbFrom("course_country_prices").insert(insertRows);
+        await (supabase as any).from("course_country_prices").insert(insertRows);
       }
 
       toast.success(isRTL ? "تم تطبيق الأسعار على جميع الكورسات" : "Prices applied to all courses");
@@ -740,9 +740,8 @@ const AdminCourses: React.FC = () => {
     queryKey: ["admin-courses"],
     queryFn: async () => {
       const { data, error } = await dbFrom("courses").select("*").order("created_at", { ascending: false });
-
       if (error) throw error;
-      return data as Course[];
+      return (data || []) as unknown as Course[];
     },
   });
 
@@ -760,15 +759,15 @@ const AdminCourses: React.FC = () => {
       const [profilesRes, coursesRes] = await Promise.all([
         userIds.length
           ? dbFrom("profiles").select("user_id, full_name").in("user_id", userIds)
-          : Promise.resolve({ data: [] as { user_id: string; full_name: string | null }[] }),
+          : Promise.resolve({ data: [] as any[] }),
         allCourseIds.length
           ? dbFrom("courses").select("id, title, title_ar").in("id", allCourseIds)
-          : Promise.resolve({ data: [] as { id: string; title: string; title_ar: string | null }[] }),
+          : Promise.resolve({ data: [] as any[] }),
       ]);
       return list.map((b) => ({
         ...b,
-        profile: profilesRes.data?.find((p) => p.user_id === b.user_id) ?? null,
-        courseTitles: (b.course_ids || []).map((cid) => coursesRes.data?.find((c) => c.id === cid)),
+        profile: (profilesRes.data as any[])?.find((p: any) => p.user_id === b.user_id) ?? null,
+        courseTitles: (b.course_ids || []).map((cid) => (coursesRes.data as any[])?.find((c: any) => c.id === cid)),
       }));
     },
   });

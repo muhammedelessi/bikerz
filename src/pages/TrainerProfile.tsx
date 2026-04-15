@@ -263,7 +263,7 @@ const TrainerProfile: React.FC = () => {
     queryKey: ['my-trainer-review', id, user?.id],
     enabled: !!id && !!user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('trainer_reviews')
         .select('id, trainer_id, rating, comment')
         .eq('trainer_id', id!)

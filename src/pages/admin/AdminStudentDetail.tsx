@@ -133,8 +133,8 @@ const AdminStudentDetail: React.FC = () => {
         dbFrom('lesson_progress').select('lesson_id, is_completed').eq('user_id', userId).eq('is_completed', true),
       ]);
 
-      const courseMap = new Map((coursesRes.data || []).map(c => [c.id, c]));
-      const reviewMap = new Map((reviewsRes.data || []).map(r => [r.course_id, r]));
+      const courseMap = new Map((coursesRes.data || []).map((c: any) => [c.id, c]));
+      const reviewMap = new Map((reviewsRes.data || []).map((r: any) => [r.course_id, r]));
       const paymentMap = new Map<string, { amount: number; currency: string; date: string; method: string }>();
       [...(tapRes.data || []), ...(manualRes.data || [])].forEach(p => {
         if (p.course_id && !paymentMap.has(p.course_id)) {
@@ -143,31 +143,31 @@ const AdminStudentDetail: React.FC = () => {
       });
 
       const { data: chapters } = await dbFrom('chapters').select('id, course_id').in('course_id', courseIds);
-      const chapterIds = (chapters || []).map(ch => ch.id);
+      const chapterIds = (chapters || []).map((ch: any) => ch.id);
       const { data: lessons } = chapterIds.length
         ? await dbFrom('lessons').select('id, chapter_id').in('chapter_id', chapterIds)
-        : { data: [] };
+        : { data: [] as any[] };
 
-      const chapterCourseMap = new Map((chapters || []).map(ch => [ch.id, ch.course_id]));
+      const chapterCourseMap = new Map((chapters || []).map((ch: any) => [ch.id, ch.course_id]));
       const lessonCourseMap = new Map<string, string>();
-      (lessons || []).forEach(l => {
+      (lessons || []).forEach((l: any) => {
         const cId = chapterCourseMap.get(l.chapter_id);
-        if (cId) lessonCourseMap.set(l.id, cId);
+        if (cId) lessonCourseMap.set(l.id, cId as string);
       });
       const totalLessonsPerCourse = new Map<string, number>();
-      (lessons || []).forEach(l => {
+      (lessons || []).forEach((l: any) => {
         const cId = chapterCourseMap.get(l.chapter_id);
-        if (cId) totalLessonsPerCourse.set(cId, (totalLessonsPerCourse.get(cId) || 0) + 1);
+        if (cId) totalLessonsPerCourse.set(cId as string, (totalLessonsPerCourse.get(cId as string) || 0) + 1);
       });
       const completedPerCourse = new Map<string, number>();
-      (progressRes.data || []).forEach(p => {
+      (progressRes.data || []).forEach((p: any) => {
         const cId = lessonCourseMap.get(p.lesson_id);
         if (cId) completedPerCourse.set(cId, (completedPerCourse.get(cId) || 0) + 1);
       });
 
       return enrs.map(e => {
-        const c = courseMap.get(e.course_id);
-        const review = reviewMap.get(e.course_id);
+        const c = courseMap.get(e.course_id) as any;
+        const review = reviewMap.get(e.course_id) as any;
         const payment = paymentMap.get(e.course_id);
         const lessonsCompleted = completedPerCourse.get(e.course_id) || 0;
         const totalLessonCount = totalLessonsPerCourse.get(e.course_id) || 0;

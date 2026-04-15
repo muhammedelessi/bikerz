@@ -128,7 +128,7 @@ const MyBookings: React.FC = () => {
     queryKey: ['my-trainer-reviews', user?.id, trainerIds.join(',')],
     enabled: !!user?.id && trainerIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('trainer_reviews')
         .select('id, trainer_id, rating, comment')
         .eq('user_id', user!.id)
