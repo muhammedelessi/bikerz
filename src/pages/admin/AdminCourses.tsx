@@ -190,8 +190,8 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
     if (!open) return;
     const load = async () => {
       // Just get SA defaults from first course
-      const { data: courses } = await supabase.from("courses" as any).select("id, price, discount_percentage").limit(1);
-      const { data: prices } = await supabase.from("course_country_prices" as any).select("*").limit(100);
+      const { data: courses } = await (supabase as any).from("courses").select("id, price, discount_percentage").limit(1);
+      const { data: prices } = await (supabase as any).from("course_country_prices").select("*").limit(100);
 
       setRows((prev) => {
         const updated = { ...prev };
@@ -275,7 +275,7 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
     }
     setSaving(true);
     try {
-      const { data: courses } = await supabase.from("courses" as any).select("id");
+      const { data: courses } = await (supabase as any).from("courses").select("id");
       if (!courses?.length) {
         setSaving(false);
         return;
@@ -323,7 +323,7 @@ const AllCoursePricesDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean
       });
 
       if (insertRows.length > 0) {
-        await supabase.from("course_country_prices" as any).insert(insertRows);
+        await (supabase as any).from("course_country_prices").insert(insertRows);
       }
 
       toast.success(isRTL ? "تم تطبيق الأسعار على جميع الكورسات" : "Prices applied to all courses");

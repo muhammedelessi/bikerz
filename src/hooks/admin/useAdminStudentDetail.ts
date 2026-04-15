@@ -3,6 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const useAdminStudentDetail = () => {
   const queryClient = useQueryClient();
-  const dbFrom = (table: string) => supabase.from(table as any);
+  const dbFrom = (table: string) => (supabase as any).from(table);
   return { useRQ: useQuery, useRM: useMutation, queryClient, dbFrom };
 };
