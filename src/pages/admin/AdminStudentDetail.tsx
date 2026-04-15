@@ -166,8 +166,8 @@ const AdminStudentDetail: React.FC = () => {
       });
 
       return enrs.map(e => {
-        const c = courseMap.get(e.course_id);
-        const review = reviewMap.get(e.course_id);
+        const c = courseMap.get(e.course_id) as any;
+        const review = reviewMap.get(e.course_id) as any;
         const payment = paymentMap.get(e.course_id);
         const lessonsCompleted = completedPerCourse.get(e.course_id) || 0;
         const totalLessonCount = totalLessonsPerCourse.get(e.course_id) || 0;
