@@ -66,7 +66,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const discountLabel = promo.appliedCoupon
     ? promo.appliedCoupon.discount_type === "percentage"
       ? `${promo.appliedCoupon.discount_value}%`
-      : `${promo.appliedCoupon.discount_value} ${currSym}`
+      : `${Math.round((promo.appliedCoupon.discount_amount / basePrice) * 100)}%`
     : "";
 
   const formatLocal = useCallback((amount: number) => `${amount} ${currSym}`, [currSym]);
