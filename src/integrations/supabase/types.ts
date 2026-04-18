@@ -257,6 +257,100 @@ export type Database = {
         }
         Relationships: []
       }
+      bike_models: {
+        Row: {
+          brand: string
+          created_at: string | null
+          id: string
+          model_name: string
+          sort_order: number | null
+          subtype_id: string
+        }
+        Insert: {
+          brand: string
+          created_at?: string | null
+          id?: string
+          model_name: string
+          sort_order?: number | null
+          subtype_id: string
+        }
+        Update: {
+          brand?: string
+          created_at?: string | null
+          id?: string
+          model_name?: string
+          sort_order?: number | null
+          subtype_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bike_models_subtype_id_fkey"
+            columns: ["subtype_id"]
+            isOneToOne: false
+            referencedRelation: "bike_subtypes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bike_subtypes: {
+        Row: {
+          created_at: string | null
+          id: string
+          name_ar: string
+          name_en: string
+          sort_order: number | null
+          type_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name_ar: string
+          name_en: string
+          sort_order?: number | null
+          type_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name_ar?: string
+          name_en?: string
+          sort_order?: number | null
+          type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bike_subtypes_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "bike_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bike_types: {
+        Row: {
+          created_at: string | null
+          id: string
+          name_ar: string
+          name_en: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name_ar: string
+          name_en: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name_ar?: string
+          name_en?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       bundle_tiers: {
         Row: {
           created_at: string | null
@@ -1742,68 +1836,179 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bike_brand: string | null
+          bike_entries: Json | null
           bike_model: string | null
           city: string | null
           country: string | null
+          courses_sold_count: number | null
           created_at: string
           date_of_birth: string | null
           engine_size_cc: number | null
           experience_level: string | null
           full_name: string | null
           gender: string | null
+          has_license: boolean | null
           id: string
+          km_logged: number | null
+          license_verified: boolean | null
+          motorcycle_vin: string | null
+          nationality: string | null
           phone: string | null
           phone_verified: boolean
           postal_code: string | null
           profile_complete: boolean
+          rank_override: boolean | null
           rider_nickname: string | null
           riding_experience_years: number | null
           updated_at: string
           user_id: string
+          vin_verified: boolean | null
         }
         Insert: {
           avatar_url?: string | null
           bike_brand?: string | null
+          bike_entries?: Json | null
           bike_model?: string | null
           city?: string | null
           country?: string | null
+          courses_sold_count?: number | null
           created_at?: string
           date_of_birth?: string | null
           engine_size_cc?: number | null
           experience_level?: string | null
           full_name?: string | null
           gender?: string | null
+          has_license?: boolean | null
           id?: string
+          km_logged?: number | null
+          license_verified?: boolean | null
+          motorcycle_vin?: string | null
+          nationality?: string | null
           phone?: string | null
           phone_verified?: boolean
           postal_code?: string | null
           profile_complete?: boolean
+          rank_override?: boolean | null
           rider_nickname?: string | null
           riding_experience_years?: number | null
           updated_at?: string
           user_id: string
+          vin_verified?: boolean | null
         }
         Update: {
           avatar_url?: string | null
           bike_brand?: string | null
+          bike_entries?: Json | null
           bike_model?: string | null
           city?: string | null
           country?: string | null
+          courses_sold_count?: number | null
           created_at?: string
           date_of_birth?: string | null
           engine_size_cc?: number | null
           experience_level?: string | null
           full_name?: string | null
           gender?: string | null
+          has_license?: boolean | null
           id?: string
+          km_logged?: number | null
+          license_verified?: boolean | null
+          motorcycle_vin?: string | null
+          nationality?: string | null
           phone?: string | null
           phone_verified?: boolean
           postal_code?: string | null
           profile_complete?: boolean
+          rank_override?: boolean | null
           rider_nickname?: string | null
           riding_experience_years?: number | null
           updated_at?: string
           user_id?: string
+          vin_verified?: boolean | null
+        }
+        Relationships: []
+      }
+      rank_definitions: {
+        Row: {
+          bg_color: string
+          border_color: string
+          color: string
+          created_at: string | null
+          custom_requirements: Json
+          description_ar: string
+          description_en: string
+          icon: string
+          id: string
+          is_admin_only: boolean
+          name: string
+          name_ar: string
+          promotion_trigger_ar: string
+          promotion_trigger_en: string
+          req_core_training: boolean
+          req_courses_sold_max: number | null
+          req_courses_sold_min: number | null
+          req_first_course: boolean
+          req_has_license: boolean
+          req_km_logged: number | null
+          req_labels: Json
+          req_motorcycle_vin: boolean
+          req_programs_sold_min: number | null
+          sort_order: number
+          updated_at: string | null
+        }
+        Insert: {
+          bg_color?: string
+          border_color?: string
+          color?: string
+          created_at?: string | null
+          custom_requirements?: Json
+          description_ar?: string
+          description_en?: string
+          icon?: string
+          id?: string
+          is_admin_only?: boolean
+          name: string
+          name_ar: string
+          promotion_trigger_ar?: string
+          promotion_trigger_en?: string
+          req_core_training?: boolean
+          req_courses_sold_max?: number | null
+          req_courses_sold_min?: number | null
+          req_first_course?: boolean
+          req_has_license?: boolean
+          req_km_logged?: number | null
+          req_labels?: Json
+          req_motorcycle_vin?: boolean
+          req_programs_sold_min?: number | null
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Update: {
+          bg_color?: string
+          border_color?: string
+          color?: string
+          created_at?: string | null
+          custom_requirements?: Json
+          description_ar?: string
+          description_en?: string
+          icon?: string
+          id?: string
+          is_admin_only?: boolean
+          name?: string
+          name_ar?: string
+          promotion_trigger_ar?: string
+          promotion_trigger_en?: string
+          req_core_training?: boolean
+          req_courses_sold_max?: number | null
+          req_courses_sold_min?: number | null
+          req_first_course?: boolean
+          req_has_license?: boolean
+          req_km_logged?: number | null
+          req_labels?: Json
+          req_motorcycle_vin?: boolean
+          req_programs_sold_min?: number | null
+          sort_order?: number
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -2231,6 +2436,7 @@ export type Database = {
           duration_hours: number
           id: string
           location: string
+          location_detail: string | null
           price: number
           services: string[] | null
           sessions_count: number
@@ -2243,6 +2449,7 @@ export type Database = {
           duration_hours?: number
           id?: string
           location?: string
+          location_detail?: string | null
           price?: number
           services?: string[] | null
           sessions_count?: number
@@ -2255,6 +2462,7 @@ export type Database = {
           duration_hours?: number
           id?: string
           location?: string
+          location_detail?: string | null
           price?: number
           services?: string[] | null
           sessions_count?: number
@@ -2337,6 +2545,7 @@ export type Database = {
           city: string
           country: string
           created_at: string
+          date_of_birth: string | null
           email: string
           id: string
           language_levels: Json
@@ -2364,6 +2573,7 @@ export type Database = {
           city?: string
           country?: string
           created_at?: string
+          date_of_birth?: string | null
           email?: string
           id?: string
           language_levels?: Json
@@ -2391,6 +2601,7 @@ export type Database = {
           city?: string
           country?: string
           created_at?: string
+          date_of_birth?: string | null
           email?: string
           id?: string
           language_levels?: Json
@@ -2555,6 +2766,7 @@ export type Database = {
           level: Database["public"]["Enums"]["training_level"]
           name_ar: string
           name_en: string
+          sessions: Json
           status: Database["public"]["Enums"]["training_status"]
           trainer_supplies: Json | null
           type: Database["public"]["Enums"]["training_type"]
@@ -2570,6 +2782,7 @@ export type Database = {
           level?: Database["public"]["Enums"]["training_level"]
           name_ar?: string
           name_en?: string
+          sessions?: Json
           status?: Database["public"]["Enums"]["training_status"]
           trainer_supplies?: Json | null
           type?: Database["public"]["Enums"]["training_type"]
@@ -2585,6 +2798,7 @@ export type Database = {
           level?: Database["public"]["Enums"]["training_level"]
           name_ar?: string
           name_en?: string
+          sessions?: Json
           status?: Database["public"]["Enums"]["training_status"]
           trainer_supplies?: Json | null
           type?: Database["public"]["Enums"]["training_type"]
