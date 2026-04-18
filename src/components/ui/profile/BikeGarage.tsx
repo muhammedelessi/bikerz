@@ -134,9 +134,53 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
   const [manualBrand, setManualBrand] = useState('');
   const [manualModel, setManualModel] = useState('');
 
+  // Pending photos (selected before bike is saved)
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
+  const [pendingPreviews, setPendingPreviews] = useState<string[]>([]);
+  const addPhotoInputRef = useRef<HTMLInputElement>(null);
+  const [savingNewBike, setSavingNewBike] = useState(false);
+
+  const onPickPendingPhotos = (files: FileList | null) => {
+    if (!files) return;
+    const arr = Array.from(files);
+    const total = pendingPhotos.length + arr.length;
+    if (total > 5) { toast.error(isRTL ? 'الحد الأقصى 5 صور' : 'Maximum 5 photos'); return; }
+    setPendingPhotos((prev) => [...prev, ...arr]);
+    setPendingPreviews((prev) => [...prev, ...arr.map((f) => URL.createObjectURL(f))]);
+    if (addPhotoInputRef.current) addPhotoInputRef.current.value = '';
+  };
+
+  const removePendingPhoto = (index: number) => {
+    setPendingPhotos((prev) => prev.filter((_, i) => i !== index));
+    setPendingPreviews((prev) => {
+      const url = prev[index];
+      if (url) URL.revokeObjectURL(url);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const clearPendingPhotos = () => {
+    pendingPreviews.forEach((u) => URL.revokeObjectURL(u));
+    setPendingPhotos([]); setPendingPreviews([]);
+  };
+
+  const uploadFilesForBike = async (bikeId: string, files: File[]): Promise<string[]> => {
+    if (!userId || files.length === 0) return [];
+    const urls: string[] = [];
+    for (const file of files) {
+      const path = `${userId}/${storageFolder}/${bikeId}/${Date.now()}-${file.name}`;
+      const { error } = await (supabase as any).storage.from('bike-photos').upload(path, file);
+      if (error) { toast.error(isRTL ? 'فشل رفع الصورة' : 'Upload failed'); continue; }
+      const { data: u } = (supabase as any).storage.from('bike-photos').getPublicUrl(path);
+      if (u?.publicUrl) urls.push(u.publicUrl as string);
+    }
+    return urls;
+  };
+
   const openAddPage = () => {
     setSearch(''); setActiveType('all'); setShowManual(false);
     setManualType(''); setManualTypeName(''); setManualBrand(''); setManualModel('');
+    clearPendingPhotos();
     setView('add');
   };
 
@@ -166,31 +210,41 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
     }), [flatModels, search, activeType]);
 
   // ── Quick add from catalog ────────────────────────────────────────────────
-  const onQuickAdd = (item: FlatModel) => {
+  const onQuickAdd = async (item: FlatModel) => {
+    const id = crypto.randomUUID();
+    setSavingNewBike(true);
+    const photoUrls = await uploadFilesForBike(id, pendingPhotos);
     const newEntry: BikeEntry = {
-      id: crypto.randomUUID(), type_id: item.type_id, type_name: item.type_name,
+      id, type_id: item.type_id, type_name: item.type_name,
       subtype_id: item.subtype_id, subtype_name: item.subtype_name,
       brand: item.brand, model: item.model_name,
-      is_custom_type: false, is_custom_brand: false, photos: [],
+      is_custom_type: false, is_custom_brand: false, photos: photoUrls,
     };
     onChange([...entries, newEntry]);
+    setSavingNewBike(false);
+    clearPendingPhotos();
     setView('list');
     toast.success(isRTL ? 'تمت إضافة الدراجة' : 'Bike added');
   };
 
   // ── Manual add ────────────────────────────────────────────────────────────
-  const onSaveManual = () => {
+  const onSaveManual = async () => {
     if (!manualBrand.trim() || !manualModel.trim()) {
       toast.error(isRTL ? 'الرجاء إدخال الماركة والموديل' : 'Please enter brand and model'); return;
     }
     const resolved = manualType === 'custom' ? null : catalogTypes.find((t) => t.id === manualType) ?? null;
+    const id = crypto.randomUUID();
+    setSavingNewBike(true);
+    const photoUrls = await uploadFilesForBike(id, pendingPhotos);
     const newEntry: BikeEntry = {
-      id: crypto.randomUUID(), type_id: resolved?.id ?? null,
+      id, type_id: resolved?.id ?? null,
       type_name: resolved?.name_en ?? manualTypeName.trim(),
       subtype_id: null, subtype_name: '', brand: manualBrand.trim(), model: manualModel.trim(),
-      is_custom_type: !resolved, is_custom_brand: true, photos: [],
+      is_custom_type: !resolved, is_custom_brand: true, photos: photoUrls,
     };
     onChange([...entries, newEntry]);
+    setSavingNewBike(false);
+    clearPendingPhotos();
     setView('list');
     toast.success(isRTL ? 'تمت إضافة الدراجة' : 'Bike added');
   };
@@ -347,12 +401,43 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
             </div>
           </div>
           <div className="p-4 space-y-3 max-h-[480px] overflow-y-auto">
+            {/* Photos picker (added BEFORE bike is created) */}
+            {canUpload && (
+              <div className="rounded-xl border border-dashed border-border/60 bg-muted/10 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-foreground">
+                    {isRTL ? 'صور الدراجة (اختياري)' : 'Bike Photos (optional)'}
+                  </p>
+                  <span className="text-[10px] text-muted-foreground">{pendingPhotos.length}/5</span>
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {pendingPreviews.map((url, i) => (
+                    <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-border/40 group">
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <button onClick={() => removePendingPhoto(i)}
+                        className="absolute top-1 end-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center hover:bg-black/80">
+                        <X className="w-2.5 h-2.5 text-white" />
+                      </button>
+                    </div>
+                  ))}
+                  {pendingPhotos.length < 5 && (
+                    <button onClick={() => addPhotoInputRef.current?.click()}
+                      className="aspect-square rounded-lg border-2 border-dashed border-border/60 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-colors">
+                      <ImagePlus className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  )}
+                </div>
+                <input ref={addPhotoInputRef} type="file" accept="image/*" multiple className="hidden"
+                  onChange={(e) => onPickPendingPhotos(e.target.files)} />
+              </div>
+            )}
+
             {/* Search */}
             <div className="relative">
               <Bike className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               <Input value={search} onChange={(e) => setSearch(e.target.value)}
                 placeholder={isRTL ? 'ابحث: BMW R18...' : 'Search: BMW R18...'}
-                className="ps-10 h-10 rounded-xl" autoFocus />
+                className="ps-10 h-10 rounded-xl" />
               {search && (
                 <button className="absolute end-3 top-1/2 -translate-y-1/2" onClick={() => setSearch('')}>
                   <X className="w-4 h-4 text-muted-foreground" />
@@ -389,9 +474,9 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
                       <p className="font-semibold text-sm text-foreground" dir="ltr">{item.brand} {item.model_name}</p>
                       <p className="text-xs text-muted-foreground">{isRTL ? item.type_name_ar : item.type_name} · {isRTL ? item.subtype_name_ar : item.subtype_name}</p>
                     </div>
-                    <button onClick={() => onQuickAdd(item)}
-                      className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 hover:bg-primary hover:text-primary-foreground transition-all">
-                      <Plus className="w-3.5 h-3.5" />
+                    <button onClick={() => onQuickAdd(item)} disabled={savingNewBike}
+                      className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-50">
+                      {savingNewBike ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                 ))}
@@ -439,8 +524,8 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
                     placeholder={isRTL ? 'الموديل...' : 'Model...'} className="h-9 rounded-xl" dir="ltr" />
                 </div>
                 <Button className="w-full gap-2 h-9" onClick={onSaveManual}
-                  disabled={!manualBrand.trim() || !manualModel.trim() || !manualType}>
-                  <Plus className="w-4 h-4" />
+                  disabled={!manualBrand.trim() || !manualModel.trim() || !manualType || savingNewBike}>
+                  {savingNewBike ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   {isRTL ? 'إضافة الدراجة' : 'Add Bike'}
                 </Button>
               </div>
