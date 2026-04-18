@@ -474,9 +474,9 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
                       <p className="font-semibold text-sm text-foreground" dir="ltr">{item.brand} {item.model_name}</p>
                       <p className="text-xs text-muted-foreground">{isRTL ? item.type_name_ar : item.type_name} · {isRTL ? item.subtype_name_ar : item.subtype_name}</p>
                     </div>
-                    <button onClick={() => onQuickAdd(item)}
-                      className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 hover:bg-primary hover:text-primary-foreground transition-all">
-                      <Plus className="w-3.5 h-3.5" />
+                    <button onClick={() => onQuickAdd(item)} disabled={savingNewBike}
+                      className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-50">
+                      {savingNewBike ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                 ))}
