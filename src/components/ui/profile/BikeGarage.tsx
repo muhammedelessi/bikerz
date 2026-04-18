@@ -4,7 +4,7 @@
  * The parent owns persistence; this component just manages entries in memory
  * and calls `onChange` whenever the list changes.
  */
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useImperativeHandle, useMemo, useRef, useState, forwardRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,6 +45,10 @@ export interface BikeGarageProps {
   isUpdating?: boolean;
 }
 
+export interface BikeGarageHandle {
+  openAddPage: () => void;
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TYPE_GRADIENTS: Record<string, string> = {
@@ -66,9 +70,9 @@ const LUCIDE_ICONS: Record<string, React.ElementType> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export const BikeGarage: React.FC<BikeGarageProps> = ({
+export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
   entries, onChange, userId, storageFolder = 'bikes', isUpdating = false,
-}) => {
+}, ref) => {
   const { isRTL } = useLanguage();
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const canUpload = Boolean(userId);
