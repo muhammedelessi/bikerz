@@ -228,12 +228,6 @@ export const BikeGarage: React.FC<BikeGarageProps> = ({
       {/* ══════════════ LIST VIEW ══════════════ */}
       {view === 'list' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-end">
-            <Button size="sm" variant="outline" onClick={openAddPage} className="gap-1.5 text-xs h-8">
-              <Plus className="w-3.5 h-3.5" />
-              {isRTL ? 'إضافة' : 'Add Bike'}
-            </Button>
-          </div>
 
           {entries.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
