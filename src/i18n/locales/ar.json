@@ -74,6 +74,71 @@
       "unitSecond": "ث"
     }
   },
+  "fields": {
+    "firstName": {
+      "label": "الاسم الأول",
+      "placeholder": "أدخل اسمك الأول",
+      "hint": ""
+    },
+    "lastName": {
+      "label": "الكنية",
+      "placeholder": "أدخل كنيتك",
+      "hint": ""
+    },
+    "email": {
+      "label": "البريد الإلكتروني",
+      "placeholder": "أدخل بريدك الإلكتروني هنا",
+      "hint": "لن نشارك بريدك مع أحد"
+    },
+    "password": {
+      "label": "كلمة المرور",
+      "placeholder": "أدخل كلمة المرور",
+      "hint": "6 أحرف على الأقل"
+    },
+    "phone": {
+      "label": "رقم الهاتف",
+      "placeholder": "أدخل رقم هاتفك",
+      "hint": "مثال: 5XXXXXXXX"
+    },
+    "country": {
+      "label": "الدولة",
+      "placeholder": "اختر دولتك",
+      "hint": ""
+    },
+    "city": {
+      "label": "المدينة",
+      "placeholder": "اختر مدينتك",
+      "hint": ""
+    },
+    "notes": {
+      "label": "ملاحظات",
+      "placeholder": "أضف أي ملاحظات إضافية هنا",
+      "hint": "اختياري"
+    },
+    "nickname": {
+      "label": "اللقب",
+      "placeholder": "اسمك المستعار",
+      "hint": "يظهر للمجتمع"
+    },
+    "dateOfBirth": {
+      "label": "تاريخ الميلاد",
+      "placeholder": "اختر تاريخ ميلادك",
+      "yearPlaceholder": "السنة",
+      "monthPlaceholder": "الشهر",
+      "dayPlaceholder": "اليوم",
+      "hint": ""
+    },
+    "gender": {
+      "label": "الجنس",
+      "placeholder": "اختر",
+      "hint": ""
+    },
+    "nationality": {
+      "label": "الجنسية",
+      "placeholder": "اختر جنسيتك",
+      "hint": ""
+    }
+  },
   "nav": {
     "home": "الرئيسية",
     "courses": "الدورات",
@@ -885,7 +950,9 @@
       "trainings": "التدريبات",
       "trainers": "المدربون",
       "trainingStudents": "طلاب التدريب",
-      "trainerReviews": "تقييمات المدربين"
+      "trainerReviews": "تقييمات المدربين",
+      "bikeCatalog": "كتالوج الدراجات",
+      "ranks": "إدارة الرتب"
     },
     "support": {
       "title": "تذاكر الدعم",
@@ -966,7 +1033,9 @@
     "invalidPhone": "يرجى إدخال رقم هاتف صحيح",
     "minLength": "يجب أن يكون {{min}} أحرف على الأقل",
     "maxLength": "يجب ألا يزيد عن {{max}} حرف",
-    "passwordsMatch": "يجب أن تتطابق كلمات المرور"
+    "passwordsMatch": "يجب أن تتطابق كلمات المرور",
+    "firstNameRequired": "يرجى إدخال الاسم الأول",
+    "lastNameRequired": "يرجى إدخال الكنية"
   },
   "notifications": {
     "title": "الإشعارات",

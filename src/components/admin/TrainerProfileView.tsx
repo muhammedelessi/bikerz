@@ -17,7 +17,8 @@ import { TrainerScheduleManager } from '@/components/admin/trainer/TrainerSchedu
 import { TrainerBookingsManager } from '@/components/admin/trainer/TrainerBookingsManager';
 import { format, isValid } from 'date-fns';
 import { arSA, enUS } from 'date-fns/locale';
-import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
+import { COUNTRIES } from '@/data/countryCityData';
+import { CountryCityPicker } from '@/components/ui/fields';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -119,7 +120,7 @@ const AddTrainingForTrainerDialog: React.FC<{
   isRTL: boolean;
 }> = ({ open, onOpenChange, trainerId, existingTrainingIds, isRTL }) => {
   const queryClient = useQueryClient();
-  const emptyForm = { training_id: '', price: 0, sessions_count: 1, duration_hours: 2, location: '' };
+  const emptyForm = { training_id: '', price: 0, sessions_count: 1, duration_hours: 2, location: '', location_detail: '' };
   const [form, setForm] = useState(emptyForm);
 
   const { data: allTrainings } = useQuery({
@@ -154,7 +155,7 @@ const AddTrainingForTrainerDialog: React.FC<{
   const locationParts = form.location.split(' - ');
   const countryPart = locationParts[0] || '';
   const cityPart = locationParts[1] || '';
-  const selectedCountry = COUNTRIES.find((c) => c.en === countryPart);
+  const selectedCountryForLoc = COUNTRIES.find((c) => c.en === countryPart);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -228,47 +229,27 @@ const AddTrainingForTrainerDialog: React.FC<{
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>{isRTL ? 'الدولة' : 'Country'}</Label>
-              <Select
-                value={selectedCountry?.code || ''}
-                onValueChange={(v) => {
-                  const c = COUNTRIES.find((x) => x.code === v);
-                  if (c) setForm((f) => ({ ...f, location: c.en }));
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {COUNTRIES.map((c) => (
-                    <SelectItem key={c.code} value={c.code}>
-                      {isRTL ? c.ar : c.en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{isRTL ? 'المدينة' : 'City'}</Label>
-              {selectedCountry ? (
-                <Select value={cityPart} onValueChange={(v) => setForm((f) => ({ ...f, location: countryPart + ' - ' + v }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[...selectedCountry.cities, OTHER_OPTION].map((c) => (
-                      <SelectItem key={c.en} value={c.en}>
-                        {isRTL ? c.ar : c.en}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input disabled placeholder={isRTL ? 'اختر الدولة أولاً' : 'Select country first'} />
-              )}
-            </div>
+          <CountryCityPicker
+            country={selectedCountryForLoc?.code || ''}
+            city={cityPart}
+            onCountryChange={(code) => {
+              const c = COUNTRIES.find((x) => x.code === code);
+              if (c) setForm((f) => ({ ...f, location: c.en }));
+            }}
+            onCityChange={(v) => {
+              const c = selectedCountryForLoc || COUNTRIES.find((x) => x.code === '');
+              const cName = c?.en || countryPart;
+              setForm((f) => ({ ...f, location: cName + ' - ' + v }));
+            }}
+          />
+          <div className="space-y-2">
+            <Label>{isRTL ? 'تفاصيل الموقع' : 'Location Details'}</Label>
+            <Input
+              value={form.location_detail}
+              onChange={(e) => setForm((f) => ({ ...f, location_detail: e.target.value }))}
+              placeholder={isRTL ? 'أدخل العنوان التفصيلي للموقع' : 'Enter the detailed location address'}
+              dir={isRTL ? 'rtl' : 'ltr'}
+            />
           </div>
         </div>
         <DialogFooter>
@@ -367,7 +348,7 @@ export const TrainerProfileView: React.FC<TrainerProfileViewProps> = ({ trainerI
     queryFn: async () => {
       const { data } = await supabase
         .from('trainer_courses')
-        .select('id, trainer_id, training_id, price, sessions_count, duration_hours, location, trainings(name_ar, name_en)')
+        .select('id, trainer_id, training_id, price, sessions_count, duration_hours, location, location_detail, trainings(name_ar, name_en)')
         .eq('trainer_id', trainerId);
       return (data || []) as TrainerCourseRow[];
     },

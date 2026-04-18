@@ -74,6 +74,71 @@
       "unitSecond": "s"
     }
   },
+  "fields": {
+    "firstName": {
+      "label": "First Name",
+      "placeholder": "Enter your first name",
+      "hint": ""
+    },
+    "lastName": {
+      "label": "Last Name",
+      "placeholder": "Enter your last name",
+      "hint": ""
+    },
+    "email": {
+      "label": "Email Address",
+      "placeholder": "Enter your email address",
+      "hint": "We'll never share your email"
+    },
+    "password": {
+      "label": "Password",
+      "placeholder": "Enter your password",
+      "hint": "At least 6 characters"
+    },
+    "phone": {
+      "label": "Phone Number",
+      "placeholder": "Enter your phone number",
+      "hint": "e.g. 5XXXXXXXX"
+    },
+    "country": {
+      "label": "Country",
+      "placeholder": "Select your country",
+      "hint": ""
+    },
+    "city": {
+      "label": "City",
+      "placeholder": "Select your city",
+      "hint": ""
+    },
+    "notes": {
+      "label": "Notes",
+      "placeholder": "Add any additional notes here",
+      "hint": "Optional"
+    },
+    "nickname": {
+      "label": "Nickname",
+      "placeholder": "Your nickname",
+      "hint": "Visible to community"
+    },
+    "dateOfBirth": {
+      "label": "Date of Birth",
+      "placeholder": "Select your date of birth",
+      "yearPlaceholder": "Year",
+      "monthPlaceholder": "Month",
+      "dayPlaceholder": "Day",
+      "hint": ""
+    },
+    "gender": {
+      "label": "Gender",
+      "placeholder": "Select",
+      "hint": ""
+    },
+    "nationality": {
+      "label": "Nationality",
+      "placeholder": "Select your nationality",
+      "hint": ""
+    }
+  },
   "nav": {
     "home": "Home",
     "courses": "Courses",
@@ -890,7 +955,9 @@
       "trainings": "Trainings",
       "trainers": "Trainers",
       "trainingStudents": "Training Students",
-      "trainerReviews": "Trainer Reviews"
+      "trainerReviews": "Trainer Reviews",
+      "bikeCatalog": "Bike Catalog",
+      "ranks": "Rank Management"
     },
     "support": {
       "title": "Support Tickets",
@@ -971,7 +1038,9 @@
     "invalidPhone": "Please enter a valid phone number",
     "minLength": "Must be at least {{min}} characters",
     "maxLength": "Must be no more than {{max}} characters",
-    "passwordsMatch": "Passwords must match"
+    "passwordsMatch": "Passwords must match",
+    "firstNameRequired": "Please enter your first name",
+    "lastNameRequired": "Please enter your last name"
   },
   "notifications": {
     "title": "Notifications",

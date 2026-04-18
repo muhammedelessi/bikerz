@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { ArrowRight, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -12,6 +11,7 @@ import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 import { useTheme } from '@/components/ThemeProvider';
 import SEOHead from '@/components/common/SEOHead';
+import { FormField } from '@/components/ui/form-field';
 
 const ForgotPassword: React.FC = () => {
   const { t } = useTranslation();
@@ -123,19 +123,18 @@ const ForgotPassword: React.FC = () => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">{t('auth.login.email')}</Label>
+                  <FormField label={t('fields.email.label')} required>
                     <Input
                       id="email"
                       type="email"
-                      placeholder={t('auth.emailPlaceholder')}
+                      placeholder={t('fields.email.placeholder')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="h-12"
                       disabled={isLoading}
                       required
                     />
-                  </div>
+                  </FormField>
 
                   <Button
                     type="submit"

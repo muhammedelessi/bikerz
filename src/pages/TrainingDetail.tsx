@@ -256,10 +256,10 @@ const TrainingDetail: React.FC = () => {
                     <Badge variant="outline" className={level.color}>
                       {isRTL ? level.label.ar : level.label.en}
                     </Badge>
-                    {Number(training.default_sessions_count) > 0 && (
+                    {(curriculumSessions.length > 0 || Number(training.default_sessions_count) > 0) && (
                       <Badge variant="outline" className="bg-background/50">
                         <Clock className="w-3 h-3 me-1" />
-                        {training.default_sessions_count} {isRTL ? "جلسات" : "sessions"}
+                        {curriculumSessions.length || training.default_sessions_count} {isRTL ? "جلسات" : "sessions"}
                       </Badge>
                     )}
                   </div>
@@ -364,8 +364,12 @@ const TrainingDetail: React.FC = () => {
                           const tr = tc.trainers;
                           if (!tr) return null;
                           const stats = reviewStats?.[tr.id];
-                          const hours = Number(tc.duration_hours);
-                          const sess = Math.max(1, Number(tc.sessions_count ?? 1));
+                          const sess = curriculumSessions.length > 0
+                            ? curriculumSessions.length
+                            : Math.max(1, Number(tc.sessions_count ?? 1));
+                          const hours = curriculumSessions.length > 0
+                            ? Math.round((curriculumSessions.reduce((sum, s) => sum + s.duration_hours, 0) / curriculumSessions.length) * 100) / 100
+                            : Number(tc.duration_hours);
                           const locRaw = translateTrainerCourseLocation(tc.location, isRTL) || String(tc.location ?? "").trim();
                           const countryEntry = COUNTRIES.find((c) => c.code === tr.country || c.en === tr.country);
                           const cityEntry = countryEntry?.cities.find((c) => c.en === tr.city);
@@ -403,6 +407,7 @@ const TrainingDetail: React.FC = () => {
                               isRTL={isRTL}
                               reviewStats={stats && stats.count > 0 ? stats : null}
                               headline={headline}
+                              subHeadline={(tc as { location_detail?: string }).location_detail || null}
                               bioPreview={bioPreview}
                               profileHref={`/trainers/${tr.id}`}
                               metaRows={metaRows}

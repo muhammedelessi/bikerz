@@ -65,6 +65,8 @@ interface NavItem {
   { icon: CreditCard, labelKey: 'payments', href: '/admin/payments' },
   { icon: Dumbbell, labelKey: 'trainings', href: '/admin/trainings' },
   { icon: UserCheck, labelKey: 'trainers', href: '/admin/trainers' },
+  { icon: Bike, labelKey: 'bikeCatalog', href: '/admin/bike-catalog' },
+  { icon: StarIcon, labelKey: 'ranks', href: '/admin/ranks' },
   { icon: Tag, labelKey: 'coupons', href: '/admin/coupons' },
   { icon: BarChart3, labelKey: 'analytics', href: '/admin/analytics' },
   { icon: FileText, labelKey: 'content', href: '/admin/content' },

@@ -7,6 +7,7 @@ import {
   startOfDay,
 } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,12 +29,10 @@ import {
   slotEndTimePg,
   formatTime12hClock,
   durationBookingLabel,
+  isSlotTooSoon,
   dayHasFreeSlot,
 } from '@/lib/trainingBookingUtils';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
@@ -45,12 +44,15 @@ import { useTrainingPlatformPricing } from '@/hooks/useTrainingPlatformPricing';
 import { applyTrainingPlatformMarkupSar, trainingCustomerChargeTotalSar } from '@/lib/trainingPlatformMarkup';
 import BookingTimeDisplay from '@/components/common/BookingTimeDisplay';
 import { formatBookingTime, formatTimeFromMinutesSinceMidnight, pgTimeStringToMinutes } from '@/utils/formatDateTime';
+import { joinFullName, splitFullName } from '@/lib/nameUtils';
 
 export type TrainingBookingTrainingMini = { id: string; name_ar: string; name_en: string };
 
 export type TrainingBookingFlowProps = {
   training: TrainingBookingTrainingMini;
   selectedCourse: TrainerCourseRow;
+  /** Parsed curriculum sessions from trainings.sessions JSONB — preferred over trainer_courses defaults */
+  curriculumSessions?: { session_number: number; duration_hours: number }[];
   /** Path used after login (e.g. current booking URL) */
   loginReturnPath: string;
   onCancel: () => void;
@@ -114,10 +116,6 @@ function buildE164Phone(dialCode: string, nationalDigits: string): string | null
   return `+${body}${n}`;
 }
 
-function isPresetDial(dial: string): boolean {
-  return PRESET_DIAL_CODES.some((p) => p.value === dial);
-}
-
 /** Spaces for readability; render inside dir="ltr" */
 function formatE164ForDisplay(e164: string): string {
   const m = e164.match(/^\+(\d{1,4})(\d+)$/);
@@ -130,11 +128,13 @@ function formatE164ForDisplay(e164: string): string {
 const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
   training,
   selectedCourse,
+  curriculumSessions,
   loginReturnPath,
   onCancel,
 }) => {
   const navigate = useNavigate();
   const { isRTL, language } = useLanguage();
+  const { t } = useTranslation();
   const { user, profile, isLoading: authLoading } = useAuth();
   const { getCoursePriceInfo, formatPriceValueThenCurrencyName } = useCurrency();
   const tap = useTapPayment();
@@ -143,13 +143,15 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const sessionsNeeded = useMemo(() => {
+    if (curriculumSessions && curriculumSessions.length > 0) return curriculumSessions.length;
     const raw = Number(selectedCourse.sessions_count);
     const n = Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : 1;
     return Math.max(1, n);
-  }, [selectedCourse.sessions_count]);
+  }, [selectedCourse.sessions_count, curriculumSessions]);
   const [activeSessionIndex, setActiveSessionIndex] = useState(0);
   const [sessionPicks, setSessionPicks] = useState<Array<CommittedSessionPick | null>>([]);
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phoneDialCode, setPhoneDialCode] = useState('+966');
   const [phoneNational, setPhoneNational] = useState('');
   const [email, setEmail] = useState('');
@@ -328,13 +330,21 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
   );
   const isFreeBooking = chargeSarTotal <= 0;
 
+  const perSessionDurationHours = useMemo(() => {
+    if (curriculumSessions && curriculumSessions.length > 0) {
+      const idx = Math.min(activeSessionIndex, curriculumSessions.length - 1);
+      return curriculumSessions[idx].duration_hours;
+    }
+    return Number(selectedCourse.duration_hours);
+  }, [selectedCourse.duration_hours, curriculumSessions, activeSessionIndex]);
+
   const durationMins = useMemo(
-    () => Math.round(Number(selectedCourse.duration_hours) * 60),
-    [selectedCourse.duration_hours],
+    () => Math.round(perSessionDurationHours * 60),
+    [perSessionDurationHours],
   );
   const sessionDurationLabel = useMemo(
-    () => durationBookingLabel(Number(selectedCourse.duration_hours), isRTL),
-    [selectedCourse.duration_hours, isRTL],
+    () => durationBookingLabel(perSessionDurationHours, isRTL),
+    [perSessionDurationHours, isRTL],
   );
 
   const summaryPhoneE164 = useMemo(() => buildE164Phone(phoneDialCode, phoneNational), [phoneDialCode, phoneNational]);
@@ -345,7 +355,9 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
 
   useEffect(() => {
     if (!user) return;
-    setFullName(profile?.full_name?.trim() || '');
+    const split = splitFullName(profile?.full_name?.trim() || '');
+    setFirstName(split.firstName);
+    setLastName(split.lastName);
     const { dial, national } = parseProfilePhone(profile?.phone?.trim() || '');
     setPhoneDialCode(dial);
     setPhoneNational(national);
@@ -437,7 +449,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
           return {
             date: format(selectedDate, 'yyyy-MM-dd'),
             start_time: selectedSlot,
-            end_time: slotEndTimePg(selectedSlot, selectedCourse.duration_hours),
+            end_time: slotEndTimePg(selectedSlot, perSessionDurationHours),
           };
         }
         return null;
@@ -463,7 +475,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
       return;
     }
     const ds = format(selectedDate, 'yyyy-MM-dd');
-    const endT = slotEndTimePg(selectedSlot, selectedCourse.duration_hours);
+    const endT = slotEndTimePg(selectedSlot, perSessionDurationHours);
     const nextIdx = Math.min(activeSessionIndex + 1, sessionsNeeded - 1);
     setSessionPicks((prev) => {
       const c = [...prev];
@@ -512,12 +524,27 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
     const phoneOut = buildE164Phone(phoneDialCode, phoneNational);
     const emailTrim = email.trim();
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim);
-    if (!fullName.trim() || !phoneOut || !emailTrim) {
+    const fullName = joinFullName(firstName, lastName);
+    if (!fullName || !phoneOut || !emailTrim) {
       toast.error(isRTL ? 'يرجى تعبئة الاسم والهاتف والبريد' : 'Please fill name, phone, and email');
       return;
     }
     if (!emailOk) {
       toast.error(isRTL ? 'صيغة البريد الإلكتروني غير صحيحة' : 'Please enter a valid email address');
+      return;
+    }
+
+    const allPicks =
+      sessionsNeeded > 1
+        ? (sessionPicks as CommittedSessionPick[])
+        : [{ date: dateStr, start_time: selectedSlot! }];
+    const tooSoonSession = allPicks.find((p) => isSlotTooSoon(p.date, p.start_time));
+    if (tooSoonSession) {
+      toast.error(
+        isRTL
+          ? 'يجب أن يكون موعد الجلسة بعد 24 ساعة على الأقل من الآن'
+          : 'Session must be at least 24 hours from now',
+      );
       return;
     }
 
@@ -527,7 +554,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
     const picks = sessionsNeeded > 1 ? (sessionPicks as CommittedSessionPick[]) : null;
     const firstDateStr = picks ? picks[0].date : dateStr;
     const firstStart = picks ? picks[0].start_time : selectedSlot!;
-    const firstEnd = picks ? picks[0].end_time : slotEndTimePg(selectedSlot!, selectedCourse.duration_hours);
+    const firstEnd = picks ? picks[0].end_time : slotEndTimePg(selectedSlot!, perSessionDurationHours);
     const sessionsDetail: PendingTrainingSessionSlot[] | undefined =
       picks && picks.length > 1
         ? picks.map((p) => ({ date: p.date, start_time: p.start_time, end_time: p.end_time }))
@@ -542,7 +569,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
       end_time: firstEnd,
       ...(sessionsDetail && sessionsDetail.length > 1 ? { sessions: sessionsDetail } : {}),
       notes: notes.trim(),
-      full_name: fullName.trim(),
+      full_name: fullName,
       phone: phoneOut,
       email: emailTrim,
       payment_amount: paymentAmount,
@@ -588,7 +615,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
         trainingId: training.id,
         currency: paymentCurrency,
         amount: paymentAmount,
-        customerName: fullName.trim(),
+        customerName: fullName,
         customerEmail: emailTrim,
         customerPhone: phoneOut,
         courseName: isRTL ? training.name_ar : training.name_en,
@@ -617,6 +644,13 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
         weeklySlotRanges,
       );
       if (!dayFree) return false;
+
+      const allSlots = getSlotsForDate(dateObj, selectedCourse, availByDow, blockedDateSet, specialHoursByDate, weeklySlotRanges);
+      const hasBookableSlot = allSlots.some(
+        (s) => !isSlotTooSoon(dateValue, s) && !slotBooked(dateValue, s, combinedBookedSlots),
+      );
+      if (!hasBookableSlot) return false;
+
       if (sessionPicks.some((s, i) => i !== sessionIndex && s?.date === dateValue)) return false;
       if (sessionIndex > 0) {
         const prevDate = sessionPicks[sessionIndex - 1]?.date;
@@ -907,6 +941,11 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                           );
                         })}
                       </div>
+                      <p className="text-xs text-muted-foreground mt-2 px-1">
+                        {isRTL
+                          ? 'يجب الحجز قبل 24 ساعة على الأقل من موعد الجلسة'
+                          : 'Booking must be made at least 24 hours before the session'}
+                      </p>
                       {activeSessionIndex > 0 && sessionPicks[activeSessionIndex - 1] && (
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2 px-1">
                           <span>
@@ -953,13 +992,14 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                               {slotsForSelectedDay.map((slot) => {
                                 const booked = slotBooked(dateStr, slot, combinedBookedSlots);
+                                const tooSoon = isSlotTooSoon(dateStr, slot);
                                 const chronologicalOk = isSlotChronological(slot);
                                 const selected = selectedSlot === slot;
                                 const startMin = pgTimeStringToMinutes(slot);
                                 const endMin = startMin + durationMins;
                                 const startTime = formatTimeFromMinutesSinceMidnight(startMin, isRTL);
                                 const endTime = formatTimeFromMinutesSinceMidnight(endMin, isRTL);
-                                const disabled = booked || !chronologicalOk;
+                                const disabled = booked || tooSoon || !chronologicalOk;
                                 return (
                                   <button
                                     key={slot}
@@ -969,11 +1009,15 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                                       if (!disabled) setSelectedSlot(slot);
                                     }}
                                     title={
-                                      !chronologicalOk
+                                      tooSoon
                                         ? isRTL
-                                          ? 'الوقت يجب أن يكون بعد نهاية الجلسة السابقة'
-                                          : 'Time must be after the previous session'
-                                        : undefined
+                                          ? 'يجب الحجز قبل 24 ساعة على الأقل'
+                                          : 'Must book at least 24 hours ahead'
+                                        : !chronologicalOk
+                                          ? isRTL
+                                            ? 'الوقت يجب أن يكون بعد نهاية الجلسة السابقة'
+                                            : 'Time must be after the previous session'
+                                          : undefined
                                     }
                                     className={cn(
                                       'flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-200 ease-out min-w-[100px] space-y-1',
@@ -1008,6 +1052,8 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                                     </div>
                                     {booked ? (
                                       <span className="text-[10px] text-muted-foreground">{isRTL ? 'محجوز' : 'Booked'}</span>
+                                    ) : tooSoon ? (
+                                      <span className="text-[10px] text-amber-600">&lt; 24h</span>
                                     ) : null}
                                   </button>
                                 );
@@ -1021,8 +1067,22 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                                     {isRTL ? 'الجلسة ستكون من' : 'Session will be from'}
                                   </span>
                                   <span className="mx-2 tabular-nums" dir="ltr">
-                                    {formatTimeFromMinutesSinceMidnight(pgTimeStringToMinutes(selectedSlot), isRTL)} —{' '}
-                                    {formatTimeFromMinutesSinceMidnight(pgTimeStringToMinutes(selectedSlot) + durationMins, isRTL)}
+                                    {(() => {
+                                      const startRaw = formatTimeFromMinutesSinceMidnight(
+                                        pgTimeStringToMinutes(selectedSlot),
+                                        isRTL,
+                                      );
+                                      const endRaw = formatTimeFromMinutesSinceMidnight(
+                                        pgTimeStringToMinutes(selectedSlot) + durationMins,
+                                        isRTL,
+                                      );
+                                      if (!isRTL) return `${startRaw} — ${endRaw}`;
+
+                                      // `formatTimeFromMinutesSinceMidnight` renders `11:00 ص` / `1:00 م`.
+                                      // We want `11ص` / `1م` (no `:00` or extra space).
+                                      const toShort = (v: string) => v.replace(/^(\d{1,2}):00\s*([صم])$/u, "$1$2");
+                                      return `من ${toShort(startRaw)} الى ${toShort(endRaw)}`;
+                                    })()}
                                   </span>
                                   <span className="text-muted-foreground text-xs">({sessionDurationLabel})</span>
                                 </div>
@@ -1133,7 +1193,12 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                           </div>
                           <div className="flex w-full flex-row items-start justify-between gap-3" dir="ltr">
                             <span className="min-w-0 flex-1 text-left font-medium" dir="auto">
-                              {durationBookingLabel(Number(selectedCourse.duration_hours) * sessionsNeeded, isRTL)}
+                              {durationBookingLabel(
+                                curriculumSessions && curriculumSessions.length > 0
+                                  ? curriculumSessions.reduce((sum, s) => sum + s.duration_hours, 0)
+                                  : Number(selectedCourse.duration_hours) * sessionsNeeded,
+                                isRTL,
+                              )}
                             </span>
                             <span className="shrink-0 text-end text-muted-foreground" dir={isRTL ? 'rtl' : 'ltr'}>
                               {isRTL ? 'المدة الكلية' : 'Total duration'}
@@ -1177,10 +1242,24 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                           <div className="flex w-full flex-row items-start justify-between gap-3" dir="ltr">
                             <span className="min-w-0 flex-1 text-left font-medium tabular-nums" dir="ltr">
                               {selectedSlot &&
-                                formatTime12hClock(selectedSlot, isRTL)}{' '}
-                              {selectedSlot ? '—' : ''}{' '}
-                              {selectedSlot &&
-                                formatTime12hClock(slotEndTimePg(selectedSlot, selectedCourse.duration_hours), isRTL)}
+                                (() => {
+                                  const startRaw = formatTime12hClock(selectedSlot, isRTL);
+                                  const endRaw = formatTime12hClock(
+                                    slotEndTimePg(selectedSlot, perSessionDurationHours),
+                                    isRTL,
+                                  );
+
+                                  if (!isRTL) return `${startRaw} — ${endRaw}`;
+
+                                  // Example target: `1:00 ص` → `1ص`, `3:00 م` → `3م`
+                                  const toShort = (v: string) =>
+                                    v
+                                      .replace(/^(\d{1,2}):00\s*([صم])$/u, "$1$2")
+                                      .replace(/\s+(ص|م)$/u, "$1")
+                                      .trim();
+
+                                  return `من ${toShort(startRaw)} الى ${toShort(endRaw)}`;
+                                })()}
                             </span>
                             <span className="shrink-0 text-end text-muted-foreground" dir={isRTL ? 'rtl' : 'ltr'}>
                               {isRTL ? 'الوقت' : 'Time'}
@@ -1188,7 +1267,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                           </div>
                           <div className="flex w-full flex-row items-start justify-between gap-3" dir="ltr">
                             <span className="min-w-0 flex-1 text-left font-medium" dir="auto">
-                              {durationBookingLabel(selectedCourse.duration_hours, isRTL)}
+                              {durationBookingLabel(perSessionDurationHours, isRTL)}
                             </span>
                             <span className="shrink-0 text-end text-muted-foreground" dir={isRTL ? 'rtl' : 'ltr'}>
                               {isRTL ? 'المدة' : 'Duration'}
@@ -1213,7 +1292,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                           )}
                         </div>
                         <span className="shrink-0 text-end text-muted-foreground" dir={isRTL ? 'rtl' : 'ltr'}>
-                          {isRTL ? 'هاتفك' : 'Your phone'}
+                          {t('fields.phone.label')}
                         </span>
                       </div>
                       <div className="flex w-full flex-row items-start justify-between gap-3" dir="ltr">
@@ -1229,7 +1308,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                           )}
                         </div>
                         <span className="shrink-0 text-end text-muted-foreground" dir={isRTL ? 'rtl' : 'ltr'}>
-                          {isRTL ? 'بريدك' : 'Your email'}
+                          {t('fields.email.label')}
                         </span>
                       </div>
                       <div className="flex w-full flex-row items-start justify-between gap-3" dir="ltr">
@@ -1249,120 +1328,6 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                 </Card>
               )}
 
-              <Card className="border-border/70 shadow-sm" dir={isRTL ? 'rtl' : 'ltr'}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{isRTL ? 'بياناتك' : 'Your details'}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2 text-start">
-                    <Label htmlFor="tbf-full-name">{isRTL ? 'الاسم الكامل' : 'Full name'}</Label>
-                    <Input
-                      id="tbf-full-name"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      autoComplete="name"
-                      dir="auto"
-                      className="rounded-xl text-start"
-                    />
-                  </div>
-                  <div className="space-y-2 text-start">
-                    <Label className="text-start">{isRTL ? 'الهاتف' : 'Phone'}</Label>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-2" dir="ltr">
-                      <div className="w-full sm:w-[min(100%,240px)] shrink-0 space-y-1.5">
-                        <Label className="text-[11px] text-muted-foreground sr-only sm:not-sr-only block text-start">
-                          {isRTL ? 'مقدمة الدولة' : 'Country code'}
-                        </Label>
-                        <Select
-                          value={isPresetDial(phoneDialCode) ? phoneDialCode : 'custom'}
-                          onValueChange={(v) => {
-                            if (v === 'custom') {
-                              setPhoneDialCode((cur) => (isPresetDial(cur) ? '+' : cur));
-                              return;
-                            }
-                            setPhoneDialCode(v);
-                          }}
-                        >
-                          <SelectTrigger id="tbf-dial" className="rounded-xl h-11 w-full bg-background text-start" dir="ltr">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {PRESET_DIAL_CODES.map((p) => (
-                              <SelectItem key={p.value} value={p.value} textValue={isRTL ? p.labelAr : p.labelEn}>
-                                <span className="text-start">{isRTL ? p.labelAr : p.labelEn}</span>
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="custom" textValue={isRTL ? 'مقدمة أخرى' : 'Other code'}>
-                              {isRTL ? 'مقدمة أخرى (+…)' : 'Other (+…)'}
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {!isPresetDial(phoneDialCode) && (
-                        <div className="w-full sm:max-w-[140px] shrink-0 space-y-1.5">
-                          <Label htmlFor="tbf-dial-custom" className="text-[11px] text-muted-foreground block text-start">
-                            {isRTL ? 'رمز الدولة' : 'Dial prefix'}
-                          </Label>
-                          <Input
-                            id="tbf-dial-custom"
-                            value={phoneDialCode}
-                            onChange={(e) => {
-                              let v = e.target.value.replace(/[^\d+]/g, '');
-                              if (v === '') {
-                                setPhoneDialCode('+');
-                                return;
-                              }
-                              if (!v.startsWith('+')) v = `+${v.replace(/\+/g, '')}`;
-                              setPhoneDialCode(v.slice(0, 10));
-                            }}
-                            placeholder="+352"
-                            className="rounded-xl h-11 font-mono text-sm"
-                            dir="ltr"
-                            autoComplete="tel-country-code"
-                          />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0 space-y-1.5">
-                        <Label htmlFor="tbf-phone-national" className="text-[11px] text-muted-foreground sr-only sm:not-sr-only block text-start">
-                          {isRTL ? 'الرقم' : 'Number'}
-                        </Label>
-                        <Input
-                          id="tbf-phone-national"
-                          className="w-full min-w-0 rounded-xl h-11"
-                          type="tel"
-                          inputMode="numeric"
-                          placeholder={isRTL ? 'رقم الجوال' : 'Mobile number'}
-                          value={phoneNational}
-                          onChange={(e) => setPhoneNational(e.target.value.replace(/\D/g, ''))}
-                          autoComplete="tel-national"
-                          dir="ltr"
-                        />
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      {isRTL
-                        ? 'اختر مقدمة الدولة أو أدخل رمزاً يبدأ بـ +، ثم الرقم بدون تكرار رمز الدولة.'
-                        : 'Pick a country code or enter a custom prefix starting with +, then your national number (no duplicate country digits).'}
-                    </p>
-                  </div>
-                  <div className="space-y-2 text-start">
-                    <Label htmlFor="tbf-email">{isRTL ? 'البريد الإلكتروني' : 'Email'}</Label>
-                    <Input
-                      id="tbf-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      autoComplete="email"
-                      dir="ltr"
-                      className="rounded-xl text-start"
-                      placeholder={isRTL ? 'name@example.com' : 'name@example.com'}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tbf-notes">{isRTL ? 'ملاحظات (اختياري)' : 'Notes (optional)'}</Label>
-                    <Textarea id="tbf-notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} className="rounded-xl resize-none min-h-[88px]" />
-                  </div>
-                </CardContent>
-              </Card>
 
               {priceInfo && (
                 <div className="flex flex-col gap-1 rounded-2xl border border-border/60 bg-muted/20 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">

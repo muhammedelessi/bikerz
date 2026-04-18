@@ -404,7 +404,7 @@ const AdminLessonDiscussions: React.FC = () => {
               placeholder={isRTL ? 'بحث في الأسئلة...' : 'Search questions...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="ps-9"
+              className="ps-11"
             />
           </div>
           <Select value={selectedCourse} onValueChange={setSelectedCourse}>

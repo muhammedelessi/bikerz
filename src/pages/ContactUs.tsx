@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { FormField } from '@/components/ui/form-field';
 import {
   Mail, Phone, MapPin, Clock, MessageSquare, Send,
   Loader2, CheckCircle, HelpCircle, CreditCard, BookOpen, User, RefreshCw, Award, MoreHorizontal
@@ -289,30 +290,29 @@ const ContactUs: React.FC = () => {
                       <form onSubmit={handleSubmit} className="space-y-6">
                         {!user && (
                           <div className="grid md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="name">{t('contact.form.name')}</Label>
+                            <FormField label={t('fields.fullName.label')}>
                               <Input
                                 id="name"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                placeholder={t('auth.signup.namePlaceholder')}
+                                placeholder={t('fields.fullName.placeholder')}
                               />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="email">{t('contact.form.email')}</Label>
+                            </FormField>
+                            <FormField
+                              label={t('fields.email.label')}
+                            >
                               <Input
                                 id="email"
                                 type="email"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                placeholder={t('auth.emailPlaceholder')}
+                                placeholder={t('fields.email.placeholder')}
                               />
-                            </div>
+                            </FormField>
                           </div>
                         )}
 
-                        <div className="space-y-2">
-                          <Label htmlFor="category">{t('contact.form.category')}</Label>
+                        <FormField label={t('contact.form.category')}>
                           <Select
                             value={formData.category}
                             onValueChange={(value: typeof formData.category) => setFormData({ ...formData, category: value })}
@@ -331,10 +331,9 @@ const ContactUs: React.FC = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                        </div>
+                        </FormField>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="subject">{t('contact.form.subject')} *</Label>
+                        <FormField label={t('contact.form.subject')} required>
                           <Input
                             id="subject"
                             value={formData.subject}
@@ -342,10 +341,9 @@ const ContactUs: React.FC = () => {
                             placeholder={t('contact.form.subjectPlaceholder')}
                             required
                           />
-                        </div>
+                        </FormField>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="message">{t('contact.form.message')} *</Label>
+                        <FormField label={t('contact.form.message')} required>
                           <Textarea
                             id="message"
                             value={formData.message}
@@ -354,7 +352,7 @@ const ContactUs: React.FC = () => {
                             rows={6}
                             required
                           />
-                        </div>
+                        </FormField>
 
                         {!user && (
                           <div className="bg-muted border border-border rounded-lg p-4">

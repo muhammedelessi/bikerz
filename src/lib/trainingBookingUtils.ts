@@ -1,4 +1,15 @@
-import { format, getDay, addDays, startOfDay, isBefore } from 'date-fns';
+import { format, getDay, addDays, startOfDay, isBefore, addHours } from 'date-fns';
+
+export const MIN_BOOKING_HOURS_AHEAD = 24;
+
+/** Returns true if the slot on the given date starts within MIN_BOOKING_HOURS_AHEAD of now. */
+export function isSlotTooSoon(dateStr: string, slotStartPg: string): boolean {
+  const [h, m] = slotStartPg.split(':').map((x) => parseInt(x, 10));
+  const [y, mo, d] = dateStr.split('-').map((x) => parseInt(x, 10));
+  const slotDate = new Date(y, mo - 1, d, h || 0, m || 0, 0);
+  const minAllowed = addHours(new Date(), MIN_BOOKING_HOURS_AHEAD);
+  return slotDate <= minAllowed;
+}
 
 export type TrainerRow = {
   id: string;

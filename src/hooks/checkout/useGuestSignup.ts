@@ -1,15 +1,12 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useSignupWebhook } from "@/hooks/useSignupWebhook";
 import { createGuestAccount, sendPasswordReset, updateProfile } from "@/services/supabase.service";
-import { COUNTRIES } from "@/data/countryCityData";
 
 export function useGuestSignup() {
   const { t } = useTranslation();
-  const { isRTL } = useLanguage();
-  const { sendFormData } = useGHLFormWebhook();
+  const { sendSignupData } = useSignupWebhook();
   const [guestSigningUp, setGuestSigningUp] = useState(false);
 
   const generatePassword = useCallback(() => {
@@ -47,42 +44,26 @@ export function useGuestSignup() {
 
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        // Resolve country English name from code
-        const countryEntry = COUNTRIES.find(
-          (c) => c.code === profileData.country || c.en === profileData.country || c.ar === profileData.country,
-        );
-        const countryName = countryEntry ? countryEntry.code : profileData.country;
-
-        // Resolve city English name
-        const cityEntry = countryEntry?.cities.find((c) => c.ar === profileData.city || c.en === profileData.city);
-        const cityName = cityEntry ? cityEntry.en : profileData.city;
-
-        // Clean phone — remove leading zero
-        const digits = profileData.phone.replace(/[^0-9+]/g, "");
-        const cleanPhone = digits.startsWith("00") ? "+" + digits.slice(2) : digits;
+        const rawPhone = profileData.phone.trim();
 
         await updateProfile(data.user.id, {
           full_name: fullName.trim(),
-          phone: cleanPhone,
-          city: cityName,
-          country: countryName,
+          phone: rawPhone,
+          city: profileData.city,
+          country: profileData.country,
           postal_code: profileData.postalCode || null,
           profile_complete: true,
         });
 
-        sendFormData({
+        sendSignupData({
           full_name: fullName.trim(),
           email: email.trim(),
-          phone: cleanPhone,
-          country: countryName,
-          city: cityName,
-          address: [cityName, countryName].filter(Boolean).join(", "),
-          orderStatus: "not purchased",
-          courses: "[]",
-          totalPurchased: 0,
-          dateOfBirth: "",
+          phone: rawPhone,
+          country: profileData.country,
+          city: profileData.city,
+          date_of_birth: "",
           gender: "",
-          isRTL,
+          silent: true,
         });
 
         sendPasswordReset(email.trim());
@@ -95,7 +76,7 @@ export function useGuestSignup() {
         setGuestSigningUp(false);
       }
     },
-    [generatePassword, t, sendFormData, isRTL],
+    [generatePassword, t, sendSignupData],
   );
 
   return { guestSigningUp, handleGuestSignup };

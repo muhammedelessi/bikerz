@@ -47,6 +47,7 @@ type TrainerCourseRow = {
   sessions_count: number;
   duration_hours: number;
   location: string;
+  location_detail?: string | null;
   services: string[] | null;
   trainers: TrainerLite | null;
 };
@@ -155,7 +156,7 @@ const AdminTrainingProfile: React.FC = () => {
       const { data, error } = await supabase
         .from('trainer_courses')
         .select(
-          'id, trainer_id, price, sessions_count, duration_hours, location, services, trainers(id, name_ar, name_en, photo_url, city, country, bike_type, motorbike_brand, license_type, years_of_experience, status, services, bio_ar, bio_en, profit_ratio)',
+          'id, trainer_id, price, sessions_count, duration_hours, location, location_detail, services, trainers(id, name_ar, name_en, photo_url, city, country, bike_type, motorbike_brand, license_type, years_of_experience, status, services, bio_ar, bio_en, profit_ratio)',
         )
         .eq('training_id', id!);
       if (error) throw error;
@@ -371,6 +372,9 @@ const AdminTrainingProfile: React.FC = () => {
                           <span>{Math.round(Number(tc.price || 0))} ﷼</span>
                           <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{Number(tc.duration_hours)} {isRTL ? 'س/جلسة' : 'h/session'}</span>
                           <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{translateLocation(trainer.country, trainer.city)}</span>
+                          {tc.location_detail && (
+                            <span className="text-[10px] text-muted-foreground/70 truncate">{tc.location_detail}</span>
+                          )}
                         </div>
                         <ChevronDown className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')} />
                       </button>

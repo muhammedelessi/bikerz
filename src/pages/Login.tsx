@@ -8,7 +8,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import LanguageToggle from "@/components/common/LanguageToggle";
 import { useAuthPageContent } from "@/hooks/useAuthPageContent";
-import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle, Mail, Lock } from "lucide-react";
+import { ArrowRight, ArrowLeft, AlertCircle, Mail } from "lucide-react";
+import { PasswordField } from "@/components/ui/fields";
 import { toast } from "sonner";
 const defaultHeroImage = "/hero-rider.webp";
 import logoDark from '@/assets/logo-dark.png';
@@ -16,6 +17,7 @@ import logoLight from '@/assets/logo-light.png';
 import { useTheme } from '@/components/ThemeProvider';
 import SEOHead from "@/components/common/SEOHead";
 import { consumeReturnUrl } from "@/lib/authReturnUrl";
+import { FormField, FormAlert } from "@/components/ui/form-field";
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
@@ -26,7 +28,6 @@ const Login: React.FC = () => {
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get("returnTo");
   const { data: authContent } = useAuthPageContent();
-  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -57,7 +58,6 @@ const Login: React.FC = () => {
   const forgotText = (isRTL ? cms.forgot_ar : cms.forgot_en) || t("auth.login.forgot");
   const noAccountText = (isRTL ? cms.no_account_ar : cms.no_account_en) || t("auth.login.noAccount");
   const signupLinkText = (isRTL ? cms.signup_link_ar : cms.signup_link_en) || t("auth.login.signupLink");
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -138,12 +138,9 @@ const Login: React.FC = () => {
               <p className="text-sm sm:text-base text-muted-foreground">{subtitle}</p>
             </div>
 
-            {error && (
-              <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg bg-destructive/10 border border-destructive/30 flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
-                <p className="text-sm text-destructive">{error}</p>
-              </div>
-            )}
+            <div className="mb-4 sm:mb-6">
+              <FormAlert message={error} />
+            </div>
 
             <form
               onSubmit={handleSubmit}
@@ -156,7 +153,7 @@ const Login: React.FC = () => {
                 }, 50);
               }}
             >
-              <div className="space-y-1">
+              <FormField label={t("fields.email.label")} error={emailError} required>
                 <div className="relative">
                   <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
                   <Input
@@ -164,44 +161,18 @@ const Login: React.FC = () => {
                     type="email"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
-                    placeholder={t("auth.login.email")}
+                    placeholder={t("fields.email.placeholder")}
                     className={`form-input h-11 sm:h-12 text-base ps-10 ${emailError ? 'border-destructive' : ''}`}
                   />
                 </div>
-                {emailError && (
-                  <p className="text-xs text-destructive flex items-center gap-1 mt-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {emailError}
-                  </p>
-                )}
-              </div>
+              </FormField>
 
-              <div className="space-y-1">
-                <div className="relative">
-                  <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); setPasswordError(null); }}
-                    placeholder={t("auth.login.password")}
-                    className={`form-input h-11 sm:h-12 text-base ps-10 pe-12 ${passwordError ? 'border-destructive' : ''}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 touch-target"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                {passwordError && (
-                  <p className="text-xs text-destructive flex items-center gap-1 mt-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {passwordError}
-                  </p>
-                )}
-              </div>
+              <PasswordField
+                value={password}
+                onChange={(val) => { setPassword(val); setPasswordError(null); }}
+                error={passwordError}
+                required
+              />
 
               <div className="flex items-center justify-end">
                 <Link to="/forgot-password" className="text-sm text-primary hover:underline touch-target py-1">

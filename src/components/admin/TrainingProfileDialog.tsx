@@ -242,6 +242,9 @@ const TrainingProfileDialog: React.FC<TrainingProfileDialogProps> = ({ training,
                                   <div className="text-xs">
                                     <span className="text-muted-foreground">{isRTL ? 'موقع التدريب' : 'Training Location'}: </span>
                                     <span className="font-medium">{tc.location}</span>
+                                    {(tc as { location_detail?: string }).location_detail && (
+                                      <p className="text-muted-foreground/70 mt-0.5">{(tc as { location_detail?: string }).location_detail}</p>
+                                    )}
                                   </div>
                                 )}
 

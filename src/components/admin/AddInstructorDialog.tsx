@@ -22,13 +22,16 @@ interface AddInstructorDialogProps {
 }
 
 const MOTORBIKE_TYPES = [
-  { value: 'Sport', labelEn: 'Sport', labelAr: 'رياضية' },
-  { value: 'Cruiser', labelEn: 'Cruiser', labelAr: 'كروزر' },
-  { value: 'Adventure', labelEn: 'Adventure', labelAr: 'مغامرة' },
-  { value: 'Touring', labelEn: 'Touring', labelAr: 'سياحية' },
-  { value: 'Naked', labelEn: 'Naked', labelAr: 'نيكد' },
-  { value: 'Dual Sport', labelEn: 'Dual Sport', labelAr: 'ثنائية الاستخدام' },
-  { value: 'Scooter', labelEn: 'Scooter', labelAr: 'سكوتر' },
+  { value: 'Sport',        labelEn: 'Sport',       labelAr: 'سبورت'       },
+  { value: 'Race',         labelEn: 'Race',        labelAr: 'ريس'         },
+  { value: 'Cruiser',      labelEn: 'Cruiser',     labelAr: 'كروزر'       },
+  { value: 'Adventure',    labelEn: 'Adventure',   labelAr: 'أدڤنتشر'    },
+  { value: 'Touring',      labelEn: 'Touring',     labelAr: 'توورينج'     },
+  { value: 'Naked',        labelEn: 'Naked',       labelAr: 'نيكد'        },
+  { value: 'Scrambler',    labelEn: 'Scrambler',   labelAr: 'سكرامبلر'    },
+  { value: 'Cafe Racer',   labelEn: 'Cafe Racer',  labelAr: 'كافيه ريسر' },
+  { value: 'Dual Sport',   labelEn: 'Dual Sport',  labelAr: 'ديول سبورت' },
+  { value: 'Scooter',      labelEn: 'Scooter',     labelAr: 'سكوتر'       },
 ] as const;
 
 const AddInstructorDialog: React.FC<AddInstructorDialogProps> = ({ open, onOpenChange }) => {

@@ -1,8 +1,16 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import type { PendingTrainingBookingPayload } from '@/lib/trainingBookingStorage';
-import { stripClockFromDbTime } from '@/lib/trainingBookingUtils';
+import { stripClockFromDbTime, MIN_BOOKING_HOURS_AHEAD } from '@/lib/trainingBookingUtils';
 import { toDbSessionsJson, type BookingSessionDraft } from '@/lib/trainingBookingSessions';
+
+function isSessionTooSoon(dateStr: string, startTime: string): boolean {
+  const [h, m] = startTime.split(':').map((x) => parseInt(x, 10));
+  const [y, mo, d] = dateStr.split('-').map((x) => parseInt(x, 10));
+  const slotDate = new Date(y, mo - 1, d, h || 0, m || 0, 0);
+  const minAllowed = new Date(Date.now() + MIN_BOOKING_HOURS_AHEAD * 60 * 60 * 1000);
+  return slotDate <= minAllowed;
+}
 
 export type InsertUserTrainingBookingParams = {
   userId: string;
@@ -35,6 +43,12 @@ export async function insertUserTrainingBooking(
             end: pending.end_time,
           },
         ];
+
+  for (const slot of slotDrafts) {
+    if (isSessionTooSoon(slot.date, stripClockFromDbTime(slot.start))) {
+      return { error: 'Session must be booked at least 24 hours in advance' };
+    }
+  }
 
   const sessionsPayload = toDbSessionsJson(slotDrafts) as unknown as Json;
   const first = slotDrafts[0];

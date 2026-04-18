@@ -121,6 +121,9 @@ const TrainerProfileModal: React.FC<TrainerProfileModalProps> = ({ trainerId, on
                             <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{Number(tc.duration_hours)}h</span>
                             <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{tc.location}</span>
                           </div>
+                          {(tc as { location_detail?: string }).location_detail && (
+                            <p className="text-[10px] text-muted-foreground/70 mt-1 truncate">{(tc as { location_detail?: string }).location_detail}</p>
+                          )}
                         </CardContent>
                       </Card>
                     );

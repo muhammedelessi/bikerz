@@ -20,4 +20,6 @@ export interface FormWebhookData {
   ticket_subject?: string;
   ticket_message?: string;
   ticket_category?: string;
+  has_motorcycle?: boolean;
+  considering_purchase?: boolean | null;
 }

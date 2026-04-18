@@ -21,23 +21,32 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FormField } from '@/components/ui/form-field';
+import { DateOfBirthPicker, CountryCityPicker, PhoneField, NameFields } from '@/components/ui/fields';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Star, Upload, X, ArrowLeft, ArrowRight, Users, Bike, MapPin, Clock, Timer, AlertTriangle, TrendingUp, Eye, Camera, Images, Check, Minus, Languages } from 'lucide-react';
+import { Plus, Pencil, Trash2, Star, Upload, X, ArrowLeft, ArrowRight, Users, Bike, MapPin, Clock, AlertTriangle, TrendingUp, Eye, Camera, Images, Check, Minus, Languages } from 'lucide-react';
 import BilingualInput from '@/components/admin/content/BilingualInput';
+import { BikeGarage } from '@/components/ui/profile/BikeGarage';
+import type { BikeEntry as GarageBikeEntry } from '@/hooks/useUserProfile';
 import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
+import { PHONE_COUNTRIES } from '@/data/phoneCountryCodes';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { parseTrainingSessions } from '@/lib/trainingSessionCurriculum';
 
 const COMMON_BIKE_TYPES = ['Sport', 'Cruiser', 'Adventure', 'Touring', 'Naked', 'Dual Sport', 'Scooter'] as const;
 const BIKE_TYPE_LABELS: Record<string, { ar: string; en: string }> = {
-  Sport: { ar: 'رياضية', en: 'Sport' },
-  Cruiser: { ar: 'كروزر', en: 'Cruiser' },
-  Adventure: { ar: 'مغامرات', en: 'Adventure' },
-  Touring: { ar: 'رحلات', en: 'Touring' },
-  Naked: { ar: 'عارية', en: 'Naked' },
-  'Dual Sport': { ar: 'مزدوجة الاستخدام', en: 'Dual Sport' },
-  Scooter: { ar: 'سكوتر', en: 'Scooter' },
+  Sport:        { ar: 'سبورت',       en: 'Sport'       },
+  Race:         { ar: 'ريس',         en: 'Race'        },
+  Cruiser:      { ar: 'كروزر',       en: 'Cruiser'     },
+  Adventure:    { ar: 'أدڤنتشر',    en: 'Adventure'   },
+  Touring:      { ar: 'توورينج',     en: 'Touring'     },
+  Naked:        { ar: 'نيكد',        en: 'Naked'       },
+  Scrambler:    { ar: 'سكرامبلر',    en: 'Scrambler'   },
+  'Cafe Racer': { ar: 'كافيه ريسر', en: 'Cafe Racer'  },
+  'Dual Sport': { ar: 'ديول سبورت', en: 'Dual Sport'  },
+  Scooter:      { ar: 'سكوتر',       en: 'Scooter'     },
 };
 
 function bikeTypeDisplayLabel(type: string, isRTL: boolean): string {
@@ -164,6 +173,24 @@ function joinFullName(first: string, last: string): string {
   return [first, last].map((p) => p.trim()).filter(Boolean).join(' ');
 }
 
+function parseTrainerPhone(fullPhone: string | null | undefined): { prefixKey: string; local: string } {
+  if (!fullPhone) return { prefixKey: '+966_SA', local: '' };
+  const sorted = [...PHONE_COUNTRIES].sort((a, b) => b.prefix.length - a.prefix.length);
+  for (const c of sorted) {
+    if (fullPhone.startsWith(c.prefix)) {
+      return { prefixKey: `${c.prefix}_${c.code}`, local: fullPhone.slice(c.prefix.length) };
+    }
+  }
+  return { prefixKey: '+966_SA', local: fullPhone.replace(/^\+/, '') };
+}
+
+function composeTrainerPhone(prefixKey: string, local: string): string {
+  const prefix = prefixKey.split('_')[0] || '+966';
+  const digits = local.replace(/[^0-9]/g, '');
+  const normalized = digits.replace(/^0+/, '');
+  return normalized ? `${prefix}${normalized}` : '';
+}
+
 function parseAssignmentLocation(location: string): { countryCode: string; city: string } {
   const loc = (location || '').trim();
   if (!loc) return { countryCode: '', city: '' };
@@ -212,6 +239,7 @@ interface Trainer {
   created_at: string;
   profit_ratio: number;
   language_levels?: unknown;
+  date_of_birth?: string | null;
 }
 
 interface TrainerCourse {
@@ -223,6 +251,7 @@ interface TrainerCourse {
   duration_hours: number;
   location_country: string;
   location_city: string;
+  location_detail: string;
   available_schedule: Json;
   services: string[];
 }
@@ -249,6 +278,7 @@ function toTrainerCourseInsertRow(trainerId: string, at: TrainerCourse) {
     sessions_count: at.sessions_count,
     duration_hours: at.duration_hours,
     location: buildTrainerCourseLocation(at.location_country, at.location_city),
+    location_detail: at.location_detail || '',
     available_schedule: at.available_schedule ?? {},
     services: at.services ?? [],
   };
@@ -316,6 +346,7 @@ function resolveLockedTrainerCourse(
 const AdminTrainers: React.FC = () => {
   const { useRQ, useRM, queryClient, dbFrom } = useAdminTrainers();
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const locationFieldDir = isRTL ? 'rtl' : 'ltr';
@@ -350,6 +381,7 @@ const AdminTrainers: React.FC = () => {
     city: '',
     bike_types: [] as string[],
     bike_entries: [] as BikeEntry[],
+    bike_entries_v2: [] as GarageBikeEntry[],
     album_photos: [] as string[],
     license_type: '',
     years_of_experience: 0,
@@ -358,10 +390,12 @@ const AdminTrainers: React.FC = () => {
     status: 'active' as 'active' | 'inactive',
     photo_url: null as string | null,
     language_levels: [] as TrainerLanguageEntry[],
+    date_of_birth: null as string | null,
   };
   const [form, setForm] = useState(defaultForm);
   const [languageAddCode, setLanguageAddCode] = useState('');
   const [languageAddLevel, setLanguageAddLevel] = useState<string>(LANGUAGE_LEVEL_OPTIONS[1]!.value);
+  const parsedPhone = useMemo(() => parseTrainerPhone(form.phone), [form.phone]);
   const formRef = useRef(form);
   formRef.current = form;
 
@@ -508,14 +542,16 @@ const AdminTrainers: React.FC = () => {
 
       const name_en = joinFullName(form.first_name_en, form.last_name_en);
       const name_ar = joinFullName(form.first_name_ar, form.last_name_ar);
-      const bike_type = form.bike_types.join(', ');
-
       const albumPhotos = [...form.album_photos];
 
-      const bikeEntries: BikeEntry[] = form.bike_types.map((typ) => {
-        const e = form.bike_entries.find((x) => x.type === typ) ?? { type: typ, brand: '', photos: [] };
-        return { type: e.type, brand: e.brand, photos: [...e.photos] };
-      });
+      // Derive legacy fields from new garage entries
+      const garageEntries = form.bike_entries_v2;
+      const bike_type = garageEntries.map((e) => e.type_name).filter(Boolean).join(', ');
+      const bikeEntries: BikeEntry[] = garageEntries.map((e) => ({
+        type: e.type_name,
+        brand: [e.brand, e.model].filter(Boolean).join(' '),
+        photos: [...e.photos],
+      }));
 
       let trainerId: string;
 
@@ -529,7 +565,7 @@ const AdminTrainers: React.FC = () => {
         country: form.country,
         city: form.city,
         bike_type,
-        bike_entries: bikeEntries as unknown as Json,
+        bike_entries: garageEntries as unknown as Json,
         bike_photos: flattenBikePhotos(bikeEntries),
         album_photos: albumPhotos,
         motorbike_brand: summarizeMotorbikeBrand(bikeEntries),
@@ -540,6 +576,7 @@ const AdminTrainers: React.FC = () => {
         status: form.status,
         photo_url: photoUrl,
         language_levels: form.language_levels as unknown as Json,
+        date_of_birth: form.date_of_birth,
       };
 
       if (editingTrainer) {
@@ -586,28 +623,14 @@ const AdminTrainers: React.FC = () => {
         trainerId = data.id;
       }
 
-      let pendingBikeChanged = false;
-      for (const entry of bikeEntries) {
-        const pend = pendingBikeByType[entry.type] || [];
-        for (const { file } of pend) {
-          entry.photos.push(await uploadTrainerBikeFile(trainerId, entry.type, file));
-          pendingBikeChanged = true;
-        }
-      }
-
       for (const { file } of pendingAlbumImages) {
         albumPhotos.push(await uploadTrainerAlbumFile(trainerId, file));
       }
 
-      if (pendingBikeChanged || pendingAlbumImages.length > 0) {
+      if (pendingAlbumImages.length > 0) {
         const { error: upErr } = await supabase
           .from('trainers')
-          .update({
-            bike_entries: bikeEntries as unknown as Json,
-            bike_photos: flattenBikePhotos(bikeEntries),
-            motorbike_brand: summarizeMotorbikeBrand(bikeEntries),
-            album_photos: albumPhotos,
-          })
+          .update({ album_photos: albumPhotos })
           .eq('id', trainerId);
         if (upErr) throw upErr;
       }
@@ -713,6 +736,24 @@ const AdminTrainers: React.FC = () => {
       }));
     }
     bike_entries = bike_types.map((typ) => bike_entries.find((e) => e.type === typ) ?? { type: typ, brand: '', photos: [] });
+
+    // Convert old {type,brand,photos} entries → new GarageBikeEntry format, or keep if already new format
+    const rawV2 = parseBikeEntries(t.bike_entries);
+    const bike_entries_v2: GarageBikeEntry[] = (rawV2.length > 0 && 'id' in (rawV2[0] as object))
+      ? (rawV2 as unknown as GarageBikeEntry[])
+      : rawV2.map((e) => ({
+          id: crypto.randomUUID(),
+          type_id: null,
+          type_name: e.type,
+          subtype_id: null,
+          subtype_name: '',
+          brand: e.brand || '',
+          model: '',
+          is_custom_type: true,
+          is_custom_brand: true,
+          photos: e.photos,
+        }));
+
     setForm({
       ...defaultForm,
       first_name_ar: ar.first,
@@ -727,6 +768,7 @@ const AdminTrainers: React.FC = () => {
       city: t.city,
       bike_types,
       bike_entries,
+      bike_entries_v2,
       album_photos: Array.isArray(t.album_photos) ? [...t.album_photos] : [],
       license_type: t.license_type || '',
       years_of_experience: t.years_of_experience,
@@ -735,6 +777,7 @@ const AdminTrainers: React.FC = () => {
       status: t.status as 'active' | 'inactive',
       photo_url: t.photo_url,
       language_levels: parseLanguageLevels(t.language_levels),
+      date_of_birth: t.date_of_birth ?? null,
     });
     setLanguageAddCode('');
     setLanguageAddLevel(LANGUAGE_LEVEL_OPTIONS[1]!.value);
@@ -751,7 +794,7 @@ const AdminTrainers: React.FC = () => {
     setPhotoPreview(t.photo_url);
     const { data: courseRows } = await supabase
       .from('trainer_courses')
-      .select('training_id, price, sessions_count, duration_hours, location, available_schedule, services')
+      .select('training_id, price, sessions_count, duration_hours, location, location_detail, available_schedule, services')
       .eq('trainer_id', t.id);
 
     const rows = courseRows || [];
@@ -807,6 +850,7 @@ const AdminTrainers: React.FC = () => {
           duration_hours: det ? det.default_session_duration_hours : Number(d.duration_hours),
           location_country: parseAssignmentLocation(d.location).countryCode,
           location_city: parseAssignmentLocation(d.location).city,
+          location_detail: (d as { location_detail?: string }).location_detail || '',
           available_schedule: d.available_schedule,
           services: (d as { services?: string[] }).services ?? [],
         };
@@ -1105,8 +1149,9 @@ const AdminTrainers: React.FC = () => {
           duration_hours: defDur,
           location_country: f.country,
           location_city: f.city,
+          location_detail: '',
           available_schedule: {},
-          services: [...f.services],
+          services: [],
         },
       ];
     });
@@ -1218,11 +1263,14 @@ const AdminTrainers: React.FC = () => {
               </div>
 
               {/* Photo album */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">{isRTL ? 'ألبوم الصور' : 'Photo album'}</Label>
-                <p className="text-xs text-muted-foreground">
-                  {isRTL ? `حتى ${MAX_ALBUM_PHOTOS} صور، حتى ${MAX_ALBUM_PHOTO_BYTES / (1024 * 1024)} ميجابايت لكل صورة` : `Up to ${MAX_ALBUM_PHOTOS} images, ${MAX_ALBUM_PHOTO_BYTES / (1024 * 1024)} MB each`}
-                </p>
+              <FormField
+                label={isRTL ? 'ألبوم الصور' : 'Photo album'}
+                hint={
+                  isRTL
+                    ? `حتى ${MAX_ALBUM_PHOTOS} صور، حتى ${MAX_ALBUM_PHOTO_BYTES / (1024 * 1024)} ميجابايت لكل صورة`
+                    : `Up to ${MAX_ALBUM_PHOTOS} images, ${MAX_ALBUM_PHOTO_BYTES / (1024 * 1024)} MB each`
+                }
+              >
                 <div className="flex flex-wrap gap-2 items-start">
                   {form.album_photos.map((url) => (
                     <div key={url} className="relative w-20 h-20 rounded-md border border-border overflow-hidden shrink-0 group/thumb">
@@ -1268,70 +1316,65 @@ const AdminTrainers: React.FC = () => {
                     onChange={(e) => addAlbumPhotoFiles(e.target.files)}
                   />
                 </div>
-              </div>
+              </FormField>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{isRTL ? 'الاسم الأول (عربي)' : 'First Name (AR)'}</Label>
-                  <Input value={form.first_name_ar} onChange={(e) => setForm((f) => ({ ...f, first_name_ar: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>{isRTL ? 'الاسم الأخير (عربي)' : 'Last Name (AR)'}</Label>
-                  <Input value={form.last_name_ar} onChange={(e) => setForm((f) => ({ ...f, last_name_ar: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>{isRTL ? 'الاسم الأول (إنجليزي)' : 'First Name (EN)'}</Label>
-                  <Input
-                    value={form.first_name_en}
-                    onChange={(e) => setForm((f) => ({ ...f, first_name_en: e.target.value }))}
-                    dir="ltr"
-                    className={cn(
-                      '[direction:ltr] [unicode-bidi:plaintext]',
-                      isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left',
-                    )}
+              <div className="grid grid-cols-1 gap-4">
+                <NameFields
+                  firstName={form.first_name_ar}
+                  lastName={form.last_name_ar}
+                  onFirstNameChange={(val) => setForm((f) => ({ ...f, first_name_ar: val }))}
+                  onLastNameChange={(val) => setForm((f) => ({ ...f, last_name_ar: val }))}
+                  firstNameLabel={isRTL ? 'الاسم الأول (عربي)' : 'First Name (AR)'}
+                  lastNameLabel={isRTL ? 'الاسم الأخير (عربي)' : 'Last Name (AR)'}
+                />
+                <NameFields
+                  firstName={form.first_name_en}
+                  lastName={form.last_name_en}
+                  onFirstNameChange={(val) => setForm((f) => ({ ...f, first_name_en: val }))}
+                  onLastNameChange={(val) => setForm((f) => ({ ...f, last_name_en: val }))}
+                  firstNameLabel={isRTL ? 'الاسم الأول (إنجليزي)' : 'First Name (EN)'}
+                  lastNameLabel={isRTL ? 'الاسم الأخير (إنجليزي)' : 'Last Name (EN)'}
+                  inputDir="ltr"
+                  inputClassName={isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}
+                />
+                <div className="md:col-span-2">
+                  <PhoneField
+                    phonePrefix={parsedPhone.prefixKey}
+                    phoneNumber={parsedPhone.local}
+                    onPrefixChange={(val) =>
+                      setForm((f) => ({
+                        ...f,
+                        phone: composeTrainerPhone(val, parseTrainerPhone(f.phone).local),
+                      }))
+                    }
+                    onNumberChange={(val) =>
+                      setForm((f) => ({
+                        ...f,
+                        phone: composeTrainerPhone(parseTrainerPhone(f.phone).prefixKey, val),
+                      }))
+                    }
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{isRTL ? 'الاسم الأخير (إنجليزي)' : 'Last Name (EN)'}</Label>
-                  <Input
-                    value={form.last_name_en}
-                    onChange={(e) => setForm((f) => ({ ...f, last_name_en: e.target.value }))}
-                    dir="ltr"
-                    className={cn(
-                      '[direction:ltr] [unicode-bidi:plaintext]',
-                      isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left',
-                    )}
-                  />
+                <div className="md:col-span-2">
+                  <FormField label={isRTL ? 'البريد الإلكتروني' : 'Email'}>
+                    <Input
+                      type="email"
+                      autoComplete="email"
+                      placeholder={isRTL ? 'name@example.com' : 'name@example.com'}
+                      value={form.email}
+                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                      dir="ltr"
+                      className={cn(
+                        '[direction:ltr] [unicode-bidi:plaintext]',
+                        isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left',
+                      )}
+                    />
+                  </FormField>
                 </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label>{isRTL ? 'رقم الجوال / الهاتف' : 'Phone number'}</Label>
-                  <Input
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    placeholder={isRTL ? '+9665xxxxxxxx' : '+9665xxxxxxxx'}
-                    value={form.phone}
-                    onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                    dir="ltr"
-                    className={cn(
-                      'font-mono text-sm [direction:ltr] [unicode-bidi:plaintext]',
-                      isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left',
-                    )}
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label>{isRTL ? 'البريد الإلكتروني' : 'Email'}</Label>
-                  <Input
-                    type="email"
-                    autoComplete="email"
-                    placeholder={isRTL ? 'name@example.com' : 'name@example.com'}
-                    value={form.email}
-                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    dir="ltr"
-                    className={cn(
-                      '[direction:ltr] [unicode-bidi:plaintext]',
-                      isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left',
-                    )}
+                <div className="md:col-span-2">
+                  <DateOfBirthPicker
+                    value={form.date_of_birth}
+                    onChange={(date) => setForm((f) => ({ ...f, date_of_birth: date }))}
                   />
                 </div>
               </div>
@@ -1344,262 +1387,34 @@ const AdminTrainers: React.FC = () => {
           <Card>
             <CardContent className="p-6 space-y-5">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'الموقع والتخصص' : 'Location & Specialization'}</h3>
-              <div dir={locationFieldDir} className="grid gap-4 md:grid-cols-2">
-                <div className="min-w-0 space-y-2">
-                  <Label className="block text-start">{isRTL ? 'الدولة' : 'Country'}</Label>
-                  <Select
-                    dir={locationFieldDir}
-                    value={form.country}
-                    onValueChange={(v) => setForm((f) => ({ ...f, country: v, city: '' }))}
-                  >
-                    <SelectTrigger dir={locationFieldDir}>
-                      <SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} />
-                    </SelectTrigger>
-                    <SelectContent dir={locationFieldDir}>
-                      {COUNTRIES.map((c) => (
-                        <SelectItem key={c.code} value={c.code}>
-                          {isRTL ? c.ar : c.en}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="min-w-0 space-y-2">
-                  <Label className="block text-start">{isRTL ? 'المدينة' : 'City'}</Label>
-                  {(() => {
-                    const selectedCountry = COUNTRIES.find((c) => c.code === form.country);
-                    const cities = selectedCountry ? [...selectedCountry.cities, OTHER_OPTION] : [];
-                    if (!selectedCountry) {
-                      return (
-                        <Input
-                          dir={locationFieldDir}
-                          className="text-start"
-                          value={form.city}
-                          onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-                          placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
-                        />
-                      );
-                    }
-                    const cityInList = cities.some((c) => c.en === form.city);
-                    return (
-                      <div className="space-y-2">
-                        <Select
-                          dir={locationFieldDir}
-                          value={cityInList ? form.city : isOtherCity ? 'Other' : ''}
-                          onValueChange={(v) => {
-                            if (v === 'Other') {
-                              setIsOtherCity(true);
-                              setForm((f) => ({ ...f, city: '' }));
-                            } else {
-                              setIsOtherCity(false);
-                              setForm((f) => ({ ...f, city: v }));
-                            }
-                          }}
-                        >
-                          <SelectTrigger dir={locationFieldDir}>
-                            <SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} />
-                          </SelectTrigger>
-                          <SelectContent dir={locationFieldDir}>
-                            {cities.map((c) => (
-                              <SelectItem key={c.en} value={c.en}>
-                                {isRTL ? c.ar : c.en}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {isOtherCity && (
-                          <Input
-                            dir={locationFieldDir}
-                            className="text-start"
-                            value={form.city}
-                            onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-                            placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
-                          />
-                        )}
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-              <div className="space-y-4 rounded-xl border border-border/70 bg-muted/10 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <Label className="text-sm font-semibold">{isRTL ? 'أنواع الدراجات وتفاصيلها' : 'Bike Types & Details'}</Label>
-                  <Badge variant="outline" className="text-xs">
-                    {form.bike_types.length} {isRTL ? 'مختار' : 'selected'}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {isRTL
-                    ? 'اختر الأنواع التي يدرب عليها المدرب، ثم أضف الماركة والصور لكل نوع.'
-                    : 'Choose trainer bike types first, then add brand and photos for each type.'}
-                </p>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {COMMON_BIKE_TYPES.map((type) => {
-                    const active = form.bike_types.includes(type);
-                    return (
-                      <Button
-                        key={type}
-                        type="button"
-                        variant={active ? 'default' : 'outline'}
-                        className="h-auto py-2 px-3 text-xs sm:text-sm justify-start"
-                        onClick={() => toggleBikeType(type)}
-                      >
-                        {bikeTypeDisplayLabel(type, isRTL)}
-                      </Button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex gap-2 max-w-md">
-                  <Input
-                    value={bikeTypeInput}
-                    onChange={(e) => setBikeTypeInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomBikeType())}
-                    placeholder={isRTL ? 'أضف نوعًا مخصصًا...' : 'Add custom bike type...'}
-                    className="flex-1"
-                  />
-                  <Button type="button" variant="outline" size="icon" onClick={addCustomBikeType}>
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {form.bike_types.map((t) => (
-                    <Badge key={t} variant="secondary" className="gap-1 px-3 py-1.5">
-                      {bikeTypeDisplayLabel(t, isRTL)}
-                      <X className="w-3 h-3 cursor-pointer hover:text-destructive" onClick={() => removeBikeTypeBadge(t)} />
-                    </Badge>
-                  ))}
-                  {form.bike_types.length === 0 && (
-                    <p className="text-xs text-muted-foreground">{isRTL ? 'لم يتم اختيار نوع بعد' : 'No bike types selected'}</p>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">{isRTL ? 'تفاصيل كل دراجة' : 'Per-bike details'}</Label>
-                <p className="text-xs text-muted-foreground">
-                  {isRTL
-                    ? `ماركة وصور لكل نوع. حتى ${MAX_PHOTOS_PER_BIKE_ENTRY} صور لكل نوع، حتى ${MAX_BIKE_PHOTO_BYTES / (1024 * 1024)} ميجابايت لكل صورة`
-                    : `Brand and photos per bike type. Up to ${MAX_PHOTOS_PER_BIKE_ENTRY} images per type, ${MAX_BIKE_PHOTO_BYTES / (1024 * 1024)} MB each`}
-                </p>
-                <input
-                  ref={bikePhotoFileRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={onBikePhotoFileInputChange}
+              <CountryCityPicker
+                country={form.country}
+                city={form.city}
+                onCountryChange={(v) => { setForm((f) => ({ ...f, country: v, city: '' })); setIsOtherCity(false); }}
+                onCityChange={(v) => { setForm((f) => ({ ...f, city: v })); setIsOtherCity(v === '__other__'); }}
+                customCity={isOtherCity ? form.city : ''}
+                onCustomCityChange={(v) => setForm((f) => ({ ...f, city: v }))}
+              />
+              <div className="rounded-xl border border-border/70 bg-muted/10 p-4">
+                <BikeGarage
+                  entries={form.bike_entries_v2}
+                  onChange={(updated) => setForm((f) => ({ ...f, bike_entries_v2: updated }))}
+                  userId={editingTrainer?.id ?? null}
+                  storageFolder="bikes"
                 />
-                  {form.bike_types.length === 0 ? (
-                    <p className="text-xs text-muted-foreground border border-dashed rounded-lg p-4 text-center">
-                      {isRTL ? 'اختر أنواع الدراجات أعلاه لإضافة التفاصيل' : 'Select bike types above to add brand and photos'}
-                    </p>
-                  ) : (
-                    <div className="space-y-4">
-                    {form.bike_types.map((bikeType) => {
-                      const entry =
-                        form.bike_entries.find((e) => e.type === bikeType) ?? { type: bikeType, brand: '', photos: [] };
-                      const pending = pendingBikeByType[bikeType] || [];
-                      const totalPhotos = entry.photos.length + pending.length;
-                      return (
-                        <div key={bikeType} dir={isRTL ? 'rtl' : 'ltr'}>
-                          <Card className="border-border/80 shadow-sm">
-                            <CardHeader className="py-3 px-4 space-y-0">
-                              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                <Bike className="w-4 h-4 text-muted-foreground shrink-0" />
-                                {bikeTypeDisplayLabel(bikeType, isRTL)}
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3 pt-0 px-4 pb-4">
-                              <div className="min-w-0 space-y-2">
-                                <Label className="block w-full text-start text-xs">
-                                  {isRTL ? 'الماركة والطراز' : 'Brand & Model'}
-                                </Label>
-                                {/* Isolate LTR so English brand/model is not affected by card RTL */}
-                                <div
-                                  dir="ltr"
-                                  lang="en"
-                                  className="min-w-0"
-                                  style={{ unicodeBidi: 'isolate' }}
-                                >
-                                  <Input
-                                    dir="ltr"
-                                    lang="en"
-                                    spellCheck={false}
-                                    autoComplete="off"
-                                    value={entry.brand}
-                                    onChange={(e) => setBikeEntryBrand(bikeType, e.target.value)}
-                                    placeholder="e.g. Yamaha R1 2023"
-                                    className={cn(
-                                      'w-full [direction:ltr] [unicode-bidi:plaintext]',
-                                      isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left',
-                                    )}
-                                  />
-                                </div>
-                              </div>
-                              <div className="space-y-2">
-                                <Label className="text-xs">{isRTL ? 'صور هذه الدراجة' : 'Photos for this bike'}</Label>
-                                <div className="flex flex-wrap gap-2 items-start">
-                                {entry.photos.map((url) => (
-                                  <div
-                                    key={url}
-                                    className="relative w-20 h-20 rounded-md border border-border overflow-hidden shrink-0 group/bthumb"
-                                  >
-                                    <img src={url} alt="" className="w-full h-full object-cover" />
-                                    <button
-                                      type="button"
-                                      className="absolute top-0.5 end-0.5 w-5 h-5 rounded-full bg-background/90 border text-xs flex items-center justify-center opacity-0 group-hover/bthumb:opacity-100 transition-opacity"
-                                      onClick={() => removeBikePhotoUrlForType(bikeType, url)}
-                                      aria-label={isRTL ? 'حذف' : 'Remove'}
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ))}
-                                {pending.map((p, i) => (
-                                  <div
-                                    key={p.preview}
-                                    className="relative w-20 h-20 rounded-md border border-border overflow-hidden shrink-0 group/bthumb"
-                                  >
-                                    <img src={p.preview} alt="" className="w-full h-full object-cover" />
-                                    <button
-                                      type="button"
-                                      className="absolute top-0.5 end-0.5 w-5 h-5 rounded-full bg-background/90 border text-xs flex items-center justify-center opacity-0 group-hover/bthumb:opacity-100 transition-opacity"
-                                      onClick={() => removePendingBikeAtForType(bikeType, i)}
-                                      aria-label={isRTL ? 'حذف' : 'Remove'}
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ))}
-                                <button
-                                  type="button"
-                                  onClick={() => triggerBikePhotoPick(bikeType)}
-                                  disabled={totalPhotos >= MAX_PHOTOS_PER_BIKE_ENTRY}
-                                  className="w-20 h-20 rounded-md border border-dashed border-muted-foreground/40 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors disabled:opacity-50"
-                                >
-                                  <Camera className="w-5 h-5" />
-                                  <span className="text-[10px]">{isRTL ? 'إضافة' : 'Add'}</span>
-                                </button>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      );
-                    })}
-                    </div>
-                  )}
-                </div>
+                {!editingTrainer && form.bike_entries_v2.length === 0 && (
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    {isRTL
+                      ? 'يمكنك إضافة صور الدراجات بعد حفظ بيانات المدرب.'
+                      : 'You can add bike photos after saving the trainer.'}
+                  </p>
+                )}
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>{isRTL ? 'نوع الرخصة' : 'License Type'}</Label>
-                  <Input value={form.license_type} onChange={e => setForm(f => ({ ...f, license_type: e.target.value }))} placeholder={isRTL ? 'مثال: A2' : 'e.g. A2'} />
-                </div>
-                <div className="space-y-2"><Label>{isRTL ? 'سنوات الخبرة' : 'Years of Experience'}</Label><Input type="number" value={form.years_of_experience} onChange={e => setForm(f => ({ ...f, years_of_experience: parseInt(e.target.value) || 0 }))} /></div>
+                <FormField label={isRTL ? 'سنوات الخبرة' : 'Years of Experience'}>
+                  <Input type="number" value={form.years_of_experience} onChange={e => setForm(f => ({ ...f, years_of_experience: parseInt(e.target.value) || 0 }))} />
+                </FormField>
               </div>
 
               {/* Status */}
@@ -1627,42 +1442,44 @@ const AdminTrainers: React.FC = () => {
               </p>
 
               <div className="flex flex-col gap-3 rounded-lg border border-border/60 bg-muted/20 p-3 sm:flex-row sm:flex-wrap sm:items-end">
-                <div className="min-w-0 flex-[1.2] space-y-1.5 sm:min-w-[12rem]">
-                  <Label className="text-xs">{isRTL ? 'لغة' : 'Language'}</Label>
-                  <Select
-                    dir={locationFieldDir}
-                    value={languageAddCode || '__none__'}
-                    onValueChange={(v) => setLanguageAddCode(v === '__none__' ? '' : v)}
-                  >
-                    <SelectTrigger dir={locationFieldDir} className="h-9 w-full">
-                      <SelectValue placeholder={isRTL ? 'اختر لغة' : 'Select language'} />
-                    </SelectTrigger>
-                    <SelectContent dir={locationFieldDir}>
-                      <SelectItem value="__none__">{isRTL ? '— اختر —' : '— Select —'}</SelectItem>
-                      {TRAINER_LANGUAGE_OPTIONS.filter(
-                        (opt) => !form.language_levels.some((e) => e.language === opt.code),
-                      ).map((opt) => (
-                        <SelectItem key={opt.code} value={opt.code}>
-                          {isRTL ? opt.label_ar : opt.label_en}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="min-w-0 flex-[1.2] sm:min-w-[12rem]">
+                  <FormField label={isRTL ? 'لغة' : 'Language'}>
+                    <Select
+                      dir={locationFieldDir}
+                      value={languageAddCode || '__none__'}
+                      onValueChange={(v) => setLanguageAddCode(v === '__none__' ? '' : v)}
+                    >
+                      <SelectTrigger dir={locationFieldDir} className="h-9 w-full">
+                        <SelectValue placeholder={isRTL ? 'اختر لغة' : 'Select language'} />
+                      </SelectTrigger>
+                      <SelectContent dir={locationFieldDir}>
+                        <SelectItem value="__none__">{isRTL ? '— اختر —' : '— Select —'}</SelectItem>
+                        {TRAINER_LANGUAGE_OPTIONS.filter(
+                          (opt) => !form.language_levels.some((e) => e.language === opt.code),
+                        ).map((opt) => (
+                          <SelectItem key={opt.code} value={opt.code}>
+                            {isRTL ? opt.label_ar : opt.label_en}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormField>
                 </div>
-                <div className="min-w-0 flex-1 space-y-1.5 sm:min-w-[12rem]">
-                  <Label className="text-xs">{isRTL ? 'المستوى' : 'Level'}</Label>
-                  <Select dir={locationFieldDir} value={languageAddLevel} onValueChange={setLanguageAddLevel}>
-                    <SelectTrigger dir={locationFieldDir} className="h-9 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent dir={locationFieldDir}>
-                      {LANGUAGE_LEVEL_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {isRTL ? opt.label_ar : opt.label_en}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="min-w-0 flex-1 sm:min-w-[12rem]">
+                  <FormField label={isRTL ? 'المستوى' : 'Level'}>
+                    <Select dir={locationFieldDir} value={languageAddLevel} onValueChange={setLanguageAddLevel}>
+                      <SelectTrigger dir={locationFieldDir} className="h-9 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent dir={locationFieldDir}>
+                        {LANGUAGE_LEVEL_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {isRTL ? opt.label_ar : opt.label_en}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormField>
                 </div>
                 <Button
                   type="button"
@@ -1701,7 +1518,7 @@ const AdminTrainers: React.FC = () => {
                 ))}
               </div>
 
-              <div className="space-y-2">
+              <FormField label={isRTL ? 'اللغات المضافة' : 'Added languages'}>
                 {form.language_levels.length === 0 ? (
                   <p className="text-xs text-muted-foreground">{isRTL ? 'لم تُضف لغات بعد' : 'No languages added yet'}</p>
                 ) : (
@@ -1753,7 +1570,7 @@ const AdminTrainers: React.FC = () => {
                     })}
                   </ul>
                 )}
-              </div>
+              </FormField>
             </CardContent>
           </Card>
 
@@ -1761,11 +1578,14 @@ const AdminTrainers: React.FC = () => {
           <Card>
             <CardContent className="p-6 space-y-4">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'الخدمات' : 'Services'}</h3>
-              <div className="flex gap-2">
-                <Input value={serviceInput} onChange={e => setServiceInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addService())} placeholder={isRTL ? 'أضف خدمة...' : 'Add service...'} className="flex-1" />
-                <Button type="button" variant="outline" size="icon" onClick={addService}><Plus className="w-4 h-4" /></Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
+              <FormField label={isRTL ? 'إضافة خدمة' : 'Add service'}>
+                <div className="flex gap-2">
+                  <Input value={serviceInput} onChange={e => setServiceInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addService())} placeholder={isRTL ? 'أضف خدمة...' : 'Add service...'} className="flex-1" />
+                  <Button type="button" variant="outline" size="icon" onClick={addService}><Plus className="w-4 h-4" /></Button>
+                </div>
+              </FormField>
+              <FormField label={isRTL ? 'الخدمات الحالية' : 'Current services'}>
+                <div className="flex flex-wrap gap-2">
                 {form.services.map((s, i) => (
                   <Badge key={i} variant="secondary" className="gap-1 px-3 py-1.5">
                     {s}
@@ -1773,7 +1593,8 @@ const AdminTrainers: React.FC = () => {
                   </Badge>
                 ))}
                 {form.services.length === 0 && <p className="text-xs text-muted-foreground">{isRTL ? 'لم تتم إضافة خدمات بعد' : 'No services added yet'}</p>}
-              </div>
+                </div>
+              </FormField>
             </CardContent>
           </Card>
 
@@ -1879,13 +1700,17 @@ const AdminTrainers: React.FC = () => {
                                 {(() => {
                                   const td = trainingDetails[training.id];
                                   const meta = allTrainings?.find((x) => x.id === training.id) as TrainingCatalogRow | undefined;
-                                  const defaultSessions = td
-                                    ? td.default_sessions_count
-                                    : Math.max(1, Number(meta?.default_sessions_count ?? assignment.sessions_count ?? 1));
-                                  const defaultDur = td
-                                    ? td.default_session_duration_hours
-                                    : Math.max(0.25, Number(meta?.default_session_duration_hours ?? assignment.duration_hours ?? 2));
                                   const curriculum = parseTrainingSessions(td?.sessions ?? meta?.sessions);
+                                  const defaultSessions = curriculum.length > 0
+                                    ? curriculum.length
+                                    : td
+                                      ? td.default_sessions_count
+                                      : Math.max(1, Number(meta?.default_sessions_count ?? assignment.sessions_count ?? 1));
+                                  const defaultDur = curriculum.length > 0
+                                    ? Math.round((curriculum.reduce((sum, s) => sum + s.duration_hours, 0) / curriculum.length) * 100) / 100
+                                    : td
+                                      ? td.default_session_duration_hours
+                                      : Math.max(0.25, Number(meta?.default_session_duration_hours ?? assignment.duration_hours ?? 2));
                                   if (!td && !meta) {
                                     return (
                                       <div
@@ -1924,16 +1749,6 @@ const AdminTrainers: React.FC = () => {
                                             {isRTL ? ' جلسات' : ' sessions'}
                                           </span>
                                         </div>
-                                        <div className="flex flex-wrap items-center gap-2">
-                                          <Timer className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                                          <span className="text-xs text-muted-foreground">
-                                            {isRTL ? 'مدة كل جلسة' : 'Per session'}
-                                          </span>
-                                          <span className="font-semibold tabular-nums">
-                                            {defaultDur}
-                                            {isRTL ? ' ساعة' : ' hrs'}
-                                          </span>
-                                        </div>
                                       </div>
                                       {curriculum.length > 0 ? (
                                         <div className="mt-2 space-y-1 border-t border-border/40 pt-2">
@@ -1959,15 +1774,14 @@ const AdminTrainers: React.FC = () => {
                                   );
                                 })()}
 
-                                <div className="space-y-1">
-                                  <Label className="text-xs text-start">
-                                    {isRTL ? 'سعر المدرب الأساسي (ر.س)' : 'Trainer base price (SAR)'}
-                                  </Label>
-                                  <p className="text-[10px] text-muted-foreground leading-snug">
-                                    {isRTL
+                                <FormField
+                                  label={isRTL ? 'سعر المدرب الأساسي (ر.س)' : 'Trainer base price (SAR)'}
+                                  hint={
+                                    isRTL
                                       ? 'ما يستحقه المدرب؛ عمولة المنصة تُضاف من إعدادات التدريبات.'
-                                      : 'Amount the trainer keeps; Bikerz commission is added in Trainings admin.'}
-                                  </p>
+                                      : 'Amount the trainer keeps; Bikerz commission is added in Trainings admin.'
+                                  }
+                                >
                                   <div className="relative max-w-md" dir="ltr">
                                     <Input
                                       type="number"
@@ -1981,8 +1795,12 @@ const AdminTrainers: React.FC = () => {
                                       {isRTL ? 'ر.س' : 'SAR'}
                                     </span>
                                   </div>
-                                </div>
+                                </FormField>
 
+                                <div className="rounded-xl border border-border/50 bg-muted/30 p-3 space-y-3" dir={isRTL ? 'rtl' : 'ltr'}>
+                                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                    {isRTL ? 'موقع التدريب' : 'Training Location'}
+                                  </p>
                                 {(() => {
                                   const countryCode = (assignment.location_country || '').trim();
                                   const city = (assignment.location_city || '').trim();
@@ -1994,8 +1812,8 @@ const AdminTrainers: React.FC = () => {
 
                                   return (
                                     <div dir={locationFieldDir} className="grid gap-3 sm:grid-cols-2">
-                                      <div className="min-w-0 space-y-1">
-                                        <Label className="block text-xs text-start">{isRTL ? 'الدولة' : 'Country'}</Label>
+                                      <div className="min-w-0">
+                                        <FormField label={isRTL ? 'الدولة' : 'Country'}>
                                         <Select
                                           dir={locationFieldDir}
                                           value={countryCode}
@@ -2015,9 +1833,10 @@ const AdminTrainers: React.FC = () => {
                                             ))}
                                           </SelectContent>
                                         </Select>
+                                        </FormField>
                                       </div>
-                                      <div className="min-w-0 space-y-1">
-                                        <Label className="block text-xs text-start">{isRTL ? 'المدينة' : 'City'}</Label>
+                                      <div className="min-w-0">
+                                        <FormField label={isRTL ? 'المدينة' : 'City'}>
                                         <div className="space-y-2">
                                           <Select
                                             dir={locationFieldDir}
@@ -2046,40 +1865,30 @@ const AdminTrainers: React.FC = () => {
                                             />
                                           )}
                                         </div>
+                                        </FormField>
                                       </div>
                                     </div>
                                   );
                                 })()}
 
-                                <div className="space-y-2">
-                                  <Label className="text-xs text-start">{isRTL ? 'الخدمات' : 'Services'}</Label>
-                                  {form.services.length === 0 ? (
-                                    <p className="text-xs text-muted-foreground text-start">
-                                      {isRTL ? 'أضف خدمات للمدرب في القسم أعلاه' : 'Add trainer services in the section above.'}
-                                    </p>
-                                  ) : (
-                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                      {form.services.map((svc) => (
-                                        <label
-                                          key={svc}
-                                          className="flex cursor-pointer items-center gap-2 rounded-md border border-border/60 bg-background/60 px-2 py-1.5 text-xs"
-                                        >
-                                          <Checkbox
-                                            checked={assignment.services.includes(svc)}
-                                            onCheckedChange={(checked) => {
-                                              const next =
-                                                checked === true
-                                                  ? [...assignment.services, svc].filter((x, i, a) => a.indexOf(x) === i)
-                                                  : assignment.services.filter((s) => s !== svc);
-                                              updateAssignment(training.id, 'services', next);
-                                            }}
-                                          />
-                                          <span className="truncate text-start">{svc}</span>
-                                        </label>
-                                      ))}
-                                    </div>
-                                  )}
+                                <FormField
+                                  label={isRTL ? 'تفاصيل الموقع' : 'Location Details'}
+                                  hint={isRTL
+                                    ? 'مثال: حديقة الملك فهد، بوابة 3، شارع الأمير محمد'
+                                    : 'e.g. King Fahd Park, Gate 3, Prince Mohammed Street'}
+                                >
+                                  <Input
+                                    value={assignment.location_detail}
+                                    onChange={(e) => updateAssignment(training.id, 'location_detail', e.target.value)}
+                                    placeholder={isRTL
+                                      ? 'أدخل العنوان التفصيلي للموقع'
+                                      : 'Enter the detailed location address'}
+                                    dir={isRTL ? 'rtl' : 'ltr'}
+                                    className="h-9 text-xs"
+                                  />
+                                </FormField>
                                 </div>
+
                               </div>
                             </motion.div>
                           ) : null}

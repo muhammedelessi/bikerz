@@ -81,7 +81,7 @@ const GamificationPanel: React.FC<GamificationPanelProps> = ({ compact = false }
             </span>
           </div>
           <div className="flex gap-1 overflow-x-auto pb-1">
-            {userBadges.slice(0, 5).map((ub) => (
+            {userBadges.filter(ub => ub.badge).slice(0, 5).map((ub) => (
               <BadgeDisplay
                 key={ub.id}
                 badge={ub.badge!}

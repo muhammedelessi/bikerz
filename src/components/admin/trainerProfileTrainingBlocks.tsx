@@ -32,6 +32,7 @@ export type TrainerCourseRow = {
   sessions_count?: number | string | null;
   duration_hours: number | string;
   location: string | null;
+  location_detail?: string | null;
   trainings?: { name_ar: string; name_en: string } | null;
 };
 
@@ -90,6 +91,7 @@ export const TrainerCourseEditDialog: React.FC<{
   const [editDur, setEditDur] = useState('');
   const [editCountry, setEditCountry] = useState('');
   const [editCity, setEditCity] = useState('');
+  const [editLocationDetail, setEditLocationDetail] = useState('');
 
   useEffect(() => {
     if (!tc || !open) return;
@@ -99,6 +101,7 @@ export const TrainerCourseEditDialog: React.FC<{
     setEditDur(String(tc.duration_hours ?? ''));
     setEditCountry(countryCode);
     setEditCity(city);
+    setEditLocationDetail(tc.location_detail || '');
   }, [tc, open]);
 
   const saveMutation = useMutation({
@@ -112,6 +115,7 @@ export const TrainerCourseEditDialog: React.FC<{
           sessions_count: Math.max(1, parseInt(editSessions, 10) || 1),
           duration_hours: Math.max(0.25, parseFloat(editDur) || 0.25),
           location,
+          location_detail: editLocationDetail,
         })
         .eq('id', tc.id);
       if (error) throw error;
@@ -203,6 +207,16 @@ export const TrainerCourseEditDialog: React.FC<{
               <Input className="h-10 text-sm" value={editCity} onChange={(e) => setEditCity(e.target.value)} placeholder={isRTL ? 'المدينة' : 'City'} />
             )}
           </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">{isRTL ? 'تفاصيل الموقع' : 'Location Details'}</Label>
+          <Input
+            className="h-10 text-sm"
+            value={editLocationDetail}
+            onChange={(e) => setEditLocationDetail(e.target.value)}
+            placeholder={isRTL ? 'أدخل العنوان التفصيلي للموقع' : 'Enter the detailed location address'}
+            dir={isRTL ? 'rtl' : 'ltr'}
+          />
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
@@ -372,6 +386,9 @@ export const TrainingCourseAccordionRow: React.FC<{
               <span className="mx-1.5 text-border">·</span>
               <span className="line-clamp-1">{locLine}</span>
             </p>
+            {tc.location_detail && (
+              <p className="text-[10px] text-muted-foreground/70 truncate ps-0.5">{tc.location_detail}</p>
+            )}
           </div>
         </button>
         <div className="flex shrink-0 items-center gap-0.5 self-center">

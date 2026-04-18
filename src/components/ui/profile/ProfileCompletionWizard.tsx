@@ -10,14 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { getUserCourseStatuses } from "@/services/ghl.service";
 import { User, Bike, Award, ChevronRight, ChevronLeft, X, Sparkles, Camera, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useGHLSync } from "@/hooks/useGHLSync";
-import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
-import { COUNTRIES } from "@/data/countryCityData";
+import { useSignupWebhook } from "@/hooks/useSignupWebhook";
+import { FormField } from "@/components/ui/form-field";
 interface ProfileCompletionWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -52,7 +51,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({ open,
   const { isRTL } = useLanguage();
   const { user, profile } = useAuth();
   const { syncContact } = useGHLSync();
-  const { sendFormData } = useGHLFormWebhook();
+  const { sendSignupData } = useSignupWebhook();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -198,25 +197,15 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({ open,
         bike_model: bikeModel || null,
       });
 
-      const { coursesJson, totalPurchased } = await getUserCourseStatuses(user.id);
-
-      sendFormData({
+      sendSignupData({
         full_name: profile?.full_name || riderNickname || "",
         email: user.email || "",
         phone: phone || profile?.phone || "",
-        country:
-          COUNTRIES.find((c) => c.en === profile?.country || c.ar === profile?.country || c.code === profile?.country)
-            ?.code ||
-          profile?.country ||
-          "",
+        country: profile?.country || "",
         city: profile?.city || "",
-        address: [profile?.city, profile?.country].filter(Boolean).join(", "),
-        dateOfBirth: profile?.date_of_birth || "",
+        date_of_birth: profile?.date_of_birth || "",
         gender: profile?.gender || "",
-        orderStatus: totalPurchased > 0 ? "purchased" : "not purchased",
-        courses: coursesJson,
-        totalPurchased,
-        isRTL,
+        silent: true,
       });
 
       // Log activity
@@ -299,8 +288,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({ open,
               <p className="text-sm text-muted-foreground">{t("profile.addProfilePhoto")}</p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="nickname">{t("profile.riderNickname")}</Label>
+            <FormField label={t("profile.riderNickname")}>
               <Input
                 id="nickname"
                 value={riderNickname}
@@ -308,10 +296,9 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({ open,
                 placeholder={t("profile.nicknamePlaceholder")}
                 className="h-11"
               />
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">{t("profile.phoneNumber")}</Label>
+            <FormField label={t("profile.phoneNumber")} dir="ltr">
               <Input
                 id="phone"
                 type="tel"
@@ -321,10 +308,9 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({ open,
                 className="h-11"
                 dir="ltr"
               />
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <Label htmlFor="ridingYears">{t("profile.yearsOfExperience")}</Label>
+            <FormField label={t("profile.yearsOfExperience")}>
               <Input
                 id="ridingYears"
                 type="number"
@@ -335,7 +321,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({ open,
                 placeholder={t("profile.yearsPlaceholder")}
                 className="h-11"
               />
-            </div>
+            </FormField>
           </motion.div>
         );
 
@@ -371,8 +357,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({ open,
 
             {!noBike && (
               <>
-                <div className="space-y-2">
-                  <Label htmlFor="bikeBrand">{t("profile.bikeBrand")}</Label>
+                <FormField label={t("profile.bikeBrand")}>
                   <select
                     id="bikeBrand"
                     value={bikeBrand}
@@ -386,10 +371,9 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({ open,
                       </option>
                     ))}
                   </select>
-                </div>
+                </FormField>
 
-                <div className="space-y-2">
-                  <Label htmlFor="bikeModel">{t("profile.bikeModel")}</Label>
+                <FormField label={t("profile.bikeModel")}>
                   <Input
                     id="bikeModel"
                     value={bikeModel}
@@ -397,10 +381,9 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({ open,
                     placeholder={t("profile.modelPlaceholder")}
                     className="h-11"
                   />
-                </div>
+                </FormField>
 
-                <div className="space-y-2">
-                  <Label htmlFor="engineSize">{t("profile.engineSize")}</Label>
+                <FormField label={t("profile.engineSize")}>
                   <Input
                     id="engineSize"
                     type="number"
@@ -411,7 +394,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({ open,
                     placeholder={t("profile.enginePlaceholder")}
                     className="h-11"
                   />
-                </div>
+                </FormField>
               </>
             )}
           </motion.div>

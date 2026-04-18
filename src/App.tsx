@@ -80,6 +80,8 @@ const AdminTrainerProfile = lazy(() => import("./pages/admin/AdminTrainerProfile
 const AdminTrainerPayments = lazy(() => import("./pages/admin/AdminTrainerPayments"));
 const AdminTrainingStudents = lazy(() => import("./pages/admin/AdminTrainingStudents"));
 const AdminTrainerReviews = lazy(() => import("./pages/admin/AdminTrainerReviews"));
+const AdminBikeCatalog = lazy(() => import("./pages/admin/AdminBikeCatalog"));
+const AdminRanks = lazy(() => import("./pages/admin/AdminRanks"));
 
 const queryClient = new QueryClient();
 
@@ -224,6 +226,8 @@ const AppRoutes = () => (
         <Route path="/admin/trainers/:id/payments" element={<AdminRoute><AdminTrainerPayments /></AdminRoute>} />
         <Route path="/admin/training-students" element={<AdminRoute><AdminTrainingStudents /></AdminRoute>} />
         <Route path="/admin/trainer-reviews" element={<AdminRoute><AdminTrainerReviews /></AdminRoute>} />
+        <Route path="/admin/bike-catalog" element={<AdminRoute><AdminBikeCatalog /></AdminRoute>} />
+        <Route path="/admin/ranks" element={<AdminRoute><AdminRanks /></AdminRoute>} />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />

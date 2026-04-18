@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import LanguageToggle from '@/components/common/LanguageToggle';
 import { RiderIdentity } from '@/components/ui/profile/RiderIdentity';
+import { RankSection } from '@/components/ui/profile/RankSection';
 import { BikeInformation } from '@/components/ui/profile/BikeInformation';
 import { LearningProgress } from '@/components/ui/profile/LearningProgress';
 import { ProfileAchievements } from '@/components/ui/profile/ProfileAchievements';
@@ -183,19 +184,31 @@ const Profile: React.FC = () => {
           ) : profile ? (
             <>
               {/* A. Rider Identity */}
-              <RiderIdentity
-                profile={profile}
-                onUpdate={updateProfile}
-                onAvatarUpload={uploadAvatar}
-                isUpdating={isUpdating}
-              />
+              <div id="profile-section-identity">
+                <RiderIdentity
+                  profile={profile}
+                  onUpdate={updateProfile}
+                  onAvatarUpload={uploadAvatar}
+                  isUpdating={isUpdating}
+                />
+              </div>
+
+              {/* A2. Rank Section */}
+              {learningStats && (
+                <RankSection
+                  profile={profile}
+                  enrollments={learningStats.enrollments || []}
+                />
+              )}
 
               {/* B. Bike Information */}
-              <BikeInformation
-                profile={profile}
-                onUpdate={updateProfile}
-                isUpdating={isUpdating}
-              />
+              <div id="profile-section-bike">
+                <BikeInformation
+                  profile={profile}
+                  onUpdate={updateProfile}
+                  isUpdating={isUpdating}
+                />
+              </div>
 
               {/* C. Learning Progress */}
               {learningStats && (
@@ -209,11 +222,13 @@ const Profile: React.FC = () => {
               <ActivityTimeline activities={activities} />
 
               {/* F. Account & Settings */}
-              <AccountSettings
-                profile={profile}
-                onUpdate={updateProfile}
-                isUpdating={isUpdating}
-              />
+              <div id="profile-section-contact">
+                <AccountSettings
+                  profile={profile}
+                  onUpdate={updateProfile}
+                  isUpdating={isUpdating}
+                />
+              </div>
             </>
           ) : (
             <div className="text-center py-12">

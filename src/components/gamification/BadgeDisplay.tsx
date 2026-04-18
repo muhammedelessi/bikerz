@@ -81,6 +81,9 @@ const BadgeDisplay: React.FC<BadgeDisplayProps> = ({
 }) => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+
+  if (!badge) return null;
+
   const Icon = iconMap[badge.icon_name] || Trophy;
 
   const badgeContent = (

@@ -71,6 +71,8 @@ export async function sendGHLFormData(data: FormWebhookData): Promise<boolean> {
     ticket_subject: rest.ticket_subject || "",
     ticket_message: rest.ticket_message || "",
     ticket_category: rest.ticket_category || "",
+    has_motorcycle: rest.has_motorcycle ?? null,
+    considering_purchase: rest.considering_purchase ?? null,
   };
 
   try {

@@ -3,9 +3,8 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Lock, CheckCircle, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Lock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { PasswordField } from '@/components/ui/fields';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import logoDark from '@/assets/logo-dark.png';
@@ -20,8 +19,6 @@ const ResetPassword: React.FC = () => {
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [ready, setReady] = useState(false);
@@ -185,25 +182,22 @@ const ResetPassword: React.FC = () => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="password">{isRTL ? 'كلمة المرور الجديدة' : 'New Password'}</Label>
-                    <div className="relative">
-                      <Input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 pe-10" disabled={isLoading} required minLength={6} />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground" tabIndex={-1}>
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
+                  <PasswordField
+                    value={password}
+                    onChange={setPassword}
+                    disabled={isLoading}
+                    required
+                    autoComplete="new-password"
+                  />
 
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">{isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}</Label>
-                    <div className="relative">
-                      <Input id="confirmPassword" type={showConfirm ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="h-12 pe-10" disabled={isLoading} required minLength={6} />
-                      <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground" tabIndex={-1}>
-                        {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
+                  <PasswordField
+                    value={confirmPassword}
+                    onChange={setConfirmPassword}
+                    label={isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}
+                    disabled={isLoading}
+                    required
+                    autoComplete="new-password"
+                  />
 
                   <Button type="submit" variant="cta" className="w-full h-12" disabled={isLoading || password.length < 6 || password !== confirmPassword}>
                     {isLoading ? (

@@ -423,6 +423,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                       onChange={setPhonePrefix}
                       placeholder="+---"
                       searchPlaceholder="Search..."
+                      selectedLabelBuilder={(option) => (option?.value.split("_")[0] ? option.value.split("_")[0] : "")}
                       dir="ltr"
                     />
                   </div>

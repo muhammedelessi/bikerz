@@ -42,6 +42,7 @@ type TrainerCoursePublic = {
   sessions_count?: number | null;
   duration_hours: number;
   location: string;
+  location_detail?: string | null;
   trainings: TrainingEmbed;
 };
 
@@ -52,13 +53,16 @@ const levelStyle: Record<string, string> = {
 };
 
 const BIKE_LABELS: Record<string, { ar: string; en: string }> = {
-  Sport: { ar: 'رياضية', en: 'Sport' },
-  Cruiser: { ar: 'كروزر', en: 'Cruiser' },
-  Adventure: { ar: 'مغامرة', en: 'Adventure' },
-  Touring: { ar: 'سياحية', en: 'Touring' },
-  Naked: { ar: 'نيكد', en: 'Naked' },
-  'Dual Sport': { ar: 'ثنائية الاستخدام', en: 'Dual Sport' },
-  Scooter: { ar: 'سكوتر', en: 'Scooter' },
+  Sport:        { ar: 'سبورت',       en: 'Sport'       },
+  Race:         { ar: 'ريس',         en: 'Race'        },
+  Cruiser:      { ar: 'كروزر',       en: 'Cruiser'     },
+  Adventure:    { ar: 'أدڤنتشر',    en: 'Adventure'   },
+  Touring:      { ar: 'توورينج',     en: 'Touring'     },
+  Naked:        { ar: 'نيكد',        en: 'Naked'       },
+  Scrambler:    { ar: 'سكرامبلر',    en: 'Scrambler'   },
+  'Cafe Racer': { ar: 'كافيه ريسر', en: 'Cafe Racer'  },
+  'Dual Sport': { ar: 'ديول سبورت', en: 'Dual Sport'  },
+  Scooter:      { ar: 'سكوتر',       en: 'Scooter'     },
 };
 
 type BikeEntry = {
@@ -225,7 +229,7 @@ const TrainerProfile: React.FC = () => {
       const { data, error } = await supabase
         .from('trainer_courses')
         .select(
-          'id, training_id, price, sessions_count, duration_hours, location, trainings(id, name_ar, name_en, description_ar, description_en, level, type)',
+          'id, training_id, price, sessions_count, duration_hours, location, location_detail, trainings(id, name_ar, name_en, description_ar, description_en, level, type)',
         )
         .eq('trainer_id', id!);
       if (error) throw error;
@@ -580,7 +584,12 @@ const TrainerProfile: React.FC = () => {
                               </div>
                               <div className="flex items-start gap-2">
                                 <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-primary/80" />
-                                <span className="leading-snug">{loc}</span>
+                                <div className="min-w-0">
+                                  <span className="leading-snug">{loc}</span>
+                                  {tc.location_detail && (
+                                    <p className="text-xs text-muted-foreground leading-snug mt-0.5">{tc.location_detail}</p>
+                                  )}
+                                </div>
                               </div>
                               <p
                                 className="text-lg font-bold text-primary tabular-nums pt-1"

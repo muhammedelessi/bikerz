@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const normalizedCode = code.trim().toUpperCase();
+    const normalizedCode = normalizeCouponCode(code);
     const { data: existingCoupon } = await adminClient
       .from("coupons")
       .select("id")
@@ -250,6 +250,15 @@ function parseSeriesCode(code: string): { prefix: string; number: number } | nul
     prefix: match[1].toUpperCase(),
     number,
   };
+}
+
+function normalizeCouponCode(input: string): string {
+  return input
+    .trim()
+    .replace(/\s+/g, "")
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776))
+    .toUpperCase();
 }
 
 function computeSeriesDiscount(

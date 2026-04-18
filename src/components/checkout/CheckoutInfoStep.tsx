@@ -1,14 +1,17 @@
 import React, { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import {
-  User, Mail, MapPin, Pencil, AlertCircle, Info,
+  User, Mail, MapPin, Pencil, Info,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { FormField } from '@/components/ui/form-field';
 import SearchableDropdown from '@/components/checkout/SearchableDropdown';
 import type { DropdownOption } from '@/components/checkout/SearchableDropdown';
 import type { ValidationErrors } from '@/types/payment';
 import type { User as AuthUser } from '@supabase/supabase-js';
+import { joinFullName, splitFullName } from '@/lib/nameUtils';
+import { CountryCityPicker, PhoneField, NameFields } from '@/components/ui/fields';
 
 interface CheckoutInfoStepProps {
   isRTL: boolean;
@@ -47,17 +50,6 @@ interface CheckoutInfoStepProps {
   setErrors: (fn: (prev: ValidationErrors) => ValidationErrors) => void;
 }
 
-const FieldError: React.FC<{ message?: string }> = memo(({ message }) => {
-  if (!message) return null;
-  return (
-    <p className="text-xs text-destructive flex items-center gap-1 mt-1">
-      <AlertCircle className="w-3 h-3" />
-      {message}
-    </p>
-  );
-});
-FieldError.displayName = 'FieldError';
-
 const CheckoutInfoStep: React.FC<CheckoutInfoStepProps> = memo(({
   isRTL, user,
   fullName, setFullName, hasNamePrefilled, isEditingName, setIsEditingName,
@@ -68,15 +60,17 @@ const CheckoutInfoStep: React.FC<CheckoutInfoStepProps> = memo(({
   cityManual, setCityManual, handleCountryChange, handleCityChange, city,
   errors, setErrors,
 }) => {
+  const { t } = useTranslation();
+  const { firstName, lastName } = useMemo(() => splitFullName(fullName), [fullName]);
   const missingFields = useMemo(() => {
     const missing: string[] = [];
-    if (!phone.trim()) missing.push(isRTL ? 'رقم الهاتف' : 'Phone number');
+    if (!phone.trim()) missing.push(t('fields.phone.label'));
     const effectiveCountry = isOtherCountry ? countryManual.trim() : (cityOptions.length > 0 ? 'set' : '');
-    if (!effectiveCountry && !isOtherCountry && !cityOptions.length) missing.push(isRTL ? 'الدولة' : 'Country');
+    if (!effectiveCountry && !isOtherCountry && !cityOptions.length) missing.push(t('fields.country.label'));
     const effectiveCity = (isOtherCity || isOtherCountry) ? cityManual.trim() : city.trim();
-    if (!effectiveCity) missing.push(isRTL ? 'المدينة' : 'City');
+    if (!effectiveCity) missing.push(t('fields.city.label'));
     return missing;
-  }, [phone, city, cityManual, isOtherCity, isOtherCountry, countryManual, cityOptions.length, isRTL]);
+  }, [phone, city, cityManual, isOtherCity, isOtherCountry, countryManual, cityOptions.length, t]);
 
   return (
     <motion.div
@@ -108,7 +102,7 @@ const CheckoutInfoStep: React.FC<CheckoutInfoStepProps> = memo(({
       </div>
 
       {/* Name */}
-      <div className="space-y-1">
+      <FormField label={`${t('fields.firstName.label')} ${t('fields.lastName.label')}`} error={errors.fullName} required>
         {hasNamePrefilled && !isEditingName ? (
           <div className="flex items-center justify-between rounded-md border border-input bg-muted/30 px-3 py-2 h-10">
             <div className="flex items-center gap-2">
@@ -124,74 +118,61 @@ const CheckoutInfoStep: React.FC<CheckoutInfoStepProps> = memo(({
             </button>
           </div>
         ) : (
-          <div className="relative">
-            <User className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            <Input
-              value={fullName}
-              onChange={(e) => { setFullName(e.target.value); setErrors(prev => ({ ...prev, fullName: undefined })); }}
-              placeholder={isRTL ? 'الاسم الكامل' : 'Full name'}
-              className={`ps-9 ${errors.fullName ? 'border-destructive' : ''}`}
-              autoFocus={isEditingName}
-            />
-          </div>
+          <NameFields
+            firstName={firstName}
+            lastName={lastName}
+            onFirstNameChange={(val) => {
+              setFullName(joinFullName(val, lastName));
+              setErrors(prev => ({ ...prev, firstName: undefined, fullName: undefined }));
+            }}
+            onLastNameChange={(val) => {
+              setFullName(joinFullName(firstName, val));
+              setErrors(prev => ({ ...prev, lastName: undefined, fullName: undefined }));
+            }}
+            firstNameError={errors.firstName}
+            lastNameError={errors.lastName}
+            required
+          />
         )}
-        <FieldError message={errors.fullName} />
-      </div>
+      </FormField>
 
       {/* Email */}
-      <div className="space-y-1">
+      <FormField
+        label={t('fields.email.label')}
+        error={errors.email}
+        required
+      >
         {user ? (
           <div className="flex items-center rounded-md border border-input bg-muted/30 px-3 py-2 h-10">
             <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0 me-2" />
             <span className="text-sm text-foreground truncate" dir="ltr">{email}</span>
           </div>
         ) : (
-          <>
-            <div className="relative">
-              <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
-                placeholder={isRTL ? 'البريد الإلكتروني' : 'Email address'}
-                className={`ps-9 ${errors.email ? 'border-destructive' : ''}`}
-              />
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              {isRTL ? 'سيتم إنشاء حساب لك تلقائياً باستخدام هذا البريد' : 'An account will be created automatically with this email'}
-            </p>
-          </>
-        )}
-        <FieldError message={errors.email} />
-      </div>
-
-      {/* Phone */}
-      <div className="space-y-1">
-        <div className="flex gap-2" dir="ltr">
-          <div className="flex-shrink-0 w-[110px]">
-            <SearchableDropdown
-              options={phonePrefixOptions}
-              value={phonePrefix}
-              onChange={(val) => setPhonePrefix(val)}
-              placeholder="+---"
-              searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
-              dir="ltr"
+          <div className="relative">
+            <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
+              placeholder={t('fields.email.placeholder')}
+              className={`ps-11 ${errors.email ? 'border-destructive' : ''}`}
             />
           </div>
-          <Input
-            value={phone}
-            onChange={(e) => {
-              const val = e.target.value.replace(/[^0-9]/g, '');
-              setPhone(val);
-              setErrors(prev => ({ ...prev, phone: undefined }));
-            }}
-            placeholder="5XXXXXXXX"
-            className={`flex-1 ${errors.phone ? 'border-destructive' : ''}`}
-            dir="ltr"
-          />
-        </div>
-        <FieldError message={errors.phone} />
-      </div>
+        )}
+      </FormField>
+
+      {/* Phone */}
+      <PhoneField
+        phonePrefix={phonePrefix}
+        phoneNumber={phone}
+        onPrefixChange={setPhonePrefix}
+        onNumberChange={(val) => {
+          setPhone(val);
+          setErrors(prev => ({ ...prev, phone: undefined }));
+        }}
+        error={errors.phone}
+        required
+      />
 
       {/* Billing Address Section */}
       <div className="rounded-lg border border-border p-3 space-y-3 mt-2">
@@ -202,66 +183,19 @@ const CheckoutInfoStep: React.FC<CheckoutInfoStepProps> = memo(({
           </h4>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          {/* Country */}
-          <div className="space-y-1.5">
-            <Label className="text-xs">{isRTL ? 'الدولة' : 'Country'} <span className="text-destructive">*</span></Label>
-            <SearchableDropdown
-              options={countryOptions}
-              value={isOtherCountry ? '__other__' : selectedCountryCode}
-              onChange={handleCountryChange}
-              placeholder={isRTL ? 'اختر الدولة' : 'Select country'}
-              searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
-              hasError={!!errors.country}
-              dir={isRTL ? 'rtl' : 'ltr'}
-            />
-            {isOtherCountry && (
-              <Input
-                value={countryManual}
-                onChange={(e) => { setCountryManual(e.target.value); setCountry(e.target.value); setErrors(prev => ({ ...prev, country: undefined })); }}
-                placeholder={isRTL ? 'اسم الدولة' : 'Country name'}
-                className={`text-sm ${errors.country ? 'border-destructive' : ''}`}
-                autoFocus
-              />
-            )}
-            <FieldError message={errors.country} />
-          </div>
-
-          {/* City */}
-          <div className="space-y-1.5">
-            <Label className="text-xs">{isRTL ? 'المدينة' : 'City'} <span className="text-destructive">*</span></Label>
-            {isOtherCountry ? (
-              <Input
-                value={cityManual}
-                onChange={(e) => { setCityManual(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
-                placeholder={isRTL ? 'اسم المدينة' : 'City name'}
-                className={`text-sm ${errors.city ? 'border-destructive' : ''}`}
-              />
-            ) : (
-              <>
-                <SearchableDropdown
-                  options={cityOptions}
-                  value={isOtherCity ? '__other__' : city}
-                  onChange={handleCityChange}
-                  placeholder={isRTL ? 'اختر المدينة' : 'Select city'}
-                  searchPlaceholder={isRTL ? 'ابحث...' : 'Search...'}
-                  hasError={!!errors.city}
-                  dir={isRTL ? 'rtl' : 'ltr'}
-                />
-                {isOtherCity && (
-                  <Input
-                    value={cityManual}
-                    onChange={(e) => { setCityManual(e.target.value); setErrors(prev => ({ ...prev, city: undefined })); }}
-                    placeholder={isRTL ? 'اسم المدينة' : 'City name'}
-                    className={`text-sm ${errors.city ? 'border-destructive' : ''}`}
-                    autoFocus
-                  />
-                )}
-              </>
-            )}
-            <FieldError message={errors.city} />
-          </div>
-        </div>
+        <CountryCityPicker
+          country={isOtherCountry ? '__other__' : selectedCountryCode}
+          city={isOtherCity ? '__other__' : city}
+          onCountryChange={handleCountryChange}
+          onCityChange={handleCityChange}
+          customCountry={countryManual}
+          onCustomCountryChange={(v) => { setCountryManual(v); setCountry(v); setErrors(prev => ({ ...prev, country: undefined })); }}
+          customCity={cityManual}
+          onCustomCityChange={(v) => { setCityManual(v); setErrors(prev => ({ ...prev, city: undefined })); }}
+          countryError={errors.country}
+          cityError={errors.city}
+          required
+        />
       </div>
     </motion.div>
   );

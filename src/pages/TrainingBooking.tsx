@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, ArrowRight, CalendarDays } from 'lucide-react';
 import type { TrainerCourseRow } from '@/lib/trainingBookingUtils';
+import { parseTrainingSessions } from '@/lib/trainingSessionCurriculum';
 
 const TrainingBooking: React.FC = () => {
   const { trainingId, trainerCourseId } = useParams<{ trainingId: string; trainerCourseId: string }>();
@@ -36,7 +37,7 @@ const TrainingBooking: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('trainings')
-        .select('id, name_ar, name_en, status, type')
+        .select('id, name_ar, name_en, status, type, sessions, default_sessions_count, default_session_duration_hours')
         .eq('id', trainingId!)
         .maybeSingle();
       if (error) throw error;
@@ -88,6 +89,11 @@ const TrainingBooking: React.FC = () => {
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
   const pageReady =
     courseMatchesTraining && training && selectedCourse && trainingType === 'practical';
+
+  const curriculum = useMemo(
+    () => parseTrainingSessions((training as ({ sessions?: unknown } | null))?.sessions),
+    [training],
+  );
 
   return (
     <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -169,6 +175,7 @@ const TrainingBooking: React.FC = () => {
                 <TrainingBookingFlow
                   training={{ id: training.id, name_ar: training.name_ar, name_en: training.name_en }}
                   selectedCourse={selectedCourse}
+                  curriculumSessions={curriculum}
                   loginReturnPath={bookingPath}
                   onCancel={() => navigate(returnPath)}
                 />

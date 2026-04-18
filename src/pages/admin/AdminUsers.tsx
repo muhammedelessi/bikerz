@@ -26,6 +26,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -58,9 +68,25 @@ import {
   Download,
   KeyRound,
   Gift,
+  Trophy,
+  Loader2,
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
+  Check,
+  Target,
+  Zap,
+  Award,
+  Crown,
+  Star,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { RANK_DEFINITIONS } from '@/hooks/useUserProfile';
+
 
 interface Profile {
   id: string;
@@ -79,6 +105,13 @@ interface Profile {
   riding_experience_years: number | null;
   rider_nickname: string | null;
   profile_complete: boolean;
+  rank_override: boolean;
+  has_license: boolean;
+  license_verified: boolean;
+  motorcycle_vin: string | null;
+  vin_verified: boolean;
+  km_logged: number;
+  courses_sold_count: number;
   created_at: string;
 }
 
@@ -91,6 +124,91 @@ interface UserWithDetails extends Profile {
   enrollmentCount: number;
   email?: string;
 }
+
+interface RequirementCheck {
+  label_ar: string;
+  label_en: string;
+  met: boolean;
+  isAdminOnly?: boolean;
+}
+
+function checkRankRequirements(
+  selectedRank: string,
+  user: UserWithDetails,
+  enrollments: any[],
+): RequirementCheck[] {
+  const rankDef = RANK_DEFINITIONS.find((r) => r.name === selectedRank);
+  if (!rankDef) return [];
+
+  const checks: RequirementCheck[] = [];
+  const req = rankDef.requirements;
+
+  if (req.hasPurchasedFirstCourse !== undefined) {
+    checks.push({
+      label_ar: 'شراء أول كورس',
+      label_en: 'Purchased first course',
+      met: enrollments.length > 0,
+    });
+  }
+  if (req.hasLicense !== undefined) {
+    checks.push({
+      label_ar: 'رخصة دراجة موثقة',
+      label_en: 'Verified motorcycle license',
+      met: !!user.has_license && !!user.license_verified,
+    });
+  }
+  if (req.hasMotorcycleVIN !== undefined) {
+    checks.push({
+      label_ar: 'رقم هيكل الدراجة (VIN) موثق',
+      label_en: 'Verified motorcycle VIN',
+      met: !!user.motorcycle_vin && !!user.vin_verified,
+    });
+  }
+  if (req.kmLogged !== undefined) {
+    checks.push({
+      label_ar: `1500 كم مسجلة (حالياً: ${user.km_logged || 0} كم)`,
+      label_en: `1,500 km logged (current: ${user.km_logged || 0} km)`,
+      met: (user.km_logged || 0) >= 1500,
+    });
+  }
+  if (req.coursesSoldCount !== undefined) {
+    checks.push({
+      label_ar: `بيع كورس واحد أو أكثر (حالياً: ${user.courses_sold_count || 0})`,
+      label_en: `Sold 1+ courses (current: ${user.courses_sold_count || 0})`,
+      met: (user.courses_sold_count || 0) >= 1,
+    });
+  }
+  if (req.trainingProgramsSoldCount !== undefined) {
+    checks.push({
+      label_ar: `بيع 4+ برامج تدريبية (حالياً: ${user.courses_sold_count || 0})`,
+      label_en: `Sold 4+ training programs (current: ${user.courses_sold_count || 0})`,
+      met: (user.courses_sold_count || 0) >= 4,
+    });
+  }
+  if (['CHAMPION', 'TRAINER'].includes(selectedRank)) {
+    checks.push({
+      label_ar: 'موافقة الأدمن (مطلوبة دائماً)',
+      label_en: 'Admin approval (always required)',
+      met: true,
+      isAdminOnly: true,
+    });
+  }
+
+  return checks;
+}
+
+// 7 basic promotable ranks. FUTURE RIDER is excluded because it's the
+// default starting state (assigned automatically to new users, not manually
+// chosen by an admin).
+const RANK_CARDS = [
+  { value: 'TRAINEE',        label_ar: 'متدرب',          label_en: 'Trainee',        icon: Target, color: 'text-blue-400',    bg: 'bg-blue-500/10',    border: 'border-blue-500/30'    },
+  { value: '1500KM BUILDER', label_ar: 'بطل 1500 كم',   label_en: '1500KM Builder', icon: Zap,    color: 'text-green-400',   bg: 'bg-green-500/10',   border: 'border-green-500/30'   },
+  { value: 'SAFE RIDER',     label_ar: 'راكب آمن',       label_en: 'Safe Rider',     icon: Shield, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
+  { value: 'CHAMPION',       label_ar: 'بطل',            label_en: 'Champion',       icon: Trophy, color: 'text-yellow-400',  bg: 'bg-yellow-500/10',  border: 'border-yellow-500/30'  },
+  { value: 'TRAINER',        label_ar: 'مدرب',           label_en: 'Trainer',        icon: Award,  color: 'text-orange-400',  bg: 'bg-orange-500/10',  border: 'border-orange-500/30'  },
+  { value: 'MASTER',         label_ar: 'محترف',          label_en: 'Master',         icon: Crown,  color: 'text-purple-400',  bg: 'bg-purple-500/10',  border: 'border-purple-500/30'  },
+  { value: 'LEGEND',         label_ar: 'أسطورة',         label_en: 'Legend',         icon: Star,   color: 'text-primary',     bg: 'bg-primary/10',     border: 'border-primary/30'     },
+];
 
 // Small helper for the detail dialog
 const InfoItem = ({ label, value }: { label: string; value: string | null }) => (
@@ -120,6 +238,10 @@ const AdminUsers: React.FC = () => {
   const [freeCourseUser, setFreeCourseUser] = useState<UserWithDetails | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
   const [isGrantingCourse, setIsGrantingCourse] = useState(false);
+  const [promotionRank, setPromotionRank] = useState('');
+  const [isPromoting, setIsPromoting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [requirementChecks, setRequirementChecks] = useState<RequirementCheck[]>([]);
 
   // Fetch all published courses for the free course dialog
   const { data: allCourses = [] } = useRQ({
@@ -302,7 +424,47 @@ const AdminUsers: React.FC = () => {
 
   const openUserDetail = (user: UserWithDetails) => {
     setSelectedUser(user);
+    setPromotionRank('');
     setIsDetailOpen(true);
+  };
+
+  const handlePromoteRank = async () => {
+    if (!promotionRank || !selectedUser) return;
+    setIsPromoting(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ experience_level: promotionRank, rank_override: true })
+        .eq('user_id', selectedUser.user_id);
+      if (error) throw error;
+
+      const rankLabel = RANK_CARDS.find(r => r.value === promotionRank)?.[isRTL ? 'label_ar' : 'label_en'];
+      toast.success(
+        isRTL
+          ? `تم تغيير رتبة ${selectedUser.full_name} إلى ${rankLabel}`
+          : `${selectedUser.full_name}'s rank updated successfully`
+      );
+
+      setSelectedUser({ ...selectedUser, experience_level: promotionRank, rank_override: true });
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setPromotionRank('');
+    } catch (err: any) {
+      toast.error(isRTL ? 'فشل تغيير الرتبة' : 'Failed to update rank');
+    } finally {
+      setIsPromoting(false);
+    }
+  };
+
+  const onActivateClick = () => {
+    if (!promotionRank || !selectedUser) return;
+    const checks = checkRankRequirements(
+      promotionRank,
+      selectedUser,
+      // enrollmentCount is available; build a stub array of that length for the check
+      Array(selectedUser.enrollmentCount).fill({}),
+    );
+    setRequirementChecks(checks);
+    setShowConfirm(true);
   };
 
   const openRoleDialog = (user: UserWithDetails) => {
@@ -642,6 +804,140 @@ const AdminUsers: React.FC = () => {
                 </div>
               </div>
 
+              {/* Rank Management */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-primary" />
+                  {isRTL ? 'إدارة الرتبة' : 'Rank Management'}
+                </h4>
+
+                <div className="p-3 rounded-xl bg-muted/30 border border-border/40 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {isRTL ? 'الرتبة الحالية:' : 'Current rank:'}
+                    </span>
+                    <span className={[
+                      'text-xs font-bold px-2 py-0.5 rounded-full',
+                      selectedUser.experience_level === 'CHAMPION' || selectedUser.experience_level === 'TRAINER'
+                        ? 'bg-primary/10 text-primary'
+                        : 'bg-muted text-muted-foreground',
+                    ].join(' ')}>
+                      {RANK_CARDS.find(r => r.value === selectedUser.experience_level)
+                        ?.[isRTL ? 'label_ar' : 'label_en']
+                        || (isRTL ? 'غير محدد' : 'Not set')}
+                    </span>
+                  </div>
+                  {selectedUser.rank_override && (
+                    <span className="text-[10px] text-primary flex items-center gap-1">
+                      <Shield className="w-3 h-3" />
+                      {isRTL ? 'رتبة يدوية' : 'Manual rank'}
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">
+                    {isRTL ? 'تغيير الرتبة إلى:' : 'Change rank to:'}
+                  </Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {RANK_CARDS.map((rank) => {
+                      const Icon = rank.icon;
+                      const isSelected = promotionRank === rank.value;
+                      const isCurrent = selectedUser?.experience_level === rank.value;
+
+                      return (
+                        <button
+                          key={rank.value}
+                          type="button"
+                          onClick={() => setPromotionRank(rank.value)}
+                          className={cn(
+                            'relative flex flex-col items-center justify-center gap-1.5',
+                            'rounded-xl border-2 p-2 transition-all duration-200',
+                            'hover:scale-[1.02] active:scale-[0.98]',
+                            isSelected
+                              ? `${rank.border} ${rank.bg} shadow-sm`
+                              : isCurrent
+                                ? 'border-emerald-500/40 bg-emerald-500/5'
+                                : 'border-border/30 bg-muted/10 hover:border-border/50',
+                          )}
+                        >
+                          {/* Icon circle */}
+                          <div className={cn(
+                            'w-8 h-8 rounded-full flex items-center justify-center',
+                            isSelected ? rank.bg : 'bg-muted/30',
+                          )}>
+                            <Icon className={cn(
+                              'w-4 h-4',
+                              isSelected ? rank.color : 'text-muted-foreground/50',
+                            )} />
+                          </div>
+
+                          {/* Label */}
+                          <span className={cn(
+                            'text-[10px] font-semibold text-center leading-tight',
+                            isSelected ? rank.color : 'text-muted-foreground/60',
+                          )}>
+                            {isRTL ? rank.label_ar : rank.label_en}
+                          </span>
+
+                          {/* Selected indicator (takes priority) */}
+                          {isSelected && (
+                            <span className="absolute -top-1.5 -end-1.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center shadow-sm">
+                              <Check className="w-2.5 h-2.5 text-white" />
+                            </span>
+                          )}
+
+                          {/* Current rank badge (only when not selected) */}
+                          {isCurrent && !isSelected && (
+                            <span className="absolute -top-1.5 -end-1.5 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center shadow-sm">
+                              <Check className="w-2.5 h-2.5 text-white" />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {promotionRank && !['CHAMPION', 'TRAINER'].includes(promotionRank) && (
+                  <p className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1.5">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    {isRTL
+                      ? 'هذه الرتبة تُحسب تلقائياً — سيتم تجاوز الحساب التلقائي'
+                      : 'This rank is auto-calculated — manual override will apply'}
+                  </p>
+                )}
+
+                <Button
+                  onClick={onActivateClick}
+                  disabled={!promotionRank || isPromoting || promotionRank === selectedUser.experience_level}
+                  className="w-full gap-2"
+                >
+                  <Trophy className="w-4 h-4" />
+                  {isRTL ? 'تفعيل الرتبة' : 'Activate Rank'}
+                </Button>
+
+                {selectedUser.rank_override && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-xs text-muted-foreground gap-1.5"
+                    onClick={async () => {
+                      await supabase
+                        .from('profiles')
+                        .update({ rank_override: false })
+                        .eq('user_id', selectedUser.user_id);
+                      setSelectedUser({ ...selectedUser, rank_override: false });
+                      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+                      toast.success(isRTL ? 'تم إلغاء التجاوز اليدوي' : 'Manual override removed');
+                    }}
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    {isRTL ? 'إعادة الحساب التلقائي' : 'Reset to auto-calculate'}
+                  </Button>
+                )}
+              </div>
+
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-lg bg-muted/50">
@@ -841,6 +1137,107 @@ const AdminUsers: React.FC = () => {
         </DialogContent>
       </Dialog>
     </div>
+
+      {/* Rank Promotion Confirmation Dialog */}
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent dir={isRTL ? 'rtl' : 'ltr'} className="max-w-md max-h-[85vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-primary shrink-0" />
+              <span>
+                {isRTL
+                  ? `ترقية ${selectedUser?.full_name} إلى ${RANK_CARDS.find((r) => r.value === promotionRank)?.label_ar ?? promotionRank}`
+                  : `Promote ${selectedUser?.full_name} to ${RANK_CARDS.find((r) => r.value === promotionRank)?.label_en ?? promotionRank}`}
+              </span>
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 mt-2">
+
+                {/* Requirements checklist */}
+                {requirementChecks.length > 0 && (
+                  <div className="rounded-xl border border-border/40 overflow-hidden">
+                    <div className="px-3 py-2 bg-muted/30 border-b border-border/40">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {isRTL ? 'متطلبات الرتبة' : 'Rank Requirements'}
+                      </p>
+                    </div>
+                    <div className="divide-y divide-border/20">
+                      {requirementChecks.map((check, i) => (
+                        <div key={i} className="flex items-center gap-3 px-3 py-2.5">
+                          {check.met ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-destructive/70 shrink-0" />
+                          )}
+                          <span className={cn(
+                            'text-sm',
+                            check.met ? 'text-foreground' : 'text-muted-foreground',
+                            check.isAdminOnly && 'text-primary',
+                          )}>
+                            {isRTL ? check.label_ar : check.label_en}
+                          </span>
+                          {check.isAdminOnly && (
+                            <span className="ms-auto text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap">
+                              {isRTL ? 'أدمن فقط' : 'Admin only'}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* No requirements (e.g. FUTURE RIDER) */}
+                {requirementChecks.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic">
+                    {isRTL ? 'لا توجد متطلبات محددة لهذه الرتبة.' : 'No specific requirements for this rank.'}
+                  </p>
+                )}
+
+                {/* Warning if any non-admin requirement is unmet */}
+                {requirementChecks.some((c) => !c.met && !c.isAdminOnly) && (
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                    <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                      {isRTL
+                        ? 'بعض المتطلبات غير مكتملة. سيتم تجاوزها بصلاحية الأدمن وتفعيل الرتبة يدوياً.'
+                        : 'Some requirements are not met. Admin override will activate this rank manually.'}
+                    </p>
+                  </div>
+                )}
+
+                {/* All non-admin requirements met */}
+                {requirementChecks.length > 0 &&
+                  requirementChecks.every((c) => c.isAdminOnly || c.met) && (
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                        {isRTL ? 'جميع المتطلبات مكتملة ✅' : 'All requirements are met ✅'}
+                      </p>
+                    </div>
+                  )}
+
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {isRTL ? 'إلغاء' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handlePromoteRank}
+              disabled={isPromoting}
+              className="gap-2"
+            >
+              {isPromoting
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Trophy className="w-4 h-4" />}
+              {isRTL ? 'تفعيل الرتبة' : 'Activate Rank'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </AdminLayout>
   );
 };

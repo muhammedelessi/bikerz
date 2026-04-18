@@ -16,7 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Star, Users, MapPin, Bike, Clock, BookOpen, Briefcase, User, ChevronDown, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
+import { COUNTRIES } from '@/data/countryCityData';
+import { CountryCityPicker } from '@/components/ui/fields';
 import { toast } from 'sonner';
 
 interface Trainer {
@@ -51,7 +52,7 @@ const AddTrainingForTrainerDialog: React.FC<{
   isRTL: boolean;
 }> = ({ open, onOpenChange, trainerId, existingTrainingIds, isRTL }) => {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({ training_id: '', price: 0, duration_hours: 0, location: '' });
+  const [form, setForm] = useState({ training_id: '', price: 0, duration_hours: 0, location: '', location_detail: '' });
 
   const { data: allTrainings } = useQuery({
     queryKey: ['all-trainings-list'],
@@ -80,7 +81,7 @@ const AddTrainingForTrainerDialog: React.FC<{
   const locationParts = form.location.split(' - ');
   const countryPart = locationParts[0] || '';
   const cityPart = locationParts[1] || '';
-  const selectedCountry = COUNTRIES.find(c => c.en === countryPart);
+  const selectedCountryForLoc = COUNTRIES.find(c => c.en === countryPart);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -106,38 +107,26 @@ const AddTrainingForTrainerDialog: React.FC<{
               <Input type="number" value={form.duration_hours} onChange={e => setForm(f => ({ ...f, duration_hours: parseFloat(e.target.value) || 0 }))} />
             </div>
           </div>
-          <div className="grid gap-4 grid-cols-2">
-            <div className="space-y-2">
-              <Label>{isRTL ? 'الدولة' : 'Country'}</Label>
-              <Select
-                value={selectedCountry?.code || ''}
-                onValueChange={v => {
-                  const c = COUNTRIES.find(c => c.code === v);
-                  if (c) setForm(f => ({ ...f, location: c.en }));
-                }}
-              >
-                <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر الدولة' : 'Select country'} /></SelectTrigger>
-                <SelectContent>
-                  {COUNTRIES.map(c => <SelectItem key={c.code} value={c.code}>{isRTL ? c.ar : c.en}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{isRTL ? 'المدينة' : 'City'}</Label>
-              {selectedCountry ? (
-                <Select
-                  value={cityPart}
-                  onValueChange={v => setForm(f => ({ ...f, location: countryPart + ' - ' + v }))}
-                >
-                  <SelectTrigger><SelectValue placeholder={isRTL ? 'اختر المدينة' : 'Select city'} /></SelectTrigger>
-                  <SelectContent>
-                    {[...selectedCountry.cities, OTHER_OPTION].map(c => <SelectItem key={c.en} value={c.en}>{isRTL ? c.ar : c.en}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input disabled placeholder={isRTL ? 'اختر الدولة أولاً' : 'Select country first'} />
-              )}
-            </div>
+          <CountryCityPicker
+            country={selectedCountryForLoc?.code || ''}
+            city={cityPart}
+            onCountryChange={(code) => {
+              const c = COUNTRIES.find(x => x.code === code);
+              if (c) setForm(f => ({ ...f, location: c.en }));
+            }}
+            onCityChange={(v) => {
+              const cName = selectedCountryForLoc?.en || countryPart;
+              setForm(f => ({ ...f, location: cName + ' - ' + v }));
+            }}
+          />
+          <div className="space-y-2">
+            <Label>{isRTL ? 'تفاصيل الموقع' : 'Location Details'}</Label>
+            <Input
+              value={form.location_detail}
+              onChange={(e) => setForm(f => ({ ...f, location_detail: e.target.value }))}
+              placeholder={isRTL ? 'أدخل العنوان التفصيلي للموقع' : 'Enter the detailed location address'}
+              dir={isRTL ? 'rtl' : 'ltr'}
+            />
           </div>
         </div>
         <DialogFooter>

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { format, addDays, startOfDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -34,7 +35,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,6 +45,8 @@ import { useTrainingPlatformPricing } from '@/hooks/useTrainingPlatformPricing';
 import { applyTrainingPlatformMarkupSar, trainingCustomerChargeTotalSar } from '@/lib/trainingPlatformMarkup';
 import BookingTimeDisplay from '@/components/common/BookingTimeDisplay';
 import { formatBookingTime, formatTimeFromMinutesSinceMidnight, pgTimeStringToMinutes } from '@/utils/formatDateTime';
+import { FormField } from '@/components/ui/form-field';
+import { joinFullName, splitFullName } from '@/lib/nameUtils';
 
 type TrainingMini = { id: string; name_ar: string; name_en: string } | null;
 
@@ -59,6 +61,7 @@ type Props = {
 const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, selectedCourse, returnTo }) => {
   const navigate = useNavigate();
   const { isRTL, language } = useLanguage();
+  const { t } = useTranslation();
   const { user, profile, isLoading: authLoading } = useAuth();
   const { getCoursePriceInfo, formatPriceValueThenCurrencyName } = useCurrency();
   const tap = useTapPayment();
@@ -66,7 +69,8 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
   const [step, setStep] = useState<'pick' | 'details'>('pick');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [notes, setNotes] = useState('');
@@ -226,7 +230,9 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
 
   useEffect(() => {
     if (!open || !user) return;
-    setFullName(profile?.full_name?.trim() || '');
+    const split = splitFullName(profile?.full_name?.trim() || '');
+    setFirstName(split.firstName);
+    setLastName(split.lastName);
     const raw = profile?.phone?.trim() || '';
     const digits = raw.replace(/^\+966\s?/i, '').replace(/\D/g, '');
     setPhone(digits);
@@ -267,7 +273,8 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
     if (digits.startsWith('966')) digits = digits.slice(3);
     if (digits.startsWith('0')) digits = digits.slice(1);
     const phoneOut = digits ? `+966${digits}` : '';
-    if (!fullName.trim() || !phoneOut || !email.trim()) {
+    const fullName = joinFullName(firstName, lastName);
+    if (!fullName || !phoneOut || !email.trim()) {
       toast.error(isRTL ? 'يرجى تعبئة الاسم والهاتف والبريد' : 'Please fill name, phone, and email');
       return;
     }
@@ -286,7 +293,7 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
       start_time: selectedSlot,
       end_time: endTime,
       notes: notes.trim(),
-      full_name: fullName.trim(),
+      full_name: fullName,
       phone: phoneOut,
       email: email.trim(),
       payment_amount: paymentAmount,
@@ -333,7 +340,7 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
         trainingId: training.id,
         currency: paymentCurrency,
         amount: paymentAmount,
-        customerName: fullName.trim(),
+        customerName: fullName,
         customerEmail: email.trim(),
         customerPhone: phoneOut,
         courseName: isRTL ? training.name_ar : training.name_en,
@@ -427,8 +434,7 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
                   </div>
                 ) : (
                   <>
-                    <div>
-                      <Label className="mb-2 block text-muted-foreground">{isRTL ? 'اليوم' : 'Day'}</Label>
+                    <FormField label={isRTL ? 'اليوم' : 'Day'}>
                       <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin">
                         {next30Days.map((date) => {
                           const ds = format(date, 'yyyy-MM-dd');
@@ -463,7 +469,7 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
                           );
                         })}
                       </div>
-                    </div>
+                    </FormField>
 
                     <AnimatePresence>
                       {selectedDate && selectedCourse && (
@@ -649,12 +655,30 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
 
                 <Separator />
 
-                <div className="space-y-2">
-                  <Label htmlFor="tbd-full-name">{isRTL ? 'الاسم الكامل' : 'Full name'}</Label>
-                  <Input id="tbd-full-name" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <FormField label={t('fields.firstName.label')} required>
+                    <Input
+                      id="tbd-first-name"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      autoComplete="given-name"
+                      placeholder={t('fields.firstName.placeholder')}
+                    />
+                  </FormField>
+                  <FormField label={t('fields.lastName.label')} required>
+                    <Input
+                      id="tbd-last-name"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      autoComplete="family-name"
+                      placeholder={t('fields.lastName.placeholder')}
+                    />
+                  </FormField>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tbd-phone">{isRTL ? 'الهاتف' : 'Phone'}</Label>
+                <FormField
+                  label={t('fields.phone.label')}
+                  required
+                >
                   <div className="flex gap-2 items-stretch" dir="ltr">
                     <span className="flex items-center rounded-md border border-input bg-muted/40 px-2.5 text-xs text-muted-foreground shrink-0">
                       +966
@@ -663,22 +687,19 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
                       id="tbd-phone"
                       className="flex-1 min-w-0"
                       type="tel"
-                      placeholder={isRTL ? '5xxxxxxxx' : '5xxxxxxxx'}
+                      placeholder={t('fields.phone.placeholder')}
                       value={phone}
                       onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                       autoComplete="tel"
                     />
                   </div>
-                  <p className="text-[11px] text-muted-foreground">{isRTL ? 'أدخل الرقم بدون المفتاح إن وُجد في ملفك.' : 'Enter digits without country code if your profile already includes it.'}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tbd-email">{isRTL ? 'البريد الإلكتروني' : 'Email'}</Label>
+                </FormField>
+                <FormField label={t('fields.email.label')} dir="ltr" required>
                   <Input id="tbd-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" dir="ltr" className="text-start" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tbd-notes">{isRTL ? 'ملاحظات (اختياري)' : 'Notes (optional)'}</Label>
-                  <Textarea id="tbd-notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-                </div>
+                </FormField>
+                <FormField label={t('fields.notes.label')} hint={t('fields.notes.hint') || undefined}>
+                  <Textarea id="tbd-notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('fields.notes.placeholder')} />
+                </FormField>
 
                 <Separator />
 

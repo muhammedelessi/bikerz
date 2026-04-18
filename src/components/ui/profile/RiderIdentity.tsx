@@ -1,16 +1,19 @@
 import React, { useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import SearchableDropdown from "@/components/checkout/SearchableDropdown";
+import { FormField } from "@/components/ui/form-field";
 import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
-import { COUNTRIES, OTHER_OPTION } from "@/data/countryCityData";
-import { Camera, Loader2, CalendarDays, User, Phone, Globe, Shield, SquarePen, Save, X, AlertCircle } from "lucide-react";
+import { COUNTRIES } from "@/data/countryCityData";
+import { Camera, Loader2, CalendarDays, User, Phone, Mail, Globe, Shield, SquarePen, Save, X, AtSign, MapPin, Bike, Plus, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CountryCityPicker, GenderPicker, DateOfBirthPicker, PhoneField, NationalityPicker } from "@/components/ui/fields";
 import { ExtendedProfile } from "@/hooks/useUserProfile";
+import { splitFullName, joinFullName } from "@/lib/nameUtils";
 
 interface RiderIdentityProps {
   profile: ExtendedProfile;
@@ -66,22 +69,25 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
   isUpdating,
 }) => {
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const dobInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isEditingProfileInfo, setIsEditingProfileInfo] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<string, string>>>({});
   const initialPhone = parsePhone(profile.phone);
   const initialCountry = resolveCountrySelection(profile.country);
   const initialCity = resolveCityForDisplay(profile.city, initialCountry.countryCode, isRTL);
+  const { firstName: initFirst, lastName: initLast } = splitFullName(profile.full_name);
   const [profileDraft, setProfileDraft] = useState({
-    full_name: profile.full_name || "",
+    firstName: initFirst,
+    lastName: initLast,
     rider_nickname: profile.rider_nickname || "",
     phonePrefix: initialPhone.prefix,
     phoneLocal: initialPhone.local,
     date_of_birth: profile.date_of_birth || "",
     gender: profile.gender || "",
+    nationality: profile.nationality || "",
     countryCode: initialCountry.countryCode,
     city: initialCity.city,
     customCountry: initialCountry.customCountry,
@@ -101,13 +107,16 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
     const parsedPhone = parsePhone(profile.phone);
     const selectedCountry = resolveCountrySelection(profile.country);
     const resolvedCity = resolveCityForDisplay(profile.city, selectedCountry.countryCode, isRTL);
+    const { firstName, lastName } = splitFullName(profile.full_name);
     setProfileDraft({
-      full_name: profile.full_name || "",
+      firstName,
+      lastName,
       rider_nickname: profile.rider_nickname || "",
       phonePrefix: parsedPhone.prefix,
       phoneLocal: parsedPhone.local,
       date_of_birth: profile.date_of_birth || "",
       gender: profile.gender || "",
+      nationality: profile.nationality || "",
       countryCode: selectedCountry.countryCode,
       city: resolvedCity.city,
       customCountry: selectedCountry.customCountry,
@@ -125,36 +134,16 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
   const cities = useMemo(() => selectedCountryEntry?.cities || [], [selectedCountryEntry]);
   const hasCities = cities.length > 0 && !isOtherCountry;
   const isOtherCity = profileDraft.city === OTHER_VALUE;
-  const phonePrefixOptions = useMemo(
-    () =>
-      PHONE_COUNTRIES.map((c) => ({
-        value: `${c.prefix}_${c.code}`,
-        label: `${c.prefix} ${isRTL ? c.ar : c.en}`,
-      })),
-    [isRTL],
-  );
-  const countryOptions = useMemo(
-    () => [
-      ...COUNTRIES.map((c) => ({ value: c.code, label: isRTL ? c.ar : c.en })),
-      { value: OTHER_VALUE, label: isRTL ? OTHER_OPTION.ar : OTHER_OPTION.en },
-    ],
-    [isRTL],
-  );
-  const cityOptions = useMemo(
-    () => [
-      ...cities.map((c) => ({ value: isRTL ? c.ar : c.en, label: isRTL ? c.ar : c.en })),
-      { value: OTHER_VALUE, label: isRTL ? OTHER_OPTION.ar : OTHER_OPTION.en },
-    ],
-    [cities, isRTL],
-  );
 
   const validateProfileDraft = () => {
     const errors: Partial<Record<string, string>> = {};
-    const fullName = profileDraft.full_name.trim();
     const phoneDigits = profileDraft.phoneLocal.replace(/[^0-9]/g, "");
 
-    if (!fullName) {
-      errors.full_name = isRTL ? "يرجى إدخال الاسم الكامل" : "Please enter full name";
+    if (!profileDraft.firstName.trim()) {
+      errors.firstName = t("validation.firstNameRequired");
+    }
+    if (!profileDraft.lastName.trim()) {
+      errors.lastName = t("validation.lastNameRequired");
     }
     if (!phoneDigits) {
       errors.phone = isRTL ? "يرجى إدخال رقم الهاتف" : "Please enter phone number";
@@ -225,11 +214,12 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
             null;
 
     await onUpdate({
-      full_name: profileDraft.full_name.trim() || null,
+      full_name: joinFullName(profileDraft.firstName, profileDraft.lastName) || null,
       rider_nickname: profileDraft.rider_nickname.trim() || null,
       phone: fullPhone,
       date_of_birth: profileDraft.date_of_birth || null,
       gender: profileDraft.gender || null,
+      nationality: profileDraft.nationality || null,
       city: savedCity,
       country: savedCountry,
     });
@@ -237,23 +227,77 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
     setIsEditingProfileInfo(false);
   };
 
-  const completionFields = useMemo(
-    () => [
-      { key: "full_name", label: isRTL ? "الاسم الكامل" : "Full Name", value: profile.full_name },
-      { key: "phone", label: isRTL ? "رقم الجوال" : "Phone", value: profile.phone },
-      { key: "city", label: isRTL ? "المدينة" : "City", value: profile.city },
-      { key: "country", label: isRTL ? "الدولة" : "Country", value: profile.country },
-      { key: "date_of_birth", label: isRTL ? "تاريخ الميلاد" : "Date of Birth", value: profile.date_of_birth },
-      { key: "gender", label: isRTL ? "الجنس" : "Gender", value: profile.gender },
-      { key: "bike_brand", label: isRTL ? "نوع الدراجة" : "Bike Brand", value: profile.bike_brand },
-      { key: "bike_model", label: isRTL ? "موديل الدراجة" : "Bike Model", value: profile.bike_model },
-      { key: "avatar", label: isRTL ? "الصورة الشخصية" : "Profile Photo", value: profile.avatar_url },
-    ],
-    [profile, isRTL],
-  );
-  const filledCount = completionFields.filter((field) => Boolean(field.value)).length;
-  const completionPercent = Math.round((filledCount / completionFields.length) * 100);
-  const missingFields = completionFields.filter((field) => !field.value);
+  const missingFields = useMemo(() => [
+    {
+      key: "rider_nickname",
+      condition: !profile.rider_nickname,
+      label_ar: "اللقب", label_en: "Nickname",
+      hint_ar: "أضف لقبك", hint_en: "Add your nickname",
+      icon: AtSign, section: "identity",
+    },
+    {
+      key: "date_of_birth",
+      condition: !profile.date_of_birth,
+      label_ar: "تاريخ الميلاد", label_en: "Date of Birth",
+      hint_ar: "أضف تاريخ ميلادك", hint_en: "Add your date of birth",
+      icon: CalendarDays, section: "identity",
+    },
+    {
+      key: "city",
+      condition: !profile.city || !profile.country,
+      label_ar: "الموقع", label_en: "Location",
+      hint_ar: "أضف مدينتك ودولتك", hint_en: "Add your city and country",
+      icon: MapPin, section: "identity",
+    },
+    {
+      key: "phone",
+      condition: !profile.phone,
+      label_ar: "رقم الهاتف", label_en: "Phone",
+      hint_ar: "أضف رقم هاتفك", hint_en: "Add your phone number",
+      icon: Phone, section: "contact",
+    },
+    {
+      key: "bike",
+      condition: !profile.bike_brand && (!profile.bike_entries || profile.bike_entries.length === 0),
+      label_ar: "الدراجة", label_en: "Bike",
+      hint_ar: "أضف دراجتك", hint_en: "Add your bike",
+      icon: Bike, section: "bike",
+    },
+    {
+      key: "gender",
+      condition: !profile.gender,
+      label_ar: "الجنس", label_en: "Gender",
+      hint_ar: "أضف جنسك", hint_en: "Add your gender",
+      icon: User, section: "identity",
+    },
+    {
+      key: "nationality",
+      condition: !profile.nationality,
+      label_ar: "الجنسية", label_en: "Nationality",
+      hint_ar: "أضف جنسيتك", hint_en: "Add your nationality",
+      icon: Globe, section: "identity",
+    },
+    {
+      key: "avatar",
+      condition: !profile.avatar_url,
+      label_ar: "الصورة الشخصية", label_en: "Profile Photo",
+      hint_ar: "أضف صورة شخصية", hint_en: "Add a profile photo",
+      icon: Camera, section: "identity",
+    },
+  ].filter((f) => f.condition), [profile]);
+
+  const totalFields = 8;
+  const completionPercent = Math.round(((totalFields - missingFields.length) / totalFields) * 100);
+
+  const scrollToSection = (section: string) => {
+    if (section === "identity") { handleStartEdit(); return; }
+    const el = document.getElementById(`profile-section-${section}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      el.classList.add("ring-2", "ring-primary/30", "rounded-xl");
+      setTimeout(() => el.classList.remove("ring-2", "ring-primary/30", "rounded-xl"), 2000);
+    }
+  };
 
   const locationLabel = useMemo(() => {
     if (!profile.city && !profile.country) return null;
@@ -303,40 +347,6 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
     return profile.gender === "Male" ? "ذكر" : profile.gender === "Female" ? "أنثى" : profile.gender;
   }, [profile.gender, isRTL]);
 
-  const detailItems = [
-    { key: "name", icon: User, label: isRTL ? "الاسم الكامل" : "Full Name", value: profile.full_name || "-" },
-    {
-      key: "nickname",
-      icon: User,
-      label: isRTL ? "اللقب" : "Nickname",
-      value: profile.rider_nickname || "-",
-      dir: "ltr" as const,
-    },
-    {
-      key: "email",
-      icon: User,
-      label: isRTL ? "البريد الإلكتروني" : "Email",
-      value: user?.email || "-",
-      dir: isRTL ? ("rtl" as const) : ("ltr" as const),
-    },
-    { key: "phone", icon: Phone, label: isRTL ? "رقم الجوال" : "Phone", value: profile.phone || "-", dir: "ltr" as const },
-    {
-      key: "dob",
-      icon: CalendarDays,
-      label: isRTL ? "تاريخ الميلاد" : "Date of Birth",
-      value: dobLabel || "-",
-      dir: isRTL ? ("rtl" as const) : ("ltr" as const),
-    },
-    {
-      key: "age",
-      icon: CalendarDays,
-      label: isRTL ? "العمر" : "Age",
-      value: ageLabel || "-",
-      tabular: true,
-    },
-    { key: "gender", icon: Shield, label: isRTL ? "الجنس" : "Gender", value: genderLabel || "-" },
-    { key: "location", icon: Globe, label: isRTL ? "الموقع" : "Location", value: locationLabel || "-" },
-  ] as { key: string; icon: any; label: string; value: string; tabular?: boolean; dir?: string }[];
 
   return (
     <div className="card-premium p-6 space-y-6" dir={isRTL ? "rtl" : "ltr"}>
@@ -369,295 +379,347 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
 
       <div className="space-y-3">
         <Separator />
-        <div className="flex items-center justify-end">
-          {!isEditingProfileInfo ? (
-            <Button variant="outline" size="sm" className="gap-2" onClick={handleStartEdit}>
-              <SquarePen className="h-4 w-4" />
-              {isRTL ? "تعديل معلومات الملف" : "Edit Profile Info"}
-            </Button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="gap-2" onClick={() => setIsEditingProfileInfo(false)}>
-                <X className="h-4 w-4" />
-                {isRTL ? "إلغاء" : "Cancel"}
-              </Button>
-              <Button size="sm" className="gap-2" onClick={handleSaveAllProfileInfo} disabled={isUpdating}>
-                <Save className="h-4 w-4" />
-                {isUpdating ? (isRTL ? "جارٍ الحفظ..." : "Saving...") : isRTL ? "حفظ الكل" : "Save All"}
-              </Button>
-            </div>
-          )}
-        </div>
 
         {isEditingProfileInfo && (
-          <div className="rounded-xl border border-border/60 bg-card/40 p-4 space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">{isRTL ? "الاسم الكامل" : "Full Name"}</p>
+          <div className="rounded-xl border border-border/60 bg-card/40 p-4 space-y-5">
+            {/* Name + Nickname */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <FormField label={t("fields.firstName.label")} error={fieldErrors.firstName} required>
                 <Input
-                  placeholder={isRTL ? "الاسم الكامل" : "Full Name"}
-                  value={profileDraft.full_name}
+                  value={profileDraft.firstName}
                   onChange={(e) => {
-                    setProfileDraft((prev) => ({ ...prev, full_name: e.target.value }));
-                    setFieldErrors((prev) => ({ ...prev, full_name: undefined }));
+                    setProfileDraft((prev) => ({ ...prev, firstName: e.target.value }));
+                    setFieldErrors((prev) => ({ ...prev, firstName: undefined }));
                   }}
-                  dir={isRTL ? "rtl" : "ltr"}
+                  placeholder={t("fields.firstName.placeholder")}
+                  className={fieldErrors.firstName ? "border-destructive" : ""}
+                  autoComplete="given-name"
                 />
-                {fieldErrors.full_name && (
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {fieldErrors.full_name}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">{isRTL ? "اللقب" : "Nickname"}</p>
+              </FormField>
+              <FormField label={t("fields.lastName.label")} error={fieldErrors.lastName} required>
                 <Input
-                  placeholder={isRTL ? "اللقب" : "Nickname"}
+                  value={profileDraft.lastName}
+                  onChange={(e) => {
+                    setProfileDraft((prev) => ({ ...prev, lastName: e.target.value }));
+                    setFieldErrors((prev) => ({ ...prev, lastName: undefined }));
+                  }}
+                  placeholder={t("fields.lastName.placeholder")}
+                  className={fieldErrors.lastName ? "border-destructive" : ""}
+                  autoComplete="family-name"
+                />
+              </FormField>
+              <FormField label={isRTL ? "اللقب" : "Nickname"}>
+                <Input
                   value={profileDraft.rider_nickname}
                   onChange={(e) => setProfileDraft((prev) => ({ ...prev, rider_nickname: e.target.value }))}
-                  dir={isRTL ? "rtl" : "ltr"}
+                  placeholder={isRTL ? "اللقب" : "Nickname"}
                 />
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">{isRTL ? "رقم الجوال" : "Phone Number"}</p>
-                <div className="flex gap-2" dir="ltr">
-                  <div className="w-[120px] shrink-0">
-                    <SearchableDropdown
-                      options={phonePrefixOptions}
-                      value={profileDraft.phonePrefix}
-                      onChange={(val) => {
-                        setProfileDraft((prev) => ({ ...prev, phonePrefix: val }));
-                        setFieldErrors((prev) => ({ ...prev, phone: undefined }));
-                      }}
-                      placeholder="+966"
-                      searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
-                      selectedLabelBuilder={(option) => option?.value.split("_")[0] || ""}
-                      dir="ltr"
-                    />
-                  </div>
-                  <Input
-                    placeholder={isRTL ? "رقم الجوال" : "Phone"}
-                    value={profileDraft.phoneLocal}
-                    onChange={(e) => {
-                      setProfileDraft((prev) => ({ ...prev, phoneLocal: e.target.value.replace(/[^0-9]/g, "") }));
-                      setFieldErrors((prev) => ({ ...prev, phone: undefined }));
-                    }}
-                    dir="ltr"
-                    className="flex-1"
-                  />
-                </div>
-                {fieldErrors.phone && (
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {fieldErrors.phone}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">{isRTL ? "تاريخ الميلاد" : "Date of Birth"}</p>
-                <Input
-                  ref={dobInputRef}
-                  type="date"
-                  value={profileDraft.date_of_birth}
-                  onChange={(e) => {
-                    setProfileDraft((prev) => ({ ...prev, date_of_birth: e.target.value }));
-                    setFieldErrors((prev) => ({ ...prev, date_of_birth: undefined }));
-                  }}
-                  onClick={() => dobInputRef.current?.showPicker?.()}
-                  lang={isRTL ? "ar-SA" : "en-US"}
-                  dir={isRTL ? "rtl" : "ltr"}
-                  className={`cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 ${
-                    isRTL ? "text-right" : "text-left"
-                  }`}
-                />
-                {fieldErrors.date_of_birth && (
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {fieldErrors.date_of_birth}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">{isRTL ? "الجنس" : "Gender"}</p>
-                <Select
-                  value={profileDraft.gender || "unset"}
-                  onValueChange={(value) => setProfileDraft((prev) => ({ ...prev, gender: value === "unset" ? "" : value }))}
-                  dir={isRTL ? "rtl" : "ltr"}
-                >
-                  <SelectTrigger className={isRTL ? "text-right" : "text-left"}>
-                    <SelectValue placeholder={isRTL ? "الجنس" : "Gender"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unset">{isRTL ? "غير محدد" : "Not set"}</SelectItem>
-                    <SelectItem value="Male">{isRTL ? "ذكر" : "Male"}</SelectItem>
-                    <SelectItem value="Female">{isRTL ? "أنثى" : "Female"}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">{isRTL ? "الدولة" : "Country"}</p>
-                <SearchableDropdown
-                  options={countryOptions}
-                  value={profileDraft.countryCode}
-                   onChange={(val) => {
-                    setProfileDraft((prev) => ({
-                      ...prev,
-                      countryCode: val,
-                      city: "",
-                      customCity: "",
-                    }));
-                    setFieldErrors((prev) => ({ ...prev, country: undefined, city: undefined }));
-                  }
-                  }
-                  placeholder={isRTL ? "الدولة" : "Country"}
-                  searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
-                  dir={isRTL ? "rtl" : "ltr"}
-                />
-                {fieldErrors.country && (
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {fieldErrors.country}
-                  </p>
-                )}
-              </div>
-              {isOtherCountry ? (
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">{isRTL ? "اسم الدولة" : "Country Name"}</p>
-                  <Input
-                    placeholder={isRTL ? "اسم الدولة" : "Country name"}
-                    value={profileDraft.customCountry}
-                    onChange={(e) => {
-                      setProfileDraft((prev) => ({ ...prev, customCountry: e.target.value }));
-                      setFieldErrors((prev) => ({ ...prev, country: undefined }));
-                    }}
-                    dir={isRTL ? "rtl" : "ltr"}
-                  />
-                </div>
-              ) : hasCities ? (
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">{isRTL ? "المدينة" : "City"}</p>
-                  <SearchableDropdown
-                    options={cityOptions}
-                    value={profileDraft.city}
-                    onChange={(val) => {
-                      setProfileDraft((prev) => ({ ...prev, city: val }));
-                      setFieldErrors((prev) => ({ ...prev, city: undefined }));
-                    }}
-                    placeholder={isRTL ? "المدينة" : "City"}
-                    searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
-                    dir={isRTL ? "rtl" : "ltr"}
-                  />
-                </div>
+              </FormField>
+            </div>
+
+            {/* Phone */}
+            <PhoneField
+              phonePrefix={profileDraft.phonePrefix}
+              phoneNumber={profileDraft.phoneLocal}
+              onPrefixChange={(val) => {
+                setProfileDraft((prev) => ({ ...prev, phonePrefix: val }));
+                setFieldErrors((prev) => ({ ...prev, phone: undefined }));
+              }}
+              onNumberChange={(val) => {
+                setProfileDraft((prev) => ({ ...prev, phoneLocal: val }));
+                setFieldErrors((prev) => ({ ...prev, phone: undefined }));
+              }}
+              error={fieldErrors.phone}
+            />
+
+            {/* DOB, Gender & Nationality */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <DateOfBirthPicker
+                value={profileDraft.date_of_birth}
+                onChange={(date) => {
+                  setProfileDraft((prev) => ({ ...prev, date_of_birth: date || "" }));
+                  setFieldErrors((prev) => ({ ...prev, date_of_birth: undefined }));
+                }}
+                error={fieldErrors.date_of_birth}
+              />
+              <GenderPicker
+                value={profileDraft.gender}
+                onChange={(value) => setProfileDraft((prev) => ({ ...prev, gender: value }))}
+              />
+              <NationalityPicker
+                value={profileDraft.nationality}
+                onChange={(value) => setProfileDraft((prev) => ({ ...prev, nationality: value }))}
+              />
+            </div>
+
+            {/* Country & City */}
+            <CountryCityPicker
+              country={profileDraft.countryCode}
+              city={profileDraft.city}
+              onCountryChange={(val) => {
+                setProfileDraft((prev) => ({ ...prev, countryCode: val, city: "", customCity: "" }));
+                setFieldErrors((prev) => ({ ...prev, country: undefined, city: undefined }));
+              }}
+              onCityChange={(val) => {
+                setProfileDraft((prev) => ({ ...prev, city: val }));
+                setFieldErrors((prev) => ({ ...prev, city: undefined }));
+              }}
+              customCountry={profileDraft.customCountry}
+              onCustomCountryChange={(val) => {
+                setProfileDraft((prev) => ({ ...prev, customCountry: val }));
+                setFieldErrors((prev) => ({ ...prev, country: undefined }));
+              }}
+              customCity={profileDraft.customCity}
+              onCustomCityChange={(val) => {
+                setProfileDraft((prev) => ({ ...prev, customCity: val }));
+                setFieldErrors((prev) => ({ ...prev, city: undefined }));
+              }}
+              countryError={fieldErrors.country}
+              cityError={fieldErrors.city}
+            />
+          </div>
+        )}
+
+        {/* ── Profile Info Section ── */}
+        {(profile.rider_nickname || profile.date_of_birth || genderLabel || locationLabel || profile.nationality) && (
+          <div className="rounded-xl border border-border/60 bg-card/50 overflow-hidden">
+            <div className="px-3 py-2 border-b border-border/40 bg-muted/30 flex items-center gap-1.5">
+              <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-1">
+                {isRTL ? "المعلومات الشخصية" : "Personal Info"}
+              </p>
+              {!isEditingProfileInfo ? (
+                <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5 text-xs text-muted-foreground hover:text-foreground" onClick={handleStartEdit}>
+                  <SquarePen className="h-3.5 w-3.5" />
+                  {isRTL ? "تعديل" : "Edit"}
+                </Button>
               ) : (
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">{isRTL ? "المدينة" : "City"}</p>
-                  <Input
-                    placeholder={isRTL ? "المدينة" : "City"}
-                    value={profileDraft.city}
-                    onChange={(e) => {
-                      setProfileDraft((prev) => ({ ...prev, city: e.target.value }));
-                      setFieldErrors((prev) => ({ ...prev, city: undefined }));
-                    }}
-                    dir={isRTL ? "rtl" : "ltr"}
-                  />
+                <div className="flex items-center gap-1.5">
+                  <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs" onClick={() => setIsEditingProfileInfo(false)}>
+                    <X className="h-3.5 w-3.5" />
+                    {isRTL ? "إلغاء" : "Cancel"}
+                  </Button>
+                  <Button size="sm" className="h-7 px-2 gap-1 text-xs" onClick={handleSaveAllProfileInfo} disabled={isUpdating}>
+                    <Save className="h-3.5 w-3.5" />
+                    {isUpdating ? (isRTL ? "حفظ..." : "Saving...") : isRTL ? "حفظ" : "Save"}
+                  </Button>
                 </div>
               )}
-              {(isOtherCountry || isOtherCity) && (
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">{isRTL ? "اسم المدينة" : "City Name"}</p>
-                  <Input
-                    placeholder={isRTL ? "اسم المدينة" : "City name"}
-                    value={profileDraft.customCity}
-                    onChange={(e) => {
-                      setProfileDraft((prev) => ({ ...prev, customCity: e.target.value }));
-                      setFieldErrors((prev) => ({ ...prev, city: undefined }));
-                    }}
-                    dir={isRTL ? "rtl" : "ltr"}
-                  />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 divide-y divide-border/20 sm:divide-y-0">
+              {/* Row 1: Nickname + DOB */}
+              {profile.rider_nickname && (
+                <div className={cn(
+                  "flex items-center gap-3 px-3 py-3",
+                  "border-b border-border/20 sm:border-b sm:border-e sm:border-border/20 rtl:sm:border-e-0 rtl:sm:border-s",
+                )}>
+                  <div className="h-10 w-10 shrink-0 rounded-lg border border-border/60 bg-muted/50 flex items-center justify-center">
+                    <User className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {isRTL ? "اللقب" : "Nickname"}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-foreground" dir="ltr">
+                      {profile.rider_nickname}
+                    </p>
+                  </div>
                 </div>
               )}
-              {fieldErrors.city && (
-                <div className="md:col-span-3">
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {fieldErrors.city}
-                  </p>
+
+              {profile.date_of_birth && (
+                <div className={cn(
+                  "flex items-center gap-3 px-3 py-3",
+                  (genderLabel || locationLabel) && "border-b border-border/20",
+                )}>
+                  <div className="h-10 w-10 shrink-0 rounded-lg border border-border/60 bg-muted/50 flex items-center justify-center">
+                    <CalendarDays className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {isRTL ? "تاريخ الميلاد / العمر" : "Date of Birth / Age"}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">
+                      {dobLabel}
+                    </p>
+                    {ageLabel && (
+                      <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">{ageLabel}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Row 2: Gender + Location */}
+              {genderLabel && (
+                <div className={cn(
+                  "flex items-center gap-3 px-3 py-3",
+                  locationLabel && "border-b border-border/20 sm:border-b-0",
+                  "sm:border-e sm:border-border/20 rtl:sm:border-e-0 rtl:sm:border-s",
+                )}>
+                  <div className="h-10 w-10 shrink-0 rounded-lg border border-border/60 bg-muted/50 flex items-center justify-center">
+                    <Shield className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {isRTL ? "الجنس" : "Gender"}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">
+                      {genderLabel}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {locationLabel && (
+                <div className={cn(
+                  "flex items-center gap-3 px-3 py-3",
+                  profile.nationality && "border-b border-border/20 sm:border-b-0",
+                  profile.nationality && "sm:border-e sm:border-border/20 rtl:sm:border-e-0 rtl:sm:border-s",
+                )}>
+                  <div className="h-10 w-10 shrink-0 rounded-lg border border-border/60 bg-muted/50 flex items-center justify-center">
+                    <Globe className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {isRTL ? "الموقع" : "Location"}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-foreground break-words">
+                      {locationLabel}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Nationality */}
+              {profile.nationality && (
+                <div className="flex items-center gap-3 px-3 py-3">
+                  <div className="h-10 w-10 shrink-0 rounded-lg border border-border/60 bg-muted/50 flex items-center justify-center">
+                    <Globe className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {isRTL ? "الجنسية" : "Nationality"}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">
+                      {COUNTRIES.find((c) => c.code === profile.nationality)?.[isRTL ? "ar" : "en"] || profile.nationality}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {detailItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <div key={item.key} className="rounded-xl border border-border/60 bg-card/50 px-3 py-3">
-                <div className="flex items-center gap-3 min-h-[56px]">
+        {/* ── Contact Info Section ── */}
+        {(user?.email || profile.phone) && (
+          <div className="rounded-xl border border-border/60 bg-card/50 overflow-hidden">
+            <div className="px-3 py-2.5 border-b border-border/40 bg-muted/30 flex items-center gap-1.5">
+              <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {isRTL ? "معلومات التواصل" : "Contact Info"}
+              </p>
+            </div>
+
+            <div className={cn(
+              "grid",
+              user?.email && profile.phone
+                ? "grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-border/20 rtl:sm:divide-x-reverse"
+                : "grid-cols-1",
+            )}>
+              {user?.email && (
+                <div className={cn(
+                  "flex items-center gap-3 px-3 py-3",
+                  profile.phone && "border-b border-border/20 sm:border-b-0",
+                )}>
                   <div className="h-10 w-10 shrink-0 rounded-lg border border-border/60 bg-muted/50 flex items-center justify-center">
-                    <Icon className="h-4 w-4 text-primary" />
+                    <Mail className="h-4 w-4 text-primary" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{item.label}</p>
-                    <p
-                      className={`mt-1 text-sm font-semibold text-foreground break-words ${
-                        item.tabular ? "tabular-nums" : ""
-                      }`}
-                      dir={item.dir}
-                    >
-                      {item.value}
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {isRTL ? "البريد الإلكتروني" : "Email"}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-foreground truncate" dir="ltr">
+                      {user.email}
                     </p>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+              )}
 
-      {completionPercent < 100 && (
-        <div className="space-y-3">
-          <Separator className="my-4" />
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <p className="text-sm text-muted-foreground">{isRTL ? "اكتمال الملف الشخصي" : "Profile Completion"}</p>
-              <span className="text-sm font-semibold tabular-nums" dir="ltr">
-                {completionPercent}%
-              </span>
-            </div>
-            <div className="h-2 rounded-full bg-muted overflow-hidden">
-              <div className="h-2 bg-primary rounded-full transition-all" style={{ width: `${completionPercent}%` }} />
+              {profile.phone && (
+                <div className="flex items-center gap-3 px-3 py-3">
+                  <div className="h-10 w-10 shrink-0 rounded-lg border border-border/60 bg-muted/50 flex items-center justify-center">
+                    <Phone className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {isRTL ? "رقم الجوال" : "Phone"}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-foreground" dir="ltr">
+                      {profile.phone}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          {missingFields.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                {isRTL ? "معلومات ناقصة (اضغط لإضافتها):" : "Missing information (click to add):"}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {missingFields.map((field) => (
+        )}
+      </div>
+
+      <div className="space-y-3">
+        <Separator />
+
+        {/* Completion bar */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">{isRTL ? "اكتمال الملف الشخصي" : "Profile Completion"}</p>
+            <span className="text-xs font-semibold tabular-nums text-muted-foreground" dir="ltr">{completionPercent}%</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className={cn(
+                "h-1.5 rounded-full transition-all duration-500",
+                completionPercent === 100 ? "bg-emerald-500" : "bg-primary",
+              )}
+              style={{ width: `${completionPercent}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Missing field chips */}
+        {missingFields.length > 0 ? (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {isRTL ? "يرجى إضافة:" : "Please complete:"}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {missingFields.map((field) => {
+                const Icon = field.icon;
+                return (
                   <button
                     key={field.key}
                     type="button"
-                    className="inline-flex items-center rounded-full border border-border bg-muted/50 px-3 py-1 text-xs text-foreground hover:bg-muted transition-colors"
                     onClick={() => {
-                      if (field.key === "avatar") {
-                        fileInputRef.current?.click();
-                        return;
-                      }
-                      const accountSettings = document.getElementById("account-settings");
-                      accountSettings?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      if (field.key === "avatar") { fileInputRef.current?.click(); return; }
+                      scrollToSection(field.section);
                     }}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-dashed border-primary/40 bg-primary/5 text-xs text-primary hover:bg-primary/10 hover:border-primary/60 transition-all group"
                   >
-                    {field.label}
+                    <Icon className="w-3 h-3 shrink-0" />
+                    {isRTL ? field.hint_ar : field.hint_en}
+                    <Plus className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+            {isRTL ? "ملفك الشخصي مكتمل ✅" : "Profile complete ✅"}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
