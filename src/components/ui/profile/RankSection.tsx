@@ -207,7 +207,7 @@ const RankCard: React.FC<{
       type="button"
       onClick={onClick}
       className={cn(
-        "relative w-full h-24 sm:h-28 rounded-2xl border-2 transition-all duration-300",
+        "relative w-full h-28 sm:h-32 rounded-2xl border-2 transition-all duration-300",
         "flex flex-col items-center justify-center gap-1.5 p-2",
         "hover:scale-[1.02] active:scale-[0.98]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
@@ -266,7 +266,7 @@ const RankSectionSkeleton: React.FC = () => (
       <div className="h-2.5 w-full rounded-full bg-muted/40 animate-pulse" />
     </div>
     <Separator />
-    <div className="grid grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="h-24 rounded-2xl bg-muted/30 animate-pulse" />
       ))}
@@ -407,19 +407,19 @@ export const RankSection: React.FC<RankSectionProps> = ({
           return (
             <div dir={isRTL ? "rtl" : "ltr"}>
               {/* Row 1 */}
-              <div className="grid grid-cols-4 gap-4 sm:gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
                 {row1.map((def, i) => (
                   <div key={def.name} className="relative">
                     <RankCard def={def} index={i} rankIndex={rankIndex} isRTL={isRTL} onClick={() => setSelectedRank(def)} />
                     {i < row1.length - 1 && (
                       <div className={cn(
-                        "absolute top-1/2 -translate-y-1/2 z-0 h-[2px] pointer-events-none",
+                        "hidden sm:block absolute top-1/2 -translate-y-1/2 z-0 h-[2px] pointer-events-none",
                         "-end-4 sm:-end-5 w-4 sm:w-5",
                         getConnectorColor(i, rankIndex),
                       )} />
                     )}
                     {i === row1.length - 1 && row2Rev.length > 0 && (
-                      <div className="absolute inset-x-0 top-full flex justify-center pointer-events-none z-0">
+                      <div className="hidden sm:flex absolute inset-x-0 top-full justify-center pointer-events-none z-0">
                         <div className={cn("w-[2px] h-2 sm:h-2.5", getConnectorColor(row1.length - 1, rankIndex))} />
                       </div>
                     )}
@@ -427,11 +427,11 @@ export const RankSection: React.FC<RankSectionProps> = ({
                 ))}
               </div>
 
-              {row2Rev.length > 0 && <div className="h-4 sm:h-5" />}
+              {row2Rev.length > 0 && <div className="h-3 sm:h-5" />}
 
               {/* Row 2 — reversed snake */}
               {row2Rev.length > 0 && (
-                <div className="grid grid-cols-4 gap-4 sm:gap-5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
                   {row2Rev.map((def, vi) => {
                     const realIdx = row2RealIdx(vi);
                     return (
@@ -439,13 +439,13 @@ export const RankSection: React.FC<RankSectionProps> = ({
                         <RankCard def={def} index={realIdx} rankIndex={rankIndex} isRTL={isRTL} onClick={() => setSelectedRank(def)} />
                         {vi < row2Rev.length - 1 && (
                           <div className={cn(
-                            "absolute top-1/2 -translate-y-1/2 z-0 h-[2px] pointer-events-none",
+                            "hidden sm:block absolute top-1/2 -translate-y-1/2 z-0 h-[2px] pointer-events-none",
                             "-end-4 sm:-end-5 w-4 sm:w-5",
                             getConnectorColor(realIdx - 1, rankIndex),
                           )} />
                         )}
                         {vi === row2Rev.length - 1 && (
-                          <div className="absolute inset-x-0 bottom-full flex justify-center pointer-events-none z-0">
+                          <div className="hidden sm:flex absolute inset-x-0 bottom-full justify-center pointer-events-none z-0">
                             <div className={cn("w-[2px] h-2 sm:h-2.5", getConnectorColor(row1.length - 1, rankIndex))} />
                           </div>
                         )}
