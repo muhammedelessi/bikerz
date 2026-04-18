@@ -228,18 +228,7 @@ export const BikeGarage: React.FC<BikeGarageProps> = ({
       {/* ══════════════ LIST VIEW ══════════════ */}
       {view === 'list' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Bike className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">{isRTL ? 'الدراجات' : 'Bikes'}</p>
-                {entries.length > 0 && (
-                  <p className="text-xs text-muted-foreground">{entries.length} {isRTL ? 'مسجلة' : 'registered'}</p>
-                )}
-              </div>
-            </div>
+          <div className="flex items-center justify-end">
             <Button size="sm" variant="outline" onClick={openAddPage} className="gap-1.5 text-xs h-8">
               <Plus className="w-3.5 h-3.5" />
               {isRTL ? 'إضافة' : 'Add Bike'}
