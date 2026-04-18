@@ -140,6 +140,8 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
     setView('add');
   };
 
+  useImperativeHandle(ref, () => ({ openAddPage }));
+
   // ── Photos page ───────────────────────────────────────────────────────────
   const photosFileRef = useRef<HTMLInputElement>(null);
   const [photosUploading, setPhotosUploading] = useState(false);
@@ -528,4 +530,5 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
       )}
     </div>
   );
-};
+});
+BikeGarage.displayName = 'BikeGarage';
