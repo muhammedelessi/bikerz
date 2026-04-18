@@ -72,6 +72,15 @@ interface TrainerRow {
   city: string | null;
   country: string | null;
   bike_type: string | null;
+  bike_entries?: unknown;
+}
+
+function parseTrainerBikeTypes(entries: unknown): string[] {
+  if (!Array.isArray(entries)) return [];
+  const types = entries
+    .map((e: any) => (e && typeof e === 'object' ? (e.type_name as string | undefined) : undefined))
+    .filter((s): s is string => Boolean(s && s.trim()));
+  return Array.from(new Set(types));
 }
 
 type Tbl = 'bike_types' | 'bike_subtypes' | 'bike_models';
