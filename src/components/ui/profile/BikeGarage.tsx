@@ -210,31 +210,41 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
     }), [flatModels, search, activeType]);
 
   // ── Quick add from catalog ────────────────────────────────────────────────
-  const onQuickAdd = (item: FlatModel) => {
+  const onQuickAdd = async (item: FlatModel) => {
+    const id = crypto.randomUUID();
+    setSavingNewBike(true);
+    const photoUrls = await uploadFilesForBike(id, pendingPhotos);
     const newEntry: BikeEntry = {
-      id: crypto.randomUUID(), type_id: item.type_id, type_name: item.type_name,
+      id, type_id: item.type_id, type_name: item.type_name,
       subtype_id: item.subtype_id, subtype_name: item.subtype_name,
       brand: item.brand, model: item.model_name,
-      is_custom_type: false, is_custom_brand: false, photos: [],
+      is_custom_type: false, is_custom_brand: false, photos: photoUrls,
     };
     onChange([...entries, newEntry]);
+    setSavingNewBike(false);
+    clearPendingPhotos();
     setView('list');
     toast.success(isRTL ? 'تمت إضافة الدراجة' : 'Bike added');
   };
 
   // ── Manual add ────────────────────────────────────────────────────────────
-  const onSaveManual = () => {
+  const onSaveManual = async () => {
     if (!manualBrand.trim() || !manualModel.trim()) {
       toast.error(isRTL ? 'الرجاء إدخال الماركة والموديل' : 'Please enter brand and model'); return;
     }
     const resolved = manualType === 'custom' ? null : catalogTypes.find((t) => t.id === manualType) ?? null;
+    const id = crypto.randomUUID();
+    setSavingNewBike(true);
+    const photoUrls = await uploadFilesForBike(id, pendingPhotos);
     const newEntry: BikeEntry = {
-      id: crypto.randomUUID(), type_id: resolved?.id ?? null,
+      id, type_id: resolved?.id ?? null,
       type_name: resolved?.name_en ?? manualTypeName.trim(),
       subtype_id: null, subtype_name: '', brand: manualBrand.trim(), model: manualModel.trim(),
-      is_custom_type: !resolved, is_custom_brand: true, photos: [],
+      is_custom_type: !resolved, is_custom_brand: true, photos: photoUrls,
     };
     onChange([...entries, newEntry]);
+    setSavingNewBike(false);
+    clearPendingPhotos();
     setView('list');
     toast.success(isRTL ? 'تمت إضافة الدراجة' : 'Bike added');
   };
