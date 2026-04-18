@@ -298,25 +298,26 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
                 const chipCls  = TYPE_CHIP_COLORS[entry.type_name] ?? 'bg-primary/10 text-primary';
                 const emoji    = TYPE_EMOJI[entry.type_name] ?? '🏍️';
                 return (
-                  <div key={entry.id} className="rounded-2xl border border-border/50 overflow-hidden bg-card shadow-sm hover:shadow-md transition-shadow flex flex-row sm:flex-col">
-                    {/* Image */}
-                    {entry.photos.length > 0 ? (
-                      <div className="relative w-32 sm:w-auto shrink-0 sm:aspect-[6/4] overflow-hidden sm:rounded-t-2xl bg-muted">
-                        <img src={entry.photos[0]} alt={entry.model} className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-500"
-                          onClick={() => setLightbox({ photos: entry.photos, index: 0 })} />
-                        {entry.photos.length > 1 && (
-                          <div className="absolute bottom-1.5 end-1.5 sm:bottom-2 sm:end-2 bg-black/60 text-white text-[10px] font-semibold px-1.5 py-0.5 sm:px-2 rounded-full backdrop-blur-sm">1 / {entry.photos.length}</div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className={cn('w-32 sm:w-auto shrink-0 sm:aspect-[6/4] sm:rounded-t-2xl bg-gradient-to-b flex items-center justify-center', gradient)}>
-                        <span className="text-4xl opacity-30 select-none">{emoji}</span>
-                      </div>
-                    )}
+                  <div key={entry.id} className="rounded-2xl border border-border/50 overflow-hidden bg-card shadow-sm hover:shadow-md transition-shadow flex flex-col">
+                    {/* Top: image + details (row on mobile, column on sm+) */}
+                    <div className="flex flex-row sm:flex-col flex-1 min-w-0">
+                      {/* Image */}
+                      {entry.photos.length > 0 ? (
+                        <div className="relative w-32 sm:w-auto shrink-0 sm:aspect-[6/4] overflow-hidden sm:rounded-t-2xl bg-muted">
+                          <img src={entry.photos[0]} alt={entry.model} className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-500"
+                            onClick={() => setLightbox({ photos: entry.photos, index: 0 })} />
+                          {entry.photos.length > 1 && (
+                            <div className="absolute bottom-1.5 end-1.5 sm:bottom-2 sm:end-2 bg-black/60 text-white text-[10px] font-semibold px-1.5 py-0.5 sm:px-2 rounded-full backdrop-blur-sm">1 / {entry.photos.length}</div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className={cn('w-32 sm:w-auto shrink-0 sm:aspect-[6/4] sm:rounded-t-2xl bg-gradient-to-b flex items-center justify-center', gradient)}>
+                          <span className="text-4xl opacity-30 select-none">{emoji}</span>
+                        </div>
+                      )}
 
-                    {/* Details + actions */}
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <div className="p-3 space-y-1.5 flex-1">
+                      {/* Details */}
+                      <div className="p-3 space-y-1.5 flex-1 min-w-0">
                         {typeName && (
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className={cn('text-[11px] font-semibold px-2 py-0.5 rounded-full', chipCls)}>{typeName}</span>
@@ -333,37 +334,39 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
                           <p className="text-sm font-black text-foreground leading-tight truncate" dir="ltr">{entry.model || (isRTL ? 'دراجة غير معرّفة' : 'Unknown Bike')}</p>
                         </div>
                       </div>
-                      <div className="px-3 pb-3 pt-2 flex items-center gap-1.5 border-t border-border/20">
-                        <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
-                          {entry.photos.slice(0, 4).map((photo, i) => (
-                            <button key={i} onClick={() => setLightbox({ photos: entry.photos, index: i })}
-                              className="w-7 h-7 rounded-md overflow-hidden border-2 border-border/40 hover:border-primary/50 hover:scale-110 transition-all shrink-0">
-                              <img src={photo} className="w-full h-full object-cover" alt="" />
-                            </button>
-                          ))}
-                          {entry.photos.length > 4 && (
-                            <button onClick={() => setLightbox({ photos: entry.photos, index: 4 })}
-                              className="w-7 h-7 rounded-md bg-muted/50 border-2 border-border/40 flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0 hover:border-primary/50">
-                              +{entry.photos.length - 4}
-                            </button>
-                          )}
-                          {canUpload && entry.photos.length < 5 && (
-                            <button onClick={() => triggerCardUpload(entry.id)} disabled={uploadingFor === entry.id}
-                              className="w-7 h-7 rounded-md border-2 border-dashed border-border/40 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-all shrink-0 disabled:opacity-50">
-                              {uploadingFor === entry.id ? <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" /> : <Plus className="w-3 h-3 text-muted-foreground" />}
-                            </button>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          {canUpload && (
-                            <Button size="icon" variant="ghost" className="h-7 w-7 hover:bg-primary/10 hover:text-primary" onClick={() => openPhotosPage(entry.id)}>
-                              <ImagePlus className="w-3 h-3" />
-                            </Button>
-                          )}
-                          <Button size="icon" variant="ghost" className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive" onClick={() => deleteBike(entry.id)} disabled={isUpdating}>
-                            <Trash2 className="w-3 h-3" />
+                    </div>
+
+                    {/* Bottom: sub-images + actions (always full width below content) */}
+                    <div className="px-3 pb-3 pt-2 flex items-center gap-1.5 border-t border-border/20">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
+                        {entry.photos.slice(0, 4).map((photo, i) => (
+                          <button key={i} onClick={() => setLightbox({ photos: entry.photos, index: i })}
+                            className="w-7 h-7 rounded-md overflow-hidden border-2 border-border/40 hover:border-primary/50 hover:scale-110 transition-all shrink-0">
+                            <img src={photo} className="w-full h-full object-cover" alt="" />
+                          </button>
+                        ))}
+                        {entry.photos.length > 4 && (
+                          <button onClick={() => setLightbox({ photos: entry.photos, index: 4 })}
+                            className="w-7 h-7 rounded-md bg-muted/50 border-2 border-border/40 flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0 hover:border-primary/50">
+                            +{entry.photos.length - 4}
+                          </button>
+                        )}
+                        {canUpload && entry.photos.length < 5 && (
+                          <button onClick={() => triggerCardUpload(entry.id)} disabled={uploadingFor === entry.id}
+                            className="w-7 h-7 rounded-md border-2 border-dashed border-border/40 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-all shrink-0 disabled:opacity-50">
+                            {uploadingFor === entry.id ? <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" /> : <Plus className="w-3 h-3 text-muted-foreground" />}
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {canUpload && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7 hover:bg-primary/10 hover:text-primary" onClick={() => openPhotosPage(entry.id)}>
+                            <ImagePlus className="w-3 h-3" />
                           </Button>
-                        </div>
+                        )}
+                        <Button size="icon" variant="ghost" className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive" onClick={() => deleteBike(entry.id)} disabled={isUpdating}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
                       </div>
                     </div>
                   </div>
