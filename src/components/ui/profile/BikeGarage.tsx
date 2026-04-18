@@ -134,9 +134,53 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
   const [manualBrand, setManualBrand] = useState('');
   const [manualModel, setManualModel] = useState('');
 
+  // Pending photos (selected before bike is saved)
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
+  const [pendingPreviews, setPendingPreviews] = useState<string[]>([]);
+  const addPhotoInputRef = useRef<HTMLInputElement>(null);
+  const [savingNewBike, setSavingNewBike] = useState(false);
+
+  const onPickPendingPhotos = (files: FileList | null) => {
+    if (!files) return;
+    const arr = Array.from(files);
+    const total = pendingPhotos.length + arr.length;
+    if (total > 5) { toast.error(isRTL ? 'الحد الأقصى 5 صور' : 'Maximum 5 photos'); return; }
+    setPendingPhotos((prev) => [...prev, ...arr]);
+    setPendingPreviews((prev) => [...prev, ...arr.map((f) => URL.createObjectURL(f))]);
+    if (addPhotoInputRef.current) addPhotoInputRef.current.value = '';
+  };
+
+  const removePendingPhoto = (index: number) => {
+    setPendingPhotos((prev) => prev.filter((_, i) => i !== index));
+    setPendingPreviews((prev) => {
+      const url = prev[index];
+      if (url) URL.revokeObjectURL(url);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const clearPendingPhotos = () => {
+    pendingPreviews.forEach((u) => URL.revokeObjectURL(u));
+    setPendingPhotos([]); setPendingPreviews([]);
+  };
+
+  const uploadFilesForBike = async (bikeId: string, files: File[]): Promise<string[]> => {
+    if (!userId || files.length === 0) return [];
+    const urls: string[] = [];
+    for (const file of files) {
+      const path = `${userId}/${storageFolder}/${bikeId}/${Date.now()}-${file.name}`;
+      const { error } = await (supabase as any).storage.from('bike-photos').upload(path, file);
+      if (error) { toast.error(isRTL ? 'فشل رفع الصورة' : 'Upload failed'); continue; }
+      const { data: u } = (supabase as any).storage.from('bike-photos').getPublicUrl(path);
+      if (u?.publicUrl) urls.push(u.publicUrl as string);
+    }
+    return urls;
+  };
+
   const openAddPage = () => {
     setSearch(''); setActiveType('all'); setShowManual(false);
     setManualType(''); setManualTypeName(''); setManualBrand(''); setManualModel('');
+    clearPendingPhotos();
     setView('add');
   };
 
