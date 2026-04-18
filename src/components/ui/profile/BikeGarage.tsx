@@ -401,12 +401,43 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
             </div>
           </div>
           <div className="p-4 space-y-3 max-h-[480px] overflow-y-auto">
+            {/* Photos picker (added BEFORE bike is created) */}
+            {canUpload && (
+              <div className="rounded-xl border border-dashed border-border/60 bg-muted/10 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-foreground">
+                    {isRTL ? 'صور الدراجة (اختياري)' : 'Bike Photos (optional)'}
+                  </p>
+                  <span className="text-[10px] text-muted-foreground">{pendingPhotos.length}/5</span>
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {pendingPreviews.map((url, i) => (
+                    <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-border/40 group">
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <button onClick={() => removePendingPhoto(i)}
+                        className="absolute top-1 end-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center hover:bg-black/80">
+                        <X className="w-2.5 h-2.5 text-white" />
+                      </button>
+                    </div>
+                  ))}
+                  {pendingPhotos.length < 5 && (
+                    <button onClick={() => addPhotoInputRef.current?.click()}
+                      className="aspect-square rounded-lg border-2 border-dashed border-border/60 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-colors">
+                      <ImagePlus className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  )}
+                </div>
+                <input ref={addPhotoInputRef} type="file" accept="image/*" multiple className="hidden"
+                  onChange={(e) => onPickPendingPhotos(e.target.files)} />
+              </div>
+            )}
+
             {/* Search */}
             <div className="relative">
               <Bike className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               <Input value={search} onChange={(e) => setSearch(e.target.value)}
                 placeholder={isRTL ? 'ابحث: BMW R18...' : 'Search: BMW R18...'}
-                className="ps-10 h-10 rounded-xl" autoFocus />
+                className="ps-10 h-10 rounded-xl" />
               {search && (
                 <button className="absolute end-3 top-1/2 -translate-y-1/2" onClick={() => setSearch('')}>
                   <X className="w-4 h-4 text-muted-foreground" />
