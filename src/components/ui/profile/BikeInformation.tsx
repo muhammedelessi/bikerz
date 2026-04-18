@@ -35,7 +35,7 @@ export const BikeInformation: React.FC<BikeInformationProps> = ({ profile, onUpd
 
   return (
     <div className="card-premium" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="p-6 space-y-5">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-5">
 
         {/* Header */}
         <div className="flex items-center gap-3">
