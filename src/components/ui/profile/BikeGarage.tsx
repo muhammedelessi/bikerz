@@ -524,8 +524,8 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
                     placeholder={isRTL ? 'الموديل...' : 'Model...'} className="h-9 rounded-xl" dir="ltr" />
                 </div>
                 <Button className="w-full gap-2 h-9" onClick={onSaveManual}
-                  disabled={!manualBrand.trim() || !manualModel.trim() || !manualType}>
-                  <Plus className="w-4 h-4" />
+                  disabled={!manualBrand.trim() || !manualModel.trim() || !manualType || savingNewBike}>
+                  {savingNewBike ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   {isRTL ? 'إضافة الدراجة' : 'Add Bike'}
                 </Button>
               </div>
