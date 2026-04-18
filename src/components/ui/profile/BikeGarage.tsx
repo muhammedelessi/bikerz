@@ -4,7 +4,7 @@
  * The parent owns persistence; this component just manages entries in memory
  * and calls `onChange` whenever the list changes.
  */
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useImperativeHandle, useMemo, useRef, useState, forwardRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,6 +45,10 @@ export interface BikeGarageProps {
   isUpdating?: boolean;
 }
 
+export interface BikeGarageHandle {
+  openAddPage: () => void;
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TYPE_GRADIENTS: Record<string, string> = {
@@ -66,9 +70,9 @@ const LUCIDE_ICONS: Record<string, React.ElementType> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export const BikeGarage: React.FC<BikeGarageProps> = ({
+export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(({
   entries, onChange, userId, storageFolder = 'bikes', isUpdating = false,
-}) => {
+}, ref) => {
   const { isRTL } = useLanguage();
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const canUpload = Boolean(userId);
@@ -135,6 +139,8 @@ export const BikeGarage: React.FC<BikeGarageProps> = ({
     setManualType(''); setManualTypeName(''); setManualBrand(''); setManualModel('');
     setView('add');
   };
+
+  useImperativeHandle(ref, () => ({ openAddPage }));
 
   // ── Photos page ───────────────────────────────────────────────────────────
   const photosFileRef = useRef<HTMLInputElement>(null);
@@ -228,23 +234,6 @@ export const BikeGarage: React.FC<BikeGarageProps> = ({
       {/* ══════════════ LIST VIEW ══════════════ */}
       {view === 'list' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Bike className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">{isRTL ? 'الدراجات' : 'Bikes'}</p>
-                {entries.length > 0 && (
-                  <p className="text-xs text-muted-foreground">{entries.length} {isRTL ? 'مسجلة' : 'registered'}</p>
-                )}
-              </div>
-            </div>
-            <Button size="sm" variant="outline" onClick={openAddPage} className="gap-1.5 text-xs h-8">
-              <Plus className="w-3.5 h-3.5" />
-              {isRTL ? 'إضافة' : 'Add Bike'}
-            </Button>
-          </div>
 
           {entries.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -541,4 +530,5 @@ export const BikeGarage: React.FC<BikeGarageProps> = ({
       )}
     </div>
   );
-};
+});
+BikeGarage.displayName = 'BikeGarage';

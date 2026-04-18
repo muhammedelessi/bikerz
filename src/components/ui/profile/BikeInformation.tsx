@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ExtendedProfile, BikeEntry } from '@/hooks/useUserProfile';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { AlertTriangle, Bike } from 'lucide-react';
-import { BikeGarage } from './BikeGarage';
+import { AlertTriangle, Bike, Plus } from 'lucide-react';
+import { BikeGarage, type BikeGarageHandle } from './BikeGarage';
 
 interface BikeInformationProps {
   profile: ExtendedProfile;
@@ -14,6 +14,7 @@ interface BikeInformationProps {
 
 export const BikeInformation: React.FC<BikeInformationProps> = ({ profile, onUpdate, isUpdating }) => {
   const { isRTL } = useLanguage();
+  const garageRef = useRef<BikeGarageHandle>(null);
 
   const [entries, setEntries] = useState<BikeEntry[]>(() =>
     Array.isArray(profile.bike_entries) ? profile.bike_entries : []);
@@ -38,18 +39,29 @@ export const BikeInformation: React.FC<BikeInformationProps> = ({ profile, onUpd
       <div className="p-2 sm:p-4 space-y-3 sm:space-y-4">
 
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Bike className="w-5 h-5 text-primary" />
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Bike className="w-5 h-5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-lg font-semibold text-foreground">{isRTL ? 'دراجاتي' : 'My Bikes'}</h3>
+              {entries.length > 0 && (
+                <p className="text-xs text-muted-foreground truncate">
+                  {entries.length} {isRTL ? (entries.length === 1 ? 'دراجة مسجلة' : 'دراجات مسجلة') : (entries.length === 1 ? 'bike registered' : 'bikes registered')}
+                </p>
+              )}
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-foreground">{isRTL ? 'دراجاتي' : 'My Bikes'}</h3>
-            {entries.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                {entries.length} {isRTL ? (entries.length === 1 ? 'دراجة مسجلة' : 'دراجات مسجلة') : (entries.length === 1 ? 'bike registered' : 'bikes registered')}
-              </p>
-            )}
-          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => garageRef.current?.openAddPage()}
+            className="gap-1.5 text-xs h-8 shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {isRTL ? 'إضافة' : 'Add Bike'}
+          </Button>
         </div>
 
         {/* Legacy banner */}
@@ -65,6 +77,7 @@ export const BikeInformation: React.FC<BikeInformationProps> = ({ profile, onUpd
 
         {/* Garage */}
         <BikeGarage
+          ref={garageRef}
           entries={entries}
           onChange={handleChange}
           userId={profile.user_id}
