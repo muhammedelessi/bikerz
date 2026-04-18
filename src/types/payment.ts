@@ -59,6 +59,8 @@ export interface AppliedCoupon {
 
 export interface ValidationErrors {
   fullName?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   phone?: string;
   city?: string;

@@ -429,7 +429,7 @@ export function useUserProfile() {
     setIsUpdating(true);
     lastUpdateSignatureRef.current = updateSignature;
     try {
-      const { error } = await supabase.from("profiles").update(changedUpdates).eq("user_id", user.id);
+      const { error } = await (supabase as any).from("profiles").update(changedUpdates).eq("user_id", user.id);
 
       if (error) throw error;
 

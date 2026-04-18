@@ -72,7 +72,7 @@ const AddTrainingForTrainerDialog: React.FC<{
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trainer-profile-courses', trainerId] });
       onOpenChange(false);
-      setForm({ training_id: '', price: 0, duration_hours: 0, location: '' });
+      setForm({ training_id: '', price: 0, duration_hours: 0, location: '', location_detail: '' });
       toast.success(isRTL ? 'تم إضافة التدريب' : 'Training added');
     },
     onError: () => toast.error(isRTL ? 'خطأ' : 'Error'),
