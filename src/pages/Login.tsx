@@ -18,6 +18,7 @@ import {
   getEnrolledEmail,
   authenticateBiometric,
   clearBiometric,
+  normalizeBiometricError,
 } from "@/lib/biometric";
 const defaultHeroImage = "/hero-rider.webp";
 import logoDark from '@/assets/logo-dark.png';
@@ -80,12 +81,12 @@ const Login: React.FC = () => {
 
   const handleBiometricLogin = async () => {
     setError(null);
-    setBioLoading(true);
     try {
+      // Run WebAuthn first (before setState) so Safari/iOS keeps user activation for Face ID / Touch ID.
       const { email: savedEmail, password: savedPassword } = await authenticateBiometric();
+      setBioLoading(true);
       const { error: signInError } = await signIn(savedEmail, savedPassword);
       if (signInError) {
-        // Saved credentials no longer valid (password changed, etc.)
         clearBiometric();
         setBioEnrolled(false);
         setBioEmail(null);
@@ -99,16 +100,27 @@ const Login: React.FC = () => {
       toast.success(t("auth.login.success"));
       const redirectAfterAuth = consumeReturnUrl() || returnTo;
       navigate(redirectAfterAuth || "/dashboard");
-    } catch (err: any) {
-      const code = err?.message || err?.name || "";
-      if (code === "NotAllowedError" || code === "BIOMETRIC_CANCELLED") {
-        // User cancelled; stay quiet.
+    } catch (err: unknown) {
+      const { code } = normalizeBiometricError(err);
+      if (code === "NOT_ALLOWED" || code === "BIOMETRIC_CANCELLED") {
+        /* user dismissed prompt */
       } else if (code === "BIOMETRIC_NOT_ENROLLED") {
         setBioEnrolled(false);
-      } else {
+      } else if (code === "BIOMETRIC_DECRYPT_FAILED") {
+        clearBiometric();
+        setBioEnrolled(false);
+        setBioEmail(null);
         toast.error(
-          isRTL ? "فشل تسجيل الدخول بالبصمة" : "Biometric sign-in failed",
+          isRTL
+            ? "بيانات الدخول المحفوظة غير صالحة. سجّل دخولك بالبريد وكلمة المرور وأعد تفعيل البصمة من الإعدادات."
+            : "Stored unlock data is invalid. Sign in with email and password, then enable biometric again in settings.",
         );
+      } else if (code !== "UNKNOWN") {
+        toast.error(
+          isRTL ? "تعذّر استخدام البصمة على هذا الجهاز أو المتصفح." : "Biometric sign-in is not available on this device or browser.",
+        );
+      } else {
+        toast.error(isRTL ? "فشل تسجيل الدخول بالبصمة" : "Biometric sign-in failed");
       }
     } finally {
       setBioLoading(false);

@@ -51,7 +51,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = () => {
   const [bioChecked, setBioChecked] = useState(false);
   const [bioEnrolled, setBioEnrolled] = useState<boolean>(isBiometricEnrolled());
   const [bioEmail, setBioEmail] = useState<string | null>(getEnrolledEmail());
-  const [bioStep, setBioStep] = useState<"idle" | "verify">("idle");
+  const [bioStep, setBioStep] = useState<"idle" | "verify" | "enroll">("idle");
   const [bioPassword, setBioPassword] = useState("");
   const [bioPasswordError, setBioPasswordError] = useState<string | null>(null);
   const [bioLoading, setBioLoading] = useState(false);
@@ -101,7 +101,8 @@ export const AccountSettings: React.FC<AccountSettingsProps> = () => {
     };
   }, [hasWebAuthnApi]);
 
-  const handleEnableBiometric = async () => {
+  /** Step 1: verify password only (must stay separate from WebAuthn on Safari / iOS). */
+  const handleVerifyPasswordForBiometric = async () => {
     setBioPasswordError(null);
     if (!user?.email) {
       toast.error(isRTL ? "لم يتم العثور على البريد الإلكتروني" : "Email not found");
@@ -118,44 +119,45 @@ export const AccountSettings: React.FC<AccountSettingsProps> = () => {
 
     setBioLoading(true);
     try {
-      // Re-verify password against Supabase before enrolling biometric
       const { error: verifyError } = await (supabase.auth as any).signInWithPassword({
         email: user.email,
         password: bioPassword,
       });
       if (verifyError) {
         setBioPasswordError(isRTL ? "كلمة المرور غير صحيحة" : "Incorrect password");
-        setBioLoading(false);
         return;
       }
+      setBioStep("enroll");
+    } finally {
+      setBioLoading(false);
+    }
+  };
 
+  /** Step 2: WebAuthn only — call from its own button press (fresh user gesture for Face ID / Touch ID). */
+  const handleRegisterBiometricOnDevice = async () => {
+    if (!user?.email || !bioPassword) {
+      toast.error(isRTL ? "أعد إدخال كلمة المرور" : "Please enter your password again");
+      setBioStep("verify");
+      return;
+    }
+
+    try {
       await enrollBiometric(user.email, bioPassword);
       setBioEnrolled(true);
       setBioEmail(user.email);
       setBioStep("idle");
       setBioPassword("");
-      toast.success(
-        isRTL ? "تم تفعيل تسجيل الدخول بالبصمة" : "Biometric sign-in enabled",
-      );
-    } catch (err: any) {
-      const code = err?.message || err?.name || "";
-      if (code === "PLATFORM_AUTHENTICATOR_UNAVAILABLE") {
-        toast.error(
-          isRTL
-            ? "جهازك لا يدعم البصمة أو التعرف على الوجه"
-            : "Your device does not support fingerprint or face recognition",
-        );
-      } else if (code === "BIOMETRIC_UNSUPPORTED") {
-        toast.error(
-          isRTL ? "متصفحك لا يدعم هذه الميزة" : "Your browser does not support this feature",
-        );
+      toast.success(isRTL ? "تم تفعيل تسجيل الدخول بالبصمة" : "Biometric sign-in enabled");
+    } catch (err: unknown) {
+      const code = err instanceof Error ? err.message : "";
+      const name = err instanceof Error ? err.name : "";
+      if (code === "BIOMETRIC_UNSUPPORTED" || name === "NotSupportedError") {
+        toast.error(isRTL ? "متصفحك لا يدعم هذه الميزة" : "Your browser does not support this feature");
       } else if (code === "NotAllowedError" || code === "BIOMETRIC_CANCELLED") {
         toast.error(isRTL ? "تم إلغاء العملية" : "Operation cancelled");
       } else {
         toast.error(isRTL ? "فشل تفعيل البصمة" : "Failed to enable biometric");
       }
-    } finally {
-      setBioLoading(false);
     }
   };
 
@@ -297,14 +299,14 @@ export const AccountSettings: React.FC<AccountSettingsProps> = () => {
                     ? "تفعيل البصمة أو التعرف على الوجه"
                     : "Enable fingerprint or face sign-in"}
                 </Button>
-              ) : (
+              ) : bioStep === "verify" ? (
                 <div className="rounded-lg border border-border/30 p-3 bg-muted/10 space-y-2">
                   <div className="flex items-start gap-2">
                     <Fingerprint className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                     <p className="text-xs text-muted-foreground leading-relaxed">
                       {isRTL
-                        ? "أدخل كلمة المرور الحالية للتحقق، ثم اتبع تعليمات جهازك لتفعيل البصمة أو التعرف على الوجه."
-                        : "Enter your current password to verify, then follow your device prompt to enable fingerprint or face recognition."}
+                        ? "أدخل كلمة المرور الحالية للتحقق أولاً."
+                        : "Enter your current password to verify first."}
                     </p>
                   </div>
                   <PasswordField
@@ -319,19 +321,15 @@ export const AccountSettings: React.FC<AccountSettingsProps> = () => {
                     autoComplete="current-password"
                     disabled={bioLoading}
                   />
-                  <div className="flex items-center gap-2 mt-2.5">
+                  <div className="mt-2.5 flex flex-wrap items-center gap-2">
                     <Button
                       size="sm"
-                      onClick={handleEnableBiometric}
+                      onClick={handleVerifyPasswordForBiometric}
                       disabled={bioLoading}
-                      className="h-8 px-4 text-xs font-semibold gap-1.5"
+                      className="h-8 gap-1.5 px-4 text-xs font-semibold"
                     >
-                      {bioLoading ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <Fingerprint className="w-3 h-3" />
-                      )}
-                      {isRTL ? "تفعيل" : "Enable"}
+                      {bioLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                      {isRTL ? "متابعة" : "Continue"}
                     </Button>
                     <Button
                       size="sm"
@@ -347,6 +345,37 @@ export const AccountSettings: React.FC<AccountSettingsProps> = () => {
                       {isRTL ? "إلغاء" : "Cancel"}
                     </Button>
                   </div>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-border/30 p-3 bg-muted/10 space-y-3">
+                  <div className="flex items-start gap-2">
+                    <Fingerprint className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                    <div className="space-y-1 text-xs leading-relaxed text-muted-foreground">
+                      <p>
+                        {isRTL
+                          ? "اضغط الزر التالي، ثم أكّد الطلب على جهازك (Face ID أو Touch ID أو Windows Hello)."
+                          : "Tap the button below, then confirm on your device (Face ID, Touch ID, or Windows Hello)."}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    type="button"
+                    className="h-9 w-full gap-2 text-xs font-semibold"
+                    onClick={handleRegisterBiometricOnDevice}
+                  >
+                    <Fingerprint className="h-3.5 w-3.5" />
+                    {isRTL ? "تسجيل البصمة على هذا الجهاز" : "Register biometrics on this device"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    type="button"
+                    className="h-8 w-full text-xs"
+                    onClick={() => setBioStep("verify")}
+                  >
+                    {isRTL ? "← العودة لكلمة المرور" : "← Back to password"}
+                  </Button>
                 </div>
               )}
           </div>

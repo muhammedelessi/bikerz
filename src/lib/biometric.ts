@@ -8,6 +8,9 @@
  * Security model: ciphertext and key material both live on the same device, so this matches
  * the security level of the existing "remember me" feature while adding a biometric UI gate.
  * It is a convenience feature, not a server-verified FIDO credential.
+ *
+ * Important (Safari / iOS): WebAuthn must run close to a user gesture. Avoid `await`ing
+ * unrelated work (e.g. network) before `navigator.credentials.create/get` — see enroll flow in UI.
  */
 
 const STORAGE_KEY = "bikerz_biometric_v1";
@@ -37,8 +40,15 @@ function b64decode(str: string): Uint8Array {
 }
 
 function getRpId(): string {
-  // Use eTLD+1 where possible; fall back to hostname.
   return window.location.hostname;
+}
+
+/** WebAuthn user.id must be 1–64 bytes (UTF-8). Long emails are truncated deterministically. */
+function webauthnUserId(email: string): Uint8Array {
+  const buf = new TextEncoder().encode(email.trim().toLowerCase());
+  if (buf.byteLength === 0) return new Uint8Array([0x30]);
+  if (buf.byteLength <= 64) return buf;
+  return buf.slice(0, 64);
 }
 
 export function isBiometricSupported(): boolean {
@@ -129,10 +139,7 @@ async function encryptPassword(
   };
 }
 
-async function decryptPassword(
-  credentialIdBytes: Uint8Array,
-  stored: StoredBiometric,
-): Promise<string> {
+async function decryptPassword(credentialIdBytes: Uint8Array, stored: StoredBiometric): Promise<string> {
   const key = await deriveKey(credentialIdBytes, b64decode(stored.salt));
   const plainBuf = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: b64decode(stored.iv) },
@@ -142,21 +149,52 @@ async function decryptPassword(
   return new TextDecoder().decode(plainBuf);
 }
 
+export type BiometricErrorCode =
+  | "BIOMETRIC_UNSUPPORTED"
+  | "BIOMETRIC_NOT_ENROLLED"
+  | "BIOMETRIC_CANCELLED"
+  | "BIOMETRIC_DECRYPT_FAILED"
+  | "NOT_ALLOWED"
+  | "UNKNOWN";
+
+/** Map DOMException / Error to a stable code for UI. */
+export function normalizeBiometricError(err: unknown): { code: BiometricErrorCode; message: string } {
+  const name = err instanceof Error ? err.name : "";
+  const msg = err instanceof Error ? err.message : String(err);
+
+  if (msg === "BIOMETRIC_NOT_ENROLLED" || msg === "BIOMETRIC_UNSUPPORTED" || msg === "BIOMETRIC_DECRYPT_FAILED") {
+    return { code: msg as BiometricErrorCode, message: msg };
+  }
+  if (name === "NotAllowedError" || msg.includes("NotAllowedError")) {
+    return { code: "NOT_ALLOWED", message: name || msg };
+  }
+  if (name === "AbortError" || msg.includes("AbortError")) {
+    return { code: "BIOMETRIC_CANCELLED", message: name || msg };
+  }
+  if (name === "SecurityError" || msg.includes("SecurityError")) {
+    return { code: "BIOMETRIC_UNSUPPORTED", message: name || msg };
+  }
+  if (name === "InvalidStateError" || msg.includes("InvalidStateError")) {
+    return { code: "NOT_ALLOWED", message: name || msg };
+  }
+  if (name === "NotSupportedError" || msg.includes("NotSupportedError")) {
+    return { code: "BIOMETRIC_UNSUPPORTED", message: name || msg };
+  }
+  return { code: "UNKNOWN", message: msg };
+}
+
 /**
  * Enroll biometric for the given email + password. Prompts the OS biometric sheet.
- * Throws if the user cancels or the platform is unsupported.
+ * Call this directly from a click handler — do not await unrelated async work before this
+ * (Safari will block Face ID / Touch ID). Pre-check platform with isPlatformAuthenticatorAvailable in the UI.
  */
 export async function enrollBiometric(email: string, password: string): Promise<void> {
   if (!isBiometricSupported()) {
     throw new Error("BIOMETRIC_UNSUPPORTED");
   }
-  const available = await isPlatformAuthenticatorAvailable();
-  if (!available) {
-    throw new Error("PLATFORM_AUTHENTICATOR_UNAVAILABLE");
-  }
 
   const challenge = crypto.getRandomValues(new Uint8Array(32));
-  const userIdBytes = new TextEncoder().encode(email);
+  const userIdBytes = webauthnUserId(email);
 
   const publicKey: PublicKeyCredentialCreationOptions = {
     challenge,
@@ -167,18 +205,19 @@ export async function enrollBiometric(email: string, password: string): Promise<
       displayName: email,
     },
     pubKeyCredParams: [
-      { type: "public-key", alg: -7 }, // ES256
-      { type: "public-key", alg: -257 }, // RS256
+      { type: "public-key", alg: -7 },
+      { type: "public-key", alg: -257 },
     ],
     timeout: 60_000,
     attestation: "none",
     authenticatorSelection: {
       authenticatorAttachment: "platform",
       userVerification: "required",
-      residentKey: "preferred",
+      residentKey: "discouraged",
     },
   };
 
+  // First await in this function must be WebAuthn (iOS user-activation requirement).
   const credential = (await navigator.credentials.create({ publicKey })) as PublicKeyCredential | null;
   if (!credential) throw new Error("BIOMETRIC_CANCELLED");
 
@@ -197,16 +236,16 @@ export async function enrollBiometric(email: string, password: string): Promise<
 
 /**
  * Prompt the OS biometric sheet to unlock saved credentials.
- * Returns { email, password } on success; throws on cancel/failure.
+ * Prefer calling from a click handler without setState/await before this in the handler.
  */
 export async function authenticateBiometric(): Promise<{ email: string; password: string }> {
   const stored = readStored();
   if (!stored) throw new Error("BIOMETRIC_NOT_ENROLLED");
   if (!isBiometricSupported()) throw new Error("BIOMETRIC_UNSUPPORTED");
 
-  const challenge = crypto.getRandomValues(new Uint8Array(32));
-  const credentialIdBytes = b64decode(stored.credentialId);
+  const keyBytes = b64decode(stored.credentialId);
 
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
   const publicKey: PublicKeyCredentialRequestOptions = {
     challenge,
     rpId: getRpId(),
@@ -215,7 +254,7 @@ export async function authenticateBiometric(): Promise<{ email: string; password
     allowCredentials: [
       {
         type: "public-key",
-        id: credentialIdBytes,
+        id: keyBytes,
         transports: ["internal"],
       },
     ],
@@ -224,7 +263,11 @@ export async function authenticateBiometric(): Promise<{ email: string; password
   const assertion = (await navigator.credentials.get({ publicKey })) as PublicKeyCredential | null;
   if (!assertion) throw new Error("BIOMETRIC_CANCELLED");
 
-  const rawId = new Uint8Array(assertion.rawId);
-  const password = await decryptPassword(rawId, stored);
-  return { email: stored.email, password };
+  try {
+    // Always use stored credential id for decryption (same bytes as enrollment; avoids buffer/view quirks).
+    const password = await decryptPassword(keyBytes, stored);
+    return { email: stored.email, password };
+  } catch {
+    throw new Error("BIOMETRIC_DECRYPT_FAILED");
+  }
 }
