@@ -46,6 +46,7 @@ const CourseLearn = lazy(() => import("./pages/CourseLearn"));
 const Mentors = lazy(() => import("./pages/Mentors"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Profile = lazy(() => import("./pages/Profile"));
+const AccountSettingsPage = lazy(() => import("./pages/AccountSettingsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const BookingPaymentComplete = lazy(() => import("./pages/BookingPaymentComplete"));
@@ -53,6 +54,9 @@ const BookingSuccess = lazy(() => import("./pages/BookingSuccess"));
 const MyBookings = lazy(() => import("./pages/MyBookings"));
 const JoinCommunity = lazy(() => import("./pages/JoinCommunity"));
 const Bundles = lazy(() => lazyRetry(() => import("./pages/Bundles")));
+const CommunityChampions = lazy(() => import("./pages/CommunityChampions"));
+const ChampionVideosList = lazy(() => import("./pages/ChampionVideosList"));
+const ChampionVideoDetail = lazy(() => import("./pages/ChampionVideoDetail"));
 
 // Admin Pages - lazy loaded
 const AdminHome = lazy(() => import("./pages/admin/AdminHome"));
@@ -82,6 +86,9 @@ const AdminTrainingStudents = lazy(() => import("./pages/admin/AdminTrainingStud
 const AdminTrainerReviews = lazy(() => import("./pages/admin/AdminTrainerReviews"));
 const AdminBikeCatalog = lazy(() => import("./pages/admin/AdminBikeCatalog"));
 const AdminRanks = lazy(() => import("./pages/admin/AdminRanks"));
+const AdminChampions = lazy(() => import("./pages/admin/AdminChampions"));
+const AdminChampionNew = lazy(() => import("./pages/admin/AdminChampionNew"));
+const AdminChampionProfile = lazy(() => import("./pages/admin/AdminChampionProfile"));
 
 const queryClient = new QueryClient();
 
@@ -194,10 +201,14 @@ const AppRoutes = () => (
         <Route path="/booking-success" element={<ProtectedRoute><BookingSuccess /></ProtectedRoute>} />
         <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
         <Route path="/join-community" element={<JoinCommunity />} />
+        <Route path="/community-champions/:championId/videos/:videoId" element={<ChampionVideoDetail />} />
+        <Route path="/community-champions/:championId" element={<ChampionVideosList />} />
+        <Route path="/community-champions" element={<CommunityChampions />} />
 
         {/* Protected Routes */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
 
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminRoute><AdminHome /></AdminRoute>} />
@@ -228,6 +239,9 @@ const AppRoutes = () => (
         <Route path="/admin/trainer-reviews" element={<AdminRoute><AdminTrainerReviews /></AdminRoute>} />
         <Route path="/admin/bike-catalog" element={<AdminRoute><AdminBikeCatalog /></AdminRoute>} />
         <Route path="/admin/ranks" element={<AdminRoute><AdminRanks /></AdminRoute>} />
+        <Route path="/admin/champions" element={<AdminRoute><AdminChampions /></AdminRoute>} />
+        <Route path="/admin/champions/new" element={<AdminRoute><AdminChampionNew /></AdminRoute>} />
+        <Route path="/admin/champions/:id" element={<AdminRoute><AdminChampionProfile /></AdminRoute>} />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />

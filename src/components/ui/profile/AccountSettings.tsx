@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,8 +16,19 @@ import {
   Sun,
   Moon,
   Globe,
+  Fingerprint,
+  ShieldCheck,
+  X,
 } from "lucide-react";
 import { ExtendedProfile } from "@/hooks/useUserProfile";
+import {
+  isBiometricSupported,
+  isPlatformAuthenticatorAvailable,
+  isBiometricEnrolled,
+  getEnrolledEmail,
+  enrollBiometric,
+  clearBiometric,
+} from "@/lib/biometric";
 
 interface AccountSettingsProps {
   profile: ExtendedProfile;
@@ -34,6 +45,130 @@ export const AccountSettings: React.FC<AccountSettingsProps> = () => {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordData, setPasswordData] = useState({ newPassword: "", confirmPassword: "" });
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+
+  // Biometric
+  const [bioAvailable, setBioAvailable] = useState(false);
+  const [bioChecked, setBioChecked] = useState(false);
+  const [bioEnrolled, setBioEnrolled] = useState<boolean>(isBiometricEnrolled());
+  const [bioEmail, setBioEmail] = useState<string | null>(getEnrolledEmail());
+  const [bioStep, setBioStep] = useState<"idle" | "verify">("idle");
+  const [bioPassword, setBioPassword] = useState("");
+  const [bioPasswordError, setBioPasswordError] = useState<string | null>(null);
+  const [bioLoading, setBioLoading] = useState(false);
+
+  const isSecureContext = typeof window !== "undefined" && window.isSecureContext;
+  const hasWebAuthnApi = isBiometricSupported();
+
+  const unavailableReason: string | null = !isSecureContext
+    ? isRTL
+      ? "تتطلب هذه الميزة اتصالاً آمناً (HTTPS) أو الوصول عبر localhost."
+      : "This feature requires a secure connection (HTTPS) or localhost access."
+    : !hasWebAuthnApi
+      ? isRTL
+        ? "متصفحك لا يدعم مصادقة الويب (WebAuthn)."
+        : "Your browser does not support Web Authentication (WebAuthn)."
+      : bioChecked && !bioAvailable
+        ? isRTL
+          ? "لم يتم العثور على بصمة / تعرف على الوجه مُفعَّل على جهازك. يرجى إعداد Windows Hello أو Touch ID / Face ID من إعدادات النظام أولاً."
+          : "No fingerprint or face recognition set up on this device. Please enable Windows Hello, Touch ID, or Face ID in your system settings first."
+        : null;
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!hasWebAuthnApi) {
+        if (mounted) {
+          setBioAvailable(false);
+          setBioChecked(true);
+        }
+        return;
+      }
+      try {
+        const available = await isPlatformAuthenticatorAvailable();
+        if (mounted) {
+          setBioAvailable(available);
+          setBioChecked(true);
+        }
+      } catch {
+        if (mounted) {
+          setBioAvailable(false);
+          setBioChecked(true);
+        }
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [hasWebAuthnApi]);
+
+  const handleEnableBiometric = async () => {
+    setBioPasswordError(null);
+    if (!user?.email) {
+      toast.error(isRTL ? "لم يتم العثور على البريد الإلكتروني" : "Email not found");
+      return;
+    }
+    if (!bioPassword || bioPassword.length < 6) {
+      setBioPasswordError(
+        isRTL
+          ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل"
+          : "Password must be at least 6 characters",
+      );
+      return;
+    }
+
+    setBioLoading(true);
+    try {
+      // Re-verify password against Supabase before enrolling biometric
+      const { error: verifyError } = await (supabase.auth as any).signInWithPassword({
+        email: user.email,
+        password: bioPassword,
+      });
+      if (verifyError) {
+        setBioPasswordError(isRTL ? "كلمة المرور غير صحيحة" : "Incorrect password");
+        setBioLoading(false);
+        return;
+      }
+
+      await enrollBiometric(user.email, bioPassword);
+      setBioEnrolled(true);
+      setBioEmail(user.email);
+      setBioStep("idle");
+      setBioPassword("");
+      toast.success(
+        isRTL ? "تم تفعيل تسجيل الدخول بالبصمة" : "Biometric sign-in enabled",
+      );
+    } catch (err: any) {
+      const code = err?.message || err?.name || "";
+      if (code === "PLATFORM_AUTHENTICATOR_UNAVAILABLE") {
+        toast.error(
+          isRTL
+            ? "جهازك لا يدعم البصمة أو التعرف على الوجه"
+            : "Your device does not support fingerprint or face recognition",
+        );
+      } else if (code === "BIOMETRIC_UNSUPPORTED") {
+        toast.error(
+          isRTL ? "متصفحك لا يدعم هذه الميزة" : "Your browser does not support this feature",
+        );
+      } else if (code === "NotAllowedError" || code === "BIOMETRIC_CANCELLED") {
+        toast.error(isRTL ? "تم إلغاء العملية" : "Operation cancelled");
+      } else {
+        toast.error(isRTL ? "فشل تفعيل البصمة" : "Failed to enable biometric");
+      }
+    } finally {
+      setBioLoading(false);
+    }
+  };
+
+  const handleDisableBiometric = () => {
+    clearBiometric();
+    setBioEnrolled(false);
+    setBioEmail(null);
+    setBioStep("idle");
+    setBioPassword("");
+    toast.success(
+      isRTL ? "تم تعطيل تسجيل الدخول بالبصمة" : "Biometric sign-in disabled",
+    );
+  };
 
   const handleChangePassword = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
@@ -108,6 +243,113 @@ export const AccountSettings: React.FC<AccountSettingsProps> = () => {
               </div>
             </div>
           )}
+
+          {/* Biometric login */}
+          <div className="pt-1">
+            {!bioAvailable ? (
+              <div className="rounded-lg border border-border/30 bg-muted/10 p-3 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Fingerprint className="w-4 h-4 text-muted-foreground" />
+                  {isRTL
+                    ? "تسجيل الدخول بالبصمة أو التعرف على الوجه"
+                    : "Fingerprint or face sign-in"}
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {!bioChecked
+                    ? isRTL
+                      ? "جارٍ التحقق من دعم الجهاز..."
+                      : "Checking device support..."
+                    : unavailableReason}
+                </p>
+              </div>
+            ) : bioEnrolled ? (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+                    <ShieldCheck className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                      <Fingerprint className="w-3.5 h-3.5" />
+                      {isRTL ? "تسجيل الدخول بالبصمة مفعّل" : "Biometric sign-in enabled"}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                      {bioEmail}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleDisableBiometric}
+                      className="h-7 px-2 mt-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
+                    >
+                      <X className="w-3 h-3" />
+                      {isRTL ? "تعطيل" : "Disable"}
+                    </Button>
+                  </div>
+                </div>
+              ) : bioStep === "idle" ? (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => setBioStep("verify")}
+                >
+                  <Fingerprint className="w-4 h-4" />
+                  {isRTL
+                    ? "تفعيل البصمة أو التعرف على الوجه"
+                    : "Enable fingerprint or face sign-in"}
+                </Button>
+              ) : (
+                <div className="rounded-lg border border-border/30 p-3 bg-muted/10 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Fingerprint className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {isRTL
+                        ? "أدخل كلمة المرور الحالية للتحقق، ثم اتبع تعليمات جهازك لتفعيل البصمة أو التعرف على الوجه."
+                        : "Enter your current password to verify, then follow your device prompt to enable fingerprint or face recognition."}
+                    </p>
+                  </div>
+                  <PasswordField
+                    value={bioPassword}
+                    onChange={(val) => {
+                      setBioPassword(val);
+                      setBioPasswordError(null);
+                    }}
+                    label={isRTL ? "كلمة المرور الحالية" : "Current password"}
+                    error={bioPasswordError}
+                    required
+                    autoComplete="current-password"
+                    disabled={bioLoading}
+                  />
+                  <div className="flex items-center gap-2 mt-2.5">
+                    <Button
+                      size="sm"
+                      onClick={handleEnableBiometric}
+                      disabled={bioLoading}
+                      className="h-8 px-4 text-xs font-semibold gap-1.5"
+                    >
+                      {bioLoading ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Fingerprint className="w-3 h-3" />
+                      )}
+                      {isRTL ? "تفعيل" : "Enable"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setBioStep("idle");
+                        setBioPassword("");
+                        setBioPasswordError(null);
+                      }}
+                      disabled={bioLoading}
+                      className="h-8 px-3 text-xs"
+                    >
+                      {isRTL ? "إلغاء" : "Cancel"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+          </div>
         </div>
       </div>
 

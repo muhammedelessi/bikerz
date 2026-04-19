@@ -42,6 +42,7 @@ import {
   UserCheck,
   GraduationCap as GraduationCapIcon,
   StarIcon,
+  Trophy,
 } from 'lucide-react';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
@@ -72,6 +73,7 @@ interface NavItem {
   { icon: FileText, labelKey: 'content', href: '/admin/content' },
   { icon: Megaphone, labelKey: 'ads', href: '/admin/ads' },
   { icon: Bike, labelKey: 'community', href: '/admin/community' },
+  { icon: Trophy, labelKey: 'champions', href: '/admin/champions' },
   { icon: MessagesSquare, labelKey: 'discussions', href: '/admin/discussions' },
   { icon: MessageSquare, labelKey: 'support', href: '/admin/support' },
   { icon: Shield, labelKey: 'roles', href: '/admin/roles' },

@@ -71,6 +71,14 @@ function extraAfterCoursesNav(t: (key: string, opts?: { lng?: string }) => strin
       is_visible: true,
       open_in_new_tab: false,
     },
+    {
+      id: "champions",
+      title_en: t("nav.champions", { lng: "en" }),
+      title_ar: t("nav.champions", { lng: "ar" }),
+      link: "/community-champions",
+      is_visible: true,
+      open_in_new_tab: false,
+    },
   ];
 }
 

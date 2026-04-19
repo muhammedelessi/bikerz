@@ -8,9 +8,17 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import LanguageToggle from "@/components/common/LanguageToggle";
 import { useAuthPageContent } from "@/hooks/useAuthPageContent";
-import { ArrowRight, ArrowLeft, AlertCircle, Mail } from "lucide-react";
+import { ArrowRight, ArrowLeft, AlertCircle, Mail, Fingerprint } from "lucide-react";
 import { PasswordField } from "@/components/ui/fields";
 import { toast } from "sonner";
+import {
+  isBiometricSupported,
+  isPlatformAuthenticatorAvailable,
+  isBiometricEnrolled,
+  getEnrolledEmail,
+  authenticateBiometric,
+  clearBiometric,
+} from "@/lib/biometric";
 const defaultHeroImage = "/hero-rider.webp";
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
@@ -35,6 +43,10 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [bioAvailable, setBioAvailable] = useState(false);
+  const [bioEnrolled, setBioEnrolled] = useState<boolean>(isBiometricEnrolled());
+  const [bioEmail, setBioEmail] = useState<string | null>(getEnrolledEmail());
+  const [bioLoading, setBioLoading] = useState(false);
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
   // Load saved credentials on mount
@@ -49,6 +61,59 @@ const Login: React.FC = () => {
       }
     } catch {}
   }, []);
+
+  // Detect biometric support
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!isBiometricSupported()) {
+        if (mounted) setBioAvailable(false);
+        return;
+      }
+      const available = await isPlatformAuthenticatorAvailable();
+      if (mounted) setBioAvailable(available);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleBiometricLogin = async () => {
+    setError(null);
+    setBioLoading(true);
+    try {
+      const { email: savedEmail, password: savedPassword } = await authenticateBiometric();
+      const { error: signInError } = await signIn(savedEmail, savedPassword);
+      if (signInError) {
+        // Saved credentials no longer valid (password changed, etc.)
+        clearBiometric();
+        setBioEnrolled(false);
+        setBioEmail(null);
+        setError(
+          isRTL
+            ? "تم تعطيل الدخول بالبصمة لأن كلمة المرور تغيّرت. يرجى تسجيل الدخول وإعادة التفعيل."
+            : "Biometric sign-in was disabled because your password changed. Please sign in and re-enable it.",
+        );
+        return;
+      }
+      toast.success(t("auth.login.success"));
+      const redirectAfterAuth = consumeReturnUrl() || returnTo;
+      navigate(redirectAfterAuth || "/dashboard");
+    } catch (err: any) {
+      const code = err?.message || err?.name || "";
+      if (code === "NotAllowedError" || code === "BIOMETRIC_CANCELLED") {
+        // User cancelled; stay quiet.
+      } else if (code === "BIOMETRIC_NOT_ENROLLED") {
+        setBioEnrolled(false);
+      } else {
+        toast.error(
+          isRTL ? "فشل تسجيل الدخول بالبصمة" : "Biometric sign-in failed",
+        );
+      }
+    } finally {
+      setBioLoading(false);
+    }
+  };
 
   const cms = authContent?.login || {};
   const heroImage = cms.image || defaultHeroImage;
@@ -190,6 +255,41 @@ const Login: React.FC = () => {
                   </>
                 )}
               </Button>
+
+              {bioAvailable && bioEnrolled && (
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-border/60" />
+                    <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {isRTL ? "أو" : "or"}
+                    </span>
+                    <div className="flex-1 h-px bg-border/60" />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-11 sm:h-12 text-base gap-2"
+                    onClick={handleBiometricLogin}
+                    disabled={bioLoading || isLoading}
+                  >
+                    {bioLoading ? (
+                      <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Fingerprint className="w-5 h-5 text-primary" />
+                        <span>
+                          {isRTL ? "تسجيل الدخول بالبصمة" : "Sign in with biometric"}
+                        </span>
+                      </>
+                    )}
+                  </Button>
+                  {bioEmail && (
+                    <p className="text-[11px] text-center text-muted-foreground truncate">
+                      {bioEmail}
+                    </p>
+                  )}
+                </div>
+              )}
             </form>
 
             <div className="mt-5 sm:mt-6 text-center text-sm sm:text-base text-muted-foreground">

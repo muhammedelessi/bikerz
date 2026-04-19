@@ -25,6 +25,7 @@ import {
   Home,
   GraduationCap,
   Settings,
+  ShieldCheck,
   LogOut,
   Menu,
   X,
@@ -242,6 +243,7 @@ const Dashboard: React.FC = () => {
     { icon: GraduationCap, label: t('dashboard.myCourses'), to: '/dashboard', active: true },
     { icon: Users, label: t('nav.mentors'), to: '/mentors' },
     { icon: User, label: t('profile.title'), to: '/profile' },
+    { icon: ShieldCheck, label: isRTL ? 'الإعدادات والأمان' : 'Settings & Security', to: '/settings' },
     ...(isAdmin ? [{ icon: Settings, label: t('nav.adminPanel'), to: '/admin' }] : []),
   ];
 

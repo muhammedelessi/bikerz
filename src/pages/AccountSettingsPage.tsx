@@ -1,22 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import SEOHead from '@/components/common/SEOHead';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import LanguageToggle from '@/components/common/LanguageToggle';
-import { RiderIdentity } from '@/components/ui/profile/RiderIdentity';
-import { RankSection } from '@/components/ui/profile/RankSection';
-import { BikeInformation } from '@/components/ui/profile/BikeInformation';
-import { LearningProgress } from '@/components/ui/profile/LearningProgress';
-import { ProfileAchievements } from '@/components/ui/profile/ProfileAchievements';
-import { ActivityTimeline } from '@/components/ui/profile/ActivityTimeline';
+import { AccountSettings } from '@/components/ui/profile/AccountSettings';
 import {
-  ChevronLeft,
-  ChevronRight,
   Menu,
   X,
   Home,
@@ -30,30 +22,19 @@ import {
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 import { useTheme } from '@/components/ThemeProvider';
-import { useState, useEffect } from 'react';
 
-const Profile: React.FC = () => {
+const AccountSettingsPage: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const {
-    profile,
-    learningStats,
-    activities,
-    isLoading,
-    isUpdating,
-    updateProfile,
-    uploadAvatar,
-  } = useUserProfile();
+  const { profile, isLoading, isUpdating, updateProfile } = useUserProfile();
 
   const { theme } = useTheme();
   const themeLogo = theme === 'light' ? logoDark : logoLight;
-  const Chevron = isRTL ? ChevronLeft : ChevronRight;
 
-  // Lock body scroll when sidebar is open on mobile
   useEffect(() => {
     if (sidebarOpen) {
       document.body.style.overflow = 'hidden';
@@ -65,32 +46,37 @@ const Profile: React.FC = () => {
     };
   }, [sidebarOpen]);
 
-  // Redirect to login if no user
   useEffect(() => {
     if (!user) {
       navigate('/login');
     }
   }, [user, navigate]);
 
+  const settingsLabel = isRTL ? 'الإعدادات والأمان' : 'Settings & Security';
+  const settingsSubtitle = isRTL
+    ? 'إدارة حسابك وتفضيلاتك وأمان تسجيل الدخول'
+    : 'Manage your account, preferences, and sign-in security';
+
   const navItems = [
     { icon: Home, label: t('nav.home'), to: '/' },
     { icon: BookOpen, label: t('nav.courses'), to: '/courses' },
     { icon: GraduationCap, label: t('dashboard.myCourses'), to: '/dashboard' },
     { icon: Users, label: t('nav.mentors'), to: '/mentors' },
-    { icon: User, label: t('profile.title'), to: '/profile', active: true },
-    { icon: ShieldCheck, label: isRTL ? 'الإعدادات والأمان' : 'Settings & Security', to: '/settings' },
+    { icon: User, label: t('profile.title'), to: '/profile' },
+    { icon: ShieldCheck, label: settingsLabel, to: '/settings', active: true },
     ...(isAdmin ? [{ icon: Settings, label: t('nav.adminPanel'), to: '/admin' }] : []),
   ];
 
-  // Show nothing while redirecting
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-background flex">
-      <SEOHead title="My Profile" description="Manage your BIKERZ Academy profile, achievements, and rider identity." noindex />
-      {/* Mobile Overlay */}
+      <SEOHead
+        title={settingsLabel}
+        description="Manage your BIKERZ Academy account, preferences, and biometric sign-in."
+        noindex
+      />
+
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
@@ -98,7 +84,6 @@ const Profile: React.FC = () => {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 z-50 w-[280px] max-w-[85vw] bg-card border-e border-border transform transition-transform duration-300 ease-out lg:translate-x-0 ${
           sidebarOpen
@@ -109,7 +94,6 @@ const Profile: React.FC = () => {
         } ${isRTL ? 'right-0' : 'left-0'}`}
       >
         <div className="flex flex-col h-full safe-area-inset">
-          {/* Logo */}
           <div className="p-4 sm:p-6 border-b border-border flex items-center justify-between">
             <Link to="/" className="flex items-center">
               <img
@@ -123,12 +107,12 @@ const Profile: React.FC = () => {
             <button
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden p-2 rounded-lg hover:bg-muted/50 transition-colors touch-target"
+              aria-label="Close sidebar"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Nav Items */}
           <nav className="flex-1 p-3 sm:p-4 space-y-1 sm:space-y-2 overflow-y-auto">
             {navItems.map((item) => (
               <Link
@@ -149,24 +133,23 @@ const Profile: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 lg:ms-[280px] min-w-0">
-        {/* Top Bar */}
         <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border safe-area-top">
           <div className="flex items-center justify-between p-3 sm:p-4">
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="lg:hidden p-2 rounded-lg hover:bg-muted/50 transition-colors touch-target flex-shrink-0"
+                aria-label="Open sidebar"
               >
                 <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
               <div className="min-w-0">
                 <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">
-                  {t('profile.title')}
+                  {settingsLabel}
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
-                  {t('profile.subtitle')}
+                  {settingsSubtitle}
                 </p>
               </div>
             </div>
@@ -174,54 +157,18 @@ const Profile: React.FC = () => {
           </div>
         </header>
 
-        {/* Profile Content */}
-        <div className="p-6 space-y-8 safe-area-bottom">
+        <div className="p-4 sm:p-6 space-y-6 safe-area-bottom max-w-3xl">
           {isLoading ? (
-            <div className="space-y-6">
+            <div className="space-y-4">
+              <Skeleton className="h-32 rounded-xl" />
               <Skeleton className="h-48 rounded-xl" />
-              <Skeleton className="h-40 rounded-xl" />
-              <Skeleton className="h-60 rounded-xl" />
             </div>
           ) : profile ? (
-            <>
-              {/* A. Rider Identity */}
-              <div id="profile-section-identity">
-                <RiderIdentity
-                  profile={profile}
-                  onUpdate={updateProfile}
-                  onAvatarUpload={uploadAvatar}
-                  isUpdating={isUpdating}
-                />
-              </div>
-
-              {/* A2. Rank Section */}
-              {learningStats && (
-                <RankSection
-                  profile={profile}
-                  enrollments={learningStats.enrollments || []}
-                />
-              )}
-
-              {/* B. Bike Information */}
-              <div id="profile-section-bike">
-                <BikeInformation
-                  profile={profile}
-                  onUpdate={updateProfile}
-                  isUpdating={isUpdating}
-                />
-              </div>
-
-              {/* C. Learning Progress */}
-              {learningStats && (
-                <LearningProgress stats={learningStats} />
-              )}
-
-              {/* D. Achievements */}
-              <ProfileAchievements />
-
-              {/* E. Activity Timeline */}
-              <ActivityTimeline activities={activities} />
-            </>
+            <AccountSettings
+              profile={profile}
+              onUpdate={updateProfile}
+              isUpdating={isUpdating}
+            />
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
@@ -235,4 +182,4 @@ const Profile: React.FC = () => {
   );
 };
 
-export default Profile;
+export default AccountSettingsPage;
