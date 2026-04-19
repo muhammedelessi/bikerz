@@ -76,8 +76,8 @@ export const BundleBottomBar: React.FC<Props> = ({
                   {lineTitles.length > 3 ? (isRTL ? ` +${lineTitles.length - 3}` : ` +${lineTitles.length - 3}`) : ''}
                 </p>
                 {selectedCourses.length === 1 && (
-                  <p className="text-xs text-amber-500">
-                    {isRTL ? '⚡ أضف كورساً واحداً فقط لتفعيل الخصم!' : '⚡ Add just 1 more course to unlock discounts!'}
+                  <p className="text-xs font-medium text-amber-600 dark:text-amber-500">
+                    {isRTL ? "أضف كورساً واحداً لتفعيل خصم الباقة." : "Add one more course to unlock bundle pricing."}
                   </p>
                 )}
                 {display.applicableTier && (
@@ -92,10 +92,12 @@ export const BundleBottomBar: React.FC<Props> = ({
                       <span className="text-muted-foreground">→</span>
                     </>
                   ) : null}
-                  <span className="text-base sm:text-lg font-bold text-foreground tabular-nums">
+                  <span className="text-base font-bold text-foreground tabular-nums sm:text-lg">
                     {display.finalPrice} {currSym}
                   </span>
-                  {display.discountPct > 0 ? <Sparkles className="w-4 h-4 text-amber-500 shrink-0" /> : null}
+                  {display.discountPct > 0 ? (
+                    <Sparkles className="h-4 w-4 shrink-0 text-amber-500" aria-hidden />
+                  ) : null}
                 </div>
               </div>
               <Button type="button" variant="ghost" size="sm" className="shrink-0 text-muted-foreground h-8 px-2.5" onClick={onClear}>
@@ -124,18 +126,22 @@ export const BundleBottomBar: React.FC<Props> = ({
             <Button
               type="button"
               variant="cta"
-              className="w-full h-10.5 rounded-xl font-bold text-sm"
+              className="h-11 w-full rounded-lg text-sm font-semibold"
               disabled={selectedCourses.length < 2}
               onClick={onCheckout}
             >
-              <ShoppingBag className="w-4 h-4 me-2" />
+              <ShoppingBag className="me-2 h-4 w-4" aria-hidden />
               {selectedCourses.length < 2
                 ? isRTL
-                  ? `اختر ${2 - selectedCourses.length} كورس أكثر`
-                  : `Select ${2 - selectedCourses.length} more course`
+                  ? selectedCourses.length === 0
+                    ? "اختر كورسين على الأقل"
+                    : "أضف كورساً واحداً للمزيد من الخصم"
+                  : selectedCourses.length === 0
+                    ? "Select at least 2 courses"
+                    : "Add 1 more course"
                 : isRTL
-                  ? `🛍 اشترِ الباقة — ${display.finalPrice} ${currSym}`
-                  : `🛍 Buy Bundle — ${display.finalPrice} ${currSym}`}
+                  ? `شراء الباقة · ${display.finalPrice} ${currSym}`
+                  : `Buy bundle · ${display.finalPrice} ${currSym}`}
             </Button>
           </div>
         </motion.div>

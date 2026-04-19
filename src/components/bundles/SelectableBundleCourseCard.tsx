@@ -1,9 +1,9 @@
-import React from 'react';
-import { Check, Eye, Plus } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useCurrency } from '@/contexts/CurrencyContext';
+import React from "react";
+import { Check, Circle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 export type BundleSelectableCourse = {
   id: string;
@@ -25,7 +25,7 @@ type Props = {
   onToggle: () => void;
 };
 
-const fallbackImg = '/hero-rider.webp';
+const fallbackImg = "/hero-rider.webp";
 
 export const SelectableBundleCourseCard: React.FC<Props> = ({
   course,
@@ -46,61 +46,68 @@ export const SelectableBundleCourseCard: React.FC<Props> = ({
 
   return (
     <div
-      role="button"
+      role="checkbox"
+      aria-checked={selected}
       tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled}
       onClick={() => !disabled && onToggle()}
       onKeyDown={(e) => {
         if (disabled) return;
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           onToggle();
         }
       }}
       className={cn(
-        'relative text-start rounded-2xl border transition-all duration-300 w-full overflow-hidden cursor-pointer h-full',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-        disabled && 'opacity-60 cursor-not-allowed',
-        selected && !disabled && 'border-primary bg-primary/5 scale-[1.01] shadow-md',
-        !selected && !disabled && 'border-border/70 bg-card hover:border-primary/40 hover:shadow-sm',
+        "group relative flex flex-col overflow-hidden rounded-xl border bg-card text-start transition-[border-color,box-shadow] duration-200",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+        disabled && "cursor-not-allowed opacity-55",
+        !disabled && "cursor-pointer",
+        selected && !disabled && "border-primary ring-1 ring-primary/30",
+        !selected && !disabled && "border-border/80 hover:border-primary/40 hover:shadow-sm",
       )}
-      dir={isRTL ? 'rtl' : 'ltr'}
+      dir={isRTL ? "rtl" : "ltr"}
     >
-      {selected && !disabled && (
-        <div className="absolute top-0 inset-x-0 z-10 flex items-center justify-center gap-1.5 bg-emerald-500 text-white text-xs font-bold py-1.5">
-          <Check className="w-3.5 h-3.5" />
-          {isRTL ? '✓ تمت الإضافة للباقة' : '✓ Added to bundle'}
-        </div>
-      )}
-      {!selected && !disabled && (
-        <div className="absolute top-2 end-2 z-10 flex items-center gap-1 px-2 py-1 rounded-full bg-background/80 backdrop-blur-sm border border-border text-[10px] text-muted-foreground">
-          <Plus className="w-3 h-3" />
-          {isRTL ? 'إضافة' : 'Add'}
-        </div>
-      )}
-      <div className={cn('relative aspect-video w-full bg-muted border-b border-border/50', selected ? 'mt-7' : '')}>
-        <img src={thumb} alt="" className="h-full w-full object-cover" loading="lazy" />
-      </div>
-      <div className="p-3 pb-12 space-y-1">
-        <h3 className="font-semibold text-sm line-clamp-2 leading-snug">{title}</h3>
-        <p className="text-sm font-bold text-primary tabular-nums">
-          {priceInfo.finalPrice} {sym}
-        </p>
-        {disabled && disabledReason && (
-          <span className="inline-block text-[10px] rounded-md bg-muted px-1.5 py-0.5 text-muted-foreground">{disabledReason}</span>
-        )}
-      </div>
-      <Link
-        to={`/courses/${course.id}`}
-        onClick={(e) => e.stopPropagation()}
+      {/* Selection indicator (card handles toggle) */}
+      <span
+        aria-hidden
         className={cn(
-          'absolute bottom-2 inset-x-2 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-background/80 backdrop-blur-sm border border-border text-xs transition-colors',
-          'text-foreground lg:text-muted-foreground lg:hover:text-foreground lg:hover:border-primary/50',
+          "pointer-events-none absolute end-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm transition-colors",
+          selected && !disabled
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-border/80 bg-background/90 backdrop-blur-sm text-muted-foreground",
+          disabled && "opacity-50",
         )}
       >
-        <Eye className="w-3 h-3" />
-        {isRTL ? 'عرض التفاصيل' : 'View Details'}
-      </Link>
+        {selected && !disabled ? (
+          <Check className="h-4 w-4 stroke-[2.5]" />
+        ) : (
+          <Circle className="h-4 w-4 opacity-40" />
+        )}
+      </span>
+
+      <div className="relative aspect-video w-full bg-muted">
+        <img src={thumb} alt="" className="h-full w-full object-cover" loading="lazy" />
+      </div>
+
+      <div className="flex flex-1 flex-col gap-2 p-3 pt-3.5">
+        <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug text-foreground">{title}</h3>
+        <div className="mt-auto flex items-end justify-between gap-2 pt-1">
+          <p className="text-sm font-bold tabular-nums text-primary">
+            {priceInfo.finalPrice} {sym}
+          </p>
+          <Link
+            to={`/courses/${course.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-[11px] font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+          >
+            {isRTL ? "تفاصيل" : "Details"}
+          </Link>
+        </div>
+        {disabled && disabledReason && (
+          <p className="text-[11px] text-muted-foreground">{disabledReason}</p>
+        )}
+      </div>
     </div>
   );
 };

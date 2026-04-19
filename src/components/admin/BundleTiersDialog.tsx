@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -24,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Loader2, AlertTriangle, Percent, Hash } from "lucide-react";
 import { toast } from "sonner";
 import type { BundleTierRow } from "@/types/bundle";
 
@@ -64,10 +65,7 @@ const BundleTiersDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["bundle-tiers"],
     queryFn: async () => {
-      const { data: tiers, error } = await supabase
-        .from("bundle_tiers")
-        .select("*")
-        .order("min_courses", { ascending: true });
+      const { data: tiers, error } = await supabase.from("bundle_tiers").select("*").order("min_courses", { ascending: true });
       if (error) throw error;
       return (tiers ?? []) as BundleTierRow[];
     },
@@ -103,6 +101,12 @@ const BundleTiersDialog: React.FC<Props> = ({ open, onOpenChange }) => {
     return false;
   }, [rows]);
 
+  const sortedIndices = useMemo(() => {
+    return rows
+      .map((_, i) => i)
+      .sort((a, b) => rows[a].min_courses - rows[b].min_courses);
+  }, [rows]);
+
   const updateRow = (index: number, patch: Partial<EditableTier>) => {
     setRows((prev) => {
       const next = [...prev];
@@ -113,8 +117,7 @@ const BundleTiersDialog: React.FC<Props> = ({ open, onOpenChange }) => {
 
   const addRow = () => {
     setRows((prev) => {
-      const nextMin =
-        prev.length === 0 ? 2 : Math.max(2, ...prev.map((r) => r.min_courses)) + 1;
+      const nextMin = prev.length === 0 ? 2 : Math.max(2, ...prev.map((r) => r.min_courses)) + 1;
       return [
         ...prev,
         {
@@ -205,21 +208,20 @@ const BundleTiersDialog: React.FC<Props> = ({ open, onOpenChange }) => {
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent
-          className="max-w-3xl max-h-[90vh] overflow-y-auto"
-          dir={isRTL ? "rtl" : "ltr"}
-        >
-          <DialogHeader>
-            <DialogTitle>{isRTL ? "إعداد خصومات الباقات" : "Bundle discount tiers"}</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto sm:max-w-xl" dir={isRTL ? "rtl" : "ltr"}>
+          <DialogHeader className="space-y-2 text-start sm:text-start">
+            <DialogTitle className="text-lg">
+              {isRTL ? "خصومات الباقات" : "Bundle discount tiers"}
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-relaxed">
               {isRTL
-                ? "كلما اختار المستخدم كورسات أكثر، حصل على خصم أكبر."
-                : "The more courses a user selects, the larger the discount can be."}
+                ? "كل مستوى يربط عدداً أدنى من الكورسات بنسبة خصم. يجب أن تكون قيماً min_courses مختلفة، ويفضّل أن يزداد الخصم عند طلب عدد أكبر من الكورسات."
+                : "Each tier maps a minimum number of courses to a discount percentage. Use unique course counts; higher counts should usually mean a higher discount."}
             </DialogDescription>
           </DialogHeader>
 
           {isLoading ? (
-            <div className="flex justify-center py-12">
+            <div className="flex justify-center py-14">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
@@ -229,8 +231,8 @@ const BundleTiersDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
                     {isRTL
-                      ? "يوجد تكرار في عدد الكورسات لبعض الصفوف."
-                      : "Duplicate min_courses values in the table."}
+                      ? "يوجد تكرار في الحد الأدنى لعدد الكورسات. عدّل القيم ثم احفظ."
+                      : "Duplicate minimum course counts. Fix the values before saving."}
                   </AlertDescription>
                 </Alert>
               )}
@@ -239,99 +241,138 @@ const BundleTiersDialog: React.FC<Props> = ({ open, onOpenChange }) => {
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
                     {isRTL
-                      ? "تنبيه: من الأفضل أن يزداد الخصم عند زيادة عدد الكورسات المطلوبة."
-                      : "Warning: discount should generally increase as the required course count increases."}
+                      ? "من الأفضل أن يكون الخصم أعلى عندما يتطلّب المستوى كورسات أكثر."
+                      : "Consider increasing the discount percentage for tiers that require more courses."}
                   </AlertDescription>
                 </Alert>
               )}
 
-              <div className="rounded-md border border-border overflow-hidden">
-                <div className="grid grid-cols-12 gap-2 bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
-                  <div className="col-span-2">{isRTL ? "عدد الكورسات" : "Min courses"}</div>
-                  <div className="col-span-4">{isRTL ? "الاسم (عربي)" : "Label (AR)"}</div>
-                  <div className="col-span-4">{isRTL ? "الاسم (إنجليزي)" : "Label (EN)"}</div>
-                  <div className="col-span-1 text-center">{isRTL ? "خصم %" : "% off"}</div>
-                  <div className="col-span-1" />
-                </div>
-                <div className="divide-y divide-border">
-                  {rows.map((row, i) => (
-                    <div key={row.id ?? `new-${i}`} className="grid grid-cols-12 gap-2 px-3 py-3 items-center">
-                      <div className="col-span-2">
-                        <Input
-                          type="number"
-                          min={2}
-                          value={row.min_courses || ""}
-                          onChange={(e) => {
-                            const v = e.target.value === "" ? 2 : parseInt(e.target.value, 10);
-                            updateRow(i, { min_courses: Number.isFinite(v) ? Math.max(2, v) : 2 });
-                          }}
-                        />
+              <div className="space-y-3">
+                {sortedIndices.map((i) => {
+                  const row = rows[i];
+                  return (
+                    <div
+                      key={row.id ?? `new-${i}`}
+                      className="rounded-lg border border-border bg-card p-4 shadow-sm"
+                    >
+                      <div className="mb-3 flex items-start justify-between gap-2">
+                        <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                          {isRTL ? `المستوى · ${row.min_courses}+ كورسات` : `Tier · ${row.min_courses}+ courses`}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={row.is_active}
+                              onCheckedChange={(c) => updateRow(i, { is_active: c })}
+                              aria-label={isRTL ? "نشط" : "Active"}
+                            />
+                            <span className="text-xs text-muted-foreground">{isRTL ? "نشط" : "On"}</span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => {
+                              if (row.id) setDeleteId(row.id);
+                              else removeRowAt(i);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="col-span-4">
-                        <Input
-                          value={row.label_ar}
-                          onChange={(e) => updateRow(i, { label_ar: e.target.value })}
-                          placeholder="باقة الثنائي"
-                          dir="rtl"
-                        />
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`min-${i}`} className="flex items-center gap-1.5 text-xs font-medium">
+                            <Hash className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+                            {isRTL ? "الحد الأدنى للكورسات" : "Minimum courses"}
+                          </Label>
+                          <Input
+                            id={`min-${i}`}
+                            type="number"
+                            min={2}
+                            className="h-9"
+                            value={row.min_courses || ""}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? 2 : parseInt(e.target.value, 10);
+                              updateRow(i, { min_courses: Number.isFinite(v) ? Math.max(2, v) : 2 });
+                            }}
+                          />
+                          <p className="text-[11px] text-muted-foreground">
+                            {isRTL ? "من 2 فما فوق." : "2 or more."}
+                          </p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`pct-${i}`} className="flex items-center gap-1.5 text-xs font-medium">
+                            <Percent className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+                            {isRTL ? "نسبة الخصم" : "Discount %"}
+                          </Label>
+                          <Input
+                            id={`pct-${i}`}
+                            type="number"
+                            min={0}
+                            max={80}
+                            className="h-9"
+                            value={row.discount_percentage}
+                            onChange={(e) => {
+                              const v = parseFloat(e.target.value);
+                              updateRow(i, { discount_percentage: Number.isFinite(v) ? v : 0 });
+                            }}
+                          />
+                          <p className="text-[11px] text-muted-foreground">
+                            {isRTL ? "بين 0 و 80." : "Between 0 and 80."}
+                          </p>
+                        </div>
                       </div>
-                      <div className="col-span-4">
-                        <Input
-                          value={row.label_en}
-                          onChange={(e) => updateRow(i, { label_en: e.target.value })}
-                          placeholder="Duo bundle"
-                        />
-                      </div>
-                      <div className="col-span-1">
-                        <Input
-                          type="number"
-                          min={0}
-                          max={80}
-                          value={row.discount_percentage}
-                          onChange={(e) => {
-                            const v = parseFloat(e.target.value);
-                            updateRow(i, { discount_percentage: Number.isFinite(v) ? v : 0 });
-                          }}
-                        />
-                      </div>
-                      <div className="col-span-1 flex flex-col items-center gap-1">
-                        <Switch
-                          checked={row.is_active}
-                          onCheckedChange={(c) => updateRow(i, { is_active: c })}
-                          aria-label={isRTL ? "نشط" : "Active"}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => {
-                            if (row.id) setDeleteId(row.id);
-                            else removeRowAt(i);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`ar-${i}`} className="text-xs font-medium">
+                            {isRTL ? "الاسم (عربي)" : "Name (Arabic)"}
+                          </Label>
+                          <Input
+                            id={`ar-${i}`}
+                            value={row.label_ar}
+                            onChange={(e) => updateRow(i, { label_ar: e.target.value })}
+                            placeholder={isRTL ? "مثال: باقة الثنائي" : "e.g. Duo"}
+                            dir="rtl"
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`en-${i}`} className="text-xs font-medium">
+                            {isRTL ? "الاسم (إنجليزي)" : "Name (English)"}
+                          </Label>
+                          <Input
+                            id={`en-${i}`}
+                            value={row.label_en}
+                            onChange={(e) => updateRow(i, { label_en: e.target.value })}
+                            placeholder={isRTL ? "Duo bundle" : "e.g. Duo bundle"}
+                            className="h-9"
+                          />
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
 
-              <Button type="button" variant="outline" className="w-full gap-2" onClick={addRow}>
+              <Button type="button" variant="outline" className="w-full gap-2 border-dashed" onClick={addRow}>
                 <Plus className="h-4 w-4" />
-                {isRTL ? "إضافة مستوى جديد" : "Add tier"}
+                {isRTL ? "إضافة مستوى خصم" : "Add discount tier"}
               </Button>
             </div>
           )}
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               {isRTL ? "إلغاء" : "Cancel"}
             </Button>
             <Button onClick={handleSave} disabled={saving || isLoading}>
-              {saving && <Loader2 className="h-4 w-4 animate-spin me-2" />}
-              {isRTL ? "حفظ التغييرات" : "Save changes"}
+              {saving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+              {isRTL ? "حفظ" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -342,13 +383,13 @@ const BundleTiersDialog: React.FC<Props> = ({ open, onOpenChange }) => {
           <AlertDialogHeader>
             <AlertDialogTitle>{isRTL ? "حذف المستوى؟" : "Delete tier?"}</AlertDialogTitle>
             <AlertDialogDescription>
-              {isRTL ? "سيتم حذف هذا المستوى نهائياً عند الحفظ." : "This tier will be removed when you confirm."}
+              {isRTL ? "سيتم حذف هذا المستوى عند تأكيد الحفظ في قاعدة البيانات." : "This tier will be removed when you save."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{isRTL ? "إلغاء" : "Cancel"}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeleteRow} className="bg-destructive text-destructive-foreground">
-              {isRTL ? "حذف" : "Delete"}
+              {isRTL ? "حذف من القائمة" : "Remove from list"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

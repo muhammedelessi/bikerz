@@ -1,23 +1,45 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Loader2, Gift, CheckSquare, Tag, ShoppingBag, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
-import SEOHead from '@/components/common/SEOHead';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { fetchEnrollmentsWithLiveProgress, type EnrollmentWithProgress } from '@/lib/enrollmentProgress';
-import { useBundleTiers } from '@/hooks/useBundleTiers';
-import { loadBundleSelectionIds, saveBundleSelectionIds } from '@/lib/bundleSelectionStorage';
-import { navigateToSignup } from '@/lib/authReturnUrl';
-import { SelectableBundleCourseCard } from '@/components/bundles/SelectableBundleCourseCard';
-import { BundleBottomBar } from '@/components/bundles/BundleBottomBar';
-import BundleCheckoutModal from '@/components/checkout/BundleCheckoutModal';
-import type { CheckoutCourse } from '@/types/payment';
-import type { BundleCourseInput } from '@/types/bundle';
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2, Layers } from "lucide-react";
+import { cn } from "@/lib/utils";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import SEOHead from "@/components/common/SEOHead";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { fetchEnrollmentsWithLiveProgress, type EnrollmentWithProgress } from "@/lib/enrollmentProgress";
+import { useBundleTiers } from "@/hooks/useBundleTiers";
+import { loadBundleSelectionIds, saveBundleSelectionIds } from "@/lib/bundleSelectionStorage";
+import { navigateToSignup } from "@/lib/authReturnUrl";
+import { SelectableBundleCourseCard } from "@/components/bundles/SelectableBundleCourseCard";
+import { BundleBottomBar } from "@/components/bundles/BundleBottomBar";
+import { BundleTierLadder } from "@/components/bundles/BundleTierLadder";
+import BundleCheckoutModal from "@/components/checkout/BundleCheckoutModal";
+import type { CheckoutCourse } from "@/types/payment";
+import type { BundleCourseInput } from "@/types/bundle";
+
+const STEPS = [
+  {
+    titleAr: "اختر الكورسات",
+    titleEn: "Pick courses",
+    descAr: "أضف كورسين أو أكثر إلى سلة الباقة.",
+    descEn: "Add two or more courses to your bundle.",
+  },
+  {
+    titleAr: "يُطبّق الخصم تلقائياً",
+    titleEn: "Discount applies",
+    descAr: "كلما زاد العدد، زاد نسبة التوفير حسب الجدول.",
+    descEn: "The more you add, the higher the tier discount.",
+  },
+  {
+    titleAr: "ادفع وابدأ",
+    titleEn: "Pay & learn",
+    descAr: "تفعيل فوري لجميع الكورسات بعد الدفع.",
+    descEn: "All courses unlock instantly after checkout.",
+  },
+] as const;
 
 const Bundles: React.FC = () => {
   const { isRTL } = useLanguage();
@@ -30,22 +52,22 @@ const Bundles: React.FC = () => {
   const { data: tiers = [], isLoading: tiersLoading } = useBundleTiers();
 
   const { data: courses = [], isLoading: coursesLoading } = useQuery({
-    queryKey: ['bundles-courses'],
+    queryKey: ["bundles-courses"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('courses')
+        .from("courses")
         .select(
-          'id, title, title_ar, thumbnail_url, preview_video_thumbnail, price, discount_percentage, discount_expires_at, vat_percentage, is_published',
+          "id, title, title_ar, thumbnail_url, preview_video_thumbnail, price, discount_percentage, discount_expires_at, vat_percentage, is_published",
         )
-        .eq('is_published', true)
-        .order('created_at', { ascending: true });
+        .eq("is_published", true)
+        .order("created_at", { ascending: true });
       if (error) throw error;
       return data ?? [];
     },
   });
 
   const { data: enrollments = [] } = useQuery({
-    queryKey: ['user-enrollments', user?.id],
+    queryKey: ["user-enrollments", user?.id],
     queryFn: async () => {
       if (!user) return [];
       return (await fetchEnrollmentsWithLiveProgress(user.id)) as EnrollmentWithProgress[];
@@ -56,11 +78,11 @@ const Bundles: React.FC = () => {
   const getEnrollment = (courseId: string) => enrollments.find((e) => e.course_id === courseId);
 
   useEffect(() => {
-    const fromUrl = searchParams.get('selected');
+    const fromUrl = searchParams.get("selected");
     const fromLs = loadBundleSelectionIds();
     const parsed = fromUrl
       ? fromUrl
-          .split(',')
+          .split(",")
           .map((s) => s.trim())
           .filter(Boolean)
       : [];
@@ -122,160 +144,154 @@ const Bundles: React.FC = () => {
   const noTiers = !tiersLoading && activeTiers.length === 0;
 
   return (
-    <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-background" dir={isRTL ? "rtl" : "ltr"}>
       <SEOHead
-        title={isRTL ? 'باقات الكورسات' : 'Course bundles'}
-        description={isRTL ? 'اصنع باقتك ووفّر أكثر' : 'Build your bundle and save'}
+        title={isRTL ? "باقات الكورسات" : "Course bundles"}
+        description={isRTL ? "اختر أكثر من كورس ووفّر أكثر." : "Pick multiple courses and save more."}
         canonical="/bundles"
       />
       <Navbar />
-      <main className="pt-[calc(var(--navbar-h)+1.5rem)] section-container pb-[calc(env(safe-area-inset-bottom)+4rem)] space-y-8">
-        <div className="max-w-7xl mx-auto space-y-8">
-        <section className="rounded-3xl border border-border/50 bg-gradient-to-b from-muted/30 to-transparent px-4 sm:px-6 py-6 sm:py-8">
-          <div className="text-center space-y-2">
-            <h1 className="text-2xl sm:text-3xl font-bold flex items-center justify-center gap-2">
-            <Gift className="w-7 h-7 text-primary" />
-            {isRTL ? 'اصنع باقتك الخاصة' : 'Build your bundle'}
-            </h1>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              {isRTL ? 'وفّر أكثر مع كل كورس تضيفه' : 'Save more with every course you add'}
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl mx-auto mt-6">
-            {[
-            {
-              step: '1',
-              icon: <CheckSquare className="w-5 h-5" />,
-              titleAr: 'اختر كورسين أو أكثر',
-              titleEn: 'Select 2+ courses',
-              descAr: 'انقر على الكورسات التي تريدها',
-              descEn: 'Tap the courses you want',
-            },
-            {
-              step: '2',
-              icon: <Tag className="w-5 h-5" />,
-              titleAr: 'احصل على خصم تلقائي',
-              titleEn: 'Get automatic discount',
-              descAr: 'الخصم يزيد كلما أضفت أكثر',
-              descEn: 'More courses = bigger discount',
-            },
-            {
-              step: '3',
-              icon: <ShoppingBag className="w-5 h-5" />,
-              titleAr: 'اشترِ وابدأ التعلم',
-              titleEn: 'Buy & start learning',
-              descAr: 'جميع الكورسات تُفعّل فوراً',
-              descEn: 'All courses unlocked instantly',
-            },
-            ].map((s) => (
-              <div
-                key={s.step}
-                className="flex flex-col items-center text-center p-3.5 rounded-2xl bg-background/70 border border-border/50 gap-2 min-h-[122px] transition-all duration-300 hover:border-primary/30 hover:shadow-sm"
-              >
-                <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">{s.icon}</div>
-                <p className="font-bold text-xs sm:text-sm">{isRTL ? s.titleAr : s.titleEn}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">{isRTL ? s.descAr : s.descEn}</p>
-              </div>
-            ))}
-          </div>
-        </section>
 
-        {loading && (
-          <div className="flex justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
+      <main
+        className={cn(
+          "pt-[calc(var(--navbar-h)+1rem)]",
+          "pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:pb-[calc(env(safe-area-inset-bottom)+5rem)]",
         )}
-
-        {noTiers && !loading && (
-          <p className="text-center text-muted-foreground py-12 rounded-2xl border border-dashed border-border">
-            {isRTL ? 'لم يتم إعداد خصومات الباقات بعد' : 'Bundle discounts not configured yet'}
-          </p>
-        )}
-
-        {!loading && !noTiers && (
-          <>
-            {selectedIds.length === 0 && (
-              <div className="flex items-start gap-3 p-4 rounded-2xl bg-primary/5 border border-primary/20 mb-6">
-                <span className="text-2xl shrink-0">👆</span>
-                <div>
-                  <p className="font-semibold text-sm">{isRTL ? 'كيف تشتري باقة؟' : 'How to buy a bundle?'}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {isRTL
-                      ? 'انقر على أي كورس لإضافته، اختر كورسين أو أكثر وستظهر لك أسعار الباقة في الأسفل'
-                      : 'Tap any course to add it, select 2+ courses and the bundle price will appear at the bottom'}
-                  </p>
-                </div>
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {/* Page intro */}
+          <header className="border-b border-border/60 pb-8 sm:pb-10">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+              <div className="space-y-1">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  {isRTL ? "التسعير" : "Pricing"}
+                </p>
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                  {isRTL ? "باقات الكورسات" : "Course bundles"}
+                </h1>
+                <p className="max-w-xl text-sm text-muted-foreground">
+                  {isRTL
+                    ? "اجمع الكورسات التي تحتاجها في عملية شراء واحدة واستفد من خصم يزداد مع عدد الكورسات."
+                    : "Combine the courses you need in one purchase—discounts increase as you add more."}
+                </p>
               </div>
-            )}
-            <div className="space-y-4">
-            <div className="w-full max-w-5xl mx-auto">
-              <p className="text-sm font-semibold text-foreground mb-2 text-center">
-                {isRTL ? 'مستويات الخصم' : 'Discount tiers'}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground sm:pb-0.5">
+                <Layers className="h-4 w-4 text-primary" aria-hidden />
+                <span>
+                  {isRTL ? "الحد الأدنى لخصم الباقة: كورسان" : "Bundle discounts start at 2+ courses"}
+                </span>
+              </div>
+            </div>
+
+            {/* Steps — horizontal, scan-friendly */}
+            <ol className="mt-8 grid gap-4 sm:grid-cols-3">
+              {STEPS.map((s, i) => (
+                <li key={i} className="relative flex gap-3 rounded-lg border border-border/60 bg-card/80 p-4">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-semibold text-primary-foreground">
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 space-y-0.5">
+                    <p className="text-sm font-medium text-foreground">{isRTL ? s.titleAr : s.titleEn}</p>
+                    <p className="text-xs leading-relaxed text-muted-foreground">{isRTL ? s.descAr : s.descEn}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </header>
+
+          {loading && (
+            <div className="flex flex-col items-center justify-center gap-3 py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">{isRTL ? "جاري التحميل…" : "Loading…"}</p>
+            </div>
+          )}
+
+          {noTiers && !loading && (
+            <div className="my-16 rounded-lg border border-dashed border-border/70 bg-muted/30 px-6 py-14 text-center">
+              <p className="text-sm font-medium text-foreground">
+                {isRTL ? "خصومات الباقات غير مفعّلة بعد" : "Bundle discounts are not set up yet"}
               </p>
-              <div className="flex gap-3 overflow-x-auto md:overflow-visible md:flex-wrap pb-2 -mx-2 px-2 w-full justify-start md:justify-center">
-              {activeTiers.map((tier) => (
-                <div
-                  key={tier.id}
-                  className={cn(
-                    'flex-shrink-0 rounded-2xl border-2 p-3 min-w-[120px] transition-all',
-                    selectedIds.length >= tier.min_courses
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border/50 bg-muted/20 opacity-70',
-                  )}
-                >
-                  <p
-                    className={cn(
-                      'text-2xl font-black tabular-nums',
-                      selectedIds.length >= tier.min_courses ? 'text-primary' : 'text-muted-foreground',
-                    )}
-                  >
-                    {Number(tier.discount_percentage)}%
-                  </p>
-                  <p className="text-xs font-medium mt-0.5">
-                    {isRTL ? tier.label_ar || tier.label_en : tier.label_en || tier.label_ar}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {tier.min_courses}+ {isRTL ? 'كورسات' : 'courses'}
-                  </p>
-                  {selectedIds.length >= tier.min_courses && (
-                    <div className="flex items-center gap-1 mt-1.5 text-emerald-600 text-[10px]">
-                      <Check className="w-3 h-3" />
-                      {isRTL ? 'مفعّل ✓' : 'Active ✓'}
+              <p className="mx-auto mt-2 max-w-md text-xs text-muted-foreground">
+                {isRTL
+                  ? "عُد لاحقاً أو تواصل مع الدعم إذا كان يفترض أن تظهر هذه الصفحة."
+                  : "Please check back later or contact support if bundles should be available."}
+              </p>
+            </div>
+          )}
+
+          {!loading && !noTiers && (
+            <div className="mt-8 lg:mt-10">
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start lg:gap-10 xl:grid-cols-[minmax(0,1fr)_300px]">
+                <div className="min-w-0 space-y-6 lg:space-y-8">
+                  {/* Mobile / tablet: tier rules before picking courses */}
+                  <div className="lg:hidden">
+                    <BundleTierLadder tiers={tiers} selectedCount={selectedIds.length} variant="compact" />
+                  </div>
+
+                  {selectedIds.length === 0 && (
+                    <div
+                      className="flex gap-3 rounded-lg border border-primary/25 bg-primary/[0.06] px-4 py-3 sm:items-center"
+                      role="status"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-sm font-semibold text-primary">
+                        !
+                      </div>
+                      <div className="min-w-0 text-sm">
+                        <p className="font-medium text-foreground">
+                          {isRTL ? "ابدأ باختيار الكورسات" : "Start by selecting courses"}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {isRTL
+                            ? "انقر على بطاقة الكورس لتضمينها. عند اختيار كورسين أو أكثر تظهر الأسعار النهائية في الشريط السفلي."
+                            : "Tap a course card to include it. With 2+ courses, your bundle total appears in the bar at the bottom."}
+                        </p>
+                      </div>
                     </div>
                   )}
+
+                  <section aria-labelledby="bundle-courses-heading">
+                    <div className="mb-4 flex flex-wrap items-end justify-between gap-2 border-b border-border/50 pb-3">
+                      <div>
+                        <h2 id="bundle-courses-heading" className="text-base font-semibold text-foreground">
+                          {isRTL ? "الكورسات المتاحة" : "Available courses"}
+                        </h2>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {isRTL
+                            ? "الكورسات التي سبق شراؤها تظهر معطّلة."
+                            : "Courses you already own are shown as disabled."}
+                        </p>
+                      </div>
+                      <span className="tabular-nums text-xs text-muted-foreground">
+                        {courses.length} {isRTL ? "كورس" : "courses"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                      {courses.map((c: any) => {
+                        const en = getEnrollment(c.id);
+                        const disabled = !!en;
+                        return (
+                          <SelectableBundleCourseCard
+                            key={c.id}
+                            course={c}
+                            selected={selectedIds.includes(c.id)}
+                            disabled={disabled}
+                            disabledReason={disabled ? (isRTL ? "تم الشراء مسبقاً" : "Already purchased") : undefined}
+                            onToggle={() => toggle(c.id)}
+                          />
+                        );
+                      })}
+                    </div>
+                  </section>
                 </div>
-              ))}
-            </div>
-            </div>
-            <div className="min-w-0 max-w-5xl mx-auto w-full">
-              <div className="mb-3 sm:mb-4 flex items-center justify-between">
-                <p className="text-sm font-semibold text-foreground">
-                  {isRTL ? 'الكورسات المتاحة في الباقة' : 'Courses available for bundle'}
-                </p>
-                <p className="text-xs text-muted-foreground tabular-nums">
-                  {courses.length} {isRTL ? 'كورس' : 'courses'}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                {courses.map((c: any) => {
-                  const en = getEnrollment(c.id);
-                  const disabled = !!en;
-                  return (
-                    <SelectableBundleCourseCard
-                      key={c.id}
-                      course={c}
-                      selected={selectedIds.includes(c.id)}
-                      disabled={disabled}
-                      disabledReason={disabled ? (isRTL ? 'مسجّل بالفعل' : 'Already enrolled') : undefined}
-                      onToggle={() => toggle(c.id)}
-                    />
-                  );
-                })}
+
+                {/* Desktop: sticky discount reference */}
+                <aside className="hidden lg:sticky lg:top-[calc(var(--navbar-h)+1rem)] lg:self-start lg:block">
+                  <BundleTierLadder tiers={tiers} selectedCount={selectedIds.length} variant="sidebar" />
+                </aside>
               </div>
             </div>
-            </div>
-          </>
-        )}
+          )}
         </div>
       </main>
 
@@ -291,12 +307,7 @@ const Bundles: React.FC = () => {
         onCheckout={handleBundleCheckout}
       />
 
-      <BundleCheckoutModal
-        open={checkoutOpen}
-        onOpenChange={setCheckoutOpen}
-        courses={checkoutCourses}
-        tiers={tiers}
-      />
+      <BundleCheckoutModal open={checkoutOpen} onOpenChange={setCheckoutOpen} courses={checkoutCourses} tiers={tiers} />
 
       <Footer />
     </div>
