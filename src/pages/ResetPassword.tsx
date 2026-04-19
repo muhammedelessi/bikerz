@@ -19,6 +19,8 @@ const ResetPassword: React.FC = () => {
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [ready, setReady] = useState(false);
@@ -65,20 +67,25 @@ const ResetPassword: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!password || !confirmPassword) {
-      toast.error(t('validation.required'));
-      return;
-    }
+    setPasswordError(null);
+    setConfirmPasswordError(null);
+
+    let hasError = false;
 
     if (password.length < 6) {
-      toast.error(isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
-      return;
+      setPasswordError(isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+      hasError = true;
     }
 
-    if (password !== confirmPassword) {
-      toast.error(isRTL ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match');
-      return;
+    if (!confirmPassword) {
+      setConfirmPasswordError(isRTL ? 'يرجى تأكيد كلمة المرور' : 'Please confirm your password');
+      hasError = true;
+    } else if (password !== confirmPassword) {
+      setConfirmPasswordError(isRTL ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match');
+      hasError = true;
     }
+
+    if (hasError) return;
 
     setIsLoading(true);
 
@@ -184,7 +191,8 @@ const ResetPassword: React.FC = () => {
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <PasswordField
                     value={password}
-                    onChange={setPassword}
+                    onChange={(val) => { setPassword(val); setPasswordError(null); }}
+                    error={passwordError}
                     disabled={isLoading}
                     required
                     autoComplete="new-password"
@@ -192,14 +200,15 @@ const ResetPassword: React.FC = () => {
 
                   <PasswordField
                     value={confirmPassword}
-                    onChange={setConfirmPassword}
+                    onChange={(val) => { setConfirmPassword(val); setConfirmPasswordError(null); }}
                     label={isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}
+                    error={confirmPasswordError}
                     disabled={isLoading}
                     required
                     autoComplete="new-password"
                   />
 
-                  <Button type="submit" variant="cta" className="w-full h-12" disabled={isLoading || password.length < 6 || password !== confirmPassword}>
+                  <Button type="submit" variant="cta" className="w-full h-12" disabled={isLoading}>
                     {isLoading ? (
                       <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                     ) : (

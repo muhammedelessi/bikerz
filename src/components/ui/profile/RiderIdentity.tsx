@@ -716,7 +716,7 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
         ) : (
           <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-            {isRTL ? "ملفك الشخصي مكتمل ✅" : "Profile complete ✅"}
+            {isRTL ? "أحسنت! ملفك الشخصي مكتمل" : "Good work! Your profile is complete"}
           </div>
         )}
       </div>

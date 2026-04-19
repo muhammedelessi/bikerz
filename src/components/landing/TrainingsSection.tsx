@@ -67,7 +67,7 @@ const TrainingsSection: React.FC = () => {
               🏁
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-foreground mb-2">
-              {isRTL ? 'التدريبات قيد الإعداد' : 'Trainings are being prepared'}
+              {isRTL ? 'التدريب العملي قيد الإعداد' : 'Trainings are being prepared'}
             </h2>
             <p className="text-muted-foreground mb-6">
               {isRTL ? 'سيتم إطلاق برامج التدريب قريباً' : 'Training programs launching soon'}
