@@ -23,14 +23,10 @@ const lazyRetry = (importFn: () => Promise<any>, retries = 3, delay = 1000): Pro
 
 const SocialProofNotification = lazy(() => lazyRetry(() => import("@/components/common/SocialProofNotification")));
 
-// Critical routes - loaded eagerly (above-the-fold / high-traffic)
+// Critical routes - loaded eagerly (above-the-fold / high-traffic). Trainings, trainers list/detail are lazy below.
 import Index from "./pages/Index";
 import Courses from "./pages/Courses";
-import Trainings from "./pages/Trainings";
-import TrainingDetail from "./pages/TrainingDetail";
 import TrainingBooking from "./pages/TrainingBooking";
-import Trainers from "./pages/Trainers";
-import TrainerProfile from "./pages/TrainerProfile";
 import CourseDetail from "./pages/CourseDetail";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -54,6 +50,11 @@ const BookingSuccess = lazy(() => import("./pages/BookingSuccess"));
 const MyBookings = lazy(() => import("./pages/MyBookings"));
 const JoinCommunity = lazy(() => import("./pages/JoinCommunity"));
 const Bundles = lazy(() => lazyRetry(() => import("./pages/Bundles")));
+const Trainings = lazy(() => import("./pages/Trainings"));
+const TrainingDetail = lazy(() => import("./pages/TrainingDetail"));
+const Trainers = lazy(() => import("./pages/Trainers"));
+const TrainerProfile = lazy(() => import("./pages/TrainerProfile"));
+const Ambassador = lazy(() => import("./pages/Ambassador"));
 const CommunityChampions = lazy(() => import("./pages/CommunityChampions"));
 const ChampionVideosList = lazy(() => import("./pages/ChampionVideosList"));
 const ChampionVideoDetail = lazy(() => import("./pages/ChampionVideoDetail"));
@@ -204,6 +205,7 @@ const AppRoutes = () => (
         <Route path="/community-champions/:championId/videos/:videoId" element={<ChampionVideoDetail />} />
         <Route path="/community-champions/:championId" element={<ChampionVideosList />} />
         <Route path="/community-champions" element={<CommunityChampions />} />
+        <Route path="/ambassador" element={<Ambassador />} />
 
         {/* Protected Routes */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
