@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -20,6 +20,7 @@ import CheckoutPaymentStep from "@/components/checkout/CheckoutPaymentStep";
 import CheckoutStatusOverlay from "@/components/checkout/CheckoutStatusOverlay";
 import type { CheckoutCourse } from "@/types/payment";
 import { navigateToSignup } from "@/lib/authReturnUrl";
+import { recordCheckoutPaymentPageVisit } from "@/services/checkoutVisitAnalytics";
 
 interface CheckoutModalProps {
   open: boolean;
@@ -28,6 +29,8 @@ interface CheckoutModalProps {
   onSuccess: () => void;
   onPaymentStarted?: () => void;
   vatPct?: number;
+  /** Analytics: where checkout was opened (e.g. course page vs learn page). */
+  visitSource?: string;
 }
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({
@@ -37,6 +40,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onSuccess,
   onPaymentStarted,
   vatPct: vatPctProp,
+  visitSource = "course_checkout",
 }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
@@ -89,6 +93,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     onOpenChange(false);
     navigateToSignup(navigate);
   }, [open, user, navigate, onOpenChange]);
+
+  const visitLoggedRef = useRef(false);
+  useEffect(() => {
+    if (!open) {
+      visitLoggedRef.current = false;
+      return;
+    }
+    if (!user) return;
+    if (visitLoggedRef.current) return;
+    visitLoggedRef.current = true;
+    recordCheckoutPaymentPageVisit({
+      userId: user.id,
+      courseId: course.id,
+      source: visitSource,
+    });
+  }, [open, user, course.id, visitSource]);
 
   const handleNextStep = useCallback(() => {
     if (!form.validateInfo()) return;

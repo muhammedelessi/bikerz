@@ -9,10 +9,11 @@ import { Separator } from "@/components/ui/separator";
 import { FormField } from "@/components/ui/form-field";
 import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
 import { COUNTRIES } from "@/data/countryCityData";
-import { Camera, Loader2, CalendarDays, User, Phone, Mail, Globe, Shield, SquarePen, Save, X, AtSign, MapPin, Bike, Plus, CheckCircle2 } from "lucide-react";
+import { Camera, Loader2, CalendarDays, User, Phone, Mail, Globe, Shield, SquarePen, Save, X, AtSign, MapPin, Bike, Plus, CheckCircle2, Gamepad2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CountryCityPicker, GenderPicker, DateOfBirthPicker, PhoneField, NationalityPicker } from "@/components/ui/fields";
 import { ExtendedProfile } from "@/hooks/useUserProfile";
+import { useSurveyCompletion } from "@/hooks/survey/useSurveyCompletion";
 import { splitFullName, joinFullName } from "@/lib/nameUtils";
 
 interface RiderIdentityProps {
@@ -71,6 +72,7 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { completions } = useSurveyCompletion(profile.user_id || user?.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isEditingProfileInfo, setIsEditingProfileInfo] = useState(false);
@@ -284,13 +286,32 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
       hint_ar: "أضف صورة شخصية", hint_en: "Add a profile photo",
       icon: Camera, section: "identity",
     },
-  ].filter((f) => f.condition), [profile]);
+    {
+      key: "survey",
+      condition: !completions?.length,
+      label_ar: t("survey.title"),
+      label_en: t("survey.title"),
+      hint_ar: t("survey.rider_chip_hint"),
+      hint_en: t("survey.rider_chip_hint"),
+      icon: Gamepad2,
+      section: "surveys",
+    },
+  ].filter((f) => f.condition), [profile, completions, t]);
 
-  const totalFields = 8;
+  const totalFields = 9;
   const completionPercent = Math.round(((totalFields - missingFields.length) / totalFields) * 100);
 
   const scrollToSection = (section: string) => {
     if (section === "identity") { handleStartEdit(); return; }
+    if (section === "surveys") {
+      const el = document.getElementById("profile-section-surveys");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        el.classList.add("ring-2", "ring-primary/30", "rounded-xl");
+        setTimeout(() => el.classList.remove("ring-2", "ring-primary/30", "rounded-xl"), 2000);
+      }
+      return;
+    }
     const el = document.getElementById(`profile-section-${section}`);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });

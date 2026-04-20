@@ -2104,6 +2104,239 @@ export type Database = {
           },
         ]
       }
+      checkout_payment_page_visits: {
+        Row: {
+          id: string
+          user_id: string
+          course_id: string | null
+          source: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          course_id?: string | null
+          source: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          course_id?: string | null
+          source?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkout_payment_page_visits_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_answers: {
+        Row: {
+          answer: string
+          answered_at: string
+          id: string
+          is_correct: boolean | null
+          question_id: string
+          survey_id: string
+          user_id: string
+        }
+        Insert: {
+          answer: string
+          answered_at?: string
+          id?: string
+          is_correct?: boolean | null
+          question_id: string
+          survey_id: string
+          user_id: string
+        }
+        Update: {
+          answer?: string
+          answered_at?: string
+          id?: string
+          is_correct?: boolean | null
+          question_id?: string
+          survey_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "survey_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_answers_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_completions: {
+        Row: {
+          completed_at: string
+          id: string
+          max_score: number
+          score: number
+          survey_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          max_score?: number
+          score?: number
+          survey_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          max_score?: number
+          score?: number
+          survey_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_completions_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_question_options: {
+        Row: {
+          id: string
+          image_url: string | null
+          is_correct: boolean
+          label_ar: string
+          label_en: string
+          question_id: string
+          sort_order: number
+        }
+        Insert: {
+          id?: string
+          image_url?: string | null
+          is_correct?: boolean
+          label_ar: string
+          label_en: string
+          question_id: string
+          sort_order?: number
+        }
+        Update: {
+          id?: string
+          image_url?: string | null
+          is_correct?: boolean
+          label_ar?: string
+          label_en?: string
+          question_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_question_options_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "survey_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_questions: {
+        Row: {
+          catalog_ref_id: string | null
+          catalog_ref_type: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          question_type: string
+          sort_order: number
+          survey_id: string
+          title_ar: string
+          title_en: string
+        }
+        Insert: {
+          catalog_ref_id?: string | null
+          catalog_ref_type?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          question_type: string
+          sort_order?: number
+          survey_id: string
+          title_ar: string
+          title_en: string
+        }
+        Update: {
+          catalog_ref_id?: string | null
+          catalog_ref_type?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          question_type?: string
+          sort_order?: number
+          survey_id?: string
+          title_ar?: string
+          title_en?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_questions_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      surveys: {
+        Row: {
+          created_at: string
+          description_ar: string | null
+          description_en: string | null
+          id: string
+          is_active: boolean
+          sort_order: number
+          title_ar: string
+          title_en: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title_ar: string
+          title_en: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title_ar?: string
+          title_en?: string
+          type?: string
+        }
+        Relationships: []
+      }
       support_tickets: {
         Row: {
           assigned_to: string | null

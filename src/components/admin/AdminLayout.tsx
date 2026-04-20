@@ -23,6 +23,7 @@ import {
   Users,
   GraduationCap,
   CreditCard,
+  MousePointerClick,
   BarChart3,
   Settings,
   Shield,
@@ -43,6 +44,7 @@ import {
   GraduationCap as GraduationCapIcon,
   StarIcon,
   Trophy,
+  Gamepad2,
 } from 'lucide-react';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
@@ -64,6 +66,7 @@ interface NavItem {
   { icon: BookOpen, labelKey: 'courses', href: '/admin/courses' },
   { icon: Users, labelKey: 'users', href: '/admin/users' },
   { icon: CreditCard, labelKey: 'payments', href: '/admin/payments' },
+  { icon: MousePointerClick, labelKey: 'checkoutVisits', href: '/admin/checkout-visits' },
   { icon: Dumbbell, labelKey: 'trainings', href: '/admin/trainings' },
   { icon: UserCheck, labelKey: 'trainers', href: '/admin/trainers' },
   { icon: Bike, labelKey: 'bikeCatalog', href: '/admin/bike-catalog' },
@@ -74,6 +77,7 @@ interface NavItem {
   { icon: Megaphone, labelKey: 'ads', href: '/admin/ads' },
   { icon: Bike, labelKey: 'community', href: '/admin/community' },
   { icon: Trophy, labelKey: 'champions', href: '/admin/champions' },
+  { icon: Gamepad2, labelKey: 'surveys', href: '/admin/surveys' },
   { icon: MessagesSquare, labelKey: 'discussions', href: '/admin/discussions' },
   { icon: MessageSquare, labelKey: 'support', href: '/admin/support' },
   { icon: Shield, labelKey: 'roles', href: '/admin/roles' },

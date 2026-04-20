@@ -1748,6 +1748,7 @@ const CourseDetail: React.FC = () => {
             <CheckoutModal
               open={showCheckout}
               onOpenChange={setShowCheckout}
+              visitSource="course_detail"
               course={{
                 id: course.id,
                 title: course.title,

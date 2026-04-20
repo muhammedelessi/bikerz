@@ -41,7 +41,8 @@ const ContactUs = lazy(() => import("./pages/ContactUs"));
 const CourseLearn = lazy(() => import("./pages/CourseLearn"));
 const Mentors = lazy(() => import("./pages/Mentors"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Profile = lazy(() => import("./pages/Profile"));
+const ProfileLayout = lazy(() => import("./pages/ProfileLayout"));
+const ProfileHome = lazy(() => import("./pages/ProfileHome"));
 const AccountSettingsPage = lazy(() => import("./pages/AccountSettingsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
@@ -66,6 +67,7 @@ const AdminCourseEditor = lazy(() => import("./pages/admin/AdminCourseEditor"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminInstructors = lazy(() => import("./pages/admin/AdminInstructors"));
 const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
+const AdminCheckoutPaymentVisits = lazy(() => import("./pages/admin/AdminCheckoutPaymentVisits"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminRoles = lazy(() => import("./pages/admin/AdminRoles"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
@@ -90,6 +92,14 @@ const AdminRanks = lazy(() => import("./pages/admin/AdminRanks"));
 const AdminChampions = lazy(() => import("./pages/admin/AdminChampions"));
 const AdminChampionNew = lazy(() => import("./pages/admin/AdminChampionNew"));
 const AdminChampionProfile = lazy(() => import("./pages/admin/AdminChampionProfile"));
+const SurveyListPage = lazy(() => import("./pages/surveys/SurveyListPage"));
+const SurveyPlayPage = lazy(() => import("./pages/surveys/SurveyPlayPage"));
+const SurveyResultsPage = lazy(() => import("./pages/surveys/SurveyResultsPage"));
+const AdminSurveys = lazy(() => import("./pages/admin/AdminSurveys"));
+const AdminSurveyDetail = lazy(() => import("./pages/admin/AdminSurveyDetail"));
+const AdminQuestionEdit = lazy(() => import("./pages/admin/AdminQuestionEdit"));
+const AdminSurveyStats = lazy(() => import("./pages/admin/AdminSurveyStats"));
+const AdminStudentSurveyDetail = lazy(() => import("./pages/admin/AdminStudentSurveyDetail"));
 
 const queryClient = new QueryClient();
 
@@ -209,7 +219,12 @@ const AppRoutes = () => (
 
         {/* Protected Routes */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><ProfileLayout /></ProtectedRoute>}>
+          <Route index element={<ProfileHome />} />
+          <Route path="surveys" element={<SurveyListPage />} />
+          <Route path="surveys/:surveyId/play" element={<SurveyPlayPage />} />
+          <Route path="surveys/:surveyId/results" element={<SurveyResultsPage />} />
+        </Route>
         <Route path="/settings" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
 
         {/* Admin Routes */}
@@ -220,6 +235,7 @@ const AppRoutes = () => (
         <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
         <Route path="/admin/instructors" element={<AdminRoute><AdminInstructors /></AdminRoute>} />
         <Route path="/admin/payments" element={<AdminRoute><AdminPayments /></AdminRoute>} />
+        <Route path="/admin/checkout-visits" element={<AdminRoute><AdminCheckoutPaymentVisits /></AdminRoute>} />
         <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
         <Route path="/admin/roles" element={<AdminRoute><AdminRoles /></AdminRoute>} />
         <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
@@ -244,6 +260,12 @@ const AppRoutes = () => (
         <Route path="/admin/champions" element={<AdminRoute><AdminChampions /></AdminRoute>} />
         <Route path="/admin/champions/new" element={<AdminRoute><AdminChampionNew /></AdminRoute>} />
         <Route path="/admin/champions/:id" element={<AdminRoute><AdminChampionProfile /></AdminRoute>} />
+        <Route path="/admin/surveys/statistics/:userId" element={<AdminRoute><AdminStudentSurveyDetail /></AdminRoute>} />
+        <Route path="/admin/surveys/statistics" element={<AdminRoute><AdminSurveyStats /></AdminRoute>} />
+        <Route path="/admin/surveys/:surveyId/questions/new" element={<AdminRoute><AdminQuestionEdit /></AdminRoute>} />
+        <Route path="/admin/surveys/:surveyId/questions/:questionId" element={<AdminRoute><AdminQuestionEdit /></AdminRoute>} />
+        <Route path="/admin/surveys/:surveyId" element={<AdminRoute><AdminSurveyDetail /></AdminRoute>} />
+        <Route path="/admin/surveys" element={<AdminRoute><AdminSurveys /></AdminRoute>} />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />

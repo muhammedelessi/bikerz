@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useMemo, useState } from 'react';
+import React, { useEffect, useCallback, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, CreditCard } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -16,6 +16,7 @@ import type { BundleTierRow } from '@/types/bundle';
 import CheckoutInfoStep from '@/components/checkout/CheckoutInfoStep';
 import CheckoutPaymentStep from '@/components/checkout/CheckoutPaymentStep';
 import { navigateToSignup } from '@/lib/authReturnUrl';
+import { recordCheckoutPaymentPageVisit } from '@/services/checkoutVisitAnalytics';
 
 type Props = {
   open: boolean;
@@ -81,6 +82,23 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
     onOpenChange(false);
     navigateToSignup(navigate);
   }, [open, user, navigate, onOpenChange]);
+
+  const bundleVisitLoggedRef = useRef(false);
+  const primaryCourseId = courses[0]?.id ?? null;
+  useEffect(() => {
+    if (!open) {
+      bundleVisitLoggedRef.current = false;
+      return;
+    }
+    if (!user) return;
+    if (bundleVisitLoggedRef.current) return;
+    bundleVisitLoggedRef.current = true;
+    recordCheckoutPaymentPageVisit({
+      userId: user.id,
+      courseId: primaryCourseId,
+      source: 'bundle_checkout',
+    });
+  }, [open, user, primaryCourseId]);
 
   const handleSubmitPayment = useCallback(async () => {
     if (!user) {
