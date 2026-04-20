@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { AmbassadorClipCategory } from "@/lib/championAmbassadorClipCategories";
 
 export interface ChampionRow {
   id: string;
@@ -27,6 +28,8 @@ export interface ChampionVideoRow {
   description: string | null;
   youtube_url: string;
   video_type: "video" | "podcast";
+  /** Ambassador tip series (for filters / library organization). */
+  ambassador_clip_category?: AmbassadorClipCategory | null;
   thumbnail_url: string | null;
   /** Length in seconds (optional; from DB or fetched). */
   duration_seconds?: number | null;

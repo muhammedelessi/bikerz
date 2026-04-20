@@ -61,12 +61,12 @@ const AdminChampions: React.FC = () => {
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <Trophy className="w-6 h-6 text-primary" />
-              {isRTL ? "أبطال المجتمع" : "Community Champions"}
+              {isRTL ? "سفراء المجتمع" : "Ambassadors"}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
               {isRTL
-                ? `${champions.length} بطل مُسجّل`
-                : `${champions.length} champions`}
+                ? `${champions.length} سفير مُسجّل`
+                : `${champions.length} Ambassadors`}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -79,7 +79,7 @@ const AdminChampions: React.FC = () => {
             <Button asChild size="sm">
               <Link to="/admin/champions/new">
                 <Plus className="w-4 h-4 me-2" />
-                {isRTL ? "إضافة بطل" : "Add Champion"}
+                {isRTL ? "إضافة سفير" : "Add Ambassador"}
               </Link>
             </Button>
           </div>
@@ -89,7 +89,7 @@ const AdminChampions: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{isRTL ? "البطل" : "Champion"}</TableHead>
+                <TableHead>{isRTL ? "السفير" : "Ambassador"}</TableHead>
                 <TableHead className="text-center">
                   <VideoIcon className="w-4 h-4 inline" />
                 </TableHead>
@@ -115,7 +115,7 @@ const AdminChampions: React.FC = () => {
               ) : champions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="py-10 text-center text-muted-foreground text-sm">
-                    {isRTL ? "لا يوجد أبطال بعد." : "No champions yet."}
+                    {isRTL ? "لا يوجد سفراء بعد." : "No Ambassadors yet."}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -203,8 +203,8 @@ const AdminChampions: React.FC = () => {
             </DialogTitle>
             <DialogDescription>
               {isRTL
-                ? "سيتم حذف البطل وكل الفيديوهات والتعليقات والإعجابات المرتبطة. لا يمكن التراجع."
-                : "This will remove the champion and all related videos, comments, and likes. This cannot be undone."}
+                ? "سيتم حذف السفير وكل الفيديوهات والتعليقات والإعجابات المرتبطة. لا يمكن التراجع."
+                : "This will remove the Ambassador and all related videos, comments, and likes. This cannot be undone."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -210,6 +210,7 @@ export function useAdminChampion(id: string | null | undefined) {
         description: payload.description ?? null,
         youtube_url: payload.youtube_url,
         video_type: payload.video_type ?? "video",
+        ambassador_clip_category: payload.ambassador_clip_category ?? null,
         thumbnail_url: payload.thumbnail_url ?? null,
         order_index: payload.order_index ?? 0,
         published: payload.published ?? true,

@@ -30,6 +30,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminChampions } from "@/hooks/admin/useAdminChampions";
 import { extractYoutubeId } from "@/lib/youtube";
+import type { AmbassadorClipCategory } from "@/lib/championAmbassadorClipCategories";
+import AmbassadorClipCategorySelect from "@/components/admin/AmbassadorClipCategorySelect";
 
 const OTHER_VALUE = "__other__";
 
@@ -39,6 +41,7 @@ interface VideoDraft {
   youtube_url: string;
   video_type: "video" | "podcast";
   description: string;
+  ambassador_clip_category: AmbassadorClipCategory | null;
 }
 
 const makeDraft = (): VideoDraft => ({
@@ -47,6 +50,7 @@ const makeDraft = (): VideoDraft => ({
   youtube_url: "",
   video_type: "video",
   description: "",
+  ambassador_clip_category: null,
 });
 
 const AdminChampionNew: React.FC = () => {
@@ -113,6 +117,14 @@ const AdminChampionNew: React.FC = () => {
         );
         return;
       }
+      if (!v.ambassador_clip_category) {
+        toast.error(
+          isRTL
+            ? "اختر نوع مقطع السفير لكل فيديو"
+            : "Select an Ambassador clip type for each video",
+        );
+        return;
+      }
       if (!extractYoutubeId(v.youtube_url)) {
         toast.error(
           isRTL
@@ -142,6 +154,7 @@ const AdminChampionNew: React.FC = () => {
           description: v.description || null,
           youtube_url: v.youtube_url,
           video_type: v.video_type,
+          ambassador_clip_category: v.ambassador_clip_category,
           order_index: idx,
           published: true,
         }));
@@ -342,10 +355,10 @@ const AdminChampionNew: React.FC = () => {
                         updateVideo(v.key, { video_type: val })
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger dir={isRTL ? "rtl" : "ltr"}>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent dir={isRTL ? "rtl" : "ltr"}>
                         <SelectItem value="video">
                           <span className="inline-flex items-center gap-1.5">
                             <Play className="w-3.5 h-3.5" />
@@ -361,6 +374,27 @@ const AdminChampionNew: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    {isRTL
+                      ? "سفير — نوع المقطع *"
+                      : "Ambassador — clip type *"}
+                  </label>
+                  <p className="text-[10px] text-muted-foreground mb-1.5 leading-snug">
+                    {isRTL
+                      ? "ثلاثة أنواع رئيسية؛ (٢) لها فروع أ، ب، ج — (٣) لها فرعان أ، ب. النوع (١) بدون تفرع."
+                      : "Three main types; (1) has no sub-branches. (2) branches A–C. (3) branches A–B."}
+                  </p>
+                  <AmbassadorClipCategorySelect
+                    value={v.ambassador_clip_category}
+                    onChange={(cat) =>
+                      updateVideo(v.key, { ambassador_clip_category: cat })
+                    }
+                    isRTL={isRTL}
+                    allowUnset
+                  />
                 </div>
 
                 <div>

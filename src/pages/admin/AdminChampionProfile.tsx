@@ -49,6 +49,9 @@ import {
 import { extractYoutubeId, youtubeThumbnailUrl } from "@/lib/youtube";
 import { CountryCityPicker } from "@/components/ui/fields/CountryCityPicker";
 import { COUNTRIES } from "@/data/countryCityData";
+import type { AmbassadorClipCategory } from "@/lib/championAmbassadorClipCategories";
+import { ambassadorClipCategoryLabel } from "@/lib/championAmbassadorClipCategories";
+import AmbassadorClipCategorySelect from "@/components/admin/AmbassadorClipCategorySelect";
 
 const OTHER_VALUE = "__other__";
 
@@ -122,6 +125,7 @@ type VideoFormState = {
   description: string;
   youtube_url: string;
   video_type: "video" | "podcast";
+  ambassador_clip_category: AmbassadorClipCategory | null;
   thumbnail_url: string;
   order_index: number;
   published: boolean;
@@ -132,6 +136,7 @@ const emptyVideoForm: VideoFormState = {
   description: "",
   youtube_url: "",
   video_type: "video",
+  ambassador_clip_category: null,
   thumbnail_url: "",
   order_index: 0,
   published: true,
@@ -231,6 +236,7 @@ const AdminChampionProfile: React.FC = () => {
       description: v.description ?? "",
       youtube_url: v.youtube_url,
       video_type: v.video_type,
+      ambassador_clip_category: v.ambassador_clip_category ?? null,
       thumbnail_url: v.thumbnail_url ?? "",
       order_index: v.order_index,
       published: v.published,
@@ -247,12 +253,21 @@ const AdminChampionProfile: React.FC = () => {
       toast.error(isRTL ? "رابط YouTube غير صالح" : "Invalid YouTube URL");
       return;
     }
+    if (!videoForm.ambassador_clip_category) {
+      toast.error(
+        isRTL
+          ? "اختر نوع مقطع السفير"
+          : "Select an Ambassador clip type",
+      );
+      return;
+    }
     try {
       const payload = {
         title: videoForm.title.trim(),
         description: videoForm.description.trim() || null,
         youtube_url: videoForm.youtube_url.trim(),
         video_type: videoForm.video_type,
+        ambassador_clip_category: videoForm.ambassador_clip_category,
         thumbnail_url: videoForm.thumbnail_url.trim() || null,
         order_index: videoForm.order_index,
         published: videoForm.published,
@@ -537,6 +552,14 @@ const AdminChampionProfile: React.FC = () => {
                                 </>
                               )}
                             </Badge>
+                            {(v.ambassador_clip_category ?? null) && (
+                              <Badge variant="outline" className="text-[10px] font-normal">
+                                {ambassadorClipCategoryLabel(
+                                  v.ambassador_clip_category ?? null,
+                                  isRTL,
+                                )}
+                              </Badge>
+                            )}
                             {!v.published && (
                               <Badge variant="outline" className="text-[10px]">
                                 {isRTL ? "غير منشور" : "Draft"}
@@ -655,10 +678,10 @@ const AdminChampionProfile: React.FC = () => {
                     setVideoForm({ ...videoForm, video_type: v })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger dir={isRTL ? "rtl" : "ltr"}>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent dir={isRTL ? "rtl" : "ltr"}>
                     <SelectItem value="video">
                       {isRTL ? "فيديو" : "Video"}
                     </SelectItem>
@@ -683,6 +706,27 @@ const AdminChampionProfile: React.FC = () => {
                   }
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                {isRTL
+                  ? "سفير — نوع المقطع *"
+                  : "Ambassador — clip type *"}
+              </label>
+              <p className="text-[10px] text-muted-foreground mb-1.5 leading-snug">
+                {isRTL
+                  ? "ثلاثة أنواع رئيسية؛ (٢) لها فروع أ، ب، ج — (٣) لها فرعان أ، ب. النوع (١) بدون تفرع."
+                  : "Three main types; (1) has no sub-branches. (2) branches A–C. (3) branches A–B."}
+              </p>
+              <AmbassadorClipCategorySelect
+                value={videoForm.ambassador_clip_category}
+                onChange={(cat) =>
+                  setVideoForm({ ...videoForm, ambassador_clip_category: cat })
+                }
+                isRTL={isRTL}
+                allowUnset
+              />
             </div>
 
             <div className="flex items-center justify-between rounded-lg border border-border/40 px-3 py-2">

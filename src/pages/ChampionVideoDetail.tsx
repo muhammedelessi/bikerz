@@ -13,6 +13,10 @@ import { Separator } from "@/components/ui/separator";
 import { ChevronLeft, ChevronRight, Trophy, Play, Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ChampionVideoPlayer from "@/components/community/ChampionVideoPlayer";
+import {
+  ambassadorClipCardSubLabel,
+  isAmbassadorClipCategory,
+} from "@/lib/championAmbassadorClipCategories";
 
 const ChampionVideoDetail: React.FC = () => {
   const { championId, videoId } = useParams<{ championId: string; videoId: string }>();
@@ -37,7 +41,7 @@ const ChampionVideoDetail: React.FC = () => {
         title={pageTitle}
         description={
           video?.description?.slice(0, 160) ??
-          "Watch and discuss BIKERZ community champion videos."
+          "Watch and discuss BIKERZ Ambassador videos."
         }
         canonical={
           championId && videoId
@@ -63,7 +67,7 @@ const ChampionVideoDetail: React.FC = () => {
                 <Button variant="ghost" size="sm" className="h-8 gap-1 px-2 text-xs" asChild>
                   <Link to="/community-champions">
                     <BackIcon className="h-4 w-4" />
-                    {isRTL ? "أبطال المجتمع" : "Champions"}
+                    {isRTL ? "السفراء" : "Ambassadors"}
                   </Link>
                 </Button>
                 {champion && (
@@ -95,10 +99,10 @@ const ChampionVideoDetail: React.FC = () => {
                   {isRTL ? "الفيديو غير موجود." : "Video not found."}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {isRTL ? "تحقق من الرابط أو عد إلى قائمة الأبطال." : "Check the link or go back to champions."}
+                  {isRTL ? "تحقق من الرابط أو عد إلى السفراء." : "Check the link or go back to Ambassadors."}
                 </p>
                 <Button asChild variant="default" size="sm" className="mt-4">
-                  <Link to="/community-champions">{isRTL ? "أبطال المجتمع" : "Community champions"}</Link>
+                  <Link to="/community-champions">{isRTL ? "السفراء" : "Ambassadors"}</Link>
                 </Button>
               </div>
             ) : (
@@ -123,7 +127,21 @@ const ChampionVideoDetail: React.FC = () => {
                       {isPodcast ? (isRTL ? "بودكاست" : "Podcast") : isRTL ? "فيديو" : "Video"}
                     </Badge>
                   </div>
-                  <h1 className="text-pretty text-lg font-semibold leading-snug tracking-tight text-foreground sm:text-xl">
+                  {video.ambassador_clip_category &&
+                    isAmbassadorClipCategory(video.ambassador_clip_category) && (
+                      <p className="mt-1.5 text-[11px] leading-snug text-primary">
+                        {ambassadorClipCardSubLabel(video.ambassador_clip_category, isRTL)}
+                      </p>
+                    )}
+                  <h1
+                    className={cn(
+                      "text-pretty text-lg font-semibold leading-snug tracking-tight text-foreground sm:text-xl",
+                      video.ambassador_clip_category &&
+                        isAmbassadorClipCategory(video.ambassador_clip_category)
+                        ? "mt-1.5"
+                        : "",
+                    )}
+                  >
                     {video.title}
                   </h1>
                   <div className="flex flex-wrap items-center gap-2">
@@ -143,7 +161,7 @@ const ChampionVideoDetail: React.FC = () => {
                       </Avatar>
                       <div className="min-w-0">
                         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                          {isRTL ? "البطل" : "Champion"}
+                          {isRTL ? "السفير" : "Ambassador"}
                         </p>
                         <p className="truncate text-xs font-medium text-foreground sm:text-sm">
                           {champion.full_name}
