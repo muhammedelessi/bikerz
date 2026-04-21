@@ -381,6 +381,123 @@ export type Database = {
         }
         Relationships: []
       }
+      champion_video_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "champion_video_comments_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "champion_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      champion_video_likes: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "champion_video_likes_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "champion_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      champion_videos: {
+        Row: {
+          ambassador_clip_category: string | null
+          champion_id: string
+          created_at: string
+          description: string | null
+          id: string
+          order_index: number
+          published: boolean
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          video_type: string
+          youtube_url: string
+        }
+        Insert: {
+          ambassador_clip_category?: string | null
+          champion_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_index?: number
+          published?: boolean
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          video_type?: string
+          youtube_url: string
+        }
+        Update: {
+          ambassador_clip_category?: string | null
+          champion_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_index?: number
+          published?: boolean
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          video_type?: string
+          youtube_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "champion_videos_champion_id_fkey"
+            columns: ["champion_id"]
+            isOneToOne: false
+            referencedRelation: "community_champions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapter_tests: {
         Row: {
           chapter_id: string
@@ -480,6 +597,95 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      checkout_payment_page_visits: {
+        Row: {
+          course_id: string | null
+          created_at: string
+          id: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          source: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkout_payment_page_visits_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_champions: {
+        Row: {
+          bio: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          full_name: string
+          id: string
+          instagram_url: string | null
+          is_active: boolean
+          nickname: string | null
+          order_index: number
+          photo_url: string | null
+          podcast_url: string | null
+          tiktok_url: string | null
+          updated_at: string
+          website_url: string | null
+          youtube_url: string | null
+        }
+        Insert: {
+          bio?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          full_name: string
+          id?: string
+          instagram_url?: string | null
+          is_active?: boolean
+          nickname?: string | null
+          order_index?: number
+          photo_url?: string | null
+          podcast_url?: string | null
+          tiktok_url?: string | null
+          updated_at?: string
+          website_url?: string | null
+          youtube_url?: string | null
+        }
+        Update: {
+          bio?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          full_name?: string
+          id?: string
+          instagram_url?: string | null
+          is_active?: boolean
+          nickname?: string | null
+          order_index?: number
+          photo_url?: string | null
+          podcast_url?: string | null
+          tiktok_url?: string | null
+          updated_at?: string
+          website_url?: string | null
+          youtube_url?: string | null
+        }
+        Relationships: []
       }
       community_members: {
         Row: {
@@ -2104,31 +2310,70 @@ export type Database = {
           },
         ]
       }
-      checkout_payment_page_visits: {
+      support_tickets: {
         Row: {
-          id: string
-          user_id: string
+          assigned_to: string | null
+          category: Database["public"]["Enums"]["ticket_category"]
+          closed_at: string | null
           course_id: string | null
-          source: string
           created_at: string
+          description: string
+          description_ar: string | null
+          first_response_at: string | null
+          id: string
+          priority: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at: string | null
+          sla_due_at: string | null
+          status: Database["public"]["Enums"]["ticket_status"]
+          subject: string
+          subject_ar: string | null
+          ticket_number: string
+          updated_at: string
+          user_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
+          assigned_to?: string | null
+          category?: Database["public"]["Enums"]["ticket_category"]
+          closed_at?: string | null
           course_id?: string | null
-          source: string
           created_at?: string
+          description: string
+          description_ar?: string | null
+          first_response_at?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at?: string | null
+          sla_due_at?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject: string
+          subject_ar?: string | null
+          ticket_number: string
+          updated_at?: string
+          user_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
+          assigned_to?: string | null
+          category?: Database["public"]["Enums"]["ticket_category"]
+          closed_at?: string | null
           course_id?: string | null
-          source?: string
           created_at?: string
+          description?: string
+          description_ar?: string | null
+          first_response_at?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at?: string | null
+          sla_due_at?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject?: string
+          subject_ar?: string | null
+          ticket_number?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "checkout_payment_page_visits_course_id_fkey"
+            foreignKeyName: "support_tickets_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
@@ -2336,77 +2581,6 @@ export type Database = {
           type?: string
         }
         Relationships: []
-      }
-      support_tickets: {
-        Row: {
-          assigned_to: string | null
-          category: Database["public"]["Enums"]["ticket_category"]
-          closed_at: string | null
-          course_id: string | null
-          created_at: string
-          description: string
-          description_ar: string | null
-          first_response_at: string | null
-          id: string
-          priority: Database["public"]["Enums"]["ticket_priority"]
-          resolved_at: string | null
-          sla_due_at: string | null
-          status: Database["public"]["Enums"]["ticket_status"]
-          subject: string
-          subject_ar: string | null
-          ticket_number: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          assigned_to?: string | null
-          category?: Database["public"]["Enums"]["ticket_category"]
-          closed_at?: string | null
-          course_id?: string | null
-          created_at?: string
-          description: string
-          description_ar?: string | null
-          first_response_at?: string | null
-          id?: string
-          priority?: Database["public"]["Enums"]["ticket_priority"]
-          resolved_at?: string | null
-          sla_due_at?: string | null
-          status?: Database["public"]["Enums"]["ticket_status"]
-          subject: string
-          subject_ar?: string | null
-          ticket_number: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          assigned_to?: string | null
-          category?: Database["public"]["Enums"]["ticket_category"]
-          closed_at?: string | null
-          course_id?: string | null
-          created_at?: string
-          description?: string
-          description_ar?: string | null
-          first_response_at?: string | null
-          id?: string
-          priority?: Database["public"]["Enums"]["ticket_priority"]
-          resolved_at?: string | null
-          sla_due_at?: string | null
-          status?: Database["public"]["Enums"]["ticket_status"]
-          subject?: string
-          subject_ar?: string | null
-          ticket_number?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "support_tickets_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       tap_charges: {
         Row: {
