@@ -498,6 +498,28 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
               countryError={fieldErrors.country}
               cityError={fieldErrors.city}
             />
+
+            {/* Mobile / tablet: save directly under last field (keyboard + scroll friendly) */}
+            <div className="flex flex-col gap-2 pt-1 lg:hidden">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-11 min-h-[44px] text-sm font-semibold"
+                onClick={() => setIsEditingProfileInfo(false)}
+              >
+                <X className="h-4 w-4 me-2" />
+                {isRTL ? "إلغاء" : "Cancel"}
+              </Button>
+              <Button
+                type="button"
+                className="w-full h-11 min-h-[44px] text-sm font-bold btn-cta"
+                onClick={handleSaveAllProfileInfo}
+                disabled={isUpdating}
+              >
+                <Save className="h-4 w-4 me-2" />
+                {isUpdating ? (isRTL ? "جاري الحفظ..." : "Saving...") : isRTL ? "حفظ البيانات" : "Save changes"}
+              </Button>
+            </div>
           </div>
         )}
 
@@ -515,7 +537,7 @@ export const RiderIdentity: React.FC<RiderIdentityProps> = ({
                   {isRTL ? "تعديل" : "Edit"}
                 </Button>
               ) : (
-                <div className="flex items-center gap-1.5">
+                <div className="hidden lg:flex items-center gap-1.5 shrink-0">
                   <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs" onClick={() => setIsEditingProfileInfo(false)}>
                     <X className="h-3.5 w-3.5" />
                     {isRTL ? "إلغاء" : "Cancel"}

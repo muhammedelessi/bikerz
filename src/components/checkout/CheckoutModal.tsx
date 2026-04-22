@@ -122,6 +122,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
+    if (!form.validateInfo()) {
+      toast.error(
+        isRTL ? "يرجى تصحيح بيانات الفوترة قبل الدفع" : "Please fix your billing details before paying.",
+      );
+      return;
+    }
+    await form.saveProfileData();
+
     onPaymentStarted?.();
 
     const composedAddress = [form.effectiveCity, form.effectiveCountry].filter(Boolean).join(", ");
@@ -227,6 +235,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       customerName: form.fullName,
       customerEmail: form.email,
       customerPhone: form.fullPhone,
+      billingCity: form.effectiveCity,
+      billingCountry: form.effectiveCountry,
       couponId: promo.appliedCoupon?.coupon_id,
       couponSeriesId: promo.appliedCoupon?.coupon_series_id || undefined,
       couponNumber: promo.appliedCoupon?.coupon_number ?? undefined,
@@ -253,6 +263,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     sendCourseStatus,
     t,
     navigate,
+    isRTL,
   ]);
 
   useEffect(() => {

@@ -8,6 +8,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { fetchProfileBillingData, updateProfile } from "@/services/supabase.service";
 import type { DropdownOption } from "@/components/checkout/SearchableDropdown";
 import type { ValidationErrors } from "@/types/payment";
+import type { ProfileUpdateData } from "@/services/supabase.service";
 
 export function useCheckoutForm(open: boolean) {
   const { t } = useTranslation();

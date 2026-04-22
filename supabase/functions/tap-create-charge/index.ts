@@ -18,6 +18,18 @@ const corsHeaders = {
 
 const PAYMENT_TIMEOUT = 30000; // 30s timeout for Tap API
 
+function trimStr(v: unknown): string {
+  if (v == null) return "";
+  return String(v).trim();
+}
+
+/** Prefer non-empty checkout `customer_phone` over DB profile (`||` would wrongly fall back on ""). */
+function pickPhoneRaw(customer_phone: unknown, profile_phone: unknown): string {
+  const c = trimStr(customer_phone);
+  if (c.length > 0) return c;
+  return trimStr(profile_phone);
+}
+
 async function getTrainingPlatformMarkupPercent(
   // deno-lint-ignore no-explicit-any
   adminClient: any,
@@ -125,6 +137,8 @@ Deno.serve(async (req) => {
     const customer_name = b.customer_name;
     const customer_email = b.customer_email;
     const customer_phone = b.customer_phone;
+    const billing_city = trimStr(b.billing_city ?? b.billingCity);
+    const billing_country = trimStr(b.billing_country ?? b.billingCountry);
     let idempotency_key = String((b.idempotency_key ?? b.idempotencyKey) ?? "").trim();
     const coupon_id = b.coupon_id;
     const coupon_series_id = (b.coupon_series_id ?? b.couponSeriesId) as string | undefined;
@@ -219,11 +233,20 @@ Deno.serve(async (req) => {
       );
     }
 
+    const effectiveNameForPayment = (() => {
+      const fromBody = trimStr(customer_name);
+      if (fromBody.length >= 3) return fromBody;
+      return trimStr(profileData.full_name);
+    })();
+    const effectivePhoneForPayment = pickPhoneRaw(customer_phone, profileData.phone);
+    const effectiveCityForPayment = billing_city.length > 0 ? billing_city : trimStr(profileData.city);
+    const effectiveCountryForPayment = billing_country.length > 0 ? billing_country : trimStr(profileData.country);
+
     const missingFields: string[] = [];
-    if (!profileData.full_name || profileData.full_name.trim().length < 3) missingFields.push("full_name");
-    if (!profileData.phone || profileData.phone.trim().length < 7) missingFields.push("phone");
-    if (!profileData.city || profileData.city.trim().length === 0) missingFields.push("city");
-    if (!profileData.country || profileData.country.trim().length === 0) missingFields.push("country");
+    if (!effectiveNameForPayment || effectiveNameForPayment.length < 3) missingFields.push("full_name");
+    if (!effectivePhoneForPayment || effectivePhoneForPayment.length < 7) missingFields.push("phone");
+    if (!effectiveCityForPayment) missingFields.push("city");
+    if (!effectiveCountryForPayment) missingFields.push("country");
 
     if (missingFields.length > 0) {
       console.warn("Incomplete profile for user:", userId, "missing:", missingFields);
@@ -500,8 +523,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    const phoneForTap = resolveTapPhone(customer_phone, profileData.phone, profileData.country);
-    const storedPhoneForCheck = String(customer_phone || profileData.phone || "").trim();
+    const countryHintForPhone =
+      billing_country.length > 0 ? billing_country : profileData.country;
+    const phoneForTap = resolveTapPhone(effectivePhoneForPayment, countryHintForPhone);
+    const storedPhoneForCheck =
+      effectivePhoneForPayment.length > 0
+        ? effectivePhoneForPayment
+        : trimStr(profileData.phone);
     if (storedPhoneForCheck && !phoneForTap) {
       return new Response(
         JSON.stringify({
@@ -573,9 +601,9 @@ Deno.serve(async (req) => {
         amount: finalAmount,
         currency: tapChargeCurrency,
         status: "pending",
-        customer_name: customer_name || profileData.full_name || "",
+        customer_name: effectiveNameForPayment || profileData.full_name || "",
         customer_email: customer_email || userEmail,
-        customer_phone: customer_phone || profileData.phone || "",
+        customer_phone: effectivePhoneForPayment,
         idempotency_key,
         device_info: safeDeviceInfo,
         metadata: {
@@ -607,8 +635,8 @@ Deno.serve(async (req) => {
           localized_display_currency: localizedDisplayCurrency,
           detected_country: detected_country || null,
           environment: tapSecretKey.startsWith("sk_test") ? "test" : "live",
-          billing_city: profileData.city,
-          billing_country: profileData.country,
+          billing_city: effectiveCityForPayment || profileData.city,
+          billing_country: effectiveCountryForPayment || profileData.country,
         },
       })
       .select("id")
@@ -639,7 +667,7 @@ Deno.serve(async (req) => {
       : `${origin}/tap-3ds-callback.html?course=${encodeURIComponent(courseIdTrim)}`;
 
     // ── Create Tap charge (practical training: always SAR + server amount; courses may use localized Tap currency) ──
-    const customerDetails = buildTapCustomerDetails(customer_name, profileData.full_name);
+    const customerDetails = buildTapCustomerDetails(effectiveNameForPayment, profileData.full_name);
     const chargePayload = compactTapPayload({
       amount: finalAmount,
       currency: tapChargeCurrency,
@@ -906,16 +934,15 @@ function stripEmptyTapValues(value: unknown): unknown {
   return value;
 }
 
-/** Tap expects `country_code` + national `number` (no leading 0). Uses profile country as default region when ISO-2. */
+/** Tap expects `country_code` + national `number` (no leading 0). Uses `profileCountry` hint when ISO-2. */
 function resolveTapPhone(
-  customerPhone: unknown,
-  profilePhone: unknown,
+  rawInput: unknown,
   profileCountry: unknown,
 ): { country_code: string; number: string } | undefined {
-  const raw = String(customerPhone || profilePhone || "").trim();
+  const raw = trimStr(rawInput);
   if (!raw) return undefined;
 
-  const countryStr = String(profileCountry || "").trim();
+  const countryStr = trimStr(profileCountry);
   const defaultRegion = /^[A-Z]{2}$/i.test(countryStr) ? countryStr.toUpperCase() : "SA";
 
   const attempts: Array<{ input: string; region?: string }> = [
@@ -1003,6 +1030,18 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
     customer_phone,
     req,
   } = ctx;
+
+  const billing_city_b = trimStr(b.billing_city ?? b.billingCity);
+  const billing_country_b = trimStr(b.billing_country ?? b.billingCountry);
+  const effectiveNameB = (() => {
+    const fromBody = trimStr(customer_name);
+    if (fromBody.length >= 3) return fromBody;
+    return trimStr(profileData.full_name);
+  })();
+  const effectivePhoneB = pickPhoneRaw(customer_phone, profileData.phone);
+  const effectiveCityB = billing_city_b.length > 0 ? billing_city_b : trimStr(profileData.city);
+  const effectiveCountryB =
+    billing_country_b.length > 0 ? billing_country_b : trimStr(profileData.country);
 
   const rawIds = (b.bundle_course_ids ?? b.bundleCourseIds) as unknown;
   const ids = Array.isArray(rawIds)
@@ -1149,8 +1188,8 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
     final_amount: finalAmount,
     detected_country: detected_country || null,
     environment: tapSecretKey.startsWith("sk_test") ? "test" : "live",
-    billing_city: profileData.city,
-    billing_country: profileData.country,
+    billing_city: effectiveCityB || profileData.city,
+    billing_country: effectiveCountryB || profileData.country,
   };
 
   const { data: chargeRecord, error: insertError } = await adminClient
@@ -1161,9 +1200,9 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
       amount: finalAmount,
       currency: "SAR",
       status: "pending",
-      customer_name: customer_name || profileData.full_name || "",
+      customer_name: effectiveNameB || profileData.full_name || "",
       customer_email: customer_email || userEmail,
-      customer_phone: customer_phone || profileData.phone || "",
+      customer_phone: effectivePhoneB,
       idempotency_key,
       device_info: safeDeviceInfo,
       metadata: bundleMeta,
@@ -1188,8 +1227,12 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
   const origin = isKnownOrigin ? requestOrigin : "https://academy.bikerz.com";
   const redirectBackUrl = `${origin}/tap-3ds-callback.html?bundle=1`;
 
-  const phoneForTap = resolveTapPhone(customer_phone, profileData.phone, profileData.country);
-  const storedPhoneForCheck = String(customer_phone || profileData.phone || "").trim();
+  const phoneForTap = resolveTapPhone(
+    effectivePhoneB,
+    billing_country_b.length > 0 ? billing_country_b : profileData.country,
+  );
+  const storedPhoneForCheck =
+    effectivePhoneB.length > 0 ? effectivePhoneB : trimStr(profileData.phone);
   if (storedPhoneForCheck && !phoneForTap) {
     return new Response(
       JSON.stringify({
@@ -1202,7 +1245,7 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
 
   const desc = `Bundle: ${ids.length} courses`;
 
-  const customerDetails = buildTapCustomerDetails(customer_name, profileData.full_name);
+  const customerDetails = buildTapCustomerDetails(effectiveNameB, profileData.full_name);
   const chargePayload = compactTapPayload({
     amount: finalAmount,
     currency: "SAR",

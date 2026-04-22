@@ -10,6 +10,9 @@ export interface TapPaymentConfig {
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
+  /** Billing from checkout form — used by Tap charge when profile is stale or wrong */
+  billingCity?: string;
+  billingCountry?: string;
   couponId?: string;
   paymentMethod?: PaymentMethod;
   tokenId?: string;

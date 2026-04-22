@@ -106,7 +106,7 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
       return;
     }
     if (!form.validateInfo()) return;
-    form.saveProfileData();
+    await form.saveProfileData();
 
     const composedAddress = [form.effectiveCity, form.effectiveCountry].filter(Boolean).join(', ');
 
@@ -155,6 +155,8 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
       customerName: form.fullName,
       customerEmail: form.email,
       customerPhone: form.fullPhone,
+      billingCity: form.effectiveCity,
+      billingCountry: form.effectiveCountry,
       courseName: isRTL ? 'باقة كورسات' : 'Course bundle',
       isRTL,
     });
