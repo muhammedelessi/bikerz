@@ -144,7 +144,7 @@ async function decryptPassword(credentialIdBytes: Uint8Array, stored: StoredBiom
   const plainBuf = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: b64decode(stored.iv) as BufferSource },
     key,
-    b64decode(stored.ciphertext),
+    b64decode(stored.ciphertext) as BufferSource,
   );
   return new TextDecoder().decode(plainBuf);
 }
