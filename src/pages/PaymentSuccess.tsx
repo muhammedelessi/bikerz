@@ -220,13 +220,16 @@ const PaymentSuccess: React.FC = () => {
     if (!course || !courseId) return;
     crmSuccessSyncedRef.current = true;
 
-    trackPurchase({
-      content_name: course.title,
-      content_ids: [courseId],
-      content_type: "product",
-      value: course.price ?? 0,
-      currency: "SAR",
-    });
+    if (pixelFiredRef.current !== tapId) {
+      pixelFiredRef.current = tapId;
+      trackPurchase({
+        content_name: course.title,
+        content_ids: [courseId],
+        content_type: "product",
+        value: course.price ?? 0,
+        currency: "SAR",
+      });
+    }
 
     void sendCourseStatus(user.id, courseId, course.title, "purchased", {
       full_name: profile?.full_name || "",
