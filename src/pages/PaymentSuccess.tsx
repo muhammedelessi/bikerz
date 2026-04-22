@@ -174,13 +174,16 @@ const PaymentSuccess: React.FC = () => {
         silent: true,
       });
 
-      trackPurchase({
-        content_name: bundleLabel,
-        content_ids: ["course_bundle"],
-        content_type: "product",
-        value: Number(amountStr) || 0,
-        currency: "SAR",
-      });
+      if (pixelFiredRef.current !== tapId) {
+        pixelFiredRef.current = tapId;
+        trackPurchase({
+          content_name: bundleLabel,
+          content_ids: ["course_bundle"],
+          content_type: "product",
+          value: Number(amountStr) || 0,
+          currency: "SAR",
+        });
+      }
 
       const n8nBase = {
         email: user.email || "",
