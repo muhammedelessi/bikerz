@@ -62,6 +62,7 @@ const PaymentSuccess: React.FC = () => {
   const [confettiFired, setConfettiFired] = useState(false);
   const retryCountRef = useRef(0);
   const crmSuccessSyncedRef = useRef(false);
+  const pixelFiredRef = useRef<string | null>(null);
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
   // Fetch course info
