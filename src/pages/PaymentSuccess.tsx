@@ -62,6 +62,7 @@ const PaymentSuccess: React.FC = () => {
   const [confettiFired, setConfettiFired] = useState(false);
   const retryCountRef = useRef(0);
   const crmSuccessSyncedRef = useRef(false);
+  const pixelFiredRef = useRef<string | null>(null);
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
   // Fetch course info
@@ -173,13 +174,16 @@ const PaymentSuccess: React.FC = () => {
         silent: true,
       });
 
-      trackPurchase({
-        content_name: bundleLabel,
-        content_ids: ["course_bundle"],
-        content_type: "product",
-        value: Number(amountStr) || 0,
-        currency: "SAR",
-      });
+      if (pixelFiredRef.current !== tapId) {
+        pixelFiredRef.current = tapId;
+        trackPurchase({
+          content_name: bundleLabel,
+          content_ids: ["course_bundle"],
+          content_type: "product",
+          value: Number(amountStr) || 0,
+          currency: "SAR",
+        });
+      }
 
       const n8nBase = {
         email: user.email || "",
@@ -216,13 +220,16 @@ const PaymentSuccess: React.FC = () => {
     if (!course || !courseId) return;
     crmSuccessSyncedRef.current = true;
 
-    trackPurchase({
-      content_name: course.title,
-      content_ids: [courseId],
-      content_type: "product",
-      value: course.price ?? 0,
-      currency: "SAR",
-    });
+    if (pixelFiredRef.current !== tapId) {
+      pixelFiredRef.current = tapId;
+      trackPurchase({
+        content_name: course.title,
+        content_ids: [courseId],
+        content_type: "product",
+        value: course.price ?? 0,
+        currency: "SAR",
+      });
+    }
 
     void sendCourseStatus(user.id, courseId, course.title, "purchased", {
       full_name: profile?.full_name || "",
