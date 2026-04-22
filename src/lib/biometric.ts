@@ -109,13 +109,13 @@ export function clearBiometric(): void {
 async function deriveKey(credentialIdBytes: Uint8Array, salt: Uint8Array): Promise<CryptoKey> {
   const baseKey = await crypto.subtle.importKey(
     "raw",
-    credentialIdBytes,
+    credentialIdBytes as BufferSource,
     { name: "PBKDF2" },
     false,
     ["deriveKey"],
   );
   return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt, iterations: 120_000, hash: "SHA-256" },
+    { name: "PBKDF2", salt: salt as BufferSource, iterations: 120_000, hash: "SHA-256" },
     baseKey,
     { name: "AES-GCM", length: 256 },
     false,
@@ -142,9 +142,9 @@ async function encryptPassword(
 async function decryptPassword(credentialIdBytes: Uint8Array, stored: StoredBiometric): Promise<string> {
   const key = await deriveKey(credentialIdBytes, b64decode(stored.salt));
   const plainBuf = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: b64decode(stored.iv) },
+    { name: "AES-GCM", iv: b64decode(stored.iv) as BufferSource },
     key,
-    b64decode(stored.ciphertext),
+    b64decode(stored.ciphertext) as BufferSource,
   );
   return new TextDecoder().decode(plainBuf);
 }
@@ -200,7 +200,7 @@ export async function enrollBiometric(email: string, password: string): Promise<
     challenge,
     rp: { name: RP_NAME, id: getRpId() },
     user: {
-      id: userIdBytes,
+      id: userIdBytes as BufferSource,
       name: email,
       displayName: email,
     },
@@ -254,7 +254,7 @@ export async function authenticateBiometric(): Promise<{ email: string; password
     allowCredentials: [
       {
         type: "public-key",
-        id: keyBytes,
+        id: keyBytes as BufferSource,
         transports: ["internal"],
       },
     ],

@@ -1,10 +1,9 @@
-import { FunctionsHttpError } from '@supabase/functions-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { TapPaymentConfig } from '@/types/payment';
 
 async function messageFromFunctionsHttpError(error: unknown): Promise<string | null> {
-  if (!(error instanceof FunctionsHttpError)) return null;
-  const ctx = error.context;
+  if (!error || typeof error !== 'object') return null;
+  const ctx = (error as { context?: unknown }).context;
   if (!(ctx instanceof Response)) return null;
   try {
     const text = await ctx.clone().text();
