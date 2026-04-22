@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.self-update-password]
 verify_jwt = false
+
+[functions.meta-product-feed]
+verify_jwt = false
