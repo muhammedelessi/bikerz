@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -60,6 +61,7 @@ interface GradedResult {
 }
 
 const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = false, onComplete }) => {
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const { checkBadges, gamificationData } = useGamification();
@@ -197,8 +199,13 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
       }
       scrollToNextQuestion(activityId);
     },
-    onError: () => {
-      toast.error(isRTL ? 'حدث خطأ أثناء التحقق' : 'Error checking answer');
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : '';
+      if (message === 'Not authenticated') {
+        toast.error(t('courseLearn.loginRequired'));
+        return;
+      }
+      toast.error(t('courseLearn.quizSubmitFailed'));
     },
   });
 
@@ -219,6 +226,11 @@ const LessonQuiz: React.FC<LessonQuizProps> = ({ lessonId, isQuizOnlyLesson = fa
     const answers = selectedAnswers[question.id] || [];
     if (answers.length === 0) {
       toast.error(isRTL ? 'الرجاء اختيار إجابة' : 'Please select an answer');
+      return;
+    }
+
+    if (!user) {
+      toast.error(t('courseLearn.loginRequired'));
       return;
     }
 

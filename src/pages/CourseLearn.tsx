@@ -535,6 +535,14 @@ const CourseLearn: React.FC = () => {
         streakDays: gamificationData?.current_streak || 1,
       });
     },
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : '';
+      if (message === 'Not authenticated') {
+        toast.error(t('courseLearn.loginRequired'));
+        return;
+      }
+      toast.error(t('courseLearn.saveProgressFailed'));
+    },
   });
 
   // Save watch time mutation (debounced, no toast)
@@ -750,7 +758,11 @@ const CourseLearn: React.FC = () => {
       currentLessonId &&
       !lessonProgressRef.current.some(lp => lp.lesson_id === currentLessonId && lp.is_completed)
     ) {
-      completeLessonMutation.mutate(currentLessonId);
+      if (!user) {
+        toast.error(t('courseLearn.loginRequired'));
+      } else {
+        completeLessonMutation.mutate(currentLessonId);
+      }
     }
 
     // Show purchase encouragement when ALL free lessons are completed (non-enrolled users only)
@@ -787,7 +799,7 @@ const CourseLearn: React.FC = () => {
     } else {
       console.log("[CourseLearn] No next lesson available");
     }
-  }, [currentLessonId, nextLesson, chapters, isEnrolled, course]);
+  }, [currentLessonId, nextLesson, chapters, isEnrolled, course, user, t]);
 
   // Track video progress (watch time only, no auto-complete)
   const handleVideoProgress = useCallback((_progress: number) => {
@@ -1407,7 +1419,13 @@ const CourseLearn: React.FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => completeLessonMutation.mutate(currentLesson.id)}
+                          onClick={() => {
+                            if (!user) {
+                              toast.error(t('courseLearn.loginRequired'));
+                              return;
+                            }
+                            completeLessonMutation.mutate(currentLesson.id);
+                          }}
                           disabled={completeLessonMutation.isPending}
                           className="h-10 sm:h-9"
                         >

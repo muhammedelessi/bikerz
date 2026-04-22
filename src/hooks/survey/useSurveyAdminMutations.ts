@@ -1,12 +1,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { QuestionType } from "@/types/survey";
+import type { QuestionType, SurveyMode, SurveyType } from "@/types/survey";
 
 export async function uploadSurveyImage(file: File): Promise<string> {
   if (!file.type.startsWith("image/")) throw new Error("IMAGE_TYPE");
   if (file.size > 5 * 1024 * 1024) throw new Error("IMAGE_SIZE");
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError) throw authError;
+  if (!user) throw new Error("AUTH_REQUIRED");
   const ext = (file.name.split(".").pop() || "jpg").replace(/[^a-zA-Z0-9]/g, "") || "jpg";
-  const path = `survey-assets/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+  // Path must be {userId}/... — avatars bucket RLS matches foldername(name)[1] to auth.uid()
+  const path = `${user.id}/survey-assets/${Date.now()}-${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from("avatars").upload(path, file, {
     cacheControl: "3600",
     upsert: true,
@@ -18,41 +25,106 @@ export async function uploadSurveyImage(file: File): Promise<string> {
   return publicUrl;
 }
 
-export function useImportBikeTypeQuestions() {
+/** Import one yes/no question per catalog row for bike_types, bike_subtypes, or bike_models surveys. */
+export function useImportCatalogQuestions() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (surveyId: string) => {
       const { data: survey, error: sErr } = await supabase.from("surveys").select("type").eq("id", surveyId).single();
       if (sErr) throw sErr;
-      if (survey?.type !== "bike_types") throw new Error("WRONG_SURVEY_TYPE");
 
-      const { data: types, error: tErr } = await supabase.from("bike_types").select("*").order("sort_order");
-      if (tErr) throw tErr;
-
-      for (const bt of types || []) {
-        const { data: existing } = await supabase
-          .from("survey_questions")
-          .select("id")
-          .eq("survey_id", surveyId)
-          .eq("catalog_ref_id", bt.id)
-          .eq("catalog_ref_type", "bike_type")
-          .maybeSingle();
-        if (existing) continue;
-
-        const title_ar = `هل تفضل دراجات ${bt.name_ar}؟`;
-        const title_en = `Do you prefer ${bt.name_en} motorcycles?`;
-        const { error: insErr } = await supabase.from("survey_questions").insert({
-          survey_id: surveyId,
-          question_type: "yes_no",
-          title_ar,
-          title_en,
-          catalog_ref_id: bt.id,
-          catalog_ref_type: "bike_type",
-          sort_order: bt.sort_order ?? 0,
-          is_active: true,
-        });
-        if (insErr) throw insErr;
+      if (survey?.type === "brands" || survey?.type === "custom") {
+        throw new Error("IMPORT_NOT_SUPPORTED");
       }
+
+      if (survey?.type === "bike_types") {
+        const { data: types, error: tErr } = await supabase.from("bike_types").select("*").order("sort_order");
+        if (tErr) throw tErr;
+        for (const bt of types || []) {
+          const { data: existing } = await supabase
+            .from("survey_questions")
+            .select("id")
+            .eq("survey_id", surveyId)
+            .eq("catalog_ref_id", bt.id)
+            .eq("catalog_ref_type", "bike_type")
+            .maybeSingle();
+          if (existing) continue;
+          const title_ar = `هل تفضل دراجات ${bt.name_ar}؟`;
+          const title_en = `Do you prefer ${bt.name_en} motorcycles?`;
+          const { error: insErr } = await supabase.from("survey_questions").insert({
+            survey_id: surveyId,
+            question_type: "yes_no",
+            title_ar,
+            title_en,
+            catalog_ref_id: bt.id,
+            catalog_ref_type: "bike_type",
+            sort_order: bt.sort_order ?? 0,
+            is_active: true,
+          });
+          if (insErr) throw insErr;
+        }
+        return;
+      }
+
+      if (survey?.type === "bike_subtypes") {
+        const { data: rows, error: e } = await supabase.from("bike_subtypes").select("*").order("sort_order");
+        if (e) throw e;
+        for (const bs of rows || []) {
+          const { data: existing } = await supabase
+            .from("survey_questions")
+            .select("id")
+            .eq("survey_id", surveyId)
+            .eq("catalog_ref_id", bs.id)
+            .eq("catalog_ref_type", "bike_subtype")
+            .maybeSingle();
+          if (existing) continue;
+          const title_ar = `هل تفضل ${bs.name_ar}؟`;
+          const title_en = `Do you prefer ${bs.name_en}?`;
+          const { error: insErr } = await supabase.from("survey_questions").insert({
+            survey_id: surveyId,
+            question_type: "yes_no",
+            title_ar,
+            title_en,
+            catalog_ref_id: bs.id,
+            catalog_ref_type: "bike_subtype",
+            sort_order: bs.sort_order ?? 0,
+            is_active: true,
+          });
+          if (insErr) throw insErr;
+        }
+        return;
+      }
+
+      if (survey?.type === "bike_models") {
+        const { data: rows, error: e } = await supabase.from("bike_models").select("*").order("sort_order");
+        if (e) throw e;
+        for (const bm of rows || []) {
+          const { data: existing } = await supabase
+            .from("survey_questions")
+            .select("id")
+            .eq("survey_id", surveyId)
+            .eq("catalog_ref_id", bm.id)
+            .eq("catalog_ref_type", "bike_model")
+            .maybeSingle();
+          if (existing) continue;
+          const title_ar = `هل تفضل ${bm.brand} ${bm.model_name}؟`;
+          const title_en = `Do you prefer ${bm.brand} ${bm.model_name}?`;
+          const { error: insErr } = await supabase.from("survey_questions").insert({
+            survey_id: surveyId,
+            question_type: "yes_no",
+            title_ar,
+            title_en,
+            catalog_ref_id: bm.id,
+            catalog_ref_type: "bike_model",
+            sort_order: bm.sort_order ?? 0,
+            is_active: true,
+          });
+          if (insErr) throw insErr;
+        }
+        return;
+      }
+
+      throw new Error("WRONG_SURVEY_TYPE");
     },
     onSuccess: (_, surveyId) => {
       queryClient.invalidateQueries({ queryKey: ["survey-questions", surveyId] });
@@ -60,6 +132,7 @@ export function useImportBikeTypeQuestions() {
     },
   });
 }
+
 
 export function useDeleteSurveyQuestion() {
   const queryClient = useQueryClient();
@@ -205,18 +278,75 @@ export function useUpdateSurveyMeta() {
       description_ar: string | null;
       description_en: string | null;
       is_active: boolean;
+      sort_order?: number;
+      survey_mode?: SurveyMode;
     }) => {
-      const { error } = await supabase
+      const update: Record<string, unknown> = {
+        title_ar: payload.title_ar,
+        title_en: payload.title_en,
+        description_ar: payload.description_ar,
+        description_en: payload.description_en,
+        is_active: payload.is_active,
+      };
+      if (payload.survey_mode !== undefined) {
+        update.survey_mode = payload.survey_mode;
+      }
+      if (payload.sort_order !== undefined) {
+        update.sort_order = payload.sort_order;
+      }
+      const { error } = await supabase.from("surveys").update(update).eq("id", payload.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["surveys"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-surveys-all"] });
+    },
+  });
+}
+
+export function useDeleteSurvey() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (surveyId: string) => {
+      const { error } = await supabase.from("surveys").delete().eq("id", surveyId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["surveys"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-surveys-all"] });
+    },
+  });
+}
+
+export function useCreateSurvey() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      title_ar: string;
+      title_en: string;
+      description_ar: string | null;
+      description_en: string | null;
+      type: SurveyType;
+      survey_mode: SurveyMode;
+      sort_order: number;
+      is_active?: boolean;
+    }) => {
+      const { data, error } = await supabase
         .from("surveys")
-        .update({
+        .insert({
           title_ar: payload.title_ar,
           title_en: payload.title_en,
           description_ar: payload.description_ar,
           description_en: payload.description_en,
-          is_active: payload.is_active,
+          type: payload.type,
+          survey_mode: payload.survey_mode,
+          sort_order: payload.sort_order,
+          is_active: payload.is_active ?? true,
         })
-        .eq("id", payload.id);
+        .select("id")
+        .single();
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["surveys"] });

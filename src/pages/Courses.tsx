@@ -7,14 +7,46 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { BookOpen, Loader2 } from "lucide-react";
+import { BookOpen, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import SEOHead from "@/components/common/SEOHead";
 import CourseCard from "@/components/course/CourseCard";
 import { fetchEnrollmentsWithLiveProgress, type EnrollmentWithProgress } from "@/lib/enrollmentProgress";
 import PromoPopup from "@/components/common/PromoPopup";
-import { Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+const CourseCardSkeleton: React.FC = () => (
+  <div className="rounded-2xl border border-border/60 bg-card/85 backdrop-blur-sm overflow-hidden">
+    <div className="relative aspect-video overflow-hidden w-full bg-muted/50">
+      <div className="absolute inset-0 p-2">
+        <div className="relative w-full h-full rounded-xl bg-muted/60 overflow-hidden">
+          <div
+            className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent dark:via-white/5 animate-shimmer"
+            aria-hidden
+          />
+        </div>
+      </div>
+    </div>
+
+    <div className="p-4 sm:p-5 flex flex-col gap-3">
+      <div className="h-7 sm:h-8 w-[92%] max-w-xl bg-muted/60 rounded-lg animate-pulse" />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="h-6 w-[4.5rem] bg-muted/50 rounded-full animate-pulse" />
+        <div className="h-6 w-24 bg-muted/50 rounded-full animate-pulse" />
+        <div className="h-6 w-20 bg-muted/40 rounded-full animate-pulse" />
+      </div>
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent opacity-60" />
+      <div className="flex items-end justify-between gap-3">
+        <div className="space-y-2 min-w-0">
+          <div className="h-8 w-28 bg-muted/60 rounded-lg animate-pulse" />
+          <div className="h-3 w-20 bg-muted/40 rounded animate-pulse" />
+        </div>
+        <div className="h-6 w-16 bg-muted/40 rounded-lg shrink-0 animate-pulse" />
+      </div>
+      <div className="h-11 w-full bg-primary/15 rounded-lg animate-pulse" />
+    </div>
+  </div>
+);
 
 const Courses: React.FC = () => {
   const { t } = useTranslation();
@@ -107,8 +139,10 @@ const Courses: React.FC = () => {
             </motion.div>
 
             {isLoading && (
-              <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-7">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <CourseCardSkeleton key={i} />
+                ))}
               </div>
             )}
 

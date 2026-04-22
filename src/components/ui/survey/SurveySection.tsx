@@ -35,7 +35,7 @@ const SurveySection: React.FC<SurveySectionProps> = ({ userId }) => {
 
   return (
     <div className="grid gap-3">
-      {preview.map((survey) => (
+      {preview.map((survey, index) => (
         <SurveyCard
           key={survey.id}
           survey={survey}
@@ -43,6 +43,7 @@ const SurveySection: React.FC<SurveySectionProps> = ({ userId }) => {
           completion={completions?.find((c) => c.survey_id === survey.id)}
           onStart={() => navigate(`/profile/surveys/${survey.id}/play`)}
           isRTL={isRTL}
+          stepIndex={index}
         />
       ))}
       <button

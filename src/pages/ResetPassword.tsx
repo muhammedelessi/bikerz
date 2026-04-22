@@ -11,6 +11,7 @@ import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 import { useTheme } from '@/components/ThemeProvider';
 import SEOHead from '@/components/common/SEOHead';
+import { translateSupabasePasswordUpdateError } from '@/lib/userFacingServerMessages';
 
 const ResetPassword: React.FC = () => {
   const { t } = useTranslation();
@@ -73,15 +74,15 @@ const ResetPassword: React.FC = () => {
     let hasError = false;
 
     if (password.length < 6) {
-      setPasswordError(isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+      setPasswordError(t('auth.signup.passwordTooShort'));
       hasError = true;
     }
 
     if (!confirmPassword) {
-      setConfirmPasswordError(isRTL ? 'يرجى تأكيد كلمة المرور' : 'Please confirm your password');
+      setConfirmPasswordError(t('auth.resetPassword.confirmRequired'));
       hasError = true;
     } else if (password !== confirmPassword) {
-      setConfirmPasswordError(isRTL ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match');
+      setConfirmPasswordError(t('auth.signup.passwordMismatch'));
       hasError = true;
     }
 
@@ -94,10 +95,10 @@ const ResetPassword: React.FC = () => {
       if (error) throw error;
 
       setIsSuccess(true);
-      toast.success(isRTL ? 'تم تحديث كلمة المرور بنجاح' : 'Password updated successfully');
-    } catch (error: any) {
+      toast.success(t('auth.resetPassword.updatedSuccess'));
+    } catch (error: unknown) {
       console.error('Password update error:', error);
-      toast.error(error?.message || t('errors.generic'));
+      toast.error(translateSupabasePasswordUpdateError(error, t));
     } finally {
       setIsLoading(false);
     }

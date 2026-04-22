@@ -289,6 +289,32 @@ export function useCheckoutForm(open: boolean) {
     setIsEditingName(false);
   }, []);
 
+  // Keep `errors` in sync when checkout is open so the payment step can show why Pay is disabled
+  // (modal defaults to payment; `validateInfo` is otherwise only run from the info step / Next).
+  useEffect(() => {
+    if (!open || !user) return;
+    if (!isInfoValid) {
+      validateInfo();
+    } else {
+      setErrors({});
+    }
+  }, [
+    open,
+    user,
+    isInfoValid,
+    fullName,
+    email,
+    phone,
+    city,
+    country,
+    cityManual,
+    countryManual,
+    isOtherCity,
+    isOtherCountry,
+    selectedCountryCode,
+    validateInfo,
+  ]);
+
   return {
     fullName,
     setFullName,

@@ -31,7 +31,6 @@ const ProfileLayout: React.FC = () => {
   const themeLogo = theme === "light" ? logoDark : logoLight;
 
   const isSurveySection = location.pathname.startsWith("/profile/surveys");
-  const isQuizPlay = /\/profile\/surveys\/[^/]+\/play$/.test(location.pathname);
 
   useEffect(() => {
     if (sidebarOpen) {
@@ -65,7 +64,7 @@ const ProfileLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background flex">
+    <div className="flex h-dvh min-h-0 w-full overflow-hidden bg-background">
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
@@ -119,7 +118,7 @@ const ProfileLayout: React.FC = () => {
         </div>
       </aside>
 
-      <main className="flex-1 lg:ms-[280px] min-w-0 flex flex-col min-h-0">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden lg:ms-[280px] min-w-0">
         <header className="shrink-0 sticky top-0 z-30 bg-background/95 backdrop-blur-xl border-b border-border safe-area-top">
           <div className="flex items-center justify-between gap-3 p-3 sm:p-4">
             <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
@@ -144,7 +143,7 @@ const ProfileLayout: React.FC = () => {
         </header>
 
         <div
-          className={`flex-1 min-h-0 flex flex-col ${isQuizPlay ? "overflow-hidden" : "overflow-y-auto"}`}
+          className="flex-1 min-h-0 flex flex-col overflow-y-auto overscroll-y-contain"
           id="profile-outlet-scroll"
         >
           <Outlet />

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import type { PaymentStatus } from '@/types/payment';
+import { translateTapPaymentDisplayError } from '@/lib/userFacingServerMessages';
 
 interface CheckoutStatusOverlayProps {
   paymentStatus: PaymentStatus;
@@ -27,6 +28,7 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
 }) => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+  const localizedPaymentError = paymentError ? translateTapPaymentDisplayError(paymentError, t) : null;
 
   if (paymentStatus === 'verifying') {
     return (
@@ -91,7 +93,7 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
           {t('checkout.statusOverlay.paymentFailed')}
         </h4>
         <p className="text-muted-foreground mb-4">
-          {paymentError || t('checkout.statusOverlay.paymentErrorFallback')}
+          {localizedPaymentError || t('checkout.statusOverlay.paymentErrorFallback')}
         </p>
         <Button variant="outline" onClick={onRetry}>
           {t('checkout.statusOverlay.tryAgain')}

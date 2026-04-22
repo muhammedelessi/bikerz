@@ -122,6 +122,10 @@ export default {
           "0%": { backgroundPosition: "0 0" },
           "100%": { backgroundPosition: "0 100%" },
         },
+        shimmer: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -134,6 +138,7 @@ export default {
         float: "float 6s ease-in-out infinite",
         glow: "glow 2s ease-in-out infinite",
         "road-move": "road-move 20s linear infinite",
+        shimmer: "shimmer 1.5s ease-in-out infinite",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

@@ -137,6 +137,8 @@ const CourseDetail: React.FC = () => {
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ArrowLeft : ArrowRight;
   const [showCheckout, setShowCheckout] = useState(false);
+  const [ctaLoading, setCtaLoading] = useState(false);
+  const [stickyCtaLoading, setStickyCtaLoading] = useState(false);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
@@ -646,8 +648,42 @@ const CourseDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-[var(--navbar-h)] min-h-[60vh] flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+        <div className="pt-[var(--navbar-h)]">
+          <div className="page-container py-3">
+            <div className="h-4 w-48 max-w-[12rem] bg-muted/50 rounded animate-pulse" />
+          </div>
+          <div className="page-container">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+              <div className="md:col-span-7 space-y-4">
+                <div className="aspect-video w-full rounded-2xl bg-muted/50 animate-pulse" />
+                <div className="space-y-2 pt-4">
+                  <div className="h-8 w-3/4 max-w-xl bg-muted/50 rounded animate-pulse" />
+                  <div className="h-4 w-1/2 max-w-md bg-muted/40 rounded animate-pulse" />
+                  <div className="flex gap-2 pt-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-8 w-24 bg-muted/40 rounded-full animate-pulse" />
+                    ))}
+                  </div>
+                  <div className="h-4 w-full bg-muted/30 rounded animate-pulse" />
+                  <div className="h-4 w-[85%] max-w-2xl bg-muted/30 rounded animate-pulse" />
+                </div>
+              </div>
+              <div className="md:col-span-5">
+                <div className="rounded-2xl border border-border/50 bg-card p-6 space-y-4">
+                  <div className="h-16 w-1/2 mx-auto max-w-[10rem] bg-muted/50 rounded animate-pulse" />
+                  <div className="h-14 w-full bg-primary/20 rounded-xl animate-pulse" />
+                  <div className="space-y-3 pt-2">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <div className="w-7 h-7 bg-muted/50 rounded-lg animate-pulse shrink-0" />
+                        <div className="h-3 bg-muted/40 rounded animate-pulse flex-1" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <Footer />
       </div>
@@ -1270,9 +1306,20 @@ const CourseDetail: React.FC = () => {
                           ) : user ? (
                             <Button
                               className="w-full btn-cta h-12 sm:h-14 text-base sm:text-lg font-bold"
-                              onClick={() => setShowCheckout(true)}
+                              disabled={ctaLoading}
+                              onClick={() => {
+                                setCtaLoading(true);
+                                window.setTimeout(() => {
+                                  setShowCheckout(true);
+                                  setCtaLoading(false);
+                                }, 150);
+                              }}
                             >
-                              <ShoppingCart className="w-5 h-5 me-2" />
+                              {ctaLoading ? (
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin me-2" />
+                              ) : (
+                                <ShoppingCart className="w-5 h-5 me-2" />
+                              )}
                               {(() => {
                                 const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                                 const sym = getCurrencySymbol(info.currency, isRTL);
@@ -1623,41 +1670,8 @@ const CourseDetail: React.FC = () => {
                                             const state = getLessonState(lesson.id);
                                             const lTitle = isRTL && lesson.title_ar ? lesson.title_ar : lesson.title;
 
-                                            return (
-                                              <Link
-                                                key={lesson.id}
-                                                to={locked || guestLocked ? "#" : `/courses/${id}/lessons/${lesson.id}`}
-                                                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-colors ${
-                                                  locked || guestLocked
-                                                    ? "opacity-60 cursor-not-allowed"
-                                                    : lesson.is_free && !isEnrolled
-                                                      ? "bg-green-500/5 hover:bg-green-500/10 border border-green-500/15"
-                                                      : "hover:bg-muted/50"
-                                                }`}
-                                                onClick={(e) => {
-                                                  if (locked) {
-                                                    e.preventDefault();
-                                                    return;
-                                                  }
-                                                  if (!isEnrolled && lesson.is_free) {
-                                                    e.preventDefault();
-                                                    if (guestLocked) {
-                                                      toast.error(
-                                                        isRTL
-                                                          ? "انتهت المعاينة المجانية. شاهد من داخل صفحة الدرس بعد إنشاء حساب."
-                                                          : "Free preview has ended. Continue from lesson page after creating an account.",
-                                                      );
-                                                      return;
-                                                    }
-                                                    if (!lesson.video_url) {
-                                                      toast.error(isRTL ? "هذا الدرس لا يحتوي فيديو متاح حالياً" : "This lesson has no playable video yet");
-                                                      return;
-                                                    }
-                                                    navigate(`/courses/${id}/lessons/${lesson.id}`);
-                                                    return;
-                                                  }
-                                                }}
-                                              >
+                                            const lessonRowInner = (
+                                              <>
                                                 <div className="flex-shrink-0">
                                                   {locked || guestLocked ? (
                                                     <Lock className="w-4 h-4 text-muted-foreground" />
@@ -1690,6 +1704,110 @@ const CourseDetail: React.FC = () => {
                                                 ) : locked || guestLocked ? (
                                                   <Lock className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
                                                 ) : null}
+                                              </>
+                                            );
+
+                                            if (locked) {
+                                              return (
+                                                <div
+                                                  key={lesson.id}
+                                                  role="button"
+                                                  tabIndex={0}
+                                                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm opacity-60 cursor-not-allowed select-none"
+                                                  onClick={() => {
+                                                    toast.info(
+                                                      isRTL
+                                                        ? "هذا الدرس مقفول — اشترك للوصول الكامل"
+                                                        : "This lesson is locked — subscribe for full access",
+                                                      { duration: 2500 },
+                                                    );
+                                                  }}
+                                                  onKeyDown={(e) => {
+                                                    if (e.key === "Enter" || e.key === " ") {
+                                                      e.preventDefault();
+                                                      toast.info(
+                                                        isRTL
+                                                          ? "هذا الدرس مقفول — اشترك للوصول الكامل"
+                                                          : "This lesson is locked — subscribe for full access",
+                                                        { duration: 2500 },
+                                                      );
+                                                    }
+                                                  }}
+                                                >
+                                                  {lessonRowInner}
+                                                </div>
+                                              );
+                                            }
+
+                                            if (guestLocked) {
+                                              return (
+                                                <div
+                                                  key={lesson.id}
+                                                  role="button"
+                                                  tabIndex={0}
+                                                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm opacity-60 cursor-not-allowed select-none"
+                                                  onClick={() => {
+                                                    toast.info(
+                                                      isRTL
+                                                        ? "انتهت المعاينة المجانية — أنشئ حساباً للمتابعة"
+                                                        : "Free preview ended — create an account to continue",
+                                                      {
+                                                        duration: 3000,
+                                                        action: {
+                                                          label: isRTL ? "إنشاء حساب" : "Sign up",
+                                                          onClick: handlePreviewPromptSignup,
+                                                        },
+                                                      },
+                                                    );
+                                                  }}
+                                                  onKeyDown={(e) => {
+                                                    if (e.key === "Enter" || e.key === " ") {
+                                                      e.preventDefault();
+                                                      toast.info(
+                                                        isRTL
+                                                          ? "انتهت المعاينة المجانية — أنشئ حساباً للمتابعة"
+                                                          : "Free preview ended — create an account to continue",
+                                                        {
+                                                          duration: 3000,
+                                                          action: {
+                                                            label: isRTL ? "إنشاء حساب" : "Sign up",
+                                                            onClick: handlePreviewPromptSignup,
+                                                          },
+                                                        },
+                                                      );
+                                                    }
+                                                  }}
+                                                >
+                                                  {lessonRowInner}
+                                                </div>
+                                              );
+                                            }
+
+                                            return (
+                                              <Link
+                                                key={lesson.id}
+                                                to={`/courses/${id}/lessons/${lesson.id}`}
+                                                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-colors ${
+                                                  lesson.is_free && !isEnrolled
+                                                    ? "bg-green-500/5 hover:bg-green-500/10 border border-green-500/15"
+                                                    : "hover:bg-muted/50"
+                                                }`}
+                                                onClick={(e) => {
+                                                  if (!isEnrolled && lesson.is_free) {
+                                                    e.preventDefault();
+                                                    if (!lesson.video_url) {
+                                                      toast.error(
+                                                        isRTL
+                                                          ? "هذا الدرس لا يحتوي فيديو متاح حالياً"
+                                                          : "This lesson has no playable video yet",
+                                                      );
+                                                      return;
+                                                    }
+                                                    navigate(`/courses/${id}/lessons/${lesson.id}`);
+                                                  }
+                                                }}
+                                              >
+                                                {lessonRowInner}
                                               </Link>
                                             );
                                           })}
@@ -1826,13 +1944,24 @@ const CourseDetail: React.FC = () => {
                 ) : (
                   <Button
                     className="btn-cta h-11 text-sm px-6 flex-shrink-0"
-                    onClick={() =>
-                      user
-                        ? setShowCheckout(true)
-                        : navigate(`/signup?returnTo=${encodeURIComponent(`/courses/${id}?checkout=true`)}`)
-                    }
+                    disabled={!!user && stickyCtaLoading}
+                    onClick={() => {
+                      if (user) {
+                        setStickyCtaLoading(true);
+                        window.setTimeout(() => {
+                          setShowCheckout(true);
+                          setStickyCtaLoading(false);
+                        }, 150);
+                      } else {
+                        navigate(`/signup?returnTo=${encodeURIComponent(`/courses/${id}?checkout=true`)}`);
+                      }
+                    }}
                   >
-                    <ShoppingCart className="w-4 h-4 me-1.5" />
+                    {user && stickyCtaLoading ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin me-1.5" />
+                    ) : (
+                      <ShoppingCart className="w-4 h-4 me-1.5" />
+                    )}
                     {(() => {
                       const info = getCoursePriceInfo(course.id, course.price, effectiveDiscount);
                       const sym = getCurrencySymbol(info.currency, isRTL);

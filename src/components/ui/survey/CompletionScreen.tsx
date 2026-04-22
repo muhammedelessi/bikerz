@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { BarChart2, ChevronRight, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Survey } from "@/types/survey";
+import type { Survey, SurveyMode } from "@/types/survey";
 import { cn } from "@/lib/utils";
 
 interface CompletionScreenProps {
@@ -33,6 +33,7 @@ const CompletionScreen: React.FC<CompletionScreenProps> = ({
   isRTL,
 }) => {
   const { t } = useTranslation();
+  const surveyMode: SurveyMode = _survey.survey_mode ?? "scored";
   const scorePct = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
 
   return (
@@ -43,7 +44,12 @@ const CompletionScreen: React.FC<CompletionScreenProps> = ({
         </div>
         <h2 className="text-2xl sm:text-3xl font-black text-pretty px-2">{t("survey.completion_title")}</h2>
 
-        {hasMultipleChoice ? (
+        {surveyMode === "preference" ? (
+          <div className="w-full max-w-md space-y-2 text-center">
+            <p className="text-lg font-bold">{t("survey.preference_completion_title")}</p>
+            <p className="text-sm text-muted-foreground">{t("survey.preference_completion_hint")}</p>
+          </div>
+        ) : hasMultipleChoice ? (
           <div className="w-full max-w-sm space-y-3">
             <p className="text-lg sm:text-xl font-bold text-primary">{t("survey.completion_score", { score, max: maxScore })}</p>
             <div className="h-3 sm:h-3.5 bg-muted/40 rounded-full overflow-hidden">

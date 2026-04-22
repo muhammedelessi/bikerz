@@ -1,13 +1,12 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { validateCoupon } from '@/services/supabase.service';
 import type { AppliedCoupon } from '@/types/payment';
+import { translateCouponValidationMessage } from '@/lib/userFacingServerMessages';
 
 export function useCheckoutPromo(courseId: string, basePrice: number) {
   const { t } = useTranslation();
-  const { isRTL } = useLanguage();
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoLoading, setPromoLoading] = useState(false);
@@ -19,14 +18,18 @@ export function useCheckoutPromo(courseId: string, basePrice: number) {
     try {
       const { data, error } = await validateCoupon(promoCode.trim(), courseId, basePrice);
       if (error) {
-        let errorMsg = t('checkout.failedToValidateCode');
+        let raw: string | undefined;
         try {
           if (error.context && typeof error.context.json === 'function') {
-            const body = await error.context.json();
-            errorMsg = body?.error || errorMsg;
+            const body = (await error.context.json()) as { error?: string };
+            raw = typeof body?.error === 'string' ? body.error : undefined;
           }
-        } catch {}
-        toast.error(errorMsg);
+        } catch {
+          /* ignore */
+        }
+        toast.error(
+          raw ? translateCouponValidationMessage(raw, t) : t('checkout.failedToValidateCode'),
+        );
         return;
       }
       if (data?.valid) {
@@ -37,10 +40,12 @@ export function useCheckoutPromo(courseId: string, basePrice: number) {
         });
         toast.success(t('checkout.discountApplied'));
       } else {
-        toast.error(data?.error || t('checkout.invalidPromoCode'));
+        const errText = typeof data?.error === "string" ? data.error : undefined;
+        toast.error(translateCouponValidationMessage(errText, t));
       }
-    } catch (err: any) {
-      toast.error(err.message || t('checkout.failedToValidateCode'));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      toast.error(msg ? translateCouponValidationMessage(msg, t) : t('checkout.failedToValidateCode'));
     } finally {
       setPromoLoading(false);
     }

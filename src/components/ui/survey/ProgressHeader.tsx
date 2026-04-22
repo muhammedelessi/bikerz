@@ -26,43 +26,58 @@ const ProgressHeader: React.FC<ProgressHeaderProps> = ({
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
 
   return (
-    <div className="shrink-0 z-10 bg-background/95 backdrop-blur-md border-b border-border">
-      <div className="max-w-2xl mx-auto w-full px-3 sm:px-4 pt-3 pb-2 space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
+    <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border/60 shadow-sm">
+      <div className="max-w-2xl mx-auto w-full px-4 py-3 space-y-2.5">
+        <div className="flex items-center justify-between gap-2">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="gap-1.5 shrink-0 h-9 font-semibold border-primary/30"
+            className="gap-1.5 -ms-1 h-8 text-xs text-muted-foreground hover:text-foreground"
             onClick={onBackToProfile}
           >
-            <BackIcon className="w-4 h-4" />
-            <span className="max-w-[140px] sm:max-w-none truncate">{t("survey.return_to_profile")}</span>
+            <BackIcon className="w-3.5 h-3.5 shrink-0" />
+            {t("survey.return_to_profile")}
           </Button>
+
           {onOpenQuizList ? (
-            <Button type="button" variant="ghost" size="sm" className="gap-1 h-9 text-muted-foreground ms-auto" onClick={onOpenQuizList}>
-              <List className="w-4 h-4" />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 h-8 text-xs text-muted-foreground -me-1"
+              onClick={onOpenQuizList}
+            >
+              <List className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t("survey.quiz_list_short")}</span>
             </Button>
           ) : null}
         </div>
 
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide tabular-nums shrink-0">
-            {t("survey.question_counter", { current, total })}
-          </p>
-          <p className="text-sm sm:text-base font-bold text-foreground text-center truncate flex-1 min-w-0 px-2">{title}</p>
-          <span className="text-xs font-semibold text-primary tabular-nums shrink-0 w-10 text-end">{pct}%</span>
+          <p className="text-sm font-bold text-foreground truncate flex-1 min-w-0">{title}</p>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-xs font-black text-primary tabular-nums">{current}</span>
+            <span className="text-xs text-muted-foreground tabular-nums">/ {total}</span>
+          </div>
         </div>
 
-        <div
-          className="h-2 sm:h-2.5 bg-muted/40 rounded-full overflow-hidden"
-          role="progressbar"
-          aria-valuenow={pct}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          <div className={cn("h-full bg-primary rounded-full transition-all duration-300 ease-out")} style={{ width: `${pct}%` }} />
+        <div className="space-y-1">
+          <div
+            className="h-2 bg-muted/40 rounded-full overflow-hidden"
+            role="progressbar"
+            aria-valuenow={pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div
+              className={cn("h-full bg-primary rounded-full transition-all duration-500 ease-out")}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <p className={cn("text-[10px] text-muted-foreground tabular-nums", isRTL ? "text-start" : "text-end")}>
+            {pct}%
+          </p>
         </div>
       </div>
     </div>

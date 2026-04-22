@@ -357,6 +357,8 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
                 courseTitleAr={courses[0]?.title_ar ?? null}
                 paymentStatus={tap.status}
                 isPaymentReady={isPaymentReady}
+                billingIncomplete={!form.isInfoValid}
+                validateBilling={form.validateInfo}
                 vatPct={calc.vatPercentApplied}
                 exchangeRate={1}
                 isSAR

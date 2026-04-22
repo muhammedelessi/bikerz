@@ -63,6 +63,7 @@ const PaymentSuccess: React.FC = () => {
   const retryCountRef = useRef(0);
   const crmSuccessSyncedRef = useRef(false);
   const pixelFiredRef = useRef<string | null>(null);
+  const bookingWebhookSentRef = useRef(false);
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
   // Fetch course info
@@ -122,7 +123,7 @@ const PaymentSuccess: React.FC = () => {
         .from("training_bookings")
         .select(
           `
-          id, amount, currency, payment_id, sessions, booking_date, start_time, end_time,
+          id, trainer_id, amount, currency, payment_id, sessions, booking_date, start_time, end_time,
           trainers(name_ar, name_en, photo_url),
           trainings(name_ar, name_en)
         `,
@@ -133,6 +134,115 @@ const PaymentSuccess: React.FC = () => {
       return data;
     },
   });
+
+  const { data: trainerDetails, isFetched: trainerDetailsFetched } = useQuery({
+    queryKey: ["trainer-phone", trainingBookingSuccess?.trainer_id],
+    enabled:
+      verifyStatus === "succeeded" && isTrainingBookingSuccess && !!trainingBookingSuccess,
+    queryFn: async () => {
+      const trainerId = trainingBookingSuccess?.trainer_id;
+      if (!trainerId) return null;
+      const { data } = await supabase
+        .from("trainers")
+        .select("phone, name_ar, name_en")
+        .eq("id", trainerId)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const GHL_TRAINING_BOOKING_WEBHOOK_URL =
+    "https://services.leadconnectorhq.com/hooks/ddAvdgekc94cWL9NBHK1/webhook-trigger/be1a5b69-96db-4ac8-baa2-9bd5cf576dfe";
+
+  // GHL WhatsApp: training booking confirmed (once; fire-and-forget)
+  useEffect(() => {
+    if (
+      verifyStatus !== "succeeded" ||
+      !isTrainingBookingSuccess ||
+      !trainingBookingSuccess ||
+      !trainerDetailsFetched ||
+      bookingWebhookSentRef.current
+    ) {
+      return;
+    }
+
+    bookingWebhookSentRef.current = true;
+
+    const booking = trainingBookingSuccess;
+    const sessions = normalizeBookingSessions(
+      booking.sessions,
+      booking.booking_date,
+      booking.start_time,
+      booking.end_time,
+      "confirmed",
+    );
+
+    const trainerName =
+      booking.trainers?.name_en || booking.trainers?.name_ar || "";
+
+    const trainingName =
+      booking.trainings?.name_en || booking.trainings?.name_ar || "";
+
+    const locationStr = [profile?.city, profile?.country].filter(Boolean).join(" - ");
+
+    const payload = {
+      event_type: "training_booking_confirmed",
+
+      training: {
+        name: trainingName,
+        sessions_count: sessions.length,
+        sessions: sessions.map((s) => ({
+          session_number: s.session_number,
+          date: s.date,
+          start_time: s.start_time,
+          end_time: s.end_time,
+        })),
+      },
+
+      training_location: {
+        city: profile?.city || "",
+        country: profile?.country || "",
+        full: locationStr,
+        detail: (booking as any).location_detail || "",
+      },
+
+      payment: {
+        amount: String(booking.amount || 0),
+        currency: booking.currency || "SAR",
+        status: "paid",
+        payment_id: tapId || "",
+        booking_date: new Date().toISOString().split("T")[0],
+      },
+
+      student_info: {
+        full_name: profile?.full_name || user?.email || "",
+        phone: profile?.phone || "",
+        email: user?.email || "",
+        country: profile?.country || "",
+        city: profile?.city || "",
+      },
+
+      trainer_info: {
+        name: trainerName,
+        phone: trainerDetails?.phone || "",
+      },
+    };
+
+    fetch(GHL_TRAINING_BOOKING_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).catch((err) => console.warn("[GHL booking webhook] failed:", err));
+  }, [
+    verifyStatus,
+    isTrainingBookingSuccess,
+    trainingBookingSuccess,
+    trainerDetails,
+    trainerDetailsFetched,
+    profile,
+    user,
+    tapId,
+  ]);
 
   // Meta Pixel + GHL + n8n on successful verification (once per success)
   useEffect(() => {

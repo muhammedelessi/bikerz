@@ -194,7 +194,12 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
         toast.error(isRTL ? 'لم تجتز الاختبار، حاول مرة أخرى' : "You didn't pass. Try again!");
       }
     },
-    onError: () => {
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : '';
+      if (message === 'Not authenticated') {
+        toast.error(t('courseLearn.loginRequired'));
+        return;
+      }
       toast.error(isRTL ? 'حدث خطأ' : 'Something went wrong');
     },
   });
@@ -216,6 +221,10 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
   }, [testStarted, timeLeft, test?.time_limit_minutes]);
 
   const startTest = () => {
+    if (!user) {
+      toast.error(t('courseLearn.loginRequired'));
+      return;
+    }
     setTestStarted(true);
     if (test?.time_limit_minutes) {
       setTimeLeft(test.time_limit_minutes * 60);
@@ -245,6 +254,10 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ testId, chapterTitle, onCompl
   };
 
   const handleSubmit = () => {
+    if (!user) {
+      toast.error(t('courseLearn.loginRequired'));
+      return;
+    }
     if (Object.keys(answers).length < questions.length) {
       toast.error(isRTL ? 'يرجى الإجابة على جميع الأسئلة' : 'Please answer all questions');
       return;

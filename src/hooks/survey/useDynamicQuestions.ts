@@ -42,6 +42,7 @@ export function useDynamicQuestions(
       const list = allQuestions || [];
       if (!survey || !list.length) return [] as SurveyQuestion[];
 
+      // brands, bike_types, custom: return seeded/manual questions as stored (no subtype/model filter).
       if (!needsFilter) return list;
 
       if (!previousSurveyId || !userId) return list;

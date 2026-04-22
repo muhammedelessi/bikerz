@@ -1,11 +1,13 @@
-import React, { memo, useState } from "react";
+import React, { memo, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { CreditCard, Gift, Shield, Check, Lock, XCircle, Pencil, X, Phone, MapPin, User } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { CreditCard, Gift, Shield, Check, Lock, XCircle, Pencil, X, Phone, MapPin, User, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
 import SearchableDropdown from "@/components/checkout/SearchableDropdown";
 import type { DropdownOption } from "@/components/checkout/SearchableDropdown";
@@ -61,6 +63,10 @@ interface CheckoutPaymentStepProps {
   courseTitleAr: string | null;
   paymentStatus: PaymentStatus;
   isPaymentReady: boolean;
+  /** When true, billing fields fail validation and Pay must stay disabled — show guidance. */
+  billingIncomplete?: boolean;
+  /** Run full billing validation (e.g. before closing the edit dialog). Returns true if valid. */
+  validateBilling?: () => boolean;
   vatPct?: number;
   exchangeRate?: number;
   isSAR?: boolean;
@@ -111,13 +117,24 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     courseTitleAr,
     paymentStatus,
     isPaymentReady,
+    billingIncomplete = false,
+    validateBilling,
     vatPct = 0,
     exchangeRate = 1,
     isSAR = true,
     onSubmitPayment,
     bundleMode = false,
   }) => {
+    const { t } = useTranslation();
     const [editOpen, setEditOpen] = useState(false);
+
+    const billingIssueLines = useMemo(
+      () =>
+        [errors.fullName, errors.email, errors.phone, errors.city, errors.country].filter(
+          (line): line is string => Boolean(line && String(line).trim()),
+        ),
+      [errors.fullName, errors.email, errors.phone, errors.city, errors.country],
+    );
 
     const effectiveCountry = isOtherCountry ? countryManual : country;
     const effectiveCity = isOtherCity ? cityManual : city;
@@ -244,7 +261,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
 
           {/* Order Summary */}
           <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
-            <div className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between">
+            <div className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between gap-2">
               <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
                 {bundleMode
                   ? isRTL
@@ -254,13 +271,14 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                     ? "ملخص الطلب"
                     : "Order Summary"}
               </p>
-              {/*  <button
+              <button
+                type="button"
                 onClick={() => setEditOpen(true)}
-                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors shrink-0"
               >
                 <Pencil className="w-3 h-3" />
                 {isRTL ? "تعديل" : "Edit"}
-              </button>*/}
+              </button>
             </div>
             <div className="p-4 space-y-2.5">
               <div className="flex justify-between text-sm">
@@ -365,6 +383,27 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
             </div>
           </div>
 
+          {billingIncomplete && paymentStatus === "idle" && (
+            <Alert variant="destructive" className="text-start">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>{t("checkout.validation.payBlockedTitle")}</AlertTitle>
+              <AlertDescription className="space-y-2">
+                {billingIssueLines.length > 0 ? (
+                  <ul className="list-disc ps-4 space-y-0.5 text-xs">
+                    {billingIssueLines.map((line, idx) => (
+                      <li key={`${idx}-${line}`}>{line}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs">{t("checkout.validation.payBlockedHint")}</p>
+                )}
+                <Button type="button" variant="outline" size="sm" className="mt-1 h-8" onClick={() => setEditOpen(true)}>
+                  {t("checkout.validation.editDetails")}
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Trust Badge */}
           <div className="flex flex-col items-center gap-2 pt-2">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -410,7 +449,11 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder={isRTL ? "الاسم الكامل" : "Full name"}
                   dir={isRTL ? "rtl" : "ltr"}
+                  className={errors.fullName ? "border-destructive" : undefined}
                 />
+                {errors.fullName ? (
+                  <p className="text-xs text-destructive">{errors.fullName}</p>
+                ) : null}
               </div>
 
               <div className="space-y-1.5">
@@ -436,9 +479,10 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                     }}
                     placeholder="5XXXXXXXX"
                     dir="ltr"
-                    className="flex-1"
+                    className={`flex-1 ${errors.phone ? "border-destructive" : ""}`}
                   />
                 </div>
+                {errors.phone ? <p className="text-xs text-destructive">{errors.phone}</p> : null}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -460,8 +504,10 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                         setCountry(e.target.value);
                       }}
                       placeholder={isRTL ? "اسم الدولة" : "Country name"}
+                      className={errors.country ? "border-destructive" : undefined}
                     />
                   )}
+                  {errors.country ? <p className="text-xs text-destructive">{errors.country}</p> : null}
                 </div>
 
                 <div className="space-y-1.5">
@@ -471,6 +517,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                       value={cityManual}
                       onChange={(e) => setCityManual(e.target.value)}
                       placeholder={isRTL ? "اسم المدينة" : "City name"}
+                      className={errors.city ? "border-destructive" : undefined}
                     />
                   ) : (
                     <>
@@ -487,16 +534,25 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                           value={cityManual}
                           onChange={(e) => setCityManual(e.target.value)}
                           placeholder={isRTL ? "اسم المدينة" : "City name"}
+                          className={errors.city ? "border-destructive" : undefined}
                         />
                       )}
                     </>
                   )}
+                  {errors.city ? <p className="text-xs text-destructive">{errors.city}</p> : null}
                 </div>
               </div>
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button className="flex-1" onClick={() => setEditOpen(false)}>
+              <Button
+                type="button"
+                className="flex-1"
+                onClick={() => {
+                  if (validateBilling && !validateBilling()) return;
+                  setEditOpen(false);
+                }}
+              >
                 <Check className="w-4 h-4 me-2" />
                 {isRTL ? "تم" : "Done"}
               </Button>

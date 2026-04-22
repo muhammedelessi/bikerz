@@ -37,6 +37,12 @@ const ContactUs: React.FC = () => {
     subject: '',
     message: ''
   });
+  const [fieldErrors, setFieldErrors] = useState<{
+    name?: string;
+    email?: string;
+    subject?: string;
+    message?: string;
+  }>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [ticketNumber, setTicketNumber] = useState('');
 
@@ -52,7 +58,7 @@ const ContactUs: React.FC = () => {
   const submitTicketMutation = useMutation({
     mutationFn: async () => {
       if (!user) {
-        throw new Error('Must be logged in to submit a ticket');
+        throw new Error(t('contact.loginToSubmit'));
       }
 
       const ticketNum = `TKT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
@@ -117,8 +123,8 @@ const ContactUs: React.FC = () => {
         });
       })();
     },
-    onError: (error: Error) => {
-      toast.error(error.message || t('contact.failedToSubmit'));
+    onError: () => {
+      toast.error(t('contact.failedToSubmit'));
     }
   });
 
@@ -131,11 +137,19 @@ const ContactUs: React.FC = () => {
       return;
     }
 
-    if (!formData.subject.trim() || !formData.message.trim()) {
-      toast.error(t('contact.fillAllRequired'));
-      return;
+    const nextErrors: typeof fieldErrors = {};
+    if (!formData.subject.trim()) {
+      nextErrors.subject = t('contact.form.errors.subjectRequired');
+    }
+    if (!formData.message.trim()) {
+      nextErrors.message = t('contact.form.errors.messageRequired');
     }
 
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      return;
+    }
+    setFieldErrors({});
     submitTicketMutation.mutate();
   };
 
@@ -287,25 +301,29 @@ const ContactUs: React.FC = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <form onSubmit={handleSubmit} className="space-y-6">
+                      <form noValidate onSubmit={handleSubmit} className="space-y-6">
                         {!user && (
                           <div className="grid md:grid-cols-2 gap-4">
-                            <FormField label={t('fields.fullName.label')}>
+                            <FormField label={t('fields.fullName.label')} error={fieldErrors.name}>
                               <Input
                                 id="name"
                                 value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                onChange={(e) => {
+                                  setFieldErrors((prev) => ({ ...prev, name: undefined }));
+                                  setFormData({ ...formData, name: e.target.value });
+                                }}
                                 placeholder={t('fields.fullName.placeholder')}
                               />
                             </FormField>
-                            <FormField
-                              label={t('fields.email.label')}
-                            >
+                            <FormField label={t('fields.email.label')} error={fieldErrors.email}>
                               <Input
                                 id="email"
                                 type="email"
                                 value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                onChange={(e) => {
+                                  setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                                  setFormData({ ...formData, email: e.target.value });
+                                }}
                                 placeholder={t('fields.email.placeholder')}
                               />
                             </FormField>
@@ -333,24 +351,30 @@ const ContactUs: React.FC = () => {
                           </Select>
                         </FormField>
 
-                        <FormField label={t('contact.form.subject')} required>
+                        <FormField label={t('contact.form.subject')} required error={fieldErrors.subject}>
                           <Input
                             id="subject"
                             value={formData.subject}
-                            onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                            onChange={(e) => {
+                              setFieldErrors((prev) => ({ ...prev, subject: undefined }));
+                              setFormData({ ...formData, subject: e.target.value });
+                            }}
                             placeholder={t('contact.form.subjectPlaceholder')}
-                            required
+                            className={fieldErrors.subject ? 'border-destructive' : undefined}
                           />
                         </FormField>
 
-                        <FormField label={t('contact.form.message')} required>
+                        <FormField label={t('contact.form.message')} required error={fieldErrors.message}>
                           <Textarea
                             id="message"
                             value={formData.message}
-                            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                            onChange={(e) => {
+                              setFieldErrors((prev) => ({ ...prev, message: undefined }));
+                              setFormData({ ...formData, message: e.target.value });
+                            }}
                             placeholder={t('contact.form.messagePlaceholder')}
                             rows={6}
-                            required
+                            className={fieldErrors.message ? 'border-destructive' : undefined}
                           />
                         </FormField>
 

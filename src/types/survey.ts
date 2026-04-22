@@ -2,6 +2,13 @@ export type QuestionType = "yes_no" | "multiple_choice";
 
 export type SurveyType = "brands" | "bike_types" | "bike_subtypes" | "bike_models" | "custom";
 
+export type SurveyMode = "scored" | "preference";
+
+/** Default mode when picking a survey type in admin (bike catalog types → preference). */
+export function defaultSurveyModeForType(type: SurveyType): SurveyMode {
+  return ["bike_types", "bike_subtypes", "bike_models"].includes(type) ? "preference" : "scored";
+}
+
 export interface Survey {
   id: string;
   title_ar: string;
@@ -9,6 +16,7 @@ export interface Survey {
   description_ar: string | null;
   description_en: string | null;
   type: SurveyType;
+  survey_mode: SurveyMode;
   sort_order: number;
   is_active: boolean;
   created_at?: string;
