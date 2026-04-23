@@ -420,7 +420,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                       <div className="flex flex-row sm:flex-col flex-1 min-w-0">
                         {/* Image */}
                         {entry.photos.length > 0 ? (
-                          <div className="relative w-32 sm:w-auto shrink-0 sm:aspect-[4/4] overflow-hidden sm:rounded-t-2xl bg-muted">
+                          <div className="relative w-28 aspect-square sm:w-auto shrink-0 sm:aspect-[4/4] overflow-hidden sm:rounded-t-2xl bg-muted">
                             <img
                               src={entry.photos[0]}
                               alt={entry.model}
@@ -436,7 +436,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                         ) : (
                           <div
                             className={cn(
-                              "w-32 sm:w-auto shrink-0 sm:aspect-[4/4] sm:rounded-t-2xl bg-gradient-to-b flex items-center justify-center",
+                              "w-28 aspect-square sm:w-auto shrink-0 sm:aspect-[4/4] sm:rounded-t-2xl bg-gradient-to-b flex items-center justify-center",
                               gradient,
                             )}
                           >
