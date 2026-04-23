@@ -120,14 +120,15 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — LTR: dock left; RTL: dock right (same pattern as learner Dashboard) */}
       <aside
-        className={`fixed lg:sticky top-0 h-screen z-50 bg-card border-e border-border flex flex-col transition-all duration-300 ${
+        dir={isRTL ? 'rtl' : 'ltr'}
+        className={`fixed lg:sticky top-0 h-screen z-50 flex flex-col bg-card border-e border-border transition-all duration-300 ${
           sidebarOpen ? 'translate-x-0' : isRTL ? 'translate-x-full' : '-translate-x-full'
-        } lg:translate-x-0 ${sidebarCollapsed ? 'w-20' : 'w-64'}`}
+        } lg:translate-x-0 ${isRTL ? 'right-0' : 'left-0'} ${sidebarCollapsed ? 'w-20' : 'w-64'}`}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+        <div className="flex h-16 items-center justify-between px-4 border-b border-border">
           {!sidebarCollapsed && (
             <Link to="/admin" className="flex items-center gap-2">
               <img
@@ -164,9 +165,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           </Button>
         </div>
 
-        {/* Navigation */}
-        <ScrollArea className="flex-1 py-4">
-          <nav className="px-3 space-y-1">
+        {/* Navigation — RTL: icon on the right, label left of it; cluster toward inner edge (justify-end) */}
+        <ScrollArea dir={isRTL ? 'rtl' : 'ltr'} className="flex-1 py-4">
+          <nav className="space-y-1 px-3" dir={isRTL ? 'rtl' : 'ltr'}>
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = isActiveRoute(item.href);
@@ -176,21 +177,22 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                   key={item.href}
                   to={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                  dir={isRTL ? 'rtl' : 'ltr'}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-start transition-colors ${
                     isActive
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                  } ${sidebarCollapsed ? 'justify-center' : isRTL ? 'justify-end' : 'justify-start'}`}
                   title={sidebarCollapsed ? t(`admin.menu.${item.labelKey}`) : undefined}
                 >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <Icon className="h-5 w-5 flex-shrink-0" aria-hidden />
                   {!sidebarCollapsed && (
-                    <span className="font-medium">
+                    <span className="min-w-0 font-medium">
                       {t(`admin.menu.${item.labelKey}`)}
                     </span>
                   )}
                   {!sidebarCollapsed && item.badge && (
-                    <span className="ms-auto bg-destructive text-destructive-foreground text-xs px-2 py-0.5 rounded-full">
+                    <span className="ms-auto shrink-0 rounded-full bg-destructive px-2 py-0.5 text-xs text-destructive-foreground">
                       {item.badge}
                     </span>
                   )}
@@ -200,8 +202,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           </nav>
         </ScrollArea>
 
-        {/* Collapse Toggle */}
-        <div className="hidden lg:flex justify-end p-2 border-t border-border">
+        {/* Collapse Toggle — logical end of sidebar strip */}
+        <div className="hidden lg:flex justify-end border-t border-border p-2">
           <Button
             variant="ghost"
             size="icon"
@@ -214,10 +216,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col">
         {/* Top Bar */}
-        <header className="h-16 border-b border-border bg-card/80 backdrop-blur-xl flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
-          <div className="flex items-center gap-4">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-card/80 px-4 backdrop-blur-xl lg:px-6">
+          <div className="flex min-w-0 items-center gap-4">
             <Button
               variant="ghost"
               size="icon"

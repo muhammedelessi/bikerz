@@ -156,6 +156,7 @@
     "login": "Login",
     "signup": "Sign Up",
     "dashboard": "Dashboard",
+    "myBookings": "My Bookings",
     "mentors": "Mentors",
     "adminPanel": "Admin Panel"
   },
@@ -529,6 +530,8 @@
     "title": "My Profile",
     "subtitle": "Manage your information and settings",
     "notFound": "Profile not found",
+    "sectionCustomerInformation": "Customer Information",
+    "sectionYourRank": "Your Rank",
     "riderIdentity": "Rider Identity",
     "bikeInformation": "Bike Information",
     "learningProgress": "Learning Progress",
@@ -559,6 +562,9 @@
     "addDetailsForBetterExperience": "Add your details for a personalized learning experience",
     "locked": "Locked",
     "achievementsMotivation": "Achievements are for in-platform motivation only"
+  },
+  "myBookings": {
+    "layoutSubtitle": "View and manage your practical training reservations"
   },
   "survey": {
     "title": "Test Your Knowledge",

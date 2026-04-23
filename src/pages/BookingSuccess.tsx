@@ -107,7 +107,7 @@ const BookingSuccess: React.FC = () => {
             )}
             <div className="flex flex-col sm:flex-row gap-2 pt-2">
               <Button asChild className="flex-1">
-                <Link to="/my-bookings">{isRTL ? 'عرض حجوزاتي' : 'My bookings'}</Link>
+                <Link to="/profile/bookings">{isRTL ? 'عرض حجوزاتي' : 'My bookings'}</Link>
               </Button>
               <Button asChild variant="outline" className="flex-1">
                 <Link to="/">{isRTL ? 'العودة للرئيسية' : 'Back home'}</Link>

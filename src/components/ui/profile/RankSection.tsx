@@ -330,17 +330,7 @@ export const RankSection: React.FC<RankSectionProps> = ({
 
   return (
     <div className="card-premium p-6 space-y-6" dir={isRTL ? "rtl" : "ltr"}>
-      {/* Section Title */}
-      <div className="flex items-center gap-2">
-        <Trophy className="h-5 w-5 text-primary" />
-        <h3 className="text-lg font-bold text-foreground">
-          {isRTL ? "رتبتك" : "Your Rank"}
-        </h3>
-      </div>
-
-      <Separator />
-
-      {/* Current Rank Hero */}
+      {/* Current Rank Hero — section title lives on Profile page */}
       <div className="text-center space-y-3">
         {(() => {
           const CurrentIcon = getIconForRank(currentRank, dbRankMap.get(currentRank)?.icon ?? currentDef.icon);

@@ -235,10 +235,8 @@ const Navbar: React.FC = () => {
         }`}
       >
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-          <div
-            className="flex items-center justify-between h-14 lg:h-16 gap-2 lg:gap-4"
-            dir={isRTL ? "rtl" : "ltr"}
-          >
+          {/* dir=ltr keeps physical layout: logo left, burger & actions right (flex start/end are not flipped in site RTL) */}
+          <div className="flex h-14 items-center justify-between gap-2 lg:h-16 lg:gap-4" dir="ltr">
             {/* Logo */}
             <Link
               to="/"
@@ -255,9 +253,9 @@ const Navbar: React.FC = () => {
               />
             </Link>
 
-            {/* Desktop Nav Links — Centered */}
+            {/* Desktop Nav Links — centered, visual order reversed (last CMS/default item appears leftmost) */}
             <div className="hidden lg:flex flex-1 min-w-0 justify-center">
-              <div className="flex items-center gap-0.5 max-w-full overflow-x-auto no-scrollbar px-2">
+              <div className="flex max-w-full flex-row-reverse items-center gap-0.5 overflow-x-auto px-2 no-scrollbar">
                 {menuItems.map((item) => {
                   const active = isActive(item.link);
                   const label = isRTL ? item.title_ar : item.title_en;
@@ -299,8 +297,11 @@ const Navbar: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Side */}
-            <div className="flex items-center gap-2 sm:gap-3 relative z-10 shrink-0">
+            {/* Right Side — inherit RTL for control labels inside; bar order stays LTR */}
+            <div
+              className="relative z-10 flex shrink-0 items-center gap-2 sm:gap-3"
+              dir={isRTL ? "rtl" : "ltr"}
+            >
               <div className="hidden lg:flex items-center gap-2">
                 <ThemeToggle />
                 {showLanguageToggle && <LanguageToggle />}
@@ -321,11 +322,6 @@ const Navbar: React.FC = () => {
                             {profile?.full_name?.split(" ")[0] ||
                               t("nav.dashboard")}
                           </span>
-                        </Button>
-                      </Link>
-                      <Link to="/my-bookings">
-                        <Button variant="ghost" size="sm" className="text-sm">
-                          {isRTL ? "حجوزاتي" : "My Bookings"}
                         </Button>
                       </Link>
                       <LogoutConfirmDialog onConfirm={handleSignOut}>
@@ -362,17 +358,30 @@ const Navbar: React.FC = () => {
                   )}
               </div>
 
-              {/* Hamburger */}
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className={`lg:hidden p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors text-foreground hover:bg-muted/50`}
-                aria-label="Toggle menu"
-                aria-expanded={isMobileMenuOpen}
-              >
-                {isMobileMenuOpen
-                  ? <X className="w-6 h-6" />
-                  : <Menu className="w-6 h-6" />}
-              </button>
+              {/* Mobile: Sign up (guest) to the left of burger; dir=ltr keeps order in site RTL */}
+              <div className="flex items-center gap-2 lg:hidden" dir="ltr">
+                {!user && ctaButton.is_visible && (
+                  <Link to={ctaButton.link} className="shrink-0">
+                    <Button
+                      size="sm"
+                      className="whitespace-nowrap bg-gradient-to-r from-primary to-primary/80 px-3 py-2 text-xs font-bold text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] sm:px-4 sm:text-sm"
+                    >
+                      {isRTL ? ctaButton.text_ar : ctaButton.text_en}
+                    </Button>
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg p-2 text-foreground transition-colors hover:bg-muted/50"
+                  aria-label="Toggle menu"
+                  aria-expanded={isMobileMenuOpen}
+                >
+                  {isMobileMenuOpen
+                    ? <X className="h-6 w-6" />
+                    : <Menu className="h-6 w-6" />}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -387,9 +396,10 @@ const Navbar: React.FC = () => {
             : "opacity-0 pointer-events-none"
         }`}
       />
-      {/* Mobile Menu Drawer */}
+      {/* Mobile Menu Drawer — always from the right edge; dir controls text alignment inside */}
       <div
-        className={`fixed top-0 right-0 z-50 w-full max-w-[320px] h-full bg-background border-s border-border/50 shadow-2xl lg:hidden safe-area-top transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        dir={isRTL ? "rtl" : "ltr"}
+        className={`fixed top-0 right-0 z-50 h-full w-full max-w-[320px] border-s border-border/50 bg-background shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] lg:hidden safe-area-top ${
           isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -422,7 +432,7 @@ const Navbar: React.FC = () => {
                 const active = isActive(item.link);
                 const label = isRTL ? item.title_ar : item.title_en;
                 const linkClass =
-                  `flex items-center justify-between py-3.5 px-4 rounded-xl transition-all duration-200 min-h-[48px] ${
+                  `flex w-full items-center justify-between gap-2 py-3.5 px-4 rounded-xl text-start transition-all duration-200 min-h-[48px] ${
                     active
                       ? "bg-primary/10 text-primary font-semibold border-s-2 border-primary"
                       : "text-foreground hover:bg-muted/40 hover:text-primary"
@@ -453,9 +463,9 @@ const Navbar: React.FC = () => {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={linkClass}
                   >
-                    <span className="text-base">{label}</span>
+                    <span className="text-base flex-1 min-w-0">{label}</span>
                     <ChevronRight
-                      className={`w-4 h-4 text-muted-foreground ${
+                      className={`w-4 h-4 shrink-0 text-muted-foreground ${
                         isRTL ? "rotate-180" : ""
                       }`}
                     />
@@ -465,14 +475,14 @@ const Navbar: React.FC = () => {
             </div>
             <div className="mt-4 space-y-2">
               {showLanguageToggle && (
-                <div className="px-4 py-3 rounded-xl bg-muted/20 flex items-center justify-between">
+                <div className="px-4 py-3 rounded-xl bg-muted/20 flex w-full items-center justify-between gap-3 text-start">
                   <span className="text-sm text-muted-foreground">
                     {t("common.language", "Language")}
                   </span>
                   <LanguageToggle />
                 </div>
               )}
-              <div className="px-4 py-3 rounded-xl bg-muted/20 flex items-center justify-between">
+              <div className="px-4 py-3 rounded-xl bg-muted/20 flex w-full items-center justify-between gap-3 text-start">
                 <span className="text-sm text-muted-foreground">
                   {isRTL ? "الوضع" : "Theme"}
                 </span>
@@ -492,9 +502,9 @@ const Navbar: React.FC = () => {
                   >
                     <Button
                       variant="outline"
-                      className="w-full h-12 text-base gap-3 border-border/50"
+                      className="w-full h-12 justify-start text-start text-base gap-3 border-border/50"
                     >
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shrink-0">
                         <span className="text-sm font-bold text-primary-foreground">
                           {profile?.full_name?.charAt(0) ||
                             user.email?.charAt(0) || "U"}
@@ -503,22 +513,10 @@ const Navbar: React.FC = () => {
                       {profile?.full_name || t("nav.dashboard")}
                     </Button>
                   </Link>
-                  <Link
-                    to="/my-bookings"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block"
-                  >
-                    <Button
-                      variant="outline"
-                      className="w-full h-12 text-base border-border/50"
-                    >
-                      {isRTL ? "حجوزاتي" : "My Bookings"}
-                    </Button>
-                  </Link>
                   <LogoutConfirmDialog onConfirm={handleSignOut}>
                     <Button
                       variant="ghost"
-                      className="w-full h-11 text-sm text-muted-foreground"
+                      className="w-full h-11 justify-start text-start text-sm text-muted-foreground"
                     >
                       <LogOut className="w-4 h-4 me-2" />
                       {t("common.logout")}
@@ -536,7 +534,7 @@ const Navbar: React.FC = () => {
                     >
                       <Button
                         variant="outline"
-                        className="w-full h-12 text-base border-border/50"
+                        className="w-full h-12 justify-start text-start text-base border-border/50"
                       >
                         {isRTL ? loginButton.text_ar : loginButton.text_en}
                       </Button>
@@ -548,7 +546,7 @@ const Navbar: React.FC = () => {
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block"
                     >
-                      <Button className="w-full h-12 text-base font-bold bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.3)]">
+                      <Button className="w-full h-12 justify-start text-start text-base font-bold bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.3)]">
                         {isRTL ? ctaButton.text_ar : ctaButton.text_en}
                       </Button>
                     </Link>

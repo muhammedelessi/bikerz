@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SEOHead from '@/components/common/SEOHead';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,6 +26,7 @@ import {
   GraduationCap,
   Settings,
   ShieldCheck,
+  Ticket,
   LogOut,
   Menu,
   X,
@@ -69,6 +70,7 @@ const Dashboard: React.FC = () => {
   const { isRTL } = useLanguage();
   const { user, profile, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme } = useTheme();
   const themeLogo = theme === 'light' ? logoDark : logoLight;
@@ -234,17 +236,15 @@ const Dashboard: React.FC = () => {
     navigate('/');
   };
 
+  const path = location.pathname;
   const navItems = [
-    { icon: Home, label: t('nav.home'), to: '/' },
-    { icon: BookOpen, label: t('nav.courses'), to: '/courses' },
-    { icon: GraduationCap, label: t('nav.trainings'), to: '/trainings' },
-    { icon: Clock, label: isRTL ? 'حجوزاتي' : 'My Bookings', to: '/my-bookings' },
-    { icon: Trophy, label: t('nav.bundles'), to: '/bundles' },
-    { icon: GraduationCap, label: t('dashboard.myCourses'), to: '/dashboard', active: true },
-    { icon: Users, label: t('nav.mentors'), to: '/mentors' },
-    { icon: User, label: t('profile.title'), to: '/profile' },
-    { icon: ShieldCheck, label: isRTL ? 'الإعدادات والأمان' : 'Settings & Security', to: '/settings' },
-    ...(isAdmin ? [{ icon: Settings, label: t('nav.adminPanel'), to: '/admin' }] : []),
+    { icon: Home, label: t('nav.home'), to: '/', active: path === '/' },
+    { icon: BookOpen, label: t('nav.courses'), to: '/courses', active: path.startsWith('/courses') },
+    { icon: GraduationCap, label: t('dashboard.myCourses'), to: '/dashboard', active: path.startsWith('/dashboard') },
+    { icon: User, label: t('profile.title'), to: '/profile', active: path.startsWith('/profile') },
+    { icon: Ticket, label: t('nav.myBookings'), to: '/profile/bookings', active: path.startsWith('/profile/bookings') },
+    { icon: ShieldCheck, label: isRTL ? 'الإعدادات والأمان' : 'Settings & Security', to: '/settings', active: path.startsWith('/settings') },
+    ...(isAdmin ? [{ icon: Settings, label: t('nav.adminPanel'), to: '/admin', active: path.startsWith('/admin') }] : []),
   ];
 
   const isLoading = coursesLoading || statsLoading;
@@ -262,6 +262,7 @@ const Dashboard: React.FC = () => {
 
       {/* Sidebar */}
       <aside
+        dir={isRTL ? 'rtl' : 'ltr'}
         className={`fixed inset-y-0 z-50 w-[280px] max-w-[85vw] bg-card border-e border-border transform transition-transform duration-300 ease-out lg:translate-x-0 ${
           sidebarOpen 
             ? 'translate-x-0' 
@@ -291,27 +292,27 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Nav Items */}
-          <nav className="flex-1 p-3 sm:p-4 space-y-1 sm:space-y-2 overflow-y-auto">
+          <nav className="flex-1 min-h-0 p-3 sm:p-4 space-y-1 sm:space-y-2 overflow-y-auto overscroll-y-contain">
             {navItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg transition-all duration-300 touch-target ${
+                className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target ${
                   item.active
                     ? 'bg-primary/10 text-primary border border-primary/20'
                     : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground active:bg-muted/70'
                 }`}
               >
                 <item.icon className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium">{item.label}</span>
+                <span className="font-medium flex-1 min-w-0">{item.label}</span>
               </Link>
             ))}
           </nav>
 
           {/* User Section */}
           <div className="p-3 sm:p-4 border-t border-border">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex w-full items-center justify-start gap-3 mb-4 text-start">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-secondary/70 flex items-center justify-center flex-shrink-0">
                 <span className="text-secondary-foreground font-bold">
                   {profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}

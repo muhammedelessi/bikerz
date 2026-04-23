@@ -45,7 +45,7 @@ export const BikeInformation: React.FC<BikeInformationProps> = ({ profile, onUpd
               <Bike className="w-5 h-5 text-primary" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-lg font-semibold text-foreground">{isRTL ? 'دراجاتي' : 'My Bikes'}</h3>
+              <h3 className="text-lg font-semibold text-foreground">{isRTL ? 'الجراج' : 'Garage'}</h3>
               {entries.length > 0 && (
                 <p className="text-xs text-muted-foreground truncate">
                   {entries.length} {isRTL ? (entries.length === 1 ? 'دراجة مسجلة' : 'دراجات مسجلة') : (entries.length === 1 ? 'bike registered' : 'bikes registered')}

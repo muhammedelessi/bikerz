@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import { useTranslation } from 'react-i18next';
+import SEOHead from '@/components/common/SEOHead';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -63,6 +63,7 @@ type RescheduleState = {
 };
 
 const MyBookings: React.FC = () => {
+  const { t } = useTranslation();
   const { isRTL, language } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -399,16 +400,16 @@ const MyBookings: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      <Navbar />
-      <main className="page-container py-8 pt-[calc(var(--navbar-h)+1.25rem)]" dir={isRTL ? 'rtl' : 'ltr'}>
-        <div className="space-y-6">
-          <header className="space-y-2">
-            <h1 className="text-2xl font-black">{isRTL ? 'حجوزاتي' : 'My Bookings'}</h1>
-            <p className="text-sm text-muted-foreground">
-              {isRTL ? `${activeBookingsCount} حجوزات نشطة` : `${activeBookingsCount} active bookings`}
-            </p>
-          </header>
+    <>
+      <SEOHead
+        title={t('nav.myBookings')}
+        description={isRTL ? 'عرض وإدارة حجوزات التدريب العملي.' : 'View and manage your practical training bookings.'}
+        noindex
+      />
+      <div className="p-4 sm:p-6 space-y-6 safe-area-bottom max-w-6xl mx-auto w-full min-w-0" dir={isRTL ? 'rtl' : 'ltr'}>
+        <p className="text-sm text-muted-foreground">
+          {isRTL ? `${activeBookingsCount} حجوزات نشطة` : `${activeBookingsCount} active bookings`}
+        </p>
 
           <div className="flex flex-wrap gap-2">
             {[
@@ -620,8 +621,7 @@ const MyBookings: React.FC = () => {
               })}
             </div>
           )}
-        </div>
-      </main>
+      </div>
 
       <Dialog
         open={!!rescheduleState}
@@ -749,8 +749,7 @@ const MyBookings: React.FC = () => {
           ) : null}
         </DialogContent>
       </Dialog>
-      <Footer />
-    </div>
+    </>
   );
 };
 

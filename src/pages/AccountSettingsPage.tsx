@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import SEOHead from '@/components/common/SEOHead';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -14,9 +14,9 @@ import {
   Home,
   BookOpen,
   GraduationCap,
-  Users,
   Settings,
   ShieldCheck,
+  Ticket,
   User,
 } from 'lucide-react';
 import logoDark from '@/assets/logo-dark.png';
@@ -28,6 +28,7 @@ const AccountSettingsPage: React.FC = () => {
   const { isRTL } = useLanguage();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const { profile, isLoading, isUpdating, updateProfile } = useUserProfile();
@@ -57,14 +58,15 @@ const AccountSettingsPage: React.FC = () => {
     ? 'إدارة حسابك وتفضيلاتك وأمان تسجيل الدخول'
     : 'Manage your account, preferences, and sign-in security';
 
+  const path = location.pathname;
   const navItems = [
-    { icon: Home, label: t('nav.home'), to: '/' },
-    { icon: BookOpen, label: t('nav.courses'), to: '/courses' },
-    { icon: GraduationCap, label: t('dashboard.myCourses'), to: '/dashboard' },
-    { icon: Users, label: t('nav.mentors'), to: '/mentors' },
-    { icon: User, label: t('profile.title'), to: '/profile' },
-    { icon: ShieldCheck, label: settingsLabel, to: '/settings', active: true },
-    ...(isAdmin ? [{ icon: Settings, label: t('nav.adminPanel'), to: '/admin' }] : []),
+    { icon: Home, label: t('nav.home'), to: '/', active: path === '/' },
+    { icon: BookOpen, label: t('nav.courses'), to: '/courses', active: path.startsWith('/courses') },
+    { icon: GraduationCap, label: t('dashboard.myCourses'), to: '/dashboard', active: path.startsWith('/dashboard') },
+    { icon: User, label: t('profile.title'), to: '/profile', active: path.startsWith('/profile') },
+    { icon: Ticket, label: t('nav.myBookings'), to: '/profile/bookings', active: path.startsWith('/profile/bookings') },
+    { icon: ShieldCheck, label: settingsLabel, to: '/settings', active: path.startsWith('/settings') },
+    ...(isAdmin ? [{ icon: Settings, label: t('nav.adminPanel'), to: '/admin', active: path.startsWith('/admin') }] : []),
   ];
 
   if (!user) return null;
@@ -85,6 +87,7 @@ const AccountSettingsPage: React.FC = () => {
       )}
 
       <aside
+        dir={isRTL ? 'rtl' : 'ltr'}
         className={`fixed inset-y-0 z-50 w-[280px] max-w-[85vw] bg-card border-e border-border transform transition-transform duration-300 ease-out lg:translate-x-0 ${
           sidebarOpen
             ? 'translate-x-0'
@@ -113,20 +116,20 @@ const AccountSettingsPage: React.FC = () => {
             </button>
           </div>
 
-          <nav className="flex-1 p-3 sm:p-4 space-y-1 sm:space-y-2 overflow-y-auto">
+          <nav className="flex-1 min-h-0 p-3 sm:p-4 space-y-1 sm:space-y-2 overflow-y-auto overscroll-y-contain">
             {navItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg transition-all duration-300 touch-target ${
+                className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target ${
                   item.active
                     ? 'bg-primary/10 text-primary border border-primary/20'
                     : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground active:bg-muted/70'
                 }`}
               >
                 <item.icon className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium">{item.label}</span>
+                <span className="font-medium flex-1 min-w-0">{item.label}</span>
               </Link>
             ))}
           </nav>

@@ -45,29 +45,47 @@ const ProfileHome: React.FC = () => {
           </div>
         ) : profile ? (
           <>
-            <div id="profile-section-identity">
+            {/* 1. Customer Information */}
+            <section
+              id="profile-section-customer"
+              className="space-y-3"
+              aria-labelledby="profile-heading-customer"
+            >
+              <h2
+                id="profile-heading-customer"
+                className="text-xl font-bold text-foreground tracking-tight"
+              >
+                {t("profile.sectionCustomerInformation")}
+              </h2>
               <RiderIdentity profile={profile} onUpdate={updateProfile} onAvatarUpload={uploadAvatar} isUpdating={isUpdating} />
-            </div>
+            </section>
 
-            {learningStats && <RankSection profile={profile} enrollments={learningStats.enrollments || []} />}
+            {/* 2. Your Rank */}
+            <section id="profile-section-rank" className="space-y-3" aria-labelledby="profile-heading-rank">
+              <h2 id="profile-heading-rank" className="text-xl font-bold text-foreground tracking-tight">
+                {t("profile.sectionYourRank")}
+              </h2>
+              <RankSection profile={profile} enrollments={learningStats?.enrollments ?? []} />
+            </section>
 
+            {/* 3. Garage */}
             <div id="profile-section-bike">
               <BikeInformation profile={profile} onUpdate={updateProfile} isUpdating={isUpdating} />
             </div>
 
-            <div id="profile-section-surveys">
-              <div className="space-y-4">
-                <h2 className="text-lg font-bold flex items-center gap-2">
-                  <Gamepad2 className="w-5 h-5 text-primary" />
-                  {t("survey.title")}
-                </h2>
-                <SurveySection userId={user.id} />
-                <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate("/profile/surveys")}>
-                  {t("survey.start")}
-                </Button>
-              </div>
-            </div>
+            {/* 4. Test Your Knowledge */}
+            <section id="profile-section-surveys" className="space-y-4" aria-labelledby="profile-heading-surveys">
+              <h2 id="profile-heading-surveys" className="text-lg font-bold flex items-center gap-2 text-foreground">
+                <Gamepad2 className="w-5 h-5 text-primary" />
+                {t("survey.title")}
+              </h2>
+              <SurveySection userId={user.id} />
+              <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate("/profile/surveys")}>
+                {t("survey.start")}
+              </Button>
+            </section>
 
+            {/* 5–7. Learning progress, achievements, activity */}
             {learningStats && <LearningProgress stats={learningStats} />}
 
             <ProfileAchievements />

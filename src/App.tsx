@@ -209,7 +209,7 @@ const AppRoutes = () => (
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/booking-payment-complete" element={<ProtectedRoute><BookingPaymentComplete /></ProtectedRoute>} />
         <Route path="/booking-success" element={<ProtectedRoute><BookingSuccess /></ProtectedRoute>} />
-        <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
+        <Route path="/my-bookings" element={<ProtectedRoute><Navigate to="/profile/bookings" replace /></ProtectedRoute>} />
         <Route path="/join-community" element={<JoinCommunity />} />
         <Route path="/community-champions/:championId/videos/:videoId" element={<ChampionVideoDetail />} />
         <Route path="/community-champions/:championId" element={<ChampionVideosList />} />
@@ -220,6 +220,7 @@ const AppRoutes = () => (
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfileLayout /></ProtectedRoute>}>
           <Route index element={<ProfileHome />} />
+          <Route path="bookings" element={<MyBookings />} />
           <Route path="surveys" element={<SurveyListPage />} />
           <Route path="surveys/:surveyId/play" element={<SurveyPlayPage />} />
           <Route path="surveys/:surveyId/results" element={<SurveyResultsPage />} />

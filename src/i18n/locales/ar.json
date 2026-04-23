@@ -156,6 +156,7 @@
     "login": "تسجيل الدخول",
     "signup": "إنشاء حساب",
     "dashboard": "لوحة التحكم",
+    "myBookings": "حجوزاتي",
     "mentors": "المدربون",
     "adminPanel": "لوحة الإدارة"
   },
@@ -529,6 +530,8 @@
     "title": "الملف الشخصي",
     "subtitle": "إدارة معلوماتك وإعداداتك",
     "notFound": "لم يتم العثور على الملف الشخصي",
+    "sectionCustomerInformation": "معلومات العميل",
+    "sectionYourRank": "رتبتك",
     "riderIdentity": "هوية الراكب",
     "bikeInformation": "معلومات الدراجة",
     "learningProgress": "تقدم التعلم",
@@ -558,6 +561,9 @@
     "addDetailsForBetterExperience": "أضف بياناتك لتحسين تجربة التعلم الخاصة بك",
     "locked": "مغلق",
     "achievementsMotivation": "الإنجازات للتحفيز داخل المنصة فقط"
+  },
+  "myBookings": {
+    "layoutSubtitle": "عرض وإدارة حجوزات التدريب العملي"
   },
   "survey": {
     "title": "اختبر معلوماتك",

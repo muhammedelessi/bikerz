@@ -659,7 +659,7 @@ const PaymentSuccess: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <Button onClick={() => navigate("/my-bookings")}>{isRTL ? "عرض حجوزاتي" : "View My Bookings"}</Button>
+            <Button onClick={() => navigate("/profile/bookings")}>{isRTL ? "عرض حجوزاتي" : "View My Bookings"}</Button>
             <Button variant="outline" onClick={() => navigate("/")}>
               {isRTL ? "العودة للرئيسية" : "Back to Home"}
             </Button>
