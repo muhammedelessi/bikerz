@@ -46,17 +46,7 @@ const ProfileHome: React.FC = () => {
         ) : profile ? (
           <>
             {/* 1. Customer Information */}
-            <section
-              id="profile-section-customer"
-              className="space-y-3"
-              aria-labelledby="profile-heading-customer"
-            >
-              <h2
-                id="profile-heading-customer"
-                className="text-xl font-bold text-foreground tracking-tight"
-              >
-                {t("profile.sectionCustomerInformation")}
-              </h2>
+            <section id="profile-section-customer">
               <RiderIdentity profile={profile} onUpdate={updateProfile} onAvatarUpload={uploadAvatar} isUpdating={isUpdating} />
             </section>
 
