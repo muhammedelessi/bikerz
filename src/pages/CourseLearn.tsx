@@ -633,29 +633,6 @@ const CourseLearn: React.FC = () => {
     }
   };
 
-  // Set initial lesson from URL or default to first lesson
-  useEffect(() => {
-    if (chapters.length > 0) {
-      // If URL has a lesson ID, validate and use it
-      if (urlLessonId) {
-        const lessonExists = chapters.some(ch => ch.lessons.some(l => l.id === urlLessonId));
-        if (lessonExists) {
-          setCurrentLessonId(urlLessonId);
-          return;
-        }
-      }
-      // Fallback to first lesson if no valid URL lesson ID
-      if (!currentLessonId) {
-        const firstLesson = chapters[0]?.lessons[0];
-        if (firstLesson) {
-          setCurrentLessonId(firstLesson.id);
-          // Update URL to include the lesson ID
-          navigate(`/courses/${id}/lessons/${firstLesson.id}`, { replace: true });
-        }
-      }
-    }
-  }, [chapters, urlLessonId, currentLessonId, id, navigate]);
-
   // Improve UX on lesson change: scroll main content to top
   useEffect(() => {
     if (!currentLessonId) return;
@@ -713,21 +690,75 @@ const CourseLearn: React.FC = () => {
     return lessonProgress.some(lp => lp.lesson_id === lessonId && lp.is_completed);
   };
 
-  const isLessonLocked = (lesson: Lesson, _chapter: Chapter) => {
-    if (!isEnrolled && !lesson.is_free) {
-      if (has24hTrialAccess && firstFullLesson?.id === lesson.id) {
-        return false;
+  const isLessonLocked = useCallback(
+    (lesson: Lesson, _chapter: Chapter) => {
+      if (!isEnrolled && !lesson.is_free) {
+        if (has24hTrialAccess && firstFullLesson?.id === lesson.id) {
+          return false;
+        }
+        return true;
       }
-      return true;
+      if (!user && lesson.is_free && isGuestBlockedByIpLimit) {
+        return true;
+      }
+      if (!user && lesson.is_free && guestPreview) {
+        return guestPreview.watchedVideoId !== lesson.id;
+      }
+      return false;
+    },
+    [isEnrolled, user, guestPreview, isGuestBlockedByIpLimit, has24hTrialAccess, firstFullLesson],
+  );
+
+  const currentLessonLocked =
+    !!currentLesson && !!currentChapter && isLessonLocked(currentLesson, currentChapter);
+
+  // Set lesson from URL or first accessible lesson — block paywalled deep links (direct URL / in-app browsers)
+  useEffect(() => {
+    if (chapters.length === 0 || !id) return;
+
+    const chapterForLesson = (lessonId: string) =>
+      chapters.find((ch) => ch.lessons.some((l) => l.id === lessonId));
+    const lessonById = (lessonId: string) =>
+      chapters.flatMap((ch) => ch.lessons).find((l) => l.id === lessonId);
+
+    const firstAccessibleLesson = (): Lesson | null => {
+      for (const ch of chapters) {
+        for (const l of ch.lessons) {
+          if (!isLessonLocked(l, ch)) return l;
+        }
+      }
+      return null;
+    };
+
+    if (urlLessonId) {
+      const lesson = lessonById(urlLessonId);
+      const ch = chapterForLesson(urlLessonId);
+      if (lesson && ch) {
+        if (isLessonLocked(lesson, ch)) {
+          const alt = firstAccessibleLesson();
+          if (alt) {
+            setCurrentLessonId(alt.id);
+            navigate(`/courses/${id}/lessons/${alt.id}`, { replace: true });
+          } else {
+            navigate(`/courses/${id}`, { replace: true });
+          }
+          return;
+        }
+        if (currentLessonId !== urlLessonId) {
+          setCurrentLessonId(urlLessonId);
+        }
+        return;
+      }
     }
-    if (!user && lesson.is_free && isGuestBlockedByIpLimit) {
-      return true;
+
+    if (!currentLessonId) {
+      const alt = firstAccessibleLesson();
+      if (alt) {
+        setCurrentLessonId(alt.id);
+        navigate(`/courses/${id}/lessons/${alt.id}`, { replace: true });
+      }
     }
-    if (!user && lesson.is_free && guestPreview) {
-      return guestPreview.watchedVideoId !== lesson.id;
-    }
-    return false;
-  };
+  }, [chapters, urlLessonId, currentLessonId, id, navigate, isLessonLocked]);
 
   // Navigation
   const currentIndex = allLessons.findIndex(l => l.id === currentLessonId);
@@ -872,8 +903,6 @@ const CourseLearn: React.FC = () => {
   const isChapterComplete = (chapter: Chapter) => {
     return chapter.lessons.every(l => isLessonCompleted(l.id));
   };
-
-  // Removed login requirement - allow anyone to view lessons
 
   if (isLoading) {
     return (
@@ -1326,8 +1355,36 @@ const CourseLearn: React.FC = () => {
                 exit={{ opacity: 0 }}
               >
                 <div className="mx-auto w-full max-w-5xl">
-                  {/* Video Player */}
-                  {currentLesson?.video_url && (
+                  {/* Video Player — never render paywalled media (URL deep-link bypass defense) */}
+                  {currentLessonLocked && (
+                    <div className="relative bg-muted w-full aspect-video sm:rounded-2xl overflow-hidden sm:mt-6 sm:mx-6 lg:mx-8 flex flex-col items-center justify-center gap-4 p-6 text-center border border-border">
+                      <Lock className="w-12 h-12 text-muted-foreground" aria-hidden />
+                      <p className="text-sm sm:text-base font-medium text-foreground max-w-md">
+                        {t("courseLearn.purchaseRequired")}
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button variant="cta" asChild>
+                          <Link to={`/courses/${id}`}>{t("courseLearn.courseDetails")}</Link>
+                        </Button>
+                        {!user ? (
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setReturnUrl(`/courses/${id}`);
+                              navigate("/signup");
+                            }}
+                          >
+                            {t("courseLearn.registerNow")}
+                          </Button>
+                        ) : (
+                          <Button variant="outline" asChild>
+                            <Link to={`/courses/${id}?checkout=true`}>{t("courseLearn.requiresEnrollment")}</Link>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {currentLesson?.video_url && !currentLessonLocked && (
                     <div className="relative bg-black w-full aspect-video sm:rounded-2xl overflow-hidden sm:mt-6 sm:mx-6 lg:mx-8">
                     {/* Next Lesson Countdown - overlay on video */}
                     <AnimatePresence>
@@ -1415,7 +1472,7 @@ const CourseLearn: React.FC = () => {
                     </div>
                     
                     <div className="flex items-center gap-2 flex-wrap">
-                      {currentLesson && !isLessonCompleted(currentLesson.id) && (
+                      {currentLesson && !currentLessonLocked && !isLessonCompleted(currentLesson.id) && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -1434,7 +1491,7 @@ const CourseLearn: React.FC = () => {
                         </Button>
                       )}
                       
-                      {currentLesson && isLessonCompleted(currentLesson.id) && (
+                      {currentLesson && !currentLessonLocked && isLessonCompleted(currentLesson.id) && (
                         <div className="flex items-center gap-2 text-primary">
                           <CheckCircle2 className="w-5 h-5" />
                           <span className="font-medium text-sm sm:text-base">{t('courseLearn.completed')}</span>
@@ -1455,7 +1512,7 @@ const CourseLearn: React.FC = () => {
                   </div>
 
                   {/* Description */}
-                  {currentLesson?.description && (
+                  {currentLesson?.description && !currentLessonLocked && (
                     <div 
                       className="prose dark:prose-invert max-w-none mb-6 sm:mb-8 text-sm sm:text-base text-muted-foreground"
                       dangerouslySetInnerHTML={{ 
@@ -1469,7 +1526,7 @@ const CourseLearn: React.FC = () => {
                   )}
 
                   {/* Lesson Quiz - Interactive questions embedded in the lesson */}
-                  {currentLesson && (
+                  {currentLesson && !currentLessonLocked && (
                     <div className="mb-6 sm:mb-8">
                       <LessonQuiz
                         lessonId={currentLesson.id}
@@ -1490,7 +1547,7 @@ const CourseLearn: React.FC = () => {
                   )}
 
                   {/* Resources */}
-                  {resources.length > 0 && (
+                  {resources.length > 0 && !currentLessonLocked && (
                     <div className="mb-6 sm:mb-8">
                       <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">
                         {t('courseLearn.resourcesTab')}
@@ -1513,7 +1570,7 @@ const CourseLearn: React.FC = () => {
                   )}
 
                   {/* Take Quiz CTA - appears when all chapter lessons are completed */}
-                  {currentChapter?.test && isChapterComplete(currentChapter) && !isTestPassed(currentChapter.test.id) && (
+                  {currentChapter?.test && !currentLessonLocked && isChapterComplete(currentChapter) && !isTestPassed(currentChapter.test.id) && (
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1543,7 +1600,7 @@ const CourseLearn: React.FC = () => {
                   )}
 
                   {/* Quiz Retake CTA - appears when quiz was attempted but not passed */}
-                  {currentChapter?.test && hasAttemptedTest(currentChapter.test.id) && !isTestPassed(currentChapter.test.id) && (
+                  {currentChapter?.test && !currentLessonLocked && hasAttemptedTest(currentChapter.test.id) && !isTestPassed(currentChapter.test.id) && (
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1613,7 +1670,7 @@ const CourseLearn: React.FC = () => {
                   </div>
 
                   {/* Lesson Discussion / Q&A Section */}
-                  {currentLesson && (
+                  {currentLesson && !currentLessonLocked && (
                     <LessonDiscussion 
                       lessonId={currentLesson.id}
                       lessonTitle={isRTL && currentLesson.title_ar ? currentLesson.title_ar : currentLesson.title}

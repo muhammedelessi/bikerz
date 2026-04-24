@@ -1,15 +1,13 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useSignupWebhook } from "@/hooks/useSignupWebhook";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import LanguageToggle from "@/components/common/LanguageToggle";
-import ProfileCompletionWizard from "@/components/ui/profile/ProfileCompletionWizard";
 import { useAuthPageContent } from "@/hooks/useAuthPageContent";
 import {
   ArrowRight,
@@ -28,7 +26,10 @@ import { consumeReturnUrl } from "@/lib/authReturnUrl";
 import { activateFreeTrialForCourse, consumeTrialOfferPending } from "@/lib/guestPreview";
 import { FormAlert, FormField } from "@/components/ui/form-field";
 import { joinFullName } from "@/lib/nameUtils";
-import { CountryCityPicker, PasswordField, PhoneField, NameFields, NationalityPicker } from "@/components/ui/fields";
+import { CountryCityPicker, PasswordField, PhoneField, NameFields } from "@/components/ui/fields";
+import type { LcpPreloadLink } from "@/components/common/SEOHead";
+
+const ProfileCompletionWizard = lazy(() => import("@/components/ui/profile/ProfileCompletionWizard"));
 
 const OTHER_VALUE = "__other__";
 
@@ -61,11 +62,25 @@ const Signup: React.FC = () => {
   const [countryError, setCountryError] = useState<string | null>(null);
   const [cityError, setCityError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [nationality, setNationality] = useState("");
   const [showProfileWizard, setShowProfileWizard] = useState(false);
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const { sendSignupData } = useSignupWebhook();
+
+  const logoSrc = theme === "light" ? logoDark : logoLight;
+  const signupLcpPreloads = useMemo((): LcpPreloadLink[] | undefined => {
+    if (!logoSrc) return undefined;
+    return [{ href: logoSrc }];
+  }, [logoSrc]);
+
+  useEffect(() => {
+    if (typeof window.requestIdleCallback !== "function") return;
+    const id = window.requestIdleCallback(
+      () => void import("@/components/ui/profile/ProfileCompletionWizard"),
+      { timeout: 8000 },
+    );
+    return () => window.cancelIdleCallback(id);
+  }, []);
 
   const isOtherCountry = country === OTHER_VALUE;
   const isOtherCity = city === OTHER_VALUE;
@@ -80,7 +95,7 @@ const Signup: React.FC = () => {
       : "This email is already registered. Please sign in or use a different email";
   }, [emailError, isRTL]);
 
-  // Auto-detect country code by user location
+  // Geo hint — deferred so it never competes with LCP (logo, fonts, critical CSS)
   useEffect(() => {
     const detectCountry = async () => {
       try {
@@ -99,7 +114,6 @@ const Signup: React.FC = () => {
           setCountry(OTHER_VALUE);
           setCustomCountry(data.country_name || "");
         }
-        // Try to auto-set city
         if (data.city && countryMatch) {
           const cityMatch = countryMatch.cities.find((c) => c.en.toLowerCase() === data.city.toLowerCase());
           if (cityMatch) {
@@ -110,8 +124,20 @@ const Signup: React.FC = () => {
         // fallback to SA
       }
     };
-    detectCountry();
-  }, []);
+    let idleId: number | undefined;
+    let timeoutId: number | undefined;
+    if (typeof window.requestIdleCallback === "function") {
+      idleId = window.requestIdleCallback(() => void detectCountry(), { timeout: 4000 });
+    } else {
+      timeoutId = window.setTimeout(() => void detectCountry(), 2000);
+    }
+    return () => {
+      if (idleId !== undefined && typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+    };
+  }, [isRTL]);
 
 
   const cms = authContent?.signup || {};
@@ -151,7 +177,6 @@ const Signup: React.FC = () => {
           phone: fullPhone,
           country: countryName,
           city: cityName,
-          nationality: nationality || null,
         })
         .eq("user_id", userId);
     } catch (e) {
@@ -333,22 +358,21 @@ const Signup: React.FC = () => {
         title="Sign Up"
         description="Create your BIKERZ Academy account and start learning motorcycle riding from expert instructors today."
         canonical="/signup"
+        lcpPreloads={signupLcpPreloads}
       />
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md mx-auto"
-      >
+      <div className="w-full max-w-md mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6 sm:mb-8">
             <Link to="/" className="flex items-center">
               <img
-                src={theme === "light" ? logoDark : logoLight}
+                src={logoSrc}
                 alt="BIKERZ"
+                width={160}
+                height={48}
                 className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
                 loading="eager"
                 decoding="async"
+                fetchPriority="high"
               />
             </Link>
             <LanguageToggle />
@@ -433,11 +457,6 @@ const Signup: React.FC = () => {
                 required
               />
 
-              <NationalityPicker
-                value={nationality}
-                onChange={setNationality}
-              />
-
               {/* Password */}
               <PasswordField
                 value={password}
@@ -469,10 +488,13 @@ const Signup: React.FC = () => {
               </Link>
             </div>
           </div>
-      </motion.div>
+      </div>
 
-      {/* Profile Completion Wizard */}
-      <ProfileCompletionWizard open={showProfileWizard} onOpenChange={handleProfileWizardClose} />
+      {showProfileWizard && (
+        <Suspense fallback={null}>
+          <ProfileCompletionWizard open={showProfileWizard} onOpenChange={handleProfileWizardClose} />
+        </Suspense>
+      )}
     </div>
   );
 };

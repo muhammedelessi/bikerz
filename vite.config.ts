@@ -30,6 +30,8 @@ export default defineConfig(({ mode }) => {
     cssMinify: true,
     reportCompressedSize: false,
     chunkSizeWarningLimit: 1000,
+    /** Smaller HTML / faster first chunk on slow networks */
+    modulePreload: { polyfill: false },
     rollupOptions: {
       output: {
         manualChunks: {

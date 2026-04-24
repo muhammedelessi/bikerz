@@ -130,10 +130,10 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 // Auth Route - redirects if already logged in
 const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth();
 
-  if (isLoading) return <PageLoader />;
   if (user) return <Navigate to="/dashboard" replace />;
+  // Don't block on session bootstrap — showing the form immediately improves LCP vs. a full-page spinner on cold loads.
   return <>{children}</>;
 };
 

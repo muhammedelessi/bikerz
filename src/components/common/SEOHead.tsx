@@ -1,6 +1,15 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 
+export interface LcpPreloadLink {
+  href: string;
+  /** e.g. image/webp */
+  type?: string;
+  /** e.g. (max-width: 768px) */
+  media?: string;
+  crossOrigin?: 'anonymous' | 'use-credentials';
+}
+
 interface SEOHeadProps {
   title: string;
   description: string;
@@ -9,6 +18,8 @@ interface SEOHeadProps {
   ogType?: string;
   noindex?: boolean;
   breadcrumbs?: Array<{ name: string; url: string }>;
+  /** High-priority fetch for LCP image(s); use absolute href for CDN thumbnails */
+  lcpPreloads?: LcpPreloadLink[];
 }
 
 const DOMAIN = 'https://academy.bikerz.com';
@@ -23,6 +34,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   ogType = 'website',
   noindex = false,
   breadcrumbs,
+  lcpPreloads,
 }) => {
   const fullTitle = `${title} | ${SITE_NAME}`;
   const canonicalUrl = canonical ? `${DOMAIN}${canonical}` : undefined;
@@ -49,6 +61,18 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       <meta name="description" content={description} />
       <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow'} />
       {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+
+      {lcpPreloads?.map((p) => (
+        <link
+          key={`${p.href}${p.media ?? ''}`}
+          rel="preload"
+          as="image"
+          href={p.href}
+          {...(p.type ? { type: p.type } : {})}
+          {...(p.media ? { media: p.media } : {})}
+          {...(p.crossOrigin ? { crossOrigin: p.crossOrigin } : {})}
+        />
+      ))}
 
       {/* Open Graph */}
       <meta property="og:type" content={ogType} />

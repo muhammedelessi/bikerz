@@ -169,6 +169,7 @@ const FeaturedCoursesSection: React.FC = () => {
                     enrollment={getEnrollment(course.id)}
                     activeVideoId={activeVideoId}
                     onPlayVideo={handlePlayVideo}
+                    imagePriority={index === 0}
                   />
                 </div>
               ))}

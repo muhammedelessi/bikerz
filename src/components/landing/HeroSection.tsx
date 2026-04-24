@@ -138,7 +138,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
       {/* ── Background Image ── */}
       <div className="absolute inset-0 z-0">
         <picture>
-          <source media="(max-width: 768px)" srcSet="/hero-rider-mobile.webp" />
+          <source media="(max-width: 768px)" srcSet="/hero-rider-mobile.webp" type="image/webp" />
+          <source media="(min-width: 769px)" srcSet="/hero-rider.webp" type="image/webp" />
           <img
             src="/hero-rider.webp"
             alt=""
@@ -147,7 +148,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
             className="w-full h-full object-cover"
             loading="eager"
             fetchPriority="high"
-            decoding="sync"
+            decoding="async"
+            sizes="100vw"
           />
         </picture>
       </div>

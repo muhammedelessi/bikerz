@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from "react";
 import SEOHead from "@/components/common/SEOHead";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -50,13 +50,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 const heroImage = "/hero-rider.webp";
-import CheckoutModal from "@/components/checkout/CheckoutModal";
-import PromoPopup from "@/components/common/PromoPopup";
-
 import BunnyVideoEmbed from "@/components/course/BunnyVideoEmbed";
 import PaymentMethodIcons from "@/components/checkout/PaymentMethodIcons";
 import { trackViewContent } from "@/utils/metaPixel";
-import CourseReviews from "@/components/course/CourseReviews";
 import StarRating from "@/components/course/StarRating";
 import CourseCard from "@/components/course/CourseCard";
 import { fetchEnrollmentsWithLiveProgress, type EnrollmentWithProgress } from "@/lib/enrollmentProgress";
@@ -68,6 +64,12 @@ import {
   recordGuestPreviewOnServer,
   type GuestPreviewState,
 } from "@/lib/guestPreview";
+import { getSupabaseStorageWebpUrl } from "@/lib/supabaseStorageImage";
+import type { LcpPreloadLink } from "@/components/common/SEOHead";
+import PromoPopup from "@/components/common/PromoPopup";
+
+const CheckoutModalLazy = lazy(() => import("@/components/checkout/CheckoutModal"));
+const CourseReviewsLazy = lazy(() => import("@/components/course/CourseReviews"));
 
 interface Lesson {
   id: string;
@@ -145,7 +147,6 @@ const CourseDetail: React.FC = () => {
   const [autoExpandedOnce, setAutoExpandedOnce] = useState(false);
   const [paymentVerifying, setPaymentVerifying] = useState(false);
   const [previewVideoPlaying, setPreviewVideoPlaying] = useState(false);
-  const [showStickyBottom, setShowStickyBottom] = useState(false);
   const [guestPreview, setGuestPreview] = useState<GuestPreviewState | null>(null);
   const [activePreviewLessonId, setActivePreviewLessonId] = useState<string | null>(null);
   const [activePreviewVideoId, setActivePreviewVideoId] = useState<string | null>(null);
@@ -153,8 +154,6 @@ const CourseDetail: React.FC = () => {
   const [showPreviewUsageHint, setShowPreviewUsageHint] = useState(false);
   const [isGuestBlockedByIpLimit, setIsGuestBlockedByIpLimit] = useState(false);
   const previewRecordInFlightRef = useRef(false);
-  const ctaCardRef = useRef<HTMLDivElement>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
 
   const THINK_WHAT_IF_YOUTUBE_ID = "00BxMrjssbU";
 
@@ -360,20 +359,6 @@ const CourseDetail: React.FC = () => {
     }
   }, [course, id]);
 
-  // IntersectionObserver for sticky bottom bar on mobile
-  const ctaCardCallbackRef = React.useCallback((node: HTMLDivElement | null) => {
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
-    ctaCardRef.current = node;
-    if (node) {
-      observerRef.current = new IntersectionObserver(([entry]) => setShowStickyBottom(!entry.isIntersecting), {
-        threshold: 0.1,
-      });
-      observerRef.current.observe(node);
-    }
-  }, []);
-
   // Enroll mutation
   const enrollMutation = useMutation({
     mutationFn: async () => {
@@ -475,6 +460,31 @@ const CourseDetail: React.FC = () => {
       ? selectedPreviewLesson.title_ar
       : selectedPreviewLesson.title
     : t("courseDetail.courseIntroduction");
+
+  const heroThumbRaw = course?.preview_video_thumbnail || course?.thumbnail_url || null;
+
+  const heroThumbWebpMobile = useMemo(
+    () => (heroThumbRaw ? getSupabaseStorageWebpUrl(heroThumbRaw, { width: 800, height: 450, quality: 80 }) : undefined),
+    [heroThumbRaw],
+  );
+  const heroThumbWebpDesktop = useMemo(
+    () => (heroThumbRaw ? getSupabaseStorageWebpUrl(heroThumbRaw, { width: 1280, height: 720, quality: 82 }) : undefined),
+    [heroThumbRaw],
+  );
+
+  const courseLcpPreloads = useMemo((): LcpPreloadLink[] | undefined => {
+    if (!heroThumbRaw || activePreviewUrl) return undefined;
+    if (heroThumbWebpMobile && heroThumbWebpDesktop) {
+      return [
+        { href: heroThumbWebpMobile, type: "image/webp", crossOrigin: "anonymous", media: "(max-width: 767px)" },
+        { href: heroThumbWebpDesktop, type: "image/webp", crossOrigin: "anonymous", media: "(min-width: 768px)" },
+      ];
+    }
+    if (heroThumbRaw.startsWith("http")) {
+      return [{ href: heroThumbRaw, crossOrigin: "anonymous" }];
+    }
+    return undefined;
+  }, [heroThumbRaw, activePreviewUrl, heroThumbWebpMobile, heroThumbWebpDesktop]);
 
   const markPreviewStartIfNeeded = useCallback(
     (videoId: string) => {
@@ -644,6 +654,22 @@ const CourseDetail: React.FC = () => {
     });
   };
 
+  useEffect(() => {
+    if (!course?.id) return;
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(() => {
+        void import("@/components/checkout/CheckoutModal");
+        void import("@/components/course/CourseReviews");
+      });
+      return () => window.cancelIdleCallback(id);
+    }
+    const t = window.setTimeout(() => {
+      void import("@/components/checkout/CheckoutModal");
+      void import("@/components/course/CourseReviews");
+    }, 280);
+    return () => window.clearTimeout(t);
+  }, [course?.id]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -725,6 +751,7 @@ const CourseDetail: React.FC = () => {
           canonical={`/courses/${id}`}
           ogType="article"
           ogImage={course.thumbnail_url || undefined}
+          lcpPreloads={courseLcpPreloads}
           breadcrumbs={[
             { name: "Home", url: "/" },
             { name: "Courses", url: "/courses" },
@@ -898,18 +925,25 @@ const CourseDetail: React.FC = () => {
                       </div>
                     );
                   })()
-                ) : course.thumbnail_url ? (
+                ) : heroThumbRaw ? (
                   <div className="relative w-full">
                     <picture>
-                      <source srcSet={course.thumbnail_url} type="image/webp" />
+                      {heroThumbWebpMobile && (
+                        <source media="(max-width: 767px)" srcSet={heroThumbWebpMobile} type="image/webp" />
+                      )}
+                      {heroThumbWebpDesktop && (
+                        <source media="(min-width: 768px)" srcSet={heroThumbWebpDesktop} type="image/webp" />
+                      )}
                       <img
-                        src={course.thumbnail_url}
+                        src={heroThumbRaw}
                         alt={courseTitle}
                         width={1280}
                         height={720}
                         className="w-full aspect-video object-cover"
                         loading="eager"
                         decoding="async"
+                        fetchPriority="high"
+                        sizes="100vw"
                       />
                     </picture>
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60" />
@@ -991,18 +1025,22 @@ const CourseDetail: React.FC = () => {
                               </div>
                             );
                           })()
-                        ) : course.thumbnail_url ? (
+                        ) : heroThumbRaw ? (
                           <div className="relative rounded-2xl overflow-hidden shadow-lg ring-1 ring-border/50">
                             <picture>
-                              <source srcSet={course.thumbnail_url} type="image/webp" />
+                              {heroThumbWebpDesktop && (
+                                <source srcSet={heroThumbWebpDesktop} type="image/webp" />
+                              )}
                               <img
-                                src={course.thumbnail_url}
+                                src={heroThumbRaw}
                                 alt={courseTitle}
                                 width={1280}
                                 height={720}
                                 className="w-full aspect-video object-cover"
                                 loading="eager"
                                 decoding="async"
+                                fetchPriority="high"
+                                sizes="(min-width: 768px) 65vw, 100vw"
                               />
                             </picture>
                           </div>
@@ -1132,7 +1170,7 @@ const CourseDetail: React.FC = () => {
                   </div>
 
                   {/* Right: Enrollment Card — aligned with video top on desktop */}
-                  <div ref={ctaCardCallbackRef} className="md:col-span-5">
+                  <div className="md:col-span-5">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1832,7 +1870,9 @@ const CourseDetail: React.FC = () => {
             </section>
 
             {/* Reviews Section */}
-            <CourseReviews courseId={id!} isEnrolled={isEnrolled} />
+            <Suspense fallback={null}>
+              <CourseReviewsLazy courseId={id!} isEnrolled={isEnrolled} />
+            </Suspense>
 
             {/* You Might Also Like Section */}
             {relatedCourses.length > 0 && (
@@ -1862,8 +1902,8 @@ const CourseDetail: React.FC = () => {
 
         {/* Checkout Modal */}
         {course && (
-          <>
-            <CheckoutModal
+          <Suspense fallback={null}>
+            <CheckoutModalLazy
               open={showCheckout}
               onOpenChange={setShowCheckout}
               visitSource="course_detail"
@@ -1882,7 +1922,7 @@ const CourseDetail: React.FC = () => {
               }}
               onPaymentStarted={() => setIsPaymentProcessing(true)}
             />
-          </>
+          </Suspense>
         )}
 
         {/* Spacer for sticky bottom bar on mobile */}
@@ -1890,7 +1930,7 @@ const CourseDetail: React.FC = () => {
 
         {/* Sticky Bottom Bar — mobile only, hidden when enrolled */}
         <AnimatePresence>
-          {showStickyBottom && !isEnrolled && !showCheckout && !isPaymentProcessing && course && (
+          {!isEnrolled && !showCheckout && !isPaymentProcessing && course && (
             <motion.div
               initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}

@@ -34,5 +34,21 @@
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
 
+# Course HTML shell (SPA) — edge cache reduces repeat origin fetches (e.g. TikTok in-app browser on slow links)
+/courses
+  Cache-Control: public, max-age=3600
+
+/courses/*
+  Cache-Control: public, max-age=3600
+
+/courses/*/*
+  Cache-Control: public, max-age=3600
+
+/courses/*/*/*
+  Cache-Control: public, max-age=3600
+
+/courses/*/*/*/*
+  Cache-Control: public, max-age=3600
+
 /
   Cache-Control: public, max-age=0, must-revalidate

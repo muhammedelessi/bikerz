@@ -7,13 +7,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { getSupabaseStorageWebpUrl } from "@/lib/supabaseStorageImage";
 
 const heroImage = "/hero-rider.webp";
-
-function getOptimizedImageUrl(url: string | null | undefined): string | undefined {
-  if (!url) return undefined;
-  return url;
-}
 
 export interface CourseCardProps {
   course: {
@@ -40,9 +36,19 @@ export interface CourseCardProps {
   enrollment?: { progress_percentage: number; completed_at?: string | null; has_reviewed?: boolean } | null;
   activeVideoId?: string | null;
   onPlayVideo?: (courseId: string) => void;
+  /** First visible cards on listing pages — eager LCP */
+  imagePriority?: boolean;
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = true, enrollment, activeVideoId, onPlayVideo }) => {
+const CourseCard: React.FC<CourseCardProps> = ({
+  course,
+  index = 0,
+  inView = true,
+  enrollment,
+  activeVideoId,
+  onPlayVideo,
+  imagePriority = false,
+}) => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
@@ -79,7 +85,11 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
   };
 
   const rawThumbnail = course.preview_video_thumbnail || course.thumbnail_url;
-  const thumbnailSrc = getOptimizedImageUrl(rawThumbnail) || heroImage;
+  const thumbnailSrc = rawThumbnail || heroImage;
+  const thumbWebp =
+    rawThumbnail && rawThumbnail !== heroImage
+      ? getSupabaseStorageWebpUrl(rawThumbnail, { width: 800, height: 450, quality: 78 })
+      : undefined;
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't navigate if clicking on buttons or video area
@@ -103,15 +113,20 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, index = 0, inView = tru
           {/* Video / Thumbnail Area */}
           <div className="relative aspect-video overflow-hidden w-full">
             <div className="absolute inset-0 p-2">
-              <img
-                src={thumbnailSrc}
-                alt={title}
-                width={1280}
-                height={720}
-                className="w-full h-full object-cover rounded-xl transition-transform duration-700 group-hover:scale-105"
-                loading="lazy"
-                decoding="async"
-              />
+              <picture>
+                {thumbWebp && <source srcSet={thumbWebp} type="image/webp" />}
+                <img
+                  src={thumbnailSrc}
+                  alt={title}
+                  width={1280}
+                  height={720}
+                  className="w-full h-full object-cover rounded-xl transition-transform duration-700 group-hover:scale-105"
+                  loading={imagePriority ? "eager" : "lazy"}
+                  decoding="async"
+                  {...(imagePriority ? { fetchPriority: "high" as const } : {})}
+                  sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw"
+                />
+              </picture>
             </div>
           </div>
 
