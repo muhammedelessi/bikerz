@@ -306,7 +306,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden border-2 border-border bg-card p-0 gap-0">
+      <DialogContent
+        className="sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden border-2 border-border bg-card p-0 gap-0"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         {/* Header */}
         <div className="bg-muted/30 p-4 sm:p-5 border-b-2 border-border flex-shrink-0">
           <DialogHeader>
