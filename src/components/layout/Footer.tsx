@@ -6,7 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Instagram, Youtube, Facebook, Linkedin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTheme } from '@/components/ThemeProvider';
-import logoDark from '@/assets/logo-dark.png';
+import logoDark from '@/assets/logo-dark.webp';
 import logoLight from '@/assets/logo-light.png';
 
 // Custom X (Twitter) icon

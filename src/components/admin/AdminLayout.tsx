@@ -46,7 +46,7 @@ import {
   Trophy,
   Gamepad2,
 } from 'lucide-react';
-import logoDark from '@/assets/logo-dark.png';
+import logoDark from '@/assets/logo-dark.webp';
 import logoLight from '@/assets/logo-light.png';
 import { useTheme } from '@/components/ThemeProvider';
 
@@ -283,7 +283,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
+        <main id="main-content" className="flex-1 overflow-auto p-4 lg:p-6">
           {children}
         </main>
       </div>

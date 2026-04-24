@@ -43,7 +43,7 @@ import {
   Trophy,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import logoDark from '@/assets/logo-dark.png';
+import logoDark from '@/assets/logo-dark.webp';
 import logoLight from '@/assets/logo-light.png';
 import { useTheme } from '@/components/ThemeProvider';
 import ChapterTest from '@/components/course/ChapterTest';

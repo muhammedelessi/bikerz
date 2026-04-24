@@ -15,7 +15,7 @@ import {
   Ticket,
   User,
 } from "lucide-react";
-import logoDark from "@/assets/logo-dark.png";
+import logoDark from "@/assets/logo-dark.webp";
 import logoLight from "@/assets/logo-light.png";
 import { useTheme } from "@/components/ThemeProvider";
 

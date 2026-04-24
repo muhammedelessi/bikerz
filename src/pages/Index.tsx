@@ -36,7 +36,7 @@ const Index: React.FC = () => {
         <Navbar />
 
         <div className="pt-[var(--navbar-h)]">
-          <main>
+          <main id="main-content">
             <HeroSection content={landingContent?.hero} isLoading={contentLoading} />
             {/* <FeaturedCoursesSection /> */}
             <WhySection content={landingContent?.why} isLoading={contentLoading} />

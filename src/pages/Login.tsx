@@ -21,7 +21,7 @@ import {
   normalizeBiometricError,
 } from "@/lib/biometric";
 const defaultHeroImage = "/hero-rider.webp";
-import logoDark from '@/assets/logo-dark.png';
+import logoDark from '@/assets/logo-dark.webp';
 import logoLight from '@/assets/logo-light.png';
 import { useTheme } from '@/components/ThemeProvider';
 import SEOHead from "@/components/common/SEOHead";
@@ -178,7 +178,10 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen min-h-[100dvh] w-full overflow-x-hidden flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
+    <div
+      id="main-content"
+      className="min-h-screen min-h-[100dvh] w-full overflow-x-hidden flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden"
+    >
       <SEOHead
         title="Login"
         description="Sign in to your BIKERZ Academy account to access your motorcycle riding courses and track your progress."

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { ArrowRight, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import logoDark from '@/assets/logo-dark.png';
+import logoDark from '@/assets/logo-dark.webp';
 import logoLight from '@/assets/logo-light.png';
 import { useTheme } from '@/components/ThemeProvider';
 import SEOHead from '@/components/common/SEOHead';
@@ -73,7 +73,7 @@ const ForgotPassword: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
+      <main id="main-content" className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
         <div className="w-full max-w-md">
           <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 sm:p-8 shadow-xl">
             {isSuccess ? (

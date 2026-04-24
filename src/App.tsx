@@ -22,13 +22,17 @@ const lazyRetry = (importFn: () => Promise<any>, retries = 3, delay = 1000): Pro
 
 const SocialProofNotification = lazy(() => lazyRetry(() => import("@/components/common/SocialProofNotification")));
 
-// Critical routes - loaded eagerly (above-the-fold / high-traffic). Trainings, trainers list/detail are lazy below.
+// Home stays eager (LCP); other high-traffic routes are lazy-loaded to cut initial JS.
 import Index from "./pages/Index";
-import Courses from "./pages/Courses";
-import TrainingBooking from "./pages/TrainingBooking";
-import CourseDetail from "./pages/CourseDetail";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
+const Courses = lazy(() => import("./pages/Courses"));
+const TrainingBooking = lazy(() => import("./pages/TrainingBooking"));
+const CourseDetail = lazy(() => import("./pages/CourseDetail"));
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const Trainings = lazy(() => import("./pages/Trainings"));
+const TrainingDetail = lazy(() => import("./pages/TrainingDetail"));
+const Trainers = lazy(() => import("./pages/Trainers"));
+const TrainerProfile = lazy(() => import("./pages/TrainerProfile"));
 
 // Secondary public routes - lazy loaded
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -50,10 +54,6 @@ const BookingSuccess = lazy(() => import("./pages/BookingSuccess"));
 const MyBookings = lazy(() => import("./pages/MyBookings"));
 const JoinCommunity = lazy(() => import("./pages/JoinCommunity"));
 const Bundles = lazy(() => lazyRetry(() => import("./pages/Bundles")));
-const Trainings = lazy(() => import("./pages/Trainings"));
-const TrainingDetail = lazy(() => import("./pages/TrainingDetail"));
-const Trainers = lazy(() => import("./pages/Trainers"));
-const TrainerProfile = lazy(() => import("./pages/TrainerProfile"));
 const Ambassador = lazy(() => import("./pages/Ambassador"));
 const CommunityChampions = lazy(() => import("./pages/CommunityChampions"));
 const ChampionVideosList = lazy(() => import("./pages/ChampionVideosList"));

@@ -138,11 +138,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
       {/* ── Background Image ── */}
       <div className="absolute inset-0 z-0">
         <picture>
-          <source media="(max-width: 768px)" srcSet="/hero-rider-mobile.webp" type="image/webp" />
-          <source media="(min-width: 769px)" srcSet="/hero-rider.webp" type="image/webp" />
+          <source type="image/avif" media="(max-width: 768px)" srcSet="/hero-rider-mobile.avif" />
+          <source type="image/avif" srcSet="/hero-rider.avif" />
+          <source type="image/webp" media="(max-width: 768px)" srcSet="/hero-rider-mobile.webp" />
+          <source type="image/webp" srcSet="/hero-rider.webp" />
           <img
-            src="/hero-rider.webp"
-            alt=""
+            src="/hero-rider.jpg"
+            alt={isRTL ? "أكاديمية بايكرز" : "Bikerz Academy"}
             width={1920}
             height={1080}
             className="w-full h-full object-cover"

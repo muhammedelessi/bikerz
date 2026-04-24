@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import SEOHead from "@/components/common/SEOHead";
-import logoDark from "@/assets/logo-dark.png";
+import logoDark from "@/assets/logo-dark.webp";
 import logoLight from "@/assets/logo-light.png";
 import { useTheme } from "@/components/ThemeProvider";
 import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
@@ -353,7 +353,10 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen min-h-[100dvh] w-full bg-background flex items-start sm:items-center justify-center p-4 sm:p-6 lg:p-8 pb-8 sm:pb-6 safe-area-inset">
+    <div
+      id="main-content"
+      className="min-h-screen min-h-[100dvh] w-full bg-background flex items-start sm:items-center justify-center p-4 sm:p-6 lg:p-8 pb-8 sm:pb-6 safe-area-inset"
+    >
       <SEOHead
         title="Sign Up"
         description="Create your BIKERZ Academy account and start learning motorcycle riding from expert instructors today."

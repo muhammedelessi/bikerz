@@ -18,7 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import logoDark from "@/assets/logo-dark.png";
+import logoDark from "@/assets/logo-dark.webp";
 import logoLight from "@/assets/logo-light.png";
 import SEOHead from "@/components/common/SEOHead";
 import { FormField } from "@/components/ui/form-field";

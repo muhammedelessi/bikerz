@@ -4,6 +4,12 @@ import App from "./App.tsx";
 import "./index.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 
+/** After deploy, stale HTML can point at removed chunks — reload once instead of a blank screen. */
+window.addEventListener("vite:preloadError", (event) => {
+  event.preventDefault();
+  window.location.reload();
+});
+
 const VIEWPORT_CONTENT = "width=device-width, initial-scale=1.0, viewport-fit=cover";
 const OAUTH_VIEWPORT_RESET_KEY = "oauth_viewport_reset_pending";
 

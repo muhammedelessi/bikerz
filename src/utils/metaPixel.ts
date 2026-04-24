@@ -1,6 +1,6 @@
 /**
  * Meta Pixel (Facebook Pixel) event tracking utility.
- * Pixel is initialized in index.html with ID 2072521093528197.
+ * Pixels are initialized in index.html (2072521093528197, 299672655754419), lazy after interaction or 3s.
  * This module provides typed helpers for standard events.
  */
 

@@ -12,7 +12,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/components/ThemeProvider";
-import logoDark from "@/assets/logo-dark.png";
+import logoDark from "@/assets/logo-dark.webp";
 import logoLight from "@/assets/logo-light.png";
 
 interface MenuItem {
@@ -92,6 +92,12 @@ const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const mainEl = document.querySelector("main");
+    if (!mainEl) return;
+    mainEl.id = "main-content";
+  }, [location.pathname]);
 
   const { data: headerContent } = useQuery({
     queryKey: ["header-content"],
@@ -224,6 +230,12 @@ const Navbar: React.FC = () => {
 
   return (
     <>
+      <a
+        href="#main-content"
+        className="sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[200] focus:m-0 focus:inline-flex focus:h-auto focus:w-auto focus:overflow-visible focus:whitespace-normal focus:rounded-md focus:bg-foreground focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-background focus:outline-none focus:ring-2 focus:ring-primary"
+      >
+        {isRTL ? "انتقل إلى المحتوى" : "Skip to main content"}
+      </a>
       <nav
         ref={navRef}
         className={`fixed top-0 left-0 right-0 z-50 safe-area-top transition-all duration-500 ${
@@ -329,8 +341,9 @@ const Navbar: React.FC = () => {
                           variant="ghost"
                           size="icon"
                           title={t("common.logout")}
+                          aria-label={isRTL ? "تسجيل الخروج" : t("common.logout")}
                         >
-                          <LogOut className="w-4 h-4" />
+                          <LogOut className="w-4 h-4" aria-hidden />
                         </Button>
                       </LogoutConfirmDialog>
                     </>
@@ -374,12 +387,12 @@ const Navbar: React.FC = () => {
                   type="button"
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                   className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg p-2 text-foreground transition-colors hover:bg-muted/50"
-                  aria-label="Toggle menu"
+                  aria-label={isRTL ? "فتح أو إغلاق القائمة" : "Open or close menu"}
                   aria-expanded={isMobileMenuOpen}
                 >
                   {isMobileMenuOpen
-                    ? <X className="h-6 w-6" />
-                    : <Menu className="h-6 w-6" />}
+                    ? <X className="h-6 w-6" aria-hidden />
+                    : <Menu className="h-6 w-6" aria-hidden />}
                 </button>
               </div>
             </div>
@@ -389,6 +402,8 @@ const Navbar: React.FC = () => {
 
       {/* Mobile Menu Backdrop */}
       <div
+        role="presentation"
+        aria-hidden={!isMobileMenuOpen}
         onClick={() => setIsMobileMenuOpen(false)}
         className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-200 ${
           isMobileMenuOpen
@@ -398,12 +413,18 @@ const Navbar: React.FC = () => {
       />
       {/* Mobile Menu Drawer — always from the right edge; dir controls text alignment inside */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mobile-nav-title"
         dir={isRTL ? "rtl" : "ltr"}
         className={`fixed top-0 right-0 z-50 h-full w-full max-w-[320px] border-s border-border/50 bg-background shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] lg:hidden safe-area-top ${
           isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
+          <p id="mobile-nav-title" className="sr-only">
+            {isRTL ? "قائمة التنقل" : "Navigation menu"}
+          </p>
           {/* Drawer Header */}
           <div className="flex items-center justify-between px-4 h-14 border-b border-border/30">
             <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>
@@ -418,11 +439,12 @@ const Navbar: React.FC = () => {
               />
             </Link>
             <button
+              type="button"
               onClick={() => setIsMobileMenuOpen(false)}
               className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-muted/50 text-foreground"
-              aria-label="Close menu"
+              aria-label={isRTL ? "إغلاق القائمة" : "Close menu"}
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden />
             </button>
           </div>
           {/* Nav Links */}
