@@ -99,6 +99,7 @@ const AdminSurveyDetail = lazy(() => import("./pages/admin/AdminSurveyDetail"));
 const AdminQuestionEdit = lazy(() => import("./pages/admin/AdminQuestionEdit"));
 const AdminSurveyStats = lazy(() => import("./pages/admin/AdminSurveyStats"));
 const AdminStudentSurveyDetail = lazy(() => import("./pages/admin/AdminStudentSurveyDetail"));
+const DataFeed = lazy(() => import("./pages/DataFeed"));
 
 const queryClient = new QueryClient();
 
@@ -266,6 +267,10 @@ const AppRoutes = () => (
         <Route path="/admin/surveys/:surveyId/questions/:questionId" element={<AdminRoute><AdminQuestionEdit /></AdminRoute>} />
         <Route path="/admin/surveys/:surveyId" element={<AdminRoute><AdminSurveyDetail /></AdminRoute>} />
         <Route path="/admin/surveys" element={<AdminRoute><AdminSurveys /></AdminRoute>} />
+
+        {/* Meta product feed redirect */}
+        <Route path="/datafeed.xml" element={<DataFeed />} />
+        <Route path="/datafeed" element={<DataFeed />} />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
