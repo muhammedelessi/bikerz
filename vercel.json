@@ -37,6 +37,13 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/datafeed.xml",
+      "destination": "https://gifovgwlxwuiibfzyvwb.supabase.co/functions/v1/meta-product-feed",
+      "statusCode": 301
+    }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
