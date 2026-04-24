@@ -2,7 +2,7 @@ import React from "react";
 
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy, ShoppingCart, Unlock } from "lucide-react";
+import { Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy, ShoppingCart, Unlock, Play } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTranslation } from "react-i18next";
@@ -127,6 +127,12 @@ const CourseCard: React.FC<CourseCardProps> = ({
                   sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw"
                 />
               </picture>
+              {/* Play icon overlay — suggests the card is interactive */}
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm ring-1 ring-white/25 shadow-xl transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/85">
+                  <Play className="h-6 w-6 text-white fill-white ms-0.5" />
+                </div>
+              </div>
             </div>
           </div>
 
