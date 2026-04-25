@@ -63,6 +63,19 @@
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap" />
     </noscript>
 
+    <!-- Critical above-the-fold CSS (inlined for instant FCP before main stylesheet loads) -->
+    <style>
+      *,*::before,*::after{box-sizing:border-box}
+      html,body{margin:0;padding:0;background:#1c1d1d;color:#cbc4b1;font-family:'Roboto','Almarai',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+      html[dir="rtl"] body{font-family:'Almarai','Roboto',system-ui,sans-serif}
+      #root{min-height:100vh;background:#1c1d1d}
+      img,svg,video{display:block;max-width:100%;height:auto}
+      :root{--navbar-h:64px}
+      header,nav[role="navigation"]{min-height:64px}
+      main:empty{min-height:60vh;background:linear-gradient(135deg,#131614 0%,#0f2a23 50%,#1c1d1d 100%)}
+      [hidden]{display:none!important}
+    </style>
+
     <!-- Website Schema -->
     <script type="application/ld+json">
     {
