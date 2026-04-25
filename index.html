@@ -35,15 +35,17 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="shortcut icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
-    <link rel="manifest" href="/manifest.json" />
+    <!-- manifest + SW injected by vite-plugin-pwa at build time -->
     <!-- LCP: hero AVIF (falls back to picture sources in HeroSection) -->
     <link rel="preload" as="image" href="/hero-rider-mobile.avif" type="image/avif" media="(max-width: 768px)" fetchpriority="high" />
     <link rel="preload" as="image" href="/hero-rider.avif" type="image/avif" media="(min-width: 769px)" fetchpriority="high" />
     <meta name="theme-color" content="#D4AF37" />
 
+    <!-- Self-hosted Almarai + Roboto: critical weights preloaded (no Google Fonts request chain) -->
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/almarai-400.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/almarai-700.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/roboto-400.woff2" crossorigin />
     <!-- Preconnect to external origins (early, before any fetches) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://gifovgwlxwuiibfzyvwb.supabase.co" crossorigin />
 
     <!-- DNS Prefetch fallbacks -->
@@ -52,16 +54,6 @@
     <link rel="dns-prefetch" href="https://www.clarity.ms" />
     <link rel="dns-prefetch" href="https://scripts.clarity.ms" />
     <link rel="dns-prefetch" href="https://connect.facebook.net" />
-
-    <!-- Non-blocking font loading (was render-blocking @import in CSS) -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" />
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" media="print" onload="this.media='all'" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap" media="print" onload="this.media='all'" />
-    <noscript>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" />
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap" />
-    </noscript>
 
     <!-- Critical above-the-fold CSS (inlined for instant FCP before main stylesheet loads) -->
     <style>

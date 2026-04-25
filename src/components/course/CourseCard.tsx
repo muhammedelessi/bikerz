@@ -36,7 +36,10 @@ export interface CourseCardProps {
   enrollment?: { progress_percentage: number; completed_at?: string | null; has_reviewed?: boolean } | null;
   activeVideoId?: string | null;
   onPlayVideo?: (courseId: string) => void;
-  /** First visible cards on listing pages — eager LCP */
+  /** Listing pages: first rows eager; first image can be fetchpriority high for LCP */
+  imageLoading?: "eager" | "lazy";
+  imageFetchPriority?: "auto" | "high" | "low";
+  /** @deprecated use imageLoading + imageFetchPriority */
   imagePriority?: boolean;
 }
 
@@ -47,8 +50,12 @@ const CourseCard: React.FC<CourseCardProps> = ({
   enrollment,
   activeVideoId,
   onPlayVideo,
+  imageLoading: imageLoadingProp,
+  imageFetchPriority: imageFetchProp,
   imagePriority = false,
 }) => {
+  const imageLoading: "eager" | "lazy" = imageLoadingProp ?? (imagePriority ? "eager" : "lazy");
+  const imageFetchPriority: "auto" | "high" | "low" = imageFetchProp ?? (imagePriority ? "high" : "auto");
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
@@ -121,9 +128,9 @@ const CourseCard: React.FC<CourseCardProps> = ({
                   width={1280}
                   height={720}
                   className="w-full h-full object-cover rounded-xl transition-transform duration-700 group-hover:scale-105"
-                  loading={imagePriority ? "eager" : "lazy"}
+                  loading={imageLoading}
                   decoding="async"
-                  {...(imagePriority ? { fetchPriority: "high" as const } : {})}
+                  fetchPriority={imageFetchPriority}
                   sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw"
                 />
               </picture>

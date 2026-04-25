@@ -166,7 +166,8 @@ const Courses: React.FC = () => {
                     enrollment={getEnrollment(course.id)}
                     activeVideoId={activeVideoId}
                     onPlayVideo={handlePlayVideo}
-                    imagePriority={index < 2}
+                    imageLoading={index < 3 ? "eager" : "lazy"}
+                    imageFetchPriority={index === 0 ? "high" : "auto"}
                   />
                 ))}
               </div>

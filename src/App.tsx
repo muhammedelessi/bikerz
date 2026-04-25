@@ -22,7 +22,8 @@ const lazyRetry = (importFn: () => Promise<any>, retries = 3, delay = 1000): Pro
 
 const SocialProofNotification = lazy(() => lazyRetry(() => import("@/components/common/SocialProofNotification")));
 
-// Route-level code splitting — smaller initial JS; Suspense uses PageSkeleton (not a blocking spinner on nav).
+// Route-level code splitting — smaller initial JS. Suspense fallback is static (no pulse/shimmer) so it does not
+// stack with each page’s own loading skeletons.
 const Index = lazy(() => import("./pages/Index"));
 const Courses = lazy(() => import("./pages/Courses"));
 const TrainingBooking = lazy(() => import("./pages/TrainingBooking"));
@@ -103,16 +104,8 @@ const DataFeed = lazy(() => import("./pages/DataFeed"));
 
 const queryClient = new QueryClient();
 
-/** Lightweight route transition placeholder (lazy chunk loading). */
-const PageSkeleton = () => (
-  <div className="min-h-[100dvh] flex items-center justify-center bg-background" aria-hidden>
-    <div className="animate-pulse w-full max-w-4xl p-6 space-y-4">
-      <div className="h-8 bg-muted rounded-md w-1/3" />
-      <div className="h-64 bg-muted rounded-md" />
-      <div className="h-4 bg-muted rounded-md w-2/3" />
-    </div>
-  </div>
-);
+/** Fills the viewport while a lazy route chunk loads. Static only — animated skeletons live on each page. */
+const RouteChunkFallback = () => <div className="min-h-[100dvh] bg-background" aria-hidden />;
 
 /** Full-screen spinner — only while auth session resolves in Protected/Admin route guards. */
 const PageLoader = () => (
@@ -187,7 +180,7 @@ const WhatsAppFloatingButtonGate = () => {
 const AppRoutes = () => (
   <>
     <AnalyticsTracker />
-    <Suspense fallback={<PageSkeleton />}>
+    <Suspense fallback={<RouteChunkFallback />}>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/courses" element={<Courses />} />
