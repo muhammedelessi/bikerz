@@ -153,6 +153,7 @@ const Navbar: React.FC = () => {
   };
 
   const menuItems = useMemo(() => {
+    const hiddenLinks = new Set(["/trainings", "/trainers"]);
     const defaultItems: MenuItem[] = [
       {
         id: "home",
@@ -187,14 +188,18 @@ const Navbar: React.FC = () => {
         is_visible: true,
         open_in_new_tab: false,
       },
-    ];
+    ].filter((item) => !hiddenLinks.has(item.link));
 
-    const cmsItems = headerContent?.menu_items?.filter((item) => item.is_visible);
+    const cmsItems = headerContent?.menu_items?.filter(
+      (item) => item.is_visible && !hiddenLinks.has(item.link),
+    );
     if (!cmsItems?.length) return defaultItems;
 
     const merged = [...cmsItems];
     const links = new Set(merged.map((item) => item.link));
-    const missing = extraAfterCoursesNav(t).filter((item) => !links.has(item.link));
+    const missing = extraAfterCoursesNav(t).filter(
+      (item) => !hiddenLinks.has(item.link) && !links.has(item.link),
+    );
     if (missing.length === 0) return merged;
 
     const coursesIdx = merged.findIndex((item) => item.link === "/courses");
