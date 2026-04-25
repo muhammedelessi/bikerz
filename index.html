@@ -98,38 +98,50 @@
     }
     </script>
 
+    <!-- Production-only analytics gate: strict allow-list. Only academy.bikerz.com runs trackers. -->
+    <script>
+      window.__BIKERZ_IS_PROD__ = (window.location.hostname === 'academy.bikerz.com');
+      if (!window.__BIKERZ_IS_PROD__) {
+        console.info('[Analytics] Skipped — non-production hostname:', window.location.hostname);
+      }
+    </script>
+
     <!-- Google Analytics 4 (deferred via idle callback to not block FCP) -->
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      (window.requestIdleCallback || function(cb){ setTimeout(cb, 3000); })(function(){
-        var s = document.createElement('script');
-        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-DDQSM0LN66';
-        s.async = true;
-        s.crossOrigin = 'anonymous';
-        document.head.appendChild(s);
-        gtag('js', new Date());
-        gtag('config', 'G-DDQSM0LN66', { send_page_view: true });
-      });
+      if (window.__BIKERZ_IS_PROD__) {
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function(){ dataLayer.push(arguments); };
+        (window.requestIdleCallback || function(cb){ setTimeout(cb, 3000); })(function(){
+          var s = document.createElement('script');
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-DDQSM0LN66';
+          s.async = true;
+          s.crossOrigin = 'anonymous';
+          document.head.appendChild(s);
+          gtag('js', new Date());
+          gtag('config', 'G-DDQSM0LN66', { send_page_view: true });
+        });
+      }
     </script>
 
     <!-- Microsoft Clarity — deferred after first paint -->
     <script type="text/javascript">
-      (function(){
-        var boot = function(){
-          (function(c,l,a,r,i,t,y){
-            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-            t=l.createElement(r);t.async=1;t.crossOrigin='anonymous';t.src="https://www.clarity.ms/tag/"+i;
-            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-          })(window, document, "clarity", "script", "wen6hla6r7");
-        };
-        (window.requestIdleCallback || function(cb){ setTimeout(cb, 2500); })(boot);
-      })();
+      if (window.__BIKERZ_IS_PROD__) {
+        (function(){
+          var boot = function(){
+            (function(c,l,a,r,i,t,y){
+              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+              t=l.createElement(r);t.async=1;t.crossOrigin='anonymous';t.src="https://www.clarity.ms/tag/"+i;
+              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "wen6hla6r7");
+          };
+          (window.requestIdleCallback || function(cb){ setTimeout(cb, 2500); })(boot);
+        })();
+      }
     </script>
 
     <!-- Hotjar Tracking Code (deferred, excluded on /admin pages) -->
     <script>
-      if (!/^\/admin/i.test(window.location.pathname)) {
+      if (window.__BIKERZ_IS_PROD__ && !/^\/admin/i.test(window.location.pathname)) {
         (window.requestIdleCallback || function(cb){ setTimeout(cb, 3000); })(function(){
           (function(h,o,t,j,a,r){
             h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
@@ -145,49 +157,53 @@
 
     <!-- Meta Pixel: both IDs, lazy-load after first interaction or 3s (one fbevents.js load) -->
     <script>
-      (function() {
-        var loaded = false;
-        function loadPixel() {
-          if (loaded) return;
-          loaded = true;
-          !function(f,b,e,v,n,t,s){
-            if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-            n.queue=[];t=b.createElement(e);t.async=!0;t.crossOrigin='anonymous';
-            t.src=v;s=b.getElementsByTagName(e)[0];
-            s.parentNode.insertBefore(t,s)
-          }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-          fbq('init', '2072521093528197');
-          fbq('init', '299672655754419');
-          fbq('track', 'PageView');
-        }
-        var events = ['scroll', 'mousemove', 'touchstart', 'keydown'];
-        events.forEach(function(e) {
-          window.addEventListener(e, loadPixel, { once: true, passive: true });
-        });
-        setTimeout(loadPixel, 3000);
-      })();
+      if (window.__BIKERZ_IS_PROD__) {
+        (function() {
+          var loaded = false;
+          function loadPixel() {
+            if (loaded) return;
+            loaded = true;
+            !function(f,b,e,v,n,t,s){
+              if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+              n.queue=[];t=b.createElement(e);t.async=!0;t.crossOrigin='anonymous';
+              t.src=v;s=b.getElementsByTagName(e)[0];
+              s.parentNode.insertBefore(t,s)
+            }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+            fbq('init', '2072521093528197');
+            fbq('init', '299672655754419');
+            fbq('track', 'PageView');
+          }
+          var events = ['scroll', 'mousemove', 'touchstart', 'keydown'];
+          events.forEach(function(e) {
+            window.addEventListener(e, loadPixel, { once: true, passive: true });
+          });
+          setTimeout(loadPixel, 3000);
+        })();
+      }
     </script>
 
     <!-- TikTok + GHL: idle after first paint (not duplicate Meta) -->
     <script>
-      (function(){
-        var _ric = window.requestIdleCallback || function(cb){ setTimeout(cb, 200); };
-        _ric(function(){
-          !function(w, d, t){
-            w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(
-            var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script")
-            ;n.type="text/javascript",n.async=!0,n.crossOrigin="anonymous",n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
-            ttq.load('D6PBJ5JC77UCTG8FFUR0');
-            ttq.page();
-          }(window, document, 'ttq');
-          var g=document.createElement('script');
-          g.defer=true;g.crossOrigin='anonymous';g.src='https://link.msgsndr.com/js/external-tracking.js';
-          g.setAttribute('data-tracking-id','tk_2b31b1d54835429da32d80af2da1a552');
-          document.head.appendChild(g);
-        });
-      })();
+      if (window.__BIKERZ_IS_PROD__) {
+        (function(){
+          var _ric = window.requestIdleCallback || function(cb){ setTimeout(cb, 200); };
+          _ric(function(){
+            !function(w, d, t){
+              w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(
+              var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script")
+              ;n.type="text/javascript",n.async=!0,n.crossOrigin="anonymous",n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
+              ttq.load('D6PBJ5JC77UCTG8FFUR0');
+              ttq.page();
+            }(window, document, 'ttq');
+            var g=document.createElement('script');
+            g.defer=true;g.crossOrigin='anonymous';g.src='https://link.msgsndr.com/js/external-tracking.js';
+            g.setAttribute('data-tracking-id','tk_2b31b1d54835429da32d80af2da1a552');
+            document.head.appendChild(g);
+          });
+        })();
+      }
     </script>
   </head>
 
