@@ -22,17 +22,17 @@ const lazyRetry = (importFn: () => Promise<any>, retries = 3, delay = 1000): Pro
 
 const SocialProofNotification = lazy(() => lazyRetry(() => import("@/components/common/SocialProofNotification")));
 
-// Eager: home + main nav targets — avoids full-screen Suspense spinner on every navigation.
-import Index from "./pages/Index";
-import Courses from "./pages/Courses";
-import TrainingBooking from "./pages/TrainingBooking";
-import CourseDetail from "./pages/CourseDetail";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Trainings from "./pages/Trainings";
-import TrainingDetail from "./pages/TrainingDetail";
-import Trainers from "./pages/Trainers";
-import TrainerProfile from "./pages/TrainerProfile";
+// Route-level code splitting — smaller initial JS; Suspense uses PageSkeleton (not a blocking spinner on nav).
+const Index = lazy(() => import("./pages/Index"));
+const Courses = lazy(() => import("./pages/Courses"));
+const TrainingBooking = lazy(() => import("./pages/TrainingBooking"));
+const CourseDetail = lazy(() => import("./pages/CourseDetail"));
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const Trainings = lazy(() => import("./pages/Trainings"));
+const TrainingDetail = lazy(() => import("./pages/TrainingDetail"));
+const Trainers = lazy(() => import("./pages/Trainers"));
+const TrainerProfile = lazy(() => import("./pages/TrainerProfile"));
 
 // Secondary public routes - lazy loaded
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -103,7 +103,18 @@ const DataFeed = lazy(() => import("./pages/DataFeed"));
 
 const queryClient = new QueryClient();
 
-/** Full-screen spinner — only for auth-gated shells; avoid as Route Suspense fallback (jarring on every lazy nav). */
+/** Lightweight route transition placeholder (lazy chunk loading). */
+const PageSkeleton = () => (
+  <div className="min-h-[100dvh] flex items-center justify-center bg-background" aria-hidden>
+    <div className="animate-pulse w-full max-w-4xl p-6 space-y-4">
+      <div className="h-8 bg-muted rounded-md w-1/3" />
+      <div className="h-64 bg-muted rounded-md" />
+      <div className="h-4 bg-muted rounded-md w-2/3" />
+    </div>
+  </div>
+);
+
+/** Full-screen spinner — only while auth session resolves in Protected/Admin route guards. */
 const PageLoader = () => (
   <div className="min-h-[100dvh] flex items-center justify-center bg-background">
     <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -176,19 +187,11 @@ const WhatsAppFloatingButtonGate = () => {
 const AppRoutes = () => (
   <>
     <AnalyticsTracker />
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageSkeleton />}>
       <Routes>
-        {/* Critical eager-loaded routes */}
         <Route path="/" element={<Index />} />
         <Route path="/courses" element={<Courses />} />
-        <Route
-          path="/bundles"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <Bundles />
-            </Suspense>
-          }
-        />
+        <Route path="/bundles" element={<Bundles />} />
         <Route path="/trainings" element={<Trainings />} />
         <Route path="/trainings/:trainingId/book/:trainerCourseId" element={<TrainingBooking />} />
         <Route path="/trainings/:id" element={<TrainingDetail />} />

@@ -138,6 +138,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
       {/* ── Background Image ── */}
       <div className="absolute inset-0 z-0">
         <picture>
+          {/* AVIF — preferred when supported (mobile + desktop) */}
           <source type="image/avif" media="(max-width: 768px)" srcSet="/hero-rider-mobile.avif" />
           <source type="image/avif" srcSet="/hero-rider.avif" />
           <source type="image/webp" media="(max-width: 768px)" srcSet="/hero-rider-mobile.webp" />
@@ -145,9 +146,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
           <img
             src="/hero-rider.jpg"
             alt={isRTL ? "أكاديمية بايكرز" : "Bikerz Academy"}
-            width={1920}
-            height={1080}
-            className="w-full h-full object-cover"
+            width={1200}
+            height={600}
+            className="w-full h-full min-h-0 object-cover"
             loading="eager"
             fetchPriority="high"
             decoding="async"

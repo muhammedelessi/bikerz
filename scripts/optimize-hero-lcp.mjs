@@ -6,8 +6,9 @@ import sharp from "sharp";
 import { existsSync } from "node:fs";
 
 const tasks = [
-  ["public/hero-rider.webp", "public/hero-rider.avif", "avif", { quality: 50 }],
-  ["public/hero-rider-mobile.webp", "public/hero-rider-mobile.avif", "avif", { quality: 50 }],
+  // Desktop LCP: smaller AVIF ≈ +PageSpeed; mobile slightly higher quality
+  ["public/hero-rider.webp", "public/hero-rider.avif", "avif", { quality: 40, effort: 9 }],
+  ["public/hero-rider-mobile.webp", "public/hero-rider-mobile.avif", "avif", { quality: 50, effort: 9 }],
   ["public/hero-rider.webp", "public/hero-rider.jpg", "jpeg", { quality: 85 }],
 ];
 
