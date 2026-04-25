@@ -2064,6 +2064,7 @@ export type Database = {
           postal_code: string | null
           profile_complete: boolean
           rank_override: boolean | null
+          role: string | null
           rider_nickname: string | null
           riding_experience_years: number | null
           updated_at: string
@@ -2095,6 +2096,7 @@ export type Database = {
           postal_code?: string | null
           profile_complete?: boolean
           rank_override?: boolean | null
+          role?: string | null
           rider_nickname?: string | null
           riding_experience_years?: number | null
           updated_at?: string
@@ -2126,6 +2128,7 @@ export type Database = {
           postal_code?: string | null
           profile_complete?: boolean
           rank_override?: boolean | null
+          role?: string | null
           rider_nickname?: string | null
           riding_experience_years?: number | null
           updated_at?: string

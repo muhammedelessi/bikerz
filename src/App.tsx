@@ -8,8 +8,10 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
 import ScrollToTop from "@/components/common/ScrollToTop";
+import ProductionThirdPartyTrackers from "@/components/common/ProductionThirdPartyTrackers";
 import WhatsAppFloatingButton from "@/components/common/WhatsAppFloatingButton";
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
+import { shouldSkipMarketingAnalytics } from "@/lib/shouldSkipMarketingAnalytics";
 import React, { Suspense, lazy, useEffect, useState } from "react";
 
 const lazyRetry = (importFn: () => Promise<any>, retries = 3, delay = 1000): Promise<any> =>
@@ -144,8 +146,8 @@ const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 // Analytics tracker component - must be inside BrowserRouter
 const AnalyticsTracker = () => {
-  const { canAccessAdmin } = useAuth();
-  useAnalyticsTracking(canAccessAdmin);
+  const { canAccessAdmin, profile } = useAuth();
+  useAnalyticsTracking(shouldSkipMarketingAnalytics(canAccessAdmin, profile));
   return null;
 };
 
@@ -286,6 +288,7 @@ const App = () => (
       <LanguageProvider>
         <CurrencyProvider>
           <AuthProvider>
+            <ProductionThirdPartyTrackers />
             <TooltipProvider>
               <Toaster />
               <Sonner />

@@ -23,6 +23,8 @@ export interface UserProfile {
   profile_complete: boolean;
   date_of_birth: string | null;
   gender: string | null;
+  /** When set on `profiles` in Supabase, used with `user_roles` to gate marketing pixels. */
+  role?: string | null;
 }
 
 export interface AuthContextType {

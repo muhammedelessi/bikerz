@@ -245,7 +245,8 @@ export function useAnalyticsTracking(isAdmin = false) {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isAdmin]);
 
-  // Disable GA4, Meta Pixel, TikTok Pixel & Hotjar for admin users
+  // Third-party scripts (GA/Meta/TikTok/Clarity) are not injected for canAccessAdmin — production gate is in
+  // ProductionThirdPartyTrackers. Keep a safety net if anything attached globals before role resolution.
   useEffect(() => {
     if (isAdmin) {
       (window as any)['ga-disable-G-DDQSM0LN66'] = true;
