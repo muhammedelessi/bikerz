@@ -362,7 +362,7 @@ function TrainerFormInner(
       isRTL,
       applyProfilePhotoFile: mode === 'apply' ? photoFile : null,
     });
-    if (!vCheck.ok) {
+    if (vCheck.ok === false) {
       setErrors(vCheck.errors as Record<string, string>);
       return;
     }

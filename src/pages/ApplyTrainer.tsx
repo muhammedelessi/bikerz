@@ -199,7 +199,7 @@ const ApplyTrainer: React.FC = () => {
 
       const profileUpdates = computeProfileUpdates(initial, submission, finalPhotoUrl);
       if (Object.keys(profileUpdates).length > 0) {
-        const { error: upErr } = await supabase.from("profiles").update(profileUpdates).eq("user_id", user.id);
+        const { error: upErr } = await supabase.from("profiles").update(profileUpdates as never).eq("user_id", user.id);
         if (upErr) throw upErr;
       }
 

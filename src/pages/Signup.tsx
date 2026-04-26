@@ -377,7 +377,7 @@ const Signup: React.FC = () => {
                 className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
                 loading="eager"
                 decoding="async"
-                fetchpriority="high"
+                fetchPriority="high"
               />
             </Link>
             <LanguageToggle />

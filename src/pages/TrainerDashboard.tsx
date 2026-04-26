@@ -95,7 +95,7 @@ const TrainerDashboard: React.FC = () => {
                 {trainerCourses.map((tc: Record<string, unknown>) => (
                   <TrainingSection
                     key={String(tc.id ?? tc.training_id)}
-                    tc={tc}
+                    tc={tc as Record<string, unknown> & { training_id: string; trainings?: { name_ar?: string; name_en?: string } }}
                     trainerId={trainer.id}
                     students={students || []}
                     reviews={reviews || []}

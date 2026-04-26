@@ -28,9 +28,9 @@ export function useCurrentTrainer() {
     enabled: !!user?.id && isInstructor,
     queryFn: async () => {
       if (!user?.id) return null;
-      const { data, error } = await supabase.from("trainers").select("*").eq("user_id", user.id).maybeSingle();
+      const { data, error } = await (supabase as any).from("trainers").select("*").eq("user_id", user.id).maybeSingle();
       if (error) throw error;
-      return data as CurrentTrainerRow | null;
+      return (data as unknown) as CurrentTrainerRow | null;
     },
   });
 
