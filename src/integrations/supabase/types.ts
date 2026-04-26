@@ -2801,6 +2801,81 @@ export type Database = {
           },
         ]
       }
+      trainer_applications: {
+        Row: {
+          bio_ar: string | null
+          bio_en: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          email: string | null
+          experience_years: number
+          full_name: string | null
+          id: string
+          phone: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          social_link: string | null
+          specialties: string[] | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          bio_ar?: string | null
+          bio_en?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          experience_years?: number
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          social_link?: string | null
+          specialties?: string[] | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          bio_ar?: string | null
+          bio_en?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          experience_years?: number
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          social_link?: string | null
+          specialties?: string[] | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_applications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trainer_availability: {
         Row: {
           created_at: string
@@ -4323,6 +4398,7 @@ export type Database = {
         | "waiting_response"
         | "resolved"
         | "closed"
+      trainer_application_status: "pending" | "approved" | "rejected"
       trainer_status: "active" | "inactive"
       training_level: "beginner" | "intermediate" | "advanced"
       training_status: "active" | "archived"
@@ -4481,6 +4557,7 @@ export const Constants = {
         "resolved",
         "closed",
       ],
+      trainer_application_status: ["pending", "approved", "rejected"],
       trainer_status: ["active", "inactive"],
       training_level: ["beginner", "intermediate", "advanced"],
       training_status: ["active", "archived"],
