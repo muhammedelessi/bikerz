@@ -3058,6 +3058,7 @@ export type Database = {
           profit_ratio: number
           services: string[] | null
           status: Database["public"]["Enums"]["trainer_status"]
+          user_id: string | null
           years_of_experience: number
         }
         Insert: {
@@ -3086,6 +3087,7 @@ export type Database = {
           profit_ratio?: number
           services?: string[] | null
           status?: Database["public"]["Enums"]["trainer_status"]
+          user_id?: string | null
           years_of_experience?: number
         }
         Update: {
@@ -3114,6 +3116,7 @@ export type Database = {
           profit_ratio?: number
           services?: string[] | null
           status?: Database["public"]["Enums"]["trainer_status"]
+          user_id?: string | null
           years_of_experience?: number
         }
         Relationships: []
