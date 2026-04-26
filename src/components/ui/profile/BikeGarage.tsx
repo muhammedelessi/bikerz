@@ -8,7 +8,23 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Bike, Plus, Trash2, Loader2, ChevronRight, ChevronLeft, X, ImagePlus, Camera, Search, Zap, Wind, Gauge, Mountain, Flame } from "lucide-react";
+import {
+  Bike,
+  Plus,
+  Trash2,
+  Loader2,
+  ChevronRight,
+  ChevronLeft,
+  X,
+  ImagePlus,
+  Camera,
+  Search,
+  Zap,
+  Wind,
+  Gauge,
+  Mountain,
+  Flame,
+} from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,44 +73,27 @@ export interface BikeGarageProps {
   storageFolder?: string;
   isUpdating?: boolean;
 }
-
 export interface BikeGarageHandle {
   openAddPage: () => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const TYPE_GRADIENTS: Record<string, string> = {
-  Race: "from-red-900/60 via-red-950/40 to-black/60",
-  Touring: "from-blue-900/60 via-blue-950/40 to-black/60",
-  Cruiser: "from-amber-900/60 via-amber-950/40 to-black/60",
-  Adventure: "from-green-900/60 via-green-950/40 to-black/60",
-  Scrambler: "from-stone-800/60 via-stone-900/40 to-black/60",
-  Naked: "from-zinc-800/60 via-zinc-900/40 to-black/60",
-};
-const TYPE_BG: Record<string, string> = {
-  Race: "from-red-950/80 to-background",
-  Touring: "from-blue-950/80 to-background",
-  Cruiser: "from-amber-950/80 to-background",
-  Adventure: "from-green-950/80 to-background",
-  Scrambler: "from-stone-950/80 to-background",
-  Naked: "from-zinc-950/80 to-background",
+const TYPE_ACCENT: Record<string, string> = {
+  Race: "from-red-600 to-red-900",
+  Touring: "from-blue-600 to-blue-900",
+  Cruiser: "from-amber-600 to-amber-900",
+  Adventure: "from-green-600 to-green-900",
+  Scrambler: "from-stone-500 to-stone-800",
+  Naked: "from-zinc-500 to-zinc-800",
 };
 const TYPE_CHIP: Record<string, string> = {
-  Race: "bg-red-500/15 text-red-400 border-red-500/20",
-  Touring: "bg-blue-500/15 text-blue-400 border-blue-500/20",
-  Cruiser: "bg-amber-500/15 text-amber-400 border-amber-500/20",
-  Adventure: "bg-green-500/15 text-green-400 border-green-500/20",
-  Scrambler: "bg-stone-500/15 text-stone-400 border-stone-500/20",
-  Naked: "bg-zinc-500/15 text-zinc-300 border-zinc-500/20",
-};
-const TYPE_EMOJI: Record<string, string> = {
-  Race: "🏁",
-  Touring: "🗺️",
-  Cruiser: "🛣️",
-  Adventure: "🏔️",
-  Scrambler: "🪨",
-  Naked: "⚡",
+  Race: "bg-red-500/20 text-red-400 border-red-500/30",
+  Touring: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  Cruiser: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  Adventure: "bg-green-500/20 text-green-400 border-green-500/30",
+  Scrambler: "bg-stone-500/20 text-stone-400 border-stone-500/30",
+  Naked: "bg-zinc-500/20 text-zinc-300 border-zinc-500/30",
 };
 const TYPE_ICON: Record<string, React.ElementType> = {
   Race: Zap,
@@ -131,17 +130,13 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
     const [view, setView] = useState<"list" | "add" | "photos">("list");
     const [photoBikeId, setPhotoBikeId] = useState<string | null>(null);
     const [lightbox, setLightbox] = useState<LightboxState | null>(null);
+    const [addTab, setAddTab] = useState<"search" | "manual">("search");
 
     // ── Per-card quick upload ─────────────────────────────────────────────────
     const cardFileRef = useRef<HTMLInputElement>(null);
     const [uploadingFor, setUploadingFor] = useState<string | null>(null);
 
-    const triggerCardUpload = (bikeId: string) => {
-      setUploadingFor(bikeId);
-      cardFileRef.current?.click();
-    };
-
-    const uploadPhotos = async (bikeId: string, files: FileList): Promise<string[]> => {
+    const uploadPhotos = async (bikeId: string, files: FileList | File[]): Promise<string[]> => {
       if (!userId) return [];
       const urls: string[] = [];
       for (const file of Array.from(files)) {
@@ -173,7 +168,6 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
     // ── Add-bike state ────────────────────────────────────────────────────────
     const [search, setSearch] = useState("");
     const [activeType, setActiveType] = useState<string>("all");
-    const [showManual, setShowManual] = useState(false);
     const [manualType, setManualType] = useState("");
     const [manualTypeName, setManualTypeName] = useState("");
     const [manualBrand, setManualBrand] = useState("");
@@ -182,6 +176,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
     const [pendingPreviews, setPendingPreviews] = useState<string[]>([]);
     const addPhotoInputRef = useRef<HTMLInputElement>(null);
     const [savingNewBike, setSavingNewBike] = useState(false);
+    const [photoError, setPhotoError] = useState(false);
 
     const onPickPendingPhotos = (files: FileList | null) => {
       if (!files) return;
@@ -190,59 +185,63 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
         toast.error(isRTL ? "الحد الأقصى 5 صور" : "Maximum 5 photos");
         return;
       }
+      setPhotoError(false);
       setPendingPhotos((prev) => [...prev, ...arr]);
       setPendingPreviews((prev) => [...prev, ...arr.map((f) => URL.createObjectURL(f))]);
       if (addPhotoInputRef.current) addPhotoInputRef.current.value = "";
     };
 
-    const removePendingPhoto = (index: number) => {
-      setPendingPhotos((prev) => prev.filter((_, i) => i !== index));
+    const removePendingPhoto = (i: number) => {
+      setPendingPhotos((prev) => prev.filter((_, j) => j !== i));
       setPendingPreviews((prev) => {
-        URL.revokeObjectURL(prev[index]);
-        return prev.filter((_, i) => i !== index);
+        URL.revokeObjectURL(prev[i]);
+        return prev.filter((_, j) => j !== i);
       });
     };
 
     const clearPendingPhotos = () => {
-      pendingPreviews.forEach((u) => URL.revokeObjectURL(u));
+      pendingPreviews.forEach(URL.revokeObjectURL);
       setPendingPhotos([]);
       setPendingPreviews([]);
-    };
-
-    const uploadFilesForBike = async (bikeId: string, files: File[]): Promise<string[]> => {
-      if (!userId || files.length === 0) return [];
-      const urls: string[] = [];
-      for (const file of files) {
-        const path = `${userId}/${storageFolder}/${bikeId}/${Date.now()}-${file.name}`;
-        const { error } = await (supabase as any).storage.from("bike-photos").upload(path, file);
-        if (error) {
-          toast.error(isRTL ? "فشل رفع الصورة" : "Upload failed");
-          continue;
-        }
-        const { data: u } = (supabase as any).storage.from("bike-photos").getPublicUrl(path);
-        if (u?.publicUrl) urls.push(u.publicUrl as string);
-      }
-      return urls;
     };
 
     const openAddPage = () => {
       setSearch("");
       setActiveType("all");
-      setShowManual(false);
+      setAddTab("search");
       setManualType("");
       setManualTypeName("");
       setManualBrand("");
       setManualModel("");
+      setPhotoError(false);
       clearPendingPhotos();
       setView("add");
     };
-
     useImperativeHandle(ref, () => ({ openAddPage }));
 
     // ── Photos page ───────────────────────────────────────────────────────────
     const photosFileRef = useRef<HTMLInputElement>(null);
     const [photosUploading, setPhotosUploading] = useState(false);
     const photoEntry = entries.find((e) => e.id === photoBikeId) ?? null;
+
+    const handlePhotosUpload = async (files: FileList | null) => {
+      if (!files || !photoBikeId || !photoEntry) return;
+      if (photoEntry.photos.length + files.length > 5) {
+        toast.error(isRTL ? "الحد الأقصى 5 صور" : "Maximum 5 photos");
+        return;
+      }
+      setPhotosUploading(true);
+      const newUrls = await uploadPhotos(photoBikeId, files);
+      onChange(entries.map((e) => (e.id === photoBikeId ? { ...e, photos: [...e.photos, ...newUrls] } : e)));
+      setPhotosUploading(false);
+    };
+
+    const removePhoto = async (url: string) => {
+      if (!photoBikeId || !photoEntry) return;
+      const path = url.split("/bike-photos/")[1];
+      if (path) await (supabase as any).storage.from("bike-photos").remove([path]);
+      onChange(entries.map((e) => (e.id === photoBikeId ? { ...e, photos: e.photos.filter((p) => p !== url) } : e)));
+    };
 
     // ── Flat models ───────────────────────────────────────────────────────────
     const flatModels: FlatModel[] = useMemo(
@@ -270,18 +269,29 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
         flatModels.filter((m) => {
           const matchType = activeType === "all" || m.type_id === activeType;
           const q = search.trim().toLowerCase();
-          const matchSearch =
-            !q || [m.brand, m.model_name, m.subtype_name, m.type_name].some((s) => s.toLowerCase().includes(q));
-          return matchType && matchSearch;
+          return (
+            matchType &&
+            (!q || [m.brand, m.model_name, m.subtype_name, m.type_name].some((s) => s.toLowerCase().includes(q)))
+          );
         }),
       [flatModels, search, activeType],
     );
 
-    // ── Handlers ──────────────────────────────────────────────────────────────
+    // ── Add handlers ──────────────────────────────────────────────────────────
+    const requirePhoto = () => {
+      if (pendingPhotos.length === 0) {
+        setPhotoError(true);
+        toast.error(isRTL ? "صورة الدراجة مطلوبة" : "Bike photo is required");
+        return false;
+      }
+      return true;
+    };
+
     const onQuickAdd = async (item: FlatModel) => {
+      if (!requirePhoto()) return;
       const id = crypto.randomUUID();
       setSavingNewBike(true);
-      const photoUrls = await uploadFilesForBike(id, pendingPhotos);
+      const photoUrls = await uploadPhotos(id, pendingPhotos);
       onChange([
         ...entries,
         {
@@ -304,6 +314,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
     };
 
     const onSaveManual = async () => {
+      if (!requirePhoto()) return;
       if (!manualBrand.trim() || !manualModel.trim()) {
         toast.error(isRTL ? "الرجاء إدخال الماركة والموديل" : "Please enter brand and model");
         return;
@@ -311,7 +322,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
       const resolved = manualType === "custom" ? null : (catalogTypes.find((t) => t.id === manualType) ?? null);
       const id = crypto.randomUUID();
       setSavingNewBike(true);
-      const photoUrls = await uploadFilesForBike(id, pendingPhotos);
+      const photoUrls = await uploadPhotos(id, pendingPhotos);
       onChange([
         ...entries,
         {
@@ -334,25 +345,6 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
     };
 
     const deleteBike = (id: string) => onChange(entries.filter((e) => e.id !== id));
-
-    const handlePhotosUpload = async (files: FileList | null) => {
-      if (!files || !photoBikeId || !photoEntry) return;
-      if (photoEntry.photos.length + files.length > 5) {
-        toast.error(isRTL ? "الحد الأقصى 5 صور" : "Maximum 5 photos");
-        return;
-      }
-      setPhotosUploading(true);
-      const newUrls = await uploadPhotos(photoBikeId, files);
-      onChange(entries.map((e) => (e.id === photoBikeId ? { ...e, photos: [...e.photos, ...newUrls] } : e)));
-      setPhotosUploading(false);
-    };
-
-    const removePhoto = async (url: string) => {
-      if (!photoBikeId || !photoEntry) return;
-      const path = url.split("/bike-photos/")[1];
-      if (path) await (supabase as any).storage.from("bike-photos").remove([path]);
-      onChange(entries.map((e) => (e.id === photoBikeId ? { ...e, photos: e.photos.filter((p) => p !== url) } : e)));
-    };
 
     // ── Localized names ───────────────────────────────────────────────────────
     const localName = (entry: BikeEntry) => {
@@ -384,95 +376,106 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                   const typeName = localName(entry);
                   const subName = localSubName(entry);
                   const chipCls = TYPE_CHIP[entry.type_name] ?? "bg-primary/10 text-primary border-primary/20";
-                  const bg = TYPE_BG[entry.type_name] ?? "from-primary/20 to-background";
-                  const emoji = TYPE_EMOJI[entry.type_name] ?? "🏍️";
+                  const accentCls = TYPE_ACCENT[entry.type_name] ?? "from-primary/60 to-primary/90";
+                  const TypeIcon = TYPE_ICON[entry.type_name] ?? Bike;
                   return (
                     <div
                       key={entry.id}
-                      className="rounded-2xl border border-border/50 overflow-hidden bg-card shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col group"
+                      className="rounded-2xl overflow-hidden border border-border/30 bg-card shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group"
                     >
-                      {/* ── Photo area ── */}
-                      <div className="relative aspect-[4/3] overflow-hidden bg-muted shrink-0">
+                      {/* ── Full-bleed photo ── */}
+                      <div
+                        className="relative aspect-[4/3] overflow-hidden cursor-pointer"
+                        onClick={() => entry.photos.length > 0 && setLightbox({ photos: entry.photos, index: 0 })}
+                      >
                         {entry.photos.length > 0 ? (
-                          <>
-                            <img
-                              src={entry.photos[0]}
-                              alt={entry.model}
-                              className="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500"
-                              onClick={() => setLightbox({ photos: entry.photos, index: 0 })}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            {entry.photos.length > 1 && (
-                              <div className="absolute bottom-2 end-2 bg-black/60 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">
-                                1 / {entry.photos.length}
-                              </div>
-                            )}
-                          </>
+                          <img
+                            src={entry.photos[0]}
+                            alt={entry.model}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
                         ) : (
-                          <div className={cn("w-full h-full bg-gradient-to-b flex items-center justify-center", bg)}>
-                            <span className="text-6xl opacity-20 select-none group-hover:scale-110 transition-transform duration-500">
-                              {emoji}
-                            </span>
+                          <div
+                            className={cn(
+                              "w-full h-full bg-gradient-to-br flex items-center justify-center",
+                              accentCls,
+                            )}
+                          >
+                            <TypeIcon className="w-20 h-20 text-white/10" />
                           </div>
                         )}
-                      </div>
 
-                      {/* ── Info ── */}
-                      <div className="p-3 flex-1 min-w-0 space-y-1">
+                        {/* Gradient overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+
+                        {/* Type chip — top start */}
                         {typeName && (
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full border", chipCls)}>
+                          <div className="absolute top-2.5 start-2.5">
+                            <span
+                              className={cn(
+                                "text-[10px] font-bold px-2 py-0.5 rounded-full border backdrop-blur-sm",
+                                chipCls,
+                              )}
+                            >
                               {typeName}
                             </span>
-                            {subName && (
-                              <>
-                                <ChevronRight className="w-3 h-3 text-muted-foreground/40 shrink-0 rtl:rotate-180" />
-                                <span className="text-[11px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full truncate">
-                                  {subName}
-                                </span>
-                              </>
-                            )}
                           </div>
                         )}
-                        {entry.brand && (
-                          <p
-                            className="text-[10px] text-muted-foreground font-medium tracking-widest uppercase"
-                            dir="ltr"
-                          >
-                            {entry.brand}
-                          </p>
+
+                        {/* Photo count — top end */}
+                        {entry.photos.length > 1 && (
+                          <div className="absolute top-2.5 end-2.5 flex items-center gap-1 bg-black/50 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm">
+                            <Camera className="w-2.5 h-2.5" />
+                            {entry.photos.length}
+                          </div>
                         )}
-                        <p className="text-sm font-bold text-foreground leading-snug truncate" dir="ltr">
-                          {entry.model || (isRTL ? "دراجة غير معرّفة" : "Unknown Bike")}
-                        </p>
+
+                        {/* Info overlay — bottom */}
+                        <div className="absolute bottom-0 start-0 end-0 p-3">
+                          {entry.brand && (
+                            <p
+                              className="text-[10px] text-white/50 font-medium tracking-widest uppercase mb-0.5"
+                              dir="ltr"
+                            >
+                              {entry.brand}
+                            </p>
+                          )}
+                          <p className="text-base font-black text-white leading-tight truncate" dir="ltr">
+                            {entry.model || (isRTL ? "دراجة غير معرّفة" : "Unknown Bike")}
+                          </p>
+                          {subName && <p className="text-[11px] text-white/50 mt-0.5 truncate">{subName}</p>}
+                        </div>
                       </div>
 
                       {/* ── Action bar ── */}
-                      <div className="px-3 pb-3 pt-2 border-t border-border/20 flex items-center gap-1.5">
-                        {/* Thumbnails */}
+                      <div className="px-3 py-2.5 flex items-center gap-2 bg-card">
+                        {/* Thumbnails row */}
                         <div className="flex items-center gap-1 flex-1 overflow-hidden">
-                          {entry.photos.slice(0, 3).map((photo, i) => (
+                          {entry.photos.slice(0, 4).map((photo, i) => (
                             <button
                               key={i}
                               onClick={() => setLightbox({ photos: entry.photos, index: i })}
-                              className="w-7 h-7 rounded-lg overflow-hidden border-2 border-border/30 hover:border-primary/60 hover:scale-110 transition-all shrink-0"
+                              className="w-8 h-8 rounded-lg overflow-hidden border-2 border-border/20 hover:border-primary/60 hover:scale-110 transition-all shrink-0"
                             >
                               <img src={photo} className="w-full h-full object-cover" alt="" />
                             </button>
                           ))}
-                          {entry.photos.length > 3 && (
+                          {entry.photos.length > 4 && (
                             <button
-                              onClick={() => setLightbox({ photos: entry.photos, index: 3 })}
-                              className="w-7 h-7 rounded-lg bg-muted/60 border-2 border-border/30 flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0 hover:border-primary/50"
+                              onClick={() => setLightbox({ photos: entry.photos, index: 4 })}
+                              className="w-8 h-8 rounded-lg bg-muted/60 border-2 border-border/20 flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0"
                             >
-                              +{entry.photos.length - 3}
+                              +{entry.photos.length - 4}
                             </button>
                           )}
                           {canUpload && entry.photos.length < 5 && (
                             <button
-                              onClick={() => triggerCardUpload(entry.id)}
+                              onClick={() => {
+                                setUploadingFor(entry.id);
+                                cardFileRef.current?.click();
+                              }}
                               disabled={uploadingFor === entry.id}
-                              className="w-7 h-7 rounded-lg border-2 border-dashed border-border/30 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-all shrink-0 disabled:opacity-40"
+                              className="w-8 h-8 rounded-lg border-2 border-dashed border-border/30 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-all shrink-0 disabled:opacity-40"
                             >
                               {uploadingFor === entry.id ? (
                                 <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
@@ -482,13 +485,14 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                             </button>
                           )}
                         </div>
+
                         {/* Buttons */}
                         <div className="flex items-center gap-0.5 shrink-0">
                           {canUpload && (
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary"
+                              className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary"
                               onClick={() => {
                                 setPhotoBikeId(entry.id);
                                 setView("photos");
@@ -500,7 +504,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
+                            className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                             onClick={() => deleteBike(entry.id)}
                             disabled={isUpdating}
                           >
@@ -515,35 +519,32 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                 {/* Add Bike tile */}
                 <button
                   onClick={openAddPage}
-                  className="rounded-2xl border-2 border-dashed border-border/40 min-h-[200px] flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 group"
+                  className="rounded-2xl border-2 border-dashed border-border/40 min-h-[220px] flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 group"
                 >
-                  <div className="w-12 h-12 rounded-full bg-muted/50 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
-                    <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <div className="w-14 h-14 rounded-2xl bg-muted/50 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                    <Plus className="w-7 h-7 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
-                  <span className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">
+                  <span className="text-sm font-semibold text-muted-foreground group-hover:text-primary transition-colors">
                     {isRTL ? "إضافة دراجة" : "Add Bike"}
                   </span>
                 </button>
               </div>
             ) : (
-              /* Empty state */
-              <div className="flex flex-col items-center justify-center py-14 gap-4 rounded-2xl border-2 border-dashed border-border/50">
-                <div className="w-16 h-16 rounded-2xl bg-muted/40 flex items-center justify-center">
-                  <Bike className="w-8 h-8 text-muted-foreground/40" />
+              <div className="flex flex-col items-center justify-center py-16 gap-5 rounded-2xl border-2 border-dashed border-border/40">
+                <div className="w-20 h-20 rounded-3xl bg-muted/40 flex items-center justify-center">
+                  <Bike className="w-10 h-10 text-muted-foreground/30" />
                 </div>
-                <div className="text-center space-y-1">
-                  <p className="text-base font-semibold text-foreground">
-                    {isRTL ? "كراجك فارغ!" : "Your garage is empty!"}
-                  </p>
+                <div className="text-center space-y-1.5">
+                  <p className="text-lg font-bold text-foreground">{isRTL ? "كراجك فارغ!" : "Your garage is empty!"}</p>
                   <p className="text-sm text-muted-foreground max-w-xs">
                     {isRTL
-                      ? "أضف دراجتك الأولى للحصول على تجربة مخصصة"
-                      : "Add your first bike for a personalized experience"}
+                      ? "أضف دراجتك الأولى وأرفق صورها للحصول على تجربة مخصصة"
+                      : "Add your first bike with photos for a personalized experience"}
                   </p>
                 </div>
-                <Button onClick={openAddPage} className="gap-2 rounded-xl">
+                <Button onClick={openAddPage} size="lg" className="gap-2 rounded-xl px-6">
                   <Plus className="w-4 h-4" />
-                  {isRTL ? "إضافة دراجة" : "Add Your Bike"}
+                  {isRTL ? "إضافة دراجتك" : "Add Your Bike"}
                 </Button>
               </div>
             )}
@@ -554,7 +555,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
         {view === "add" && (
           <div className="rounded-2xl border border-border/40 overflow-hidden bg-card flex flex-col">
             {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-border/40 bg-muted/20 shrink-0">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-border/30 bg-muted/20 shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
@@ -563,41 +564,137 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
               >
                 <BackIcon className="w-4 h-4" />
               </Button>
-              <h3 className="text-sm font-semibold flex-1">{isRTL ? "إضافة دراجة" : "Add a Bike"}</h3>
+              <div>
+                <h3 className="text-sm font-bold">{isRTL ? "إضافة دراجة" : "Add a Bike"}</h3>
+                <p className="text-[11px] text-muted-foreground">{isRTL ? "الصورة إجبارية" : "Photo is required"}</p>
+              </div>
             </div>
 
-            {/* Tab bar */}
+            {/* ── Photo Upload (mandatory) ── */}
+            <div
+              className={cn(
+                "px-4 pt-4 pb-3 border-b shrink-0",
+                photoError ? "border-destructive/40 bg-destructive/5" : "border-border/30 bg-muted/5",
+              )}
+            >
+              <div className="flex items-center justify-between mb-2.5">
+                <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <Camera className="w-3.5 h-3.5" />
+                  {isRTL ? "صور الدراجة" : "Bike Photos"}
+                  <span className="text-destructive">*</span>
+                </p>
+                <span
+                  className={cn(
+                    "text-[10px] font-bold px-2.5 py-0.5 rounded-full border",
+                    pendingPhotos.length > 0
+                      ? "bg-green-500/10 text-green-500 border-green-500/20"
+                      : "bg-destructive/10 text-destructive border-destructive/20",
+                  )}
+                >
+                  {pendingPhotos.length > 0 ? `${pendingPhotos.length} / 5` : isRTL ? "مطلوبة" : "Required"}
+                </span>
+              </div>
+
+              {pendingPhotos.length === 0 ? (
+                <button
+                  onClick={() => {
+                    setPhotoError(false);
+                    addPhotoInputRef.current?.click();
+                  }}
+                  className={cn(
+                    "w-full rounded-2xl border-2 border-dashed py-6 flex flex-col items-center gap-2.5 transition-all",
+                    photoError
+                      ? "border-destructive/50 bg-destructive/5 hover:bg-destructive/10"
+                      : "border-border/50 hover:border-primary/40 hover:bg-primary/5",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors",
+                      photoError ? "bg-destructive/15" : "bg-muted/60",
+                    )}
+                  >
+                    <ImagePlus className={cn("w-6 h-6", photoError ? "text-destructive" : "text-muted-foreground")} />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-foreground">
+                      {isRTL ? "اضغط لرفع صورة الدراجة" : "Tap to upload bike photo"}
+                    </p>
+                    <p className={cn("text-xs mt-0.5", photoError ? "text-destructive" : "text-muted-foreground")}>
+                      {isRTL ? "مطلوبة — حتى 5 صور" : "Required — up to 5 photos"}
+                    </p>
+                  </div>
+                </button>
+              ) : (
+                <div className="flex gap-2 flex-wrap">
+                  {pendingPreviews.map((url, i) => (
+                    <div
+                      key={i}
+                      className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-border/30 group"
+                    >
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => removePendingPhoto(i)}
+                        className="absolute inset-0 bg-black/55 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-4 h-4 text-white" />
+                      </button>
+                      {i === 0 && (
+                        <div className="absolute bottom-0.5 start-0.5 end-0.5 bg-black/60 text-[8px] text-white text-center font-bold rounded-md py-0.5">
+                          {isRTL ? "رئيسية" : "Cover"}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {pendingPhotos.length < 5 && (
+                    <button
+                      onClick={() => addPhotoInputRef.current?.click()}
+                      className="w-16 h-16 rounded-xl border-2 border-dashed border-border/40 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                    >
+                      <Plus className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  )}
+                </div>
+              )}
+              <input
+                ref={addPhotoInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => onPickPendingPhotos(e.target.files)}
+              />
+            </div>
+
+            {/* ── Tab bar ── */}
             <div className="grid grid-cols-2 border-b border-border/30 shrink-0">
-              <button
-                onClick={() => setShowManual(false)}
-                className={cn(
-                  "flex items-center justify-center gap-2 py-2.5 text-xs font-semibold border-b-2 transition-all",
-                  !showManual
-                    ? "border-primary text-primary bg-primary/5"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/20",
-                )}
-              >
-                <Search className="w-3.5 h-3.5" />
-                {isRTL ? "بحث في الكتالوج" : "Search Catalog"}
-              </button>
-              <button
-                onClick={() => setShowManual(true)}
-                className={cn(
-                  "flex items-center justify-center gap-2 py-2.5 text-xs font-semibold border-b-2 transition-all",
-                  showManual
-                    ? "border-primary text-primary bg-primary/5"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/20",
-                )}
-              >
-                <Plus className="w-3.5 h-3.5" />
-                {isRTL ? "إضافة يدوية" : "Add Manually"}
-              </button>
+              {(["search", "manual"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setAddTab(tab)}
+                  className={cn(
+                    "flex items-center justify-center gap-2 py-2.5 text-xs font-semibold border-b-2 transition-all",
+                    addTab === tab
+                      ? "border-primary text-primary bg-primary/5"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/20",
+                  )}
+                >
+                  {tab === "search" ? <Search className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                  {tab === "search"
+                    ? isRTL
+                      ? "بحث في الكتالوج"
+                      : "Search Catalog"
+                    : isRTL
+                      ? "إضافة يدوية"
+                      : "Add Manually"}
+                </button>
+              ))}
             </div>
 
-            {/* Scrollable content */}
-            <div className="overflow-y-auto max-h-[460px] p-4 space-y-4">
-              {/* ── CATALOG TAB ── */}
-              {!showManual && (
+            {/* ── Tab content ── */}
+            <div className="overflow-y-auto max-h-[380px] p-4 space-y-4">
+              {/* CATALOG TAB */}
+              {addTab === "search" && (
                 <>
                   {/* Type filter grid */}
                   <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
@@ -617,7 +714,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                           "flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 transition-all",
                           activeType === id
                             ? "border-primary bg-primary/10 text-primary"
-                            : "border-border/30 bg-muted/20 text-muted-foreground hover:border-primary/40 hover:bg-muted/40",
+                            : "border-border/30 bg-muted/20 text-muted-foreground hover:border-primary/30 hover:bg-muted/40",
                         )}
                       >
                         <Icon className="w-4 h-4" />
@@ -636,7 +733,6 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder={isRTL ? "ابحث: Honda, BMW, R1250..." : "Search: Honda, BMW, R1250..."}
                       className="ps-10 pe-10 h-10 rounded-xl bg-muted/30 border-border/40 focus:bg-background"
-                      autoFocus
                     />
                     {search && (
                       <button className="absolute end-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
@@ -658,28 +754,31 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                             key={item.model_id}
                             className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border/20 hover:border-primary/30 hover:bg-primary/5 transition-all group"
                           >
-                            <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
+                            <div className="w-9 h-9 rounded-xl bg-muted/60 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
                               <ItemIcon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-sm text-foreground truncate" dir="ltr">
+                              <p className="font-bold text-sm text-foreground truncate" dir="ltr">
                                 {item.brand} {item.model_name}
                               </p>
                               <p className="text-[11px] text-muted-foreground">
                                 {isRTL ? item.type_name_ar : item.type_name}
-                                <span className="mx-1 opacity-40">·</span>
+                                <span className="mx-1 opacity-30">·</span>
                                 {isRTL ? item.subtype_name_ar : item.subtype_name}
                               </p>
                             </div>
                             <button
                               onClick={() => onQuickAdd(item)}
                               disabled={savingNewBike}
-                              className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-40"
+                              className="h-8 px-3 rounded-lg bg-primary/10 text-primary text-xs font-semibold flex items-center gap-1.5 hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-40 shrink-0"
                             >
                               {savingNewBike ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                               ) : (
-                                <Plus className="w-3.5 h-3.5" />
+                                <>
+                                  <Plus className="w-3 h-3" />
+                                  {isRTL ? "إضافة" : "Add"}
+                                </>
                               )}
                             </button>
                           </div>
@@ -687,9 +786,9 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                       })}
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-8 gap-2">
+                    <div className="flex flex-col items-center justify-center py-8 gap-2.5">
                       <div className="w-12 h-12 rounded-full bg-muted/40 flex items-center justify-center">
-                        <Search className="w-5 h-5 text-muted-foreground/50" />
+                        <Search className="w-5 h-5 text-muted-foreground/40" />
                       </div>
                       <p className="text-sm text-muted-foreground text-center">
                         {search
@@ -703,7 +802,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                       {search && (
                         <button
                           className="text-xs text-primary underline underline-offset-2"
-                          onClick={() => setShowManual(true)}
+                          onClick={() => setAddTab("manual")}
                         >
                           {isRTL ? "إضافة يدوياً بدلاً من ذلك" : "Add manually instead"}
                         </button>
@@ -713,12 +812,11 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                 </>
               )}
 
-              {/* ── MANUAL TAB ── */}
-              {showManual && (
+              {/* MANUAL TAB */}
+              {addTab === "manual" && (
                 <div className="space-y-4">
-                  {/* Type selection */}
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold text-foreground">{isRTL ? "نوع الدراجة *" : "Bike Type *"}</p>
+                    <p className="text-xs font-bold text-foreground">{isRTL ? "نوع الدراجة *" : "Bike Type *"}</p>
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                       {[
                         ...catalogTypes.map((t) => ({
@@ -736,7 +834,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                             "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
                             manualType === id
                               ? "border-primary bg-primary/10 text-primary"
-                              : "border-border/30 bg-muted/20 text-muted-foreground hover:border-primary/40 hover:bg-muted/40",
+                              : "border-border/30 bg-muted/20 text-muted-foreground hover:border-primary/30 hover:bg-muted/40",
                           )}
                         >
                           <Icon className="w-5 h-5" />
@@ -748,7 +846,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
 
                   {manualType === "custom" && (
                     <div className="space-y-1.5">
-                      <p className="text-xs font-semibold text-foreground">{isRTL ? "اسم النوع *" : "Type Name *"}</p>
+                      <p className="text-xs font-bold text-foreground">{isRTL ? "اسم النوع *" : "Type Name *"}</p>
                       <Input
                         value={manualTypeName}
                         onChange={(e) => setManualTypeName(e.target.value)}
@@ -760,7 +858,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <p className="text-xs font-semibold text-foreground">{isRTL ? "الماركة *" : "Brand *"}</p>
+                      <p className="text-xs font-bold text-foreground">{isRTL ? "الماركة *" : "Brand *"}</p>
                       <Input
                         value={manualBrand}
                         onChange={(e) => setManualBrand(e.target.value)}
@@ -770,7 +868,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <p className="text-xs font-semibold text-foreground">{isRTL ? "الموديل *" : "Model *"}</p>
+                      <p className="text-xs font-bold text-foreground">{isRTL ? "الموديل *" : "Model *"}</p>
                       <Input
                         value={manualModel}
                         onChange={(e) => setManualModel(e.target.value)}
@@ -792,53 +890,6 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                 </div>
               )}
             </div>
-
-            {/* Photos — sticky at bottom, shared between both tabs */}
-            {canUpload && (
-              <div className="border-t border-border/30 px-4 py-3 bg-muted/10 shrink-0 space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                    <Camera className="w-3.5 h-3.5 text-muted-foreground" />
-                    {isRTL ? "صور الدراجة (اختياري)" : "Bike Photos (optional)"}
-                  </p>
-                  <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                    {pendingPhotos.length} / 5
-                  </span>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  {pendingPreviews.map((url, i) => (
-                    <div
-                      key={i}
-                      className="relative w-12 h-12 rounded-lg overflow-hidden border border-border/40 group"
-                    >
-                      <img src={url} alt="" className="w-full h-full object-cover" />
-                      <button
-                        onClick={() => removePendingPhoto(i)}
-                        className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-3.5 h-3.5 text-white" />
-                      </button>
-                    </div>
-                  ))}
-                  {pendingPhotos.length < 5 && (
-                    <button
-                      onClick={() => addPhotoInputRef.current?.click()}
-                      className="w-12 h-12 rounded-lg border-2 border-dashed border-border/40 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-colors"
-                    >
-                      <ImagePlus className="w-4 h-4 text-muted-foreground" />
-                    </button>
-                  )}
-                </div>
-                <input
-                  ref={addPhotoInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => onPickPendingPhotos(e.target.files)}
-                />
-              </div>
-            )}
           </div>
         )}
 
@@ -868,7 +919,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                 {photoEntry.photos.map((url, i) => (
                   <div
                     key={i}
-                    className="relative aspect-square rounded-xl overflow-hidden border border-border/40 group"
+                    className="relative aspect-square rounded-xl overflow-hidden border border-border/30 group"
                   >
                     <img
                       src={url}
@@ -876,9 +927,14 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                       className="w-full h-full object-cover cursor-pointer"
                       onClick={() => setLightbox({ photos: photoEntry.photos, index: i })}
                     />
+                    {i === 0 && (
+                      <div className="absolute top-1.5 start-1.5 bg-primary text-primary-foreground text-[8px] font-bold px-1.5 py-0.5 rounded-md">
+                        {isRTL ? "رئيسية" : "Cover"}
+                      </div>
+                    )}
                     <button
                       onClick={() => removePhoto(url)}
-                      className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute inset-0 bg-black/55 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <Trash2 className="w-4 h-4 text-white" />
                     </button>
@@ -888,10 +944,10 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                   <button
                     onClick={() => photosFileRef.current?.click()}
                     disabled={photosUploading}
-                    className="aspect-square rounded-xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-1 hover:border-primary/50 hover:bg-primary/5 transition-colors disabled:opacity-50"
+                    className="aspect-square rounded-xl border-2 border-dashed border-border/40 flex flex-col items-center justify-center gap-1 hover:border-primary/50 hover:bg-primary/5 transition-colors disabled:opacity-50"
                   >
                     {photosUploading ? (
-                      <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                     ) : (
                       <ImagePlus className="w-5 h-5 text-muted-foreground" />
                     )}
