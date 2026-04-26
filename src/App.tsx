@@ -8,9 +8,8 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
 import ScrollToTop from "@/components/common/ScrollToTop";
-import ProductionThirdPartyTrackers from "@/components/common/ProductionThirdPartyTrackers";
+import Pr3t24NpUrJMNunMMASmhAM953bFGeLXzN7 from "@/components/common/Pr3t24NpUrJMNunMMASmhAM953bFGeLXzN7";
 import WhatsAppFloatingButton from "@/components/common/WhatsAppFloatingButton";
-import RequireInstructor from "@/components/auth/RequireInstructor";
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
 import { shouldSkipMarketingAnalytics } from "@/lib/shouldSkipMarketingAnalytics";
 import React, { Suspense, lazy, useEffect, useState } from "react";
@@ -18,9 +17,7 @@ import React, { Suspense, lazy, useEffect, useState } from "react";
 const lazyRetry = (importFn: () => Promise<any>, retries = 3, delay = 1000): Promise<any> =>
   importFn().catch((err: Error) => {
     if (retries <= 0) throw err;
-    return new Promise((resolve) => setTimeout(resolve, delay)).then(() =>
-      lazyRetry(importFn, retries - 1, delay)
-    );
+    return new Promise((resolve) => setTimeout(resolve, delay)).then(() => lazyRetry(importFn, retries - 1, delay));
   });
 
 const SocialProofNotification = lazy(() => lazyRetry(() => import("@/components/common/SocialProofNotification")));
@@ -46,12 +43,11 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const ContactUs = lazy(() => import("./pages/ContactUs"));
 const CourseLearn = lazy(() => import("./pages/CourseLearn"));
-const DashboardLayout = lazy(() => import("./pages/DashboardLayout"));
-const DashboardHome = lazy(() => import("./pages/DashboardHome"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ProfileLayout = lazy(() => import("./pages/ProfileLayout"));
+const ApplyTrainer = lazy(() => import("./pages/ApplyTrainer"));
 const ProfileHome = lazy(() => import("./pages/ProfileHome"));
 const AccountSettingsPage = lazy(() => import("./pages/AccountSettingsPage"));
-const ApplyTrainer = lazy(() => import("./pages/ApplyTrainer"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const BookingPaymentComplete = lazy(() => import("./pages/BookingPaymentComplete"));
@@ -105,7 +101,6 @@ const AdminQuestionEdit = lazy(() => import("./pages/admin/AdminQuestionEdit"));
 const AdminSurveyStats = lazy(() => import("./pages/admin/AdminSurveyStats"));
 const AdminStudentSurveyDetail = lazy(() => import("./pages/admin/AdminStudentSurveyDetail"));
 const DataFeed = lazy(() => import("./pages/DataFeed"));
-const TrainerDashboard = lazy(() => import("./pages/TrainerDashboard"));
 
 const queryClient = new QueryClient();
 
@@ -160,7 +155,7 @@ const DeferredSocialProof = () => {
   useEffect(() => {
     const id = (window.requestIdleCallback || ((cb: IdleRequestCallback) => setTimeout(cb, 4000)))(
       () => setShow(true),
-      { timeout: 5000 }
+      { timeout: 5000 },
     );
     return () => {
       if (window.cancelIdleCallback) window.cancelIdleCallback(id as number);
@@ -196,11 +191,32 @@ const AppRoutes = () => (
         <Route path="/trainers" element={<Trainers />} />
         <Route path="/trainers/:id" element={<TrainerProfile />} />
         <Route path="/courses/:id" element={<CourseDetail />} />
-        <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
-        <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
+        <Route
+          path="/login"
+          element={
+            <AuthRoute>
+              <Login />
+            </AuthRoute>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <AuthRoute>
+              <Signup />
+            </AuthRoute>
+          }
+        />
 
         {/* Secondary public routes */}
-        <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
+        <Route
+          path="/forgot-password"
+          element={
+            <AuthRoute>
+              <ForgotPassword />
+            </AuthRoute>
+          }
+        />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -209,9 +225,30 @@ const AppRoutes = () => (
         <Route path="/courses/:id/learn" element={<CourseLearn />} />
         <Route path="/courses/:id/lessons/:lessonId" element={<CourseLearn />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
-        <Route path="/booking-payment-complete" element={<ProtectedRoute><BookingPaymentComplete /></ProtectedRoute>} />
-        <Route path="/booking-success" element={<ProtectedRoute><BookingSuccess /></ProtectedRoute>} />
-        <Route path="/my-bookings" element={<ProtectedRoute><Navigate to="/profile/bookings" replace /></ProtectedRoute>} />
+        <Route
+          path="/booking-payment-complete"
+          element={
+            <ProtectedRoute>
+              <BookingPaymentComplete />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/booking-success"
+          element={
+            <ProtectedRoute>
+              <BookingSuccess />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my-bookings"
+          element={
+            <ProtectedRoute>
+              <Navigate to="/profile/bookings" replace />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/join-community" element={<JoinCommunity />} />
         <Route path="/community-champions/:championId/videos/:videoId" element={<ChampionVideoDetail />} />
         <Route path="/community-champions/:championId" element={<ChampionVideosList />} />
@@ -219,69 +256,343 @@ const AppRoutes = () => (
         <Route path="/ambassador" element={<Ambassador />} />
 
         {/* Protected Routes */}
-        <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-          <Route index element={<DashboardHome />} />
-          <Route path="apply-trainer" element={<ApplyTrainer />} />
-        </Route>
-        <Route path="/profile" element={<ProtectedRoute><ProfileLayout /></ProtectedRoute>}>
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfileLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<ProfileHome />} />
           <Route path="bookings" element={<MyBookings />} />
-          <Route path="apply-trainer" element={<Navigate to="/dashboard/apply-trainer" replace />} />
           <Route path="surveys" element={<SurveyListPage />} />
           <Route path="surveys/:surveyId/play" element={<SurveyPlayPage />} />
           <Route path="surveys/:surveyId/results" element={<SurveyResultsPage />} />
+          <Route path="apply-trainer" element={<ApplyTrainer />} />
         </Route>
-        <Route path="/settings" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
         <Route
-          path="/trainer/dashboard"
+          path="/settings"
           element={
             <ProtectedRoute>
-              <RequireInstructor>
-                <TrainerDashboard />
-              </RequireInstructor>
+              <AccountSettingsPage />
             </ProtectedRoute>
           }
         />
 
         {/* Admin Routes */}
-        <Route path="/admin" element={<AdminRoute><AdminHome /></AdminRoute>} />
-        <Route path="/admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
-        <Route path="/admin/courses/new" element={<AdminRoute><AdminCourseEditor /></AdminRoute>} />
-        <Route path="/admin/courses/:id" element={<AdminRoute><AdminCourseEditor /></AdminRoute>} />
-        <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-        <Route path="/admin/instructors" element={<AdminRoute><AdminInstructors /></AdminRoute>} />
-        <Route path="/admin/payments" element={<AdminRoute><AdminPayments /></AdminRoute>} />
-        <Route path="/admin/checkout-visits" element={<AdminRoute><AdminCheckoutPaymentVisits /></AdminRoute>} />
-        <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
-        <Route path="/admin/roles" element={<AdminRoute><AdminRoles /></AdminRoute>} />
-        <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
-        <Route path="/admin/support" element={<AdminRoute><AdminSupport /></AdminRoute>} />
-        <Route path="/admin/discussions" element={<AdminRoute><AdminLessonDiscussions /></AdminRoute>} />
-        <Route path="/admin/content" element={<AdminRoute><AdminContent /></AdminRoute>} />
-        <Route path="/admin/coupons" element={<AdminRoute><AdminCoupons /></AdminRoute>} />
-        <Route path="/admin/courses/:id/reviews" element={<AdminRoute><AdminCourseReviews /></AdminRoute>} />
-        <Route path="/admin/courses/:id/students" element={<AdminRoute><AdminCourseStudents /></AdminRoute>} />
-        <Route path="/admin/courses/:id/students/:userId" element={<AdminRoute><AdminStudentDetail /></AdminRoute>} />
-        <Route path="/admin/ads" element={<AdminRoute><AdminAds /></AdminRoute>} />
-        <Route path="/admin/community" element={<AdminRoute><AdminCommunity /></AdminRoute>} />
-        <Route path="/admin/trainings" element={<AdminRoute><AdminTrainings /></AdminRoute>} />
-        <Route path="/admin/trainings/:id" element={<AdminRoute><AdminTrainingProfile /></AdminRoute>} />
-        <Route path="/admin/trainers" element={<AdminRoute><AdminTrainers /></AdminRoute>} />
-        <Route path="/admin/trainers/:id" element={<AdminRoute><AdminTrainerProfile /></AdminRoute>} />
-        <Route path="/admin/trainers/:id/payments" element={<AdminRoute><AdminTrainerPayments /></AdminRoute>} />
-        <Route path="/admin/training-students" element={<AdminRoute><AdminTrainingStudents /></AdminRoute>} />
-        <Route path="/admin/trainer-reviews" element={<AdminRoute><AdminTrainerReviews /></AdminRoute>} />
-        <Route path="/admin/bike-catalog" element={<AdminRoute><AdminBikeCatalog /></AdminRoute>} />
-        <Route path="/admin/ranks" element={<AdminRoute><AdminRanks /></AdminRoute>} />
-        <Route path="/admin/champions" element={<AdminRoute><AdminChampions /></AdminRoute>} />
-        <Route path="/admin/champions/new" element={<AdminRoute><AdminChampionNew /></AdminRoute>} />
-        <Route path="/admin/champions/:id" element={<AdminRoute><AdminChampionProfile /></AdminRoute>} />
-        <Route path="/admin/surveys/statistics/:userId" element={<AdminRoute><AdminStudentSurveyDetail /></AdminRoute>} />
-        <Route path="/admin/surveys/statistics" element={<AdminRoute><AdminSurveyStats /></AdminRoute>} />
-        <Route path="/admin/surveys/:surveyId/questions/new" element={<AdminRoute><AdminQuestionEdit /></AdminRoute>} />
-        <Route path="/admin/surveys/:surveyId/questions/:questionId" element={<AdminRoute><AdminQuestionEdit /></AdminRoute>} />
-        <Route path="/admin/surveys/:surveyId" element={<AdminRoute><AdminSurveyDetail /></AdminRoute>} />
-        <Route path="/admin/surveys" element={<AdminRoute><AdminSurveys /></AdminRoute>} />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminHome />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/courses"
+          element={
+            <AdminRoute>
+              <AdminCourses />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/courses/new"
+          element={
+            <AdminRoute>
+              <AdminCourseEditor />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/courses/:id"
+          element={
+            <AdminRoute>
+              <AdminCourseEditor />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <AdminRoute>
+              <AdminUsers />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/instructors"
+          element={
+            <AdminRoute>
+              <AdminInstructors />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/payments"
+          element={
+            <AdminRoute>
+              <AdminPayments />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/checkout-visits"
+          element={
+            <AdminRoute>
+              <AdminCheckoutPaymentVisits />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/analytics"
+          element={
+            <AdminRoute>
+              <AdminAnalytics />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/roles"
+          element={
+            <AdminRoute>
+              <AdminRoles />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            <AdminRoute>
+              <AdminSettings />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/support"
+          element={
+            <AdminRoute>
+              <AdminSupport />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/discussions"
+          element={
+            <AdminRoute>
+              <AdminLessonDiscussions />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/content"
+          element={
+            <AdminRoute>
+              <AdminContent />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/coupons"
+          element={
+            <AdminRoute>
+              <AdminCoupons />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/courses/:id/reviews"
+          element={
+            <AdminRoute>
+              <AdminCourseReviews />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/courses/:id/students"
+          element={
+            <AdminRoute>
+              <AdminCourseStudents />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/courses/:id/students/:userId"
+          element={
+            <AdminRoute>
+              <AdminStudentDetail />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/ads"
+          element={
+            <AdminRoute>
+              <AdminAds />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/community"
+          element={
+            <AdminRoute>
+              <AdminCommunity />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/trainings"
+          element={
+            <AdminRoute>
+              <AdminTrainings />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/trainings/:id"
+          element={
+            <AdminRoute>
+              <AdminTrainingProfile />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/trainers"
+          element={
+            <AdminRoute>
+              <AdminTrainers />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/trainers/:id"
+          element={
+            <AdminRoute>
+              <AdminTrainerProfile />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/trainers/:id/payments"
+          element={
+            <AdminRoute>
+              <AdminTrainerPayments />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/training-students"
+          element={
+            <AdminRoute>
+              <AdminTrainingStudents />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/trainer-reviews"
+          element={
+            <AdminRoute>
+              <AdminTrainerReviews />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/bike-catalog"
+          element={
+            <AdminRoute>
+              <AdminBikeCatalog />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/ranks"
+          element={
+            <AdminRoute>
+              <AdminRanks />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/champions"
+          element={
+            <AdminRoute>
+              <AdminChampions />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/champions/new"
+          element={
+            <AdminRoute>
+              <AdminChampionNew />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/champions/:id"
+          element={
+            <AdminRoute>
+              <AdminChampionProfile />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/surveys/statistics/:userId"
+          element={
+            <AdminRoute>
+              <AdminStudentSurveyDetail />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/surveys/statistics"
+          element={
+            <AdminRoute>
+              <AdminSurveyStats />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/surveys/:surveyId/questions/new"
+          element={
+            <AdminRoute>
+              <AdminQuestionEdit />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/surveys/:surveyId/questions/:questionId"
+          element={
+            <AdminRoute>
+              <AdminQuestionEdit />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/surveys/:surveyId"
+          element={
+            <AdminRoute>
+              <AdminSurveyDetail />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/surveys"
+          element={
+            <AdminRoute>
+              <AdminSurveys />
+            </AdminRoute>
+          }
+        />
 
         {/* Meta product feed redirect */}
         <Route path="/datafeed.xml" element={<DataFeed />} />
@@ -304,16 +615,11 @@ const App = () => (
       <LanguageProvider>
         <CurrencyProvider>
           <AuthProvider>
-            <ProductionThirdPartyTrackers />
+            <Pr3t24NpUrJMNunMMASmhAM953bFGeLXzN7 />
             <TooltipProvider>
               <Toaster />
               <Sonner />
-              <BrowserRouter
-                future={{
-                  v7_startTransition: true,
-                  v7_relativeSplatPath: true,
-                }}
-              >
+              <BrowserRouter>
                 <ScrollToTop />
                 <WhatsAppFloatingButtonGate />
                 <DeferredSocialProof />

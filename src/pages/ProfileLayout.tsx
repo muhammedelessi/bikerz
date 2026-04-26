@@ -4,18 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import LanguageToggle from "@/components/common/LanguageToggle";
-import {
-  Menu,
-  X,
-  Home,
-  BookOpen,
-  GraduationCap,
-  LayoutDashboard,
-  Settings,
-  ShieldCheck,
-  Ticket,
-  User,
-} from "lucide-react";
+import { Menu, X, Home, BookOpen, GraduationCap, Settings, ShieldCheck, Ticket, User, Award } from "lucide-react";
 import logoDark from "@/assets/logo-dark.webp";
 import logoLight from "@/assets/logo-light.png";
 import { useTheme } from "@/components/ThemeProvider";
@@ -23,7 +12,7 @@ import { useTheme } from "@/components/ThemeProvider";
 const ProfileLayout: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { user, isAdmin, isInstructor } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -32,7 +21,6 @@ const ProfileLayout: React.FC = () => {
   const themeLogo = theme === "light" ? logoDark : logoLight;
 
   const path = location.pathname;
-  const dashboardHomeActive = path === "/dashboard" || path === "/dashboard/";
   const isSurveySection = path.startsWith("/profile/surveys");
   const isBookingsSection = path.startsWith("/profile/bookings");
   const profilePathNorm = path.replace(/\/$/, "") || "/";
@@ -58,21 +46,24 @@ const ProfileLayout: React.FC = () => {
   const navItems = [
     { icon: Home, label: t("nav.home"), to: "/", active: path === "/" },
     { icon: BookOpen, label: t("nav.courses"), to: "/courses", active: path.startsWith("/courses") },
-    { icon: GraduationCap, label: t("dashboard.myCourses"), to: "/dashboard", active: dashboardHomeActive },
+    { icon: GraduationCap, label: t("dashboard.myCourses"), to: "/dashboard", active: path.startsWith("/dashboard") },
     { icon: User, label: t("profile.title"), to: "/profile", active: isProfileHome },
     { icon: Ticket, label: t("nav.myBookings"), to: "/profile/bookings", active: path.startsWith("/profile/bookings") },
-    ...(isInstructor
-      ? [
-          {
-            icon: LayoutDashboard,
-            label: t("trainerDashboard.navLink"),
-            to: "/trainer/dashboard",
-            active: path.startsWith("/trainer/dashboard"),
-          },
-        ]
+    {
+      icon: Award,
+      label: isRTL ? "تقديم كمدرب" : "Apply as Trainer",
+      to: "/profile/apply-trainer",
+      active: path.startsWith("/profile/apply-trainer"),
+    },
+    {
+      icon: ShieldCheck,
+      label: isRTL ? "الإعدادات والأمان" : "Settings & Security",
+      to: "/settings",
+      active: path.startsWith("/settings"),
+    },
+    ...(isAdmin
+      ? [{ icon: Settings, label: t("nav.adminPanel"), to: "/admin", active: path.startsWith("/admin") }]
       : []),
-    { icon: ShieldCheck, label: isRTL ? "الإعدادات والأمان" : "Settings & Security", to: "/settings", active: path.startsWith("/settings") },
-    ...(isAdmin ? [{ icon: Settings, label: t("nav.adminPanel"), to: "/admin", active: path.startsWith("/admin") }] : []),
   ];
 
   if (!user) {
@@ -148,11 +139,7 @@ const ProfileLayout: React.FC = () => {
               </button>
               <div className="min-w-0 flex-1">
                 <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">
-                  {isSurveySection
-                    ? t("survey.title")
-                    : isBookingsSection
-                      ? t("nav.myBookings")
-                      : t("profile.title")}
+                  {isSurveySection ? t("survey.title") : isBookingsSection ? t("nav.myBookings") : t("profile.title")}
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground truncate hidden sm:block">
                   {isSurveySection
@@ -167,10 +154,7 @@ const ProfileLayout: React.FC = () => {
           </div>
         </header>
 
-        <div
-          className="flex-1 min-h-0 flex flex-col overflow-y-auto overscroll-y-contain"
-          id="profile-outlet-scroll"
-        >
+        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto overscroll-y-contain" id="profile-outlet-scroll">
           <Outlet />
         </div>
       </main>
