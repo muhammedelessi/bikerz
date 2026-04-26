@@ -583,16 +583,6 @@ const Dashboard: React.FC = () => {
                   </span>
                 </div>
               </Link>
-              <Link to="/mentors" className="block flex-1">
-                <div className="card-premium p-3 sm:p-4 flex items-center gap-3 sm:gap-4 hover:border-primary/40 active:scale-[0.99] transition-all touch-target w-full">
-                  <div className="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center flex-shrink-0">
-                    <Users className="w-5 h-5 text-secondary" />
-                  </div>
-                  <span className="font-medium text-sm sm:text-base text-foreground">
-                    {t('dashboard.findMentor')}
-                  </span>
-                </div>
-              </Link>
             </div>
           </section>
         </div>
