@@ -366,6 +366,7 @@ function TrainerFormInner(
       setErrors(vCheck.errors as Record<string, string>);
       return;
     }
+    void vCheck;
 
     let out: TrainerFormValues = { ...values };
     if (requireSingleBio && !out.bio_ar.trim() && !out.bio_en.trim()) {

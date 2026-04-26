@@ -214,7 +214,7 @@ export function TrainerApplicationDetailDialog({
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt className="text-muted-foreground shrink-0">{t("admin.trainerApplications.dialog.gender")}</dt>
-                  <dd className="text-start font-medium min-w-0">{genderLabelForDialog(row.gender, isRTL)}</dd>
+                  <dd className="text-start font-medium min-w-0">{row.gender ? (isRTL ? (row.gender === "male" ? "ذكر" : row.gender === "female" ? "أنثى" : row.gender) : row.gender.charAt(0).toUpperCase() + row.gender.slice(1)) : "—"}</dd>
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt className="text-muted-foreground shrink-0">{t("admin.trainerApplications.dialog.nationality")}</dt>
