@@ -8,7 +8,7 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
 import ScrollToTop from "@/components/common/ScrollToTop";
-import Pr3t24NpUrJMNunMMASmhAM953bFGeLXzN7 from "@/components/common/Pr3t24NpUrJMNunMMASmhAM953bFGeLXzN7";
+import ProductionThirdPartyTrackers from "@/components/common/ProductionThirdPartyTrackers";
 import WhatsAppFloatingButton from "@/components/common/WhatsAppFloatingButton";
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
 import { shouldSkipMarketingAnalytics } from "@/lib/shouldSkipMarketingAnalytics";
@@ -629,7 +629,7 @@ const App = () => (
       <LanguageProvider>
         <CurrencyProvider>
           <AuthProvider>
-            <Pr3t24NpUrJMNunMMASmhAM953bFGeLXzN7 />
+            <ProductionThirdPartyTrackers />
             <TooltipProvider>
               <Toaster />
               <Sonner />
