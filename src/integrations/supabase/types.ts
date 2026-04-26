@@ -2889,22 +2889,7 @@ export type Database = {
           user_id?: string
           years_of_experience?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "trainer_applications_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "trainer_applications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       trainer_availability: {
         Row: {
