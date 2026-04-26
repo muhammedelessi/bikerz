@@ -162,11 +162,6 @@ const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/mentors" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
-                  {t('nav.mentors')}
-                </Link>
-              </li>
-              <li>
                 <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
                   {t('nav.about')}
                 </Link>

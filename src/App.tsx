@@ -45,7 +45,6 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const ContactUs = lazy(() => import("./pages/ContactUs"));
 const CourseLearn = lazy(() => import("./pages/CourseLearn"));
-const Mentors = lazy(() => import("./pages/Mentors"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ProfileLayout = lazy(() => import("./pages/ProfileLayout"));
 const ProfileHome = lazy(() => import("./pages/ProfileHome"));
@@ -205,7 +204,6 @@ const AppRoutes = () => (
         <Route path="/contact" element={<ContactUs />} />
         <Route path="/courses/:id/learn" element={<CourseLearn />} />
         <Route path="/courses/:id/lessons/:lessonId" element={<CourseLearn />} />
-        <Route path="/mentors" element={<Mentors />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/booking-payment-complete" element={<ProtectedRoute><BookingPaymentComplete /></ProtectedRoute>} />
         <Route path="/booking-success" element={<ProtectedRoute><BookingSuccess /></ProtectedRoute>} />
