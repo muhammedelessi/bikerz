@@ -72,13 +72,9 @@ interface FlatModel {
 }
 
 export interface BikeGarageProps {
-  /** Current list of bike entries */
   entries: BikeEntry[];
-  /** Called whenever entries change (add / delete / photo update) */
   onChange: (entries: BikeEntry[]) => void;
-  /** Used as the storage path prefix for photo uploads. If omitted, photo upload is disabled. */
   userId?: string | null;
-  /** Optional extra subfolder inside the user dir (default: "bikes") */
   storageFolder?: string;
   isUpdating?: boolean;
 }
@@ -196,7 +192,6 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
     const [manualBrand, setManualBrand] = useState("");
     const [manualModel, setManualModel] = useState("");
 
-    // Pending photos (selected before bike is saved)
     const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
     const [pendingPreviews, setPendingPreviews] = useState<string[]>([]);
     const addPhotoInputRef = useRef<HTMLInputElement>(null);
@@ -416,11 +411,11 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                       key={entry.id}
                       className="rounded-2xl border border-border/50 overflow-hidden bg-card shadow-sm hover:shadow-md transition-shadow flex flex-col"
                     >
-                      {/* Top: image + details (row on mobile, column on sm+) */}
+                      {/* Top: image + details — row on mobile, column on sm+ */}
                       <div className="flex flex-row sm:flex-col flex-1 min-w-0">
                         {/* Image */}
                         {entry.photos.length > 0 ? (
-                          <div className="relative w-28 aspect-square sm:w-auto shrink-0 sm:aspect-[4/3] overflow-hidden sm:rounded-t-2xl bg-muted">
+                          <div className="relative w-28 aspect-square sm:w-auto shrink-0 sm:aspect-[4/3] overflow-hidden bg-muted">
                             <img
                               src={entry.photos[0]}
                               alt={entry.model}
@@ -436,7 +431,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                         ) : (
                           <div
                             className={cn(
-                              "w-28 aspect-square sm:w-auto shrink-0 sm:aspect-[4/3] sm:rounded-t-2xl bg-gradient-to-b flex items-center justify-center",
+                              "w-28 aspect-square sm:w-auto shrink-0 sm:aspect-[4/3] bg-gradient-to-b flex items-center justify-center",
                               gradient,
                             )}
                           >
@@ -477,7 +472,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                         </div>
                       </div>
 
-                      {/* Bottom: sub-images + actions (always full width below content) */}
+                      {/* Bottom: thumbnails + actions */}
                       <div className="px-3 pb-3 pt-2 flex items-center gap-1.5 border-t border-border/20">
                         <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
                           {entry.photos.slice(0, 4).map((photo, i) => (
@@ -536,6 +531,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                     </div>
                   );
                 })}
+
                 {/* Add Bike tile */}
                 <button
                   onClick={openAddPage}
@@ -586,7 +582,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
               </div>
             </div>
             <div className="p-4 space-y-3 max-h-[480px] overflow-y-auto">
-              {/* Photos picker (added BEFORE bike is created) */}
+              {/* Photos picker */}
               {canUpload && (
                 <div className="rounded-xl border border-dashed border-border/60 bg-muted/10 p-3 space-y-2">
                   <div className="flex items-center justify-between">
@@ -645,6 +641,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                   </button>
                 )}
               </div>
+
               {/* Type filter chips */}
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {[
@@ -666,6 +663,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                   </button>
                 ))}
               </div>
+
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-px bg-border/40" />
                 <span className="text-[10px] text-muted-foreground shrink-0">
@@ -673,6 +671,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                 </span>
                 <div className="flex-1 h-px bg-border/40" />
               </div>
+
               {/* Results */}
               {searchResults.length > 0 ? (
                 <div className="space-y-1.5">
@@ -718,6 +717,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                       : "No bikes found"}
                 </div>
               )}
+
               {/* Manual entry */}
               {!showManual ? (
                 <div className="flex items-center gap-2 pt-1">
