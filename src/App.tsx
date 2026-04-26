@@ -13,6 +13,7 @@ import WhatsAppFloatingButton from "@/components/common/WhatsAppFloatingButton";
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
 import { shouldSkipMarketingAnalytics } from "@/lib/shouldSkipMarketingAnalytics";
 import React, { Suspense, lazy, useEffect, useState } from "react";
+import RequireInstructor from "@/components/auth/RequireInstructor";
 
 const lazyRetry = (importFn: () => Promise<any>, retries = 3, delay = 1000): Promise<any> =>
   importFn().catch((err: Error) => {
@@ -43,7 +44,9 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const ContactUs = lazy(() => import("./pages/ContactUs"));
 const CourseLearn = lazy(() => import("./pages/CourseLearn"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
+const DashboardLayout = lazy(() => import("./pages/DashboardLayout"));
+const DashboardHome = lazy(() => import("./pages/DashboardHome"));
+const DashboardTrainerWorkspace = lazy(() => import("./pages/DashboardTrainerWorkspace"));
 const ProfileLayout = lazy(() => import("./pages/ProfileLayout"));
 const ApplyTrainer = lazy(() => import("./pages/ApplyTrainer"));
 const ProfileHome = lazy(() => import("./pages/ProfileHome"));
@@ -260,10 +263,21 @@ const AppRoutes = () => (
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <DashboardLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<DashboardHome />} />
+          <Route path="apply-trainer" element={<ApplyTrainer />} />
+          <Route
+            path="trainer"
+            element={
+              <RequireInstructor>
+                <DashboardTrainerWorkspace />
+              </RequireInstructor>
+            }
+          />
+        </Route>
         <Route
           path="/profile"
           element={

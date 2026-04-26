@@ -18,6 +18,7 @@ import {
   Menu,
   X,
   User,
+  BadgeCheck,
 } from 'lucide-react';
 import logoDark from '@/assets/logo-dark.webp';
 import logoLight from '@/assets/logo-light.png';
@@ -26,7 +27,7 @@ import { useTheme } from '@/components/ThemeProvider';
 const DashboardLayout: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { user, profile, signOut, isAdmin, isInstructor } = useAuth();
+  const { user, profile, signOut, isAdmin, isInstructor, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -51,6 +52,7 @@ const DashboardLayout: React.FC = () => {
 
   const path = location.pathname;
   const isApplyTrainerRoute = path.startsWith('/dashboard/apply-trainer');
+  const isTrainerWorkspaceRoute = path.startsWith('/dashboard/trainer');
   const dashboardHomeActive = path === '/dashboard' || path === '/dashboard/';
 
   const navItems = [
@@ -134,6 +136,38 @@ const DashboardLayout: React.FC = () => {
             ))}
           </nav>
 
+          <div className="shrink-0 border-t border-border bg-muted/20 p-3 sm:p-4">
+            {authLoading ? (
+              <div className="h-12 w-full rounded-lg bg-muted/50 animate-pulse" aria-hidden />
+            ) : !isInstructor ? (
+              <Link
+                to="/dashboard/apply-trainer"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
+                  isApplyTrainerRoute
+                    ? 'bg-primary/15 text-primary border-primary/30'
+                    : 'border-border bg-card text-foreground hover:bg-muted/60 hover:border-primary/25'
+                }`}
+              >
+                <Award className="w-5 h-5 flex-shrink-0" />
+                <span className="font-semibold flex-1 min-w-0">{t('nav.applyTrainer')}</span>
+              </Link>
+            ) : (
+              <Link
+                to="/dashboard/trainer"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
+                  isTrainerWorkspaceRoute
+                    ? 'bg-primary/15 text-primary border-primary/30'
+                    : 'border-border bg-card text-foreground hover:bg-muted/60 hover:border-primary/25'
+                }`}
+              >
+                <BadgeCheck className="w-5 h-5 flex-shrink-0" />
+                <span className="font-semibold flex-1 min-w-0">{t('nav.trainerWorkspace')}</span>
+              </Link>
+            )}
+          </div>
+
           <div className="p-3 sm:p-4 border-t border-border">
             <div className="flex w-full items-center justify-start gap-3 mb-4 text-start">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-secondary/70 flex items-center justify-center flex-shrink-0">
@@ -169,10 +203,18 @@ const DashboardLayout: React.FC = () => {
               </button>
               <div className="min-w-0">
                 <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">
-                  {isApplyTrainerRoute ? t('applyTrainer.title') : `${t('dashboard.welcome')}, ${firstName}!`}
+                  {isApplyTrainerRoute
+                    ? t('applyTrainer.title')
+                    : isTrainerWorkspaceRoute
+                      ? t('dashboard.trainerWorkspaceSeoTitle')
+                      : `${t('dashboard.welcome')}, ${firstName}!`}
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block truncate">
-                  {isApplyTrainerRoute ? t('applyTrainer.subtitle') : t('dashboard.keepUpGreatWork')}
+                  {isApplyTrainerRoute
+                    ? t('applyTrainer.subtitle')
+                    : isTrainerWorkspaceRoute
+                      ? t('dashboard.trainerWorkspaceSubtitle')
+                      : t('dashboard.keepUpGreatWork')}
                 </p>
               </div>
             </div>

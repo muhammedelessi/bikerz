@@ -158,6 +158,7 @@
     "dashboard": "لوحة التحكم",
     "myBookings": "حجوزاتي",
     "applyTrainer": "التقديم كمدرب",
+    "trainerWorkspace": "مساحة المدرب",
     "mentors": "المدربون",
     "adminPanel": "لوحة الإدارة"
   },
@@ -371,7 +372,10 @@
     "courseCompleted": "تم إكمال الدورة",
     "courseCompletedWellDone": "أحسنت! أكملت هذه الدورة",
     "quickActions": "إجراءات سريعة",
-    "findMentor": "ابحث عن مدرب"
+    "findMentor": "ابحث عن مدرب",
+    "trainerWorkspaceSeoTitle": "مساحة المدرب",
+    "trainerWorkspaceSubtitle": "إدارة ملفك والتدريبات والجدول والحجوزات والمدفوعات.",
+    "trainerWorkspaceBack": "العودة للوحة التحكم"
   },
   "courses": {
     "title": "الدورات",

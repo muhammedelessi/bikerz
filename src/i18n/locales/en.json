@@ -158,6 +158,7 @@
     "dashboard": "Dashboard",
     "myBookings": "My Bookings",
     "applyTrainer": "Apply as Trainer",
+    "trainerWorkspace": "Trainer workspace",
     "mentors": "Mentors",
     "adminPanel": "Admin Panel"
   },
@@ -371,7 +372,10 @@
     "courseCompleted": "Course completed",
     "courseCompletedWellDone": "Well done! Course completed",
     "quickActions": "Quick Actions",
-    "findMentor": "Find a Mentor"
+    "findMentor": "Find a Mentor",
+    "trainerWorkspaceSeoTitle": "Trainer workspace",
+    "trainerWorkspaceSubtitle": "Manage your profile, trainings, schedule, bookings, and payments.",
+    "trainerWorkspaceBack": "Back to dashboard"
   },
   "courses": {
     "title": "Courses",

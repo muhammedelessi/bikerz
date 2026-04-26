@@ -4,7 +4,19 @@ import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import LanguageToggle from "@/components/common/LanguageToggle";
-import { Menu, X, Home, BookOpen, GraduationCap, Settings, ShieldCheck, Ticket, User, Award } from "lucide-react";
+import {
+  Menu,
+  X,
+  Home,
+  BookOpen,
+  GraduationCap,
+  Award,
+  BadgeCheck,
+  Settings,
+  ShieldCheck,
+  Ticket,
+  User,
+} from "lucide-react";
 import logoDark from "@/assets/logo-dark.webp";
 import logoLight from "@/assets/logo-light.png";
 import { useTheme } from "@/components/ThemeProvider";
@@ -12,7 +24,7 @@ import { useTheme } from "@/components/ThemeProvider";
 const ProfileLayout: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isInstructor, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -25,6 +37,7 @@ const ProfileLayout: React.FC = () => {
   const isBookingsSection = path.startsWith("/profile/bookings");
   const profilePathNorm = path.replace(/\/$/, "") || "/";
   const isProfileHome = profilePathNorm === "/profile";
+  const isTrainerWorkspaceRoute = path.startsWith("/dashboard/trainer");
 
   useEffect(() => {
     if (sidebarOpen) {
@@ -123,6 +136,23 @@ const ProfileLayout: React.FC = () => {
               </Link>
             ))}
           </nav>
+
+          {!authLoading && isInstructor ? (
+            <div className="shrink-0 border-t border-border bg-muted/20 p-3 sm:p-4">
+              <Link
+                to="/dashboard/trainer"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
+                  isTrainerWorkspaceRoute
+                    ? "bg-primary/15 text-primary border-primary/30"
+                    : "border-border bg-card text-foreground hover:bg-muted/60 hover:border-primary/25"
+                }`}
+              >
+                <BadgeCheck className="w-5 h-5 flex-shrink-0" />
+                <span className="font-semibold flex-1 min-w-0">{t("nav.trainerWorkspace")}</span>
+              </Link>
+            </div>
+          ) : null}
         </div>
       </aside>
 

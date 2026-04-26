@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,13 +21,13 @@ import { parseTrainerPhone } from "@/lib/trainer-phone-utils";
 import { formLanguagesToDb, languageEntriesToForm, parseLanguageLevels } from "@/lib/trainer-form-constants";
 import type { BikeEntry as GarageBikeEntry } from "@/hooks/useUserProfile";
 import { uploadTrainerProfilePhoto, uploadTrainerAlbumFile } from "@/lib/trainer-uploads";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Star, Users, MapPin, Bike, Clock, BookOpen, Briefcase, User, ChevronDown, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { COUNTRIES } from "@/data/countryCityData";
-import { CountryCityPicker } from "@/components/ui/fields";
 import { toast } from "sonner";
+import { AddTrainingForTrainerDialog } from "@/components/admin/trainer/AddTrainingForTrainerDialog";
+
+export { AddTrainingForTrainerDialog };
 
 export type TrainerProfileMode = "admin" | "self";
 export type TrainerProfileVariant = "dialog" | "inline";
@@ -134,128 +134,6 @@ interface TrainerProfileDialogProps {
   variant?: TrainerProfileVariant;
   onTrainerUpdated?: () => void;
 }
-
-// ─── Add Training Dialog ─────────────────────────────────────────────
-export const AddTrainingForTrainerDialog: React.FC<{
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  trainerId: string;
-  existingTrainingIds: string[];
-  isRTL: boolean;
-  mode?: TrainerProfileMode;
-}> = ({ open, onOpenChange, trainerId, existingTrainingIds, isRTL, mode: _mode = "admin" }) => {
-  const queryClient = useQueryClient();
-  const [form, setForm] = useState({ training_id: "", price: 0, duration_hours: 0, location: "", location_detail: "" });
-
-  const { data: allTrainings } = useQuery({
-    queryKey: ["all-trainings-list"],
-    queryFn: async () => {
-      const { data } = await supabase.from("trainings").select("id, name_ar, name_en");
-      return data || [];
-    },
-  });
-
-  const availableTrainings = allTrainings?.filter((t) => !existingTrainingIds.includes(t.id)) || [];
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("trainer_courses").insert({
-        trainer_id: trainerId,
-        training_id: form.training_id,
-        price: form.price,
-        duration_hours: form.duration_hours,
-        location: form.location || "",
-        location_detail: form.location_detail || null,
-        sessions_count: 1,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["trainer-profile-courses", trainerId] });
-      queryClient.invalidateQueries({ queryKey: ["trainer-profile-view", trainerId] });
-      queryClient.invalidateQueries({ queryKey: ["current-trainer"] });
-      onOpenChange(false);
-      setForm({ training_id: "", price: 0, duration_hours: 0, location: "", location_detail: "" });
-      toast.success(isRTL ? "تم إضافة التدريب" : "Training added");
-    },
-    onError: () => toast.error(isRTL ? "خطأ" : "Error"),
-  });
-
-  const locationParts = form.location.split(" - ");
-  const countryPart = locationParts[0] || "";
-  const cityPart = locationParts[1] || "";
-  const selectedCountryForLoc = COUNTRIES.find((c) => c.en === countryPart);
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{isRTL ? "إضافة تدريب" : "Add Training"}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>{isRTL ? "التدريب" : "Training"}</Label>
-            <Select value={form.training_id} onValueChange={(v) => setForm((f) => ({ ...f, training_id: v }))}>
-              <SelectTrigger>
-                <SelectValue placeholder={isRTL ? "اختر تدريب" : "Select training"} />
-              </SelectTrigger>
-              <SelectContent>
-                {availableTrainings.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {isRTL ? t.name_ar : t.name_en}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-4 grid-cols-2">
-            <div className="space-y-2">
-              <Label>{isRTL ? "السعر (ر.س)" : "Price (SAR)"}</Label>
-              <Input type="number" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: parseFloat(e.target.value) || 0 }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>{isRTL ? "المدة (ساعات)" : "Duration (hrs)"}</Label>
-              <Input
-                type="number"
-                value={form.duration_hours}
-                onChange={(e) => setForm((f) => ({ ...f, duration_hours: parseFloat(e.target.value) || 0 }))}
-              />
-            </div>
-          </div>
-          <CountryCityPicker
-            country={selectedCountryForLoc?.code || ""}
-            city={cityPart}
-            onCountryChange={(code) => {
-              const c = COUNTRIES.find((x) => x.code === code);
-              if (c) setForm((f) => ({ ...f, location: c.en }));
-            }}
-            onCityChange={(v) => {
-              const cName = selectedCountryForLoc?.en || countryPart;
-              setForm((f) => ({ ...f, location: cName + " - " + v }));
-            }}
-          />
-          <div className="space-y-2">
-            <Label>{isRTL ? "تفاصيل الموقع" : "Location Details"}</Label>
-            <Input
-              value={form.location_detail}
-              onChange={(e) => setForm((f) => ({ ...f, location_detail: e.target.value }))}
-              placeholder={isRTL ? "أدخل العنوان التفصيلي للموقع" : "Enter the detailed location address"}
-              dir={isRTL ? "rtl" : "ltr"}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {isRTL ? "إلغاء" : "Cancel"}
-          </Button>
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !form.training_id}>
-            {saveMutation.isPending ? "..." : isRTL ? "حفظ" : "Save"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
 
 // ─── Training Section (students & reviews per training) ──────────────
 export const TrainingSection: React.FC<{

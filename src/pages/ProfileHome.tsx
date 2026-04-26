@@ -69,7 +69,7 @@ const ProfileHome: React.FC = () => {
                   </CardHeader>
                   <CardContent className="pt-0">
                     <Button asChild className="gap-2">
-                      <Link to="/trainer/dashboard">
+                      <Link to="/dashboard/trainer">
                         {t("trainerDashboard.instructorCardCta")}
                       </Link>
                     </Button>

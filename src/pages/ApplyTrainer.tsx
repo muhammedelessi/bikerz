@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrentTrainer } from "@/hooks/useCurrentTrainer";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES } from "@/data/countryCityData";
@@ -125,8 +126,9 @@ const STEPS = [
 
 const ApplyTrainer: React.FC = () => {
   const { isRTL } = useLanguage();
-  const { user } = useAuth();
+  const { user, isInstructor } = useAuth();
   const { profile, isLoading } = useUserProfile();
+  const { trainer: linkedTrainerRow, isLoading: linkedTrainerLoading } = useCurrentTrainer();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
@@ -191,6 +193,21 @@ const ApplyTrainer: React.FC = () => {
     const entry = COUNTRIES.find((c) => c.en === form.country || c.ar === form.country || c.code === form.country);
     return entry?.cities ?? [];
   }, [form.country]);
+
+  if (user && isInstructor) {
+    if (linkedTrainerLoading) {
+      return (
+        <div className="max-w-2xl mx-auto p-6" dir={isRTL ? "rtl" : "ltr"} aria-busy="true">
+          <div className="rounded-2xl border border-border p-8 flex justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        </div>
+      );
+    }
+    if (linkedTrainerRow) {
+      return <Navigate to="/dashboard/trainer" replace />;
+    }
+  }
 
   // ── Step validation ───────────────────────────────────────────────────────
   const isStepValid = (s: number): boolean => {
@@ -298,7 +315,7 @@ const ApplyTrainer: React.FC = () => {
             <Check className="w-8 h-8 text-green-500" />
           </div>
           <h2 className="text-lg font-bold">{isRTL ? "تمت الموافقة على طلبك!" : "Your application is approved!"}</h2>
-          <Button onClick={() => navigate("/trainer/dashboard")}>
+          <Button onClick={() => navigate("/dashboard/trainer")}>
             {isRTL ? "اذهب إلى لوحة المدرب" : "Go to Trainer Dashboard"}
           </Button>
         </div>
