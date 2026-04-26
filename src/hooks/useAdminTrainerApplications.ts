@@ -14,6 +14,9 @@ export const ADMIN_TRAINER_APPLICATIONS_PENDING_COUNT_KEY = ["admin-trainer-appl
 export type AdminTrainerApplicationProfile = {
   full_name: string | null;
   avatar_url: string | null;
+  /** From profiles merge when application row has no demographics column. */
+  gender?: string | null;
+  nationality?: string | null;
 };
 
 export type AdminTrainerApplicationRow = TrainerApplication & {
@@ -59,12 +62,23 @@ async function fetchTrainerApplicationsMerged(
     });
   }
 
-  return rows.map((app) => ({
-    ...app,
-    profile: profileMap.get(app.user_id) ?? null,
-    reviewer_profile: app.reviewed_by ? profileMap.get(app.reviewed_by) ?? null : null,
-    email: emailMap.get(app.user_id) ?? null,
-  }));
+  return rows.map((app) => {
+    const prof = profileMap.get(app.user_id) ?? null;
+    const appGender = (app as TrainerApplication).gender;
+    const appNat = (app as TrainerApplication).nationality;
+    const g = (appGender ?? prof?.gender ?? "").trim() || null;
+    const n = (appNat ?? prof?.nationality ?? "").trim() || null;
+    return {
+      ...app,
+      gender: g,
+      nationality: n,
+      profile: prof
+        ? { full_name: prof.full_name, avatar_url: prof.avatar_url, gender: prof.gender, nationality: prof.nationality }
+        : null,
+      reviewer_profile: app.reviewed_by ? profileMap.get(app.reviewed_by) ?? null : null,
+      email: emailMap.get(app.user_id) ?? null,
+    };
+  });
 }
 
 /** Pending count only — use on AdminTrainers tab badge without loading the full list. */

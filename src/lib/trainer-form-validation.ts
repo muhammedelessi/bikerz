@@ -73,6 +73,27 @@ function isReadonlyField(
   return !!readonly?.includes(field);
 }
 
+function validateApplyBikeEntries(
+  entries: TrainerFormValues['bike_entries'],
+  isRTL: boolean,
+): string | null {
+  if (!Array.isArray(entries) || entries.length < 1) {
+    return isRTL ? 'أضف دراجة واحدة على الأقل في الجراج.' : 'Add at least one motorcycle in the garage.';
+  }
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i]!;
+    const typeOk = (e.type_name ?? '').trim() || String(e.type_id ?? '').trim();
+    const brandOk = (e.brand ?? '').trim();
+    const modelOk = (e.model ?? '').trim();
+    if (!typeOk || !brandOk || !modelOk) {
+      return isRTL
+        ? `أكمل بيانات الدراجة رقم ${i + 1} (النوع، الماركة، الطراز) دون ترك حقول فارغة.`
+        : `Complete bike #${i + 1} (type, brand, and model). Do not leave fields empty.`;
+    }
+  }
+  return null;
+}
+
 export function validateTrainerFormSubmit(args: {
   mode: TrainerFormMode;
   values: TrainerFormValues;
@@ -81,8 +102,10 @@ export function validateTrainerFormSubmit(args: {
   hiddenFields?: (keyof TrainerFormValues)[];
   readonlyFields?: (keyof TrainerFormValues)[];
   isRTL: boolean;
+  /** Apply flow: selected profile photo file (not yet in `values.photo_url`). */
+  applyProfilePhotoFile?: File | null;
 }): TrainerFormValidationResult {
-  const { mode, values, requireSingleBio, singleBioDraft, hiddenFields, readonlyFields, isRTL } = args;
+  const { mode, values, requireSingleBio, singleBioDraft, hiddenFields, readonlyFields, isRTL, applyProfilePhotoFile } = args;
   const errors: Partial<Record<TrainerFormFieldErrorKey, string>> = {};
 
   const need = (field: keyof TrainerFormValues, msgEn: string, msgAr: string) => {
@@ -118,8 +141,37 @@ export function validateTrainerFormSubmit(args: {
   }
 
   if (mode === 'apply') {
-    need('gender', 'Gender is required', 'الجنس مطلوب');
-    need('nationality', 'Nationality is required', 'الجنسية مطلوبة');
+    need('gender', 'Gender is required', 'يرجى اختيار الجنس');
+    need('nationality', 'Nationality is required', 'يرجى اختيار الجنسية');
+    need('country', 'Country is required', 'يرجى اختيار الدولة');
+    need('city', 'City is required', 'يرجى اختيار المدينة');
+    need('phone', 'Phone number is required', 'رقم الجوال مطلوب');
+    need('first_name_ar', 'First name is required', 'الاسم الأول مطلوب');
+    need('last_name_ar', 'Last name is required', 'اسم العائلة مطلوب');
+
+    if (!isHiddenField('photo_url', mode, hiddenFields) && !isReadonlyField('photo_url', readonlyFields)) {
+      const hasPhoto = !!(values.photo_url && String(values.photo_url).trim()) || !!applyProfilePhotoFile;
+      if (!hasPhoto) {
+        errors.photo_url = isRTL ? 'يرجى إضافة صورة شخصية.' : 'Please upload a profile photo.';
+      }
+    }
+
+    if (!isHiddenField('bike_entries', mode, hiddenFields) && !isReadonlyField('bike_entries', readonlyFields)) {
+      const bikeMsg = validateApplyBikeEntries(values.bike_entries, isRTL);
+      if (bikeMsg) errors.bike_entries = bikeMsg;
+    }
+
+    if (!isHiddenField('services', mode, hiddenFields) && !isReadonlyField('services', readonlyFields)) {
+      if (!values.services?.length) {
+        errors.services = isRTL ? 'أضف خدمة واحدة على الأقل يمكنك تقديمها.' : 'Add at least one service you can offer.';
+      }
+    }
+
+    if (!isHiddenField('languages', mode, hiddenFields) && !isReadonlyField('languages', readonlyFields)) {
+      if (!values.languages?.length) {
+        errors.languages = isRTL ? 'أضف لغة واحدة على الأقل.' : 'Add at least one language.';
+      }
+    }
   }
 
   const albumCount = (values.photo_album?.length ?? 0);

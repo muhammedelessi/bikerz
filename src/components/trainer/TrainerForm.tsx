@@ -79,7 +79,12 @@ function defaultValues(mode: TrainerFormMode, initial?: Partial<TrainerFormValue
     nationality: initial?.nationality ?? '',
     bike_entries: initial?.bike_entries ? [...initial.bike_entries] : [],
     years_of_experience: initial?.years_of_experience ?? 0,
-    languages: initial?.languages ? [...initial.languages] : [],
+    languages:
+      Array.isArray(initial?.languages) && initial.languages.length > 0
+        ? [...initial.languages]
+        : mode === 'apply'
+          ? [{ code: 'ar', level: 'native' }]
+          : [],
     services: initial?.services ? [...initial.services] : [],
     status: initial?.status ?? 'active',
     assigned_training_ids: initial?.assigned_training_ids ? [...initial.assigned_training_ids] : [],
@@ -230,6 +235,11 @@ function TrainerFormInner(
     if (file) {
       setPhotoFile(file);
       setPhotoPreview(URL.createObjectURL(file));
+      setErrors((er) => {
+        const next = { ...er };
+        delete next.photo_url;
+        return next;
+      });
     }
   };
 
@@ -277,6 +287,11 @@ function TrainerFormInner(
 
   const addService = () => {
     if (serviceInput.trim()) {
+      setErrors((e) => {
+        const next = { ...e };
+        delete next.services;
+        return next;
+      });
       setValues((v) => ({ ...v, services: [...v.services, serviceInput.trim()] }));
       setServiceInput('');
     }
@@ -298,6 +313,43 @@ function TrainerFormInner(
     setLanguageAddCode('');
   }, [languageAddCode, languageAddLevel, values.languages, isRTL]);
 
+  /** Apply flow: one tap to add a language (Arabic → native, others → fluent). */
+  const addLanguageFromChip = useCallback(
+    (code: string) => {
+      if (valuesRef.current.languages.some((x) => x.code === code)) return;
+      const level = code === 'ar' ? 'native' : 'fluent';
+      setErrors((e) => {
+        const next = { ...e };
+        delete next.general;
+        delete next.languages;
+        return next;
+      });
+      setValues((v) => ({ ...v, languages: [...v.languages, { code, level }] }));
+    },
+    [],
+  );
+
+  const setLanguageLevelAt = useCallback((index: number, level: string) => {
+    setErrors((e) => {
+      const next = { ...e };
+      delete next.languages;
+      return next;
+    });
+    setValues((f) => ({
+      ...f,
+      languages: f.languages.map((e, idx) => (idx === index ? { ...e, level } : e)),
+    }));
+  }, []);
+
+  const removeLanguageAt = useCallback((index: number) => {
+    setErrors((e) => {
+      const next = { ...e };
+      delete next.languages;
+      return next;
+    });
+    setValues((f) => ({ ...f, languages: f.languages.filter((_, idx) => idx !== index) }));
+  }, []);
+
   const submit = useCallback(async () => {
     setErrors({});
     const vCheck = validateTrainerFormSubmit({
@@ -308,6 +360,7 @@ function TrainerFormInner(
       hiddenFields,
       readonlyFields,
       isRTL,
+      applyProfilePhotoFile: mode === 'apply' ? photoFile : null,
     });
     if (!vCheck.ok) {
       setErrors(vCheck.errors as Record<string, string>);
@@ -489,6 +542,9 @@ function TrainerFormInner(
               </div>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} disabled={ro('photo_url')} />
             </div>
+          ) : null}
+          {errors.photo_url ? (
+            <p className="text-sm text-destructive">{errors.photo_url}</p>
           ) : null}
 
           {vis('photo_album') ? (
@@ -784,133 +840,235 @@ function TrainerFormInner(
               <Languages className="h-4 w-4 shrink-0" aria-hidden />
               {label('sectionLanguages')}
             </h3>
-            <p className="text-xs text-muted-foreground">{label('languagesIntro')}</p>
 
-            <div className="flex flex-col gap-3 rounded-lg border border-border/60 bg-muted/20 p-3 sm:flex-row sm:flex-wrap sm:items-end">
-              <div className="min-w-0 flex-[1.2] sm:min-w-[12rem]">
-                <FormField label={label('language')}>
-                  <Select
-                    dir={locationFieldDir}
-                    value={languageAddCode || '__none__'}
-                    onValueChange={(v) => setLanguageAddCode(v === '__none__' ? '' : v)}
-                    disabled={ro('languages')}
-                  >
-                    <SelectTrigger dir={locationFieldDir} className="h-9 w-full">
-                      <SelectValue placeholder={label('languagePlaceholder')} />
-                    </SelectTrigger>
-                    <SelectContent dir={locationFieldDir}>
-                      <SelectItem value="__none__">{label('languageNone')}</SelectItem>
-                      {TRAINER_LANGUAGE_OPTIONS.filter((opt) => !values.languages.some((e) => e.code === opt.code)).map((opt) => (
-                        <SelectItem key={opt.code} value={opt.code}>
-                          {isRTL ? opt.label_ar : opt.label_en}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormField>
-              </div>
-              <div className="min-w-0 flex-1 sm:min-w-[12rem]">
-                <FormField label={label('languageLevel')}>
-                  <Select dir={locationFieldDir} value={languageAddLevel} onValueChange={setLanguageAddLevel} disabled={ro('languages')}>
-                    <SelectTrigger dir={locationFieldDir} className="h-9 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent dir={locationFieldDir}>
-                      {LANGUAGE_LEVEL_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {isRTL ? opt.label_ar : opt.label_en}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormField>
-              </div>
-              <Button
-                type="button"
-                variant="secondary"
-                className="h-9 gap-1 shrink-0 sm:min-w-[7.5rem]"
-                onClick={addTrainerLanguage}
-                disabled={!languageAddCode || ro('languages')}
-              >
-                <Plus className="h-4 w-4" />
-                {label('add')}
-              </Button>
-            </div>
+            {mode === 'apply' ? (
+              <>
+                {errors.languages ? (
+                  <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
+                    {errors.languages}
+                  </p>
+                ) : null}
 
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] text-muted-foreground">{label('quickAdd')}</span>
-              {TRAINER_LANGUAGE_OPTIONS.filter(
-                (opt) => ['ar', 'en', 'ur'].includes(opt.code) && !values.languages.some((e) => e.code === opt.code),
-              ).map((opt) => (
-                <Button
-                  key={opt.code}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2.5 text-xs"
-                  disabled={ro('languages')}
-                  onClick={() =>
-                    setValues((f) => ({
-                      ...f,
-                      languages: [...f.languages, { code: opt.code, level: languageAddLevel }],
-                    }))
-                  }
-                >
-                  {isRTL ? opt.label_ar : opt.label_en}
-                </Button>
-              ))}
-            </div>
-
-            <FormField label={label('languagesAdded')}>
-              {values.languages.length === 0 ? (
-                <p className="text-xs text-muted-foreground">{label('languagesEmpty')}</p>
-              ) : (
-                <ul className="divide-y divide-border/60 rounded-lg border border-border/60">
-                  {values.languages.map((row, i) => {
-                    const levelVal = LANGUAGE_LEVEL_OPTIONS.some((x) => x.value === row.level) ? row.level : LANGUAGE_LEVEL_OPTIONS[4]!.value;
-                    return (
-                      <li key={`${row.code}-${i}`} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-sm font-medium">{languageOptionLabel(row.code, isRTL)}</span>
-                        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                          <Select
-                            value={levelVal}
-                            disabled={ro('languages')}
-                            onValueChange={(v) =>
-                              setValues((f) => ({
-                                ...f,
-                                languages: f.languages.map((e, idx) => (idx === i ? { ...e, level: v } : e)),
-                              }))
-                            }
-                          >
-                            <SelectTrigger className="h-9 w-full min-w-[10rem] sm:w-[14rem]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {LANGUAGE_LEVEL_OPTIONS.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  {isRTL ? opt.label_ar : opt.label_en}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
-                            disabled={ro('languages')}
-                            onClick={() => setValues((f) => ({ ...f, languages: f.languages.filter((_, idx) => idx !== i) }))}
-                            aria-label={label('removeLanguage')}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </li>
-                    );
-                  })}
+                <ul className="space-y-4">
+                  {[...values.languages.map((row, i) => ({ row, i }))]
+                    .sort((a, b) => {
+                      if (a.row.code === 'ar' && b.row.code !== 'ar') return -1;
+                      if (b.row.code === 'ar' && a.row.code !== 'ar') return 1;
+                      return 0;
+                    })
+                    .map(({ row, i }) => {
+                      const levelVal = LANGUAGE_LEVEL_OPTIONS.some((x) => x.value === row.level)
+                        ? row.level
+                        : LANGUAGE_LEVEL_OPTIONS[1]!.value;
+                      return (
+                        <li
+                          key={`${row.code}-${i}`}
+                          className="rounded-xl border border-border/70 bg-muted/15 p-4 space-y-3"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center gap-2 min-w-0">
+                              <span className="text-sm font-semibold text-foreground">
+                                {languageOptionLabel(row.code, isRTL)}
+                              </span>
+                              {row.code === 'ar' && levelVal === 'native' ? (
+                                <span className="text-[11px] font-medium rounded-full bg-primary/15 text-primary px-2.5 py-0.5 border border-primary/25">
+                                  {label('motherTongueBadge')}
+                                </span>
+                              ) : null}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 shrink-0 text-muted-foreground hover:text-destructive"
+                              disabled={ro('languages')}
+                              onClick={() => removeLanguageAt(i)}
+                              aria-label={label('removeLanguage')}
+                            >
+                              <X className="h-4 w-4 me-1" />
+                              {label('remove')}
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{label('languagesApplyLevelPrompt')}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {LANGUAGE_LEVEL_OPTIONS.map((opt) => (
+                              <Button
+                                key={opt.value}
+                                type="button"
+                                variant={levelVal === opt.value ? 'default' : 'outline'}
+                                size="sm"
+                                className="h-8 rounded-full px-3 text-xs"
+                                disabled={ro('languages')}
+                                onClick={() => setLanguageLevelAt(i, opt.value)}
+                              >
+                                {isRTL ? opt.label_ar : opt.label_en}
+                              </Button>
+                            ))}
+                          </div>
+                        </li>
+                      );
+                    })}
                 </ul>
-              )}
-            </FormField>
+
+                <div className="rounded-lg border border-dashed border-border/80 bg-background/60 p-4 space-y-2">
+                  <p className="text-sm font-medium text-foreground">{label('languagesApplyAddTitle')}</p>
+                  <p className="text-xs text-muted-foreground">{label('languagesApplyAddHint')}</p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {[...TRAINER_LANGUAGE_OPTIONS]
+                      .sort((a, b) => {
+                        if (a.code === 'ar') return -1;
+                        if (b.code === 'ar') return 1;
+                        return (isRTL ? a.label_ar : a.label_en).localeCompare(isRTL ? b.label_ar : b.label_en);
+                      })
+                      .filter((opt) => !values.languages.some((e) => e.code === opt.code))
+                      .map((opt) => (
+                        <Button
+                          key={opt.code}
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          className="h-9 rounded-full gap-1"
+                          disabled={ro('languages')}
+                          onClick={() => addLanguageFromChip(opt.code)}
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          {isRTL ? opt.label_ar : opt.label_en}
+                        </Button>
+                      ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground">{label('languagesIntro')}</p>
+
+                <div className="flex flex-col gap-3 rounded-lg border border-border/60 bg-muted/20 p-3 sm:flex-row sm:flex-wrap sm:items-end">
+                  <div className="min-w-0 flex-[1.2] sm:min-w-[12rem]">
+                    <FormField label={label('language')}>
+                      <Select
+                        dir={locationFieldDir}
+                        value={languageAddCode || '__none__'}
+                        onValueChange={(v) => setLanguageAddCode(v === '__none__' ? '' : v)}
+                        disabled={ro('languages')}
+                      >
+                        <SelectTrigger dir={locationFieldDir} className="h-9 w-full">
+                          <SelectValue placeholder={label('languagePlaceholder')} />
+                        </SelectTrigger>
+                        <SelectContent dir={locationFieldDir}>
+                          <SelectItem value="__none__">{label('languageNone')}</SelectItem>
+                          {TRAINER_LANGUAGE_OPTIONS.filter((opt) => !values.languages.some((e) => e.code === opt.code)).map((opt) => (
+                            <SelectItem key={opt.code} value={opt.code}>
+                              {isRTL ? opt.label_ar : opt.label_en}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormField>
+                  </div>
+                  <div className="min-w-0 flex-1 sm:min-w-[12rem]">
+                    <FormField label={label('languageLevel')}>
+                      <Select dir={locationFieldDir} value={languageAddLevel} onValueChange={setLanguageAddLevel} disabled={ro('languages')}>
+                        <SelectTrigger dir={locationFieldDir} className="h-9 w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent dir={locationFieldDir}>
+                          {LANGUAGE_LEVEL_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {isRTL ? opt.label_ar : opt.label_en}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormField>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="h-9 gap-1 shrink-0 sm:min-w-[7.5rem]"
+                    onClick={addTrainerLanguage}
+                    disabled={!languageAddCode || ro('languages')}
+                  >
+                    <Plus className="h-4 w-4" />
+                    {label('add')}
+                  </Button>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground">{label('quickAdd')}</span>
+                  {TRAINER_LANGUAGE_OPTIONS.filter(
+                    (opt) => ['ar', 'en', 'ur'].includes(opt.code) && !values.languages.some((e) => e.code === opt.code),
+                  ).map((opt) => (
+                    <Button
+                      key={opt.code}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2.5 text-xs"
+                      disabled={ro('languages')}
+                      onClick={() =>
+                        setValues((f) => ({
+                          ...f,
+                          languages: [...f.languages, { code: opt.code, level: languageAddLevel }],
+                        }))
+                      }
+                    >
+                      {isRTL ? opt.label_ar : opt.label_en}
+                    </Button>
+                  ))}
+                </div>
+
+                <FormField label={label('languagesAdded')}>
+                  {values.languages.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">{label('languagesEmpty')}</p>
+                  ) : (
+                    <ul className="divide-y divide-border/60 rounded-lg border border-border/60">
+                      {values.languages.map((row, i) => {
+                        const levelVal = LANGUAGE_LEVEL_OPTIONS.some((x) => x.value === row.level) ? row.level : LANGUAGE_LEVEL_OPTIONS[4]!.value;
+                        return (
+                          <li key={`${row.code}-${i}`} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
+                            <span className="text-sm font-medium">{languageOptionLabel(row.code, isRTL)}</span>
+                            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                              <Select
+                                value={levelVal}
+                                disabled={ro('languages')}
+                                onValueChange={(v) =>
+                                  setValues((f) => ({
+                                    ...f,
+                                    languages: f.languages.map((e, idx) => (idx === i ? { ...e, level: v } : e)),
+                                  }))
+                                }
+                              >
+                                <SelectTrigger className="h-9 w-full min-w-[10rem] sm:w-[14rem]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {LANGUAGE_LEVEL_OPTIONS.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      {isRTL ? opt.label_ar : opt.label_en}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                                disabled={ro('languages')}
+                                onClick={() => setValues((f) => ({ ...f, languages: f.languages.filter((_, idx) => idx !== i) }))}
+                                aria-label={label('removeLanguage')}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </FormField>
+              </>
+            )}
           </CardContent>
         </Card>
       ) : null}
@@ -919,7 +1077,7 @@ function TrainerFormInner(
         <Card>
           <CardContent className="p-6 space-y-4">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{label('sectionServices')}</h3>
-            <FormField label={label('addService')}>
+            <FormField label={label('addService')} error={errors.services}>
               <div className="flex gap-2">
                 <Input
                   value={serviceInput}
@@ -942,7 +1100,14 @@ function TrainerFormInner(
                     {!ro('services') ? (
                       <X
                         className="w-3 h-3 cursor-pointer hover:text-destructive"
-                        onClick={() => setValues((f) => ({ ...f, services: f.services.filter((_, idx) => idx !== i) }))}
+                        onClick={() => {
+                          setErrors((e) => {
+                            const next = { ...e };
+                            delete next.services;
+                            return next;
+                          });
+                          setValues((f) => ({ ...f, services: f.services.filter((_, idx) => idx !== i) }));
+                        }}
                       />
                     ) : null}
                   </Badge>

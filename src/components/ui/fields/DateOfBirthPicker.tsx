@@ -19,6 +19,8 @@ const MONTHS_EN = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 const CLEAR_VALUE = '__clear__';
+/** Radix Select must stay controlled; `undefined` toggles uncontrolled → controlled. */
+const UNSELECTED = '__unselected__';
 
 export interface DateOfBirthPickerProps {
   value: string | null;
@@ -108,9 +110,9 @@ export function DateOfBirthPicker({
   const selects = (
     <div className="grid grid-cols-3 gap-2" dir={isRTL ? 'rtl' : 'ltr'}>
       <Select
-        value={year || undefined}
+        value={year || UNSELECTED}
         onValueChange={(v) => {
-          if (v === CLEAR_VALUE) {
+          if (v === UNSELECTED || v === CLEAR_VALUE) {
             setYear('');
             setMonth('');
             setDay('');
@@ -122,11 +124,12 @@ export function DateOfBirthPicker({
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         <SelectTrigger className={triggerClass}>
-          <SelectValue
-            placeholder={t('fields.dateOfBirth.yearPlaceholder')}
-          />
+          <SelectValue placeholder={t('fields.dateOfBirth.yearPlaceholder')} />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value={UNSELECTED} className="text-muted-foreground">
+            {t('fields.dateOfBirth.yearPlaceholder')}
+          </SelectItem>
           <SelectItem value={CLEAR_VALUE}>
             {isRTL ? 'مسح' : 'Clear'}
           </SelectItem>
@@ -139,9 +142,9 @@ export function DateOfBirthPicker({
       </Select>
 
       <Select
-        value={month || undefined}
+        value={month || UNSELECTED}
         onValueChange={(v) => {
-          if (v === CLEAR_VALUE) {
+          if (v === UNSELECTED || v === CLEAR_VALUE) {
             setMonth('');
             setDay('');
             return;
@@ -152,11 +155,12 @@ export function DateOfBirthPicker({
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         <SelectTrigger className={triggerClass}>
-          <SelectValue
-            placeholder={t('fields.dateOfBirth.monthPlaceholder')}
-          />
+          <SelectValue placeholder={t('fields.dateOfBirth.monthPlaceholder')} />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value={UNSELECTED} className="text-muted-foreground">
+            {t('fields.dateOfBirth.monthPlaceholder')}
+          </SelectItem>
           <SelectItem value={CLEAR_VALUE}>
             {isRTL ? 'مسح' : 'Clear'}
           </SelectItem>
@@ -172,17 +176,24 @@ export function DateOfBirthPicker({
       </Select>
 
       <Select
-        value={day || undefined}
-        onValueChange={(v) => setDay(v === CLEAR_VALUE ? '' : v)}
+        value={day || UNSELECTED}
+        onValueChange={(v) => {
+          if (v === UNSELECTED || v === CLEAR_VALUE) {
+            setDay('');
+            return;
+          }
+          setDay(v);
+        }}
         disabled={disabled || !month}
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         <SelectTrigger className={triggerClass}>
-          <SelectValue
-            placeholder={t('fields.dateOfBirth.dayPlaceholder')}
-          />
+          <SelectValue placeholder={t('fields.dateOfBirth.dayPlaceholder')} />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value={UNSELECTED} className="text-muted-foreground">
+            {t('fields.dateOfBirth.dayPlaceholder')}
+          </SelectItem>
           <SelectItem value={CLEAR_VALUE}>
             {isRTL ? 'مسح' : 'Clear'}
           </SelectItem>

@@ -65,7 +65,6 @@ function buildInitialFormValues(profile: ExtendedProfile, email: string): Partia
     nationality: (profile.nationality ?? "").trim(),
     bike_entries,
     years_of_experience: profile.riding_experience_years ?? 0,
-    languages: [],
     services: [],
     license_type: "",
     profit_ratio: 0,
@@ -85,7 +84,7 @@ function buildReadonlyFields(
   if ((profile.country ?? "").trim()) ro.push("country");
   if ((profile.city ?? "").trim()) ro.push("city");
   if (profile.date_of_birth) ro.push("date_of_birth");
-  if (profile.riding_experience_years != null) ro.push("years_of_experience");
+  // Do not lock years on apply: DB default is 0 so `!= null` hid the field for almost everyone.
   if ((profile.gender ?? "").trim()) ro.push("gender");
   if ((profile.nationality ?? "").trim()) ro.push("nationality");
   return ro;
@@ -127,8 +126,9 @@ function computeProfileUpdates(
   if (!initial.date_of_birth && v.date_of_birth) {
     updates.date_of_birth = v.date_of_birth;
   }
-  if (initial.riding_experience_years == null && v.years_of_experience != null) {
-    updates.riding_experience_years = v.years_of_experience;
+  const submittedYears = Number(v.years_of_experience);
+  if (Number.isFinite(submittedYears) && submittedYears !== (initial.riding_experience_years ?? null)) {
+    updates.riding_experience_years = submittedYears;
   }
 
   if (!(initial.gender ?? "").trim() && (v.gender ?? "").trim()) {
@@ -210,6 +210,8 @@ const ApplyTrainer: React.FC = () => {
       const firstBike = (v.bike_entries as BikeEntry[])[0];
       const bike_type = firstBike?.type_name?.trim() || null;
 
+      // Omit gender/nationality here: older DBs without 20260429100000 columns get PostgREST 400.
+      // Those values are saved on profiles (see computeProfileUpdates) before this insert.
       const insertRow = {
         user_id: user.id,
         bio: primaryBio,
@@ -217,7 +219,7 @@ const ApplyTrainer: React.FC = () => {
         bio_en: v.bio_en.trim() || null,
         name_ar,
         name_en,
-        services: v.services,
+        services: Array.isArray(v.services) ? v.services : [],
         photo_url: finalPhotoUrl,
         bike_type,
         years_of_experience: v.years_of_experience,
@@ -225,8 +227,6 @@ const ApplyTrainer: React.FC = () => {
         city: v.city.trim() || null,
         date_of_birth: v.date_of_birth || null,
         phone: v.phone.trim() || null,
-        gender: v.gender.trim() || null,
-        nationality: v.nationality.trim() || null,
       };
 
       const { error: insErr } = await supabase.from("trainer_applications").insert(insertRow);

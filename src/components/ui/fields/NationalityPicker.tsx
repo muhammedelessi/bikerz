@@ -58,28 +58,33 @@ export function NationalityPicker({
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       <div className="relative" ref={containerRef}>
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => setOpen((v) => !v)}
-          className={`flex h-10 w-full items-center rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
+        <div
+          className={`flex h-10 w-full items-stretch overflow-hidden rounded-md border bg-background text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring disabled:opacity-50 ${
             error ? 'border-destructive' : 'border-input'
-          }`}
+          } ${disabled ? 'pointer-events-none opacity-50' : ''}`}
         >
-          <span className={`flex-1 text-start truncate ${displayLabel ? 'text-foreground' : 'text-muted-foreground'}`}>
-            {displayLabel || t('fields.nationality.placeholder')}
-          </span>
-          {value && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => setOpen((v) => !v)}
+            className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-start ring-offset-background focus-visible:outline-none disabled:cursor-not-allowed"
+          >
+            <span className={`min-w-0 flex-1 truncate ${displayLabel ? 'text-foreground' : 'text-muted-foreground'}`}>
+              {displayLabel || t('fields.nationality.placeholder')}
+            </span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </button>
+          {value && !disabled ? (
             <button
               type="button"
-              className="me-1 text-muted-foreground hover:text-foreground"
-              onClick={(e) => { e.stopPropagation(); onChange(''); }}
+              className="shrink-0 border-s border-input px-2.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+              onClick={() => onChange('')}
+              aria-label={isRTL ? 'مسح' : 'Clear'}
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="h-3.5 w-3.5" />
             </button>
-          )}
-          <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-        </button>
+          ) : null}
+        </div>
 
         {open && (
           <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-lg overflow-hidden">
