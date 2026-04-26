@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Bike, Plus, Trash2, Loader2, ChevronRight, ChevronLeft, X, ImagePlus, Camera, Search, Zap } from "lucide-react";
+import { Bike, Plus, Trash2, Loader2, ChevronRight, ChevronLeft, X, ImagePlus, Camera, Search, Zap, Wind, Gauge, Mountain, Flame } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
