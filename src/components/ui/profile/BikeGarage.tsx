@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Bike, Plus, Trash2, Loader2, ChevronRight, ChevronLeft, X, ImagePlus, Camera } from "lucide-react";
+import { Bike, Plus, Trash2, Loader2, ChevronRight, ChevronLeft, X, ImagePlus, Camera, Search } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -95,6 +95,14 @@ const TYPE_EMOJI: Record<string, string> = {
   Adventure: "🏔️",
   Scrambler: "🪨",
   Naked: "⚡",
+};
+const TYPE_ICON: Record<string, React.ElementType> = {
+  Race: Zap,
+  Touring: Wind,
+  Cruiser: Gauge,
+  Adventure: Mountain,
+  Scrambler: Flame,
+  Naked: Bike,
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -544,9 +552,9 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
 
         {/* ══════════════ ADD BIKE PAGE ══════════════ */}
         {view === "add" && (
-          <div className="rounded-2xl border border-border/40 overflow-hidden bg-card">
+          <div className="rounded-2xl border border-border/40 overflow-hidden bg-card flex flex-col">
             {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-border/40 bg-muted/20">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-border/40 bg-muted/20 shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
@@ -555,249 +563,226 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
               >
                 <BackIcon className="w-4 h-4" />
               </Button>
-              <div>
-                <h3 className="text-sm font-semibold">{isRTL ? "اختر دراجتك" : "Choose Your Bike"}</h3>
-                <p className="text-xs text-muted-foreground">
-                  {isRTL ? "ابحث في الكتالوج أو أضف يدوياً" : "Search catalog or add manually"}
-                </p>
-              </div>
+              <h3 className="text-sm font-semibold flex-1">{isRTL ? "إضافة دراجة" : "Add a Bike"}</h3>
             </div>
 
-            <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
-              {/* Pending photos */}
-              {canUpload && (
-                <div className="rounded-xl border border-dashed border-border/50 bg-muted/10 p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-foreground">
-                      {isRTL ? "صور الدراجة (اختياري)" : "Bike Photos (optional)"}
-                    </p>
-                    <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                      {pendingPhotos.length} / 5
-                    </span>
-                  </div>
-                  <div className="flex gap-2 flex-wrap">
-                    {pendingPreviews.map((url, i) => (
-                      <div
-                        key={i}
-                        className="relative w-16 h-16 rounded-xl overflow-hidden border border-border/40 group"
-                      >
-                        <img src={url} alt="" className="w-full h-full object-cover" />
-                        <button
-                          onClick={() => removePendingPhoto(i)}
-                          className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-4 h-4 text-white" />
-                        </button>
-                      </div>
-                    ))}
-                    {pendingPhotos.length < 5 && (
-                      <button
-                        onClick={() => addPhotoInputRef.current?.click()}
-                        className="w-16 h-16 rounded-xl border-2 border-dashed border-border/50 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-colors"
-                      >
-                        <ImagePlus className="w-5 h-5 text-muted-foreground" />
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    ref={addPhotoInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => onPickPendingPhotos(e.target.files)}
-                  />
-                </div>
-              )}
-
-              {/* Search input */}
-              <div className="relative">
-                <Bike className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={isRTL ? "ابحث: Honda CBR..." : "Search: Honda CBR..."}
-                  className="ps-10 pe-10 h-10 rounded-xl bg-muted/30 border-border/50 focus:bg-background"
-                />
-                {search && (
-                  <button className="absolute end-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
-                    <X className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
-                  </button>
+            {/* Tab bar */}
+            <div className="grid grid-cols-2 border-b border-border/30 shrink-0">
+              <button
+                onClick={() => setShowManual(false)}
+                className={cn(
+                  "flex items-center justify-center gap-2 py-2.5 text-xs font-semibold border-b-2 transition-all",
+                  !showManual
+                    ? "border-primary text-primary bg-primary/5"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/20",
                 )}
-              </div>
+              >
+                <Search className="w-3.5 h-3.5" />
+                {isRTL ? "بحث في الكتالوج" : "Search Catalog"}
+              </button>
+              <button
+                onClick={() => setShowManual(true)}
+                className={cn(
+                  "flex items-center justify-center gap-2 py-2.5 text-xs font-semibold border-b-2 transition-all",
+                  showManual
+                    ? "border-primary text-primary bg-primary/5"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/20",
+                )}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {isRTL ? "إضافة يدوية" : "Add Manually"}
+              </button>
+            </div>
 
-              {/* Type filter pills */}
-              <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-none">
-                {[
-                  { id: "all", label_ar: "الكل", label_en: "All" },
-                  ...catalogTypes.map((t) => ({ id: t.id, label_ar: t.name_ar, label_en: t.name_en })),
-                ].map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => setActiveType(f.id)}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 border transition-all",
-                      activeType === f.id
-                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                        : "bg-muted/30 text-muted-foreground border-border/40 hover:border-primary/40 hover:text-foreground",
-                    )}
-                  >
-                    {isRTL ? f.label_ar : f.label_en}
-                  </button>
-                ))}
-              </div>
-
-              {/* Results count */}
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-px bg-border/30" />
-                <span className="text-[10px] text-muted-foreground shrink-0 bg-muted/50 px-2.5 py-0.5 rounded-full">
-                  {searchResults.length} {isRTL ? "نتيجة" : "results"}
-                </span>
-                <div className="flex-1 h-px bg-border/30" />
-              </div>
-
-              {/* Results list */}
-              {searchResults.length > 0 ? (
-                <div className="space-y-1">
-                  {searchResults.map((item) => (
-                    <div
-                      key={item.model_id}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border/20 hover:border-primary/30 hover:bg-primary/5 transition-all cursor-default group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
-                        <Bike className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm text-foreground" dir="ltr">
-                          {item.brand} {item.model_name}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {isRTL ? item.type_name_ar : item.type_name}
-                          {" · "}
-                          {isRTL ? item.subtype_name_ar : item.subtype_name}
-                        </p>
-                      </div>
+            {/* Scrollable content */}
+            <div className="overflow-y-auto max-h-[460px] p-4 space-y-4">
+              {/* ── CATALOG TAB ── */}
+              {!showManual && (
+                <>
+                  {/* Type filter grid */}
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
+                    {[
+                      { id: "all", label_ar: "الكل", label_en: "All", Icon: Bike },
+                      ...catalogTypes.map((t) => ({
+                        id: t.id,
+                        label_ar: t.name_ar,
+                        label_en: t.name_en,
+                        Icon: TYPE_ICON[t.name_en] ?? Bike,
+                      })),
+                    ].map(({ id, label_ar, label_en, Icon }) => (
                       <button
-                        onClick={() => onQuickAdd(item)}
-                        disabled={savingNewBike}
-                        className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-40"
-                      >
-                        {savingNewBike ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Plus className="w-3.5 h-3.5" />
+                        key={id}
+                        onClick={() => setActiveType(id)}
+                        className={cn(
+                          "flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 transition-all",
+                          activeType === id
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border/30 bg-muted/20 text-muted-foreground hover:border-primary/40 hover:bg-muted/40",
                         )}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span className="text-[9px] font-semibold truncate w-full text-center leading-tight">
+                          {isRTL ? label_ar : label_en}
+                        </span>
                       </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6 text-sm text-muted-foreground">
-                  {search
-                    ? isRTL
-                      ? `لا نتائج لـ "${search}"`
-                      : `No results for "${search}"`
-                    : isRTL
-                      ? "لا توجد دراجات"
-                      : "No bikes found"}
-                </div>
-              )}
-
-              {/* Manual entry toggle */}
-              {!showManual ? (
-                <div className="flex items-center gap-3 pt-1">
-                  <div className="flex-1 h-px bg-border/30" />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 shrink-0 rounded-full text-xs border-border/50 hover:border-primary/50"
-                    onClick={() => setShowManual(true)}
-                  >
-                    <Plus className="w-3 h-3" />
-                    {isRTL ? "إضافة يدوية" : "Add manually"}
-                  </Button>
-                  <div className="flex-1 h-px bg-border/30" />
-                </div>
-              ) : (
-                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-primary">
-                      {isRTL ? "إضافة دراجة غير موجودة في الكتالوج" : "Add unlisted bike"}
-                    </p>
-                    <button
-                      onClick={() => setShowManual(false)}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    ))}
                   </div>
 
-                  {/* Type grid */}
-                  <div>
-                    <p className="text-[11px] font-medium text-muted-foreground mb-1.5">
-                      {isRTL ? "نوع الدراجة" : "Bike Type"}
-                    </p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {/* Search input */}
+                  <div className="relative">
+                    <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    <Input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder={isRTL ? "ابحث: Honda, BMW, R1250..." : "Search: Honda, BMW, R1250..."}
+                      className="ps-10 pe-10 h-10 rounded-xl bg-muted/30 border-border/40 focus:bg-background"
+                      autoFocus
+                    />
+                    {search && (
+                      <button className="absolute end-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
+                        <X className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Results */}
+                  {searchResults.length > 0 ? (
+                    <div className="space-y-1">
+                      <p className="text-[11px] text-muted-foreground ps-1 pb-0.5">
+                        {searchResults.length} {isRTL ? "نتيجة" : "results"}
+                      </p>
+                      {searchResults.map((item) => {
+                        const ItemIcon = TYPE_ICON[item.type_name] ?? Bike;
+                        return (
+                          <div
+                            key={item.model_id}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border/20 hover:border-primary/30 hover:bg-primary/5 transition-all group"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
+                              <ItemIcon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm text-foreground truncate" dir="ltr">
+                                {item.brand} {item.model_name}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground">
+                                {isRTL ? item.type_name_ar : item.type_name}
+                                <span className="mx-1 opacity-40">·</span>
+                                {isRTL ? item.subtype_name_ar : item.subtype_name}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => onQuickAdd(item)}
+                              disabled={savingNewBike}
+                              className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-40"
+                            >
+                              {savingNewBike ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Plus className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 gap-2">
+                      <div className="w-12 h-12 rounded-full bg-muted/40 flex items-center justify-center">
+                        <Search className="w-5 h-5 text-muted-foreground/50" />
+                      </div>
+                      <p className="text-sm text-muted-foreground text-center">
+                        {search
+                          ? isRTL
+                            ? `لا نتائج لـ "${search}"`
+                            : `No results for "${search}"`
+                          : isRTL
+                            ? "اختر نوعاً أو ابحث بالاسم"
+                            : "Select a type or search by name"}
+                      </p>
+                      {search && (
+                        <button
+                          className="text-xs text-primary underline underline-offset-2"
+                          onClick={() => setShowManual(true)}
+                        >
+                          {isRTL ? "إضافة يدوياً بدلاً من ذلك" : "Add manually instead"}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* ── MANUAL TAB ── */}
+              {showManual && (
+                <div className="space-y-4">
+                  {/* Type selection */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-foreground">{isRTL ? "نوع الدراجة *" : "Bike Type *"}</p>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                       {[
                         ...catalogTypes.map((t) => ({
                           id: t.id,
                           nameAr: t.name_ar,
                           nameEn: t.name_en,
-                          emoji: TYPE_EMOJI[t.name_en] ?? "🏍️",
+                          Icon: TYPE_ICON[t.name_en] ?? Bike,
                         })),
-                        { id: "custom", nameAr: "أخرى", nameEn: "Other", emoji: "❓" },
-                      ].map((t) => (
+                        { id: "custom", nameAr: "أخرى", nameEn: "Other", Icon: Plus },
+                      ].map(({ id, nameAr, nameEn, Icon }) => (
                         <button
-                          key={t.id}
-                          onClick={() => setManualType(t.id)}
+                          key={id}
+                          onClick={() => setManualType(id)}
                           className={cn(
-                            "flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-xs font-semibold transition-all text-start",
-                            manualType === t.id
+                            "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+                            manualType === id
                               ? "border-primary bg-primary/10 text-primary"
-                              : "border-border/30 bg-background/50 text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                              : "border-border/30 bg-muted/20 text-muted-foreground hover:border-primary/40 hover:bg-muted/40",
                           )}
                         >
-                          <span className="text-base">{t.emoji}</span>
-                          {isRTL ? t.nameAr : t.nameEn}
+                          <Icon className="w-5 h-5" />
+                          <span className="text-[11px] font-semibold">{isRTL ? nameAr : nameEn}</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
                   {manualType === "custom" && (
-                    <Input
-                      value={manualTypeName}
-                      onChange={(e) => setManualTypeName(e.target.value)}
-                      placeholder={isRTL ? "اسم النوع..." : "Type name..."}
-                      className="h-9 rounded-xl"
-                    />
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-semibold text-foreground">{isRTL ? "اسم النوع *" : "Type Name *"}</p>
+                      <Input
+                        value={manualTypeName}
+                        onChange={(e) => setManualTypeName(e.target.value)}
+                        placeholder={isRTL ? "مثال: سكوتر..." : "e.g. Scooter..."}
+                        className="h-10 rounded-xl"
+                      />
+                    </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-medium text-muted-foreground">{isRTL ? "الماركة" : "Brand"}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-semibold text-foreground">{isRTL ? "الماركة *" : "Brand *"}</p>
                       <Input
                         value={manualBrand}
                         onChange={(e) => setManualBrand(e.target.value)}
                         placeholder="Honda, BMW..."
-                        className="h-9 rounded-xl"
+                        className="h-10 rounded-xl"
                         dir="ltr"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-medium text-muted-foreground">{isRTL ? "الموديل" : "Model"}</p>
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-semibold text-foreground">{isRTL ? "الموديل *" : "Model *"}</p>
                       <Input
                         value={manualModel}
                         onChange={(e) => setManualModel(e.target.value)}
-                        placeholder="CBR 600, R1200..."
-                        className="h-9 rounded-xl"
+                        placeholder="CBR 600, R1250..."
+                        className="h-10 rounded-xl"
                         dir="ltr"
                       />
                     </div>
                   </div>
 
                   <Button
-                    className="w-full gap-2 rounded-xl"
+                    className="w-full h-10 gap-2 rounded-xl"
                     onClick={onSaveManual}
                     disabled={!manualBrand.trim() || !manualModel.trim() || !manualType || savingNewBike}
                   >
@@ -807,6 +792,53 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                 </div>
               )}
             </div>
+
+            {/* Photos — sticky at bottom, shared between both tabs */}
+            {canUpload && (
+              <div className="border-t border-border/30 px-4 py-3 bg-muted/10 shrink-0 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-muted-foreground" />
+                    {isRTL ? "صور الدراجة (اختياري)" : "Bike Photos (optional)"}
+                  </p>
+                  <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                    {pendingPhotos.length} / 5
+                  </span>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {pendingPreviews.map((url, i) => (
+                    <div
+                      key={i}
+                      className="relative w-12 h-12 rounded-lg overflow-hidden border border-border/40 group"
+                    >
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => removePendingPhoto(i)}
+                        className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3.5 h-3.5 text-white" />
+                      </button>
+                    </div>
+                  ))}
+                  {pendingPhotos.length < 5 && (
+                    <button
+                      onClick={() => addPhotoInputRef.current?.click()}
+                      className="w-12 h-12 rounded-lg border-2 border-dashed border-border/40 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                    >
+                      <ImagePlus className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={addPhotoInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => onPickPendingPhotos(e.target.files)}
+                />
+              </div>
+            )}
           </div>
         )}
 
