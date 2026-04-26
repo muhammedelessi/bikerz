@@ -2803,61 +2803,91 @@ export type Database = {
       }
       trainer_applications: {
         Row: {
+          bike_type: string | null
+          bio: string
           bio_ar: string | null
           bio_en: string | null
           city: string | null
           country: string | null
           created_at: string | null
+          date_of_birth: string | null
           email: string | null
           experience_years: number
           full_name: string | null
+          gender: string | null
           id: string
+          name_ar: string | null
+          name_en: string | null
+          nationality: string | null
           phone: string | null
+          photo_url: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          services: string[]
           social_link: string | null
           specialties: string[] | null
           status: string
           updated_at: string | null
           user_id: string
+          years_of_experience: number | null
         }
         Insert: {
+          bike_type?: string | null
+          bio?: string
           bio_ar?: string | null
           bio_en?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           email?: string | null
           experience_years?: number
           full_name?: string | null
+          gender?: string | null
           id?: string
+          name_ar?: string | null
+          name_en?: string | null
+          nationality?: string | null
           phone?: string | null
+          photo_url?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          services?: string[]
           social_link?: string | null
           specialties?: string[] | null
           status?: string
           updated_at?: string | null
           user_id: string
+          years_of_experience?: number | null
         }
         Update: {
+          bike_type?: string | null
+          bio?: string
           bio_ar?: string | null
           bio_en?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           email?: string | null
           experience_years?: number
           full_name?: string | null
+          gender?: string | null
           id?: string
+          name_ar?: string | null
+          name_en?: string | null
+          nationality?: string | null
           phone?: string | null
+          photo_url?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          services?: string[]
           social_link?: string | null
           specialties?: string[] | null
           status?: string
           updated_at?: string | null
           user_id?: string
+          years_of_experience?: number | null
         }
         Relationships: [
           {
