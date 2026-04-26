@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import SEOHead from '@/components/common/SEOHead';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,34 +10,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { fetchEnrollmentsWithLiveProgress } from '@/lib/enrollmentProgress';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import LanguageToggle from '@/components/common/LanguageToggle';
-import LogoutConfirmDialog from '@/components/common/LogoutConfirmDialog';
 import ProfileCompletionReminder from '@/components/ui/profile/ProfileCompletionReminder';
 import GamificationPanel from '@/components/gamification/GamificationPanel';
-
-import {
-  BookOpen,
-  Play,
-  Clock,
-  Trophy,
-  ChevronRight,
-  ChevronLeft,
-  Home,
-  GraduationCap,
-  Settings,
-  ShieldCheck,
-  Ticket,
-  LogOut,
-  Menu,
-  X,
-  Users,
-  User,
-  Loader2,
-  CheckCircle2,
-} from 'lucide-react';
-import logoDark from '@/assets/logo-dark.webp';
-import logoLight from '@/assets/logo-light.png';
-import { useTheme } from '@/components/ThemeProvider';
+import { BookOpen, Play, Clock, Trophy, CheckCircle2 } from 'lucide-react';
 
 interface EnrolledCourse {
   id: string;
@@ -65,16 +40,10 @@ interface LearningStats {
   overallProgress: number;
 }
 
-const Dashboard: React.FC = () => {
+const DashboardHome: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { user, profile, signOut, isAdmin } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { theme } = useTheme();
-  const themeLogo = theme === 'light' ? logoDark : logoLight;
-  const Chevron = isRTL ? ChevronLeft : ChevronRight;
+  const { user } = useAuth();
 
   // Fetch enrolled courses with live progress
   const { data: enrolledCourses = [], isLoading: coursesLoading } = useQuery({
@@ -219,152 +188,16 @@ const Dashboard: React.FC = () => {
     return `${minutes}m`;
   };
 
-  // Lock body scroll when sidebar is open on mobile
-  useEffect(() => {
-    if (sidebarOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [sidebarOpen]);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
-
-  const path = location.pathname;
-  const navItems = [
-    { icon: Home, label: t('nav.home'), to: '/', active: path === '/' },
-    { icon: BookOpen, label: t('nav.courses'), to: '/courses', active: path.startsWith('/courses') },
-    { icon: GraduationCap, label: t('dashboard.myCourses'), to: '/dashboard', active: path.startsWith('/dashboard') },
-    { icon: User, label: t('profile.title'), to: '/profile', active: path.startsWith('/profile') },
-    { icon: Ticket, label: t('nav.myBookings'), to: '/profile/bookings', active: path.startsWith('/profile/bookings') },
-    { icon: ShieldCheck, label: isRTL ? 'الإعدادات والأمان' : 'Settings & Security', to: '/settings', active: path.startsWith('/settings') },
-    ...(isAdmin ? [{ icon: Settings, label: t('nav.adminPanel'), to: '/admin', active: path.startsWith('/admin') }] : []),
-  ];
-
   const isLoading = coursesLoading || statsLoading;
 
+  if (!user) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-background flex">
+    <>
       <SEOHead title="My Dashboard" description="Access your BIKERZ Academy dashboard. Track your course progress, manage enrollments, and continue learning." noindex />
-      {/* Mobile Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        dir={isRTL ? 'rtl' : 'ltr'}
-        className={`fixed inset-y-0 z-50 w-[280px] max-w-[85vw] bg-card border-e border-border transform transition-transform duration-300 ease-out lg:translate-x-0 ${
-          sidebarOpen 
-            ? 'translate-x-0' 
-            : isRTL 
-              ? 'translate-x-full' 
-              : '-translate-x-full'
-        } ${isRTL ? 'right-0' : 'left-0'}`}
-      >
-        <div className="flex flex-col h-full safe-area-inset">
-          {/* Logo */}
-          <div className="p-4 sm:p-6 border-b border-border flex items-center justify-between">
-            <Link to="/" className="flex items-center">
-                <img
-                  src={themeLogo}
-                  alt="BIKERZ"
-                  className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
-                  loading={sidebarOpen ? 'eager' : 'lazy'}
-                  decoding="async"
-                />
-            </Link>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden p-2 rounded-lg hover:bg-muted/50 transition-colors touch-target"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Nav Items */}
-          <nav className="flex-1 min-h-0 p-3 sm:p-4 space-y-1 sm:space-y-2 overflow-y-auto overscroll-y-contain">
-            {navItems.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target ${
-                  item.active
-                    ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground active:bg-muted/70'
-                }`}
-              >
-                <item.icon className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium flex-1 min-w-0">{item.label}</span>
-              </Link>
-            ))}
-          </nav>
-
-          {/* User Section */}
-          <div className="p-3 sm:p-4 border-t border-border">
-            <div className="flex w-full items-center justify-start gap-3 mb-4 text-start">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-secondary/70 flex items-center justify-center flex-shrink-0">
-                <span className="text-secondary-foreground font-bold">
-                  {profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground truncate">
-                  {profile?.full_name || t('common.user')}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-              </div>
-            </div>
-            <LogoutConfirmDialog onConfirm={handleSignOut}>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start text-muted-foreground hover:text-destructive touch-target"
-              >
-                <LogOut className="w-4 h-4 me-2" />
-                {t('common.logout')}
-              </Button>
-            </LogoutConfirmDialog>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 lg:ms-[280px] min-w-0">
-        {/* Top Bar */}
-        <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border safe-area-top">
-          <div className="flex items-center justify-between p-3 sm:p-4">
-            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-2 rounded-lg hover:bg-muted/50 transition-colors touch-target flex-shrink-0"
-              >
-                <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
-              </button>
-              <div className="min-w-0">
-                <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">
-                  {t('dashboard.welcome')}, {profile?.full_name?.split(' ')[0] || t('common.user')}!
-                </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
-                  {t('dashboard.keepUpGreatWork')}
-                </p>
-              </div>
-            </div>
-            <LanguageToggle />
-          </div>
-        </header>
-
-        {/* Dashboard Content */}
-        <div className="p-6 space-y-8 safe-area-bottom">
+      <div className="p-6 space-y-8 safe-area-bottom">
           {/* Profile Completion Reminder */}
           <ProfileCompletionReminder variant="card" />
 
@@ -585,10 +418,9 @@ const Dashboard: React.FC = () => {
               </Link>
             </div>
           </section>
-        </div>
-      </main>
-    </div>
+      </div>
+    </>
   );
 };
 
-export default Dashboard;
+export default DashboardHome;

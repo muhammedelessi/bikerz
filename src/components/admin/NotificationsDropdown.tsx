@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,6 +17,7 @@ import {
 import { Bell, Check, CheckCheck, Info, AlertTriangle, AlertCircle, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface Notification {
   id: string;
@@ -33,6 +35,7 @@ const NotificationsDropdown: React.FC = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['admin-notifications', user?.id],
@@ -172,11 +175,32 @@ const NotificationsDropdown: React.FC = () => {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`relative p-3 mb-1 rounded-md border-l-4 transition-colors ${getTypeStyles(notification.type)} ${
-                    notification.is_read 
-                      ? 'bg-muted/30' 
-                      : 'bg-muted/60 hover:bg-muted/80'
-                  }`}
+                  role={notification.action_url ? 'button' : undefined}
+                  tabIndex={notification.action_url ? 0 : undefined}
+                  onClick={() => {
+                    const raw = notification.action_url?.trim();
+                    if (!raw) return;
+                    if (!notification.is_read) {
+                      markAsReadMutation.mutate(notification.id);
+                    }
+                    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+                      window.location.assign(raw);
+                    } else {
+                      navigate(raw);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (!notification.action_url) return;
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      (e.currentTarget as HTMLDivElement).click();
+                    }
+                  }}
+                  className={cn(
+                    `relative p-3 mb-1 rounded-md border-l-4 transition-colors ${getTypeStyles(notification.type)}`,
+                    notification.is_read ? 'bg-muted/30' : 'bg-muted/60 hover:bg-muted/80',
+                    notification.action_url && 'cursor-pointer',
+                  )}
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 mt-0.5">

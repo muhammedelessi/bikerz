@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { clampTrainingVatPercent } from "@/lib/trainingPlatformMarkup";
+import { fetchCountryCodeFromPublicGeoApis, normalizeCountryCode } from "@/lib/publicGeoCountry";
 
 export type CurrencyCode =
   | "SAR"
@@ -356,39 +357,76 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // ── Auto-detect country on mount ──
   useEffect(() => {
-    let savedCurrency: string | null = null;
-    try {
-      savedCurrency = sessionStorage.getItem(CURRENCY_CACHE_KEY);
-    } catch {
-      savedCurrency = null;
-    }
-    const hasSavedCurrency = !!(savedCurrency && savedCurrency in CURRENCY_META);
-    if (hasSavedCurrency) setIsDetecting(false);
+    const applyGeoFallback = () => {
+      try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone?.toUpperCase() || "";
+        const isPalestineTz = tz.includes("GAZA") || tz.includes("HEBRON") || tz.includes("JERUSALEM");
+
+        if (isPalestineTz) {
+          setDetectedCountry("PS");
+          setCurrencyCodeState("ILS");
+          try {
+            sessionStorage.setItem(COUNTRY_CACHE_KEY, "PS");
+            sessionStorage.setItem(CURRENCY_CACHE_KEY, "ILS");
+          } catch {
+            // Ignore restricted-storage environments on iOS
+          }
+          return;
+        }
+      } catch {
+        // Ignore timezone detection failures
+      }
+
+      setDetectedCountry(null);
+      setCurrencyCodeState("SAR");
+    };
 
     const detectLocation = async () => {
+      let cachedCountry: string | null = null;
+      try {
+        cachedCountry = sessionStorage.getItem(COUNTRY_CACHE_KEY);
+      } catch {
+        cachedCountry = null;
+      }
+      const normalizedCache = normalizeCountryCode(cachedCountry);
+      if (normalizedCache) {
+        setDetectedCountry(normalizedCache);
+        const detected = COUNTRY_TO_CURRENCY[normalizedCache];
+        if (detected) {
+          setCurrencyCodeState((prev) => (prev === detected ? prev : detected));
+          try {
+            sessionStorage.setItem(CURRENCY_CACHE_KEY, detected);
+          } catch {
+            // Ignore restricted-storage environments on iOS
+          }
+        } else {
+          setCurrencyCodeState((prev) => (prev === "USD" ? prev : "USD"));
+          try {
+            sessionStorage.setItem(CURRENCY_CACHE_KEY, "USD");
+          } catch {
+            // Ignore restricted-storage environments on iOS
+          }
+        }
+        setIsDetecting(false);
+        return;
+      }
+
       try {
         const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-        const timeout = setTimeout(() => controller?.abort(), 5000);
-        const res = await fetch("https://ipapi.co/json/", controller ? { signal: controller.signal } : undefined);
+        const timeout = setTimeout(() => controller?.abort(), 8000);
+        const country = await fetchCountryCodeFromPublicGeoApis(controller?.signal);
         clearTimeout(timeout);
 
-        if (res.ok) {
-          const data = await res.json();
-          const country = data?.country_code?.toUpperCase() || null;
+        if (country) {
           setDetectedCountry(country);
-
-          if (country) {
-            try {
-              sessionStorage.setItem(COUNTRY_CACHE_KEY, country);
-            } catch {
-              // Ignore restricted-storage environments on iOS
-            }
+          try {
+            sessionStorage.setItem(COUNTRY_CACHE_KEY, country);
+          } catch {
+            // Ignore restricted-storage environments on iOS
           }
 
-          const detected = country ? COUNTRY_TO_CURRENCY[country] : undefined;
+          const detected = COUNTRY_TO_CURRENCY[country];
           if (detected) {
-            // Always sync currency with the latest detected country.
-            // This avoids stale sessionStorage values when a user changes location/country.
             setCurrencyCodeState((prev) => (prev === detected ? prev : detected));
             try {
               sessionStorage.setItem(CURRENCY_CACHE_KEY, detected);
@@ -396,7 +434,6 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               // Ignore restricted-storage environments on iOS
             }
           } else {
-            // Non-Arab country → USD
             setCurrencyCodeState((prev) => (prev === "USD" ? prev : "USD"));
             try {
               sessionStorage.setItem(CURRENCY_CACHE_KEY, "USD");
@@ -404,32 +441,11 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               // Ignore restricted-storage environments on iOS
             }
           }
+        } else {
+          applyGeoFallback();
         }
       } catch {
-        // If geolocation fetch fails, use a small timezone-based fallback.
-        // This helps cases where users are in Palestine but the IP lookup is blocked.
-        try {
-          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone?.toUpperCase() || "";
-          const isPalestineTz = tz.includes("GAZA") || tz.includes("HEBRON") || tz.includes("JERUSALEM");
-
-          if (isPalestineTz) {
-            setDetectedCountry("PS");
-            setCurrencyCodeState("ILS");
-            try {
-              sessionStorage.setItem(COUNTRY_CACHE_KEY, "PS");
-              sessionStorage.setItem(CURRENCY_CACHE_KEY, "ILS");
-            } catch {
-              // Ignore restricted-storage environments on iOS
-            }
-            return;
-          }
-        } catch {
-          // Ignore timezone detection failures
-        }
-
-        // Default SAR
-        setDetectedCountry(null);
-        setCurrencyCodeState("SAR");
+        applyGeoFallback();
       } finally {
         setIsDetecting(false);
       }

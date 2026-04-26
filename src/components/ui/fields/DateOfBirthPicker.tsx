@@ -9,7 +9,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { FormField } from '@/components/ui/form-field';
-import { Calendar, Hash, LayoutList } from 'lucide-react';
 
 const MONTHS_AR = [
   'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
@@ -104,7 +103,7 @@ export function DateOfBirthPicker({
     }
   }, [day, month, onChange, year]);
 
-  const triggerClass = 'text-start [&>span]:flex [&>span]:items-center [&>span]:gap-2';
+  const triggerClass = 'text-start';
 
   const selects = (
     <div className="grid grid-cols-3 gap-2" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -123,7 +122,6 @@ export function DateOfBirthPicker({
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         <SelectTrigger className={triggerClass}>
-          <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           <SelectValue
             placeholder={t('fields.dateOfBirth.yearPlaceholder')}
           />
@@ -154,7 +152,6 @@ export function DateOfBirthPicker({
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         <SelectTrigger className={triggerClass}>
-          <LayoutList className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           <SelectValue
             placeholder={t('fields.dateOfBirth.monthPlaceholder')}
           />
@@ -181,7 +178,6 @@ export function DateOfBirthPicker({
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         <SelectTrigger className={triggerClass}>
-          <Hash className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           <SelectValue
             placeholder={t('fields.dateOfBirth.dayPlaceholder')}
           />

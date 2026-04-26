@@ -10,6 +10,7 @@ import { HelmetProvider } from "react-helmet-async";
 import ScrollToTop from "@/components/common/ScrollToTop";
 import ProductionThirdPartyTrackers from "@/components/common/ProductionThirdPartyTrackers";
 import WhatsAppFloatingButton from "@/components/common/WhatsAppFloatingButton";
+import RequireInstructor from "@/components/auth/RequireInstructor";
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
 import { shouldSkipMarketingAnalytics } from "@/lib/shouldSkipMarketingAnalytics";
 import React, { Suspense, lazy, useEffect, useState } from "react";
@@ -45,10 +46,12 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const ContactUs = lazy(() => import("./pages/ContactUs"));
 const CourseLearn = lazy(() => import("./pages/CourseLearn"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
+const DashboardLayout = lazy(() => import("./pages/DashboardLayout"));
+const DashboardHome = lazy(() => import("./pages/DashboardHome"));
 const ProfileLayout = lazy(() => import("./pages/ProfileLayout"));
 const ProfileHome = lazy(() => import("./pages/ProfileHome"));
 const AccountSettingsPage = lazy(() => import("./pages/AccountSettingsPage"));
+const ApplyTrainer = lazy(() => import("./pages/ApplyTrainer"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const BookingPaymentComplete = lazy(() => import("./pages/BookingPaymentComplete"));
@@ -102,6 +105,7 @@ const AdminQuestionEdit = lazy(() => import("./pages/admin/AdminQuestionEdit"));
 const AdminSurveyStats = lazy(() => import("./pages/admin/AdminSurveyStats"));
 const AdminStudentSurveyDetail = lazy(() => import("./pages/admin/AdminStudentSurveyDetail"));
 const DataFeed = lazy(() => import("./pages/DataFeed"));
+const TrainerDashboard = lazy(() => import("./pages/TrainerDashboard"));
 
 const queryClient = new QueryClient();
 
@@ -215,15 +219,29 @@ const AppRoutes = () => (
         <Route path="/ambassador" element={<Ambassador />} />
 
         {/* Protected Routes */}
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+          <Route index element={<DashboardHome />} />
+          <Route path="apply-trainer" element={<ApplyTrainer />} />
+        </Route>
         <Route path="/profile" element={<ProtectedRoute><ProfileLayout /></ProtectedRoute>}>
           <Route index element={<ProfileHome />} />
           <Route path="bookings" element={<MyBookings />} />
+          <Route path="apply-trainer" element={<Navigate to="/dashboard/apply-trainer" replace />} />
           <Route path="surveys" element={<SurveyListPage />} />
           <Route path="surveys/:surveyId/play" element={<SurveyPlayPage />} />
           <Route path="surveys/:surveyId/results" element={<SurveyResultsPage />} />
         </Route>
         <Route path="/settings" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
+        <Route
+          path="/trainer/dashboard"
+          element={
+            <ProtectedRoute>
+              <RequireInstructor>
+                <TrainerDashboard />
+              </RequireInstructor>
+            </ProtectedRoute>
+          }
+        />
 
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminRoute><AdminHome /></AdminRoute>} />
@@ -290,7 +308,12 @@ const App = () => (
             <TooltipProvider>
               <Toaster />
               <Sonner />
-              <BrowserRouter>
+              <BrowserRouter
+                future={{
+                  v7_startTransition: true,
+                  v7_relativeSplatPath: true,
+                }}
+              >
                 <ScrollToTop />
                 <WhatsAppFloatingButtonGate />
                 <DeferredSocialProof />

@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
+import { COUNTRIES, OTHER_OPTION, getCityDisplayLabel } from '@/data/countryCityData';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
-import { Globe, MapPin, ChevronDown, Search } from 'lucide-react';
+import { ChevronDown, Search } from 'lucide-react';
 
 const OTHER_VALUE = '__other__';
 
@@ -132,7 +132,6 @@ export function CountryCityPicker({
               countryError ? 'border-destructive' : 'border-input'
             }`}
           >
-            <Globe className="w-4 h-4 text-muted-foreground me-2 flex-shrink-0" />
             <span
               className={`flex-1 text-start truncate ${
                 selectedCountryEntry || isOtherCountry
@@ -223,7 +222,6 @@ export function CountryCityPicker({
                 cityError ? 'border-destructive' : 'border-input'
               }`}
             >
-              <MapPin className="w-4 h-4 text-muted-foreground me-2 flex-shrink-0" />
               <span
                 className={`flex-1 text-start truncate ${
                   city && !isOtherCity
@@ -231,7 +229,9 @@ export function CountryCityPicker({
                     : 'text-muted-foreground'
                 }`}
               >
-                {city && !isOtherCity ? city : t('fields.city.placeholder')}
+                {city && !isOtherCity
+                  ? getCityDisplayLabel(country, city, isRTL) || city
+                  : t('fields.city.placeholder')}
               </span>
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </button>
@@ -239,9 +239,8 @@ export function CountryCityPicker({
               <div className="absolute z-50 mt-1 w-full min-w-[200px] rounded-md border border-border bg-popover shadow-lg max-h-60 overflow-hidden">
                 <div className="p-2 border-b border-border">
                   <div className="relative">
-                    <Search className="absolute start-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
-                      className="w-full ps-8 pe-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+                      className="w-full px-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
                       placeholder={isRTL ? 'بحث...' : 'Search...'}
                       value={citySearch}
                       onChange={(e) => setCitySearch(e.target.value)}
@@ -255,9 +254,7 @@ export function CountryCityPicker({
                       key={c.en}
                       type="button"
                       className={`w-full text-start px-3 py-2 text-sm hover:bg-accent transition-colors ${
-                        city === (isRTL ? c.ar : c.en)
-                          ? 'bg-accent text-accent-foreground'
-                          : ''
+                        city === c.en || city === c.ar ? 'bg-accent text-accent-foreground' : ''
                       }`}
                       onClick={() =>
                         handleCitySelect(isRTL ? c.ar : c.en)
@@ -278,22 +275,19 @@ export function CountryCityPicker({
             )}
           </div>
         ) : (
-          <div className="relative">
-            <MapPin className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            <Input
-              value={isOtherCountry ? customCity : city}
-              onChange={(e) => {
-                if (isOtherCountry) {
-                  onCustomCityChange?.(e.target.value);
-                } else {
-                  onCityChange(e.target.value);
-                }
-              }}
-              placeholder={t('fields.city.placeholder')}
-              className={`ps-11 ${cityError ? 'border-destructive' : ''}`}
-              disabled={disabled}
-            />
-          </div>
+          <Input
+            value={isOtherCountry ? customCity : city}
+            onChange={(e) => {
+              if (isOtherCountry) {
+                onCustomCityChange?.(e.target.value);
+              } else {
+                onCityChange(e.target.value);
+              }
+            }}
+            placeholder={t('fields.city.placeholder')}
+            className={cityError ? 'border-destructive' : ''}
+            disabled={disabled}
+          />
         )}
         {!isOtherCountry && isOtherCity && (
           <Input

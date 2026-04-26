@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -26,14 +27,19 @@ import {
 import { AdminPaymentDetailDialog } from "@/components/admin/payments/AdminPaymentDetailDialog";
 import { parseTrainingBookingPaymentBreakdown } from "@/lib/trainingPaymentBreakdown";
 
+export type TrainerPaymentsMode = "admin" | "self";
+
 type Props = {
   trainerId: string;
   /** When true, show a link to the full dedicated payments page. */
   embed?: boolean;
+  mode?: TrainerPaymentsMode;
 };
 
-export function TrainerAdminPaymentsSection({ trainerId, embed }: Props) {
+export function TrainerAdminPaymentsSection({ trainerId, embed, mode = "admin" }: Props) {
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
+  const isSelf = mode === "self";
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedPayment, setSelectedPayment] = useState<UnifiedPayment | null>(null);
@@ -321,15 +327,17 @@ export function TrainerAdminPaymentsSection({ trainerId, embed }: Props) {
                 <TableRow>
                   <TableHead>{isRTL ? "المستخدم" : "User"}</TableHead>
                   <TableHead>{isRTL ? "التدريب" : "Training"}</TableHead>
-                  <TableHead className="min-w-[9rem] whitespace-normal">
-                    {isRTL ? "تقسيم المبلغ (ريال)" : "Split (SAR)"}
-                  </TableHead>
+                  {!isSelf ? (
+                    <TableHead className="min-w-[9rem] whitespace-normal">
+                      {isRTL ? "تقسيم المبلغ (ريال)" : "Split (SAR)"}
+                    </TableHead>
+                  ) : null}
                   <TableHead>{isRTL ? "الإجمالي" : "Total"}</TableHead>
-                  <TableHead>{isRTL ? "النوع" : "Type"}</TableHead>
-                  <TableHead>{isRTL ? "طريقة الدفع" : "Method"}</TableHead>
+                  {!isSelf ? <TableHead>{isRTL ? "النوع" : "Type"}</TableHead> : null}
+                  {!isSelf ? <TableHead>{isRTL ? "طريقة الدفع" : "Method"}</TableHead> : null}
                   <TableHead>{isRTL ? "التاريخ" : "Date"}</TableHead>
                   <TableHead>{isRTL ? "الحالة" : "Status"}</TableHead>
-                  <TableHead></TableHead>
+                  {!isSelf ? <TableHead></TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -356,38 +364,42 @@ export function TrainerAdminPaymentsSection({ trainerId, embed }: Props) {
                           ? payment.course?.title_ar || payment.course?.title || "—"
                           : payment.course?.title || "—"}
                       </TableCell>
-                      <TableCell className="align-top text-xs tabular-nums">
-                        {bd ? (
-                          <div className="space-y-1 max-w-[14rem]">
-                            <div>
-                              <span className="text-muted-foreground">{isRTL ? "مدرب: " : "Trainer: "}</span>
-                              <span className="font-medium">{bd.trainerSar.toFixed(2)}</span>
+                      {!isSelf ? (
+                        <TableCell className="align-top text-xs tabular-nums">
+                          {bd ? (
+                            <div className="space-y-1 max-w-[14rem]">
+                              <div>
+                                <span className="text-muted-foreground">{isRTL ? "مدرب: " : "Trainer: "}</span>
+                                <span className="font-medium">{bd.trainerSar.toFixed(2)}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">{isRTL ? "بايكرز: " : "Bikerz: "}</span>
+                                <span className="font-medium">{bd.bikerzSar.toFixed(2)}</span>
+                              </div>
+                              {bd.platformMarkupSar != null && bd.vatSar != null ? (
+                                <p className="text-[11px] leading-snug text-muted-foreground">
+                                  {isRTL
+                                    ? `عمولة ${bd.platformMarkupSar.toFixed(2)} + ضريبة ${bd.vatSar.toFixed(2)}`
+                                    : `Fee ${bd.platformMarkupSar.toFixed(2)} + VAT ${bd.vatSar.toFixed(2)}`}
+                                </p>
+                              ) : null}
+                              <div className="pt-0.5 border-t border-border/50 text-foreground">
+                                <span className="text-muted-foreground">{isRTL ? "مجموع: " : "Total: "}</span>
+                                <span className="font-semibold">{bd.totalSar.toFixed(2)}</span>
+                              </div>
                             </div>
-                            <div>
-                              <span className="text-muted-foreground">{isRTL ? "بايكرز: " : "Bikerz: "}</span>
-                              <span className="font-medium">{bd.bikerzSar.toFixed(2)}</span>
-                            </div>
-                            {bd.platformMarkupSar != null && bd.vatSar != null ? (
-                              <p className="text-[11px] leading-snug text-muted-foreground">
-                                {isRTL
-                                  ? `عمولة ${bd.platformMarkupSar.toFixed(2)} + ضريبة ${bd.vatSar.toFixed(2)}`
-                                  : `Fee ${bd.platformMarkupSar.toFixed(2)} + VAT ${bd.vatSar.toFixed(2)}`}
-                              </p>
-                            ) : null}
-                            <div className="pt-0.5 border-t border-border/50 text-foreground">
-                              <span className="text-muted-foreground">{isRTL ? "مجموع: " : "Total: "}</span>
-                              <span className="font-semibold">{bd.totalSar.toFixed(2)}</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      ) : null}
                       <TableCell>
                         {payment.amount.toFixed(2)} {payment.currency}
                       </TableCell>
-                      <TableCell>{getSourceBadge(payment.source, isRTL)}</TableCell>
-                      <TableCell className="capitalize">{getPaymentMethodLabel(payment)}</TableCell>
+                      {!isSelf ? <TableCell>{getSourceBadge(payment.source, isRTL)}</TableCell> : null}
+                      {!isSelf ? (
+                        <TableCell className="capitalize">{getPaymentMethodLabel(payment)}</TableCell>
+                      ) : null}
                       <TableCell>{format(new Date(payment.created_at), "MMM dd, yyyy")}</TableCell>
                       <TableCell>
                         <div className="space-y-1">
@@ -399,31 +411,36 @@ export function TrainerAdminPaymentsSection({ trainerId, embed }: Props) {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align={isRTL ? "start" : "end"}>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedPayment(payment);
-                              }}
-                            >
-                              <Eye className="w-4 h-4 me-2" />
-                              {isRTL ? "عرض التفاصيل" : "View Details"}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                      {!isSelf ? (
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align={isRTL ? "start" : "end"}>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedPayment(payment);
+                                }}
+                              >
+                                <Eye className="w-4 h-4 me-2" />
+                                {isRTL ? "عرض التفاصيل" : "View Details"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      ) : null}
                     </TableRow>
                   );
                 })}
                 {filteredPayments?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={isSelf ? 5 : 9}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       {isRTL ? "لا توجد مدفوعات لهذا المدرب" : "No payments for this trainer"}
                     </TableCell>
                   </TableRow>

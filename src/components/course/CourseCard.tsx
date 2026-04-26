@@ -130,7 +130,9 @@ const CourseCard: React.FC<CourseCardProps> = ({
                   className="w-full h-full object-cover rounded-xl transition-transform duration-700 group-hover:scale-105"
                   loading={imageLoading}
                   decoding="async"
-                  fetchPriority={imageFetchPriority}
+                  {...(imageFetchPriority !== "auto"
+                    ? ({ fetchpriority: imageFetchPriority } as React.ImgHTMLAttributes<HTMLImageElement>)
+                    : {})}
                   sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw"
                 />
               </picture>

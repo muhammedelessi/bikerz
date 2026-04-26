@@ -8,7 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import LanguageToggle from "@/components/common/LanguageToggle";
 import { useAuthPageContent } from "@/hooks/useAuthPageContent";
-import { ArrowRight, ArrowLeft, AlertCircle, Mail, Fingerprint } from "lucide-react";
+import { ArrowRight, ArrowLeft, AlertCircle, Fingerprint } from "lucide-react";
 import { PasswordField } from "@/components/ui/fields";
 import { toast } from "sonner";
 import {
@@ -234,17 +234,14 @@ const Login: React.FC = () => {
               }}
             >
               <FormField label={t("fields.email.label")} error={emailError} required>
-                <div className="relative">
-                  <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
-                    placeholder={t("fields.email.placeholder")}
-                    className={`form-input h-11 sm:h-12 text-base ps-10 ${emailError ? 'border-destructive' : ''}`}
-                  />
-                </div>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
+                  placeholder={t("fields.email.placeholder")}
+                  className={`form-input h-11 sm:h-12 text-base ${emailError ? 'border-destructive' : ''}`}
+                />
               </FormField>
 
               <PasswordField

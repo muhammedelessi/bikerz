@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import SearchableDropdown from "@/components/checkout/SearchableDropdown";
 import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
-import { Phone } from "lucide-react";
 
 export interface PhoneFieldProps {
   phonePrefix: string;
@@ -62,7 +61,6 @@ export const PhoneField: React.FC<PhoneFieldProps> = ({
           />
         </div>
         <div className="relative flex-1">
-          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <Input
             type="tel"
             inputMode="numeric"
@@ -71,7 +69,7 @@ export const PhoneField: React.FC<PhoneFieldProps> = ({
               onNumberChange(e.target.value.replace(/[^0-9]/g, ""))
             }
             placeholder={t("fields.phone.placeholder")}
-            className={`pl-10 ${isRTL ? "text-right" : "text-left"} ${error ? "border-destructive" : ""}`}
+            className={`${isRTL ? "text-right" : "text-left"} ${error ? "border-destructive" : ""}`}
             dir="ltr"
             disabled={disabled}
           />

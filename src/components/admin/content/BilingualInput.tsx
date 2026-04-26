@@ -16,6 +16,8 @@ interface BilingualInputProps {
   placeholderAr?: string;
   className?: string;
   rows?: number;
+  readOnlyAr?: boolean;
+  readOnlyEn?: boolean;
 }
 
 const BilingualInput: React.FC<BilingualInputProps> = ({
@@ -30,6 +32,8 @@ const BilingualInput: React.FC<BilingualInputProps> = ({
   placeholderAr,
   className,
   rows = 3,
+  readOnlyAr = false,
+  readOnlyEn = false,
 }) => {
   return (
     <div className={cn('space-y-4', className)} dir="ltr">
@@ -67,6 +71,7 @@ const BilingualInput: React.FC<BilingualInputProps> = ({
               placeholder={placeholderEn}
               dir="ltr"
               rows={rows}
+              readOnly={readOnlyEn}
             />
           ) : (
             <Input
@@ -74,6 +79,7 @@ const BilingualInput: React.FC<BilingualInputProps> = ({
               onChange={(e) => onChangeEn(e.target.value)}
               placeholder={placeholderEn}
               dir="ltr"
+              readOnly={readOnlyEn}
             />
           )}
         </div>

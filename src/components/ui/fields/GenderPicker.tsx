@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { FormField } from '@/components/ui/form-field';
-import { UserCircle, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 const GENDER_OPTIONS = [
   { value: 'Male', ar: 'ذكر', en: 'Male' },
@@ -62,7 +62,6 @@ export function GenderPicker({
             error ? 'border-destructive' : 'border-input'
           }`}
         >
-          <UserCircle className="w-4 h-4 text-muted-foreground me-2 flex-shrink-0" />
           <span
             className={`flex-1 text-start truncate ${
               displayLabel ? 'text-foreground' : 'text-muted-foreground'

@@ -942,7 +942,7 @@ const CourseDetail: React.FC = () => {
                         className="w-full aspect-video object-cover"
                         loading="eager"
                         decoding="async"
-                        fetchPriority="high"
+                        fetchpriority="high"
                         sizes="100vw"
                       />
                     </picture>
@@ -1039,7 +1039,7 @@ const CourseDetail: React.FC = () => {
                                 className="w-full aspect-video object-cover"
                                 loading="eager"
                                 decoding="async"
-                                fetchPriority="high"
+                                fetchpriority="high"
                                 sizes="(min-width: 768px) 65vw, 100vw"
                               />
                             </picture>

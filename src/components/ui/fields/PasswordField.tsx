@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
-import { Lock, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 export interface PasswordFieldProps {
   value: string;
@@ -41,13 +41,12 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
       dir={isRTL ? "rtl" : "ltr"}
     >
       <div className="relative" dir="ltr">
-        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         <Input
           type={show ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder || t("fields.password.placeholder")}
-          className={`pl-10 pr-10 ${isRTL ? "text-right" : "text-left"} ${error ? "border-destructive" : ""}`}
+          className={`pr-10 ${isRTL ? "text-right" : "text-left"} ${error ? "border-destructive" : ""}`}
           dir="ltr"
           disabled={disabled}
           autoComplete={autoComplete}

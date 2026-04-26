@@ -98,12 +98,16 @@ const DateInputShell: React.FC<{ children: React.ReactNode; className?: string }
   </div>
 );
 
+export type TrainerScheduleMode = 'admin' | 'self';
+
 type Props = {
   trainerId: string;
   isRTL: boolean;
+  /** Reserved for future trainer vs admin UI differences; behavior is the same today. */
+  mode?: TrainerScheduleMode;
 };
 
-export const TrainerScheduleManager: React.FC<Props> = ({ trainerId, isRTL }) => {
+export const TrainerScheduleManager: React.FC<Props> = ({ trainerId, isRTL, mode: _mode = 'admin' }) => {
   const queryClient = useQueryClient();
   const dir = isRTL ? 'rtl' : 'ltr';
   const todayYmd = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);

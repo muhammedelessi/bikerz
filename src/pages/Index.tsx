@@ -31,6 +31,20 @@ const Index: React.FC = () => {
           title={isRTL ? "تعلم قيادة الدراجات النارية مع خبراء" : "Learn Motorcycle Riding with Expert Instructors"}
           description="BIKERZ Academy is your premier online motorcycle riding school."
           canonical="/"
+          lcpPreloads={[
+            {
+              href: "/hero-rider-mobile.avif",
+              type: "image/avif",
+              media: "(max-width: 768px)",
+              fetchPriority: "high",
+            },
+            {
+              href: "/hero-rider.avif",
+              type: "image/avif",
+              media: "(min-width: 769px)",
+              fetchPriority: "high",
+            },
+          ]}
         />
 
         <Navbar />

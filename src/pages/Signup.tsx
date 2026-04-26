@@ -13,7 +13,6 @@ import {
   ArrowRight,
   ArrowLeft,
   AlertCircle,
-  Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import SEOHead from "@/components/common/SEOHead";
@@ -23,6 +22,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
 import { COUNTRIES } from "@/data/countryCityData";
 import { consumeReturnUrl } from "@/lib/authReturnUrl";
+import { fetchPublicGeoHint } from "@/lib/publicGeoCountry";
 import { activateFreeTrialForCourse, consumeTrialOfferPending } from "@/lib/guestPreview";
 import { FormAlert, FormField } from "@/components/ui/form-field";
 import { joinFullName } from "@/lib/nameUtils";
@@ -97,12 +97,12 @@ const Signup: React.FC = () => {
 
   // Geo hint — deferred so it never competes with LCP (logo, fonts, critical CSS)
   useEffect(() => {
+    const ac = new AbortController();
     const detectCountry = async () => {
       try {
-        const res = await fetch("https://ipapi.co/json/");
-        if (!res.ok) return;
-        const data = await res.json();
-        const countryCode = data.country_code;
+        const hint = await fetchPublicGeoHint(ac.signal);
+        if (!hint) return;
+        const countryCode = hint.countryCode;
         const phoneMatch = PHONE_COUNTRIES.find((c) => c.code === countryCode);
         if (phoneMatch) {
           setPhonePrefix(`${phoneMatch.prefix}_${phoneMatch.code}`);
@@ -112,10 +112,10 @@ const Signup: React.FC = () => {
           setCountry(countryCode);
         } else {
           setCountry(OTHER_VALUE);
-          setCustomCountry(data.country_name || "");
+          setCustomCountry(hint.countryName || "");
         }
-        if (data.city && countryMatch) {
-          const cityMatch = countryMatch.cities.find((c) => c.en.toLowerCase() === data.city.toLowerCase());
+        if (hint.city && countryMatch) {
+          const cityMatch = countryMatch.cities.find((c) => c.en.toLowerCase() === hint.city!.toLowerCase());
           if (cityMatch) {
             setCity(isRTL ? cityMatch.ar : cityMatch.en);
           }
@@ -126,12 +126,14 @@ const Signup: React.FC = () => {
     };
     let idleId: number | undefined;
     let timeoutId: number | undefined;
+    const run = () => void detectCountry();
     if (typeof window.requestIdleCallback === "function") {
-      idleId = window.requestIdleCallback(() => void detectCountry(), { timeout: 4000 });
+      idleId = window.requestIdleCallback(run, { timeout: 4000 });
     } else {
-      timeoutId = window.setTimeout(() => void detectCountry(), 2000);
+      timeoutId = window.setTimeout(run, 2000);
     }
     return () => {
+      ac.abort();
       if (idleId !== undefined && typeof window.cancelIdleCallback === "function") {
         window.cancelIdleCallback(idleId);
       }
@@ -375,7 +377,7 @@ const Signup: React.FC = () => {
                 className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
                 loading="eager"
                 decoding="async"
-                fetchPriority="high"
+                fetchpriority="high"
               />
             </Link>
             <LanguageToggle />
@@ -420,20 +422,17 @@ const Signup: React.FC = () => {
                 error={emailErrorMessage}
                 required
               >
-                <div className="relative">
-                  <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setEmailError(null);
-                    }}
-                    placeholder={t("fields.email.placeholder")}
-                    className={`ps-11 ${emailError ? "border-destructive" : ""}`}
-                  />
-                </div>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setEmailError(null);
+                  }}
+                  placeholder={t("fields.email.placeholder")}
+                  className={emailError ? "border-destructive" : ""}
+                />
               </FormField>
 
               {/* Phone */}

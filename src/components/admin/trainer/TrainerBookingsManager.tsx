@@ -32,6 +32,8 @@ import { toast } from 'sonner';
 import BookingTimeDisplay from '@/components/common/BookingTimeDisplay';
 import type { Json } from '@/integrations/supabase/types';
 
+export type TrainerManagerMode = 'admin' | 'self';
+
 type BookingRow = {
   id: string;
   user_id: string;
@@ -84,7 +86,12 @@ function payBadge(ps: string, isRTL: boolean) {
   );
 }
 
-export const TrainerBookingsManager: React.FC<{ trainerId: string; isRTL: boolean }> = ({ trainerId, isRTL }) => {
+export const TrainerBookingsManager: React.FC<{
+  trainerId: string;
+  isRTL: boolean;
+  mode?: TrainerManagerMode;
+}> = ({ trainerId, isRTL, mode = 'admin' }) => {
+  const isSelf = mode === 'self';
   const queryClient = useQueryClient();
   const dir = isRTL ? 'rtl' : 'ltr';
   const dfLocale = isRTL ? arSA : enUS;
@@ -239,7 +246,9 @@ export const TrainerBookingsManager: React.FC<{ trainerId: string; isRTL: boolea
 
   return (
     <div className="flex min-h-0 flex-col gap-4" dir={dir}>
-      <div className="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-4">
+      <div
+        className={`grid shrink-0 grid-cols-2 gap-3 ${isSelf ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}
+      >
         <Card>
           <CardContent className="p-4 space-y-1">
             <p className="text-xs text-muted-foreground">{isRTL ? 'إجمالي الحجوزات' : 'Total bookings'}</p>
@@ -258,14 +267,16 @@ export const TrainerBookingsManager: React.FC<{ trainerId: string; isRTL: boolea
             <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
           </CardContent>
         </Card>
-        <Card className="border-emerald-600/30 bg-emerald-500/5">
-          <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-emerald-700">{isRTL ? 'الإيرادات' : 'Revenue'}</p>
-            <p className="text-2xl font-bold text-emerald-700">
-              {stats.revenue.toLocaleString(isRTL ? 'ar-SA' : 'en-US')} ﷼
-            </p>
-          </CardContent>
-        </Card>
+        {!isSelf ? (
+          <Card className="border-emerald-600/30 bg-emerald-500/5">
+            <CardContent className="p-4 space-y-1">
+              <p className="text-xs text-emerald-700">{isRTL ? 'الإيرادات' : 'Revenue'}</p>
+              <p className="text-2xl font-bold text-emerald-700">
+                {stats.revenue.toLocaleString(isRTL ? 'ar-SA' : 'en-US')} ﷼
+              </p>
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
 
       <div className="flex shrink-0 flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-end">
@@ -326,8 +337,8 @@ export const TrainerBookingsManager: React.FC<{ trainerId: string; isRTL: boolea
               <TableHead>{isRTL ? 'التدريب' : 'Training'}</TableHead>
               <TableHead>{isRTL ? 'عدد الجلسات' : 'Sessions'}</TableHead>
               <TableHead>{isRTL ? 'الجلسة القادمة' : 'Next session'}</TableHead>
-              <TableHead>{isRTL ? 'المبلغ' : 'Amount'}</TableHead>
-              <TableHead>{isRTL ? 'حالة الدفع' : 'Payment'}</TableHead>
+              {!isSelf ? <TableHead>{isRTL ? 'المبلغ' : 'Amount'}</TableHead> : null}
+              {!isSelf ? <TableHead>{isRTL ? 'حالة الدفع' : 'Payment'}</TableHead> : null}
               <TableHead>{isRTL ? 'الحالة' : 'Status'}</TableHead>
               <TableHead className="text-end">{isRTL ? 'إجراءات' : 'Actions'}</TableHead>
             </TableRow>
@@ -335,7 +346,10 @@ export const TrainerBookingsManager: React.FC<{ trainerId: string; isRTL: boolea
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground py-10">
+                <TableCell
+                  colSpan={isSelf ? 7 : 9}
+                  className="text-center text-muted-foreground py-10"
+                >
                   {isRTL ? 'لا توجد حجوزات' : 'No bookings'}
                 </TableCell>
               </TableRow>
@@ -366,10 +380,13 @@ export const TrainerBookingsManager: React.FC<{ trainerId: string; isRTL: boolea
                       );
                     })()}
                   </TableCell>
-                  <TableCell dir="ltr">
-                    {Number(b.amount || 0).toLocaleString(isRTL ? 'ar-SA' : 'en-US')} {b.currency === 'SAR' ? '﷼' : b.currency}
-                  </TableCell>
-                  <TableCell>{payBadge(b.payment_status, isRTL)}</TableCell>
+                  {!isSelf ? (
+                    <TableCell dir="ltr">
+                      {Number(b.amount || 0).toLocaleString(isRTL ? 'ar-SA' : 'en-US')}{' '}
+                      {b.currency === 'SAR' ? '﷼' : b.currency}
+                    </TableCell>
+                  ) : null}
+                  {!isSelf ? <TableCell>{payBadge(b.payment_status, isRTL)}</TableCell> : null}
                   <TableCell>{statusBadge(b.status, isRTL)}</TableCell>
                   <TableCell className="text-end">
                     <div className="flex flex-wrap justify-end gap-1">
@@ -459,10 +476,14 @@ export const TrainerBookingsManager: React.FC<{ trainerId: string; isRTL: boolea
                 <span>{detailRow.payment_status}</span>
                 <span className="text-muted-foreground">{isRTL ? 'الحالة' : 'Status'}</span>
                 <span>{detailRow.status}</span>
-                <span className="text-muted-foreground">{isRTL ? 'معرف الدفع' : 'Payment ID'}</span>
-                <span dir="ltr" className="break-all text-xs">
-                  {detailRow.payment_id || '—'}
-                </span>
+                {!isSelf ? (
+                  <>
+                    <span className="text-muted-foreground">{isRTL ? 'معرف الدفع' : 'Payment ID'}</span>
+                    <span dir="ltr" className="break-all text-xs">
+                      {detailRow.payment_id || '—'}
+                    </span>
+                  </>
+                ) : null}
                 <span className="text-muted-foreground">{isRTL ? 'تاريخ الحجز' : 'Booked on'}</span>
                 <span>{detailRow.created_at ? formatDate(detailRow.created_at.slice(0, 10)) : '—'}</span>
                 <span className="text-muted-foreground">{isRTL ? 'ملاحظات' : 'Notes'}</span>

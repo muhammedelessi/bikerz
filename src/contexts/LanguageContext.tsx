@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import i18n from 'i18next';
+import { fetchCountryCodeFromPublicGeoApis } from '@/lib/publicGeoCountry';
 
 type Language = 'en' | 'ar';
 
@@ -73,18 +74,19 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     if (!hasManualChoice) {
       const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      const options = controller ? { signal: controller.signal } : undefined;
 
-      fetch('https://ipapi.co/country_code/', options)
-        .then((res) => res.text())
-        .then((code) => {
-          const countryCode = code.trim().toUpperCase();
+      void (async () => {
+        try {
+          const countryCode = await fetchCountryCodeFromPublicGeoApis(controller?.signal);
+          if (!countryCode) return;
           const detectedLang: Language = ARAB_COUNTRIES.has(countryCode) ? 'ar' : 'en';
           if (detectedLang !== language) {
             setLanguage(detectedLang);
           }
-        })
-        .catch(() => {});
+        } catch {
+          /* ignore */
+        }
+      })();
 
       return () => {
         controller?.abort();

@@ -244,3 +244,18 @@ export const COUNTRIES: CountryEntry[] = [
 ];
 
 export const OTHER_OPTION: CityEntry = { en: 'Other', ar: 'أخرى' };
+
+/**
+ * Resolve a stored city string (either English or Arabic label from our list) to the
+ * display label for the current UI language.
+ */
+export function getCityDisplayLabel(countryCode: string, storedCity: string, useArabic: boolean): string {
+  const code = countryCode.trim();
+  const raw = storedCity.trim();
+  if (!raw) return '';
+  const country = COUNTRIES.find((c) => c.code === code);
+  if (!country) return raw;
+  const entry = country.cities.find((city) => city.en === raw || city.ar === raw);
+  if (!entry) return raw;
+  return useArabic ? entry.ar : entry.en;
+}

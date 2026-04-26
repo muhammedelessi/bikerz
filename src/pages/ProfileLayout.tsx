@@ -10,6 +10,7 @@ import {
   Home,
   BookOpen,
   GraduationCap,
+  LayoutDashboard,
   Settings,
   ShieldCheck,
   Ticket,
@@ -22,7 +23,7 @@ import { useTheme } from "@/components/ThemeProvider";
 const ProfileLayout: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isInstructor } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -31,6 +32,7 @@ const ProfileLayout: React.FC = () => {
   const themeLogo = theme === "light" ? logoDark : logoLight;
 
   const path = location.pathname;
+  const dashboardHomeActive = path === "/dashboard" || path === "/dashboard/";
   const isSurveySection = path.startsWith("/profile/surveys");
   const isBookingsSection = path.startsWith("/profile/bookings");
   const profilePathNorm = path.replace(/\/$/, "") || "/";
@@ -56,9 +58,19 @@ const ProfileLayout: React.FC = () => {
   const navItems = [
     { icon: Home, label: t("nav.home"), to: "/", active: path === "/" },
     { icon: BookOpen, label: t("nav.courses"), to: "/courses", active: path.startsWith("/courses") },
-    { icon: GraduationCap, label: t("dashboard.myCourses"), to: "/dashboard", active: path.startsWith("/dashboard") },
+    { icon: GraduationCap, label: t("dashboard.myCourses"), to: "/dashboard", active: dashboardHomeActive },
     { icon: User, label: t("profile.title"), to: "/profile", active: isProfileHome },
     { icon: Ticket, label: t("nav.myBookings"), to: "/profile/bookings", active: path.startsWith("/profile/bookings") },
+    ...(isInstructor
+      ? [
+          {
+            icon: LayoutDashboard,
+            label: t("trainerDashboard.navLink"),
+            to: "/trainer/dashboard",
+            active: path.startsWith("/trainer/dashboard"),
+          },
+        ]
+      : []),
     { icon: ShieldCheck, label: isRTL ? "الإعدادات والأمان" : "Settings & Security", to: "/settings", active: path.startsWith("/settings") },
     ...(isAdmin ? [{ icon: Settings, label: t("nav.adminPanel"), to: "/admin", active: path.startsWith("/admin") }] : []),
   ];
@@ -136,7 +148,11 @@ const ProfileLayout: React.FC = () => {
               </button>
               <div className="min-w-0 flex-1">
                 <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">
-                  {isSurveySection ? t("survey.title") : isBookingsSection ? t("nav.myBookings") : t("profile.title")}
+                  {isSurveySection
+                    ? t("survey.title")
+                    : isBookingsSection
+                      ? t("nav.myBookings")
+                      : t("profile.title")}
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground truncate hidden sm:block">
                   {isSurveySection

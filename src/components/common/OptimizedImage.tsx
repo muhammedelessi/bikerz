@@ -39,7 +39,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
       height={height}
       loading={priority ? "eager" : "lazy"}
       decoding="async"
-      {...(priority ? { fetchPriority: "high" as const } : {})}
+      {...(priority ? ({ fetchpriority: "high" } as React.ImgHTMLAttributes<HTMLImageElement>) : {})}
       className={cn("max-w-full h-auto", className)}
       {...rest}
     />

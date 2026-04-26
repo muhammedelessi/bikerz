@@ -12,7 +12,6 @@ import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
 import { useSignupWebhook } from "@/hooks/useSignupWebhook";
 import {
   Check, MessageCircle, Users,
-  Mail, Bike,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
@@ -23,6 +22,7 @@ import logoLight from "@/assets/logo-light.png";
 import SEOHead from "@/components/common/SEOHead";
 import { FormField } from "@/components/ui/form-field";
 import { joinFullName } from "@/lib/nameUtils";
+import { fetchPublicGeoHint } from "@/lib/publicGeoCountry";
 
 const WHATSAPP_NUMBER = "966562562368";
 
@@ -68,28 +68,31 @@ const JoinCommunity: React.FC = () => {
 
   // Auto-detect country & phone prefix by user location
   useEffect(() => {
+    const ac = new AbortController();
     const detect = async () => {
       try {
-        const res = await fetch('https://ipapi.co/json/');
-        if (!res.ok) return;
-        const data = await res.json();
-        const cc = data.country_code;
-        const phoneMatch = PHONE_COUNTRIES.find(c => c.code === cc);
+        const hint = await fetchPublicGeoHint(ac.signal);
+        if (!hint) return;
+        const cc = hint.countryCode;
+        const phoneMatch = PHONE_COUNTRIES.find((c) => c.code === cc);
         if (phoneMatch) setPhonePrefix(`${phoneMatch.prefix}_${phoneMatch.code}`);
-        const countryMatch = COUNTRIES.find(c => c.code === cc);
+        const countryMatch = COUNTRIES.find((c) => c.code === cc);
         if (countryMatch) {
           setCountryCode(countryMatch.code);
-          if (data.city) {
+          if (hint.city) {
             const cityMatch = countryMatch.cities.find(
-              c => c.en.toLowerCase() === data.city.toLowerCase()
+              (c) => c.en.toLowerCase() === hint.city!.toLowerCase(),
             );
             if (cityMatch) setCity(isRTL ? cityMatch.ar : cityMatch.en);
           }
         }
-      } catch {}
+      } catch {
+        /* ignore */
+      }
     };
-    detect();
-  }, []);
+    void detect();
+    return () => ac.abort();
+  }, [isRTL]);
 
   const selectedCountry = useMemo(() => COUNTRIES.find(c => c.code === countryCode) || null, [countryCode]);
 
@@ -280,23 +283,19 @@ const JoinCommunity: React.FC = () => {
               required
             />
 
-            {/* Email — icon inside, supports RTL */}
             <FormField
               label={t('fields.email.label')}
               error={errors.email}
               required
             >
-              <div className="relative">
-                <Mail className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none ${isRTL ? "right-3" : "left-3"}`} />
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
-                  placeholder={t('fields.email.placeholder')}
-                  className={`${isRTL ? "pr-11 text-right" : "pl-11 text-left"} ${errors.email ? "border-destructive" : ""}`}
-                  dir={isRTL ? "rtl" : "ltr"}
-                />
-              </div>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
+                placeholder={t('fields.email.placeholder')}
+                className={`${isRTL ? "text-right" : "text-left"} ${errors.email ? "border-destructive" : ""}`}
+                dir={isRTL ? "rtl" : "ltr"}
+              />
             </FormField>
 
             {/* Country & City */}

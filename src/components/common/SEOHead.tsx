@@ -8,6 +8,8 @@ export interface LcpPreloadLink {
   /** e.g. (max-width: 768px) */
   media?: string;
   crossOrigin?: 'anonymous' | 'use-credentials';
+  /** Hint for the preload request (DOM attribute is `fetchpriority`) */
+  fetchPriority?: 'high' | 'low' | 'auto';
 }
 
 interface SEOHeadProps {
@@ -71,6 +73,9 @@ const SEOHead: React.FC<SEOHeadProps> = ({
           {...(p.type ? { type: p.type } : {})}
           {...(p.media ? { media: p.media } : {})}
           {...(p.crossOrigin ? { crossOrigin: p.crossOrigin } : {})}
+          {...(p.fetchPriority && p.fetchPriority !== 'auto'
+            ? ({ fetchpriority: p.fetchPriority } as React.LinkHTMLAttributes<HTMLLinkElement>)
+            : {})}
         />
       ))}
 

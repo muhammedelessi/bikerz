@@ -36,9 +36,7 @@
     <link rel="shortcut icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
     <!-- manifest + SW injected by vite-plugin-pwa at build time -->
-    <!-- LCP: hero AVIF (falls back to picture sources in HeroSection) -->
-    <link rel="preload" as="image" href="/hero-rider-mobile.avif" type="image/avif" media="(max-width: 768px)" fetchpriority="high" />
-    <link rel="preload" as="image" href="/hero-rider.avif" type="image/avif" media="(min-width: 769px)" fetchpriority="high" />
+    <!-- Hero AVIF LCP preloads: home page only (see Index.tsx SEOHead lcpPreloads) -->
     <meta name="theme-color" content="#D4AF37" />
 
     <!-- Self-hosted Almarai + Roboto: critical weights preloaded (no Google Fonts request chain) -->

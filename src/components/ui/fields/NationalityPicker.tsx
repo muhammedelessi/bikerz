@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { FormField } from '@/components/ui/form-field';
 import { COUNTRIES } from '@/data/countryCityData';
-import { Globe, ChevronDown, Search, X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 
 export interface NationalityPickerProps {
   value: string;
@@ -66,7 +66,6 @@ export function NationalityPicker({
             error ? 'border-destructive' : 'border-input'
           }`}
         >
-          <Globe className="w-4 h-4 text-muted-foreground me-2 flex-shrink-0" />
           <span className={`flex-1 text-start truncate ${displayLabel ? 'text-foreground' : 'text-muted-foreground'}`}>
             {displayLabel || t('fields.nationality.placeholder')}
           </span>
@@ -85,14 +84,13 @@ export function NationalityPicker({
         {open && (
           <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-lg overflow-hidden">
             {/* Search */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40">
-              <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <div className="px-3 py-2 border-b border-border/40">
               <input
                 ref={searchRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={isRTL ? 'بحث...' : 'Search...'}
-                className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 dir={isRTL ? 'rtl' : 'ltr'}
               />
             </div>

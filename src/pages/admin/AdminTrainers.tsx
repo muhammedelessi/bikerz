@@ -6,14 +6,13 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdminTrainers } from '@/hooks/admin/useAdminTrainers';
+import { useAdminTrainerApplicationsPendingCount } from '@/hooks/useAdminTrainerApplications';
+import TrainerApplicationsList from '@/components/admin/trainer/TrainerApplicationsList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -22,101 +21,30 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormField } from '@/components/ui/form-field';
-import { DateOfBirthPicker, CountryCityPicker, PhoneField, NameFields } from '@/components/ui/fields';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Star, Upload, X, ArrowLeft, ArrowRight, Users, Bike, MapPin, Clock, AlertTriangle, TrendingUp, Eye, Camera, Images, Check, Minus, Languages } from 'lucide-react';
-import BilingualInput from '@/components/admin/content/BilingualInput';
-import { BikeGarage } from '@/components/ui/profile/BikeGarage';
+import { Plus, Pencil, Trash2, Star, X, ArrowLeft, ArrowRight, Users, Bike, MapPin, Clock, AlertTriangle, TrendingUp, Eye, Check, Minus } from 'lucide-react';
+import TrainerForm, { type TrainerFormHandle } from '@/components/trainer/TrainerForm';
+import type { TrainerFormSubmission, TrainerFormValues } from '@/types/trainerForm';
+import { uploadTrainerProfilePhoto, uploadTrainerAlbumFile } from '@/lib/trainer-uploads';
+import { joinFullName, splitFullName } from '@/lib/trainer-name-utils';
+import { parseTrainerPhone } from '@/lib/trainer-phone-utils';
+import {
+  formLanguagesToDb,
+  languageEntriesToForm,
+  parseLanguageLevels,
+} from '@/lib/trainer-form-constants';
 import type { BikeEntry as GarageBikeEntry } from '@/hooks/useUserProfile';
 import { COUNTRIES, OTHER_OPTION } from '@/data/countryCityData';
-import { PHONE_COUNTRIES } from '@/data/phoneCountryCodes';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { parseTrainingSessions } from '@/lib/trainingSessionCurriculum';
-
-const COMMON_BIKE_TYPES = ['Sport', 'Cruiser', 'Adventure', 'Touring', 'Naked', 'Dual Sport', 'Scooter'] as const;
-const BIKE_TYPE_LABELS: Record<string, { ar: string; en: string }> = {
-  Sport:        { ar: 'سبورت',       en: 'Sport'       },
-  Race:         { ar: 'ريس',         en: 'Race'        },
-  Cruiser:      { ar: 'كروزر',       en: 'Cruiser'     },
-  Adventure:    { ar: 'أدڤنتشر',    en: 'Adventure'   },
-  Touring:      { ar: 'توورينج',     en: 'Touring'     },
-  Naked:        { ar: 'نيكد',        en: 'Naked'       },
-  Scrambler:    { ar: 'سكرامبلر',    en: 'Scrambler'   },
-  'Cafe Racer': { ar: 'كافيه ريسر', en: 'Cafe Racer'  },
-  'Dual Sport': { ar: 'ديول سبورت', en: 'Dual Sport'  },
-  Scooter:      { ar: 'سكوتر',       en: 'Scooter'     },
-};
-
-function bikeTypeDisplayLabel(type: string, isRTL: boolean): string {
-  const m = BIKE_TYPE_LABELS[type];
-  if (!m) return type;
-  return isRTL ? m.ar : m.en;
-}
-
-const MAX_BIKE_PHOTO_BYTES = 2 * 1024 * 1024;
-const MAX_ALBUM_PHOTO_BYTES = 3 * 1024 * 1024;
-const MAX_PHOTOS_PER_BIKE_ENTRY = 5;
-const MAX_ALBUM_PHOTOS = 10;
-
-/** Stored in `trainers.language_levels` as JSON array */
-export type TrainerLanguageEntry = {
-  language: string;
-  level: string;
-};
-
-const TRAINER_LANGUAGE_OPTIONS = [
-  { code: 'ar', label_en: 'Arabic', label_ar: 'العربية' },
-  { code: 'en', label_en: 'English', label_ar: 'الإنجليزية' },
-  { code: 'fr', label_en: 'French', label_ar: 'الفرنسية' },
-  { code: 'es', label_en: 'Spanish', label_ar: 'الإسبانية' },
-  { code: 'de', label_en: 'German', label_ar: 'الألمانية' },
-  { code: 'it', label_en: 'Italian', label_ar: 'الإيطالية' },
-  { code: 'tr', label_en: 'Turkish', label_ar: 'التركية' },
-  { code: 'ur', label_en: 'Urdu', label_ar: 'الأردية' },
-  { code: 'hi', label_en: 'Hindi', label_ar: 'الهندية' },
-  { code: 'pt', label_en: 'Portuguese', label_ar: 'البرتغالية' },
-] as const;
-
-const LANGUAGE_LEVEL_OPTIONS = [
-  { value: 'native', label_en: 'Native', label_ar: 'لغة أم' },
-  { value: 'fluent', label_en: 'Fluent', label_ar: 'طلاقة' },
-  { value: 'professional', label_en: 'Professional working', label_ar: 'مهنية' },
-  { value: 'conversational', label_en: 'Conversational', label_ar: 'محادثة' },
-  { value: 'basic', label_en: 'Basic', label_ar: 'مبتدئ' },
-] as const;
-
-function parseLanguageLevels(raw: unknown): TrainerLanguageEntry[] {
-  if (!raw || !Array.isArray(raw)) return [];
-  const out: TrainerLanguageEntry[] = [];
-  for (const x of raw) {
-    if (!x || typeof x !== 'object') continue;
-    const o = x as Record<string, unknown>;
-    const language = String(o.language ?? o.code ?? '').trim().toLowerCase();
-    const level = String(o.level ?? '').trim().toLowerCase();
-    if (!language || !level) continue;
-    out.push({ language, level });
-  }
-  return out;
-}
-
-function languageOptionLabel(code: string, isRTL: boolean): string {
-  const o = TRAINER_LANGUAGE_OPTIONS.find((x) => x.code === code);
-  if (!o) return code.toUpperCase();
-  return isRTL ? o.label_ar : o.label_en;
-}
 
 export type BikeEntry = {
   type: string;
   brand: string;
   photos: string[];
 };
-
-function typeStorageSlug(type: string): string {
-  const s = encodeURIComponent(type.trim()).replace(/%/g, '_');
-  return s.slice(0, 96) || 'bike';
-}
 
 function parseBikeEntries(raw: unknown): BikeEntry[] {
   if (!raw || !Array.isArray(raw)) return [];
@@ -143,15 +71,6 @@ function flattenBikePhotos(entries: BikeEntry[]): string[] {
   return entries.flatMap((e) => e.photos);
 }
 
-function trainerBikeCellLabel(t: Trainer, isRTL: boolean): string {
-  const entries = parseBikeEntries(t.bike_entries);
-  if (entries.length > 0) {
-    return entries.map((e) => (e.brand ? `${e.type}: ${e.brand}` : e.type)).join(' · ');
-  }
-  const legacy = [t.bike_type?.trim(), t.motorbike_brand?.trim()].filter(Boolean).join(' · ');
-  return legacy || (isRTL ? '—' : '—');
-}
-
 function trainerTableLocationDisplay(t: Trainer, isRTL: boolean): string {
   const countryEntry = COUNTRIES.find((c) => c.code === t.country);
   const displayCountry = countryEntry ? (isRTL ? countryEntry.ar : countryEntry.en) : (t.country || '').trim();
@@ -160,35 +79,6 @@ function trainerTableLocationDisplay(t: Trainer, isRTL: boolean): string {
   const parts = [displayCity, displayCountry].filter(Boolean);
   if (parts.length === 0) return '—';
   return parts.join(isRTL ? '، ' : ', ');
-}
-
-function splitFullName(full: string): { first: string; last: string } {
-  const s = (full || '').trim();
-  const i = s.indexOf(' ');
-  if (i === -1) return { first: s, last: '' };
-  return { first: s.slice(0, i).trim(), last: s.slice(i + 1).trim() };
-}
-
-function joinFullName(first: string, last: string): string {
-  return [first, last].map((p) => p.trim()).filter(Boolean).join(' ');
-}
-
-function parseTrainerPhone(fullPhone: string | null | undefined): { prefixKey: string; local: string } {
-  if (!fullPhone) return { prefixKey: '+966_SA', local: '' };
-  const sorted = [...PHONE_COUNTRIES].sort((a, b) => b.prefix.length - a.prefix.length);
-  for (const c of sorted) {
-    if (fullPhone.startsWith(c.prefix)) {
-      return { prefixKey: `${c.prefix}_${c.code}`, local: fullPhone.slice(c.prefix.length) };
-    }
-  }
-  return { prefixKey: '+966_SA', local: fullPhone.replace(/^\+/, '') };
-}
-
-function composeTrainerPhone(prefixKey: string, local: string): string {
-  const prefix = prefixKey.split('_')[0] || '+966';
-  const digits = local.replace(/[^0-9]/g, '');
-  const normalized = digits.replace(/^0+/, '');
-  return normalized ? `${prefix}${normalized}` : '';
 }
 
 function parseAssignmentLocation(location: string): { countryCode: string; city: string } {
@@ -214,8 +104,6 @@ function trainingTypeLabel(type: string | null | undefined, isRTL: boolean): str
   return type || '';
 }
 
-type PendingImage = { file: File; preview: string };
-
 interface Trainer {
   id: string;
   name_ar: string;
@@ -240,6 +128,53 @@ interface Trainer {
   profit_ratio: number;
   language_levels?: unknown;
   date_of_birth?: string | null;
+}
+
+function buildTrainerFormInitialValues(t: Trainer): Partial<TrainerFormValues> {
+  const ar = splitFullName(t.name_ar);
+  const en = splitFullName(t.name_en);
+  const ph = parseTrainerPhone((t.phone ?? '').trim());
+  const rawV2 = parseBikeEntries(t.bike_entries);
+  const bike_entries: GarageBikeEntry[] =
+    rawV2.length > 0 && 'id' in (rawV2[0] as object)
+      ? (rawV2 as unknown as GarageBikeEntry[])
+      : rawV2.map((e) => ({
+          id: crypto.randomUUID(),
+          type_id: null,
+          type_name: e.type,
+          subtype_id: null,
+          subtype_name: '',
+          brand: e.brand || '',
+          model: '',
+          is_custom_type: true,
+          is_custom_brand: true,
+          photos: e.photos,
+        }));
+  return {
+    photo_url: t.photo_url,
+    photo_album: Array.isArray(t.album_photos) ? [...t.album_photos] : [],
+    first_name_ar: ar.first,
+    last_name_ar: ar.last,
+    first_name_en: en.first,
+    last_name_en: en.last,
+    phone: (t.phone ?? '').trim(),
+    phone_country_code: ph.prefixKey,
+    email: (t.email ?? '').trim(),
+    date_of_birth: t.date_of_birth ?? null,
+    bio_ar: t.bio_ar || '',
+    bio_en: t.bio_en || '',
+    country: t.country,
+    city: t.city,
+    gender: '',
+    nationality: '',
+    bike_entries,
+    years_of_experience: t.years_of_experience,
+    languages: languageEntriesToForm(parseLanguageLevels(t.language_levels)),
+    services: t.services || [],
+    status: t.status === 'inactive' ? 'inactive' : 'active',
+    license_type: t.license_type || '',
+    profit_ratio: t.profit_ratio ?? 0,
+  };
 }
 
 interface TrainerCourse {
@@ -349,59 +284,30 @@ const AdminTrainers: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { data: pendingApplicationsCount = 0 } = useAdminTrainerApplicationsPendingCount();
+  const mainTab = searchParams.get('tab') === 'applications' ? 'applications' : 'trainers';
+
+  const setMainTab = (v: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (v === 'applications') next.set('tab', 'applications');
+        else next.delete('tab');
+        return next;
+      },
+      { replace: true },
+    );
+  };
   const locationFieldDir = isRTL ? 'rtl' : 'ltr';
-  const fileRef = useRef<HTMLInputElement>(null);
-  const bikePhotoFileRef = useRef<HTMLInputElement>(null);
-  const bikePhotoPickTypeRef = useRef<string | null>(null);
-  const albumPhotosInputRef = useRef<HTMLInputElement>(null);
+  const trainerFormRef = useRef<TrainerFormHandle>(null);
+  const trainerFormSnapshotRef = useRef<Partial<TrainerFormValues>>({});
+  const [trainerFormNonce, setTrainerFormNonce] = useState(0);
+  const [trainerFormInitial, setTrainerFormInitial] = useState<Partial<TrainerFormValues>>({});
   const [formOpen, setFormOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingTrainer, setEditingTrainer] = useState<Trainer | null>(null);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [serviceInput, setServiceInput] = useState('');
-  const [isOtherCity, setIsOtherCity] = useState(false);
   const [assignedTrainings, setAssignedTrainings] = useState<TrainerCourse[]>([]);
   const [trainingDetails, setTrainingDetails] = useState<Record<string, TrainingDetailsCache>>({});
-  
-  const [bikeTypeInput, setBikeTypeInput] = useState('');
-  const [pendingBikeByType, setPendingBikeByType] = useState<Record<string, PendingImage[]>>({});
-  const [pendingAlbumImages, setPendingAlbumImages] = useState<PendingImage[]>([]);
-
-  const defaultForm = {
-    first_name_ar: '',
-    first_name_en: '',
-    last_name_ar: '',
-    last_name_en: '',
-    phone: '',
-    email: '',
-    bio_ar: '',
-    bio_en: '',
-    country: '',
-    city: '',
-    bike_types: [] as string[],
-    bike_entries: [] as BikeEntry[],
-    bike_entries_v2: [] as GarageBikeEntry[],
-    album_photos: [] as string[],
-    license_type: '',
-    years_of_experience: 0,
-    profit_ratio: 0,
-    services: [] as string[],
-    status: 'active' as 'active' | 'inactive',
-    photo_url: null as string | null,
-    language_levels: [] as TrainerLanguageEntry[],
-    date_of_birth: null as string | null,
-  };
-  const [form, setForm] = useState(defaultForm);
-  const [languageAddCode, setLanguageAddCode] = useState('');
-  const [languageAddLevel, setLanguageAddLevel] = useState<string>(LANGUAGE_LEVEL_OPTIONS[1]!.value);
-  const parsedPhone = useMemo(() => parseTrainerPhone(form.phone), [form.phone]);
-  const formRef = useRef(form);
-  formRef.current = form;
-
-  const revokePendingList = (list: PendingImage[]) => {
-    list.forEach((p) => URL.revokeObjectURL(p.preview));
-  };
 
   const { data: trainers, isLoading } = useRQ({
     queryKey: ['admin-trainers'],
@@ -508,44 +414,17 @@ const AdminTrainers: React.FC = () => {
     return rev;
   }, [trainerCourseRows, trainers, studentsPerTrainerTraining]);
 
-  const uploadPhoto = async (file: File): Promise<string> => {
-    const ext = file.name.split('.').pop();
-    const path = `${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from('trainer-photos').upload(path, file);
-    if (error) throw error;
-    const { data } = supabase.storage.from('trainer-photos').getPublicUrl(path);
-    return data.publicUrl;
-  };
-
-  const uploadTrainerBikeFile = async (trainerId: string, bikeType: string, file: File): Promise<string> => {
-    const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '') || 'jpg';
-    const path = `bikes/${trainerId}/${typeStorageSlug(bikeType)}/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from('trainer-photos').upload(path, file);
-    if (error) throw error;
-    const { data } = supabase.storage.from('trainer-photos').getPublicUrl(path);
-    return data.publicUrl;
-  };
-
-  const uploadTrainerAlbumFile = async (trainerId: string, file: File): Promise<string> => {
-    const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '') || 'jpg';
-    const path = `album/${trainerId}/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from('trainer-photos').upload(path, file);
-    if (error) throw error;
-    const { data } = supabase.storage.from('trainer-photos').getPublicUrl(path);
-    return data.publicUrl;
-  };
-
   const saveMutation = useRM({
-    mutationFn: async () => {
+    mutationFn: async (submission: TrainerFormSubmission) => {
+      const form = submission.values;
       let photoUrl = form.photo_url;
-      if (photoFile) photoUrl = await uploadPhoto(photoFile);
+      if (submission.profilePhotoFile) photoUrl = await uploadTrainerProfilePhoto(submission.profilePhotoFile);
 
       const name_en = joinFullName(form.first_name_en, form.last_name_en);
       const name_ar = joinFullName(form.first_name_ar, form.last_name_ar);
-      const albumPhotos = [...form.album_photos];
+      const albumPhotos = [...(form.photo_album || [])];
 
-      // Derive legacy fields from new garage entries
-      const garageEntries = form.bike_entries_v2;
+      const garageEntries = form.bike_entries as GarageBikeEntry[];
       const bike_type = garageEntries.map((e) => e.type_name).filter(Boolean).join(', ');
       const bikeEntries: BikeEntry[] = garageEntries.map((e) => ({
         type: e.type_name,
@@ -569,13 +448,13 @@ const AdminTrainers: React.FC = () => {
         bike_photos: flattenBikePhotos(bikeEntries),
         album_photos: albumPhotos,
         motorbike_brand: summarizeMotorbikeBrand(bikeEntries),
-        license_type: form.license_type,
+        license_type: form.license_type ?? '',
         years_of_experience: form.years_of_experience,
-        profit_ratio: form.profit_ratio,
+        profit_ratio: form.profit_ratio ?? 0,
         services: form.services,
-        status: form.status,
+        status: form.status ?? 'active',
         photo_url: photoUrl,
-        language_levels: form.language_levels as unknown as Json,
+        language_levels: formLanguagesToDb(form.languages) as unknown as Json,
         date_of_birth: form.date_of_birth,
       };
 
@@ -623,11 +502,11 @@ const AdminTrainers: React.FC = () => {
         trainerId = data.id;
       }
 
-      for (const { file } of pendingAlbumImages) {
+      for (const { file } of submission.pendingAlbumFiles) {
         albumPhotos.push(await uploadTrainerAlbumFile(trainerId, file));
       }
 
-      if (pendingAlbumImages.length > 0) {
+      if (submission.pendingAlbumFiles.length > 0) {
         const { error: upErr } = await supabase
           .from('trainers')
           .update({ album_photos: albumPhotos })
@@ -660,11 +539,8 @@ const AdminTrainers: React.FC = () => {
         if (tcError) throw tcError;
       }
     },
-    onSuccess: () => {
-      Object.values(pendingBikeByType).forEach((list) => revokePendingList(list));
-      setPendingBikeByType({});
-      revokePendingList(pendingAlbumImages);
-      setPendingAlbumImages([]);
+    onSuccess: (_data, submission: TrainerFormSubmission) => {
+      submission.pendingAlbumFiles.forEach((p) => URL.revokeObjectURL(p.preview));
       queryClient.invalidateQueries({ queryKey: ['admin-trainers'] });
       queryClient.invalidateQueries({ queryKey: ['training-trainer-counts'] });
       queryClient.invalidateQueries({ queryKey: ['admin-trainer-courses-summary'] });
@@ -700,98 +576,17 @@ const AdminTrainers: React.FC = () => {
 
   const openAdd = () => {
     setEditingTrainer(null);
-    setForm(defaultForm);
-    setPhotoFile(null);
-    setPhotoPreview(null);
-    setPendingBikeByType((prev) => {
-      Object.values(prev).forEach((list) => revokePendingList(list));
-      return {};
-    });
-    setPendingAlbumImages((prev) => {
-      revokePendingList(prev);
-      return [];
-    });
-    setBikeTypeInput('');
+    setTrainerFormInitial({});
+    setTrainerFormNonce((n) => n + 1);
     setAssignedTrainings([]);
     setTrainingDetails({});
-    setIsOtherCity(false);
-    setLanguageAddCode('');
-    setLanguageAddLevel(LANGUAGE_LEVEL_OPTIONS[1]!.value);
     setFormOpen(true);
   };
 
   const openEdit = async (t: Trainer) => {
     setEditingTrainer(t);
-    const ar = splitFullName(t.name_ar);
-    const en = splitFullName(t.name_en);
-    const bike_types = t.bike_type
-      ? t.bike_type.split(',').map((s) => s.trim()).filter(Boolean)
-      : [];
-    let bike_entries = parseBikeEntries(t.bike_entries);
-    if (bike_entries.length === 0 && bike_types.length > 0) {
-      bike_entries = bike_types.map((typ, i) => ({
-        type: typ,
-        brand: i === 0 ? (t.motorbike_brand || '') : '',
-        photos: i === 0 && Array.isArray(t.bike_photos) ? [...t.bike_photos] : [],
-      }));
-    }
-    bike_entries = bike_types.map((typ) => bike_entries.find((e) => e.type === typ) ?? { type: typ, brand: '', photos: [] });
-
-    // Convert old {type,brand,photos} entries → new GarageBikeEntry format, or keep if already new format
-    const rawV2 = parseBikeEntries(t.bike_entries);
-    const bike_entries_v2: GarageBikeEntry[] = (rawV2.length > 0 && 'id' in (rawV2[0] as object))
-      ? (rawV2 as unknown as GarageBikeEntry[])
-      : rawV2.map((e) => ({
-          id: crypto.randomUUID(),
-          type_id: null,
-          type_name: e.type,
-          subtype_id: null,
-          subtype_name: '',
-          brand: e.brand || '',
-          model: '',
-          is_custom_type: true,
-          is_custom_brand: true,
-          photos: e.photos,
-        }));
-
-    setForm({
-      ...defaultForm,
-      first_name_ar: ar.first,
-      last_name_ar: ar.last,
-      first_name_en: en.first,
-      last_name_en: en.last,
-      phone: (t.phone ?? '').trim(),
-      email: (t.email ?? '').trim(),
-      bio_ar: t.bio_ar,
-      bio_en: t.bio_en,
-      country: t.country,
-      city: t.city,
-      bike_types,
-      bike_entries,
-      bike_entries_v2,
-      album_photos: Array.isArray(t.album_photos) ? [...t.album_photos] : [],
-      license_type: t.license_type || '',
-      years_of_experience: t.years_of_experience,
-      profit_ratio: t.profit_ratio || 0,
-      services: t.services || [],
-      status: t.status as 'active' | 'inactive',
-      photo_url: t.photo_url,
-      language_levels: parseLanguageLevels(t.language_levels),
-      date_of_birth: t.date_of_birth ?? null,
-    });
-    setLanguageAddCode('');
-    setLanguageAddLevel(LANGUAGE_LEVEL_OPTIONS[1]!.value);
-    setPendingBikeByType((prev) => {
-      Object.values(prev).forEach((list) => revokePendingList(list));
-      return {};
-    });
-    setPendingAlbumImages((prev) => {
-      revokePendingList(prev);
-      return [];
-    });
-    setBikeTypeInput('');
-    setPhotoFile(null);
-    setPhotoPreview(t.photo_url);
+    setTrainerFormInitial(buildTrainerFormInitialValues(t));
+    setTrainerFormNonce((n) => n + 1);
     const { data: courseRows } = await supabase
       .from('trainer_courses')
       .select('training_id, price, sessions_count, duration_hours, location, location_detail, available_schedule, services')
@@ -856,10 +651,6 @@ const AdminTrainers: React.FC = () => {
         };
       }),
     );
-    // Check if stored city is in the country's city list
-    const countryEntry = COUNTRIES.find(c => c.code === t.country);
-    const cityInList = countryEntry?.cities.some(c => c.en === t.city);
-    setIsOtherCity(!!countryEntry && !cityInList && !!t.city);
     setFormOpen(true);
   };
 
@@ -889,192 +680,6 @@ const AdminTrainers: React.FC = () => {
 
     void run();
   }, [searchParams, trainers, setSearchParams]);
-
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPhotoFile(file);
-      setPhotoPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const addService = () => {
-    if (serviceInput.trim()) {
-      setForm(f => ({ ...f, services: [...f.services, serviceInput.trim()] }));
-      setServiceInput('');
-    }
-  };
-
-  const addTrainerLanguage = () => {
-    if (!languageAddCode) {
-      toast.error(isRTL ? 'اختر لغة' : 'Choose a language');
-      return;
-    }
-    if (form.language_levels.some((x) => x.language === languageAddCode)) {
-      toast.error(isRTL ? 'هذه اللغة مضافة بالفعل' : 'That language is already added');
-      return;
-    }
-    setForm((f) => ({
-      ...f,
-      language_levels: [...f.language_levels, { language: languageAddCode, level: languageAddLevel }],
-    }));
-    setLanguageAddCode('');
-  };
-
-  const clearPendingForBikeType = (bikeType: string) => {
-    setPendingBikeByType((pb) => {
-      const list = pb[bikeType];
-      if (list?.length) revokePendingList(list);
-      const { [bikeType]: _, ...rest } = pb;
-      return rest;
-    });
-  };
-
-  const toggleBikeType = (type: string) => {
-    const f = formRef.current;
-    const removing = f.bike_types.includes(type);
-    if (removing) clearPendingForBikeType(type);
-    setForm((prev) => {
-      const nextTypes = removing ? prev.bike_types.filter((t) => t !== type) : [...prev.bike_types, type];
-      const nextEntries = nextTypes.map(
-        (t) => prev.bike_entries.find((e) => e.type === t) ?? { type: t, brand: '', photos: [] },
-      );
-      return { ...prev, bike_types: nextTypes, bike_entries: nextEntries };
-    });
-  };
-
-  const addCustomBikeType = () => {
-    const v = bikeTypeInput.trim();
-    if (!v) return;
-    const f = formRef.current;
-    if (f.bike_types.includes(v)) {
-      setBikeTypeInput('');
-      return;
-    }
-    setForm((prev) => ({
-      ...prev,
-      bike_types: [...prev.bike_types, v],
-      bike_entries: [...prev.bike_entries, { type: v, brand: '', photos: [] }],
-    }));
-    setBikeTypeInput('');
-  };
-
-  const removeBikeTypeBadge = (bikeType: string) => {
-    clearPendingForBikeType(bikeType);
-    setForm((prev) => ({
-      ...prev,
-      bike_types: prev.bike_types.filter((x) => x !== bikeType),
-      bike_entries: prev.bike_entries.filter((e) => e.type !== bikeType),
-    }));
-  };
-
-  const setBikeEntryBrand = (bikeType: string, brand: string) => {
-    setForm((f) => ({
-      ...f,
-      bike_entries: f.bike_entries.some((e) => e.type === bikeType)
-        ? f.bike_entries.map((e) => (e.type === bikeType ? { ...e, brand } : e))
-        : [...f.bike_entries, { type: bikeType, brand, photos: [] }],
-    }));
-  };
-
-  const triggerBikePhotoPick = (bikeType: string) => {
-    bikePhotoPickTypeRef.current = bikeType;
-    bikePhotoFileRef.current?.click();
-  };
-
-  const addBikePhotoFilesForType = (bikeType: string, files: FileList | null) => {
-    if (!files?.length || !bikeType) return;
-    setPendingBikeByType((prev) => {
-      const pending = prev[bikeType] || [];
-      const entry = formRef.current.bike_entries.find((e) => e.type === bikeType);
-      const urlCount = entry?.photos.length ?? 0;
-      const next = [...pending];
-      for (const file of Array.from(files)) {
-        if (file.size > MAX_BIKE_PHOTO_BYTES) {
-          toast.error(
-            isRTL
-              ? `الملف أكبر من ${MAX_BIKE_PHOTO_BYTES / (1024 * 1024)} ميجابايت`
-              : `File exceeds ${MAX_BIKE_PHOTO_BYTES / (1024 * 1024)} MB`,
-          );
-          continue;
-        }
-        if (urlCount + next.length >= MAX_PHOTOS_PER_BIKE_ENTRY) {
-          toast.error(
-            isRTL
-              ? `الحد الأقصى ${MAX_PHOTOS_PER_BIKE_ENTRY} صور لكل دراجة`
-              : `Maximum ${MAX_PHOTOS_PER_BIKE_ENTRY} photos per bike`,
-          );
-          break;
-        }
-        next.push({ file, preview: URL.createObjectURL(file) });
-      }
-      return { ...prev, [bikeType]: next };
-    });
-    if (bikePhotoFileRef.current) bikePhotoFileRef.current.value = '';
-  };
-
-  const onBikePhotoFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const type = bikePhotoPickTypeRef.current;
-    bikePhotoPickTypeRef.current = null;
-    if (type) addBikePhotoFilesForType(type, e.target.files);
-    e.target.value = '';
-  };
-
-  const removeBikePhotoUrlForType = (bikeType: string, url: string) => {
-    setForm((f) => ({
-      ...f,
-      bike_entries: f.bike_entries.map((e) =>
-        e.type === bikeType ? { ...e, photos: e.photos.filter((u) => u !== url) } : e,
-      ),
-    }));
-  };
-
-  const removePendingBikeAtForType = (bikeType: string, index: number) => {
-    setPendingBikeByType((prev) => {
-      const list = prev[bikeType] || [];
-      const row = list[index];
-      if (row) URL.revokeObjectURL(row.preview);
-      const nextList = list.filter((_, i) => i !== index);
-      const { [bikeType]: _, ...rest } = prev;
-      return nextList.length ? { ...rest, [bikeType]: nextList } : rest;
-    });
-  };
-
-  const addAlbumPhotoFiles = (files: FileList | null) => {
-    if (!files?.length) return;
-    setPendingAlbumImages((prev) => {
-      const next = [...prev];
-      for (const file of Array.from(files)) {
-        if (file.size > MAX_ALBUM_PHOTO_BYTES) {
-          toast.error(
-            isRTL
-              ? `الملف أكبر من ${MAX_ALBUM_PHOTO_BYTES / (1024 * 1024)} ميجابايت`
-              : `File exceeds ${MAX_ALBUM_PHOTO_BYTES / (1024 * 1024)} MB`,
-          );
-          continue;
-        }
-        if (formRef.current.album_photos.length + next.length >= MAX_ALBUM_PHOTOS) {
-          toast.error(isRTL ? `الحد الأقصى ${MAX_ALBUM_PHOTOS} صور` : `Maximum ${MAX_ALBUM_PHOTOS} album photos`);
-          break;
-        }
-        next.push({ file, preview: URL.createObjectURL(file) });
-      }
-      return next;
-    });
-    if (albumPhotosInputRef.current) albumPhotosInputRef.current.value = '';
-  };
-
-  const removeAlbumPhotoUrl = (url: string) => {
-    setForm((f) => ({ ...f, album_photos: f.album_photos.filter((u) => u !== url) }));
-  };
-
-  const removePendingAlbumAt = (index: number) => {
-    setPendingAlbumImages((prev) => {
-      const row = prev[index];
-      if (row) URL.revokeObjectURL(row.preview);
-      return prev.filter((_, i) => i !== index);
-    });
-  };
 
   /**
    * Add/remove a training assignment. New rows snapshot trainer country/city/services from the form;
@@ -1137,7 +742,9 @@ const AdminTrainers: React.FC = () => {
       },
     }));
 
-    const f = formRef.current;
+    const snap = trainerFormSnapshotRef.current;
+    const location_country = (snap.country ?? editingTrainer?.country ?? '').trim();
+    const location_city = (snap.city ?? editingTrainer?.city ?? '').trim();
     setAssignedTrainings((prev) => {
       if (prev.some((a) => a.training_id === trainingId)) return prev;
       return [
@@ -1147,8 +754,8 @@ const AdminTrainers: React.FC = () => {
           price: 0,
           sessions_count: defSessions,
           duration_hours: defDur,
-          location_country: f.country,
-          location_city: f.city,
+          location_country,
+          location_city,
           location_detail: '',
           available_schedule: {},
           services: [],
@@ -1214,14 +821,23 @@ const AdminTrainers: React.FC = () => {
     return { ok: true as const, message: '' };
   };
 
-  const onSaveTrainer = () => {
+  const handleTrainerFormSubmit = async (submission: TrainerFormSubmission) => {
     const v = validateAssignedTrainings();
     if (!v.ok) {
       toast.error(v.message);
       return;
     }
-    saveMutation.mutate();
+    await saveMutation.mutateAsync(submission);
   };
+
+  const onSaveTrainer = () => {
+    void trainerFormRef.current?.submit();
+  };
+
+  useEffect(() => {
+    if (!formOpen) return;
+    trainerFormSnapshotRef.current = { ...trainerFormInitial };
+  }, [formOpen, trainerFormNonce, trainerFormInitial]);
 
   // ─── Full-page form view ────────────────────────────────────────
   if (formOpen) {
@@ -1241,363 +857,20 @@ const AdminTrainers: React.FC = () => {
             </Button>
           </div>
 
-          {/* Section: Photo & Basic Info */}
-          <Card>
-            <CardContent className="p-6 space-y-5">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'المعلومات الأساسية' : 'Basic Information'}</h3>
-
-              {/* Photo Upload */}
-              <div
-                onClick={() => fileRef.current?.click()}
-                className="flex items-center gap-4 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors"
-              >
-                <Avatar className="h-16 w-16">
-                  <AvatarImage src={photoPreview || ''} />
-                  <AvatarFallback className="bg-primary/10 text-primary"><Upload className="w-6 h-6" /></AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium">{isRTL ? 'رفع صورة المدرب' : 'Upload trainer photo'}</p>
-                  <p className="text-xs text-muted-foreground">{isRTL ? 'اسحب أو انقر للرفع' : 'Drag or click to upload'}</p>
-                </div>
-                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
-              </div>
-
-              {/* Photo album */}
-              <FormField
-                label={isRTL ? 'ألبوم الصور' : 'Photo album'}
-                hint={
-                  isRTL
-                    ? `حتى ${MAX_ALBUM_PHOTOS} صور، حتى ${MAX_ALBUM_PHOTO_BYTES / (1024 * 1024)} ميجابايت لكل صورة`
-                    : `Up to ${MAX_ALBUM_PHOTOS} images, ${MAX_ALBUM_PHOTO_BYTES / (1024 * 1024)} MB each`
-                }
-              >
-                <div className="flex flex-wrap gap-2 items-start">
-                  {form.album_photos.map((url) => (
-                    <div key={url} className="relative w-20 h-20 rounded-md border border-border overflow-hidden shrink-0 group/thumb">
-                      <img src={url} alt="" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        className="absolute top-0.5 end-0.5 w-5 h-5 rounded-full bg-background/90 border text-xs flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity"
-                        onClick={() => removeAlbumPhotoUrl(url)}
-                        aria-label={isRTL ? 'حذف' : 'Remove'}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                  {pendingAlbumImages.map((p, i) => (
-                    <div key={p.preview} className="relative w-20 h-20 rounded-md border border-border overflow-hidden shrink-0 group/thumb">
-                      <img src={p.preview} alt="" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        className="absolute top-0.5 end-0.5 w-5 h-5 rounded-full bg-background/90 border text-xs flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity"
-                        onClick={() => removePendingAlbumAt(i)}
-                        aria-label={isRTL ? 'حذف' : 'Remove'}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => albumPhotosInputRef.current?.click()}
-                    disabled={form.album_photos.length + pendingAlbumImages.length >= MAX_ALBUM_PHOTOS}
-                    className="w-20 h-20 rounded-md border border-dashed border-muted-foreground/40 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors disabled:opacity-50"
-                  >
-                    <Images className="w-5 h-5" />
-                    <span className="text-[10px]">{isRTL ? 'إضافة' : 'Add'}</span>
-                  </button>
-                  <input
-                    ref={albumPhotosInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => addAlbumPhotoFiles(e.target.files)}
-                  />
-                </div>
-              </FormField>
-
-              <div className="grid grid-cols-1 gap-4">
-                <NameFields
-                  firstName={form.first_name_ar}
-                  lastName={form.last_name_ar}
-                  onFirstNameChange={(val) => setForm((f) => ({ ...f, first_name_ar: val }))}
-                  onLastNameChange={(val) => setForm((f) => ({ ...f, last_name_ar: val }))}
-                  firstNameLabel={isRTL ? 'الاسم الأول (عربي)' : 'First Name (AR)'}
-                  lastNameLabel={isRTL ? 'الاسم الأخير (عربي)' : 'Last Name (AR)'}
-                />
-                <NameFields
-                  firstName={form.first_name_en}
-                  lastName={form.last_name_en}
-                  onFirstNameChange={(val) => setForm((f) => ({ ...f, first_name_en: val }))}
-                  onLastNameChange={(val) => setForm((f) => ({ ...f, last_name_en: val }))}
-                  firstNameLabel={isRTL ? 'الاسم الأول (إنجليزي)' : 'First Name (EN)'}
-                  lastNameLabel={isRTL ? 'الاسم الأخير (إنجليزي)' : 'Last Name (EN)'}
-                  inputDir="ltr"
-                  inputClassName={isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}
-                />
-                <div className="md:col-span-2">
-                  <PhoneField
-                    phonePrefix={parsedPhone.prefixKey}
-                    phoneNumber={parsedPhone.local}
-                    onPrefixChange={(val) =>
-                      setForm((f) => ({
-                        ...f,
-                        phone: composeTrainerPhone(val, parseTrainerPhone(f.phone).local),
-                      }))
-                    }
-                    onNumberChange={(val) =>
-                      setForm((f) => ({
-                        ...f,
-                        phone: composeTrainerPhone(parseTrainerPhone(f.phone).prefixKey, val),
-                      }))
-                    }
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <FormField label={isRTL ? 'البريد الإلكتروني' : 'Email'}>
-                    <Input
-                      type="email"
-                      autoComplete="email"
-                      placeholder={isRTL ? 'name@example.com' : 'name@example.com'}
-                      value={form.email}
-                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                      dir="ltr"
-                      className={cn(
-                        '[direction:ltr] [unicode-bidi:plaintext]',
-                        isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left',
-                      )}
-                    />
-                  </FormField>
-                </div>
-                <div className="md:col-span-2">
-                  <DateOfBirthPicker
-                    value={form.date_of_birth}
-                    onChange={(date) => setForm((f) => ({ ...f, date_of_birth: date }))}
-                  />
-                </div>
-              </div>
-
-              <BilingualInput labelEn="Bio" labelAr="السيرة" valueEn={form.bio_en} valueAr={form.bio_ar} onChangeEn={v => setForm(f => ({ ...f, bio_en: v }))} onChangeAr={v => setForm(f => ({ ...f, bio_ar: v }))} isTextarea rows={3} />
-            </CardContent>
-          </Card>
-
-          {/* Section: Location & Specialization */}
-          <Card>
-            <CardContent className="p-6 space-y-5">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'الموقع والتخصص' : 'Location & Specialization'}</h3>
-              <CountryCityPicker
-                country={form.country}
-                city={form.city}
-                onCountryChange={(v) => { setForm((f) => ({ ...f, country: v, city: '' })); setIsOtherCity(false); }}
-                onCityChange={(v) => { setForm((f) => ({ ...f, city: v })); setIsOtherCity(v === '__other__'); }}
-                customCity={isOtherCity ? form.city : ''}
-                onCustomCityChange={(v) => setForm((f) => ({ ...f, city: v }))}
-              />
-              <div className="rounded-xl border border-border/70 bg-muted/10 p-4">
-                <BikeGarage
-                  entries={form.bike_entries_v2}
-                  onChange={(updated) => setForm((f) => ({ ...f, bike_entries_v2: updated }))}
-                  userId={editingTrainer?.id ?? null}
-                  storageFolder="bikes"
-                />
-                {!editingTrainer && form.bike_entries_v2.length === 0 && (
-                  <p className="text-xs text-muted-foreground mt-2 text-center">
-                    {isRTL
-                      ? 'يمكنك إضافة صور الدراجات بعد حفظ بيانات المدرب.'
-                      : 'You can add bike photos after saving the trainer.'}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField label={isRTL ? 'سنوات الخبرة' : 'Years of Experience'}>
-                  <Input type="number" value={form.years_of_experience} onChange={e => setForm(f => ({ ...f, years_of_experience: parseInt(e.target.value) || 0 }))} />
-                </FormField>
-              </div>
-
-              {/* Status */}
-              <div className="flex items-center justify-between rounded-lg border border-border p-4">
-                <div>
-                  <Label className="text-sm font-medium">{isRTL ? 'الحالة' : 'Status'}</Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">{isRTL ? 'تفعيل أو تعطيل هذا المدرب' : 'Enable or disable this trainer'}</p>
-                </div>
-                <Switch checked={form.status === 'active'} onCheckedChange={v => setForm(f => ({ ...f, status: v ? 'active' : 'inactive' }))} />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Section: Languages & proficiency */}
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                <Languages className="h-4 w-4 shrink-0" aria-hidden />
-                {isRTL ? 'اللغات والمستوى' : 'Languages & level'}
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                {isRTL
-                  ? 'أضف كل لغة يتحدثها المدرب واختر مستوى الإتقان لكل لغة.'
-                  : 'Add each language the trainer speaks and set proficiency for every language.'}
-              </p>
-
-              <div className="flex flex-col gap-3 rounded-lg border border-border/60 bg-muted/20 p-3 sm:flex-row sm:flex-wrap sm:items-end">
-                <div className="min-w-0 flex-[1.2] sm:min-w-[12rem]">
-                  <FormField label={isRTL ? 'لغة' : 'Language'}>
-                    <Select
-                      dir={locationFieldDir}
-                      value={languageAddCode || '__none__'}
-                      onValueChange={(v) => setLanguageAddCode(v === '__none__' ? '' : v)}
-                    >
-                      <SelectTrigger dir={locationFieldDir} className="h-9 w-full">
-                        <SelectValue placeholder={isRTL ? 'اختر لغة' : 'Select language'} />
-                      </SelectTrigger>
-                      <SelectContent dir={locationFieldDir}>
-                        <SelectItem value="__none__">{isRTL ? '— اختر —' : '— Select —'}</SelectItem>
-                        {TRAINER_LANGUAGE_OPTIONS.filter(
-                          (opt) => !form.language_levels.some((e) => e.language === opt.code),
-                        ).map((opt) => (
-                          <SelectItem key={opt.code} value={opt.code}>
-                            {isRTL ? opt.label_ar : opt.label_en}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormField>
-                </div>
-                <div className="min-w-0 flex-1 sm:min-w-[12rem]">
-                  <FormField label={isRTL ? 'المستوى' : 'Level'}>
-                    <Select dir={locationFieldDir} value={languageAddLevel} onValueChange={setLanguageAddLevel}>
-                      <SelectTrigger dir={locationFieldDir} className="h-9 w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent dir={locationFieldDir}>
-                        {LANGUAGE_LEVEL_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {isRTL ? opt.label_ar : opt.label_en}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormField>
-                </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="h-9 gap-1 shrink-0 sm:min-w-[7.5rem]"
-                  onClick={addTrainerLanguage}
-                  disabled={!languageAddCode}
-                >
-                  <Plus className="h-4 w-4" />
-                  {isRTL ? 'إضافة' : 'Add'}
-                </Button>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] text-muted-foreground">{isRTL ? 'إضافة سريعة:' : 'Quick add:'}</span>
-                {TRAINER_LANGUAGE_OPTIONS.filter(
-                  (opt) =>
-                    ['ar', 'en', 'ur'].includes(opt.code) &&
-                    !form.language_levels.some((e) => e.language === opt.code),
-                ).map((opt) => (
-                  <Button
-                    key={opt.code}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-7 px-2.5 text-xs"
-                    onClick={() =>
-                      setForm((f) => ({
-                        ...f,
-                        language_levels: [...f.language_levels, { language: opt.code, level: languageAddLevel }],
-                      }))
-                    }
-                  >
-                    {isRTL ? opt.label_ar : opt.label_en}
-                  </Button>
-                ))}
-              </div>
-
-              <FormField label={isRTL ? 'اللغات المضافة' : 'Added languages'}>
-                {form.language_levels.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">{isRTL ? 'لم تُضف لغات بعد' : 'No languages added yet'}</p>
-                ) : (
-                  <ul className="divide-y divide-border/60 rounded-lg border border-border/60">
-                    {form.language_levels.map((row, i) => {
-                      const levelVal = LANGUAGE_LEVEL_OPTIONS.some((x) => x.value === row.level) ? row.level : LANGUAGE_LEVEL_OPTIONS[4]!.value;
-                      return (
-                        <li key={`${row.language}-${i}`} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
-                          <span className="text-sm font-medium">{languageOptionLabel(row.language, isRTL)}</span>
-                          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                            <Select
-                              value={levelVal}
-                              onValueChange={(v) =>
-                                setForm((f) => ({
-                                  ...f,
-                                  language_levels: f.language_levels.map((e, idx) => (idx === i ? { ...e, level: v } : e)),
-                                }))
-                              }
-                            >
-                              <SelectTrigger className="h-9 w-full min-w-[10rem] sm:w-[14rem]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {LANGUAGE_LEVEL_OPTIONS.map((opt) => (
-                                  <SelectItem key={opt.value} value={opt.value}>
-                                    {isRTL ? opt.label_ar : opt.label_en}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
-                              onClick={() =>
-                                setForm((f) => ({
-                                  ...f,
-                                  language_levels: f.language_levels.filter((_, idx) => idx !== i),
-                                }))
-                              }
-                              aria-label={isRTL ? 'إزالة اللغة' : 'Remove language'}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </FormField>
-            </CardContent>
-          </Card>
-
-          {/* Section: Services */}
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'الخدمات' : 'Services'}</h3>
-              <FormField label={isRTL ? 'إضافة خدمة' : 'Add service'}>
-                <div className="flex gap-2">
-                  <Input value={serviceInput} onChange={e => setServiceInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addService())} placeholder={isRTL ? 'أضف خدمة...' : 'Add service...'} className="flex-1" />
-                  <Button type="button" variant="outline" size="icon" onClick={addService}><Plus className="w-4 h-4" /></Button>
-                </div>
-              </FormField>
-              <FormField label={isRTL ? 'الخدمات الحالية' : 'Current services'}>
-                <div className="flex flex-wrap gap-2">
-                {form.services.map((s, i) => (
-                  <Badge key={i} variant="secondary" className="gap-1 px-3 py-1.5">
-                    {s}
-                    <X className="w-3 h-3 cursor-pointer hover:text-destructive" onClick={() => setForm(f => ({ ...f, services: f.services.filter((_, idx) => idx !== i) }))} />
-                  </Badge>
-                ))}
-                {form.services.length === 0 && <p className="text-xs text-muted-foreground">{isRTL ? 'لم تتم إضافة خدمات بعد' : 'No services added yet'}</p>}
-                </div>
-              </FormField>
-            </CardContent>
-          </Card>
-
+          <TrainerForm
+            ref={trainerFormRef}
+            mode={editingTrainer ? 'admin-edit' : 'admin-create'}
+            formResetKey={trainerFormNonce}
+            initialValues={trainerFormInitial}
+            garageStorageUserId={editingTrainer?.id ?? null}
+            hideSubmitButton
+            onValuesChange={(v) => {
+              trainerFormSnapshotRef.current = v;
+            }}
+            onSubmit={handleTrainerFormSubmit}
+            isSubmitting={saveMutation.isPending}
+            trainingsSlot={
+            <>
           {/* Section: Training Assignments */}
           <Card>
             <CardContent className="p-6 space-y-4">
@@ -1900,6 +1173,9 @@ const AdminTrainers: React.FC = () => {
               )}
             </CardContent>
           </Card>
+            </>
+            }
+          />
 
           {/* Bottom Save */}
           <div className="flex justify-end gap-3 pb-6">
@@ -1917,14 +1193,42 @@ const AdminTrainers: React.FC = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold">{isRTL ? 'إدارة المدربين' : 'Trainers Management'}</h1>
             <p className="text-sm text-muted-foreground">{isRTL ? 'إدارة جميع المدربين' : 'Manage all trainers'}</p>
           </div>
-          <Button onClick={openAdd} size="sm"><Plus className="w-4 h-4 me-2" />{isRTL ? 'إضافة مدرب' : 'Add Trainer'}</Button>
+          {mainTab === 'trainers' && (
+            <Button onClick={openAdd} size="sm" className="shrink-0 w-fit">
+              <Plus className="w-4 h-4 me-2" />
+              {isRTL ? 'إضافة مدرب' : 'Add Trainer'}
+            </Button>
+          )}
         </div>
 
+        <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
+          <TabsList className="flex h-auto flex-wrap gap-1 p-1">
+            <TabsTrigger value="trainers" className="gap-1.5">
+              {isRTL ? 'المدربين' : 'Trainers'}
+            </TabsTrigger>
+            <TabsTrigger value="applications" className="gap-1.5">
+              <span>{t('admin.trainerApplications.tabLabel')}</span>
+              {pendingApplicationsCount > 0 && (
+                <Badge
+                  variant="destructive"
+                  className="h-5 min-w-5 rounded-full px-1.5 text-[10px] font-bold tabular-nums"
+                >
+                  {pendingApplicationsCount >= 10 ? '9+' : pendingApplicationsCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="applications" className="mt-6 outline-none">
+            <TrainerApplicationsList />
+          </TabsContent>
+
+          <TabsContent value="trainers" className="mt-6 space-y-6 outline-none">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
@@ -2101,6 +1405,8 @@ const AdminTrainers: React.FC = () => {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Delete Confirm */}

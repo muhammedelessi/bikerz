@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { ChevronDown, Search, X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface DropdownOption {
@@ -137,14 +137,13 @@ var SearchableDropdown: React.FC<SearchableDropdownProps> = function (props) {
         >
           {/* Search input */}
           <div className="flex items-center gap-2 border-b border-border px-3 py-2">
-            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input
               ref={searchRef}
               type="text"
               value={search}
               onChange={function (e) { setSearch(e.target.value); }}
               placeholder={searchPlaceholder}
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground min-w-0"
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               dir={dir || undefined}
               autoComplete="off"
               autoCorrect="off"
