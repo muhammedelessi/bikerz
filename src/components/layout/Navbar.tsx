@@ -153,7 +153,7 @@ const Navbar: React.FC = () => {
   };
 
   const menuItems = useMemo(() => {
-    const hiddenLinks = new Set(["/trainings", "/trainers"]);
+    const hiddenLinks = new Set(["/trainings", "/trainers", "/mentors"]);
     const defaultItems: MenuItem[] = [
       {
         id: "home",
@@ -172,14 +172,6 @@ const Navbar: React.FC = () => {
         open_in_new_tab: false,
       },
       ...extraAfterCoursesNav(t),
-      {
-        id: "mentors",
-        title_en: t("nav.mentors", { lng: "en" }),
-        title_ar: t("nav.mentors", { lng: "ar" }),
-        link: "/mentors",
-        is_visible: true,
-        open_in_new_tab: false,
-      },
       {
         id: "about",
         title_en: t("nav.about", { lng: "en" }),
