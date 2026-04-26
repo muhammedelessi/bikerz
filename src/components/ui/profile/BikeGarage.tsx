@@ -1,9 +1,3 @@
-/**
- * BikeGarage — reusable multi-bike manager.
- * Decoupled from any specific profile/trainer model.
- * The parent owns persistence; this component just manages entries in memory
- * and calls `onChange` whenever the list changes.
- */
 import React, { useImperativeHandle, useMemo, useRef, useState, forwardRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -14,21 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import {
-  Bike,
-  Plus,
-  Trash2,
-  Loader2,
-  ChevronRight,
-  ChevronLeft,
-  X,
-  ImagePlus,
-  Gauge,
-  Zap,
-  Mountain,
-  Flame,
-  Wind,
-} from "lucide-react";
+import { Bike, Plus, Trash2, Loader2, ChevronRight, ChevronLeft, X, ImagePlus, Camera } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,7 +38,6 @@ interface LightboxState {
   photos: string[];
   index: number;
 }
-
 interface FlatModel {
   model_id: string;
   brand: string;
@@ -86,6 +65,14 @@ export interface BikeGarageHandle {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TYPE_GRADIENTS: Record<string, string> = {
+  Race: "from-red-900/60 via-red-950/40 to-black/60",
+  Touring: "from-blue-900/60 via-blue-950/40 to-black/60",
+  Cruiser: "from-amber-900/60 via-amber-950/40 to-black/60",
+  Adventure: "from-green-900/60 via-green-950/40 to-black/60",
+  Scrambler: "from-stone-800/60 via-stone-900/40 to-black/60",
+  Naked: "from-zinc-800/60 via-zinc-900/40 to-black/60",
+};
+const TYPE_BG: Record<string, string> = {
   Race: "from-red-950/80 to-background",
   Touring: "from-blue-950/80 to-background",
   Cruiser: "from-amber-950/80 to-background",
@@ -93,13 +80,13 @@ const TYPE_GRADIENTS: Record<string, string> = {
   Scrambler: "from-stone-950/80 to-background",
   Naked: "from-zinc-950/80 to-background",
 };
-const TYPE_CHIP_COLORS: Record<string, string> = {
-  Race: "bg-red-500/15 text-red-500",
-  Touring: "bg-blue-500/15 text-blue-500",
-  Cruiser: "bg-amber-500/15 text-amber-500",
-  Adventure: "bg-green-500/15 text-green-500",
-  Scrambler: "bg-stone-500/15 text-stone-400",
-  Naked: "bg-zinc-500/15 text-zinc-400",
+const TYPE_CHIP: Record<string, string> = {
+  Race: "bg-red-500/15 text-red-400 border-red-500/20",
+  Touring: "bg-blue-500/15 text-blue-400 border-blue-500/20",
+  Cruiser: "bg-amber-500/15 text-amber-400 border-amber-500/20",
+  Adventure: "bg-green-500/15 text-green-400 border-green-500/20",
+  Scrambler: "bg-stone-500/15 text-stone-400 border-stone-500/20",
+  Naked: "bg-zinc-500/15 text-zinc-300 border-zinc-500/20",
 };
 const TYPE_EMOJI: Record<string, string> = {
   Race: "🏁",
@@ -108,14 +95,6 @@ const TYPE_EMOJI: Record<string, string> = {
   Adventure: "🏔️",
   Scrambler: "🪨",
   Naked: "⚡",
-};
-const LUCIDE_ICONS: Record<string, React.ElementType> = {
-  Race: Zap,
-  Touring: Wind,
-  Cruiser: Gauge,
-  Adventure: Mountain,
-  Scrambler: Flame,
-  Naked: Bike,
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -183,7 +162,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
       if (cardFileRef.current) cardFileRef.current.value = "";
     };
 
-    // ── Add-bike page state ───────────────────────────────────────────────────
+    // ── Add-bike state ────────────────────────────────────────────────────────
     const [search, setSearch] = useState("");
     const [activeType, setActiveType] = useState<string>("all");
     const [showManual, setShowManual] = useState(false);
@@ -191,7 +170,6 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
     const [manualTypeName, setManualTypeName] = useState("");
     const [manualBrand, setManualBrand] = useState("");
     const [manualModel, setManualModel] = useState("");
-
     const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
     const [pendingPreviews, setPendingPreviews] = useState<string[]>([]);
     const addPhotoInputRef = useRef<HTMLInputElement>(null);
@@ -200,8 +178,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
     const onPickPendingPhotos = (files: FileList | null) => {
       if (!files) return;
       const arr = Array.from(files);
-      const total = pendingPhotos.length + arr.length;
-      if (total > 5) {
+      if (pendingPhotos.length + arr.length > 5) {
         toast.error(isRTL ? "الحد الأقصى 5 صور" : "Maximum 5 photos");
         return;
       }
@@ -213,8 +190,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
     const removePendingPhoto = (index: number) => {
       setPendingPhotos((prev) => prev.filter((_, i) => i !== index));
       setPendingPreviews((prev) => {
-        const url = prev[index];
-        if (url) URL.revokeObjectURL(url);
+        URL.revokeObjectURL(prev[index]);
         return prev.filter((_, i) => i !== index);
       });
     };
@@ -260,12 +236,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
     const [photosUploading, setPhotosUploading] = useState(false);
     const photoEntry = entries.find((e) => e.id === photoBikeId) ?? null;
 
-    const openPhotosPage = (bikeId: string) => {
-      setPhotoBikeId(bikeId);
-      setView("photos");
-    };
-
-    // ── Flat models for search ────────────────────────────────────────────────
+    // ── Flat models ───────────────────────────────────────────────────────────
     const flatModels: FlatModel[] = useMemo(
       () =>
         catalogTypes.flatMap((t) =>
@@ -286,7 +257,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
       [catalogTypes],
     );
 
-    const searchResults: FlatModel[] = useMemo(
+    const searchResults = useMemo(
       () =>
         flatModels.filter((m) => {
           const matchType = activeType === "all" || m.type_id === activeType;
@@ -298,31 +269,32 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
       [flatModels, search, activeType],
     );
 
-    // ── Quick add from catalog ────────────────────────────────────────────────
+    // ── Handlers ──────────────────────────────────────────────────────────────
     const onQuickAdd = async (item: FlatModel) => {
       const id = crypto.randomUUID();
       setSavingNewBike(true);
       const photoUrls = await uploadFilesForBike(id, pendingPhotos);
-      const newEntry: BikeEntry = {
-        id,
-        type_id: item.type_id,
-        type_name: item.type_name,
-        subtype_id: item.subtype_id,
-        subtype_name: item.subtype_name,
-        brand: item.brand,
-        model: item.model_name,
-        is_custom_type: false,
-        is_custom_brand: false,
-        photos: photoUrls,
-      };
-      onChange([...entries, newEntry]);
+      onChange([
+        ...entries,
+        {
+          id,
+          type_id: item.type_id,
+          type_name: item.type_name,
+          subtype_id: item.subtype_id,
+          subtype_name: item.subtype_name,
+          brand: item.brand,
+          model: item.model_name,
+          is_custom_type: false,
+          is_custom_brand: false,
+          photos: photoUrls,
+        },
+      ]);
       setSavingNewBike(false);
       clearPendingPhotos();
       setView("list");
       toast.success(isRTL ? "تمت إضافة الدراجة" : "Bike added");
     };
 
-    // ── Manual add ────────────────────────────────────────────────────────────
     const onSaveManual = async () => {
       if (!manualBrand.trim() || !manualModel.trim()) {
         toast.error(isRTL ? "الرجاء إدخال الماركة والموديل" : "Please enter brand and model");
@@ -332,29 +304,29 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
       const id = crypto.randomUUID();
       setSavingNewBike(true);
       const photoUrls = await uploadFilesForBike(id, pendingPhotos);
-      const newEntry: BikeEntry = {
-        id,
-        type_id: resolved?.id ?? null,
-        type_name: resolved?.name_en ?? manualTypeName.trim(),
-        subtype_id: null,
-        subtype_name: "",
-        brand: manualBrand.trim(),
-        model: manualModel.trim(),
-        is_custom_type: !resolved,
-        is_custom_brand: true,
-        photos: photoUrls,
-      };
-      onChange([...entries, newEntry]);
+      onChange([
+        ...entries,
+        {
+          id,
+          type_id: resolved?.id ?? null,
+          type_name: resolved?.name_en ?? manualTypeName.trim(),
+          subtype_id: null,
+          subtype_name: "",
+          brand: manualBrand.trim(),
+          model: manualModel.trim(),
+          is_custom_type: !resolved,
+          is_custom_brand: true,
+          photos: photoUrls,
+        },
+      ]);
       setSavingNewBike(false);
       clearPendingPhotos();
       setView("list");
       toast.success(isRTL ? "تمت إضافة الدراجة" : "Bike added");
     };
 
-    // ── Delete ────────────────────────────────────────────────────────────────
     const deleteBike = (id: string) => onChange(entries.filter((e) => e.id !== id));
 
-    // ── Photos page upload ────────────────────────────────────────────────────
     const handlePhotosUpload = async (files: FileList | null) => {
       if (!files || !photoBikeId || !photoEntry) return;
       if (photoEntry.photos.length + files.length > 5) {
@@ -375,14 +347,14 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
     };
 
     // ── Localized names ───────────────────────────────────────────────────────
-    const localizedTypeName = (entry: BikeEntry) => {
+    const localName = (entry: BikeEntry) => {
       if (entry.type_id) {
         const ct = catalogTypes.find((t) => t.id === entry.type_id);
         if (ct) return isRTL ? ct.name_ar : ct.name_en;
       }
       return entry.type_name;
     };
-    const localizedSubtypeName = (entry: BikeEntry) => {
+    const localSubName = (entry: BikeEntry) => {
       if (entry.subtype_id) {
         for (const ct of catalogTypes) {
           const s = ct.bike_subtypes.find((s) => s.id === entry.subtype_id);
@@ -397,106 +369,102 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
       <div dir={isRTL ? "rtl" : "ltr"}>
         {/* ══════════════ LIST VIEW ══════════════ */}
         {view === "list" && (
-          <div className="space-y-4">
+          <div>
             {entries.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
                 {entries.map((entry) => {
-                  const typeName = localizedTypeName(entry);
-                  const subName = localizedSubtypeName(entry);
-                  const gradient = TYPE_GRADIENTS[entry.type_name] ?? "from-primary/20 to-background";
-                  const chipCls = TYPE_CHIP_COLORS[entry.type_name] ?? "bg-primary/10 text-primary";
+                  const typeName = localName(entry);
+                  const subName = localSubName(entry);
+                  const chipCls = TYPE_CHIP[entry.type_name] ?? "bg-primary/10 text-primary border-primary/20";
+                  const bg = TYPE_BG[entry.type_name] ?? "from-primary/20 to-background";
                   const emoji = TYPE_EMOJI[entry.type_name] ?? "🏍️";
                   return (
                     <div
                       key={entry.id}
-                      className="rounded-2xl border border-border/50 overflow-hidden bg-card shadow-sm hover:shadow-md transition-shadow flex flex-col"
+                      className="rounded-2xl border border-border/50 overflow-hidden bg-card shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col group"
                     >
-                      {/* Top: image + details — row on mobile, column on sm+ */}
-                      <div className="flex flex-row sm:flex-col flex-1 min-w-0">
-                        {/* Image */}
+                      {/* ── Photo area ── */}
+                      <div className="relative aspect-[4/3] overflow-hidden bg-muted shrink-0">
                         {entry.photos.length > 0 ? (
-                          <div className="relative w-28 aspect-square sm:w-auto shrink-0 sm:aspect-[4/3] overflow-hidden bg-muted">
+                          <>
                             <img
                               src={entry.photos[0]}
                               alt={entry.model}
-                              className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-500"
+                              className="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500"
                               onClick={() => setLightbox({ photos: entry.photos, index: 0 })}
                             />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             {entry.photos.length > 1 && (
-                              <div className="absolute bottom-1.5 end-1.5 sm:bottom-2 sm:end-2 bg-black/60 text-white text-[10px] font-semibold px-1.5 py-0.5 sm:px-2 rounded-full backdrop-blur-sm">
+                              <div className="absolute bottom-2 end-2 bg-black/60 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">
                                 1 / {entry.photos.length}
                               </div>
                             )}
-                          </div>
+                          </>
                         ) : (
-                          <div
-                            className={cn(
-                              "w-28 aspect-square sm:w-auto shrink-0 sm:aspect-[4/3] bg-gradient-to-b flex items-center justify-center",
-                              gradient,
-                            )}
-                          >
-                            <span className="text-4xl opacity-30 select-none">{emoji}</span>
+                          <div className={cn("w-full h-full bg-gradient-to-b flex items-center justify-center", bg)}>
+                            <span className="text-6xl opacity-20 select-none group-hover:scale-110 transition-transform duration-500">
+                              {emoji}
+                            </span>
                           </div>
                         )}
-
-                        {/* Details */}
-                        <div className="p-3 space-y-1.5 flex-1 min-w-0">
-                          {typeName && (
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full", chipCls)}>
-                                {typeName}
-                              </span>
-                              {subName && (
-                                <>
-                                  <ChevronRight className="w-3 h-3 text-muted-foreground/50 shrink-0 rtl:rotate-180" />
-                                  <span className="text-[11px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full truncate">
-                                    {subName}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          )}
-                          <div>
-                            {entry.brand && (
-                              <p
-                                className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase truncate"
-                                dir="ltr"
-                              >
-                                {entry.brand}
-                              </p>
-                            )}
-                            <p className="text-sm font-black text-foreground leading-tight truncate" dir="ltr">
-                              {entry.model || (isRTL ? "دراجة غير معرّفة" : "Unknown Bike")}
-                            </p>
-                          </div>
-                        </div>
                       </div>
 
-                      {/* Bottom: thumbnails + actions */}
-                      <div className="px-3 pb-3 pt-2 flex items-center gap-1.5 border-t border-border/20">
-                        <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
-                          {entry.photos.slice(0, 4).map((photo, i) => (
+                      {/* ── Info ── */}
+                      <div className="p-3 flex-1 min-w-0 space-y-1">
+                        {typeName && (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full border", chipCls)}>
+                              {typeName}
+                            </span>
+                            {subName && (
+                              <>
+                                <ChevronRight className="w-3 h-3 text-muted-foreground/40 shrink-0 rtl:rotate-180" />
+                                <span className="text-[11px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full truncate">
+                                  {subName}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        )}
+                        {entry.brand && (
+                          <p
+                            className="text-[10px] text-muted-foreground font-medium tracking-widest uppercase"
+                            dir="ltr"
+                          >
+                            {entry.brand}
+                          </p>
+                        )}
+                        <p className="text-sm font-bold text-foreground leading-snug truncate" dir="ltr">
+                          {entry.model || (isRTL ? "دراجة غير معرّفة" : "Unknown Bike")}
+                        </p>
+                      </div>
+
+                      {/* ── Action bar ── */}
+                      <div className="px-3 pb-3 pt-2 border-t border-border/20 flex items-center gap-1.5">
+                        {/* Thumbnails */}
+                        <div className="flex items-center gap-1 flex-1 overflow-hidden">
+                          {entry.photos.slice(0, 3).map((photo, i) => (
                             <button
                               key={i}
                               onClick={() => setLightbox({ photos: entry.photos, index: i })}
-                              className="w-7 h-7 rounded-md overflow-hidden border-2 border-border/40 hover:border-primary/50 hover:scale-110 transition-all shrink-0"
+                              className="w-7 h-7 rounded-lg overflow-hidden border-2 border-border/30 hover:border-primary/60 hover:scale-110 transition-all shrink-0"
                             >
                               <img src={photo} className="w-full h-full object-cover" alt="" />
                             </button>
                           ))}
-                          {entry.photos.length > 4 && (
+                          {entry.photos.length > 3 && (
                             <button
-                              onClick={() => setLightbox({ photos: entry.photos, index: 4 })}
-                              className="w-7 h-7 rounded-md bg-muted/50 border-2 border-border/40 flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0 hover:border-primary/50"
+                              onClick={() => setLightbox({ photos: entry.photos, index: 3 })}
+                              className="w-7 h-7 rounded-lg bg-muted/60 border-2 border-border/30 flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0 hover:border-primary/50"
                             >
-                              +{entry.photos.length - 4}
+                              +{entry.photos.length - 3}
                             </button>
                           )}
                           {canUpload && entry.photos.length < 5 && (
                             <button
                               onClick={() => triggerCardUpload(entry.id)}
                               disabled={uploadingFor === entry.id}
-                              className="w-7 h-7 rounded-md border-2 border-dashed border-border/40 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-all shrink-0 disabled:opacity-50"
+                              className="w-7 h-7 rounded-lg border-2 border-dashed border-border/30 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-all shrink-0 disabled:opacity-40"
                             >
                               {uploadingFor === entry.id ? (
                                 <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
@@ -506,25 +474,29 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                             </button>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
+                        {/* Buttons */}
+                        <div className="flex items-center gap-0.5 shrink-0">
                           {canUpload && (
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-7 w-7 hover:bg-primary/10 hover:text-primary"
-                              onClick={() => openPhotosPage(entry.id)}
+                              className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary"
+                              onClick={() => {
+                                setPhotoBikeId(entry.id);
+                                setView("photos");
+                              }}
                             >
-                              <ImagePlus className="w-3 h-3" />
+                              <Camera className="w-3.5 h-3.5" />
                             </Button>
                           )}
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+                            className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
                             onClick={() => deleteBike(entry.id)}
                             disabled={isUpdating}
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>
                       </div>
@@ -535,10 +507,10 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                 {/* Add Bike tile */}
                 <button
                   onClick={openAddPage}
-                  className="rounded-2xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-2 min-h-[140px] sm:min-h-[200px] hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                  className="rounded-2xl border-2 border-dashed border-border/40 min-h-[200px] flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 group"
                 >
-                  <div className="w-10 h-10 rounded-full bg-muted/40 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
-                    <Plus className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <div className="w-12 h-12 rounded-full bg-muted/50 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                    <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                   <span className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">
                     {isRTL ? "إضافة دراجة" : "Add Bike"}
@@ -546,21 +518,24 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                 </button>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-10 gap-3 rounded-xl border border-dashed border-border/60">
-                <div className="w-12 h-12 rounded-full bg-muted/40 flex items-center justify-center">
-                  <Bike className="w-6 h-6 text-muted-foreground/50" />
+              /* Empty state */
+              <div className="flex flex-col items-center justify-center py-14 gap-4 rounded-2xl border-2 border-dashed border-border/50">
+                <div className="w-16 h-16 rounded-2xl bg-muted/40 flex items-center justify-center">
+                  <Bike className="w-8 h-8 text-muted-foreground/40" />
                 </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {isRTL ? "لم تضف أي دراجة بعد" : "No bikes added yet"}
+                <div className="text-center space-y-1">
+                  <p className="text-base font-semibold text-foreground">
+                    {isRTL ? "كراجك فارغ!" : "Your garage is empty!"}
                   </p>
-                  <p className="text-xs text-muted-foreground/70 mt-0.5">
-                    {isRTL ? "أضف دراجتك للحصول على تجربة مخصصة" : "Add a bike for a personalized experience"}
+                  <p className="text-sm text-muted-foreground max-w-xs">
+                    {isRTL
+                      ? "أضف دراجتك الأولى للحصول على تجربة مخصصة"
+                      : "Add your first bike for a personalized experience"}
                   </p>
                 </div>
-                <Button size="sm" onClick={openAddPage} className="gap-2">
+                <Button onClick={openAddPage} className="gap-2 rounded-xl">
                   <Plus className="w-4 h-4" />
-                  {isRTL ? "إضافة دراجة" : "Add Bike"}
+                  {isRTL ? "إضافة دراجة" : "Add Your Bike"}
                 </Button>
               </div>
             )}
@@ -569,49 +544,58 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
 
         {/* ══════════════ ADD BIKE PAGE ══════════════ */}
         {view === "add" && (
-          <div className="rounded-xl border border-border/40 overflow-hidden">
-            <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-border/40 bg-muted/20">
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setView("list")}>
+          <div className="rounded-2xl border border-border/40 overflow-hidden bg-card">
+            {/* Header */}
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-border/40 bg-muted/20">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-xl shrink-0"
+                onClick={() => setView("list")}
+              >
                 <BackIcon className="w-4 h-4" />
               </Button>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold text-foreground">{isRTL ? "اختر دراجتك" : "Choose Your Bike"}</h3>
+              <div>
+                <h3 className="text-sm font-semibold">{isRTL ? "اختر دراجتك" : "Choose Your Bike"}</h3>
                 <p className="text-xs text-muted-foreground">
-                  {isRTL ? "ابحث في الكتالوج أو أضف يدوياً" : "Search the catalog or add manually"}
+                  {isRTL ? "ابحث في الكتالوج أو أضف يدوياً" : "Search catalog or add manually"}
                 </p>
               </div>
             </div>
-            <div className="p-4 space-y-3 max-h-[480px] overflow-y-auto">
-              {/* Photos picker */}
+
+            <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
+              {/* Pending photos */}
               {canUpload && (
-                <div className="rounded-xl border border-dashed border-border/60 bg-muted/10 p-3 space-y-2">
+                <div className="rounded-xl border border-dashed border-border/50 bg-muted/10 p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-semibold text-foreground">
                       {isRTL ? "صور الدراجة (اختياري)" : "Bike Photos (optional)"}
                     </p>
-                    <span className="text-[10px] text-muted-foreground">{pendingPhotos.length}/5</span>
+                    <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                      {pendingPhotos.length} / 5
+                    </span>
                   </div>
-                  <div className="grid grid-cols-5 gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     {pendingPreviews.map((url, i) => (
                       <div
                         key={i}
-                        className="relative aspect-square rounded-lg overflow-hidden border border-border/40 group"
+                        className="relative w-16 h-16 rounded-xl overflow-hidden border border-border/40 group"
                       >
                         <img src={url} alt="" className="w-full h-full object-cover" />
                         <button
                           onClick={() => removePendingPhoto(i)}
-                          className="absolute top-1 end-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center hover:bg-black/80"
+                          className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <X className="w-2.5 h-2.5 text-white" />
+                          <X className="w-4 h-4 text-white" />
                         </button>
                       </div>
                     ))}
                     {pendingPhotos.length < 5 && (
                       <button
                         onClick={() => addPhotoInputRef.current?.click()}
-                        className="aspect-square rounded-lg border-2 border-dashed border-border/60 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                        className="w-16 h-16 rounded-xl border-2 border-dashed border-border/50 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-colors"
                       >
-                        <ImagePlus className="w-4 h-4 text-muted-foreground" />
+                        <ImagePlus className="w-5 h-5 text-muted-foreground" />
                       </button>
                     )}
                   </div>
@@ -626,24 +610,24 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                 </div>
               )}
 
-              {/* Search */}
+              {/* Search input */}
               <div className="relative">
                 <Bike className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder={isRTL ? "ابحث: BMW R18..." : "Search: BMW R18..."}
-                  className="ps-10 h-10 rounded-xl"
+                  placeholder={isRTL ? "ابحث: Honda CBR..." : "Search: Honda CBR..."}
+                  className="ps-10 pe-10 h-10 rounded-xl bg-muted/30 border-border/50 focus:bg-background"
                 />
                 {search && (
                   <button className="absolute end-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
-                    <X className="w-4 h-4 text-muted-foreground" />
+                    <X className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
                   </button>
                 )}
               </div>
 
-              {/* Type filter chips */}
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              {/* Type filter pills */}
+              <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-none">
                 {[
                   { id: "all", label_ar: "الكل", label_en: "All" },
                   ...catalogTypes.map((t) => ({ id: t.id, label_ar: t.name_ar, label_en: t.name_en })),
@@ -652,50 +636,51 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                     key={f.id}
                     onClick={() => setActiveType(f.id)}
                     className={cn(
-                      "flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 border transition-all",
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 border transition-all",
                       activeType === f.id
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-muted/30 text-muted-foreground border-border/40 hover:border-primary/40",
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-muted/30 text-muted-foreground border-border/40 hover:border-primary/40 hover:text-foreground",
                     )}
                   >
-                    <Bike className="w-3 h-3" />
                     {isRTL ? f.label_ar : f.label_en}
                   </button>
                 ))}
               </div>
 
+              {/* Results count */}
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-px bg-border/40" />
-                <span className="text-[10px] text-muted-foreground shrink-0">
-                  {isRTL ? "النتائج" : "Results"} ({searchResults.length})
+                <div className="flex-1 h-px bg-border/30" />
+                <span className="text-[10px] text-muted-foreground shrink-0 bg-muted/50 px-2.5 py-0.5 rounded-full">
+                  {searchResults.length} {isRTL ? "نتيجة" : "results"}
                 </span>
-                <div className="flex-1 h-px bg-border/40" />
+                <div className="flex-1 h-px bg-border/30" />
               </div>
 
-              {/* Results */}
+              {/* Results list */}
               {searchResults.length > 0 ? (
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   {searchResults.map((item) => (
                     <div
                       key={item.model_id}
-                      className="flex items-center gap-3 p-2.5 rounded-xl border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-all group"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border/20 hover:border-primary/30 hover:bg-primary/5 transition-all cursor-default group"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
+                      <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
                         <Bike className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm text-foreground" dir="ltr">
                           {item.brand} {item.model_name}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {isRTL ? item.type_name_ar : item.type_name} ·{" "}
+                        <p className="text-xs text-muted-foreground truncate">
+                          {isRTL ? item.type_name_ar : item.type_name}
+                          {" · "}
                           {isRTL ? item.subtype_name_ar : item.subtype_name}
                         </p>
                       </div>
                       <button
                         onClick={() => onQuickAdd(item)}
                         disabled={savingNewBike}
-                        className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-50"
+                        className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-40"
                       >
                         {savingNewBike ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -707,7 +692,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-4 text-sm text-muted-foreground">
+                <div className="text-center py-6 text-sm text-muted-foreground">
                   {search
                     ? isRTL
                       ? `لا نتائج لـ "${search}"`
@@ -718,51 +703,67 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                 </div>
               )}
 
-              {/* Manual entry */}
+              {/* Manual entry toggle */}
               {!showManual ? (
-                <div className="flex items-center gap-2 pt-1">
-                  <div className="flex-1 h-px bg-border/40" />
+                <div className="flex items-center gap-3 pt-1">
+                  <div className="flex-1 h-px bg-border/30" />
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-1.5 shrink-0 rounded-full text-xs"
+                    className="gap-1.5 shrink-0 rounded-full text-xs border-border/50 hover:border-primary/50"
                     onClick={() => setShowManual(true)}
                   >
                     <Plus className="w-3 h-3" />
                     {isRTL ? "إضافة يدوية" : "Add manually"}
                   </Button>
-                  <div className="flex-1 h-px bg-border/40" />
+                  <div className="flex-1 h-px bg-border/30" />
                 </div>
               ) : (
-                <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-3 space-y-3">
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-semibold text-primary">
-                      {isRTL ? "إضافة دراجة غير موجودة" : "Add unlisted bike"}
+                      {isRTL ? "إضافة دراجة غير موجودة في الكتالوج" : "Add unlisted bike"}
                     </p>
-                    <button onClick={() => setShowManual(false)}>
-                      <X className="w-4 h-4 text-muted-foreground" />
+                    <button
+                      onClick={() => setShowManual(false)}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {[
-                      ...catalogTypes.map((t) => ({ id: t.id, nameAr: t.name_ar, nameEn: t.name_en })),
-                      { id: "custom", nameAr: "أخرى", nameEn: "Other" },
-                    ].map((t) => (
-                      <button
-                        key={t.id}
-                        onClick={() => setManualType(t.id)}
-                        className={cn(
-                          "flex flex-col items-center gap-1 p-2 rounded-xl border-2 text-xs font-semibold transition-all",
-                          manualType === t.id
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-border/30 bg-muted/20 text-muted-foreground hover:border-primary/40",
-                        )}
-                      >
-                        <Bike className="w-4 h-4" />
-                        {isRTL ? t.nameAr : t.nameEn}
-                      </button>
-                    ))}
+
+                  {/* Type grid */}
+                  <div>
+                    <p className="text-[11px] font-medium text-muted-foreground mb-1.5">
+                      {isRTL ? "نوع الدراجة" : "Bike Type"}
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {[
+                        ...catalogTypes.map((t) => ({
+                          id: t.id,
+                          nameAr: t.name_ar,
+                          nameEn: t.name_en,
+                          emoji: TYPE_EMOJI[t.name_en] ?? "🏍️",
+                        })),
+                        { id: "custom", nameAr: "أخرى", nameEn: "Other", emoji: "❓" },
+                      ].map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => setManualType(t.id)}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-xs font-semibold transition-all text-start",
+                            manualType === t.id
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border/30 bg-background/50 text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                          )}
+                        >
+                          <span className="text-base">{t.emoji}</span>
+                          {isRTL ? t.nameAr : t.nameEn}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+
                   {manualType === "custom" && (
                     <Input
                       value={manualTypeName}
@@ -771,24 +772,32 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                       className="h-9 rounded-xl"
                     />
                   )}
+
                   <div className="grid grid-cols-2 gap-2">
-                    <Input
-                      value={manualBrand}
-                      onChange={(e) => setManualBrand(e.target.value)}
-                      placeholder={isRTL ? "الماركة..." : "Brand..."}
-                      className="h-9 rounded-xl"
-                      dir="ltr"
-                    />
-                    <Input
-                      value={manualModel}
-                      onChange={(e) => setManualModel(e.target.value)}
-                      placeholder={isRTL ? "الموديل..." : "Model..."}
-                      className="h-9 rounded-xl"
-                      dir="ltr"
-                    />
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-medium text-muted-foreground">{isRTL ? "الماركة" : "Brand"}</p>
+                      <Input
+                        value={manualBrand}
+                        onChange={(e) => setManualBrand(e.target.value)}
+                        placeholder="Honda, BMW..."
+                        className="h-9 rounded-xl"
+                        dir="ltr"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-medium text-muted-foreground">{isRTL ? "الموديل" : "Model"}</p>
+                      <Input
+                        value={manualModel}
+                        onChange={(e) => setManualModel(e.target.value)}
+                        placeholder="CBR 600, R1200..."
+                        className="h-9 rounded-xl"
+                        dir="ltr"
+                      />
+                    </div>
                   </div>
+
                   <Button
-                    className="w-full gap-2 h-9"
+                    className="w-full gap-2 rounded-xl"
                     onClick={onSaveManual}
                     disabled={!manualBrand.trim() || !manualModel.trim() || !manualType || savingNewBike}
                   >
@@ -803,22 +812,27 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
 
         {/* ══════════════ PHOTOS PAGE ══════════════ */}
         {view === "photos" && photoEntry && (
-          <div className="rounded-xl border border-border/40 overflow-hidden">
-            <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-border/40 bg-muted/20">
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setView("list")}>
+          <div className="rounded-2xl border border-border/40 overflow-hidden bg-card">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-border/40 bg-muted/20">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-xl shrink-0"
+                onClick={() => setView("list")}
+              >
                 <BackIcon className="w-4 h-4" />
               </Button>
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold text-foreground truncate" dir="ltr">
+                <h3 className="text-sm font-semibold truncate" dir="ltr">
                   {photoEntry.brand} {photoEntry.model}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  {photoEntry.photos.length}/5 {isRTL ? "صور" : "photos"}
+                  {photoEntry.photos.length} / 5 {isRTL ? "صور" : "photos"}
                 </p>
               </div>
             </div>
             <div className="p-4 space-y-3">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {photoEntry.photos.map((url, i) => (
                   <div
                     key={i}
@@ -832,9 +846,9 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                     />
                     <button
                       onClick={() => removePhoto(url)}
-                      className="absolute top-1.5 end-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center hover:bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <X className="w-3 h-3 text-white" />
+                      <Trash2 className="w-4 h-4 text-white" />
                     </button>
                   </div>
                 ))}
@@ -842,14 +856,14 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                   <button
                     onClick={() => photosFileRef.current?.click()}
                     disabled={photosUploading}
-                    className="aspect-square rounded-xl border-2 border-dashed border-border/60 flex flex-col items-center justify-center gap-1 hover:border-primary/50 hover:bg-primary/5 transition-colors disabled:opacity-50"
+                    className="aspect-square rounded-xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-1 hover:border-primary/50 hover:bg-primary/5 transition-colors disabled:opacity-50"
                   >
                     {photosUploading ? (
                       <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
                     ) : (
                       <ImagePlus className="w-5 h-5 text-muted-foreground" />
                     )}
-                    <span className="text-[10px] text-muted-foreground">{isRTL ? "إضافة صورة" : "Add photo"}</span>
+                    <span className="text-[10px] text-muted-foreground">{isRTL ? "إضافة" : "Add"}</span>
                   </button>
                 )}
               </div>
@@ -861,14 +875,14 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                 className="hidden"
                 onChange={(e) => handlePhotosUpload(e.target.files)}
               />
-              <Button variant="outline" className="w-full h-9" onClick={() => setView("list")}>
+              <Button variant="outline" className="w-full rounded-xl" onClick={() => setView("list")}>
                 {isRTL ? "تم" : "Done"}
               </Button>
             </div>
           </div>
         )}
 
-        {/* Hidden input for per-card quick upload */}
+        {/* Hidden card upload input */}
         <input
           ref={cardFileRef}
           type="file"
@@ -878,7 +892,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
           onChange={(e) => handleCardPhotoUpload(e.target.files)}
         />
 
-        {/* ── Lightbox ─────────────────────────────────────────────────────── */}
+        {/* ══════════════ LIGHTBOX ══════════════ */}
         {lightbox && (
           <Dialog open onOpenChange={() => setLightbox(null)}>
             <DialogContent
@@ -888,7 +902,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
               <div className="relative">
                 <img src={lightbox.photos[lightbox.index]} className="w-full max-h-[75vh] object-contain" alt="" />
                 <button
-                  className="absolute top-3 end-3 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 z-10"
+                  className="absolute top-3 end-3 w-9 h-9 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 z-10 transition-colors"
                   onClick={() => setLightbox(null)}
                 >
                   <X className="w-4 h-4 text-white" />
@@ -896,14 +910,14 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                 {lightbox.photos.length > 1 && (
                   <>
                     <button
-                      className="absolute start-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 disabled:opacity-30"
+                      className="absolute start-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 disabled:opacity-20 transition-all"
                       disabled={lightbox.index === 0}
                       onClick={() => setLightbox((p) => p && { ...p, index: p.index - 1 })}
                     >
                       <ChevronLeft className="w-5 h-5 text-white rtl:rotate-180" />
                     </button>
                     <button
-                      className="absolute end-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 disabled:opacity-30"
+                      className="absolute end-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 disabled:opacity-20 transition-all"
                       disabled={lightbox.index === lightbox.photos.length - 1}
                       onClick={() => setLightbox((p) => p && { ...p, index: p.index + 1 })}
                     >
@@ -924,8 +938,8 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                       className={cn(
                         "w-14 h-14 rounded-lg overflow-hidden shrink-0 border-2 transition-all",
                         i === lightbox.index
-                          ? "border-primary scale-105"
-                          : "border-transparent opacity-60 hover:opacity-100",
+                          ? "border-primary scale-110"
+                          : "border-transparent opacity-50 hover:opacity-100",
                       )}
                     >
                       <img src={photo} className="w-full h-full object-cover" alt="" />
