@@ -108,7 +108,7 @@ export function TrainerApplicationDetailDialog({
       setConfirmApprove(false);
       onOpenChange(false);
       toastBilingual("admin.trainerApplications.toast.approved");
-      const { data: trainerRow } = await supabase.from("trainers").select("id").eq("user_id", row.user_id).maybeSingle();
+      const { data: trainerRow } = await (supabase as any).from("trainers").select("id").eq("user_id", row.user_id).maybeSingle();
       if (trainerRow?.id) {
         toast.success(`${i18n.getFixedT("en")("admin.trainerApplications.toast.profileCreated")}\n${i18n.getFixedT("ar")("admin.trainerApplications.toast.profileCreated")}`, {
           action: {
