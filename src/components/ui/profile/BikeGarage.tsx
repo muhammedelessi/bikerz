@@ -404,7 +404,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
         {view === "list" && (
           <div className="space-y-4">
             {entries.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-3">
                 {entries.map((entry) => {
                   const typeName = localizedTypeName(entry);
                   const subName = localizedSubtypeName(entry);
@@ -420,7 +420,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                       <div className="flex flex-row sm:flex-col flex-1 min-w-0">
                         {/* Image */}
                         {entry.photos.length > 0 ? (
-                          <div className="relative w-28 aspect-square sm:w-auto shrink-0 sm:aspect-[4/4] overflow-hidden sm:rounded-t-2xl bg-muted">
+                          <div className="relative w-28 aspect-square sm:w-auto shrink-0 sm:aspect-[4/3] overflow-hidden sm:rounded-t-2xl bg-muted">
                             <img
                               src={entry.photos[0]}
                               alt={entry.model}
@@ -436,7 +436,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                         ) : (
                           <div
                             className={cn(
-                              "w-28 aspect-square sm:w-auto shrink-0 sm:aspect-[4/4] sm:rounded-t-2xl bg-gradient-to-b flex items-center justify-center",
+                              "w-28 aspect-square sm:w-auto shrink-0 sm:aspect-[4/3] sm:rounded-t-2xl bg-gradient-to-b flex items-center justify-center",
                               gradient,
                             )}
                           >
@@ -536,6 +536,18 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                     </div>
                   );
                 })}
+                {/* Add Bike tile */}
+                <button
+                  onClick={openAddPage}
+                  className="rounded-2xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-2 min-h-[140px] sm:min-h-[200px] hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-muted/40 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                    <Plus className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">
+                    {isRTL ? "إضافة دراجة" : "Add Bike"}
+                  </span>
+                </button>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-10 gap-3 rounded-xl border border-dashed border-border/60">
@@ -731,7 +743,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                       <X className="w-4 h-4 text-muted-foreground" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {[
                       ...catalogTypes.map((t) => ({ id: t.id, nameAr: t.name_ar, nameEn: t.name_en })),
                       { id: "custom", nameAr: "أخرى", nameEn: "Other" },
@@ -869,7 +881,10 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
         {/* ── Lightbox ─────────────────────────────────────────────────────── */}
         {lightbox && (
           <Dialog open onOpenChange={() => setLightbox(null)}>
-            <DialogContent className="max-w-3xl p-0 bg-black/95 border-0 overflow-hidden gap-0">
+            <DialogContent
+              className="max-w-3xl p-0 bg-black/95 border-0 overflow-hidden gap-0"
+              dir={isRTL ? "rtl" : "ltr"}
+            >
               <div className="relative">
                 <img src={lightbox.photos[lightbox.index]} className="w-full max-h-[75vh] object-contain" alt="" />
                 <button
@@ -885,14 +900,14 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                       disabled={lightbox.index === 0}
                       onClick={() => setLightbox((p) => p && { ...p, index: p.index - 1 })}
                     >
-                      <ChevronLeft className="w-5 h-5 text-white" />
+                      <ChevronLeft className="w-5 h-5 text-white rtl:rotate-180" />
                     </button>
                     <button
                       className="absolute end-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 disabled:opacity-30"
                       disabled={lightbox.index === lightbox.photos.length - 1}
                       onClick={() => setLightbox((p) => p && { ...p, index: p.index + 1 })}
                     >
-                      <ChevronRight className="w-5 h-5 text-white" />
+                      <ChevronRight className="w-5 h-5 text-white rtl:rotate-180" />
                     </button>
                   </>
                 )}
