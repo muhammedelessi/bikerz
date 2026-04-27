@@ -1,4 +1,4 @@
-import React, { useImperativeHandle, useMemo, useRef, useState, forwardRef } from "react";
+import React, { useEffect, useImperativeHandle, useMemo, useRef, useState, forwardRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,6 +72,8 @@ export interface BikeGarageProps {
   userId?: string | null;
   storageFolder?: string;
   isUpdating?: boolean;
+  /** View-only: same cards as profile, no add / delete / uploads. */
+  readOnly?: boolean;
 }
 export interface BikeGarageHandle {
   openAddPage: () => void;
@@ -107,10 +109,10 @@ const TYPE_ICON: Record<string, React.ElementType> = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
-  ({ entries, onChange, userId, storageFolder = "bikes", isUpdating = false }, ref) => {
+  ({ entries, onChange, userId, storageFolder = "bikes", isUpdating = false, readOnly = false }, ref) => {
     const { isRTL } = useLanguage();
     const BackIcon = isRTL ? ChevronRight : ChevronLeft;
-    const canUpload = Boolean(userId);
+    const canUpload = Boolean(userId) && !readOnly;
 
     // ── Catalog ───────────────────────────────────────────────────────────────
     const { data: catalogTypes = [] } = useQuery<CatalogType[]>({
@@ -131,6 +133,10 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
     const [photoBikeId, setPhotoBikeId] = useState<string | null>(null);
     const [lightbox, setLightbox] = useState<LightboxState | null>(null);
     const [addTab, setAddTab] = useState<"search" | "manual">("search");
+
+    useEffect(() => {
+      if (readOnly && (view === "add" || view === "photos")) setView("list");
+    }, [readOnly, view]);
 
     // ── Per-card quick upload ─────────────────────────────────────────────────
     const cardFileRef = useRef<HTMLInputElement>(null);
@@ -206,6 +212,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
     };
 
     const openAddPage = () => {
+      if (readOnly) return;
       setSearch("");
       setActiveType("all");
       setAddTab("search");
@@ -217,7 +224,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
       clearPendingPhotos();
       setView("add");
     };
-    useImperativeHandle(ref, () => ({ openAddPage }));
+    useImperativeHandle(ref, () => ({ openAddPage: readOnly ? () => {} : openAddPage }));
 
     // ── Photos page ───────────────────────────────────────────────────────────
     const photosFileRef = useRef<HTMLInputElement>(null);
@@ -344,7 +351,10 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
       toast.success(isRTL ? "تمت إضافة الدراجة" : "Bike added");
     };
 
-    const deleteBike = (id: string) => onChange(entries.filter((e) => e.id !== id));
+    const deleteBike = (id: string) => {
+      if (readOnly) return;
+      onChange(entries.filter((e) => e.id !== id));
+    };
 
     // ── Localized names ───────────────────────────────────────────────────────
     const localName = (entry: BikeEntry) => {
@@ -371,7 +381,12 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
         {view === "list" && (
           <div>
             {entries.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
+              <div
+                className={cn(
+                  "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr",
+                  readOnly && "lg:grid-cols-3",
+                )}
+              >
                 {entries.map((entry) => {
                   const typeName = localName(entry);
                   const subName = localSubName(entry);
@@ -487,47 +502,56 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                         </div>
 
                         {/* Buttons */}
-                        <div className="flex items-center gap-0.5 shrink-0">
-                          {canUpload && (
+                        {!readOnly ? (
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            {canUpload && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                                onClick={() => {
+                                  setPhotoBikeId(entry.id);
+                                  setView("photos");
+                                }}
+                              >
+                                <Camera className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                              onClick={() => {
-                                setPhotoBikeId(entry.id);
-                                setView("photos");
-                              }}
+                              className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                              onClick={() => deleteBike(entry.id)}
+                              disabled={isUpdating}
                             >
-                              <Camera className="w-3.5 h-3.5" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </Button>
-                          )}
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                            onClick={() => deleteBike(entry.id)}
-                            disabled={isUpdating}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   );
                 })}
 
                 {/* Add Bike tile */}
-                <button
-                  onClick={openAddPage}
-                  className="rounded-2xl border-2 border-dashed border-border/40 min-h-[220px] flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 group"
-                >
-                  <div className="w-14 h-14 rounded-2xl bg-muted/50 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
-                    <Plus className="w-7 h-7 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </div>
-                  <span className="text-sm font-semibold text-muted-foreground group-hover:text-primary transition-colors">
-                    {isRTL ? "إضافة دراجة" : "Add Bike"}
-                  </span>
-                </button>
+                {!readOnly ? (
+                  <button
+                    onClick={openAddPage}
+                    className="rounded-2xl border-2 border-dashed border-border/40 min-h-[220px] flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 group"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-muted/50 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                      <Plus className="w-7 h-7 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                    <span className="text-sm font-semibold text-muted-foreground group-hover:text-primary transition-colors">
+                      {isRTL ? "إضافة دراجة" : "Add Bike"}
+                    </span>
+                  </button>
+                ) : null}
+              </div>
+            ) : readOnly ? (
+              <div className="flex flex-col items-center justify-center py-12 rounded-2xl border border-border/40 bg-muted/10">
+                <Bike className="w-10 h-10 text-muted-foreground/40 mb-2" />
+                <p className="text-sm text-muted-foreground">{isRTL ? "لا توجد دراجات في الطلب" : "No bikes in this application"}</p>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-16 gap-5 rounded-2xl border-2 border-dashed border-border/40">
@@ -552,7 +576,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
         )}
 
         {/* ══════════════ ADD BIKE PAGE ══════════════ */}
-        {view === "add" && (
+        {!readOnly && view === "add" && (
           <div className="rounded-2xl border border-border/40 overflow-hidden bg-card flex flex-col">
             {/* Header */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-border/30 bg-muted/20 shrink-0">
@@ -894,7 +918,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
         )}
 
         {/* ══════════════ PHOTOS PAGE ══════════════ */}
-        {view === "photos" && photoEntry && (
+        {!readOnly && view === "photos" && photoEntry && (
           <div className="rounded-2xl border border-border/40 overflow-hidden bg-card">
             <div className="flex items-center gap-3 px-4 py-3 border-b border-border/40 bg-muted/20">
               <Button

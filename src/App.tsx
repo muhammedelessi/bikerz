@@ -86,6 +86,7 @@ const AdminCommunity = lazy(() => import("./pages/admin/AdminCommunity"));
 const AdminTrainings = lazy(() => import("./pages/admin/AdminTrainings"));
 const AdminTrainingProfile = lazy(() => import("./pages/admin/AdminTrainingProfile"));
 const AdminTrainers = lazy(() => import("./pages/admin/AdminTrainers"));
+const AdminTrainerApplicationDetail = lazy(() => import("./pages/admin/AdminTrainerApplicationDetail"));
 const AdminTrainerProfile = lazy(() => import("./pages/admin/AdminTrainerProfile"));
 const AdminTrainerPayments = lazy(() => import("./pages/admin/AdminTrainerPayments"));
 const AdminTrainingStudents = lazy(() => import("./pages/admin/AdminTrainingStudents"));
@@ -488,6 +489,14 @@ const AppRoutes = () => (
           }
         />
         <Route
+          path="/admin/trainer-applications/:applicationId"
+          element={
+            <AdminRoute>
+              <AdminTrainerApplicationDetail />
+            </AdminRoute>
+          }
+        />
+        <Route
           path="/admin/trainers/:id"
           element={
             <AdminRoute>
@@ -633,7 +642,12 @@ const App = () => (
             <TooltipProvider>
               <Toaster />
               <Sonner />
-              <BrowserRouter>
+              <BrowserRouter
+                future={{
+                  v7_startTransition: true,
+                  v7_relativeSplatPath: true,
+                }}
+              >
                 <ScrollToTop />
                 <WhatsAppFloatingButtonGate />
                 <DeferredSocialProof />

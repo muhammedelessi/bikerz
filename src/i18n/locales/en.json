@@ -1281,6 +1281,20 @@
       },
       "viewButton": "View",
       "empty": "No applications match the current filters.",
+      "detail": {
+        "back": "Back to applications",
+        "notFound": "Application not found or you do not have access.",
+        "sectionContact": "Contact",
+        "sectionContactHint": "Email and phone on the account.",
+        "sectionApplicant": "Location & demographics",
+        "sectionApplicantHint": "Values submitted with the application.",
+        "sectionSubmittedPhoto": "Photo submitted with the application",
+        "sectionSummary": "Explanation",
+        "sectionServices": "Services",
+        "sectionLanguages": "Language proficiency",
+        "sectionLanguageList": "Languages (structured)",
+        "license": "License type"
+      },
       "dialog": {
         "title": "Application details",
         "personalInfo": "Personal info",

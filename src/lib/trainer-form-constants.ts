@@ -56,3 +56,12 @@ export function languageEntriesToForm(
 export function formLanguagesToDb(rows: { code: string; level: string }[]): TrainerLanguageEntry[] {
   return rows.map((r) => ({ language: r.code.trim().toLowerCase(), level: r.level.trim().toLowerCase() }));
 }
+
+/** Preset service ids use `applyTrainer.services.*`; free-text lines stay as-is. */
+export function trainerServiceLineDisplayLabel(serviceIdOrLine: string, t: (key: string) => string): string {
+  const raw = serviceIdOrLine.trim();
+  if (!raw) return "";
+  const key = `applyTrainer.services.${raw}`;
+  const out = t(key);
+  return out === key ? raw : out;
+}

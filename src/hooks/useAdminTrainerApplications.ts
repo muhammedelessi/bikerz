@@ -25,16 +25,8 @@ export type AdminTrainerApplicationRow = TrainerApplication & {
   email: string | null;
 };
 
-async function fetchTrainerApplicationsMerged(
-  filter: AdminTrainerApplicationFilter,
-): Promise<AdminTrainerApplicationRow[]> {
-  let q = supabase.from("trainer_applications").select("*").order("created_at", { ascending: false });
-  if (filter !== "all") {
-    q = q.eq("status", filter);
-  }
-  const { data: apps, error } = await q;
-  if (error) throw error;
-  const rows = (apps || []) as TrainerApplication[];
+async function mergeTrainerApplicationRows(rows: TrainerApplication[]): Promise<AdminTrainerApplicationRow[]> {
+  if (rows.length === 0) return [];
 
   const userIds = [...new Set(rows.map((r) => r.user_id))];
   const reviewerIds = [
@@ -81,6 +73,37 @@ async function fetchTrainerApplicationsMerged(
   });
 }
 
+async function fetchTrainerApplicationsMerged(
+  filter: AdminTrainerApplicationFilter,
+): Promise<AdminTrainerApplicationRow[]> {
+  let q = supabase.from("trainer_applications").select("*").order("created_at", { ascending: false });
+  if (filter !== "all") {
+    q = q.eq("status", filter);
+  }
+  const { data: apps, error } = await q;
+  if (error) throw error;
+  const rows = (apps || []) as TrainerApplication[];
+  return mergeTrainerApplicationRows(rows);
+}
+
+export async function fetchAdminTrainerApplicationById(id: string): Promise<AdminTrainerApplicationRow | null> {
+  const { data: app, error } = await supabase.from("trainer_applications").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  if (!app) return null;
+  const merged = await mergeTrainerApplicationRows([app as TrainerApplication]);
+  return merged[0] ?? null;
+}
+
+export const adminTrainerApplicationDetailQueryKey = (id: string) => [...ADMIN_TRAINER_APPLICATIONS_QUERY_PREFIX, "detail", id] as const;
+
+export function useAdminTrainerApplication(id: string | undefined) {
+  return useQuery({
+    queryKey: id ? adminTrainerApplicationDetailQueryKey(id) : ["admin-trainer-applications", "detail", "none"],
+    queryFn: () => fetchAdminTrainerApplicationById(id!),
+    enabled: Boolean(id),
+  });
+}
+
 /** Pending count only — use on AdminTrainers tab badge without loading the full list. */
 export function useAdminTrainerApplicationsPendingCount() {
   return useQuery({
@@ -96,13 +119,8 @@ export function useAdminTrainerApplicationsPendingCount() {
   });
 }
 
-export function useAdminTrainerApplications(filter: AdminTrainerApplicationFilter = "pending") {
+export function useTrainerApplicationReviewMutations() {
   const queryClient = useQueryClient();
-
-  const listQuery = useQuery({
-    queryKey: adminTrainerApplicationsQueryKey(filter),
-    queryFn: () => fetchTrainerApplicationsMerged(filter),
-  });
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: [...ADMIN_TRAINER_APPLICATIONS_QUERY_PREFIX] });
@@ -155,14 +173,30 @@ export function useAdminTrainerApplications(filter: AdminTrainerApplicationFilte
   });
 
   return {
+    approveApplication: approveMutation.mutateAsync,
+    rejectApplication: rejectMutation.mutateAsync,
+    isApproving: approveMutation.isPending,
+    isRejecting: rejectMutation.isPending,
+  };
+}
+
+export function useAdminTrainerApplications(filter: AdminTrainerApplicationFilter = "pending") {
+  const listQuery = useQuery({
+    queryKey: adminTrainerApplicationsQueryKey(filter),
+    queryFn: () => fetchTrainerApplicationsMerged(filter),
+  });
+
+  const { approveApplication, rejectApplication, isApproving, isRejecting } = useTrainerApplicationReviewMutations();
+
+  return {
     applications: listQuery.data ?? [],
     isLoading: listQuery.isLoading,
     isFetching: listQuery.isFetching,
     error: listQuery.error,
     refetch: listQuery.refetch,
-    approveApplication: approveMutation.mutateAsync,
-    rejectApplication: rejectMutation.mutateAsync,
-    isApproving: approveMutation.isPending,
-    isRejecting: rejectMutation.isPending,
+    approveApplication,
+    rejectApplication,
+    isApproving,
+    isRejecting,
   };
 }

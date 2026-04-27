@@ -1,7 +1,7 @@
 import React from "react";
 import SEOHead from "@/components/common/SEOHead";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,7 @@ import SurveySection from "@/components/ui/survey/SurveySection";
 import { LearningProgress } from "@/components/ui/profile/LearningProgress";
 import { ProfileAchievements } from "@/components/ui/profile/ProfileAchievements";
 import { ActivityTimeline } from "@/components/ui/profile/ActivityTimeline";
-import { Gamepad2, LayoutDashboard } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Gamepad2 } from "lucide-react";
 
 const ProfileHome: React.FC = () => {
   const { t } = useTranslation();
@@ -50,33 +49,6 @@ const ProfileHome: React.FC = () => {
             <section id="profile-section-customer">
               <RiderIdentity profile={profile} onUpdate={updateProfile} onAvatarUpload={uploadAvatar} isUpdating={isUpdating} />
             </section>
-
-            {isInstructor ? (
-              <section aria-labelledby="trainer-dashboard-cta-heading">
-                <Card className="rounded-xl border-primary/25 bg-gradient-to-br from-primary/8 to-transparent">
-                  <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-                    <div className="rounded-lg bg-primary/15 p-2.5 shrink-0">
-                      <LayoutDashboard className="h-6 w-6 text-primary" aria-hidden />
-                    </div>
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <CardTitle id="trainer-dashboard-cta-heading" className="text-lg font-bold tracking-tight">
-                        {t("trainerDashboard.instructorCardTitle")}
-                      </CardTitle>
-                      <CardDescription className="text-muted-foreground">
-                        {t("trainerDashboard.instructorCardDescription")}
-                      </CardDescription>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <Button asChild className="gap-2">
-                      <Link to="/dashboard/trainer">
-                        {t("trainerDashboard.instructorCardCta")}
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              </section>
-            ) : null}
 
             {/* 2. Your Rank */}
             <section id="profile-section-rank" className="space-y-3" aria-labelledby="profile-heading-rank">

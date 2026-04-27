@@ -18,10 +18,17 @@ import TrainerForm from "@/components/trainer/TrainerForm";
 import type { TrainerFormSubmission, TrainerFormValues } from "@/types/trainerForm";
 import { joinFullName, splitFullName } from "@/lib/trainer-name-utils";
 import { parseTrainerPhone } from "@/lib/trainer-phone-utils";
-import { formLanguagesToDb, languageEntriesToForm, parseLanguageLevels } from "@/lib/trainer-form-constants";
+import {
+  formLanguagesToDb,
+  languageEntriesToForm,
+  parseLanguageLevels,
+  trainerServiceLineDisplayLabel,
+} from "@/lib/trainer-form-constants";
+import { COUNTRIES, getCityDisplayLabel } from "@/data/countryCityData";
+import TrainerProfileReviews from "@/components/training/TrainerProfileReviews";
 import type { BikeEntry as GarageBikeEntry } from "@/hooks/useUserProfile";
 import { uploadTrainerProfilePhoto, uploadTrainerAlbumFile } from "@/lib/trainer-uploads";
-import { Star, Users, MapPin, Bike, Clock, BookOpen, Briefcase, User, ChevronDown, Plus } from "lucide-react";
+import { Star, Users, MapPin, Bike, Clock, BookOpen, User, ChevronDown, Plus, CalendarDays, Contact } from "lucide-react";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
@@ -34,6 +41,7 @@ export type TrainerProfileVariant = "dialog" | "inline";
 
 export interface Trainer {
   id: string;
+  user_id?: string | null;
   name_ar: string;
   name_en: string;
   photo_url: string | null;
@@ -47,9 +55,43 @@ export interface Trainer {
   status: string;
   created_at: string;
   profit_ratio: number;
+  gender?: string | null;
+  nationality?: string | null;
+  bike_entries?: unknown;
 }
 
 type LegacyBikeRow = { type: string; brand: string; photos: string[] };
+
+function trainerStoredCountryCode(stored: string): string {
+  const t = stored.trim();
+  if (!t) return "";
+  if (COUNTRIES.some((c) => c.code === t)) return t;
+  return COUNTRIES.find((c) => c.en === t || c.ar === t)?.code ?? "";
+}
+
+function formatTrainerCardLocation(country: string, city: string, isRTL: boolean): string {
+  const cc = trainerStoredCountryCode(country);
+  const countryLabel = cc
+    ? (COUNTRIES.find((c) => c.code === cc)?.[isRTL ? "ar" : "en"] ?? country)
+    : country;
+  const cityRaw = (city || "").trim();
+  const cityLabel = cc && cityRaw ? getCityDisplayLabel(cc, cityRaw, isRTL) || cityRaw : cityRaw;
+  if (isRTL) return [cityLabel, countryLabel].filter(Boolean).join("، ");
+  return [cityLabel, countryLabel].filter(Boolean).join(", ");
+}
+
+function uniqueBioBlocks(ar: string, en: string): string[] {
+  const parts = [ar?.trim(), en?.trim()].filter(Boolean) as string[];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const p of parts) {
+    if (!seen.has(p)) {
+      seen.add(p);
+      out.push(p);
+    }
+  }
+  return out;
+}
 
 function parseBikeEntriesLegacy(raw: unknown): LegacyBikeRow[] {
   if (!raw || !Array.isArray(raw)) return [];
@@ -83,6 +125,17 @@ function mapTrainerRowToFormValues(t: Record<string, unknown>): Partial<TrainerF
   const ar = splitFullName(String(t.name_ar ?? ""));
   const en = splitFullName(String(t.name_en ?? ""));
   const ph = parseTrainerPhone(String(t.phone ?? "").trim());
+  const rawCountry = String(t.country ?? "").trim();
+  const countryCode =
+    COUNTRIES.find((c) => c.code === rawCountry)?.code ??
+    COUNTRIES.find((c) => c.en === rawCountry)?.code ??
+    COUNTRIES.find((c) => c.ar === rawCountry)?.code ??
+    rawCountry;
+  const rawCity = String(t.city ?? "").trim();
+  const cityForForm =
+    countryCode && rawCity && COUNTRIES.some((c) => c.code === countryCode)
+      ? getCityDisplayLabel(countryCode, rawCity, false) || rawCity
+      : rawCity;
   const rawV2 = parseBikeEntriesLegacy(t.bike_entries);
   const first = rawV2[0];
   const bike_entries: GarageBikeEntry[] =
@@ -113,8 +166,8 @@ function mapTrainerRowToFormValues(t: Record<string, unknown>): Partial<TrainerF
     date_of_birth: (t.date_of_birth as string | null) ?? null,
     bio_ar: String(t.bio_ar ?? ""),
     bio_en: String(t.bio_en ?? ""),
-    country: String(t.country ?? ""),
-    city: String(t.city ?? ""),
+    country: countryCode,
+    city: cityForForm,
     gender: String((t as { gender?: string }).gender ?? ""),
     nationality: String((t as { nationality?: string }).nationality ?? ""),
     bike_entries,
@@ -357,6 +410,37 @@ function TrainerSelfEditForm({
       };
       const { error } = await supabase.from("trainers").update(row).eq("id", trainer.id);
       if (error) throw error;
+
+      const uid = String(trainer.user_id ?? "").trim();
+      if (uid) {
+        const cc = (form.country || "").trim();
+        const profileCountry = cc && COUNTRIES.some((c) => c.code === cc)
+          ? (COUNTRIES.find((c) => c.code === cc)?.en ?? form.country)
+          : form.country.trim() || null;
+        const profileCity =
+          cc && form.city ? getCityDisplayLabel(cc, form.city, false) || form.city.trim() || null : form.city.trim() || null;
+        const fullName =
+          joinFullName(form.first_name_ar, form.last_name_ar).trim() ||
+          joinFullName(form.first_name_en, form.last_name_en).trim() ||
+          null;
+        const profilePatch: Record<string, unknown> = {
+          full_name: fullName,
+          date_of_birth: form.date_of_birth,
+          country: profileCountry,
+          city: profileCity,
+          gender: (form.gender || "").trim() || null,
+          nationality: (form.nationality || "").trim() || null,
+          riding_experience_years: form.years_of_experience,
+          bike_entries: garageEntries as unknown as Json,
+          phone: form.phone.trim() || null,
+        };
+        if (photoUrl) profilePatch.avatar_url = photoUrl;
+        const { error: pErr } = await supabase.from("profiles").update(profilePatch).eq("user_id", uid);
+        if (pErr) {
+          console.error(pErr);
+          toast.error(isRTL ? "تم حفظ ملف المدرب لكن تعذّر مزامنة الملف الشخصي" : "Trainer saved, but profile sync failed");
+        }
+      }
     },
     onSuccess: (_data, submission: TrainerFormSubmission) => {
       submission.pendingAlbumFiles.forEach((p) => URL.revokeObjectURL(p.preview));
@@ -435,6 +519,30 @@ const TrainerProfileDialog: React.FC<TrainerProfileDialogProps> = ({
   const isLoading = loadingStudents || loadingReviews || loadingCourses;
   const showTrainings = variant === "dialog";
   const initial = (trainer.name_en || trainer.name_ar || "?").trim().charAt(0) || "?";
+  const primaryName =
+    (isRTL ? trainer.name_ar : trainer.name_en)?.trim() ||
+    trainer.name_en?.trim() ||
+    trainer.name_ar?.trim() ||
+    "";
+  const altName = (isRTL ? trainer.name_en?.trim() : trainer.name_ar?.trim()) || "";
+  const showAltName = Boolean(altName && altName !== primaryName);
+  const bikeGarageCount = Array.isArray(trainer.bike_entries) ? trainer.bike_entries.length : 0;
+  const genderLabel = (() => {
+    const g = (trainer.gender ?? "").trim();
+    if (!g) return "";
+    const low = g.toLowerCase();
+    if (isRTL) {
+      if (low === "male" || g === "Male") return "ذكر";
+      if (low === "female" || g === "Female") return "أنثى";
+      return g;
+    }
+    if (low === "male" || g === "Male") return "Male";
+    if (low === "female" || g === "Female") return "Female";
+    return g;
+  })();
+  const nationalityLabel = trainer.nationality
+    ? COUNTRIES.find((c) => c.code === trainer.nationality)?.[isRTL ? "ar" : "en"] || trainer.nationality
+    : "";
 
   const innerBody = (
     <div className="p-6 pt-2 space-y-6">
@@ -448,8 +556,8 @@ const TrainerProfileDialog: React.FC<TrainerProfileDialogProps> = ({
           <AvatarFallback className="text-lg bg-primary/10 text-primary">{initial}</AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
-          <h2 className="text-xl font-bold">{isRTL ? trainer.name_ar : trainer.name_en}</h2>
-          <p className="text-sm text-muted-foreground">{isRTL ? trainer.name_en : trainer.name_ar}</p>
+          <h2 className="text-xl font-bold">{primaryName}</h2>
+          {showAltName ? <p className="text-sm text-muted-foreground">{altName}</p> : null}
           <div className="flex flex-wrap gap-2 mt-2">
             {mode === "admin" ? (
               <Badge
@@ -459,10 +567,12 @@ const TrainerProfileDialog: React.FC<TrainerProfileDialogProps> = ({
                 {trainer.status === "active" ? (isRTL ? "نشط" : "Active") : isRTL ? "غير نشط" : "Inactive"}
               </Badge>
             ) : null}
-            <Badge variant="secondary" className="gap-1">
-              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-              {avgRating} ({reviews?.length || 0})
-            </Badge>
+            {!(mode === "self" && variant === "inline") ? (
+              <Badge variant="secondary" className="gap-1">
+                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                {avgRating} ({reviews?.length || 0})
+              </Badge>
+            ) : null}
             <Badge variant="secondary" className="gap-1">
               <Users className="w-3 h-3" />
               {students?.length || 0} {isRTL ? "طالب" : "students"}
@@ -481,16 +591,18 @@ const TrainerProfileDialog: React.FC<TrainerProfileDialogProps> = ({
               <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
               <div>
                 <p className="text-xs text-muted-foreground">{isRTL ? "الموقع" : "Location"}</p>
-                <p className="font-medium">
-                  {trainer.city}, {trainer.country}
-                </p>
+                <p className="font-medium">{formatTrainerCardLocation(trainer.country, trainer.city, isRTL) || "—"}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Bike className="w-4 h-4 text-muted-foreground shrink-0" />
               <div>
-                <p className="text-xs text-muted-foreground">{isRTL ? "نوع الدراجة" : "Bike Type"}</p>
-                <p className="font-medium">{trainer.bike_type}</p>
+                <p className="text-xs text-muted-foreground">{isRTL ? "الدراجات" : "Bikes"}</p>
+                <p className="font-medium">
+                  {bikeGarageCount > 0
+                    ? `${bikeGarageCount} ${isRTL ? (bikeGarageCount === 1 ? "دراجة" : "دراجات") : bikeGarageCount === 1 ? "bike" : "bikes"}`
+                    : trainer.bike_type || "—"}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -502,43 +614,62 @@ const TrainerProfileDialog: React.FC<TrainerProfileDialogProps> = ({
                 </p>
               </div>
             </div>
-            {mode === "admin" ? (
+            {genderLabel ? (
               <div className="flex items-center gap-2">
-                <Briefcase className="w-4 h-4 text-muted-foreground shrink-0" />
+                <Contact className="w-4 h-4 text-muted-foreground shrink-0" />
                 <div>
-                  <p className="text-xs text-muted-foreground">{isRTL ? "نسبة الربح" : "Profit Ratio"}</p>
-                  <p className="font-medium">{trainer.profit_ratio}%</p>
+                  <p className="text-xs text-muted-foreground">{isRTL ? "الجنس" : "Gender"}</p>
+                  <p className="font-medium">{genderLabel}</p>
+                </div>
+              </div>
+            ) : null}
+            {nationalityLabel ? (
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-muted-foreground shrink-0 opacity-70" />
+                <div>
+                  <p className="text-xs text-muted-foreground">{isRTL ? "الجنسية" : "Nationality"}</p>
+                  <p className="font-medium">{nationalityLabel}</p>
                 </div>
               </div>
             ) : null}
             <div className="flex items-center gap-2 col-span-2">
-              <User className="w-4 h-4 text-muted-foreground shrink-0" />
+              <CalendarDays className="w-4 h-4 text-muted-foreground shrink-0" />
               <div>
                 <p className="text-xs text-muted-foreground">{isRTL ? "تاريخ الانضمام" : "Joined"}</p>
                 <p className="font-medium">{format(new Date(trainer.created_at), "yyyy-MM-dd")}</p>
               </div>
             </div>
           </div>
-          {(trainer.bio_ar || trainer.bio_en) && mode === "admin" ? (
-            <div className="mt-3 pt-3 border-t border-border">
-              <p className="text-xs text-muted-foreground mb-1">{isRTL ? "نبذة" : "Bio"}</p>
-              <p className="text-sm leading-relaxed">{isRTL ? trainer.bio_ar : trainer.bio_en}</p>
+          {(trainer.bio_ar || trainer.bio_en) ? (
+            <div className="mt-3 pt-3 border-t border-border space-y-2">
+              <p className="text-xs text-muted-foreground">{isRTL ? "نبذة" : "Bio"}</p>
+              {uniqueBioBlocks(trainer.bio_ar, trainer.bio_en).map((block, i) => (
+                <p key={i} className="text-sm leading-relaxed whitespace-pre-wrap" dir="auto">
+                  {block}
+                </p>
+              ))}
             </div>
           ) : null}
           {trainer.services?.length > 0 ? (
             <div className="mt-3 pt-3 border-t border-border">
               <p className="text-xs text-muted-foreground mb-2">{isRTL ? "الخدمات" : "Services"}</p>
-              <div className="flex flex-wrap gap-1.5">
+              <ul className="list-disc ps-5 space-y-1 text-sm">
                 {trainer.services.map((s, i) => (
-                  <Badge key={i} variant="secondary" className="text-xs">
-                    {s}
-                  </Badge>
+                  <li key={i} className="leading-relaxed">
+                    {trainerServiceLineDisplayLabel(s, t)}
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           ) : null}
         </CardContent>
       </Card>
+
+      {mode === "self" && variant === "inline" ? (
+        <div className="px-1 sm:px-0">
+          <TrainerProfileReviews trainerId={trainer.id} />
+        </div>
+      ) : null}
 
       {showTrainings ? (
         <div className="space-y-3">

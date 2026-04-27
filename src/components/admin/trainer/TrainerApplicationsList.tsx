@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { formatDistanceToNow } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
@@ -16,7 +17,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TrainerApplicationDetailDialog } from "@/components/admin/trainer/TrainerApplicationDetailDialog";
 import { ClipboardList, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -45,10 +45,8 @@ const TrainerApplicationsList: React.FC = () => {
 
   const [filter, setFilter] = useState<AdminTrainerApplicationFilter>("pending");
   const [search, setSearch] = useState("");
-  const [detailRow, setDetailRow] = useState<AdminTrainerApplicationRow | null>(null);
 
-  const { applications, isLoading, approveApplication, rejectApplication, isApproving, isRejecting } =
-    useAdminTrainerApplications(filter);
+  const { applications, isLoading } = useAdminTrainerApplications(filter);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -93,7 +91,7 @@ const TrainerApplicationsList: React.FC = () => {
       </div>
 
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-3 sm:p-4">
           {isLoading ? (
             <div className="p-4 space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -116,7 +114,7 @@ const TrainerApplicationsList: React.FC = () => {
               <p className="text-sm text-muted-foreground">{t("admin.trainerApplications.empty")}</p>
             </div>
           ) : (
-            <div className="overflow-x-auto" dir={tableDir}>
+            <div className="overflow-x-auto rounded-lg border border-border/60" dir={tableDir}>
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
@@ -165,9 +163,11 @@ const TrainerApplicationsList: React.FC = () => {
                           })}
                         </TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="sm" className="gap-1 h-8" onClick={() => setDetailRow(row)}>
-                            <Eye className="h-3.5 w-3.5" />
-                            {t("admin.trainerApplications.viewButton")}
+                          <Button variant="ghost" size="sm" className="gap-1 h-8 p-0 sm:px-3" asChild>
+                            <Link to={`/admin/trainer-applications/${row.id}`}>
+                              <Eye className="h-3.5 w-3.5" />
+                              {t("admin.trainerApplications.viewButton")}
+                            </Link>
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -179,18 +179,6 @@ const TrainerApplicationsList: React.FC = () => {
           )}
         </CardContent>
       </Card>
-
-      <TrainerApplicationDetailDialog
-        open={!!detailRow}
-        onOpenChange={(open) => {
-          if (!open) setDetailRow(null);
-        }}
-        row={detailRow}
-        approveApplication={approveApplication}
-        rejectApplication={rejectApplication}
-        isApproving={isApproving}
-        isRejecting={isRejecting}
-      />
     </div>
   );
 };

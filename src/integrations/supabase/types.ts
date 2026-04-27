@@ -2803,6 +2803,7 @@ export type Database = {
       }
       trainer_applications: {
         Row: {
+          bike_entries: Json | null
           bike_type: string | null
           bio: string
           bio_ar: string | null
@@ -2816,6 +2817,7 @@ export type Database = {
           full_name: string | null
           gender: string | null
           id: string
+          languages: Json | null
           name_ar: string | null
           name_en: string | null
           nationality: string | null
@@ -2832,6 +2834,7 @@ export type Database = {
           years_of_experience: number | null
         }
         Insert: {
+          bike_entries?: Json | null
           bike_type?: string | null
           bio?: string
           bio_ar?: string | null
@@ -2845,6 +2848,7 @@ export type Database = {
           full_name?: string | null
           gender?: string | null
           id?: string
+          languages?: Json | null
           name_ar?: string | null
           name_en?: string | null
           nationality?: string | null
@@ -2861,6 +2865,7 @@ export type Database = {
           years_of_experience?: number | null
         }
         Update: {
+          bike_entries?: Json | null
           bike_type?: string | null
           bio?: string
           bio_ar?: string | null
@@ -2874,6 +2879,7 @@ export type Database = {
           full_name?: string | null
           gender?: string | null
           id?: string
+          languages?: Json | null
           name_ar?: string | null
           name_en?: string | null
           nationality?: string | null

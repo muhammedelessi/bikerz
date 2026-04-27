@@ -551,7 +551,10 @@ function TrainerFormInner(
             <FormField label={label('photoAlbum')} hint={label('photoAlbumHint')}>
               <div className="flex flex-wrap gap-2 items-start">
                 {values.photo_album.map((url) => (
-                  <div key={url} className="relative w-20 h-20 rounded-md border border-border overflow-hidden shrink-0 group/thumb">
+                  <div
+                    key={url}
+                    className="relative w-24 sm:w-28 aspect-square rounded-md border border-border overflow-hidden shrink-0 group/thumb"
+                  >
                     <img src={url} alt="" className="w-full h-full object-cover" />
                     {!ro('photo_album') ? (
                       <button
@@ -585,7 +588,7 @@ function TrainerFormInner(
                     type="button"
                     onClick={() => albumPhotosInputRef.current?.click()}
                     disabled={values.photo_album.length + pendingAlbumImages.length >= MAX_ALBUM_PHOTOS}
-                    className="w-20 h-20 rounded-md border border-dashed border-muted-foreground/40 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors disabled:opacity-50"
+                    className="w-24 sm:w-28 aspect-square rounded-md border border-dashed border-muted-foreground/40 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors disabled:opacity-50"
                   >
                     <Images className="w-5 h-5" />
                     <span className="text-[10px]">{label('add')}</span>

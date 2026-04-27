@@ -10,8 +10,6 @@ import {
   Home,
   BookOpen,
   GraduationCap,
-  Award,
-  BadgeCheck,
   Settings,
   ShieldCheck,
   Ticket,
@@ -24,7 +22,7 @@ import { useTheme } from "@/components/ThemeProvider";
 const ProfileLayout: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { user, isAdmin, isInstructor, isLoading: authLoading } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -37,8 +35,6 @@ const ProfileLayout: React.FC = () => {
   const isBookingsSection = path.startsWith("/profile/bookings");
   const profilePathNorm = path.replace(/\/$/, "") || "/";
   const isProfileHome = profilePathNorm === "/profile";
-  const isTrainerWorkspaceRoute = path.startsWith("/dashboard/trainer");
-
   useEffect(() => {
     if (sidebarOpen) {
       document.body.style.overflow = "hidden";
@@ -62,12 +58,6 @@ const ProfileLayout: React.FC = () => {
     { icon: GraduationCap, label: t("dashboard.myCourses"), to: "/dashboard", active: path.startsWith("/dashboard") },
     { icon: User, label: t("profile.title"), to: "/profile", active: isProfileHome },
     { icon: Ticket, label: t("nav.myBookings"), to: "/profile/bookings", active: path.startsWith("/profile/bookings") },
-    {
-      icon: Award,
-      label: isRTL ? "تقديم كمدرب" : "Apply as Trainer",
-      to: "/profile/apply-trainer",
-      active: path.startsWith("/profile/apply-trainer"),
-    },
     {
       icon: ShieldCheck,
       label: isRTL ? "الإعدادات والأمان" : "Settings & Security",
@@ -136,23 +126,6 @@ const ProfileLayout: React.FC = () => {
               </Link>
             ))}
           </nav>
-
-          {!authLoading && isInstructor ? (
-            <div className="shrink-0 border-t border-border bg-muted/20 p-3 sm:p-4">
-              <Link
-                to="/dashboard/trainer"
-                onClick={() => setSidebarOpen(false)}
-                className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
-                  isTrainerWorkspaceRoute
-                    ? "bg-primary/15 text-primary border-primary/30"
-                    : "border-border bg-card text-foreground hover:bg-muted/60 hover:border-primary/25"
-                }`}
-              >
-                <BadgeCheck className="w-5 h-5 flex-shrink-0" />
-                <span className="font-semibold flex-1 min-w-0">{t("nav.trainerWorkspace")}</span>
-              </Link>
-            </div>
-          ) : null}
         </div>
       </aside>
 

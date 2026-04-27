@@ -1276,6 +1276,20 @@
       },
       "viewButton": "عرض",
       "empty": "لا توجد طلبات مطابقة للفلتر الحالي.",
+      "detail": {
+        "back": "العودة إلى الطلبات",
+        "notFound": "الطلب غير موجود أو لا تملك صلاحية عرضه.",
+        "sectionContact": "التواصل",
+        "sectionContactHint": "البريد والهاتف المرتبطان بالحساب.",
+        "sectionApplicant": "الموقع والبيانات الديموغرافية",
+        "sectionApplicantHint": "القيم المرسلة مع نموذج الطلب.",
+        "sectionSubmittedPhoto": "الصورة المرفقة مع الطلب",
+        "sectionSummary": "التوضيح",
+        "sectionServices": "الخدمات",
+        "sectionLanguages": "إتقان اللغات",
+        "sectionLanguageList": "اللغات (منظّمة)",
+        "license": "نوع الرخصة"
+      },
       "dialog": {
         "title": "تفاصيل الطلب",
         "personalInfo": "البيانات الشخصية",

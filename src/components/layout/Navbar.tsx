@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 
-import { BadgeCheck, ChevronRight, LogOut, Menu, X } from "lucide-react";
+import { ChevronRight, LogOut, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LanguageToggle from "@/components/common/LanguageToggle";
 import LogoutConfirmDialog from "@/components/common/LogoutConfirmDialog";
@@ -319,16 +319,6 @@ const Navbar: React.FC = () => {
                 {user
                   ? (
                     <>
-                      {isInstructor ? (
-                        <Link to="/dashboard/trainer">
-                          <Button variant="outline" size="sm" className="gap-1.5 shrink-0 border-primary/25">
-                            <BadgeCheck className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                            <span className="hidden sm:inline max-w-[10rem] truncate text-xs font-semibold sm:text-sm">
-                              {t("nav.trainerWorkspace")}
-                            </span>
-                          </Button>
-                        </Link>
-                      ) : null}
                       <Link to="/dashboard">
                         <Button variant="ghost" size="sm" className="gap-2">
                           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
@@ -524,21 +514,6 @@ const Navbar: React.FC = () => {
             {user
               ? (
                 <>
-                  {isInstructor ? (
-                    <Link
-                      to="/dashboard/trainer"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="block"
-                    >
-                      <Button
-                        variant="outline"
-                        className="w-full h-12 justify-start text-start text-base gap-3 border-primary/25 font-semibold"
-                      >
-                        <BadgeCheck className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-                        {t("nav.trainerWorkspace")}
-                      </Button>
-                    </Link>
-                  ) : null}
                   <Link
                     to="/dashboard"
                     onClick={() => setIsMobileMenuOpen(false)}

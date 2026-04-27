@@ -59,16 +59,6 @@ const DashboardLayout: React.FC = () => {
     { icon: Home, label: t('nav.home'), to: '/', active: path === '/' },
     { icon: BookOpen, label: t('nav.courses'), to: '/courses', active: path.startsWith('/courses') },
     { icon: GraduationCap, label: t('dashboard.myCourses'), to: '/dashboard', active: dashboardHomeActive },
-    ...(!isInstructor
-      ? [
-          {
-            icon: Award,
-            label: t('nav.applyTrainer'),
-            to: '/dashboard/apply-trainer',
-            active: isApplyTrainerRoute,
-          },
-        ]
-      : []),
     { icon: User, label: t('profile.title'), to: '/profile', active: path.startsWith('/profile') },
     { icon: Ticket, label: t('nav.myBookings'), to: '/profile/bookings', active: path.startsWith('/profile/bookings') },
     {
@@ -136,40 +126,8 @@ const DashboardLayout: React.FC = () => {
             ))}
           </nav>
 
-          <div className="shrink-0 border-t border-border bg-muted/20 p-3 sm:p-4">
-            {authLoading ? (
-              <div className="h-12 w-full rounded-lg bg-muted/50 animate-pulse" aria-hidden />
-            ) : !isInstructor ? (
-              <Link
-                to="/dashboard/apply-trainer"
-                onClick={() => setSidebarOpen(false)}
-                className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
-                  isApplyTrainerRoute
-                    ? 'bg-primary/15 text-primary border-primary/30'
-                    : 'border-border bg-card text-foreground hover:bg-muted/60 hover:border-primary/25'
-                }`}
-              >
-                <Award className="w-5 h-5 flex-shrink-0" />
-                <span className="font-semibold flex-1 min-w-0">{t('nav.applyTrainer')}</span>
-              </Link>
-            ) : (
-              <Link
-                to="/dashboard/trainer"
-                onClick={() => setSidebarOpen(false)}
-                className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
-                  isTrainerWorkspaceRoute
-                    ? 'bg-primary/15 text-primary border-primary/30'
-                    : 'border-border bg-card text-foreground hover:bg-muted/60 hover:border-primary/25'
-                }`}
-              >
-                <BadgeCheck className="w-5 h-5 flex-shrink-0" />
-                <span className="font-semibold flex-1 min-w-0">{t('nav.trainerWorkspace')}</span>
-              </Link>
-            )}
-          </div>
-
           <div className="p-3 sm:p-4 border-t border-border">
-            <div className="flex w-full items-center justify-start gap-3 mb-4 text-start">
+            <div className="flex w-full items-center justify-start gap-3 text-start">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-secondary/70 flex items-center justify-center flex-shrink-0">
                 <span className="text-secondary-foreground font-bold">
                   {profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
@@ -180,8 +138,41 @@ const DashboardLayout: React.FC = () => {
                 <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               </div>
             </div>
+            {!authLoading ? (
+              <div className="mt-3 space-y-2">
+                {!isInstructor ? (
+                  <Link
+                    to="/dashboard/apply-trainer"
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
+                      isApplyTrainerRoute
+                        ? 'bg-primary/15 text-primary border-primary/30'
+                        : 'border-border bg-card text-foreground hover:bg-muted/60 hover:border-primary/25'
+                    }`}
+                  >
+                    <Award className="w-5 h-5 flex-shrink-0" />
+                    <span className="font-semibold flex-1 min-w-0">{t('nav.applyTrainer')}</span>
+                  </Link>
+                ) : (
+                  <Link
+                    to="/dashboard/trainer"
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
+                      isTrainerWorkspaceRoute
+                        ? 'bg-primary/15 text-primary border-primary/30'
+                        : 'border-border bg-card text-foreground hover:bg-muted/60 hover:border-primary/25'
+                    }`}
+                  >
+                    <BadgeCheck className="w-5 h-5 flex-shrink-0" />
+                    <span className="font-semibold flex-1 min-w-0">{t('nav.trainerWorkspace')}</span>
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <div className="mt-3 h-12 w-full rounded-lg bg-muted/50 animate-pulse" aria-hidden />
+            )}
             <LogoutConfirmDialog onConfirm={handleSignOut}>
-              <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-destructive touch-target">
+              <Button variant="ghost" className="mt-3 w-full justify-start text-muted-foreground hover:text-destructive touch-target">
                 <LogOut className="w-4 h-4 me-2" />
                 {t('common.logout')}
               </Button>

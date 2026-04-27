@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
+import { trainerServiceLineDisplayLabel } from '@/lib/trainer-form-constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -469,13 +471,13 @@ const TrainerProfile: React.FC = () => {
               {trainer.services && trainer.services.length > 0 && (
                 <section>
                   <SectionHeader>{isRTL ? 'الخدمات' : 'Services'}</SectionHeader>
-                  <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                  <ul className="list-disc ps-5 space-y-1.5 text-sm text-start max-w-prose mx-auto sm:mx-0">
                     {trainer.services.map((s: string, i: number) => (
-                      <Badge key={i} variant="secondary" className="font-normal">
-                        {s}
-                      </Badge>
+                      <li key={i} className="leading-relaxed">
+                        {trainerServiceLineDisplayLabel(s, t)}
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </section>
               )}
 
