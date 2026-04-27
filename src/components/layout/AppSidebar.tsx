@@ -158,11 +158,24 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ sidebarOpen, onSidebarOpenChang
             </div>
 
             {/*
-              Always render one of the two links — never show a loading skeleton in its place,
-              so new users immediately see "Apply as Trainer" the moment auth resolves.
-              We swap to "Trainer Dashboard" only when a trainer record is actually loaded.
+              "Apply as Trainer" is always visible for every signed-in user, regardless of
+              their current role or trainer status. Approved trainers additionally get a
+              quick "Trainer Dashboard" shortcut below it.
             */}
             <div className="mt-3 space-y-2">
+              <Link
+                to="/dashboard/apply-trainer"
+                onClick={() => onSidebarOpenChange(false)}
+                className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
+                  isApplyTrainerRoute
+                    ? "bg-primary/15 text-primary border-primary/30"
+                    : "border-border bg-card text-foreground hover:bg-muted/60 hover:border-primary/25"
+                }`}
+              >
+                <Award className="w-5 h-5 flex-shrink-0" />
+                <span className="font-semibold flex-1 min-w-0">{t("nav.applyTrainer")}</span>
+              </Link>
+
               {trainer ? (
                 <Link
                   to="/dashboard/trainer"
@@ -176,20 +189,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ sidebarOpen, onSidebarOpenChang
                   <BadgeCheck className="w-5 h-5 flex-shrink-0" />
                   <span className="font-semibold flex-1 min-w-0">{t("nav.trainerWorkspace")}</span>
                 </Link>
-              ) : (
-                <Link
-                  to="/dashboard/apply-trainer"
-                  onClick={() => onSidebarOpenChange(false)}
-                  className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
-                    isApplyTrainerRoute
-                      ? "bg-primary/15 text-primary border-primary/30"
-                      : "border-border bg-card text-foreground hover:bg-muted/60 hover:border-primary/25"
-                  }`}
-                >
-                  <Award className="w-5 h-5 flex-shrink-0" />
-                  <span className="font-semibold flex-1 min-w-0">{t("nav.applyTrainer")}</span>
-                </Link>
-              )}
+              ) : null}
             </div>
 
             <LogoutConfirmDialog onConfirm={handleSignOut}>
