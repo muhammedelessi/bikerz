@@ -23,9 +23,9 @@ export function useTrainerApplication() {
     queryKey: userId ? trainerApplicationQueryKey(userId) : ["trainer-application", "anon"],
     enabled: !!userId,
     queryFn: async () => {
-      if (!userId) return { latest: null as TrainerApplication | null, isInstructor: false };
+      if (!userId) return { latest: null as TrainerApplication | null, hasTrainerRecord: false };
 
-      const [{ data: appRow, error: appError }, { data: instructorRow, error: roleError }] = await Promise.all([
+      const [{ data: appRow, error: appError }, { data: trainerRow, error: trainerError }] = await Promise.all([
         supabase
           .from("trainer_applications")
           .select("*")
@@ -33,24 +33,25 @@ export function useTrainerApplication() {
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
-        supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "instructor").maybeSingle(),
+        supabase.from("trainers").select("id").eq("user_id", userId).maybeSingle(),
       ]);
 
       if (appError) throw appError;
-      if (roleError) throw roleError;
+      if (trainerError) throw trainerError;
 
       return {
         latest: appRow as TrainerApplication | null,
-        isInstructor: !!instructorRow,
+        /** Linked `trainers` row — not JWT / `user_roles` alone (can exist without a trainer profile). */
+        hasTrainerRecord: !!trainerRow,
       };
     },
   });
 
   const latestApplication = query.data?.latest ?? null;
-  const isInstructor = query.data?.isInstructor ?? false;
+  const hasTrainerRecord = query.data?.hasTrainerRecord ?? false;
 
   const { canApply, retryAvailableAt } = useMemo(() => {
-    if (isInstructor) {
+    if (hasTrainerRecord) {
       return { canApply: false, retryAvailableAt: null as Date | null };
     }
     if (latestApplication?.status === "pending" || latestApplication?.status === "approved") {
@@ -65,11 +66,11 @@ export function useTrainerApplication() {
       };
     }
     return { canApply: true, retryAvailableAt: null };
-  }, [isInstructor, latestApplication]);
+  }, [hasTrainerRecord, latestApplication]);
 
   return {
     latestApplication,
-    isInstructor,
+    hasTrainerRecord,
     canApply,
     retryAvailableAt,
     isLoading: query.isLoading,

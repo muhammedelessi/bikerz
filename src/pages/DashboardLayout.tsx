@@ -23,11 +23,13 @@ import {
 import logoDark from '@/assets/logo-dark.webp';
 import logoLight from '@/assets/logo-light.png';
 import { useTheme } from '@/components/ThemeProvider';
+import { useCurrentTrainer } from '@/hooks/useCurrentTrainer';
 
 const DashboardLayout: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const { user, profile, signOut, isAdmin, isInstructor, isLoading: authLoading } = useAuth();
+  const { user, profile, signOut, isAdmin, isLoading: authLoading } = useAuth();
+  const { trainer, isLoading: trainerLinkLoading } = useCurrentTrainer();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -138,22 +140,9 @@ const DashboardLayout: React.FC = () => {
                 <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               </div>
             </div>
-            {!authLoading ? (
+            {!authLoading && !trainerLinkLoading ? (
               <div className="mt-3 space-y-2">
-                {!isInstructor ? (
-                  <Link
-                    to="/dashboard/apply-trainer"
-                    onClick={() => setSidebarOpen(false)}
-                    className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
-                      isApplyTrainerRoute
-                        ? 'bg-primary/15 text-primary border-primary/30'
-                        : 'border-border bg-card text-foreground hover:bg-muted/60 hover:border-primary/25'
-                    }`}
-                  >
-                    <Award className="w-5 h-5 flex-shrink-0" />
-                    <span className="font-semibold flex-1 min-w-0">{t('nav.applyTrainer')}</span>
-                  </Link>
-                ) : (
+                {trainer ? (
                   <Link
                     to="/dashboard/trainer"
                     onClick={() => setSidebarOpen(false)}
@@ -165,6 +154,19 @@ const DashboardLayout: React.FC = () => {
                   >
                     <BadgeCheck className="w-5 h-5 flex-shrink-0" />
                     <span className="font-semibold flex-1 min-w-0">{t('nav.trainerWorkspace')}</span>
+                  </Link>
+                ) : (
+                  <Link
+                    to="/dashboard/apply-trainer"
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
+                      isApplyTrainerRoute
+                        ? 'bg-primary/15 text-primary border-primary/30'
+                        : 'border-border bg-card text-foreground hover:bg-muted/60 hover:border-primary/25'
+                    }`}
+                  >
+                    <Award className="w-5 h-5 flex-shrink-0" />
+                    <span className="font-semibold flex-1 min-w-0">{t('nav.applyTrainer')}</span>
                   </Link>
                 )}
               </div>
