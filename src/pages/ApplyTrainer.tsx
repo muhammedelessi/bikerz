@@ -261,8 +261,10 @@ const ApplyTrainer: React.FC = () => {
   }, [user]);
 
   // ── Hydrate from draft, then profile ──────────────────────────────────────
+  // Wait for profile so the form is auto-filled with the user's saved details
+  // (name, phone, country/city, DOB, gender, nationality, bikes, …).
   useEffect(() => {
-    if (hydrated || isLoading || !user) return;
+    if (hydrated || isLoading || !user || !profile) return;
     let next: FormState = { ...EMPTY_FORM };
     try {
       const raw = localStorage.getItem(draftKey);
