@@ -288,9 +288,16 @@ const AdminTrainerApplicationDetail: React.FC = () => {
   const bios = uniqueBioParagraphs(row);
   const extras = applicationExtras(row);
 
-  const countryCode = row.country?.trim() ?? "";
-  const countryEntry = countryCode ? COUNTRIES.find((c) => c.code === countryCode) : undefined;
-  const countryDisplay = countryEntry ? countryEntry[isRTL ? "ar" : "en"] : row.country?.trim() || "—";
+  const countryRaw = row.country?.trim() ?? "";
+  // `row.country` may be an ISO code, the English name, or the Arabic name —
+  // resolve to the canonical entry so we can render in the active UI language.
+  const countryEntry = countryRaw
+    ? COUNTRIES.find(
+        (c) => c.code === countryRaw || c.en === countryRaw || c.ar === countryRaw,
+      )
+    : undefined;
+  const countryCode = countryEntry?.code ?? "";
+  const countryDisplay = countryEntry ? countryEntry[isRTL ? "ar" : "en"] : countryRaw || "—";
   const cityRaw = row.city?.trim() || "";
   const cityDisplay =
     cityRaw && countryCode ? getCityDisplayLabel(countryCode, cityRaw, isRTL) || cityRaw : cityRaw || "—";
