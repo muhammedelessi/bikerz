@@ -2803,6 +2803,7 @@ export type Database = {
       }
       trainer_applications: {
         Row: {
+          bike_entries: Json
           bike_type: string | null
           bio: string
           bio_ar: string | null
@@ -2832,6 +2833,7 @@ export type Database = {
           years_of_experience: number | null
         }
         Insert: {
+          bike_entries?: Json
           bike_type?: string | null
           bio?: string
           bio_ar?: string | null
@@ -2861,6 +2863,7 @@ export type Database = {
           years_of_experience?: number | null
         }
         Update: {
+          bike_entries?: Json
           bike_type?: string | null
           bio?: string
           bio_ar?: string | null
