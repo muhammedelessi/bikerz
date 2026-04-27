@@ -1033,9 +1033,16 @@ const ApplyTrainer: React.FC = () => {
         )}
       </div>
 
-      {/* Footer navigation */}
-      <div className="fixed bottom-0 inset-x-0 z-20 bg-background/95 backdrop-blur-md border-t border-border safe-area-bottom">
-        <div className="max-w-3xl w-full min-w-0 mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+      {/*
+        Footer navigation
+        - `pointer-events-none` on the outer bar so the wide blurred surface NEVER
+          intercepts clicks meant for the sidebar / other UI.
+        - `pointer-events-auto` on the inner button row so the buttons themselves
+          stay clickable.
+        - `lg:start-[280px]` keeps the bar from rendering on top of the desktop sidebar.
+      */}
+      <div className="pointer-events-none fixed bottom-0 inset-x-0 lg:start-[280px] z-20 bg-background/95 backdrop-blur-md border-t border-border safe-area-bottom">
+        <div className="pointer-events-auto max-w-3xl w-full min-w-0 mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <Button
             variant="outline"
             onClick={goPrev}

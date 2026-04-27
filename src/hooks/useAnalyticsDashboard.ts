@@ -1,6 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { subDays, subHours, format, startOfDay, startOfWeek, startOfMonth, differenceInDays } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
+
+/**
+ * Analytics tables (user_gamification, xp_transactions, etc.) are RLS-protected to admins only.
+ * Non-admins hitting these endpoints get a 403. Centralize the role gate so each hook can
+ * `enabled: isAdminAnalyticsViewer` itself instead of failing in the network layer.
+ */
+function useIsAdminAnalyticsViewer() {
+  const { hasAnyRole } = useAuth();
+  return hasAnyRole(['super_admin', 'developer', 'academy_admin', 'finance']);
+}
 
 // Helper to fetch ALL rows from a table, bypassing the 1000-row default limit
 async function fetchAllRows(
@@ -72,7 +83,9 @@ const isSuccessfulTapStatus = (status?: string | null) =>
 
 // Global System Overview
 export function useSystemOverview(dateRange: string = '30d') {
+  const enabled = useIsAdminAnalyticsViewer();
   return useQuery({
+    enabled,
     queryKey: ['analytics-system-overview', dateRange],
     queryFn: async () => {
       const now = new Date();
@@ -158,7 +171,9 @@ export function useSystemOverview(dateRange: string = '30d') {
 
 // User Intelligence
 export function useUserIntelligence(dateRange: string) {
+  const enabled = useIsAdminAnalyticsViewer();
   return useQuery({
+    enabled,
     queryKey: ['analytics-user-intelligence', dateRange],
     queryFn: async () => {
       const days = DATE_RANGES[dateRange]?.days || 30;
@@ -229,7 +244,9 @@ export function useUserIntelligence(dateRange: string) {
 
 // Video & Lesson Micro-Analytics
 export function useVideoAnalytics(dateRange: string, lessonId?: string) {
+  const enabled = useIsAdminAnalyticsViewer();
   return useQuery({
+    enabled,
     queryKey: ['analytics-video', dateRange, lessonId],
     queryFn: async () => {
       const days = DATE_RANGES[dateRange]?.days || 30;
@@ -358,7 +375,9 @@ export function useVideoAnalytics(dateRange: string, lessonId?: string) {
 
 // Course-Level Psychology
 export function useCourseAnalytics(dateRange: string) {
+  const enabled = useIsAdminAnalyticsViewer();
   return useQuery({
+    enabled,
     queryKey: ['analytics-courses', dateRange],
     queryFn: async () => {
       const since = getSinceDate(dateRange);
@@ -448,7 +467,9 @@ export function useCourseAnalytics(dateRange: string) {
 
 // Funnel & Conversion Intelligence
 export function useFunnelAnalytics(dateRange: string) {
+  const enabled = useIsAdminAnalyticsViewer();
   return useQuery({
+    enabled,
     queryKey: ['analytics-funnel', dateRange],
     queryFn: async () => {
       const since = getSinceDate(dateRange);
@@ -515,7 +536,9 @@ export function useFunnelAnalytics(dateRange: string) {
 
 // Revenue Analytics
 export function useRevenueAnalytics(dateRange: string) {
+  const enabled = useIsAdminAnalyticsViewer();
   return useQuery({
+    enabled,
     queryKey: ['analytics-revenue', dateRange],
     queryFn: async () => {
       const since = getSinceDate(dateRange);
@@ -633,7 +656,9 @@ export function useRevenueAnalytics(dateRange: string) {
 
 // Retention & Churn
 export function useRetentionAnalytics(dateRange: string) {
+  const enabled = useIsAdminAnalyticsViewer();
   return useQuery({
+    enabled,
     queryKey: ['analytics-retention', dateRange],
     queryFn: async () => {
       const since = getSinceDate(dateRange);
@@ -719,7 +744,9 @@ export function useRetentionAnalytics(dateRange: string) {
 
 // Infrastructure Metrics
 export function useInfrastructureMetrics(dateRange: string) {
+  const enabled = useIsAdminAnalyticsViewer();
   return useQuery({
+    enabled,
     queryKey: ['analytics-infrastructure', dateRange],
     queryFn: async () => {
       const days = DATE_RANGES[dateRange]?.days || 30;
