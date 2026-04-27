@@ -679,7 +679,14 @@ const App = () => (
               <Sonner />
               <BrowserRouter
                 future={{
-                  v7_startTransition: true,
+                  // v7_startTransition was causing navigations to feel "stuck":
+                  // every Link click went through React.startTransition, so when
+                  // the target route's lazy chunk was suspending, React kept the
+                  // OLD route (e.g. ApplyTrainer) on screen and only committed
+                  // the new route after some unrelated re-render (selecting a
+                  // date in the picker, etc.). Disabling it makes navigations
+                  // commit immediately and show the route's Suspense fallback,
+                  // which is the expected behavior.
                   v7_relativeSplatPath: true,
                 }}
               >
