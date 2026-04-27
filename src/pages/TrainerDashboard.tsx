@@ -1,4 +1,5 @@
 import React from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,13 +7,13 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrentTrainer } from "@/hooks/useCurrentTrainer";
 import TrainerDashboardLayout, { type TrainerDashboardTab } from "@/components/trainer/TrainerDashboardLayout";
 import TrainerProfileDialog, {
-  AddTrainingForTrainerDialog,
   TrainingSection,
   UnlinkedReviews,
 } from "@/components/admin/TrainerProfileDialog";
 import { TrainerScheduleManager } from "@/components/admin/trainer/TrainerScheduleManager";
 import { TrainerBookingsManager } from "@/components/admin/trainer/TrainerBookingsManager";
 import { TrainerAdminPaymentsSection } from "@/components/admin/trainer/TrainerAdminPaymentsSection";
+import { TrainerAddTrainingPage } from "@/components/trainer/TrainerAddTrainingPage";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,7 +22,25 @@ const TrainerDashboard: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { trainer, refetch } = useCurrentTrainer();
-  const [addTrainingOpen, setAddTrainingOpen] = React.useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const action = searchParams.get("action");
+  const isAddingTraining = action === "add";
+
+  const openAddTrainingPage = () => {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      p.set("tab", "trainings");
+      p.set("action", "add");
+      return p;
+    });
+  };
+  const closeAddTrainingPage = () => {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      p.delete("action");
+      return p;
+    }, { replace: true });
+  };
 
   const trainerId = trainer?.id ?? "";
 
@@ -68,6 +87,15 @@ const TrainerDashboard: React.FC = () => {
           />
         );
       case "trainings":
+        if (isAddingTraining) {
+          return (
+            <TrainerAddTrainingPage
+              trainerId={trainer.id}
+              existingTrainingIds={trainerCourses?.map((tc: { training_id: string }) => tc.training_id) || []}
+              onClose={closeAddTrainingPage}
+            />
+          );
+        }
         return (
           <div className="space-y-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -75,7 +103,7 @@ const TrainerDashboard: React.FC = () => {
                 <h2 className="text-lg font-bold">{t("trainerDashboard.trainings.title")}</h2>
                 <p className="text-xs text-muted-foreground">{t("trainerDashboard.trainings.hint")}</p>
               </div>
-              <Button type="button" size="sm" className="gap-1.5 shrink-0" onClick={() => setAddTrainingOpen(true)}>
+              <Button type="button" size="sm" className="gap-1.5 shrink-0" onClick={openAddTrainingPage}>
                 <Plus className="h-4 w-4" />
                 {t("trainerDashboard.trainings.addButton")}
               </Button>
@@ -105,14 +133,6 @@ const TrainerDashboard: React.FC = () => {
                 {reviews && <UnlinkedReviews reviews={reviews} isRTL={isRTL} />}
               </div>
             )}
-            <AddTrainingForTrainerDialog
-              open={addTrainingOpen}
-              onOpenChange={setAddTrainingOpen}
-              trainerId={trainer.id}
-              existingTrainingIds={trainerCourses?.map((tc: { training_id: string }) => tc.training_id) || []}
-              isRTL={isRTL}
-              mode="self"
-            />
           </div>
         );
       case "schedule":

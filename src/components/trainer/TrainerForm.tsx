@@ -101,8 +101,13 @@ function modeHidesField(mode: TrainerFormMode, field: keyof TrainerFormValues): 
   if (mode === 'apply' && field === 'photo_album') return true;
   if (mode === 'apply' && field === 'status') return true;
   if (mode === 'apply' && field === 'assigned_training_ids') return true;
+  // Photo and garage are sourced from the user's personal profile — not editable here.
+  if (mode === 'apply' && field === 'photo_url') return true;
+  if (mode === 'apply' && field === 'bike_entries') return true;
   if (mode === 'self-edit' && field === 'status') return true;
   if (mode === 'self-edit' && field === 'assigned_training_ids') return true;
+  if (mode === 'self-edit' && field === 'photo_url') return true;
+  if (mode === 'self-edit' && field === 'bike_entries') return true;
   return false;
 }
 

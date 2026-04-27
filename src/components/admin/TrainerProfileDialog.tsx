@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -357,14 +357,50 @@ function TrainerSelfEditForm({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [formNonce, setFormNonce] = useState(0);
-  const [initial, setInitial] = useState<Partial<TrainerFormValues>>(() =>
-    mapTrainerRowToFormValues(trainer as unknown as Record<string, unknown>),
-  );
+
+  // Photo + garage are sourced from the linked user profile, not the trainer row.
+  const trainerUserId = String((trainer as unknown as { user_id?: string | null }).user_id ?? "").trim() || null;
+  const { data: profileSync } = useQuery({
+    queryKey: ["trainer-profile-sync", trainerUserId],
+    queryFn: async () => {
+      if (!trainerUserId) return { avatar_url: null as string | null, bike_entries: [] as unknown[] };
+      const { data } = await (supabase as unknown as {
+        from: (table: string) => {
+          select: (cols: string) => {
+            eq: (k: string, v: string) => { maybeSingle: () => Promise<{ data: { avatar_url?: string | null; bike_entries?: unknown } | null }> };
+          };
+        };
+      })
+        .from("profiles")
+        .select("avatar_url, bike_entries")
+        .eq("user_id", trainerUserId)
+        .maybeSingle();
+      return {
+        avatar_url: typeof data?.avatar_url === "string" ? data.avatar_url : null,
+        bike_entries: Array.isArray(data?.bike_entries) ? (data!.bike_entries as unknown[]) : [],
+      };
+    },
+    enabled: !!trainerUserId,
+  });
+
+  const buildInitial = useCallback((): Partial<TrainerFormValues> => {
+    const base = mapTrainerRowToFormValues(trainer as unknown as Record<string, unknown>);
+    return {
+      ...base,
+      photo_url: profileSync?.avatar_url ?? base.photo_url ?? null,
+      bike_entries:
+        Array.isArray(profileSync?.bike_entries) && profileSync.bike_entries.length > 0
+          ? (profileSync.bike_entries as TrainerFormValues["bike_entries"])
+          : base.bike_entries,
+    };
+  }, [trainer, profileSync]);
+
+  const [initial, setInitial] = useState<Partial<TrainerFormValues>>(() => buildInitial());
 
   useEffect(() => {
-    setInitial(mapTrainerRowToFormValues(trainer as unknown as Record<string, unknown>));
+    setInitial(buildInitial());
     setFormNonce((n) => n + 1);
-  }, [trainer]);
+  }, [buildInitial]);
 
   const saveMutation = useMutation({
     mutationFn: async (submission: TrainerFormSubmission) => {
@@ -524,8 +560,6 @@ const TrainerProfileDialog: React.FC<TrainerProfileDialogProps> = ({
     trainer.name_en?.trim() ||
     trainer.name_ar?.trim() ||
     "";
-  const altName = (isRTL ? trainer.name_en?.trim() : trainer.name_ar?.trim()) || "";
-  const showAltName = Boolean(altName && altName !== primaryName);
   const bikeGarageCount = Array.isArray(trainer.bike_entries) ? trainer.bike_entries.length : 0;
   const genderLabel = (() => {
     const g = (trainer.gender ?? "").trim();
@@ -557,7 +591,6 @@ const TrainerProfileDialog: React.FC<TrainerProfileDialogProps> = ({
         </Avatar>
         <div className="flex-1 min-w-0">
           <h2 className="text-xl font-bold">{primaryName}</h2>
-          {showAltName ? <p className="text-sm text-muted-foreground">{altName}</p> : null}
           <div className="flex flex-wrap gap-2 mt-2">
             {mode === "admin" ? (
               <Badge

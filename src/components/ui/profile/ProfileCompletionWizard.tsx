@@ -15,7 +15,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useGHLSync } from "@/hooks/useGHLSync";
-import { useSignupWebhook } from "@/hooks/useSignupWebhook";
 import { FormField } from "@/components/ui/form-field";
 interface ProfileCompletionWizardProps {
   open: boolean;
@@ -51,7 +50,6 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({ open,
   const { isRTL } = useLanguage();
   const { user, profile } = useAuth();
   const { syncContact } = useGHLSync();
-  const { sendSignupData } = useSignupWebhook();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -195,17 +193,6 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({ open,
         phone: phone || null,
         bike_brand: bikeBrand || null,
         bike_model: bikeModel || null,
-      });
-
-      sendSignupData({
-        full_name: profile?.full_name || riderNickname || "",
-        email: user.email || "",
-        phone: phone || profile?.phone || "",
-        country: profile?.country || "",
-        city: profile?.city || "",
-        date_of_birth: profile?.date_of_birth || "",
-        gender: profile?.gender || "",
-        silent: true,
       });
 
       // Log activity

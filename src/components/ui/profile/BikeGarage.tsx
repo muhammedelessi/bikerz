@@ -559,7 +559,7 @@ export const BikeGarage = forwardRef<BikeGarageHandle, BikeGarageProps>(
                   <Bike className="w-10 h-10 text-muted-foreground/30" />
                 </div>
                 <div className="text-center space-y-1.5">
-                  <p className="text-lg font-bold text-foreground">{isRTL ? "كراجك فارغ!" : "Your garage is empty!"}</p>
+                  <p className="text-lg font-bold text-foreground">{isRTL ? "جراجك فارغ" : "Your garage is empty"}</p>
                   <p className="text-sm text-muted-foreground max-w-xs">
                     {isRTL
                       ? "أضف دراجتك الأولى وأرفق صورها للحصول على تجربة مخصصة"

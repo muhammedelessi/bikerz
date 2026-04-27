@@ -408,9 +408,10 @@ const ApplyTrainer: React.FC = () => {
       const localDigits = form.phone.replace(/[^0-9]/g, "");
       const phoneVal =
         localDigits.length >= 7 && localDigits.length <= 15 ? fullPhone : (profile?.phone?.trim() || null);
-      const firstBikePhoto =
-        form.bikeEntries.map((b) => b.photos?.[0]).find((u) => typeof u === "string" && u.trim().length > 0) ?? null;
-      const photoUrl = profile?.avatar_url?.trim() || firstBikePhoto || null;
+      // Trainer photo comes ONLY from the user's profile avatar.
+      // Never fall back to a bike photo — that would put a motorcycle in the
+      // trainer's avatar slot when the user hasn't picked a profile photo.
+      const photoUrl = profile?.avatar_url?.trim() || null;
       const languagesJson = form.languages.map((l) => ({ language: l.code, level: l.level }));
       const payload = {
         user_id: user.id,

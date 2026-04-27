@@ -3,10 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
+import { sendGHLProfileData } from "@/services/ghl.service";
 import { fetchEnrollmentsWithLiveProgress } from "@/lib/enrollmentProgress";
-import { getUserCourseStatuses } from "@/services/ghl.service";
-import { COUNTRIES } from "@/data/countryCityData";
 export interface ExtendedProfile {
   id: string;
   user_id: string;
@@ -396,7 +394,6 @@ export function calculateRank(
 
 export function useUserProfile() {
   const { user } = useAuth();
-  const { sendFormData } = useGHLFormWebhook();
   const [profile, setProfile] = useState<ExtendedProfile | null>(null);
   const [learningStats, setLearningStats] = useState<LearningStats | null>(null);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -435,29 +432,24 @@ export function useUserProfile() {
 
       setProfile((prev) => (prev ? { ...prev, ...changedUpdates } : null));
 
-      // Send updated fields to GHL via form webhook (uses email to match contact)
       const mergedProfile = { ...profile, ...changedUpdates };
 
-      const { coursesJson, totalPurchased } = await getUserCourseStatuses(user.id);
-
-      sendFormData({
-        full_name: mergedProfile?.full_name || "",
-        email: user.email || "",
-        phone: mergedProfile?.phone || "",
-        country: (() => {
-          const entry = COUNTRIES.find((c) => c.en === mergedProfile?.country || c.ar === mergedProfile?.country);
-          return entry ? entry.code : mergedProfile?.country || "";
-        })(),
-        city: mergedProfile?.city || "",
-        address: [mergedProfile?.city, mergedProfile?.country].filter(Boolean).join(", "),
-        dateOfBirth: mergedProfile?.date_of_birth || "",
-        gender: mergedProfile?.gender || "",
-        orderStatus: totalPurchased > 0 ? "purchased" : "not purchased",
-        courses: coursesJson,
-        totalPurchased,
-        silent: true,
+      // Dedicated profile webhook — only the user's personal profile fields
+      sendGHLProfileData({
+        user_id: user.id,
+        email: user.email ?? null,
+        full_name: mergedProfile?.full_name ?? null,
+        date_of_birth: mergedProfile?.date_of_birth ?? null,
+        gender: mergedProfile?.gender ?? null,
+        nationality: mergedProfile?.nationality ?? null,
+        rider_nickname: mergedProfile?.rider_nickname ?? null,
+        phone: mergedProfile?.phone ?? null,
+        country: mergedProfile?.country ?? null,
+        city: mergedProfile?.city ?? null,
+        postal_code: mergedProfile?.postal_code ?? null,
+        avatar_url: mergedProfile?.avatar_url ?? null,
       }).catch((err) => {
-        console.error("[GHL] Profile update webhook error:", err);
+        console.error("[GHL] Profile-only webhook error:", err);
       });
 
       toast.success("Profile updated successfully");

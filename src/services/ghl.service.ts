@@ -92,6 +92,75 @@ export async function sendGHLFormData(data: FormWebhookData): Promise<boolean> {
   }
 }
 
+// ─── Profile-only webhook ────────────────────────────────────────────────────
+// Dedicated webhook for user profile data (registration + profile updates).
+// Sends ONLY the personal profile fields below — nothing else.
+
+const GHL_PROFILE_WEBHOOK_URL =
+  "https://services.leadconnectorhq.com/hooks/ddAvdgekc94cWL9NBHK1/webhook-trigger/dbd98231-b486-4e88-9693-9e63962dbfd7";
+
+export interface ProfileWebhookData {
+  user_id?: string | null;
+  email?: string | null;
+  /** Full name string — gets split into firstname/lastname before sending. */
+  full_name?: string | null;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  nationality?: string | null;
+  rider_nickname?: string | null;
+  phone?: string | null;
+  country?: string | null;
+  city?: string | null;
+  postal_code?: string | null;
+  avatar_url?: string | null;
+}
+
+function splitNameForWebhook(fullName: string): { firstname: string; lastname: string } {
+  const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
+  return {
+    firstname: parts[0] || "",
+    lastname: parts.slice(1).join(" ") || "",
+  };
+}
+
+export async function sendGHLProfileData(data: ProfileWebhookData): Promise<boolean> {
+  const country = data.country ?? "";
+  const city = data.city ?? "";
+  const nationality = data.nationality ?? "";
+  const { firstname, lastname } = splitNameForWebhook(data.full_name ?? "");
+
+  const payload: Record<string, unknown> = {
+    user_id: data.user_id ?? "",
+    email: data.email ?? "",
+    firstname,
+    lastname,
+    date_of_birth: data.date_of_birth ?? "",
+    gender: data.gender ?? "",
+    nationality: resolveCountryEnglish(nationality) || "",
+    nationality_code: toCountryCode(nationality) || "",
+    rider_nickname: data.rider_nickname ?? "",
+    phone: data.phone ?? "",
+    country: resolveCountryEnglish(country) || "",
+    country_code: toCountryCode(country) || "",
+    city: resolveCityEnglish(city, country) || "",
+    postal_code: data.postal_code ?? "",
+    avatar_url: data.avatar_url ?? "",
+  };
+
+  try {
+    const res = await fetch(GHL_PROFILE_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) console.warn(`GHL profile webhook returned ${res.status}`);
+    return res.ok;
+  } catch (err) {
+    console.error("GHL profile webhook failed:", err);
+    return false;
+  }
+}
+
 export async function upsertCourseStatus(userId: string, courseId: string, courseName: string, orderStatus: string) {
   const { data, error } = await supabase.rpc("upsert_course_status", {
     p_user_id: userId,

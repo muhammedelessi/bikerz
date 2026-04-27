@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useSignupWebhook } from "@/hooks/useSignupWebhook";
+import { sendGHLProfileData } from "@/services/ghl.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -65,7 +65,6 @@ const Signup: React.FC = () => {
   const [showProfileWizard, setShowProfileWizard] = useState(false);
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
-  const { sendSignupData } = useSignupWebhook();
 
   const logoSrc = theme === "light" ? logoDark : logoLight;
   const signupLcpPreloads = useMemo((): LcpPreloadLink[] | undefined => {
@@ -202,15 +201,16 @@ const Signup: React.FC = () => {
       console.error("GHL signup sync failed:", syncErr);
     }
 
-    sendSignupData({
-      full_name: fullName || "",
-      email: userEmail || "",
+    // Dedicated profile webhook — fires once on registration
+    sendGHLProfileData({
+      user_id: userId,
+      email: userEmail,
+      full_name: fullName,
       phone: fullPhone,
       country: countryName,
       city: cityName,
-      date_of_birth: "",
-      gender: "",
-      silent: true,
+    }).catch((err) => {
+      console.error("[GHL] Registration profile webhook error:", err);
     });
   };
 

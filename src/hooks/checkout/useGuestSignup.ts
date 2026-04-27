@@ -1,12 +1,11 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { useSignupWebhook } from "@/hooks/useSignupWebhook";
+import { sendGHLProfileData } from "@/services/ghl.service";
 import { createGuestAccount, sendPasswordReset, updateProfile } from "@/services/supabase.service";
 
 export function useGuestSignup() {
   const { t } = useTranslation();
-  const { sendSignupData } = useSignupWebhook();
   const [guestSigningUp, setGuestSigningUp] = useState(false);
 
   const generatePassword = useCallback(() => {
@@ -55,15 +54,16 @@ export function useGuestSignup() {
           profile_complete: true,
         });
 
-        sendSignupData({
+        sendGHLProfileData({
+          user_id: data.user.id,
           full_name: fullName.trim(),
           email: email.trim(),
           phone: rawPhone,
           country: profileData.country,
           city: profileData.city,
-          date_of_birth: "",
-          gender: "",
-          silent: true,
+          postal_code: profileData.postalCode || "",
+        }).catch((err) => {
+          console.error("[GHL] Guest signup profile webhook error:", err);
         });
 
         sendPasswordReset(email.trim());
@@ -76,7 +76,7 @@ export function useGuestSignup() {
         setGuestSigningUp(false);
       }
     },
-    [generatePassword, t, sendSignupData],
+    [generatePassword, t],
   );
 
   return { guestSigningUp, handleGuestSignup };
