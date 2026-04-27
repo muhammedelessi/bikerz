@@ -202,6 +202,7 @@ function TrainerBikeCard({ bike, displayType, isRTL, onPhotoClick }: BikeCardPro
 const TrainerProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { isRTL, language } = useLanguage();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
