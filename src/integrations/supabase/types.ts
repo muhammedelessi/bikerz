@@ -2817,6 +2817,7 @@ export type Database = {
           full_name: string | null
           gender: string | null
           id: string
+          languages: Json
           name_ar: string | null
           name_en: string | null
           nationality: string | null
@@ -2847,6 +2848,7 @@ export type Database = {
           full_name?: string | null
           gender?: string | null
           id?: string
+          languages?: Json
           name_ar?: string | null
           name_en?: string | null
           nationality?: string | null
@@ -2877,6 +2879,7 @@ export type Database = {
           full_name?: string | null
           gender?: string | null
           id?: string
+          languages?: Json
           name_ar?: string | null
           name_en?: string | null
           nationality?: string | null
