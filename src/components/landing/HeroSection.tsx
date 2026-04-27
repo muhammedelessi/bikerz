@@ -150,7 +150,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
             height={600}
             className="w-full h-full min-h-0 object-cover"
             loading="eager"
-            fetchpriority="high"
+            fetchPriority="high"
             decoding="async"
             sizes="100vw"
           />

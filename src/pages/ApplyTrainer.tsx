@@ -918,7 +918,13 @@ const ApplyTrainer: React.FC = () => {
               />
               <ReviewRow
                 label={isRTL ? "الجنس" : "Gender"}
-                value={formatGenderLabel((form.gender || profile?.gender || "").trim(), isRTL)}
+                value={(() => {
+                  const g = (form.gender || profile?.gender || "").trim().toLowerCase();
+                  if (!g) return "";
+                  if (g === "male") return isRTL ? "ذكر" : "Male";
+                  if (g === "female") return isRTL ? "أنثى" : "Female";
+                  return isRTL ? "آخر" : "Other";
+                })()}
               />
               <ReviewRow
                 label={isRTL ? "الجنسية" : "Nationality"}
