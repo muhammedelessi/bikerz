@@ -10,6 +10,26 @@ window.addEventListener("vite:preloadError", (event) => {
   window.location.reload();
 });
 
+/**
+ * Service-worker auto-reload after deploy.
+ *
+ * The PWA is configured with `registerType: "autoUpdate"`, which makes the new
+ * service worker call `skipWaiting` + `clientsClaim` as soon as it installs.
+ * That swap fires the `controllerchange` event in every tab still running the
+ * old chunks. Without an explicit reload here, those tabs keep showing the old
+ * cached JavaScript (e.g. an old sidebar that's missing the "Apply as Trainer"
+ * button) until the user manually refreshes. Reloading once on the swap means
+ * users see new releases immediately.
+ */
+if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloading) return;
+    reloading = true;
+    window.location.reload();
+  });
+}
+
 const VIEWPORT_CONTENT = "width=device-width, initial-scale=1.0, viewport-fit=cover";
 const OAUTH_VIEWPORT_RESET_KEY = "oauth_viewport_reset_pending";
 
