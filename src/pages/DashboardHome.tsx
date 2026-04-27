@@ -10,7 +10,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { fetchEnrollmentsWithLiveProgress } from '@/lib/enrollmentProgress';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import ProfileCompletionReminder from '@/components/ui/profile/ProfileCompletionReminder';
 import GamificationPanel from '@/components/gamification/GamificationPanel';
 import { BookOpen, Play, Clock, Trophy, CheckCircle2 } from 'lucide-react';
 
@@ -198,9 +197,6 @@ const DashboardHome: React.FC = () => {
     <>
       <SEOHead title="My Dashboard" description="Access your BIKERZ Academy dashboard. Track your course progress, manage enrollments, and continue learning." noindex />
       <div className="p-6 space-y-8 safe-area-bottom">
-          {/* Profile Completion Reminder */}
-          <ProfileCompletionReminder variant="card" />
-
           {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {isLoading ? (

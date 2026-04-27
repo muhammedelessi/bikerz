@@ -690,8 +690,7 @@ const ApplyTrainer: React.FC = () => {
             </FormField>
 
             <FormField
-              label={isRTL ? "سنوات الخبرة (كم عدد السنوات؟) *" : "Years of experience *"}
-              hint={isRTL ? "أدخل عدد السنوات كرقم." : "Enter your years of experience as a number."}
+              label={isRTL ? "ادخل سنوات الخبرة" : "Enter years of experience"}
             >
               <Input
                 type="number"
@@ -705,17 +704,12 @@ const ApplyTrainer: React.FC = () => {
                   setForm({ ...form, yearsExperience: Number.isFinite(n) ? Math.min(80, Math.max(0, n)) : 0 });
                 }}
                 placeholder={isRTL ? "مثال: 5" : "e.g. 5"}
-                dir="ltr"
+                dir={isRTL ? "rtl" : "ltr"}
               />
             </FormField>
 
             <FormField
-              label={isRTL ? `ملخص تعريفي * (${form.summary.length}/500)` : `Professional summary * (${form.summary.length}/500)`}
-              hint={
-                isRTL
-                  ? "ملخص واحد عن خبرتك وأسلوبك (30 حرفًا على الأقل)."
-                  : "One summary about your experience and teaching style (min. 30 characters)."
-              }
+              label={isRTL ? `النبذة (${form.summary.length}/500)` : `Bio (${form.summary.length}/500)`}
             >
               <Textarea
                 rows={5}
@@ -852,7 +846,7 @@ const ApplyTrainer: React.FC = () => {
                         next[i] = e.target.value;
                         setForm({ ...form, serviceLines: next });
                       }}
-                      placeholder={isRTL ? "مثال: تدريب المبتدئين في المدينة" : "e.g. Beginner city training"}
+                      placeholder={isRTL ? "حامي اليدين" : "حامي اليدين"}
                       className="flex-1 min-w-0"
                       dir={isRTL ? "rtl" : "ltr"}
                     />
@@ -965,7 +959,7 @@ const ApplyTrainer: React.FC = () => {
                 label={isRTL ? "سنوات الخبرة" : "Years of experience"}
                 value={`${form.yearsExperience} ${isRTL ? "سنة" : "years"}`}
               />
-              <ReviewRow label={isRTL ? "التوضيح" : "Explanation"} value={form.summary} multiline />
+              <ReviewRow label={isRTL ? "النبذة" : "Bio"} value={form.summary} stacked />
             </ReviewBlock>
 
             <ReviewBlock title={isRTL ? "الدراجات" : "Bikes"} onEdit={() => setStep(3)}>
@@ -1122,23 +1116,33 @@ const ReviewBlock: React.FC<{ title: string; onEdit: () => void; children: React
   </div>
 );
 
-const ReviewRow: React.FC<{ label: string; value: string; multiline?: boolean; dir?: "ltr" | "rtl" }> = ({
-  label,
-  value,
-  multiline,
-  dir,
-}) => (
+const ReviewRow: React.FC<{
+  label: string;
+  value: string;
+  multiline?: boolean;
+  /** Force the value to render under the label instead of beside it. */
+  stacked?: boolean;
+  dir?: "ltr" | "rtl";
+}> = ({ label, value, multiline, stacked, dir }) => (
   <div
     className={cn(
-      "flex gap-3 text-xs",
-      multiline ? "flex-col sm:flex-row sm:items-start sm:justify-between" : "items-center justify-between",
+      "flex gap-2 text-xs",
+      stacked
+        ? "flex-col items-stretch"
+        : multiline
+          ? "flex-col sm:flex-row sm:items-start sm:justify-between"
+          : "items-center justify-between",
     )}
   >
     <span className="text-muted-foreground shrink-0">{label}</span>
     <span
       className={cn(
-        "text-foreground font-medium text-start sm:text-end min-w-0",
-        multiline ? "whitespace-pre-wrap break-words" : "truncate",
+        "min-w-0 text-foreground font-medium",
+        stacked
+          ? "whitespace-pre-wrap break-words text-start"
+          : multiline
+            ? "whitespace-pre-wrap break-words text-start sm:text-end"
+            : "truncate text-start sm:text-end",
       )}
       dir={dir}
     >

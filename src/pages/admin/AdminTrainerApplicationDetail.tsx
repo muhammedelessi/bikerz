@@ -186,7 +186,7 @@ function ServiceChip({ id }: { id: string }) {
 
 const AdminTrainerApplicationDetail: React.FC = () => {
   const { applicationId } = useParams<{ applicationId: string }>();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const navigate = useNavigate();
   const dateLocale = isRTL ? arSA : enUS;
@@ -198,40 +198,29 @@ const AdminTrainerApplicationDetail: React.FC = () => {
   const [confirmApprove, setConfirmApprove] = useState(false);
   const [confirmReject, setConfirmReject] = useState(false);
 
-  const toastBilingual = (key: string) => {
-    const en = i18n.getFixedT("en")(key);
-    const ar = i18n.getFixedT("ar")(key);
-    toast.success(`${en}\n${ar}`);
-  };
-
-  const toastBilingualError = (key: string) => {
-    const en = i18n.getFixedT("en")(key);
-    const ar = i18n.getFixedT("ar")(key);
-    toast.error(`${en}\n${ar}`);
-  };
+  // Single-language toasts — always render in the active site language only.
+  const toastSuccess = (key: string) => toast.success(t(key));
+  const toastError = (key: string) => toast.error(t(key));
 
   const onConfirmApprove = async () => {
     if (!row) return;
     try {
       await approveApplication(row.id);
       setConfirmApprove(false);
-      toastBilingual("admin.trainerApplications.toast.approved");
+      toastSuccess("admin.trainerApplications.toast.approved");
       const { data: trainerRow } = await (supabase as any).from("trainers").select("id").eq("user_id", row.user_id).maybeSingle();
       if (trainerRow?.id) {
-        toast.success(
-          `${i18n.getFixedT("en")("admin.trainerApplications.toast.profileCreated")}\n${i18n.getFixedT("ar")("admin.trainerApplications.toast.profileCreated")}`,
-          {
-            action: {
-              label: t("admin.trainerApplications.dialog.viewTrainer"),
-              onClick: () => navigate(`/admin/trainers/${trainerRow.id}`),
-            },
-            duration: 10000,
+        toast.success(t("admin.trainerApplications.toast.profileCreated"), {
+          action: {
+            label: t("admin.trainerApplications.dialog.viewTrainer"),
+            onClick: () => navigate(`/admin/trainers/${trainerRow.id}`),
           },
-        );
+          duration: 10000,
+        });
       }
       navigate("/admin/trainers?tab=applications");
     } catch {
-      toastBilingualError("admin.trainerApplications.toast.error");
+      toastError("admin.trainerApplications.toast.error");
     }
   };
 
@@ -240,10 +229,10 @@ const AdminTrainerApplicationDetail: React.FC = () => {
     try {
       await rejectApplication(row.id);
       setConfirmReject(false);
-      toastBilingual("admin.trainerApplications.toast.rejected");
+      toastSuccess("admin.trainerApplications.toast.rejected");
       navigate("/admin/trainers?tab=applications");
     } catch {
-      toastBilingualError("admin.trainerApplications.toast.error");
+      toastError("admin.trainerApplications.toast.error");
     }
   };
 

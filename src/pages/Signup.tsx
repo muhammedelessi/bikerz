@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -29,7 +29,6 @@ import { joinFullName } from "@/lib/nameUtils";
 import { CountryCityPicker, PasswordField, PhoneField, NameFields } from "@/components/ui/fields";
 import type { LcpPreloadLink } from "@/components/common/SEOHead";
 
-const ProfileCompletionWizard = lazy(() => import("@/components/ui/profile/ProfileCompletionWizard"));
 
 const OTHER_VALUE = "__other__";
 
@@ -62,7 +61,6 @@ const Signup: React.FC = () => {
   const [countryError, setCountryError] = useState<string | null>(null);
   const [cityError, setCityError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [showProfileWizard, setShowProfileWizard] = useState(false);
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
@@ -72,14 +70,6 @@ const Signup: React.FC = () => {
     return [{ href: logoSrc }];
   }, [logoSrc]);
 
-  useEffect(() => {
-    if (typeof window.requestIdleCallback !== "function") return;
-    const id = window.requestIdleCallback(
-      () => void import("@/components/ui/profile/ProfileCompletionWizard"),
-      { timeout: 8000 },
-    );
-    return () => window.cancelIdleCallback(id);
-  }, []);
 
   const isOtherCountry = country === OTHER_VALUE;
   const isOtherCity = city === OTHER_VALUE;
@@ -338,20 +328,8 @@ const Signup: React.FC = () => {
       activateFreeTrialForCourse(pendingTrial.courseId);
     }
 
-    // If coming from checkout / saved return URL, skip profile wizard and redirect directly
     const redirectAfterAuth = consumeReturnUrl() || returnTo;
-    if (redirectAfterAuth) {
-      navigate(redirectAfterAuth);
-      return;
-    }
-    setShowProfileWizard(true);
-  };
-
-  const handleProfileWizardClose = (open: boolean) => {
-    setShowProfileWizard(open);
-    if (!open) {
-      navigate(returnTo || "/dashboard");
-    }
+    navigate(redirectAfterAuth || "/dashboard");
   };
 
   return (
@@ -492,11 +470,6 @@ const Signup: React.FC = () => {
           </div>
       </div>
 
-      {showProfileWizard && (
-        <Suspense fallback={null}>
-          <ProfileCompletionWizard open={showProfileWizard} onOpenChange={handleProfileWizardClose} />
-        </Suspense>
-      )}
     </div>
   );
 };
