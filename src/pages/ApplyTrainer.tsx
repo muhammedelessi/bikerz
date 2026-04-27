@@ -636,13 +636,17 @@ const ApplyTrainer: React.FC = () => {
                 country={form.countryCode}
                 city={form.city}
                 onCountryChange={(countryCode) =>
-                  setForm({ ...form, countryCode, city: "", customCity: "" })
+                  setForm((prev) => ({ ...prev, countryCode, city: "", customCity: "" }))
                 }
-                onCityChange={(city) => setForm({ ...form, city })}
+                onCityChange={(city) => setForm((prev) => ({ ...prev, city }))}
                 customCountry={form.customCountry}
-                onCustomCountryChange={(customCountry) => setForm({ ...form, customCountry })}
+                onCustomCountryChange={(customCountry) =>
+                  setForm((prev) => ({ ...prev, customCountry }))
+                }
                 customCity={form.customCity}
-                onCustomCityChange={(customCity) => setForm({ ...form, customCity })}
+                onCustomCityChange={(customCity) =>
+                  setForm((prev) => ({ ...prev, customCity }))
+                }
                 required
                 layout="column"
               />
