@@ -353,17 +353,6 @@ const AdminTrainerApplicationDetail: React.FC = () => {
           </CardHeader>
 
           <CardContent className="p-4 sm:p-6 space-y-8">
-            {appPhoto ? (
-              <section className="space-y-2">
-                <h3 className="text-sm font-semibold text-foreground">
-                  {t("admin.trainerApplications.detail.sectionSubmittedPhoto")}
-                </h3>
-                <div className="overflow-hidden rounded-xl border border-border bg-muted/20">
-                  <img src={appPhoto} alt="" className="max-h-72 w-full object-contain object-center" />
-                </div>
-              </section>
-            ) : null}
-
             <section>
               <h3 className="text-sm font-semibold text-foreground mb-1">{t("admin.trainerApplications.detail.sectionContact")}</h3>
               <p className="text-xs text-muted-foreground mb-4">{t("admin.trainerApplications.detail.sectionContactHint")}</p>
