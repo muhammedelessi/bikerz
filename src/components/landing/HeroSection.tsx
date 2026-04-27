@@ -150,9 +150,12 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
             height={600}
             className="w-full h-full min-h-0 object-cover"
             loading="eager"
-            fetchPriority="high"
             decoding="async"
             sizes="100vw"
+            // React 18 doesn't whitelist `fetchPriority` (camelCase) — passing it
+            // raw triggers a console warning. Spread the lowercase HTML attribute
+            // instead so the browser still gets `fetchpriority="high"` for LCP.
+            {...({ fetchpriority: "high" } as Record<string, string>)}
           />
         </picture>
       </div>

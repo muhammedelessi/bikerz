@@ -62,20 +62,28 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
   const form = useCheckoutForm(open);
   const [step, setStep] = useState<'info' | 'payment'>('info');
 
+  // `form` and `tap` are fresh objects every render (returned from custom hooks).
+  // Including them in the dep array causes an infinite loop. Stash them in refs
+  // and only re-run the effect when the actual triggers (`open`, `user`) change.
+  const formRef = useRef(form);
+  formRef.current = form;
+  const tapRef = useRef(tap);
+  tapRef.current = tap;
+
   useEffect(() => {
     if (!open) {
       setStep('info');
-      tap.reset();
-      form.resetForm();
+      tapRef.current.reset();
+      formRef.current.resetForm();
       return;
     }
     if (user) {
-      form.prefillAndAutoAdvance();
-      if (form.fullName && form.effectiveCountry) {
+      formRef.current.prefillAndAutoAdvance();
+      if (formRef.current.fullName && formRef.current.effectiveCountry) {
         setStep('payment');
       }
     }
-  }, [open, user, form, tap]);
+  }, [open, user]);
 
   useEffect(() => {
     if (!open || user) return;
