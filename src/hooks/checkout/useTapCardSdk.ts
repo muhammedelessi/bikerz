@@ -24,11 +24,6 @@ declare global {
         tokenize: () => void;
         updateCardConfig: (config: Record<string, unknown>) => void;
       };
-      Themes: { DARK: string; LIGHT: string; DYNAMIC: string };
-      Currencies: Record<string, string>;
-      Direction: { RTL: string; LTR: string };
-      Edges: { CURVED: string; FLAT: string };
-      Locale: { AR: string; EN: string };
     };
   }
 }
@@ -124,8 +119,6 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
   // ── Build the SDK config object ──────────────────────────────────────────
   const buildSdkConfig = useCallback(
     (publicKey: string, cfg: TapCardConfig): Record<string, unknown> => {
-      const sdk = window.CardSDK!;
-      const { Themes, Direction, Edges, Locale } = sdk;
       const isAr = cfg.locale === 'ar';
 
       return {
@@ -137,7 +130,7 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
         customer: {
           name: [
             {
-              lang: isAr ? Locale.AR : Locale.EN,
+              lang: isAr ? 'AR' : 'EN',
               line1: cfg.customerName?.trim() || '',
             },
           ],
@@ -156,10 +149,10 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
         fields: { cardHolder: true },
         addons: { loader: true, saveCard: false, scanner: true },
         interface: {
-          locale: isAr ? Locale.AR : Locale.EN,
-          theme: Themes.DARK,
-          edges: Edges.CURVED,
-          direction: isAr ? Direction.RTL : Direction.LTR,
+          locale: isAr ? 'AR' : 'EN',
+          theme: 'DARK',
+          edges: 'CURVED',
+          direction: isAr ? 'RTL' : 'LTR',
         },
         onReady: () => {
           setSdkLoading(false);
