@@ -24,6 +24,8 @@ import type { CheckoutCourse } from "@/types/payment";
 import { navigateToSignup } from "@/lib/authReturnUrl";
 import { recordCheckoutPaymentPageVisit } from "@/services/checkoutVisitAnalytics";
 
+const TAP_SUPPORTED_CURRENCIES = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"] as const;
+
 interface CheckoutModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -86,6 +88,21 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       ? `${promo.appliedCoupon.discount_value}%`
       : `${Math.round((promo.appliedCoupon.discount_amount / basePrice) * 100)}%`
     : "";
+  const paymentQuote = useMemo(() => {
+    const localCurrency = priceInfo.currency as string;
+
+    if (TAP_SUPPORTED_CURRENCIES.includes(localCurrency as (typeof TAP_SUPPORTED_CURRENCIES)[number])) {
+      return {
+        currency: localCurrency,
+        amount: discountedPrice,
+      };
+    }
+
+    return {
+      currency: "SAR",
+      amount: isSAR || exchangeRate <= 0 ? discountedPrice : Math.ceil(discountedPrice / exchangeRate),
+    };
+  }, [discountedPrice, exchangeRate, isSAR, priceInfo.currency]);
 
   // Extract phone country code digits (e.g. "+966_SA" → "966")
   const phoneCountryCode = useMemo(() => {
@@ -95,8 +112,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const tapCard = useTapCardSdk({
     containerId: 'tap-card-element',
-    amount: discountedPrice,
-    currency: priceInfo.currency as string,
+    amount: paymentQuote.amount,
+    currency: paymentQuote.currency,
     locale: isRTL ? 'ar' : 'en',
     theme,
     customerName: form.fullName,
@@ -155,10 +172,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Keep SDK amount in sync when a coupon changes the price
   useEffect(() => {
     if (tapCard.sdkReady) {
-      tapCard.updateAmount(discountedPrice, priceInfo.currency as string);
+      tapCard.updateAmount(paymentQuote.amount, paymentQuote.currency);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [discountedPrice, priceInfo.currency]);
+  }, [paymentQuote.amount, paymentQuote.currency]);
 
   useEffect(() => {
     if (!open || user) return;
@@ -205,7 +222,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     onPaymentStarted?.();
 
     const composedAddress = [form.effectiveCity, form.effectiveCountry].filter(Boolean).join(", ");
-    const localCurrency = priceInfo.currency as string;
 
     // Free enrollment (100% coupon)
     if (discountedPrice === 0 && promo.appliedCoupon) {
@@ -242,7 +258,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           city: form.effectiveCity,
           address: composedAddress,
           amount: "0",
-          currency: localCurrency,
+          currency: paymentQuote.currency,
           dateOfBirth: profile?.date_of_birth || "",
           gender: profile?.gender || "",
           silent: true,
@@ -254,19 +270,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
-    // Tap supported currencies
-    const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
-
-    let paymentCurrency: string;
-    let paymentAmount: number;
-
-    if (TAP_SUPPORTED.includes(localCurrency)) {
-      paymentCurrency = localCurrency;
-      paymentAmount = discountedPrice;
-    } else {
-      paymentCurrency = "SAR";
-      paymentAmount = isSAR || exchangeRate <= 0 ? discountedPrice : Math.ceil(discountedPrice / exchangeRate);
-    }
+    const paymentCurrency = paymentQuote.currency;
+    const paymentAmount = paymentQuote.amount;
 
     // Save checkout data for PaymentSuccess webhook
     try {
@@ -342,6 +347,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     isSAR,
     exchangeRate,
     isRTL,
+    paymentQuote.amount,
+    paymentQuote.currency,
     profile,
     onPaymentStarted,
     onSuccess,
