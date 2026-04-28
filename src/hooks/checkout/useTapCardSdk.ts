@@ -207,25 +207,40 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
     sdkInstanceRef.current = null;
 
     try {
-      // 1. Fetch publishable key from Supabase Edge Function
-      const { data, error: fnErr } = await supabase.functions.invoke('tap-config', {});
-      if (fnErr || !data?.public_key) {
-        throw new Error('Unable to load payment configuration. Please try again.');
+      // 1. Resolve publishable key
+      //    Priority: VITE env var (baked at build time) → tap-config Edge Function
+      let publicKey: string | null =
+        (import.meta.env.VITE_TAP_PUBLIC_KEY as string | undefined)?.trim() || null;
+
+      if (!publicKey) {
+        const { data, error: fnErr } = await supabase.functions.invoke('tap-config', {});
+        if (fnErr || !data?.public_key) {
+          throw new Error('Payment configuration missing. Set TAP_PUBLIC_KEY in Supabase Secrets or VITE_TAP_PUBLIC_KEY in .env.');
+        }
+        publicKey = data.public_key as string;
       }
-      const publicKey: string = data.public_key;
 
       // 2. Ensure SDK script is loaded
       await ensureScriptLoaded();
-      if (!window.CardSDK) throw new Error('Tap Card SDK is unavailable.');
+      if (!window.CardSDK) throw new Error('Tap Card SDK is unavailable. Check CDN URL.');
 
-      // 3. Mount the card iframe
+      // 3. Small delay so the Dialog portal is fully flushed to the DOM
+      await new Promise<void>((r) => setTimeout(r, 80));
+
+      // 4. Verify the container element exists
       const cfg = configRef.current;
+      if (!document.getElementById(cfg.containerId)) {
+        throw new Error(`Card container #${cfg.containerId} not found in DOM.`);
+      }
+
+      // 5. Mount the card iframe
       sdkInstanceRef.current = window.CardSDK.renderTapCard(
         cfg.containerId,
         buildSdkConfig(publicKey, cfg),
       );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Payment setup failed.';
+      console.error('[TapCardSdk] init error:', msg);
       setSdkError(msg);
       setSdkLoading(false);
     }
