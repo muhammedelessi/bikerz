@@ -357,13 +357,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   }, [tap.status, course.id, navigate]);
 
-  // Pay button is enabled only once the card form is valid (all fields filled)
+  // Pay button is enabled only once the card form is valid (all fields filled).
+  // Also blocked while SDK is still loading to prevent falling back to src_all.
   const isPaymentReady =
     form.isInfoValid &&
     !tap.error &&
     tap.status !== "processing" &&
     tap.status !== "verifying" &&
-    (tapCard.sdkReady ? tapCard.cardValid : true);
+    !tapCard.sdkLoading &&
+    (tapCard.sdkReady ? tapCard.cardValid : false);
 
   const isStatusOverlay = tap.status === "verifying" || tap.status === "succeeded" || tap.status === "failed";
 
