@@ -51,7 +51,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { sendCourseStatus } = useGHLFormWebhook();
   const { handleGuestSignup, guestSigningUp } = useGuestSignup();
 
-  const [step, setStep] = useState<"info" | "payment">("payment");
+  const [step, setStep] = useState<"info" | "payment">("info");
 
   const priceInfo = useMemo(
     () => getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0),
@@ -106,7 +106,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   useEffect(() => {
     if (!open) {
-      setStep("payment");
+      setStep("info");
       promo.resetPromo();
       tap.reset();
       form.resetForm();
@@ -115,10 +115,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (user) {
       form.prefillAndAutoAdvance();
     }
-    // Init Tap Card SDK when modal opens
-    tapCard.reinit();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user]);
+
+  // Init Tap Card SDK only when the payment step becomes active
+  // (the #tap-card-element container must be in the DOM first)
+  useEffect(() => {
+    if (step === "payment" && open) {
+      tapCard.reinit();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, open]);
 
   /**
    * If the URL carries `?code=XYZ`, validate and apply it as soon as the modal
@@ -397,13 +404,45 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <DialogTitle className="text-lg font-bold">
               {step === "info"
                 ? isRTL
-                  ? "معلومات الدفع"
+                  ? "معلومات الفاتورة"
                   : "Billing Information"
                 : isRTL
-                  ? "إتمام الشراء"
-                  : "Complete Purchase"}
+                  ? "بيانات البطاقة"
+                  : "Card Details"}
             </DialogTitle>
           </DialogHeader>
+
+          {/* Step indicator */}
+          <div className="flex items-center gap-2 mt-2">
+            {/* Step 1 */}
+            <div className="flex items-center gap-1.5">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                step === "info" ? "bg-primary text-primary-foreground" : "bg-primary/20 text-primary"
+              }`}>
+                {step === "payment" ? "✓" : "1"}
+              </div>
+              <span className={`text-xs font-medium transition-colors ${
+                step === "info" ? "text-foreground" : "text-muted-foreground"
+              }`}>
+                {isRTL ? "البيانات" : "Info"}
+              </span>
+            </div>
+            {/* Connector */}
+            <div className={`flex-1 h-px transition-colors ${step === "payment" ? "bg-primary" : "bg-border"}`} />
+            {/* Step 2 */}
+            <div className="flex items-center gap-1.5">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                step === "payment" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              }`}>
+                2
+              </div>
+              <span className={`text-xs font-medium transition-colors ${
+                step === "payment" ? "text-foreground" : "text-muted-foreground"
+              }`}>
+                {isRTL ? "الدفع" : "Payment"}
+              </span>
+            </div>
+          </div>
 
           {/* Course info */}
           <div className="flex items-center gap-3 mt-3">
@@ -545,8 +584,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         {/* Footer */}
         <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-border flex-shrink-0 flex gap-2">
           {step === "info" ? (
+            /* ── Step 1: Next button (full width) ── */
             <Button
-              className="flex-1 btn-cta"
+              className="flex-1 h-11 btn-cta"
               onClick={handleNextStep}
               disabled={form.profileSaving || !form.isInfoValid}
             >
@@ -554,90 +594,94 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {isRTL ? "التالي" : "Next"}
               <ArrowIcon className="w-4 h-4 ms-2" />
             </Button>
-          ) : promoOpen && !promo.promoApplied ? (
-            /*
-              Promo panel is open — swap the Pay button for an Apply button so the
-              user has a single, focused CTA. After successful apply, the panel
-              auto-closes (see useEffect above) and the footer reverts to "Pay Now".
-            */
-            <Button
-              className="flex-1 h-11 rounded-xl text-sm font-bold"
-              variant="cta"
-              onClick={promo.handleApplyPromo}
-              disabled={!promo.promoCode || promo.promoLoading || tap.status === "processing"}
-            >
-              {promo.promoLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin me-2" />
-                  {isRTL ? "جارٍ التحقق..." : "Verifying…"}
-                </>
-              ) : (
-                <>
-                  <CreditCard className="w-4 h-4 me-2" />
-                  {isRTL ? "تطبيق الكود" : "Apply code"}
-                </>
-              )}
-            </Button>
-          ) : discountedPrice <= 0 && promo.appliedCoupon ? (
-            <Button
-              className="flex-1"
-              variant="cta"
-              onClick={handleSubmitPayment}
-              disabled={tap.status === "processing" || !isPaymentReady}
-            >
-              {tap.status === "processing" ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin me-2" />
-                  {isRTL ? "جاري التسجيل..." : "Enrolling..."}
-                </>
-              ) : isRTL ? (
-                "سجّل مجاناً"
-              ) : (
-                "Enroll for Free"
-              )}
-            </Button>
           ) : (
-            <Button
-              className="flex-1 h-11 rounded-xl text-sm font-bold"
-              variant="cta"
-              onClick={handleSubmitPayment}
-              disabled={tap.status === "processing" || guestSigningUp || !isPaymentReady}
-            >
-              {guestSigningUp ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin me-2" />
-                  {isRTL ? "جاري إنشاء الحساب..." : "Creating account..."}
-                </>
-              ) : tap.status === "processing" ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin me-2" />
-                  {isRTL ? "جاري تجهيز الدفع..." : "Preparing payment..."}
-                </>
-              ) : (
-                <>
-                  <CreditCard className="w-4 h-4 me-2" />
-                  {/*
-                    Pay button must always carry the actual amount the user is about to pay,
-                    so they never doubt whether the discount applied. Use the same fallback
-                    logic the order summary uses (local currency when Tap supports it,
-                    otherwise show the SAR equivalent).
-                  */}
-                  {(() => {
-                    const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
-                    const showLocal = TAP_SUPPORTED.includes(priceInfo.currency as string);
-                    const displayAmt = showLocal
-                      ? discountedPrice
-                      : isSAR || exchangeRate <= 0
-                        ? discountedPrice
-                        : Math.ceil(discountedPrice / exchangeRate);
-                    const displaySym = showLocal ? currSym : isRTL ? "ر.س" : "SAR";
-                    return isRTL
-                      ? `ادفع الآن — ${displayAmt} ${displaySym}`
-                      : `Pay Now — ${displayAmt} ${displaySym}`;
-                  })()}
-                </>
+            /* ── Step 2: Back icon + CTA ── */
+            <>
+              {/* Back button — hidden while promo panel is open to keep footer clean */}
+              {!promoOpen && (
+                <Button
+                  variant="outline"
+                  className="h-11 px-3 rounded-xl shrink-0"
+                  onClick={() => setStep("info")}
+                  disabled={tap.status === "processing"}
+                  aria-label={isRTL ? "رجوع" : "Back"}
+                >
+                  <BackArrowIcon className="w-4 h-4" />
+                </Button>
               )}
-            </Button>
+
+              {/* CTA — Apply code / Free enroll / Pay Now */}
+              {promoOpen && !promo.promoApplied ? (
+                <Button
+                  className="flex-1 h-11 rounded-xl text-sm font-bold"
+                  variant="cta"
+                  onClick={promo.handleApplyPromo}
+                  disabled={!promo.promoCode || promo.promoLoading || tap.status === "processing"}
+                >
+                  {promo.promoLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin me-2" />
+                      {isRTL ? "جارٍ التحقق..." : "Verifying…"}
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4 me-2" />
+                      {isRTL ? "تطبيق الكود" : "Apply code"}
+                    </>
+                  )}
+                </Button>
+              ) : discountedPrice <= 0 && promo.appliedCoupon ? (
+                <Button
+                  className="flex-1 h-11"
+                  variant="cta"
+                  onClick={handleSubmitPayment}
+                  disabled={tap.status === "processing" || !isPaymentReady}
+                >
+                  {tap.status === "processing" ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin me-2" />
+                      {isRTL ? "جاري التسجيل..." : "Enrolling..."}
+                    </>
+                  ) : isRTL ? "سجّل مجاناً" : "Enroll for Free"}
+                </Button>
+              ) : (
+                <Button
+                  className="flex-1 h-11 rounded-xl text-sm font-bold"
+                  variant="cta"
+                  onClick={handleSubmitPayment}
+                  disabled={tap.status === "processing" || guestSigningUp || !isPaymentReady}
+                >
+                  {guestSigningUp ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin me-2" />
+                      {isRTL ? "جاري إنشاء الحساب..." : "Creating account..."}
+                    </>
+                  ) : tap.status === "processing" ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin me-2" />
+                      {isRTL ? "جاري تجهيز الدفع..." : "Preparing payment..."}
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4 me-2" />
+                      {(() => {
+                        const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
+                        const showLocal = TAP_SUPPORTED.includes(priceInfo.currency as string);
+                        const displayAmt = showLocal
+                          ? discountedPrice
+                          : isSAR || exchangeRate <= 0
+                            ? discountedPrice
+                            : Math.ceil(discountedPrice / exchangeRate);
+                        const displaySym = showLocal ? currSym : isRTL ? "ر.س" : "SAR";
+                        return isRTL
+                          ? `ادفع الآن — ${displayAmt} ${displaySym}`
+                          : `Pay Now — ${displayAmt} ${displaySym}`;
+                      })()}
+                    </>
+                  )}
+                </Button>
+              )}
+            </>
           )}
         </div>
 
