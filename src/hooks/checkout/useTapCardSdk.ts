@@ -120,12 +120,24 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
   const buildSdkConfig = useCallback(
     (publicKey: string, cfg: TapCardConfig): Record<string, unknown> => {
       const isAr = cfg.locale === 'ar';
+      // Tap requires uppercase ISO-4217 currency codes. Normalize and fall
+      // back to SAR if the value is empty/invalid so the iframe can still
+      // render brand options instead of showing "No payment options available".
+      const normalizedCurrency = (cfg.currency || '').toString().trim().toUpperCase();
+      const safeCurrency = /^[A-Z]{3}$/.test(normalizedCurrency) ? normalizedCurrency : 'SAR';
+      // MADA is a Saudi-only network — including it for non-SAR transactions
+      // makes the SDK filter out every brand that doesn't match the currency
+      // and renders the "No payment options available" empty state.
+      const supportedBrands =
+        safeCurrency === 'SAR'
+          ? ['VISA', 'MASTERCARD', 'MADA', 'AMEX']
+          : ['VISA', 'MASTERCARD', 'AMEX'];
 
       return {
         publicKey,
         transaction: {
           amount: cfg.amount,
-          currency: cfg.currency,
+          currency: safeCurrency,
         },
         customer: {
           name: [
@@ -143,7 +155,7 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
           },
         },
         acceptance: {
-          supportedBrands: ['VISA', 'MASTERCARD', 'MADA', 'AMEX'],
+          supportedBrands,
           supportedCards: ['CREDIT', 'DEBIT'],
         },
         fields: { cardHolder: true },
