@@ -148,15 +148,10 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
             },
           },
         },
-        // Card-only acceptance — VISA + MASTERCARD + MADA (SAR only).
-        // Apple Pay is intentionally excluded here; it requires domain whitelisting
-        // and will be added via a separate button once Tap approves the domain.
+        // Minimal acceptance — 3DS only, no scheme restrictions.
+        // Letting Tap decide which schemes to show based on what's active on the account.
+        // Apple Pay bundle_id errors are suppressed in onError below.
         acceptance: {
-          supportedSchemes: [
-            'VISA',
-            'MASTERCARD',
-            ...(safeCurrency === 'SAR' ? ['MADA'] : []),
-          ],
           supportedPaymentAuthentications: ['3DS'],
         },
         fields: { cardHolder: true },
