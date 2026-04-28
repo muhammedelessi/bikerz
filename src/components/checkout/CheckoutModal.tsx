@@ -222,7 +222,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     onPaymentStarted?.();
 
     const composedAddress = [form.effectiveCity, form.effectiveCountry].filter(Boolean).join(", ");
-    const localCurrency = priceInfo.currency as string;
 
     // Free enrollment (100% coupon)
     if (discountedPrice === 0 && promo.appliedCoupon) {
@@ -259,7 +258,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           city: form.effectiveCity,
           address: composedAddress,
           amount: "0",
-          currency: localCurrency,
+          currency: paymentQuote.currency,
           dateOfBirth: profile?.date_of_birth || "",
           gender: profile?.gender || "",
           silent: true,
@@ -271,19 +270,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
-    // Tap supported currencies
-    const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
-
-    let paymentCurrency: string;
-    let paymentAmount: number;
-
-    if (TAP_SUPPORTED.includes(localCurrency)) {
-      paymentCurrency = localCurrency;
-      paymentAmount = discountedPrice;
-    } else {
-      paymentCurrency = "SAR";
-      paymentAmount = isSAR || exchangeRate <= 0 ? discountedPrice : Math.ceil(discountedPrice / exchangeRate);
-    }
+    const paymentCurrency = paymentQuote.currency;
+    const paymentAmount = paymentQuote.amount;
 
     // Save checkout data for PaymentSuccess webhook
     try {
@@ -359,6 +347,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     isSAR,
     exchangeRate,
     isRTL,
+    paymentQuote.amount,
+    paymentQuote.currency,
     profile,
     onPaymentStarted,
     onSuccess,
