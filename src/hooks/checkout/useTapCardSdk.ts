@@ -136,7 +136,8 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
       return {
         publicKey,
         transaction: {
-          amount: cfg.amount,
+          // Round to 2 decimal places — Tap rejects amounts with excessive precision
+          amount: Math.round(cfg.amount * 100) / 100,
           currency: safeCurrency,
         },
         customer: {
