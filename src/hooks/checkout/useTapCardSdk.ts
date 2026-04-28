@@ -21,9 +21,14 @@ declare global {
         containerId: string,
         config: Record<string, unknown>,
       ) => {
-        tokenize: () => void;
-        updateCardConfig: (config: Record<string, unknown>) => void;
+        unmount?: () => void;
+        tokenize?: () => void;
+        updateCardConfig?: (config: Record<string, unknown>) => void;
+        updateCardConfiguration?: (config: Record<string, unknown>) => void;
       };
+      tokenize?: () => void;
+      updateCardConfig?: (config: Record<string, unknown>) => void;
+      updateCardConfiguration?: (config: Record<string, unknown>) => void;
     };
   }
 }
@@ -108,12 +113,46 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
 
   // Refs that survive re-renders without triggering effects
   const sdkInstanceRef = useRef<{
-    tokenize: () => void;
-    updateCardConfig: (c: Record<string, unknown>) => void;
+    unmount?: () => void;
+    tokenize?: () => void;
+    updateCardConfig?: (c: Record<string, unknown>) => void;
+    updateCardConfiguration?: (c: Record<string, unknown>) => void;
   } | null>(null);
   const resolveTokenRef = useRef<((token: string | null) => void) | null>(null);
   const configRef = useRef(config);
   const mountedRef = useRef(false); // true once renderTapCard succeeded
+
+  const getTokenizer = useCallback(() => {
+    if (typeof sdkInstanceRef.current?.tokenize === 'function') {
+      return sdkInstanceRef.current.tokenize.bind(sdkInstanceRef.current);
+    }
+
+    if (typeof window.CardSDK?.tokenize === 'function') {
+      return window.CardSDK.tokenize.bind(window.CardSDK);
+    }
+
+    return null;
+  }, []);
+
+  const getConfigUpdater = useCallback(() => {
+    if (typeof sdkInstanceRef.current?.updateCardConfig === 'function') {
+      return sdkInstanceRef.current.updateCardConfig.bind(sdkInstanceRef.current);
+    }
+
+    if (typeof sdkInstanceRef.current?.updateCardConfiguration === 'function') {
+      return sdkInstanceRef.current.updateCardConfiguration.bind(sdkInstanceRef.current);
+    }
+
+    if (typeof window.CardSDK?.updateCardConfig === 'function') {
+      return window.CardSDK.updateCardConfig.bind(window.CardSDK);
+    }
+
+    if (typeof window.CardSDK?.updateCardConfiguration === 'function') {
+      return window.CardSDK.updateCardConfiguration.bind(window.CardSDK);
+    }
+
+    return null;
+  }, []);
 
   // Keep configRef current
   useEffect(() => { configRef.current = config; }, [config]);
@@ -231,6 +270,7 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
 
   // ── Core init function ───────────────────────────────────────────────────
   const init = useCallback(async () => {
+    sdkInstanceRef.current?.unmount?.();
     setSdkLoading(true);
     setSdkReady(false);
     setCardValid(false);
@@ -307,12 +347,13 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
   // ── Tokenize — wraps the callback-based SDK in a Promise ────────────────
   const tokenize = useCallback((): Promise<string | null> => {
     return new Promise((resolve) => {
-      if (!sdkInstanceRef.current) {
+      const tokenizeCard = getTokenizer();
+      if (!tokenizeCard) {
         resolve(null);
         return;
       }
       resolveTokenRef.current = resolve;
-      sdkInstanceRef.current.tokenize();
+      tokenizeCard();
 
       // Safety timeout: reject after 30 s to prevent hanging Pay button
       setTimeout(() => {
@@ -322,12 +363,15 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
         }
       }, 30_000);
     });
-  }, []);
+  }, [getTokenizer]);
 
   // ── Update amount/currency without remounting ────────────────────────────
   const updateAmount = useCallback((amount: number, currency: string) => {
-    sdkInstanceRef.current?.updateCardConfig({ transaction: { amount, currency } });
-  }, []);
+    const updateCardConfig = getConfigUpdater();
+    if (!updateCardConfig) return;
+
+    updateCardConfig({ transaction: { amount, currency } });
+  }, [getConfigUpdater]);
 
   // ── Reinit (e.g. modal reopened) ────────────────────────────────────────
   const reinit = useCallback(() => {
