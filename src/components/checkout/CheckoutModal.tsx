@@ -12,6 +12,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCheckoutForm } from "@/hooks/checkout/useCheckoutForm";
 import { useCheckoutPromo } from "@/hooks/checkout/useCheckoutPromo";
 import { useTapPayment } from "@/hooks/useTapPayment";
+import { useTapCardSdk } from "@/hooks/checkout/useTapCardSdk";
 import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
 import { useGuestSignup } from "@/hooks/checkout/useGuestSignup";
 import { enrollUserInCourse, incrementCouponUsage } from "@/services/supabase.service";
@@ -75,6 +76,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (promo.promoApplied && promoOpen) setPromoOpen(false);
   }, [promo.promoApplied, promoOpen]);
 
+  // Discount & price — computed before tapCard so we pass the right initial amount
   const discountAmount = promo.appliedCoupon ? promo.appliedCoupon.discount_amount : 0;
   const discountedPrice = promo.appliedCoupon ? promo.appliedCoupon.final_amount : basePrice;
   const discountLabel = promo.appliedCoupon
@@ -82,6 +84,23 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       ? `${promo.appliedCoupon.discount_value}%`
       : `${Math.round((promo.appliedCoupon.discount_amount / basePrice) * 100)}%`
     : "";
+
+  // Extract phone country code digits (e.g. "+966_SA" → "966")
+  const phoneCountryCode = useMemo(() => {
+    const raw = form.phonePrefix || '';
+    return raw.replace(/^\+/, '').split('_')[0] || '966';
+  }, [form.phonePrefix]);
+
+  const tapCard = useTapCardSdk({
+    containerId: 'tap-card-element',
+    amount: discountedPrice,
+    currency: priceInfo.currency as string,
+    locale: isRTL ? 'ar' : 'en',
+    customerName: form.fullName,
+    customerEmail: form.email,
+    customerPhone: form.phone,
+    phoneCountryCode,
+  });
 
   const formatLocal = useCallback((amount: number) => `${amount} ${currSym}`, [currSym]);
 
@@ -96,13 +115,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (user) {
       form.prefillAndAutoAdvance();
     }
+    // Init Tap Card SDK when modal opens
+    tapCard.reinit();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user]);
 
   /**
    * If the URL carries `?code=XYZ`, validate and apply it as soon as the modal
-   * opens for an authenticated user. The hook silently shows the discounted
-   * summary on success — and on failure it just leaves the field collapsed
-   * (the user sees no confusing prefilled-but-broken code).
+   * opens for an authenticated user.
    */
   const urlCodeAppliedRef = useRef<string | null>(null);
   useEffect(() => {
@@ -121,6 +141,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     void promo.applyCodeFromUrl(trimmed);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user]);
+
+  // Keep SDK amount in sync when a coupon changes the price
+  useEffect(() => {
+    if (tapCard.sdkReady) {
+      tapCard.updateAmount(discountedPrice, priceInfo.currency as string);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [discountedPrice, priceInfo.currency]);
 
   useEffect(() => {
     if (!open || user) return;
@@ -263,6 +291,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     const courseDisplayName = isRTL && course.title_ar ? course.title_ar : course.title;
 
+    // ── Tokenise card before creating the charge ──────────────────────────
+    let resolvedTokenId: string | undefined;
+    if (tapCard.sdkReady) {
+      const tokenId = await tapCard.tokenize();
+      if (!tokenId) {
+        // SDK will surface its own error via tapCard.sdkError
+        toast.error(isRTL ? 'فشل في قراءة بيانات البطاقة، يرجى المحاولة مرة أخرى' : 'Card tokenisation failed. Please try again.');
+        return;
+      }
+      resolvedTokenId = tokenId;
+    }
+
     await tap.submitPayment({
       courseId: course.id,
       currency: paymentCurrency,
@@ -277,6 +317,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       couponCode: promo.appliedCoupon?.coupon_code || promo.promoCode?.trim().toUpperCase() || undefined,
       amount: paymentAmount,
       courseName: courseDisplayName,
+      tokenId: resolvedTokenId,
       isRTL,
     });
   }, [
@@ -306,7 +347,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   }, [tap.status, course.id, navigate]);
 
-  const isPaymentReady = form.isInfoValid && !tap.error && tap.status !== "processing" && tap.status !== "verifying";
+  // Pay button is enabled only once the card form is valid (all fields filled)
+  const isPaymentReady =
+    form.isInfoValid &&
+    !tap.error &&
+    tap.status !== "processing" &&
+    tap.status !== "verifying" &&
+    (tapCard.sdkReady ? tapCard.cardValid : true);
 
   const isStatusOverlay = tap.status === "verifying" || tap.status === "succeeded" || tap.status === "failed";
 
@@ -486,6 +533,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 exchangeRate={exchangeRate}
                 isSAR={isSAR}
                 onSubmitPayment={handleSubmitPayment}
+                tapCardContainerId="tap-card-element"
+                tapCardLoading={tapCard.sdkLoading}
+                tapCardValid={tapCard.cardValid}
+                tapCardError={tapCard.sdkError}
               />
             )}
           </AnimatePresence>

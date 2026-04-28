@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Gift, Shield, Check, Lock, Pencil, X, Phone, MapPin, User, AlertTriangle, Loader2 } from "lucide-react";
+import { Gift, Shield, Check, Lock, XCircle, Pencil, X, Phone, MapPin, User, AlertTriangle, CreditCard, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,6 +75,14 @@ interface CheckoutPaymentStepProps {
   /** Lifted state: whether the promo input panel is open. Controlled by the parent modal so the footer can swap Pay → Apply. */
   promoOpen?: boolean;
   onPromoOpenChange?: (open: boolean) => void;
+  /** Tap Card SDK container id — when provided the embedded card form is shown */
+  tapCardContainerId?: string;
+  /** true while the SDK iframe is loading */
+  tapCardLoading?: boolean;
+  /** true once all card fields are valid (enables Pay button) */
+  tapCardValid?: boolean;
+  /** SDK-level error message */
+  tapCardError?: string | null;
 }
 
 const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
@@ -131,6 +139,10 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     bundleMode = false,
     promoOpen: promoOpenProp,
     onPromoOpenChange,
+    tapCardContainerId,
+    tapCardLoading = false,
+    tapCardValid = false,
+    tapCardError,
   }) => {
     const { t } = useTranslation();
     const [editOpen, setEditOpen] = useState(false);
@@ -466,6 +478,38 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
               )}
             </div>
           </div>
+
+          {/* ── Tap Embedded Card Form ───────────────────────────────── */}
+          {tapCardContainerId && !bundleMode && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <CreditCard className="w-3.5 h-3.5 text-primary" />
+                {isRTL ? "بيانات البطاقة" : "Card Details"}
+              </div>
+
+              {/* SDK mounts here — must NOT be conditionally removed from DOM */}
+              <div className="relative rounded-xl overflow-hidden border border-border bg-muted/10 min-h-[180px]">
+                {tapCardLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center z-10 bg-card/70 rounded-xl">
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                      <span className="text-xs text-muted-foreground">
+                        {isRTL ? "جاري تحميل نموذج الدفع…" : "Loading payment form…"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <div id={tapCardContainerId} className="w-full" />
+              </div>
+
+              {tapCardError && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                  {tapCardError}
+                </p>
+              )}
+            </div>
+          )}
 
           {billingIncomplete && paymentStatus === "idle" && (
             <Alert variant="destructive" className="text-start">
