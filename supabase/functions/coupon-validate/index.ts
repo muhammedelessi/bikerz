@@ -181,11 +181,16 @@ Deno.serve(async (req) => {
       return res(400, { valid: false, error: "Coupon not found" });
     }
 
+    // Count usages by OTHER users only. The current user re-validating their own
+    // pending code (e.g. re-opening checkout, toggling promo) must not be blocked
+    // by their own prior validate/charge attempts — the charge flow re-checks the
+    // cap atomically when actually consuming the code.
     const { count: usageCount, error: usageCountErr } = await adminClient
       .from("coupon_series_usage")
       .select("id", { count: "exact", head: true })
       .eq("series_id", series.id)
-      .eq("code_number", parsed.number);
+      .eq("code_number", parsed.number)
+      .neq("user_id", userId);
     if (usageCountErr) {
       console.error("Series usage count error:", usageCountErr.message);
       return res(500, { error: "Validation failed" });
