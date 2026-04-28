@@ -148,9 +148,12 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
             },
           },
         },
-        // NOTE: omitting `acceptance` entirely — passing explicit brand/card lists
-        // causes "No payment options available" when the test account doesn't have
-        // those methods enabled. Tap will show whatever is active on the account.
+        // Minimal acceptance — only require 3DS (mandatory for MENA online cards).
+        // Omitting supportedSchemes / supportedFundSource lets Tap show every
+        // card scheme that is active on the merchant account.
+        acceptance: {
+          supportedPaymentAuthentications: ['3DS'],
+        },
         fields: { cardHolder: true },
         addons: { loader: true, saveCard: false, scanner: true },
         interface: {
