@@ -560,8 +560,22 @@ const AdminTrainers: React.FC = () => {
 
   const deleteMutation = useRM({
     mutationFn: async (id: string) => {
+      // Get trainer's user_id before deletion to revert their role
+      const { data: trainerRow } = await dbFrom('trainers').select('user_id').eq('id', id).maybeSingle();
+      const userId = trainerRow?.user_id as string | undefined;
+
       const { error } = await dbFrom('trainers').delete().eq('id', id);
       if (error) throw error;
+
+      // Revert role: remove instructor, add student (idempotent)
+      if (userId) {
+        await dbFrom('user_roles').delete().eq('user_id', userId).eq('role', 'instructor');
+        const { error: insErr } = await dbFrom('user_roles').insert({ user_id: userId, role: 'student' });
+        // Ignore unique-violation if student role already exists
+        if (insErr && !String(insErr.message || '').toLowerCase().includes('duplicate')) {
+          console.warn('Failed to assign student role after trainer deletion:', insErr.message);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trainers'] });
