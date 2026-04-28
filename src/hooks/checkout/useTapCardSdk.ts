@@ -163,10 +163,26 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
         onBinIdentification: (_data: unknown) => { /* could detect card scheme */ },
         onValidInput: (allValid: boolean) => setCardValid(allValid),
         onError: (err: unknown) => {
-          const msg =
-            err && typeof err === 'object' && 'message' in err
-              ? String((err as { message: string }).message)
-              : 'Card error. Please re-enter your details.';
+          // Tap SDK may emit errors as strings, Error objects, or nested
+          // payloads like { error: { message } } / { errors: [{ description }] }.
+          // Extract the most useful text we can find before falling back.
+          const extractMsg = (e: unknown): string | null => {
+            if (!e) return null;
+            if (typeof e === 'string') return e;
+            if (e instanceof Error) return e.message;
+            if (typeof e === 'object') {
+              const o = e as Record<string, any>;
+              if (typeof o.message === 'string') return o.message;
+              if (typeof o.description === 'string') return o.description;
+              if (typeof o.code === 'string') return `Card error (${o.code})`;
+              if (o.error) return extractMsg(o.error);
+              if (Array.isArray(o.errors) && o.errors.length) return extractMsg(o.errors[0]);
+            }
+            return null;
+          };
+          const msg = extractMsg(err) || 'Card error. Please re-enter your details.';
+          // Surface the raw payload to the console so we can diagnose silent SDK failures.
+          console.error('[TapCardSdk] onError payload:', err);
           setSdkError(msg);
           setSdkLoading(false);
           // Reject any pending tokenize() promise
