@@ -191,10 +191,17 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
           const msg = extractMsg(err) || 'Card error. Please re-enter your details.';
           // Apple Pay bundle_id mismatch is non-fatal — it means Apple Pay is enabled
           // on the account but the current domain isn't whitelisted yet.
-          // Card payments still work; suppress this error so it doesn't block the form.
+          // Card payments still work; clear loading state so the form isn't stuck.
           const raw = JSON.stringify(err ?? '').toLowerCase();
           if (raw.includes('bundle_id') || raw.includes('apple')) {
             console.warn('[TapCardSdk] Apple Pay unavailable on this domain (bundle_id mismatch) — cards unaffected.');
+            // If onReady hasn't fired yet, clear the loading state so the form
+            // isn't stuck spinning (card iframe may still render independently).
+            if (!mountedRef.current) {
+              setSdkLoading(false);
+              setSdkReady(true);
+              mountedRef.current = true;
+            }
             return;
           }
           // Surface the raw payload to the console so we can diagnose silent SDK failures.
