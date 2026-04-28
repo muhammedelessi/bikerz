@@ -246,18 +246,36 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
       await ensureScriptLoaded();
       if (!window.CardSDK) throw new Error('Tap Card SDK is unavailable. Check CDN URL.');
 
-      // 3. Wait (up to ~3s) for the container element to appear in the DOM.
-      //    The payment step may render conditional content (e.g. guest signup)
-      //    before the card container mounts, so a fixed delay isn't enough.
+      // 3. Wait for the container element to appear in the DOM.
+      //    The payment step may not be rendered yet (user could be on the
+      //    info/guest-signup step), so we observe the DOM until the container
+      //    mounts instead of giving up after a fixed timeout.
       const cfg = configRef.current;
-      const waitForContainer = async (): Promise<HTMLElement | null> => {
-        for (let i = 0; i < 60; i += 1) {
-          const el = document.getElementById(cfg.containerId);
-          if (el) return el;
-          await new Promise<void>((r) => setTimeout(r, 50));
-        }
-        return null;
-      };
+      const waitForContainer = (): Promise<HTMLElement | null> =>
+        new Promise((resolve) => {
+          const existing = document.getElementById(cfg.containerId);
+          if (existing) { resolve(existing); return; }
+
+          let settled = false;
+          const finish = (el: HTMLElement | null) => {
+            if (settled) return;
+            settled = true;
+            observer.disconnect();
+            clearTimeout(timer);
+            resolve(el);
+          };
+
+          const observer = new MutationObserver(() => {
+            const el = document.getElementById(cfg.containerId);
+            if (el) finish(el);
+          });
+          observer.observe(document.body, { childList: true, subtree: true });
+
+          // Hard ceiling of 30 s — if the user never reaches the payment step
+          // we silently bail out instead of leaving the observer in memory.
+          const timer = setTimeout(() => finish(null), 30_000);
+        });
+
       const containerEl = await waitForContainer();
       if (!containerEl) {
         throw new Error(`Card container #${cfg.containerId} not found in DOM.`);
