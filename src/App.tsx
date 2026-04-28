@@ -17,7 +17,17 @@ import RequireInstructor from "@/components/auth/RequireInstructor";
 
 const LAZY_IMPORT_RELOAD_KEY = "lazy-import-reload-pending";
 
-const lazyRetry = async (importFn: () => Promise<any>, retries = 3, delay = 1000): Promise<any> => {
+const isChunkLoadError = (err: unknown): boolean => {
+  const msg = err instanceof Error ? err.message : String(err ?? "");
+  return (
+    /Failed to fetch dynamically imported module/i.test(msg) ||
+    /Importing a module script failed/i.test(msg) ||
+    /error loading dynamically imported module/i.test(msg) ||
+    /ChunkLoadError/i.test(msg)
+  );
+};
+
+const lazyRetry = async (importFn: () => Promise<any>, retries = 2, delay = 800): Promise<any> => {
   try {
     const module = await importFn();
 
@@ -33,6 +43,23 @@ const lazyRetry = async (importFn: () => Promise<any>, retries = 3, delay = 1000
 
     return module;
   } catch (err) {
+    // Stale chunk after a redeploy/HMR — retrying the same URL will not help.
+    // Force a one-time hard reload so the browser fetches the new asset manifest.
+    if (isChunkLoadError(err)) {
+      try {
+        const hasReloaded = sessionStorage.getItem(LAZY_IMPORT_RELOAD_KEY) === "1";
+        if (!hasReloaded) {
+          sessionStorage.setItem(LAZY_IMPORT_RELOAD_KEY, "1");
+          window.location.reload();
+          return new Promise(() => undefined);
+        }
+        sessionStorage.removeItem(LAZY_IMPORT_RELOAD_KEY);
+      } catch {
+        // ignore
+      }
+      throw err;
+    }
+
     if (retries > 0) {
       await new Promise((resolve) => setTimeout(resolve, delay));
       return lazyRetry(importFn, retries - 1, delay);
