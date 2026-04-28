@@ -36,6 +36,8 @@ export interface TapCardConfig {
   currency: string;
   /** 'ar' or 'en' — controls SDK locale + text direction */
   locale: 'ar' | 'en';
+  /** Site theme — maps to Tap SDK 'DARK' / 'LIGHT'. Defaults to 'dark'. */
+  theme?: 'dark' | 'light';
   customerName?: string;
   customerEmail?: string;
   /** Full phone number WITHOUT country code prefix, e.g. "512345678" */
@@ -153,7 +155,7 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
         addons: { loader: true, saveCard: false, scanner: true },
         interface: {
           locale: isAr ? 'AR' : 'EN',
-          theme: 'DARK',
+          theme: cfg.theme === 'light' ? 'LIGHT' : 'DARK',
           edges: 'CURVED',
           direction: isAr ? 'RTL' : 'LTR',
         },

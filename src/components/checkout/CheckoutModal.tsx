@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/components/ThemeProvider";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCheckoutForm } from "@/hooks/checkout/useCheckoutForm";
 import { useCheckoutPromo } from "@/hooks/checkout/useCheckoutPromo";
@@ -46,6 +47,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user, profile } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const { getCoursePriceInfo, getCurrencySymbol, isSAR, exchangeRate } = useCurrency();
   const { sendCourseStatus } = useGHLFormWebhook();
@@ -96,6 +98,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     amount: discountedPrice,
     currency: priceInfo.currency as string,
     locale: isRTL ? 'ar' : 'en',
+    theme,
     customerName: form.fullName,
     customerEmail: form.email,
     customerPhone: form.phone,
