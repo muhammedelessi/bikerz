@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Gift, Shield, Check, Lock, XCircle, Pencil, X, Phone, MapPin, User, AlertTriangle } from "lucide-react";
+import { Gift, Shield, Check, Lock, Pencil, X, Phone, MapPin, User, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,12 +22,18 @@ interface CheckoutPaymentStepProps {
   promoCode: string;
   setPromoCode: (v: string) => void;
   promoApplied: boolean;
+  /** Loading state while we validate the code against the server. */
+  promoLoading?: boolean;
   appliedCoupon: AppliedCoupon | null;
+  /** Last failed validation message — when set, the input shows red + inline error. */
+  invalidCode?: string | null;
   handleApplyPromo: () => void;
   clearPromo: () => void;
   discountLabel: string;
   discountAmount: number;
   discountedPrice: number;
+  /** Original (pre-discount) price — used to render the strikethrough next to the new total. */
+  originalPrice?: number;
   fullName: string;
   setFullName: (v: string) => void;
   email: string;
@@ -66,6 +72,9 @@ interface CheckoutPaymentStepProps {
   onSubmitPayment: () => void;
   /** Bundle checkout: hide promo + duplicate pricing; order box shows contact fields only */
   bundleMode?: boolean;
+  /** Lifted state: whether the promo input panel is open. Controlled by the parent modal so the footer can swap Pay → Apply. */
+  promoOpen?: boolean;
+  onPromoOpenChange?: (open: boolean) => void;
 }
 
 const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
@@ -76,12 +85,15 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     promoCode,
     setPromoCode,
     promoApplied,
+    promoLoading = false,
     appliedCoupon,
+    invalidCode = null,
     handleApplyPromo,
     clearPromo,
     discountLabel,
     discountAmount,
     discountedPrice,
+    originalPrice,
     fullName,
     setFullName,
     email,
@@ -117,9 +129,22 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     isSAR = true,
     onSubmitPayment,
     bundleMode = false,
+    promoOpen: promoOpenProp,
+    onPromoOpenChange,
   }) => {
     const { t } = useTranslation();
     const [editOpen, setEditOpen] = useState(false);
+    /**
+     * Promo input is hidden by default — user reveals it via the small link below the total.
+     * State is controlled when `promoOpen` / `onPromoOpenChange` are provided (CheckoutModal lifts
+     * it up so the footer can swap the Pay button for an Apply button), uncontrolled otherwise.
+     */
+    const [internalPromoOpen, setInternalPromoOpen] = useState(false);
+    const promoOpen = promoOpenProp ?? internalPromoOpen;
+    const setPromoOpen = (next: boolean) => {
+      if (onPromoOpenChange) onPromoOpenChange(next);
+      else setInternalPromoOpen(next);
+    };
 
     const billingIssueLines = useMemo(
       () =>
@@ -167,59 +192,132 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
           exit={{ opacity: 0, y: -10 }}
           className={bundleMode ? "space-y-4" : "space-y-5"}
         >
-          {/* Promo Code */}
+          {/*
+            Promo Code (collapsed-by-default UX)
+            - No field visible until the user clicks the small "Do you have a discount code?" link.
+            - On open, the [input] [Apply] row slides in (300ms via AnimatePresence + height/opacity).
+            - Success: green confirmation card with "Code X applied — You saved Y SAR" + Remove button.
+            - Failure: input gets a red border + "Invalid code" inline message.
+            - Auto-uppercase is enforced in the hook (`setPromoCode` lowercases→uppercases).
+          */}
           {!bundleMode && (
-          <div className="space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-1.5">
-              <Gift className="w-3.5 h-3.5 text-primary" />
-              {isRTL ? "رمز الخصم" : "Promo Code"}
-            </Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Input
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value)}
-                  placeholder={isRTL ? "أدخل رمز الخصم" : "Enter promo code"}
-                  disabled={promoApplied || paymentStatus === "processing"}
-                  className="w-full pe-8 h-9"
-                />
-                {promoCode && !promoApplied && (
-                  <button
-                    type="button"
-                    onClick={() => setPromoCode("")}
-                    className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  >
-                    <XCircle className="w-4 h-4" />
-                  </button>
-                )}
-                {promoApplied && (
-                  <button
-                    type="button"
-                    onClick={clearPromo}
-                    className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                  >
-                    <XCircle className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              <Button
-                variant="outline"
-                size="default"
-                onClick={handleApplyPromo}
-                disabled={!promoCode || promoApplied || paymentStatus === "processing"}
-              >
-                {promoApplied ? (isRTL ? "مطبق" : "Applied") : isRTL ? "تطبيق" : "Apply"}
-              </Button>
-            </div>
-            {promoApplied && appliedCoupon && (
-              <p className="text-xs text-primary flex items-center gap-1">
-                <Check className="w-3.5 h-3.5" />
-                {isRTL
-                  ? `تم تطبيق خصم ${discountLabel}`
-                  : `${discountLabel} discount applied`}
-              </p>
-            )}
-          </div>
+            <AnimatePresence mode="wait" initial={false}>
+              {promoApplied && appliedCoupon ? (
+                /* === Applied state — strong, unambiguous confirmation === */
+                <motion.div
+                  key="promo-applied"
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.25 }}
+                  className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2.5 sm:px-4 sm:py-3"
+                >
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                        {isRTL
+                          ? `تم تطبيق كود ${appliedCoupon.coupon_code ?? promoCode} بنجاح`
+                          : `Code ${appliedCoupon.coupon_code ?? promoCode} applied successfully`}
+                      </p>
+                      <p className="text-xs text-emerald-800/80 dark:text-emerald-200/80 mt-0.5">
+                        {isRTL
+                          ? `تم خصم ${discountLabel} من سعر الكورس 🎉 تهانينا`
+                          : `${discountLabel} discount applied 🎉 Congratulations`}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearPromo();
+                        setPromoOpen(false);
+                      }}
+                      disabled={paymentStatus === "processing"}
+                      className="shrink-0 text-xs font-semibold text-emerald-900/80 dark:text-emerald-100/80 hover:text-emerald-950 dark:hover:text-emerald-50 underline underline-offset-2 disabled:opacity-50"
+                    >
+                      {isRTL ? "إزالة" : "Remove"}
+                    </button>
+                  </div>
+                </motion.div>
+              ) : promoOpen ? (
+                /* === Open input row — slides in at 300ms === */
+                <motion.div
+                  key="promo-open"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="overflow-hidden"
+                >
+                  <div className="space-y-2 px-3 sm:px-4 pt-1">
+                    <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <Gift className="w-3.5 h-3.5 text-primary" />
+                      {isRTL ? "كود الخصم" : "Discount code"}
+                    </Label>
+                    <Input
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (promoCode && !promoLoading) handleApplyPromo();
+                        }
+                      }}
+                      placeholder="MOH301"
+                      disabled={promoLoading || paymentStatus === "processing"}
+                      autoFocus
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      dir="ltr"
+                      className={`w-full h-8 px-3 text-center uppercase tracking-[0.2em] font-mono text-sm placeholder:tracking-normal placeholder:text-muted-foreground/40 ${
+                        invalidCode
+                          ? "border-destructive/60 bg-destructive/5 focus-visible:ring-destructive/30"
+                          : ""
+                      }`}
+                    />
+                    {invalidCode ? (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        {isRTL ? "كود غير صالح" : "Invalid code"}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground/80">
+                        {isRTL
+                          ? "اضغط زر «تطبيق الكود» أدناه للتحقق."
+                          : "Tap the “Apply code” button below to verify."}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPromoOpen(false);
+                        setPromoCode("");
+                      }}
+                      className="text-[11px] text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+                    >
+                      {isRTL ? "إلغاء" : "Cancel"}
+                    </button>
+                  </div>
+                </motion.div>
+              ) : (
+                /* === Default state — just a small gray link === */
+                <motion.button
+                  key="promo-link"
+                  type="button"
+                  onClick={() => setPromoOpen(true)}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="group flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition-all hover:border-primary hover:bg-primary/10 hover:shadow-sm"
+                >
+                  <Gift className="w-4 h-4 transition-transform group-hover:scale-110" />
+                  <span>{isRTL ? "هل لديك كود خصم؟" : "Do you have a discount code?"}</span>
+                </motion.button>
+              )}
+            </AnimatePresence>
           )}
 
           {/* Order Summary */}
@@ -291,7 +389,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                     </div>
                   )}
                   <Separator className="my-1" />
-                  <div className="flex justify-between font-bold text-base">
+                  <div className="flex justify-between font-bold text-base items-baseline gap-2">
                     <span>
                       {isRTL
                         ? vatPct > 0
@@ -301,8 +399,31 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                           ? "Total (incl. VAT)"
                           : "Total"}
                     </span>
-                    <span className="text-primary">
-                      {totalWithVat} {currencyLabel}
+                    <span className="flex items-baseline gap-2">
+                      {/* Old price strikethrough — only when a discount is applied */}
+                      {promoApplied && originalPrice != null && originalPrice > totalWithVat ? (
+                        <motion.span
+                          key="old-price"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="text-xs font-medium text-muted-foreground line-through tabular-nums"
+                        >
+                          {formatLocal(originalPrice)}
+                        </motion.span>
+                      ) : null}
+                      {/* New total — animated transition between old & new amounts */}
+                      <AnimatePresence mode="popLayout" initial={false}>
+                        <motion.span
+                          key={`total-${totalWithVat}`}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.3, ease: "easeOut" }}
+                          className="text-primary tabular-nums"
+                        >
+                          {totalWithVat} {currencyLabel}
+                        </motion.span>
+                      </AnimatePresence>
                     </span>
                   </div>
 
