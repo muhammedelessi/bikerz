@@ -148,10 +148,15 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
             },
           },
         },
-        // Minimal acceptance — only require 3DS (mandatory for MENA online cards).
-        // Omitting supportedSchemes / supportedFundSource lets Tap show every
-        // card scheme that is active on the merchant account.
+        // Card-only acceptance — VISA + MASTERCARD + MADA (SAR only).
+        // Apple Pay is intentionally excluded here; it requires domain whitelisting
+        // and will be added via a separate button once Tap approves the domain.
         acceptance: {
+          supportedSchemes: [
+            'VISA',
+            'MASTERCARD',
+            ...(safeCurrency === 'SAR' ? ['MADA'] : []),
+          ],
           supportedPaymentAuthentications: ['3DS'],
         },
         fields: { cardHolder: true },
@@ -189,6 +194,14 @@ export function useTapCardSdk(config: TapCardConfig): UseTapCardSdkReturn {
             return null;
           };
           const msg = extractMsg(err) || 'Card error. Please re-enter your details.';
+          // Apple Pay bundle_id mismatch is non-fatal — it means Apple Pay is enabled
+          // on the account but the current domain isn't whitelisted yet.
+          // Card payments still work; suppress this error so it doesn't block the form.
+          const raw = JSON.stringify(err ?? '').toLowerCase();
+          if (raw.includes('bundle_id') || raw.includes('apple')) {
+            console.warn('[TapCardSdk] Apple Pay unavailable on this domain (bundle_id mismatch) — cards unaffected.');
+            return;
+          }
           // Surface the raw payload to the console so we can diagnose silent SDK failures.
           console.error('[TapCardSdk] onError payload:', err);
           setSdkError(msg);
