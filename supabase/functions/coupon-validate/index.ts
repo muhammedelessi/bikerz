@@ -194,20 +194,13 @@ Deno.serve(async (req) => {
       return res(400, { valid: false, error: "Code already used" });
     }
 
-    const { data: alreadyUsedByUser, error: usedByUserErr } = await adminClient
-      .from("coupon_series_usage")
-      .select("id")
-      .eq("series_id", series.id)
-      .eq("code_number", parsed.number)
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (usedByUserErr && usedByUserErr.code !== "PGRST116") {
-      console.error("Series user usage check error:", usedByUserErr.message);
-      return res(500, { error: "Validation failed" });
-    }
-    if (alreadyUsedByUser?.id) {
-      return res(400, { valid: false, error: "Already used by you" });
-    }
+    /*
+      The previous per-user uniqueness check has been removed: it blocked the
+      same user from using a code more than once even when the admin had set
+      `max_uses_per_code` to a higher value (e.g. 4). The global usage count
+      check above already enforces the cap — once the code reaches
+      `max_uses_per_code` total uses, it stops working for everyone.
+    */
 
     const originalAmount = Number(amount);
     const discount = computeSeriesDiscount(
