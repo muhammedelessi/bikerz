@@ -666,6 +666,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <Loader2 className="w-4 h-4 animate-spin me-2" />
                       {isRTL ? "جاري تجهيز الدفع..." : "Preparing payment..."}
                     </>
+                  ) : tapCard.sdkLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin me-2" />
+                      {isRTL ? "جارٍ تحميل نموذج الدفع..." : "Loading payment form..."}
+                    </>
+                  ) : !tapCard.cardValid ? (
+                    <>
+                      <CreditCard className="w-4 h-4 me-2" />
+                      {isRTL ? "أدخل بيانات البطاقة" : "Enter card details"}
+                    </>
                   ) : (
                     <>
                       <CreditCard className="w-4 h-4 me-2" />

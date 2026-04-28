@@ -199,9 +199,10 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
       <>
         <motion.div
           key="payment"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, x: isRTL ? -24 : 24, y: 6 }}
+          animate={{ opacity: 1, x: 0, y: 0 }}
+          exit={{ opacity: 0, x: isRTL ? 24 : -24, y: -6 }}
+          transition={{ duration: 0.22, ease: "easeOut" }}
           className={bundleMode ? "space-y-4" : "space-y-5"}
         >
           {/*
@@ -341,19 +342,50 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
               </div>
 
               {/* SDK mounts here — must NOT be conditionally removed from DOM */}
-              <div className="relative rounded-xl overflow-hidden border border-border bg-muted/10 min-h-[180px]">
+              <div className={`relative rounded-xl overflow-hidden border-2 transition-all duration-300 bg-muted/10 min-h-[180px] ${
+                tapCardValid
+                  ? 'border-primary/70 shadow-[0_0_0_3px_hsl(var(--primary)/0.12)]'
+                  : 'border-border'
+              }`}>
                 {tapCardLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center z-10 bg-card/70 rounded-xl">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-card/95 rounded-xl gap-4 px-5">
                     <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                      <span className="text-xs text-muted-foreground">
-                        {isRTL ? "جاري تحميل نموذج الدفع…" : "Loading payment form…"}
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      <span className="text-xs font-medium text-muted-foreground text-center">
+                        {isRTL ? "جارٍ تحميل نموذج الدفع الآمن..." : "Loading secure payment form..."}
                       </span>
+                    </div>
+                    {/* Skeleton placeholder */}
+                    <div className="w-full space-y-2">
+                      <div className="h-10 bg-muted/50 rounded-lg animate-pulse" />
+                      <div className="flex gap-2">
+                        <div className="h-10 bg-muted/50 rounded-lg animate-pulse flex-1" />
+                        <div className="h-10 bg-muted/50 rounded-lg animate-pulse flex-1" />
+                      </div>
                     </div>
                   </div>
                 )}
                 <div id={tapCardContainerId} className="w-full" />
               </div>
+
+              {/* Card validity indicator */}
+              {!tapCardLoading && !tapCardError && (
+                <div className={`flex items-center gap-1.5 text-xs transition-colors ${
+                  tapCardValid ? 'text-emerald-500' : 'text-muted-foreground/50'
+                }`}>
+                  {tapCardValid ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>{isRTL ? "بيانات البطاقة مكتملة ✓" : "Card details complete ✓"}</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span>{isRTL ? "أدخل بيانات بطاقتك أعلاه" : "Enter your card details above"}</span>
+                    </>
+                  )}
+                </div>
+              )}
 
               {tapCardError && (
                 <p className="text-xs text-destructive flex items-center gap-1">
@@ -385,26 +417,30 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
             </Alert>
           )}
 
-          {/* Trust Badge */}
-          <div className="flex flex-col items-center gap-2 pt-2">
+          {/* Trust Badges */}
+          <div className="flex flex-col items-center gap-2 pt-1 pb-1">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Lock className="w-3.5 h-3.5 text-primary" />
               <span>
                 {bundleMode
-                  ? isRTL
-                    ? "دفع إلكتروني مؤمّن"
-                    : "Secure online payment"
-                  : isRTL
-                    ? "مُؤمّن بواسطة Tap Payments"
-                    : "Secured by Tap Payments"}
+                  ? isRTL ? "دفع إلكتروني مؤمّن" : "Secure online payment"
+                  : isRTL ? "مُؤمّن بواسطة Tap Payments" : "Secured by Tap Payments"}
               </span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 flex-wrap justify-center">
+              {["VISA", "Mastercard", "MADA"].map((card) => (
+                <span
+                  key={card}
+                  className="px-2 py-0.5 rounded border border-border/50 text-[10px] font-semibold text-muted-foreground/70 bg-muted/20 tracking-wide"
+                >
+                  {card}
+                </span>
+              ))}
+              <span className="text-muted-foreground/20 text-xs">•</span>
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
                 <Shield className="w-3 h-3" />
                 <span>3D Secure</span>
               </div>
-              <span className="text-muted-foreground/20">|</span>
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
                 <Shield className="w-3 h-3" />
                 <span>PCI DSS</span>
