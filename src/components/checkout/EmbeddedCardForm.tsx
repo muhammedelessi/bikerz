@@ -93,6 +93,7 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
           theme: theme === "dark" ? "DARK" : "LIGHT",
           edges: "CURVED",
           direction: isRTL ? "RTL" : "LTR",
+          colorStyle: "#CC4E1D", // BIKERZ primary
         },
       }),
       [
