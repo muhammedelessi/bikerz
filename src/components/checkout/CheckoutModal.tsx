@@ -64,6 +64,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const form = useCheckoutForm(open);
   const promo = useCheckoutPromo(course.id, basePrice);
   const tap = useTapPayment();
+  /**
+   * Lifted promo-panel state — when the user opens the discount field, the
+   * footer's primary CTA swaps from "Pay Now" to "Apply code". Single, focused
+   * action prevents accidental payment without applying the discount.
+   */
+  const [promoOpen, setPromoOpen] = useState(false);
+  // Auto-close the panel once a code is applied (the green confirmation card replaces the input).
+  useEffect(() => {
+    if (promo.promoApplied && promoOpen) setPromoOpen(false);
+  }, [promo.promoApplied, promoOpen]);
 
   const discountAmount = promo.appliedCoupon ? promo.appliedCoupon.discount_amount : 0;
   const discountedPrice = promo.appliedCoupon ? promo.appliedCoupon.final_amount : basePrice;
@@ -86,6 +96,30 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (user) {
       form.prefillAndAutoAdvance();
     }
+  }, [open, user]);
+
+  /**
+   * If the URL carries `?code=XYZ`, validate and apply it as soon as the modal
+   * opens for an authenticated user. The hook silently shows the discounted
+   * summary on success — and on failure it just leaves the field collapsed
+   * (the user sees no confusing prefilled-but-broken code).
+   */
+  const urlCodeAppliedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!open || !user) return;
+    let code: string | null = null;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      code = params.get("code") || params.get("coupon");
+    } catch {
+      /* ignore */
+    }
+    if (!code) return;
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed || urlCodeAppliedRef.current === trimmed) return;
+    urlCodeAppliedRef.current = trimmed;
+    void promo.applyCodeFromUrl(trimmed);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user]);
 
   useEffect(() => {
@@ -407,12 +441,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 promoCode={promo.promoCode}
                 setPromoCode={promo.setPromoCode}
                 promoApplied={promo.promoApplied}
+                promoLoading={promo.promoLoading}
                 appliedCoupon={promo.appliedCoupon}
+                invalidCode={promo.invalidCode}
                 handleApplyPromo={promo.handleApplyPromo}
                 clearPromo={promo.clearPromo}
                 discountLabel={discountLabel}
                 discountAmount={discountAmount}
                 discountedPrice={discountedPrice}
+                originalPrice={basePrice}
+                promoOpen={promoOpen}
+                onPromoOpenChange={setPromoOpen}
                 fullName={form.fullName}
                 setFullName={form.setFullName}
                 email={form.email}
@@ -464,6 +503,30 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {isRTL ? "التالي" : "Next"}
               <ArrowIcon className="w-4 h-4 ms-2" />
             </Button>
+          ) : promoOpen && !promo.promoApplied ? (
+            /*
+              Promo panel is open — swap the Pay button for an Apply button so the
+              user has a single, focused CTA. After successful apply, the panel
+              auto-closes (see useEffect above) and the footer reverts to "Pay Now".
+            */
+            <Button
+              className="flex-1 h-11 rounded-xl text-sm font-bold"
+              variant="cta"
+              onClick={promo.handleApplyPromo}
+              disabled={!promo.promoCode || promo.promoLoading || tap.status === "processing"}
+            >
+              {promo.promoLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin me-2" />
+                  {isRTL ? "جارٍ التحقق..." : "Verifying…"}
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-4 h-4 me-2" />
+                  {isRTL ? "تطبيق الكود" : "Apply code"}
+                </>
+              )}
+            </Button>
           ) : discountedPrice <= 0 && promo.appliedCoupon ? (
             <Button
               className="flex-1"
@@ -502,6 +565,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               ) : (
                 <>
                   <CreditCard className="w-4 h-4 me-2" />
+                  {/*
+                    Pay button must always carry the actual amount the user is about to pay,
+                    so they never doubt whether the discount applied. Use the same fallback
+                    logic the order summary uses (local currency when Tap supports it,
+                    otherwise show the SAR equivalent).
+                  */}
                   {(() => {
                     const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
                     const showLocal = TAP_SUPPORTED.includes(priceInfo.currency as string);
@@ -511,7 +580,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         ? discountedPrice
                         : Math.ceil(discountedPrice / exchangeRate);
                     const displaySym = showLocal ? currSym : isRTL ? "ر.س" : "SAR";
-                    return isRTL ? `ادفع الآن` : `Pay Now`;
+                    return isRTL
+                      ? `ادفع الآن — ${displayAmt} ${displaySym}`
+                      : `Pay Now — ${displayAmt} ${displaySym}`;
                   })()}
                 </>
               )}
