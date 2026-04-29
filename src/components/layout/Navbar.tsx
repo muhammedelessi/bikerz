@@ -319,6 +319,14 @@ const Navbar: React.FC = () => {
                 {user
                   ? (
                     <>
+                      <Link to="/dashboard/apply-trainer">
+                        <Button variant="outline" size="sm" className="gap-2 border-primary/30 text-primary hover:bg-primary/10">
+                          <Award className="w-4 h-4" aria-hidden />
+                          <span className="hidden xl:inline text-sm font-semibold">
+                            {t("nav.applyTrainer")}
+                          </span>
+                        </Button>
+                      </Link>
                       <Link to="/dashboard">
                         <Button variant="ghost" size="sm" className="gap-2">
                           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
