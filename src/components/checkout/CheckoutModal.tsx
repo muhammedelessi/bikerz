@@ -573,7 +573,39 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               />
             )}
           </AnimatePresence>
+
+          {/* Embedded Tap Card form — only on Step 2, only when there's an amount to charge. */}
+          {showEmbeddedCard && (
+            <div className="mt-5">
+              <EmbeddedCardForm
+                isRTL={isRTL}
+                active={showEmbeddedCard}
+                amount={tapChargeInfo.amount}
+                currency={tapChargeInfo.currency}
+                customerName={form.fullName}
+                customerEmail={form.email}
+                customerPhoneCountryCode={cardPhoneCountryCode}
+                customerPhoneNumber={cardPhoneNumber}
+                onApiReady={handleCardApiReady}
+                onStatusChange={handleCardSdkStatusChange}
+              />
+            </div>
+          )}
         </div>
+
+        {/* Back button on Step 2 — only when Step 1 wasn't auto-skipped. */}
+        {step === "payment" && !autoSkippedInfo && (
+          <div className="px-4 sm:px-5 -mt-2">
+            <button
+              type="button"
+              onClick={() => setStep("info")}
+              className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <BackArrowIcon className="w-3.5 h-3.5" />
+              {isRTL ? "رجوع لتعديل البيانات" : "Back to edit info"}
+            </button>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-border flex-shrink-0 flex gap-2">
