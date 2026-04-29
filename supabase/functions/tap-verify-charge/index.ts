@@ -108,6 +108,11 @@ Deno.serve(async (req) => {
     }
 
     const status = mapTapStatus(tapCharge.status);
+    const tapMessage =
+      (typeof tapCharge?.response?.message === "string" && tapCharge.response.message) ||
+      (typeof tapCharge?.acquirer?.message === "string" && tapCharge.acquirer.message) ||
+      (typeof tapCharge?.response?.code === "string" ? `Code ${tapCharge.response.code}` : null) ||
+      null;
 
     // Use service role client for DB operations
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
