@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Loader2, CreditCard } from "lucide-react";
@@ -510,8 +510,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         {/* Content */}
         <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0">
-          <AnimatePresence mode="wait">
-            {step === "info" ? (
+          {step === "info" ? (
               <CheckoutInfoStep
                 key="info"
                 isRTL={isRTL}
@@ -621,7 +620,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 }
               />
             )}
-          </AnimatePresence>
         </div>
 
 
