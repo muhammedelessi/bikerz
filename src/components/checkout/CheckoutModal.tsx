@@ -392,8 +392,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const isStatusOverlay =
     tap.status === "processing" ||
     tap.status === "verifying" ||
-    tap.status === "succeeded" ||
-    tap.status === "failed";
+    tap.status === "succeeded";
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
   const BackArrowIcon = isRTL ? ArrowRight : ArrowLeft;
@@ -433,7 +432,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden border-2 border-border bg-card p-0 gap-0"
+        className="relative sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden border-2 border-border bg-card p-0 gap-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         {/* Header */}
@@ -742,10 +741,21 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         </div>
 
         {tap.status === "failed" && (
-          <div className="p-4 border-t-2 border-border flex-shrink-0">
-            <Button className="w-full" variant="outline" onClick={() => onOpenChange(false)}>
-              {isRTL ? "إغلاق" : "Close"}
-            </Button>
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 sm:p-5">
+            <div className="w-full max-w-md rounded-2xl border-2 border-border bg-card shadow-2xl">
+              <CheckoutStatusOverlay
+                paymentStatus={tap.status}
+                paymentError={tap.error}
+                courseId={course.id}
+                onSuccess={onSuccess}
+                onOpenChange={onOpenChange}
+                onRetry={() => {
+                  tap.reset();
+                  setStep("payment");
+                }}
+                navigate={navigate}
+              />
+            </div>
           </div>
         )}
       </DialogContent>
