@@ -207,6 +207,45 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
     };
   }, [enabled, containerId, reinitNonce]);
 
+  // Reliable validity detection via postMessage from the Tap iframe.
+  // Some SDK builds don't reliably fire onValidInput/onInvalidInput callbacks,
+  // so we observe iframe messages directly. The iframe broadcasts messages
+  // whose payload includes a boolean `valid`/`isValid` field as the user types.
+  useEffect(() => {
+    if (!enabled) return;
+
+    const handler = (event: MessageEvent) => {
+      try {
+        const origin = event.origin || "";
+        // Only trust messages from Tap-owned iframes.
+        if (!/(^https?:\/\/[^/]*tap\.company)|(tap-sdks\.b-cdn\.net)/i.test(origin)) return;
+
+        const data = event.data;
+        if (!data || typeof data !== "object") return;
+
+        // Accept any of the common shapes Tap uses across SDK builds.
+        const payload = (data as Record<string, unknown>);
+        const candidates = [
+          payload.valid,
+          payload.isValid,
+          (payload.data as Record<string, unknown> | undefined)?.valid,
+          (payload.data as Record<string, unknown> | undefined)?.isValid,
+          (payload.payload as Record<string, unknown> | undefined)?.valid,
+          (payload.payload as Record<string, unknown> | undefined)?.isValid,
+        ];
+        const validFlag = candidates.find((v) => typeof v === "boolean") as boolean | undefined;
+        if (typeof validFlag === "boolean") {
+          setCardValid(validFlag);
+        }
+      } catch {
+        /* ignore malformed messages */
+      }
+    };
+
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [enabled]);
+
   const tokenize = useCallback((): Promise<string> => {
     return new Promise((resolve, reject) => {
       if (!sdkReady) {
