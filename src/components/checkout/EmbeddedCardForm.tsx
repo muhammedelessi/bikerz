@@ -12,11 +12,12 @@
  * - Lets the modal render the order summary / promo code / footer Pay button
  *   without leaking SDK state into them.
  */
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import { Loader2, Lock, ShieldCheck, AlertTriangle, CreditCard } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useTheme } from "@/components/ThemeProvider";
 import { useTapCardSdk } from "@/hooks/checkout/useTapCardSdk";
+import { useTapApplePaySdk } from "@/hooks/checkout/useTapApplePaySdk";
 import { splitFullName } from "@/lib/nameUtils";
 import type { TapCardConfig } from "@/types/tapCardSdk";
 
