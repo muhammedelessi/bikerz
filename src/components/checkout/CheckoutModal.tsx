@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Loader2, CreditCard } from "lucide-react";
 import { toast } from "sonner";
@@ -472,7 +472,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         {/* Header */}
         <div className="bg-muted/30 p-4 sm:p-5 border-b-2 border-border flex-shrink-0">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold">
+            {/* Visible heading — the accessible Title for screen readers
+                lives in ResponsiveCheckoutShell as sr-only, so this is a
+                plain h2 to avoid duplicate Radix Title nodes. */}
+            <h2 className="text-lg font-bold leading-none tracking-tight">
               {step === "info"
                 ? isRTL
                   ? "معلومات الدفع"
@@ -480,7 +483,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 : isRTL
                   ? "إتمام الشراء"
                   : "Complete Purchase"}
-            </DialogTitle>
+            </h2>
           </DialogHeader>
 
           {/* Step 1 / Step 2 indicator (hidden when the user was auto-skipped past Step 1) */}

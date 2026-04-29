@@ -17,9 +17,14 @@
  *   - Drawer wants viewport-attached + body lock + drag handle
  * Trying to unify them via CSS produces flicker on the desktop→mobile
  * resize. Two implementations, one switch, no flicker.
+ *
+ * Accessibility: Radix Dialog (and vaul) STRICTLY require a Title node inside
+ * the content for screen readers — without one, newer Radix versions throw
+ * and the dialog never paints. We always render an sr-only Title here using
+ * `a11yLabel` so callers don't have to remember to include their own.
  */
 import React from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -31,6 +36,8 @@ interface ResponsiveCheckoutShellProps {
   preventClose?: boolean;
   /** Accessible label for screen readers (Dialog/Drawer require a title). */
   a11yLabel: string;
+  /** Optional accessible description — passed to `aria-describedby`. */
+  a11yDescription?: string;
   children: React.ReactNode;
   /** Optional: extra classes for the inner content wrapper. */
   className?: string;
@@ -41,6 +48,7 @@ const ResponsiveCheckoutShell: React.FC<ResponsiveCheckoutShellProps> = ({
   onOpenChange,
   preventClose = false,
   a11yLabel,
+  a11yDescription,
   children,
   className,
 }) => {
@@ -68,8 +76,10 @@ const ResponsiveCheckoutShell: React.FC<ResponsiveCheckoutShellProps> = ({
             className || "",
           ].join(" ")}
         >
-          {/* Drawer title is required by vaul/Radix for a11y but the
-              checkout has its own visible header — hide via sr-only. */}
+          {/* Title is required by vaul/Radix for a11y. The checkout has its
+              own visible header (rendered as a regular h2 inside children),
+              so the title here is sr-only — duplicates would confuse screen
+              readers. */}
           <DrawerTitle className="sr-only">{a11yLabel}</DrawerTitle>
           {children}
         </DrawerContent>
@@ -85,8 +95,13 @@ const ResponsiveCheckoutShell: React.FC<ResponsiveCheckoutShellProps> = ({
           className || "",
         ].join(" ")}
         onOpenAutoFocus={(e) => e.preventDefault()}
-        aria-label={a11yLabel}
       >
+        {/* Required for Radix Dialog accessibility — without a Title in the
+            tree, modern Radix versions throw and the dialog never renders. */}
+        <DialogTitle className="sr-only">{a11yLabel}</DialogTitle>
+        {a11yDescription ? (
+          <DialogDescription className="sr-only">{a11yDescription}</DialogDescription>
+        ) : null}
         {children}
       </DialogContent>
     </Dialog>
