@@ -52,7 +52,27 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { sendCourseStatus } = useGHLFormWebhook();
   const { handleGuestSignup, guestSigningUp } = useGuestSignup();
 
-  const [step, setStep] = useState<"info" | "payment">("payment");
+  // Default to "info" — for returning customers with a complete profile, the
+  // open-effect below auto-advances to "payment" right after prefillAndAutoAdvance().
+  const [step, setStep] = useState<"info" | "payment">("info");
+  /** True once we've evaluated the profile completeness on open. Hides Step 1 indicator
+   *  when the user was auto-skipped past it. */
+  const [autoSkippedInfo, setAutoSkippedInfo] = useState(false);
+  /** Tokenize handle wired up from the embedded card form. */
+  const cardApiRef = useRef<{ tokenize: () => Promise<string> } | null>(null);
+  const [cardSdkStatus, setCardSdkStatus] = useState<{
+    sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null;
+  }>({ sdkLoading: false, sdkReady: false, cardValid: false, sdkError: null });
+  const [tokenizing, setTokenizing] = useState(false);
+  const handleCardApiReady = useCallback((api: { tokenize: () => Promise<string> }) => {
+    cardApiRef.current = api;
+  }, []);
+  const handleCardSdkStatusChange = useCallback(
+    (s: { sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null }) => {
+      setCardSdkStatus(s);
+    },
+    [],
+  );
 
   const priceInfo = useMemo(
     () => getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0),
