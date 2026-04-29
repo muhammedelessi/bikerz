@@ -107,6 +107,35 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const formatLocal = useCallback((amount: number) => `${amount} ${currSym}`, [currSym]);
 
+  /**
+   * Compute the actual currency + amount that will be charged on the card.
+   * Mirrors the same fallback logic used in handleSubmitPayment so the embedded
+   * Tap iframe always shows the user the exact amount they're about to pay.
+   */
+  const tapChargeInfo = useMemo(() => {
+    const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
+    const localCurrency = priceInfo.currency as string;
+    if (TAP_SUPPORTED.includes(localCurrency)) {
+      return { currency: localCurrency, amount: discountedPrice };
+    }
+    const sarAmt = isSAR || exchangeRate <= 0 ? discountedPrice : Math.ceil(discountedPrice / exchangeRate);
+    return { currency: "SAR", amount: sarAmt };
+  }, [priceInfo.currency, discountedPrice, isSAR, exchangeRate]);
+
+  /** Phone country code for the SDK (e.g. "966" without the +). */
+  const cardPhoneCountryCode = useMemo(() => {
+    const raw = form.actualPrefix || "";
+    return raw.replace(/^\+/, "").trim();
+  }, [form.actualPrefix]);
+  const cardPhoneNumber = useMemo(() => {
+    const v = (form.phone || "").trim().replace(/[^0-9]/g, "");
+    return v.startsWith("0") ? v.slice(1) : v;
+  }, [form.phone]);
+
+  /** Skip the embedded SDK entirely when the order is free (100%-off coupon). */
+  const isFreeEnrollment = discountedPrice <= 0 && !!promo.appliedCoupon;
+  const showEmbeddedCard = step === "payment" && !isFreeEnrollment;
+
   useEffect(() => {
     if (!open) {
       setStep("info");
