@@ -326,9 +326,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const courseDisplayName = isRTL && course.title_ar ? course.title_ar : course.title;
 
     // Tokenize the card client-side first so the secret-key backend only ever
-    // sees a tok_xxx — raw card details never leave Tap's iframe.
-    let tokenId: string | undefined;
-    if (cardApiRef.current) {
+    // sees a tok_xxx — raw card details never leave Tap's iframe. Apple Pay
+    // already supplies a token (preTokenizedTokenId), so skip the card SDK call.
+    let tokenId: string | undefined = preTokenizedTokenId;
+    if (!tokenId && cardApiRef.current) {
       try {
         setTokenizing(true);
         tokenId = await cardApiRef.current.tokenize();
