@@ -481,6 +481,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </div>
         </div>
 
+        {/* Sticky Back-to-Step-1 bar — pinned to the top of the scroll area on Step 2,
+            stays visible while card details / promo code scroll beneath it. */}
+        {step === "payment" && !autoSkippedInfo && (
+          <div className="sticky top-0 z-10 px-4 sm:px-5 py-2.5 bg-background/95 backdrop-blur-sm border-b border-border flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => setStep("info")}
+              className="inline-flex items-center gap-2 h-10 px-3.5 rounded-lg border-2 border-border bg-background text-sm font-semibold text-foreground hover:bg-muted hover:border-primary/40 active:scale-[0.98] transition-all shadow-sm min-h-[40px]"
+              aria-label={isRTL ? "رجوع للخطوة الأولى لتعديل البيانات" : "Back to step 1 to edit info"}
+            >
+              <BackArrowIcon className="w-4 h-4" />
+              <span>{isRTL ? "رجوع لتعديل البيانات" : "Back to edit info"}</span>
+            </button>
+          </div>
+        )}
+
         {/* Content */}
         <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0">
           <AnimatePresence mode="wait">
