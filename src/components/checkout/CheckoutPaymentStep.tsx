@@ -320,152 +320,91 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
             </AnimatePresence>
           )}
 
-          {/* Order Summary */}
-          <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
-            <div className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between gap-2">
-              <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                {bundleMode
-                  ? isRTL
-                    ? "بياناتك للتواصل"
-                    : "Your details"
-                  : isRTL
-                    ? "ملخص الطلب"
-                    : "Order Summary"}
-              </p>
-              <button
-                type="button"
-                onClick={() => setEditOpen(true)}
-                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors shrink-0"
-              >
-                <Pencil className="w-3 h-3" />
-                {isRTL ? "تعديل" : "Edit"}
-              </button>
-            </div>
-            <div className="p-4 space-y-2.5">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5" />
-                  {isRTL ? "الاسم" : "Name"}
+          {/* Total + charge hint (Order Summary card removed) */}
+          {!bundleMode && (
+            <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2.5">
+              <div className="flex justify-between font-bold text-base items-baseline gap-2">
+                <span>
+                  {isRTL
+                    ? vatPct > 0
+                      ? "الإجمالي (شامل الضريبة)"
+                      : "الإجمالي"
+                    : vatPct > 0
+                      ? "Total (incl. VAT)"
+                      : "Total"}
                 </span>
-                <span className="font-medium truncate max-w-[200px]">{fullName}</span>
+                <span className="flex items-baseline gap-2">
+                  {promoApplied && originalPrice != null && originalPrice > totalWithVat ? (
+                    <motion.span
+                      key="old-price"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-xs font-medium text-muted-foreground line-through tabular-nums"
+                    >
+                      {formatLocal(originalPrice)}
+                    </motion.span>
+                  ) : null}
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.span
+                      key={`total-${totalWithVat}`}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                      className="text-primary tabular-nums"
+                    >
+                      {totalWithVat} {currencyLabel}
+                    </motion.span>
+                  </AnimatePresence>
+                </span>
               </div>
-              {displayPhone && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5" />
-                    {isRTL ? "الهاتف" : "Phone"}
+
+              {promoApplied && appliedCoupon && (
+                <div className="flex justify-between text-xs text-primary">
+                  <span>
+                    {isRTL ? "الخصم المطبّق" : "Discount applied"} ({discountLabel})
                   </span>
-                  <span className="font-medium font-mono" dir="ltr">
-                    {displayPhone}
-                  </span>
+                  <span>-{formatLocal(discountAmount)}</span>
                 </div>
               )}
-              {(effectiveCity || effectiveCountry) && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" />
-                    {isRTL ? "العنوان" : "Address"}
-                  </span>
-                  <span className="font-medium truncate max-w-[200px]">
-                    {[displayCity, displayCountry].filter(Boolean).join(", ")}
-                  </span>
-                </div>
-              )}
-              {!bundleMode && (
-                <>
-                  <Separator className="my-1" />
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{isRTL ? "الدورة" : "Course"}</span>
-                    <span className="font-medium truncate max-w-[200px]">
-                      {isRTL && courseTitleAr ? courseTitleAr : courseTitle}
-                    </span>
-                  </div>
-                  {promoApplied && appliedCoupon && (
-                    <div className="flex justify-between text-sm text-primary">
-                      <span>
-                        {isRTL ? "الخصم" : "Discount"} ({discountLabel})
+
+              {/* Equivalent amount info — for all non-SAR currencies */}
+              {!isSAR &&
+                exchangeRate > 0 &&
+                (() => {
+                  const TAP_SUPPORTED = ["KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
+                  const isSupported = TAP_SUPPORTED.some((c) => currencyLabel.includes(c));
+                  const sarEquivalent = Math.ceil(totalWithVat / exchangeRate);
+
+                  return (
+                    <div className="flex items-center justify-center gap-1.5 flex-wrap text-center px-2 py-2 rounded-lg bg-muted/40 mt-1">
+                      <span className="text-[12px] text-muted-foreground">
+                        {isRTL ? "سيتم خصم" : "You will be charged"}
                       </span>
-                      <span>-{formatLocal(discountAmount)}</span>
+                      <span className="text-[12px] font-bold text-primary flex items-center gap-1">
+                        {isSupported ? `${totalWithVat} ${currencyLabel}` : `${totalWithVat} ${currencyLabel}`}
+                      </span>
+                      <span className="text-[12px] text-muted-foreground">
+                        {isRTL ? " أي ما يعادل" : "equivalent to"}
+                      </span>
+                      <span className="text-[12px] font-bold text-foreground">
+                        {sarEquivalent}
+                        <span>{" SAR "}</span>
+                      </span>
                     </div>
-                  )}
-                  <Separator className="my-1" />
-                  <div className="flex justify-between font-bold text-base items-baseline gap-2">
-                    <span>
-                      {isRTL
-                        ? vatPct > 0
-                          ? "الإجمالي (شامل الضريبة)"
-                          : "الإجمالي"
-                        : vatPct > 0
-                          ? "Total (incl. VAT)"
-                          : "Total"}
-                    </span>
-                    <span className="flex items-baseline gap-2">
-                      {/* Old price strikethrough — only when a discount is applied */}
-                      {promoApplied && originalPrice != null && originalPrice > totalWithVat ? (
-                        <motion.span
-                          key="old-price"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="text-xs font-medium text-muted-foreground line-through tabular-nums"
-                        >
-                          {formatLocal(originalPrice)}
-                        </motion.span>
-                      ) : null}
-                      {/* New total — animated transition between old & new amounts */}
-                      <AnimatePresence mode="popLayout" initial={false}>
-                        <motion.span
-                          key={`total-${totalWithVat}`}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -8 }}
-                          transition={{ duration: 0.3, ease: "easeOut" }}
-                          className="text-primary tabular-nums"
-                        >
-                          {totalWithVat} {currencyLabel}
-                        </motion.span>
-                      </AnimatePresence>
-                    </span>
-                  </div>
+                  );
+                })()}
 
-                  {/* Equivalent amount info — for all non-SAR currencies */}
-                  {!isSAR &&
-                    exchangeRate > 0 &&
-                    (() => {
-                      const TAP_SUPPORTED = ["KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
-                      const isSupported = TAP_SUPPORTED.some((c) => currencyLabel.includes(c));
-                      const sarEquivalent = Math.ceil(totalWithVat / exchangeRate);
-
-                      return (
-                        <div className="flex items-center justify-center gap-1.5 flex-wrap text-center px-2 py-2 rounded-lg bg-muted/40 mt-1">
-                          <span className="text-[12px] text-muted-foreground">
-                            {isRTL ? "سيتم خصم" : "You will be charged"}
-                          </span>
-                          <span className="text-[12px] font-bold text-primary flex items-center gap-1">
-                            {isSupported ? `${totalWithVat} ${currencyLabel}` : `${totalWithVat} ${currencyLabel}`}
-                          </span>
-                          <span className="text-[12px] text-muted-foreground">
-                            {isRTL ? " أي ما يعادل" : "equivalent to"}
-                          </span>
-                          <span className="text-[12px] font-bold text-foreground">
-                            {sarEquivalent}
-                            <span>{" SAR "}</span>
-                          </span>
-                        </div>
-                      );
-                    })()}
-
-                  {vatPct > 0 && (
-                    <div className="pt-2 border-t border-border/50">
-                      <p className="text-[11px] text-muted-foreground text-center">
-                        {isRTL ? "الرقم الضريبي" : "VAT Number"}:{" "}
-                        <span className="font-mono font-medium text-foreground/70">311508395300003</span>
-                      </p>
-                    </div>
-                  )}
-                </>
+              {vatPct > 0 && (
+                <div className="pt-2 border-t border-border/50">
+                  <p className="text-[11px] text-muted-foreground text-center">
+                    {isRTL ? "الرقم الضريبي" : "VAT Number"}:{" "}
+                    <span className="font-mono font-medium text-foreground/70">311508395300003</span>
+                  </p>
+                </div>
               )}
             </div>
-          </div>
+          )}
 
           {billingIncomplete && paymentStatus === "idle" && (
             <Alert variant="destructive" className="text-start">
