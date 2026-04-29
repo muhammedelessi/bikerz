@@ -296,6 +296,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     const courseDisplayName = isRTL && course.title_ar ? course.title_ar : course.title;
 
+    // Tokenize the card client-side first so the secret-key backend only ever
+    // sees a tok_xxx — raw card details never leave Tap's iframe.
+    let tokenId: string | undefined;
+    if (cardApiRef.current) {
+      try {
+        setTokenizing(true);
+        tokenId = await cardApiRef.current.tokenize();
+      } catch (err: any) {
+        setTokenizing(false);
+        toast.error(err?.message || (isRTL ? "تعذّر التحقق من بيانات البطاقة" : "Could not validate card details"));
+        return;
+      } finally {
+        setTokenizing(false);
+      }
+    }
+
     await tap.submitPayment({
       courseId: course.id,
       currency: paymentCurrency,
@@ -311,6 +327,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       amount: paymentAmount,
       courseName: courseDisplayName,
       isRTL,
+      tokenId,
     });
   }, [
     user,
