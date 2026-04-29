@@ -95,6 +95,12 @@ const ResponsiveCheckoutShell: React.FC<ResponsiveCheckoutShellProps> = ({
           className || "",
         ].join(" ")}
         onOpenAutoFocus={(e) => e.preventDefault()}
+        // When no description is provided, explicitly opt out of
+        // aria-describedby to silence Radix's runtime warning. When a
+        // description IS provided, omit this prop so Radix's internal
+        // context-based wiring takes over and points to the rendered
+        // <DialogDescription> below.
+        {...(a11yDescription ? {} : { "aria-describedby": undefined })}
       >
         {/* Required for Radix Dialog accessibility — without a Title in the
             tree, modern Radix versions throw and the dialog never renders. */}
