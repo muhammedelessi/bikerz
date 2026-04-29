@@ -74,8 +74,7 @@ interface CheckoutPaymentStepProps {
   bundleMode?: boolean;
   /** Lifted state: whether the promo input panel is open. Controlled by the parent modal so the footer can swap Pay → Apply. */
   promoOpen?: boolean;
-  onPromoOpenChange?: (open: boolean) => void;
-}
+  onPromoO
 
 const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
   ({
