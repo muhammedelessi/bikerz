@@ -323,6 +323,9 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
             </AnimatePresence>
           )}
 
+          {/* Embedded card form rendered directly under the discount/promo section */}
+          {cardFormSlot}
+
           {/* Total + charge hint (Order Summary card removed) */}
           {!bundleMode && (
             <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2.5">
