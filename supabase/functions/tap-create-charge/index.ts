@@ -1048,6 +1048,40 @@ function stripEmptyTapValues(value: unknown): unknown {
   return value;
 }
 
+/** Maps common free-text country names (EN/AR) to ISO-2 codes for libphonenumber region hints. */
+const COUNTRY_NAME_TO_ISO: Record<string, string> = {
+  "saudi arabia": "SA", "ksa": "SA", "السعودية": "SA", "المملكة العربية السعودية": "SA",
+  "uae": "AE", "united arab emirates": "AE", "الإمارات": "AE",
+  "kuwait": "KW", "الكويت": "KW",
+  "bahrain": "BH", "البحرين": "BH",
+  "qatar": "QA", "قطر": "QA",
+  "oman": "OM", "عُمان": "OM", "عمان": "OM",
+  "egypt": "EG", "مصر": "EG",
+  "jordan": "JO", "الأردن": "JO",
+  "iraq": "IQ", "العراق": "IQ",
+  "lebanon": "LB", "لبنان": "LB",
+  "palestine": "PS", "فلسطين": "PS", "state of palestine": "PS",
+  "yemen": "YE", "اليمن": "YE",
+  "syria": "SY", "سوريا": "SY",
+  "morocco": "MA", "المغرب": "MA",
+  "algeria": "DZ", "الجزائر": "DZ",
+  "tunisia": "TN", "تونس": "TN",
+  "libya": "LY", "ليبيا": "LY",
+  "sudan": "SD", "السودان": "SD",
+  "turkey": "TR", "تركيا": "TR",
+  "united states": "US", "usa": "US", "us": "US",
+  "united kingdom": "GB", "uk": "GB",
+};
+
+/** Common phone-prefix → ISO-2 (used when the number itself starts with a known country calling code). */
+const PREFIX_TO_ISO: Array<[string, string]> = [
+  ["966", "SA"], ["971", "AE"], ["965", "KW"], ["973", "BH"], ["974", "QA"],
+  ["968", "OM"], ["962", "JO"], ["20", "EG"], ["964", "IQ"], ["961", "LB"],
+  ["970", "PS"], ["972", "PS"], ["967", "YE"], ["963", "SY"], ["212", "MA"],
+  ["213", "DZ"], ["216", "TN"], ["218", "LY"], ["249", "SD"], ["90", "TR"],
+  ["1", "US"], ["44", "GB"],
+];
+
 /** Tap expects `country_code` + national `number` (no leading 0). Uses `profileCountry` hint when ISO-2. */
 function resolveTapPhone(
   rawInput: unknown,
@@ -1057,22 +1091,46 @@ function resolveTapPhone(
   if (!raw) return undefined;
 
   const countryStr = trimStr(profileCountry);
-  const defaultRegion = /^[A-Z]{2}$/i.test(countryStr) ? countryStr.toUpperCase() : "SA";
+  const isoFromCountry = /^[A-Z]{2}$/i.test(countryStr)
+    ? countryStr.toUpperCase()
+    : COUNTRY_NAME_TO_ISO[countryStr.toLowerCase()] || "";
+  const defaultRegion = isoFromCountry || "SA";
+
+  const digits = raw.replace(/\D/g, "");
+  const startsWithPlus = raw.trim().startsWith("+");
 
   const attempts: Array<{ input: string; region?: string }> = [
     { input: raw, region: defaultRegion },
-    { input: raw, region: "SA" },
   ];
+  if (defaultRegion !== "SA") attempts.push({ input: raw, region: "SA" });
 
-  const digits = raw.replace(/\D/g, "");
-  if (!raw.trim().startsWith("+") && digits.length >= 10) {
+  // If the input has no +, try prepending it (covers digits-only inputs that already include the country code).
+  if (!startsWithPlus && digits.length >= 8) {
     attempts.push({ input: `+${digits}` });
   }
-  if (!raw.includes("+") && digits.length === 10 && digits.startsWith("05")) {
+
+  // If the input has no + and starts with a known country calling code, try that region explicitly.
+  if (!startsWithPlus && digits.length >= 8) {
+    for (const [pfx, iso] of PREFIX_TO_ISO) {
+      if (digits.startsWith(pfx) && digits.length >= pfx.length + 7) {
+        attempts.push({ input: `+${digits}`, region: iso });
+        // Also try the national portion (without the calling-code prefix) parsed under that region.
+        attempts.push({ input: digits.slice(pfx.length), region: iso });
+      }
+    }
+  }
+
+  // Saudi-specific local-format fallbacks (legacy behavior).
+  if (!startsWithPlus && digits.length === 10 && digits.startsWith("05")) {
     attempts.push({ input: `+966${digits.slice(1)}` });
   }
-  if (!raw.includes("+") && digits.length === 9 && digits.startsWith("5")) {
+  if (!startsWithPlus && digits.length === 9 && digits.startsWith("5")) {
     attempts.push({ input: `+966${digits}` });
+  }
+
+  // Last-ditch: try parsing with the resolved region but stripping any leading 0.
+  if (!startsWithPlus && digits.startsWith("0")) {
+    attempts.push({ input: digits.replace(/^0+/, ""), region: defaultRegion });
   }
 
   for (const { input, region } of attempts) {
@@ -1081,6 +1139,17 @@ function resolveTapPhone(
       : parsePhoneNumberFromString(input);
     if (p?.isValid()) {
       return { country_code: String(p.countryCallingCode), number: String(p.nationalNumber) };
+    }
+  }
+
+  // Soft fallback: if we have a clearly-formatted "+<cc><national>" but libphonenumber's strict
+  // validation rejects it (rare regional edge cases), still pass it through to Tap so the user
+  // isn't blocked. Tap will perform its own validation and surface a precise error if needed.
+  if (startsWithPlus && digits.length >= 8) {
+    for (const [pfx] of PREFIX_TO_ISO) {
+      if (digits.startsWith(pfx) && digits.length >= pfx.length + 7) {
+        return { country_code: pfx, number: digits.slice(pfx.length) };
+      }
     }
   }
 
