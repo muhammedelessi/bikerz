@@ -13,7 +13,7 @@
  *   without leaking SDK state into them.
  */
 import React, { useMemo } from "react";
-import { Loader2, Lock, Shield, ShieldCheck, AlertTriangle, CreditCard } from "lucide-react";
+import { Loader2, Lock, ShieldCheck, AlertTriangle, CreditCard } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useTheme } from "@/components/ThemeProvider";
 import { useTapCardSdk } from "@/hooks/checkout/useTapCardSdk";
@@ -185,22 +185,6 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
         </Alert>
       )}
 
-      {/* Trust badges — branded chips */}
-      <div className="flex flex-col items-center gap-2 pt-1">
-        <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <Lock className="w-3.5 h-3.5 text-primary" />
-          <span>{isRTL ? "مُؤمَّن بواسطة Tap Payments" : "Secured by Tap Payments"}</span>
-        </div>
-        <div className="flex flex-wrap items-center justify-center gap-2 text-[10px]">
-          <span className="rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 font-bold tracking-wider text-primary">VISA</span>
-          <span className="rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 font-bold tracking-wider text-primary">MC</span>
-          <span className="rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 font-bold tracking-wider text-primary">MADA</span>
-          <span className="inline-flex items-center gap-1 rounded-md border border-[#C6BFAA]/40 bg-[#C6BFAA]/15 px-2 py-0.5 font-semibold text-muted-foreground">
-            <Shield className="w-3 h-3" />
-            3D Secure
-          </span>
-        </div>
-      </div>
     </div>
   );
 };
