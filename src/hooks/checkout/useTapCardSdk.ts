@@ -133,36 +133,22 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
         }
         container.innerHTML = "";
 
-        const setValidityFromPayload = (payload: unknown, fallback?: boolean) => {
-          if (cancelled) return;
-          if (typeof payload === "boolean") {
-            setCardValid(payload);
-            return;
+        const readBooleanFromPayload = (payload: unknown): boolean | undefined => {
+          if (typeof payload === "boolean") return payload;
+          if (!payload || typeof payload !== "object") return undefined;
+
+          const record = payload as Record<string, unknown>;
+          const nestedCandidates = [record, record.data, record.payload]
+            .filter((value): value is Record<string, unknown> => !!value && typeof value === "object");
+
+          for (const candidate of nestedCandidates) {
+            if (typeof candidate.valid === "boolean") return candidate.valid;
+            if (typeof candidate.isValid === "boolean") return candidate.isValid;
+            if (typeof candidate.invalid === "boolean") return !candidate.invalid;
+            if (typeof candidate.isInvalid === "boolean") return !candidate.isInvalid;
           }
-          if (payload && typeof payload === "object") {
-            const record = payload as Record<string, unknown>;
-            const nestedCandidates = [record, record.data, record.payload]
-              .filter((value): value is Record<string, unknown> => !!value && typeof value === "object");
-            for (const candidate of nestedCandidates) {
-              if (typeof candidate.valid === "boolean") {
-                setCardValid(candidate.valid);
-                return;
-              }
-              if (typeof candidate.isValid === "boolean") {
-                setCardValid(candidate.isValid);
-                return;
-              }
-              if (typeof candidate.invalid === "boolean") {
-                setCardValid(!candidate.invalid);
-                return;
-              }
-              if (typeof candidate.isInvalid === "boolean") {
-                setCardValid(!candidate.isInvalid);
-                return;
-              }
-            }
-          }
-          if (typeof fallback === "boolean") setCardValid(fallback);
+
+          return undefined;
         };
 
         const fullConfig = {
@@ -172,16 +158,20 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
             if (!cancelled) setSdkReady(true);
           },
           onValidInput: (data: unknown) => {
-            setValidityFromPayload(data, true);
+            const next = readBooleanFromPayload(data);
+            if (!cancelled && typeof next === "boolean") setCardValid(next);
           },
           onValidInputChange: (data: unknown) => {
-            setValidityFromPayload(data, true);
+            const next = readBooleanFromPayload(data);
+            if (!cancelled && typeof next === "boolean") setCardValid(next);
           },
           onInvalidInput: (data: unknown) => {
-            setValidityFromPayload(data, false);
+            const next = readBooleanFromPayload(data);
+            if (!cancelled && typeof next === "boolean") setCardValid(!next);
           },
           onInvalidInputChange: (data: unknown) => {
-            setValidityFromPayload(data, false);
+            const next = readBooleanFromPayload(data);
+            if (!cancelled && typeof next === "boolean") setCardValid(!next);
           },
           onError: (err) => {
             if (cancelled) return;
@@ -245,52 +235,7 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
     };
   }, [enabled, containerId, reinitNonce]);
 
-  // Reliable validity detection via postMessage from the Tap iframe.
-  // Some SDK builds don't reliably fire onValidInput/onInvalidInput callbacks,
-  // so we observe iframe messages directly. The iframe broadcasts messages
-  // whose payload includes a boolean `valid`/`isValid` field as the user types.
-  useEffect(() => {
-    if (!enabled) return;
 
-    const handler = (event: MessageEvent) => {
-      try {
-        const origin = event.origin || "";
-        // Only trust messages from Tap-owned iframes.
-        if (!/(^https?:\/\/[^/]*tap\.company)|(tap-sdks\.b-cdn\.net)/i.test(origin)) return;
-
-        const data = event.data;
-        if (!data || typeof data !== "object") return;
-
-        const payload = data as Record<string, unknown>;
-        const objects = [payload, payload.data, payload.payload]
-          .filter((value): value is Record<string, unknown> => !!value && typeof value === "object");
-
-        for (const candidate of objects) {
-          if (typeof candidate.valid === "boolean") {
-            setCardValid(candidate.valid);
-            return;
-          }
-          if (typeof candidate.isValid === "boolean") {
-            setCardValid(candidate.isValid);
-            return;
-          }
-          if (typeof candidate.invalid === "boolean") {
-            setCardValid(!candidate.invalid);
-            return;
-          }
-          if (typeof candidate.isInvalid === "boolean") {
-            setCardValid(!candidate.isInvalid);
-            return;
-          }
-        }
-      } catch {
-        /* ignore malformed messages */
-      }
-    };
-
-    window.addEventListener("message", handler);
-    return () => window.removeEventListener("message", handler);
-  }, [enabled]);
 
   const tokenize = useCallback((): Promise<string> => {
     return new Promise((resolve, reject) => {
