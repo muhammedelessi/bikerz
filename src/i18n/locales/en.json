@@ -1041,6 +1041,8 @@
       "countryRequired": "Country is required"
     },
     "statusOverlay": {
+      "processingPayment": "Processing payment...",
+      "doNotClosePage": "Please do not close this window",
       "verifyingPayment": "Verifying payment...",
       "pleaseWaitMoment": "Please wait a moment",
       "paymentSuccessful": "🎉 Payment Successful!",

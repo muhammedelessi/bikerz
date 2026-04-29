@@ -1037,6 +1037,8 @@
       "countryRequired": "الدولة مطلوبة"
     },
     "statusOverlay": {
+      "processingPayment": "جاري معالجة الدفع...",
+      "doNotClosePage": "يرجى عدم إغلاق هذه النافذة",
       "verifyingPayment": "جاري التحقق من الدفع...",
       "pleaseWaitMoment": "يرجى الانتظار لحظة",
       "paymentSuccessful": "🎉 تم الدفع بنجاح!",

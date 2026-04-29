@@ -30,19 +30,29 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
   const { t } = useTranslation();
   const localizedPaymentError = paymentError ? translateTapPaymentDisplayError(paymentError, t) : null;
 
-  if (paymentStatus === 'verifying') {
+  if (paymentStatus === 'processing' || paymentStatus === 'verifying') {
+    const titleKey =
+      paymentStatus === 'processing'
+        ? 'checkout.statusOverlay.processingPayment'
+        : 'checkout.statusOverlay.verifyingPayment';
+    const subKey =
+      paymentStatus === 'processing'
+        ? 'checkout.statusOverlay.doNotClosePage'
+        : 'checkout.statusOverlay.pleaseWaitMoment';
     return (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="flex flex-col items-center justify-center py-12 text-center"
+        role="status"
+        aria-live="polite"
       >
         <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
         <h4 className="text-lg font-bold text-foreground mb-1">
-          {t('checkout.statusOverlay.verifyingPayment')}
+          {t(titleKey)}
         </h4>
         <p className="text-sm text-muted-foreground">
-          {t('checkout.statusOverlay.pleaseWaitMoment')}
+          {t(subKey)}
         </p>
       </motion.div>
     );
