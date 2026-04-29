@@ -20,6 +20,7 @@ import CheckoutPaymentStep from "@/components/checkout/CheckoutPaymentStep";
 import CheckoutStatusOverlay from "@/components/checkout/CheckoutStatusOverlay";
 import CheckoutStepIndicator from "@/components/checkout/CheckoutStepIndicator";
 import EmbeddedCardForm from "@/components/checkout/EmbeddedCardForm";
+import Checkout3DSModal from "@/components/checkout/Checkout3DSModal";
 import type { CheckoutCourse } from "@/types/payment";
 import { navigateToSignup } from "@/lib/authReturnUrl";
 import { recordCheckoutPaymentPageVisit } from "@/services/checkoutVisitAnalytics";
