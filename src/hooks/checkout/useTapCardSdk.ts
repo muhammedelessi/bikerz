@@ -175,6 +175,14 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
 
         const inst = window.CardSDK.renderTapCard(containerId, fullConfig);
         instanceRef.current = inst ?? null;
+
+        // Fallback: some SDK builds don't fire onReady reliably. The iframe
+        // shows its own skeleton while loading, so once renderTapCard returns
+        // successfully we treat the form as ready after a short grace period
+        // so the user isn't stuck on "Loading payment form…".
+        setTimeout(() => {
+          if (!cancelled) setSdkReady(true);
+        }, 1200);
       } catch (err) {
         if (cancelled) return;
         setSdkError(err instanceof Error ? err.message : "Could not load secure card form");
