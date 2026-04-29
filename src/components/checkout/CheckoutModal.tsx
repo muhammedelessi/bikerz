@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Loader2, CreditCard } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, CreditCard, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -58,9 +59,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Default to "info" — for returning customers with a complete profile, the
   // open-effect below auto-advances to "payment" right after prefillAndAutoAdvance().
   const [step, setStep] = useState<"info" | "payment">("info");
-  /** True once we've evaluated the profile completeness on open. Hides Step 1 indicator
-   *  when the user was auto-skipped past it. */
-  const [autoSkippedInfo, setAutoSkippedInfo] = useState(false);
   /** Tokenize handle wired up from the embedded card form. */
   const cardApiRef = useRef<{ tokenize: () => Promise<string> } | null>(null);
   const [cardSdkStatus, setCardSdkStatus] = useState<{
@@ -142,24 +140,20 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   useEffect(() => {
     if (!open) {
       setStep("info");
-      setAutoSkippedInfo(false);
       promo.resetPromo();
       tap.reset();
       form.resetForm();
       return;
     }
     if (user) {
-      // prefillAndAutoAdvance() returns true when the profile already has full name +
-      // billing — in that case skip Step 1 to preserve the conversion-friendly flow.
-      void form.prefillAndAutoAdvance().then((complete) => {
-        if (complete) {
-          setStep("payment");
-          setAutoSkippedInfo(true);
-        } else {
-          setStep("info");
-          setAutoSkippedInfo(false);
-        }
-      });
+      // ALWAYS show Step 1 first — even when the profile is already complete.
+      // Reasoning: users want to confirm their billing details before paying;
+      // it builds trust ("I see exactly what's being submitted") and lets
+      // them tweak the phone or address inline without going back later.
+      // The fields are silently prefilled, so it's a one-click confirm —
+      // not a re-typing chore.
+      void form.prefillAndAutoAdvance();
+      setStep("info");
     }
   }, [open, user]);
 
@@ -488,7 +482,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           {/* Step 1 / Step 2 indicator (hidden when the user was auto-skipped past Step 1) */}
           <div className="mt-3">
-            <CheckoutStepIndicator currentStep={step} isRTL={isRTL} hideInfoStep={autoSkippedInfo} />
+            <CheckoutStepIndicator currentStep={step} isRTL={isRTL} />
           </div>
 
           {/* Course info */}
@@ -529,25 +523,55 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </div>
         </div>
 
-        {/* Pinned Back-to-Step-1 bar — sits between header and scrollable content on Step 2,
-            so it stays visible while card details / promo code scroll beneath it. */}
-        {step === "payment" && !autoSkippedInfo && (
-          <div className="px-4 sm:px-5 py-2.5 bg-muted/30 border-b border-border flex-shrink-0">
+        {/* Step-2 status bar: shows a one-line summary of who is paying +
+            an inline edit shortcut. Replaces the prior plain "Back" button —
+            now the user sees their confirmed details (name, email) front and
+            center, which builds trust ("yes, that's me, going to charge that
+            card") and gives a single click to edit. The bar is sticky between
+            header and scrollable content. */}
+        {step === "payment" && (
+          <div className="px-4 sm:px-5 py-2.5 bg-muted/30 border-b border-border flex-shrink-0 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Check className="w-3.5 h-3.5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] text-muted-foreground leading-tight">
+                  {isRTL ? "بيانات الفاتورة" : "Billing details"}
+                </p>
+                <p className="text-xs font-semibold text-foreground truncate" dir="auto">
+                  {form.fullName || (isRTL ? "—" : "—")}
+                </p>
+              </div>
+            </div>
             <button
               type="button"
               onClick={() => setStep("info")}
-              className="inline-flex items-center gap-2 h-10 px-3.5 rounded-lg border-2 border-border bg-background text-sm font-semibold text-foreground hover:bg-muted hover:border-primary/40 active:scale-[0.98] transition-all shadow-sm min-h-[40px]"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-border bg-background text-xs font-semibold text-foreground hover:bg-muted hover:border-primary/40 active:scale-[0.98] transition-all min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label={isRTL ? "رجوع للخطوة الأولى لتعديل البيانات" : "Back to step 1 to edit info"}
             >
-              <BackArrowIcon className="w-4 h-4" />
-              <span>{isRTL ? "رجوع لتعديل البيانات" : "Back to edit info"}</span>
+              <BackArrowIcon className="w-3.5 h-3.5" />
+              <span>{isRTL ? "تعديل" : "Edit"}</span>
             </button>
           </div>
         )}
 
-        {/* Content */}
-        <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0">
-          {step === "info" ? (
+        {/* Content — animated step transitions.
+            • info → payment : slide in from the leading edge (right in LTR, left in RTL)
+            • payment → info : slide in from the trailing edge
+            mode="wait" ensures the outgoing step finishes before the incoming
+            one mounts, so the embedded card SDK iframe never overlaps the
+            previous step during the transition. */}
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0 relative">
+          <AnimatePresence mode="wait" initial={false}>
+            {step === "info" ? (
+              <motion.div
+                key="step-info"
+                initial={{ opacity: 0, x: isRTL ? -24 : 24 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: isRTL ? 24 : -24 }}
+                transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+              >
               <CheckoutInfoStep
                 key="info"
                 isRTL={isRTL}
@@ -580,7 +604,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 errors={form.errors}
                 setErrors={form.setErrors}
               />
+              </motion.div>
             ) : (
+              <motion.div
+                key="step-payment"
+                initial={{ opacity: 0, x: isRTL ? -24 : 24 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: isRTL ? 24 : -24 }}
+                transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+              >
               <CheckoutPaymentStep
                 key="payment"
                 isRTL={isRTL}
@@ -656,7 +688,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   ) : null
                 }
               />
+              </motion.div>
             )}
+          </AnimatePresence>
         </div>
 
 
@@ -676,13 +710,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           <div className="flex gap-2">
           {step === "info" ? (
             <Button
-              className="flex-1 btn-cta"
+              className="flex-1 h-11 rounded-xl text-sm font-bold btn-cta"
               onClick={handleNextStep}
               disabled={form.profileSaving || !form.isInfoValid}
             >
-              {form.profileSaving && <Loader2 className="w-4 h-4 animate-spin me-2" />}
-              {isRTL ? "التالي" : "Next"}
-              <ArrowIcon className="w-4 h-4 ms-2" />
+              {form.profileSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin me-2" />
+                  {isRTL ? "جاري الحفظ..." : "Saving..."}
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-4 h-4 me-2" />
+                  {isRTL ? "الذهاب للدفع" : "Continue to payment"}
+                  <ArrowIcon className="w-4 h-4 ms-2" />
+                </>
+              )}
             </Button>
           ) : promoOpen && !promo.promoApplied ? (
             /*
