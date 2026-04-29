@@ -134,6 +134,54 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
     onApiReady({ tokenize });
   }, [tokenize, onApiReady]);
 
+  // ---- Apple Pay (only renders on supported Safari/Apple devices) ----
+  const applePayConfig = useMemo(
+    () => ({
+      transaction: { amount, currency },
+      customer: {
+        name: [
+          {
+            lang: (isRTL ? "AR" : "EN") as "EN" | "AR",
+            first: firstName || customerName || "Customer",
+            last: lastName || "",
+          },
+        ],
+        contact: {
+          email: customerEmail,
+          phone:
+            customerPhoneCountryCode && customerPhoneNumber
+              ? { countryCode: customerPhoneCountryCode, number: customerPhoneNumber }
+              : undefined,
+        },
+      },
+      acceptance: {
+        supportedBrands: ["VISA", "MASTERCARD", "MADA", "AMERICAN_EXPRESS"],
+        supportedCards: "ALL" as const,
+      },
+      interface: {
+        locale: (isRTL ? "AR" : "EN") as "EN" | "AR",
+        theme: (theme === "dark" ? "DARK" : "LIGHT") as "DARK" | "LIGHT",
+        type: "buy" as const,
+        edges: "CURVED" as const,
+      },
+    }),
+    [amount, currency, firstName, lastName, customerName, customerEmail, customerPhoneCountryCode, customerPhoneNumber, isRTL, theme],
+  );
+
+  const handleApplePayToken = useCallback(
+    (tokenId: string) => {
+      onApplePayToken?.(tokenId);
+    },
+    [onApplePayToken],
+  );
+
+  const { available: applePayAvailable } = useTapApplePaySdk({
+    containerId: APPLE_PAY_CONTAINER_ID,
+    enabled: active && !!onApplePayToken,
+    config: applePayConfig,
+    onToken: handleApplePayToken,
+  });
+
   if (!active) return null;
 
   return (
