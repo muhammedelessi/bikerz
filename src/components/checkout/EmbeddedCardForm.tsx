@@ -42,6 +42,11 @@ interface EmbeddedCardFormProps {
   onApiReady: (api: { tokenize: () => Promise<string> }) => void;
   /** Live status the parent uses to enable/disable its Pay button + show messaging. */
   onStatusChange: (status: { sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null }) => void;
+  /**
+   * Fired when the user completes Apple Pay. The parent should treat this as a
+   * pre-tokenized payment and skip the regular tokenize() + Pay Now footer flow.
+   */
+  onApplePayToken?: (tokenId: string) => void;
 }
 
 const CONTAINER_ID = "tap-card-sdk-container";
