@@ -186,6 +186,16 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
 
   return (
     <div className="space-y-3">
+      {/* Apple Pay — auto-hidden on non-Apple/non-Safari devices via the SDK's capability check */}
+      <div className={applePayAvailable ? "space-y-3" : "hidden"}>
+        <div id={APPLE_PAY_CONTAINER_ID} className="min-h-[44px] [&>*]:!w-full" />
+        <div className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          <span className="h-px flex-1 bg-border" />
+          <span>{isRTL ? "أو ادفع بالبطاقة" : "Or pay with card"}</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+      </div>
+
       {/* Branded card frame: sand-tinted background, primary header strip, primary border on valid */}
       <div
         className={[
