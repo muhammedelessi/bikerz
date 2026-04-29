@@ -87,7 +87,30 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const tapSecretKey = Deno.env.get("TAP_SECRET_KEY");
+
+    // Origin-based key switching: requests from preview/dev environments use
+    // the Tap TEST secret key (so they can charge tok_test_… tokens issued by
+    // the test publishable key returned from tap-config). Production uses live.
+    // Must match the logic in supabase/functions/tap-config/index.ts.
+    const reqOrigin = req.headers.get("origin") || req.headers.get("referer");
+    let isPreviewEnv = false;
+    try {
+      if (reqOrigin) {
+        const host = new URL(reqOrigin).hostname.toLowerCase();
+        isPreviewEnv =
+          host === "localhost" ||
+          host === "127.0.0.1" ||
+          host.endsWith(".lovableproject.com") ||
+          host.endsWith(".lovable.app") ||
+          host.endsWith(".lovable.dev");
+      }
+    } catch {
+      isPreviewEnv = false;
+    }
+
+    const liveSecret = Deno.env.get("TAP_SECRET_KEY");
+    const testSecret = Deno.env.get("TAP_SECRET_TEST_KEY");
+    const tapSecretKey = isPreviewEnv ? (testSecret || liveSecret) : liveSecret;
 
     if (!tapSecretKey) {
       return new Response(
@@ -97,12 +120,15 @@ Deno.serve(async (req) => {
     }
 
     if (tapSecretKey.startsWith("pk_")) {
-      console.error("TAP_SECRET_KEY contains a publishable key instead of secret key");
+      console.error("TAP secret key slot contains a publishable key instead of secret key");
       return new Response(
         JSON.stringify({ error: "Payment service misconfigured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log(`[tap-create-charge] mode=${isPreviewEnv ? "TEST" : "LIVE"} origin=${reqOrigin || "(none)"}`);
+
 
     // Verify user
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
