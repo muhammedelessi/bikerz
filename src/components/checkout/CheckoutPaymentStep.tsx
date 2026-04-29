@@ -133,6 +133,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     bundleMode = false,
     promoOpen: promoOpenProp,
     onPromoOpenChange,
+    cardFormSlot,
   }) => {
     const { t } = useTranslation();
     const [editOpen, setEditOpen] = useState(false);
