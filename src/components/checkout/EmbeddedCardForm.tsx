@@ -63,6 +63,7 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
   customerPhoneNumber,
   onApiReady,
   onStatusChange,
+  onApplePayToken,
 }) => {
   const { theme } = useTheme();
 
