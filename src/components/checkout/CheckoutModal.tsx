@@ -212,7 +212,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setStep("payment");
   }, [form]);
 
-  const handleSubmitPayment = useCallback(async () => {
+  const handleSubmitPayment = useCallback(async (preTokenizedTokenId?: string) => {
     if (!user) {
       navigateToSignup(navigate);
       return;
