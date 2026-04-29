@@ -540,6 +540,19 @@ const Navbar: React.FC = () => {
                       {profile?.full_name || t("nav.dashboard")}
                     </Button>
                   </Link>
+                  <Link
+                    to="/dashboard/apply-trainer"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block"
+                  >
+                    <Button
+                      variant="outline"
+                      className="w-full h-12 justify-start text-start text-base gap-3 border-primary/30 text-primary hover:bg-primary/10"
+                    >
+                      <Award className="w-5 h-5" aria-hidden />
+                      <span className="font-semibold">{t("nav.applyTrainer")}</span>
+                    </Button>
+                  </Link>
                   <LogoutConfirmDialog onConfirm={handleSignOut}>
                     <Button
                       variant="ghost"
