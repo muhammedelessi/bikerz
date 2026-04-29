@@ -49,6 +49,8 @@ export interface TapCardConfig {
     theme?: TapCardTheme;
     edges?: TapCardEdges;
     direction?: TapCardDirection;
+    /** Hex color used for the active border, focus rings, and brand accents. */
+    colorStyle?: string;
   };
   onReady?: () => void;
   onFocus?: () => void;
