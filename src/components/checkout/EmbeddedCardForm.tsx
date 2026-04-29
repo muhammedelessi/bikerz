@@ -130,33 +130,52 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
 
   return (
     <div className="space-y-3">
-      {/* Iframe container — the SDK injects its own UI here. The border turns primary when card is valid. */}
+      {/* Branded card frame: sand-tinted background, primary header strip, primary border on valid */}
       <div
         className={[
-          "relative rounded-xl border-2 bg-card transition-colors",
-          cardValid ? "border-primary" : "border-border",
+          "relative overflow-hidden rounded-2xl border-2 transition-all duration-300",
+          "bg-[#C6BFAA]/15 dark:bg-[#C6BFAA]/5",
+          cardValid
+            ? "border-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.12)]"
+            : "border-[#C6BFAA]/60 dark:border-[#C6BFAA]/20",
         ].join(" ")}
       >
-        {/* Skeleton overlay while the SDK initializes. */}
-        {(sdkLoading || (!sdkReady && !sdkError)) && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-[10px] bg-muted/60 backdrop-blur-sm">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            <p className="text-xs text-muted-foreground">
-              {isRTL ? "جارٍ تحميل نموذج الدفع الآمن…" : "Loading secure payment form…"}
-            </p>
+        {/* Branded header */}
+        <div className="flex items-center justify-between gap-2 bg-primary px-4 py-2.5 text-primary-foreground">
+          <div className="flex items-center gap-2">
+            <CreditCard className="w-4 h-4" />
+            <span className="text-sm font-semibold tracking-wide">
+              {isRTL ? "بيانات البطاقة" : "Card Details"}
+            </span>
           </div>
-        )}
-
-        <div id={CONTAINER_ID} className="min-h-[280px] p-2" />
-
-        {cardValid && (
-          <div className="px-3 pb-2 -mt-1">
-            <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              {isRTL ? "بيانات البطاقة مكتملة ✓" : "Card details complete ✓"}
-            </p>
+          <div className="flex items-center gap-1.5 text-[11px] font-medium opacity-90">
+            <Lock className="w-3 h-3" />
+            <span>{isRTL ? "تشفير 256-bit" : "256-bit encrypted"}</span>
           </div>
-        )}
+        </div>
+
+        {/* Iframe container — SDK injects its UI here */}
+        <div className="relative bg-card">
+          {(sdkLoading || (!sdkReady && !sdkError)) && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-card/80 backdrop-blur-sm">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <p className="text-xs text-muted-foreground">
+                {isRTL ? "جارٍ تحميل نموذج الدفع الآمن…" : "Loading secure payment form…"}
+              </p>
+            </div>
+          )}
+
+          <div id={CONTAINER_ID} className="min-h-[280px] px-3 py-3" />
+
+          {cardValid && (
+            <div className="border-t border-primary/15 bg-primary/5 px-4 py-2">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                {isRTL ? "بيانات البطاقة مكتملة ✓" : "Card details complete ✓"}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       {sdkError && (
@@ -166,19 +185,20 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
         </Alert>
       )}
 
-      {/* Trust badges */}
-      <div className="flex flex-col items-center gap-1.5 pt-1">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      {/* Trust badges — branded chips */}
+      <div className="flex flex-col items-center gap-2 pt-1">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           <Lock className="w-3.5 h-3.5 text-primary" />
           <span>{isRTL ? "مُؤمَّن بواسطة Tap Payments" : "Secured by Tap Payments"}</span>
         </div>
-        <div className="flex items-center gap-3 text-[10px] text-muted-foreground/70">
-          <span className="rounded bg-muted px-1.5 py-0.5 font-semibold">VISA</span>
-          <span className="rounded bg-muted px-1.5 py-0.5 font-semibold">MC</span>
-          <span className="rounded bg-muted px-1.5 py-0.5 font-semibold">MADA</span>
-          <span className="text-muted-foreground/40">|</span>
-          <Shield className="w-3 h-3" />
-          <span>3D Secure</span>
+        <div className="flex flex-wrap items-center justify-center gap-2 text-[10px]">
+          <span className="rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 font-bold tracking-wider text-primary">VISA</span>
+          <span className="rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 font-bold tracking-wider text-primary">MC</span>
+          <span className="rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 font-bold tracking-wider text-primary">MADA</span>
+          <span className="inline-flex items-center gap-1 rounded-md border border-[#C6BFAA]/40 bg-[#C6BFAA]/15 px-2 py-0.5 font-semibold text-muted-foreground">
+            <Shield className="w-3 h-3" />
+            3D Secure
+          </span>
         </div>
       </div>
     </div>
