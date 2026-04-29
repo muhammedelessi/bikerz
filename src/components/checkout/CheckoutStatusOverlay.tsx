@@ -106,16 +106,14 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
           {t('checkout.statusOverlay.paymentFailed')}
         </h4>
         <p className="mb-4 max-w-md text-sm text-muted-foreground leading-relaxed">
-          {isRTL
-            ? 'لم يتم خصم أي مبلغ من بطاقتك. يمكنك مراجعة السبب أدناه ثم المحاولة مرة أخرى.'
-            : 'No amount was deducted from your card. Please review the reason below and try again.'}
+          {t('checkout.statusOverlay.noDeductionNotice')}
         </p>
         <div
           dir={isRTL ? 'rtl' : 'ltr'}
           className="w-full max-w-md mb-5 rounded-xl border-2 border-destructive/30 bg-destructive/5 p-4 text-start"
         >
           <p className="text-xs font-semibold uppercase tracking-wide text-destructive mb-1">
-            {isRTL ? 'سبب فشل الدفع' : 'Reason for failure'}
+            {t('checkout.statusOverlay.failureReasonLabel')}
           </p>
           <p className="text-sm font-medium text-foreground leading-relaxed break-words">
             {reason}

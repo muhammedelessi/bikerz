@@ -1049,6 +1049,8 @@
       "enrolledSuccess": "You have been enrolled in the course",
       "startLearningNow": "Start Learning Now",
       "paymentFailed": "Payment Failed",
+      "noDeductionNotice": "No amount was deducted from your card. Please review the reason below and try again.",
+      "failureReasonLabel": "Reason for failure",
       "paymentErrorFallback": "An error occurred. Please try again.",
       "tryAgain": "Try Again"
     },
