@@ -212,7 +212,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setStep("payment");
   }, [form]);
 
-  const handleSubmitPayment = useCallback(async () => {
+  const handleSubmitPayment = useCallback(async (preTokenizedTokenId?: string) => {
     if (!user) {
       navigateToSignup(navigate);
       return;
@@ -326,9 +326,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const courseDisplayName = isRTL && course.title_ar ? course.title_ar : course.title;
 
     // Tokenize the card client-side first so the secret-key backend only ever
-    // sees a tok_xxx — raw card details never leave Tap's iframe.
-    let tokenId: string | undefined;
-    if (cardApiRef.current) {
+    // sees a tok_xxx — raw card details never leave Tap's iframe. Apple Pay
+    // already supplies a token (preTokenizedTokenId), so skip the card SDK call.
+    let tokenId: string | undefined = preTokenizedTokenId;
+    if (!tokenId && cardApiRef.current) {
       try {
         setTokenizing(true);
         tokenId = await cardApiRef.current.tokenize();
@@ -588,6 +589,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 customerPhoneNumber={cardPhoneNumber}
                 onApiReady={handleCardApiReady}
                 onStatusChange={handleCardSdkStatusChange}
+                onApplePayToken={(tokenId) => {
+                  // Apple Pay sheet completed — submit immediately, bypassing
+                  // the card SDK tokenize step (we already have a tok_xxx).
+                  void handleSubmitPayment(tokenId);
+                }}
               />
             </div>
           )}
@@ -647,7 +653,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <Button
               className="flex-1"
               variant="cta"
-              onClick={handleSubmitPayment}
+              onClick={() => handleSubmitPayment()}
               disabled={tap.status === "processing" || !isPaymentReady}
             >
               {tap.status === "processing" ? (
@@ -665,7 +671,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <Button
               className="flex-1 h-11 rounded-xl text-sm font-bold"
               variant="cta"
-              onClick={handleSubmitPayment}
+              onClick={() => handleSubmitPayment()}
               disabled={tap.status === "processing" || guestSigningUp || !isPaymentReady || tokenizing || (showEmbeddedCard && (!cardSdkStatus.sdkReady || !cardSdkStatus.cardValid))}
             >
               {guestSigningUp ? (

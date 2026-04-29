@@ -12,11 +12,12 @@
  * - Lets the modal render the order summary / promo code / footer Pay button
  *   without leaking SDK state into them.
  */
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import { Loader2, Lock, ShieldCheck, AlertTriangle, CreditCard } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useTheme } from "@/components/ThemeProvider";
 import { useTapCardSdk } from "@/hooks/checkout/useTapCardSdk";
+import { useTapApplePaySdk } from "@/hooks/checkout/useTapApplePaySdk";
 import { splitFullName } from "@/lib/nameUtils";
 import type { TapCardConfig } from "@/types/tapCardSdk";
 
@@ -41,9 +42,15 @@ interface EmbeddedCardFormProps {
   onApiReady: (api: { tokenize: () => Promise<string> }) => void;
   /** Live status the parent uses to enable/disable its Pay button + show messaging. */
   onStatusChange: (status: { sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null }) => void;
+  /**
+   * Fired when the user completes Apple Pay. The parent should treat this as a
+   * pre-tokenized payment and skip the regular tokenize() + Pay Now footer flow.
+   */
+  onApplePayToken?: (tokenId: string) => void;
 }
 
 const CONTAINER_ID = "tap-card-sdk-container";
+const APPLE_PAY_CONTAINER_ID = "tap-apple-pay-container";
 
 const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
   isRTL,
@@ -56,6 +63,7 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
   customerPhoneNumber,
   onApiReady,
   onStatusChange,
+  onApplePayToken,
 }) => {
   const { theme } = useTheme();
 
@@ -126,10 +134,68 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
     onApiReady({ tokenize });
   }, [tokenize, onApiReady]);
 
+  // ---- Apple Pay (only renders on supported Safari/Apple devices) ----
+  const applePayConfig = useMemo(
+    () => ({
+      transaction: { amount, currency },
+      customer: {
+        name: [
+          {
+            lang: (isRTL ? "AR" : "EN") as "EN" | "AR",
+            first: firstName || customerName || "Customer",
+            last: lastName || "",
+          },
+        ],
+        contact: {
+          email: customerEmail,
+          phone:
+            customerPhoneCountryCode && customerPhoneNumber
+              ? { countryCode: customerPhoneCountryCode, number: customerPhoneNumber }
+              : undefined,
+        },
+      },
+      acceptance: {
+        supportedBrands: ["VISA", "MASTERCARD", "MADA", "AMERICAN_EXPRESS"],
+        supportedCards: "ALL" as const,
+      },
+      interface: {
+        locale: (isRTL ? "AR" : "EN") as "EN" | "AR",
+        theme: (theme === "dark" ? "DARK" : "LIGHT") as "DARK" | "LIGHT",
+        type: "buy" as const,
+        edges: "CURVED" as const,
+      },
+    }),
+    [amount, currency, firstName, lastName, customerName, customerEmail, customerPhoneCountryCode, customerPhoneNumber, isRTL, theme],
+  );
+
+  const handleApplePayToken = useCallback(
+    (tokenId: string) => {
+      onApplePayToken?.(tokenId);
+    },
+    [onApplePayToken],
+  );
+
+  const { available: applePayAvailable } = useTapApplePaySdk({
+    containerId: APPLE_PAY_CONTAINER_ID,
+    enabled: active && !!onApplePayToken,
+    config: applePayConfig,
+    onToken: handleApplePayToken,
+  });
+
   if (!active) return null;
 
   return (
     <div className="space-y-3">
+      {/* Apple Pay — auto-hidden on non-Apple/non-Safari devices via the SDK's capability check */}
+      <div className={applePayAvailable ? "space-y-3" : "hidden"}>
+        <div id={APPLE_PAY_CONTAINER_ID} className="min-h-[44px] [&>*]:!w-full" />
+        <div className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          <span className="h-px flex-1 bg-border" />
+          <span>{isRTL ? "أو ادفع بالبطاقة" : "Or pay with card"}</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+      </div>
+
       {/* Branded card frame: sand-tinted background, primary header strip, primary border on valid */}
       <div
         className={[
