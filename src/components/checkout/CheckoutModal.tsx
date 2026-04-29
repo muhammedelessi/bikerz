@@ -665,7 +665,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <Button
               className="flex-1 h-11 rounded-xl text-sm font-bold"
               variant="cta"
-              onClick={handleSubmitPayment}
+              onClick={() => handleSubmitPayment()}
               disabled={tap.status === "processing" || guestSigningUp || !isPaymentReady || tokenizing || (showEmbeddedCard && (!cardSdkStatus.sdkReady || !cardSdkStatus.cardValid))}
             >
               {guestSigningUp ? (
