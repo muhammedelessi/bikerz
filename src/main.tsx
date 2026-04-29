@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { installLcpGuard } from "@/lib/lcpGuard";
+
+installLcpGuard();
 
 /** After deploy, stale HTML can point at removed chunks — reload once instead of a blank screen. */
 window.addEventListener("vite:preloadError", (event) => {
