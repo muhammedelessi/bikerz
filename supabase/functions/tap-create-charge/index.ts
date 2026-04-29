@@ -570,7 +570,95 @@ Deno.serve(async (req) => {
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      // ── Recover stuck charges before allowing a new one ──
+      // If the user has any recent (last 24h) tap_charges for this same course in
+      // `pending`/`processing`/`succeeded` state, verify them with Tap (source of
+      // truth). If any captured, enroll the user and refuse the new charge so the
+      // card is NOT charged a second time.
+      const recentCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recentCharges } = await adminClient
+        .from("tap_charges")
+        .select("id, charge_id, status, metadata")
+        .eq("user_id", userId)
+        .eq("course_id", courseIdTrim)
+        .in("status", ["pending", "processing", "succeeded"])
+        .gte("created_at", recentCutoff)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (recentCharges && recentCharges.length > 0) {
+        for (const rc of recentCharges) {
+          if (!rc.charge_id || !String(rc.charge_id).startsWith("chg_")) continue;
+          try {
+            const verifyRes = await fetch(`https://api.tap.company/v2/charges/${rc.charge_id}`, {
+              headers: { Authorization: `Bearer ${tapSecretKey}`, Accept: "application/json" },
+              signal: AbortSignal.timeout(8000),
+            });
+            if (!verifyRes.ok) continue;
+            const tapCharge = await verifyRes.json();
+            const realStatus = mapTapStatus(tapCharge.status);
+
+            // Persist the latest status from Tap
+            if (realStatus !== rc.status) {
+              await adminClient
+                .from("tap_charges")
+                .update({
+                  status: realStatus,
+                  webhook_verified: true,
+                  tap_response: sanitizeTapResponse(tapCharge),
+                  payment_method: tapCharge.source?.payment_method || null,
+                  card_brand: tapCharge.source?.payment_type || null,
+                  card_last_four: tapCharge.source?.payment?.last_four || null,
+                  error_message: realStatus === "failed"
+                    ? tapCharge.response?.message || "Payment failed"
+                    : null,
+                })
+                .eq("id", rc.id);
+            }
+
+            if (realStatus === "succeeded") {
+              // Enroll the user (idempotent: unique (user_id, course_id))
+              const { error: enrollErr } = await adminClient
+                .from("course_enrollments")
+                .insert({ user_id: userId, course_id: courseIdTrim });
+              if (enrollErr && !enrollErr.message.includes("duplicate")) {
+                console.error("Recovery enrollment error:", enrollErr.message);
+              }
+
+              return new Response(
+                JSON.stringify({
+                  charge_id: rc.charge_id,
+                  status: "succeeded",
+                  duplicate: true,
+                  recovered: true,
+                  error:
+                    "A previous payment for this course was already successful. Your card was not charged again.",
+                }),
+                { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
+            }
+
+            if (realStatus === "processing") {
+              return new Response(
+                JSON.stringify({
+                  charge_id: rc.charge_id,
+                  status: "processing",
+                  duplicate: true,
+                  error:
+                    "A previous payment for this course is still being processed. Please wait a moment and refresh — do not pay again.",
+                }),
+                { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
+            }
+          } catch (recoveryErr) {
+            console.warn("Recovery verify failed for charge:", rc.charge_id, recoveryErr);
+            // Don't block — fall through to the normal flow
+          }
+        }
+      }
     }
+
 
     // ── Insert pending charge record ──
     // Sanitize device_info: plain string, max 200 chars
