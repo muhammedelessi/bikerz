@@ -12,7 +12,7 @@
  * - Lets the modal render the order summary / promo code / footer Pay button
  *   without leaking SDK state into them.
  */
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useLayoutEffect } from "react";
 import { Loader2, Lock, ShieldCheck, AlertTriangle, CreditCard } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useTheme } from "@/components/ThemeProvider";
@@ -125,7 +125,7 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
   });
 
   // Bubble status to parent on every change.
-  React.useEffect(() => {
+  useLayoutEffect(() => {
     onStatusChange({ sdkLoading, sdkReady, cardValid, sdkError });
   }, [sdkLoading, sdkReady, cardValid, sdkError, onStatusChange]);
 
