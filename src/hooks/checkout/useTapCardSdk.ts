@@ -175,6 +175,14 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
 
         const inst = window.CardSDK.renderTapCard(containerId, fullConfig);
         instanceRef.current = inst ?? null;
+
+        // Fallback: some SDK builds don't fire onReady reliably. The iframe
+        // shows its own skeleton while loading, so once renderTapCard returns
+        // successfully we treat the form as ready after a short grace period
+        // so the user isn't stuck on "Loading payment form…".
+        setTimeout(() => {
+          if (!cancelled) setSdkReady(true);
+        }, 1200);
       } catch (err) {
         if (cancelled) return;
         setSdkError(err instanceof Error ? err.message : "Could not load secure card form");
@@ -205,10 +213,10 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
         reject(new Error("Card form is not ready yet"));
         return;
       }
-      if (!cardValid) {
-        reject(new Error("Please complete the card details"));
-        return;
-      }
+      // Note: we intentionally don't gate on `cardValid` here. Some Tap SDK
+      // builds don't emit onValidInput/onInvalidInput; in that case the SDK's
+      // own tokenize() will reject with a validation error, which is the
+      // authoritative signal.
       if (!window.CardSDK?.tokenize) {
         reject(new Error("Card SDK is not available"));
         return;
