@@ -922,7 +922,12 @@ Deno.serve(async (req) => {
 
     const tapRedirectUrl = tapData.transaction?.url || null;
 
-    if (!tapRedirectUrl && chargeStatus !== "succeeded") {
+    // Only treat "no redirect URL" as a gateway error when the charge is in a
+    // pending-style state. If Tap has already declined/failed/cancelled the
+    // charge, fall through and return a normal payload so the client can show
+    // its own branded failure overlay (with reason).
+    const isFinalNonSuccess = chargeStatus === "failed" || chargeStatus === "cancelled";
+    if (!tapRedirectUrl && chargeStatus !== "succeeded" && !isFinalNonSuccess) {
       console.error("No redirect URL from Tap:", JSON.stringify(tapData));
       await adminClient
         .from("tap_charges")
