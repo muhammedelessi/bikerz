@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
 import SearchableDropdown from "@/components/checkout/SearchableDropdown";
@@ -461,136 +460,138 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
           </div>
         </motion.div>
 
-        {/* Edit Info Dialog */}
-        <Dialog open={editOpen} onOpenChange={setEditOpen}>
-          <DialogContent className="sm:max-w-[420px] w-full bg-card border-border">
-            <DialogHeader>
-              <DialogTitle className="text-base font-bold">
-                {isRTL ? "تعديل المعلومات" : "Edit Information"}
-              </DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-4 py-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">{isRTL ? "الاسم الكامل" : "Full Name"}</Label>
-                <Input
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder={isRTL ? "الاسم الكامل" : "Full name"}
-                  dir={isRTL ? "rtl" : "ltr"}
-                  className={errors.fullName ? "border-destructive" : undefined}
-                />
-                {errors.fullName ? (
-                  <p className="text-xs text-destructive">{errors.fullName}</p>
-                ) : null}
+        {editOpen ? (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-[420px] rounded-2xl border border-border bg-card p-4 shadow-2xl sm:p-5">
+              <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
+                <h3 className="text-base font-bold text-foreground">
+                  {isRTL ? "تعديل المعلومات" : "Edit Information"}
+                </h3>
+                <Button type="button" variant="ghost" size="icon" onClick={() => setEditOpen(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">{isRTL ? "رقم الهاتف" : "Phone Number"}</Label>
-                <div className="flex gap-2" dir="ltr">
-                  <div className="w-[110px] flex-shrink-0">
-                    <SearchableDropdown
-                      options={phonePrefixOptions}
-                      value={phonePrefix}
-                      onChange={setPhonePrefix}
-                      placeholder="+---"
-                      searchPlaceholder="Search..."
-                      selectedLabelBuilder={(option) => (option?.value.split("_")[0] ? option.value.split("_")[0] : "")}
+              <div className="space-y-4 py-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">{isRTL ? "الاسم الكامل" : "Full Name"}</Label>
+                  <Input
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder={isRTL ? "الاسم الكامل" : "Full name"}
+                    dir={isRTL ? "rtl" : "ltr"}
+                    className={errors.fullName ? "border-destructive" : undefined}
+                  />
+                  {errors.fullName ? <p className="text-xs text-destructive">{errors.fullName}</p> : null}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">{isRTL ? "رقم الهاتف" : "Phone Number"}</Label>
+                  <div className="flex gap-2" dir="ltr">
+                    <div className="w-[110px] flex-shrink-0">
+                      <SearchableDropdown
+                        options={phonePrefixOptions}
+                        value={phonePrefix}
+                        onChange={setPhonePrefix}
+                        placeholder="+---"
+                        searchPlaceholder="Search..."
+                        selectedLabelBuilder={(option) => (option?.value.split("_")[0] ? option.value.split("_")[0] : "")}
+                        dir="ltr"
+                      />
+                    </div>
+                    <Input
+                      value={phone}
+                      onChange={(e) => {
+                        let val = e.target.value.replace(/[^0-9]/g, "");
+                        if (val.startsWith("0")) val = val.slice(1);
+                        setPhone(val);
+                      }}
+                      placeholder="5XXXXXXXX"
                       dir="ltr"
+                      className={`flex-1 ${errors.phone ? "border-destructive" : ""}`}
                     />
                   </div>
-                  <Input
-                    value={phone}
-                    onChange={(e) => {
-                      let val = e.target.value.replace(/[^0-9]/g, "");
-                      if (val.startsWith("0")) val = val.slice(1);
-                      setPhone(val);
-                    }}
-                    placeholder="5XXXXXXXX"
-                    dir="ltr"
-                    className={`flex-1 ${errors.phone ? "border-destructive" : ""}`}
-                  />
-                </div>
-                {errors.phone ? <p className="text-xs text-destructive">{errors.phone}</p> : null}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">{isRTL ? "الدولة" : "Country"}</Label>
-                  <SearchableDropdown
-                    options={countryOptions}
-                    value={isOtherCountry ? "__other__" : selectedCountryCode}
-                    onChange={handleCountryChange}
-                    placeholder={isRTL ? "اختر الدولة" : "Select country"}
-                    searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
-                    dir={isRTL ? "rtl" : "ltr"}
-                  />
-                  {isOtherCountry && (
-                    <Input
-                      value={countryManual}
-                      onChange={(e) => {
-                        setCountryManual(e.target.value);
-                        setCountry(e.target.value);
-                      }}
-                      placeholder={isRTL ? "اسم الدولة" : "Country name"}
-                      className={errors.country ? "border-destructive" : undefined}
-                    />
-                  )}
-                  {errors.country ? <p className="text-xs text-destructive">{errors.country}</p> : null}
+                  {errors.phone ? <p className="text-xs text-destructive">{errors.phone}</p> : null}
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">{isRTL ? "المدينة" : "City"}</Label>
-                  {isOtherCountry ? (
-                    <Input
-                      value={cityManual}
-                      onChange={(e) => setCityManual(e.target.value)}
-                      placeholder={isRTL ? "اسم المدينة" : "City name"}
-                      className={errors.city ? "border-destructive" : undefined}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">{isRTL ? "الدولة" : "Country"}</Label>
+                    <SearchableDropdown
+                      options={countryOptions}
+                      value={isOtherCountry ? "__other__" : selectedCountryCode}
+                      onChange={handleCountryChange}
+                      placeholder={isRTL ? "اختر الدولة" : "Select country"}
+                      searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
+                      dir={isRTL ? "rtl" : "ltr"}
                     />
-                  ) : (
-                    <>
-                      <SearchableDropdown
-                        options={cityOptions}
-                        value={isOtherCity ? "__other__" : city}
-                        onChange={handleCityChange}
-                        placeholder={isRTL ? "اختر المدينة" : "Select city"}
-                        searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
-                        dir={isRTL ? "rtl" : "ltr"}
+                    {isOtherCountry ? (
+                      <Input
+                        value={countryManual}
+                        onChange={(e) => {
+                          setCountryManual(e.target.value);
+                          setCountry(e.target.value);
+                        }}
+                        placeholder={isRTL ? "اسم الدولة" : "Country name"}
+                        className={errors.country ? "border-destructive" : undefined}
                       />
-                      {isOtherCity && (
-                        <Input
-                          value={cityManual}
-                          onChange={(e) => setCityManual(e.target.value)}
-                          placeholder={isRTL ? "اسم المدينة" : "City name"}
-                          className={errors.city ? "border-destructive" : undefined}
+                    ) : null}
+                    {errors.country ? <p className="text-xs text-destructive">{errors.country}</p> : null}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">{isRTL ? "المدينة" : "City"}</Label>
+                    {isOtherCountry ? (
+                      <Input
+                        value={cityManual}
+                        onChange={(e) => setCityManual(e.target.value)}
+                        placeholder={isRTL ? "اسم المدينة" : "City name"}
+                        className={errors.city ? "border-destructive" : undefined}
+                      />
+                    ) : (
+                      <>
+                        <SearchableDropdown
+                          options={cityOptions}
+                          value={isOtherCity ? "__other__" : city}
+                          onChange={handleCityChange}
+                          placeholder={isRTL ? "اختر المدينة" : "Select city"}
+                          searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
+                          dir={isRTL ? "rtl" : "ltr"}
                         />
-                      )}
-                    </>
-                  )}
-                  {errors.city ? <p className="text-xs text-destructive">{errors.city}</p> : null}
+                        {isOtherCity ? (
+                          <Input
+                            value={cityManual}
+                            onChange={(e) => setCityManual(e.target.value)}
+                            placeholder={isRTL ? "اسم المدينة" : "City name"}
+                            className={errors.city ? "border-destructive" : undefined}
+                          />
+                        ) : null}
+                      </>
+                    )}
+                    {errors.city ? <p className="text-xs text-destructive">{errors.city}</p> : null}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex gap-2 pt-2">
-              <Button
-                type="button"
-                className="flex-1"
-                onClick={() => {
-                  if (validateBilling && !validateBilling()) return;
-                  setEditOpen(false);
-                }}
-              >
-                <Check className="w-4 h-4 me-2" />
-                {isRTL ? "تم" : "Done"}
-              </Button>
-              <Button variant="ghost" onClick={() => setEditOpen(false)}>
-                <X className="w-4 h-4" />
-              </Button>
+              <div className="flex gap-2 border-t border-border pt-4">
+                <Button
+                  type="button"
+                  className="flex-1"
+                  onClick={() => {
+                    if (validateBilling && !validateBilling()) return;
+                    setEditOpen(false);
+                  }}
+                >
+                  <Check className="w-4 h-4 me-2" />
+                  {isRTL ? "تم" : "Done"}
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => setEditOpen(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
-          </DialogContent>
-        </Dialog>
+          </div>
+        ) : null}
       </>
     );
   },
