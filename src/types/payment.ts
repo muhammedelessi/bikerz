@@ -1,5 +1,5 @@
 export type PaymentMethod = 'card' | 'apple_pay' | 'google_pay';
-export type PaymentStatus = 'idle' | 'processing' | 'verifying' | 'succeeded' | 'failed';
+export type PaymentStatus = 'idle' | 'processing' | 'challenging_3ds' | 'verifying' | 'succeeded' | 'failed';
 
 export type TapPaymentKind = 'course' | 'training_booking' | 'course_bundle';
 

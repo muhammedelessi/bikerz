@@ -386,9 +386,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   }, [tap.status, course.id, navigate]);
 
-  const isPaymentReady = form.isInfoValid && !tap.error && tap.status !== "processing" && tap.status !== "verifying";
+  const isPaymentReady = form.isInfoValid && !tap.error && tap.status !== "processing" && tap.status !== "verifying" && tap.status !== "challenging_3ds";
 
-  const isStatusOverlay = tap.status === "processing" || tap.status === "verifying" || tap.status === "succeeded" || tap.status === "failed";
+  const isStatusOverlay =
+    tap.status === "processing" ||
+    tap.status === "verifying" ||
+    tap.status === "succeeded" ||
+    tap.status === "failed";
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
   const BackArrowIcon = isRTL ? ArrowRight : ArrowLeft;
@@ -399,24 +403,29 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   if (isStatusOverlay) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
-          <div>
-            <CheckoutStatusOverlay
-              paymentStatus={tap.status}
-              paymentError={tap.error}
-              courseId={course.id}
-              onSuccess={onSuccess}
-              onOpenChange={onOpenChange}
-              onRetry={() => {
-                tap.reset();
-                setStep("payment");
-              }}
-              navigate={navigate}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="sm:max-w-md">
+            <div>
+              <CheckoutStatusOverlay
+                paymentStatus={tap.status}
+                paymentError={tap.error}
+                courseId={course.id}
+                onSuccess={onSuccess}
+                onOpenChange={onOpenChange}
+                onRetry={() => {
+                  tap.reset();
+                  setStep("payment");
+                }}
+                navigate={navigate}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+        {tap.challengeUrl && (
+          <Checkout3DSModal url={tap.challengeUrl} onCancel={tap.cancelChallenge} />
+        )}
+      </>
     );
   }
 

@@ -108,6 +108,11 @@ Deno.serve(async (req) => {
     }
 
     const status = mapTapStatus(tapCharge.status);
+    const tapMessage =
+      (typeof tapCharge?.response?.message === "string" && tapCharge.response.message) ||
+      (typeof tapCharge?.acquirer?.message === "string" && tapCharge.acquirer.message) ||
+      (typeof tapCharge?.response?.code === "string" ? `Code ${tapCharge.response.code}` : null) ||
+      null;
 
     // Use service role client for DB operations
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
@@ -135,7 +140,7 @@ Deno.serve(async (req) => {
       if (!chargeUserId) {
         console.warn("Cannot create DB record: no user_id in charge metadata or auth");
         return new Response(
-          JSON.stringify({ status, charge_id, warning: "no_user_context" }),
+          JSON.stringify({ status, charge_id, warning: "no_user_context", message: tapMessage }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -207,7 +212,7 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ status, charge_id }),
+        JSON.stringify({ status, charge_id, message: tapMessage }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -297,7 +302,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ status, charge_id }),
+      JSON.stringify({ status, charge_id, message: tapMessage }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {

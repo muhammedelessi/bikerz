@@ -922,7 +922,12 @@ Deno.serve(async (req) => {
 
     const tapRedirectUrl = tapData.transaction?.url || null;
 
-    if (!tapRedirectUrl && chargeStatus !== "succeeded") {
+    // Only treat "no redirect URL" as a gateway error when the charge is in a
+    // pending-style state. If Tap has already declined/failed/cancelled the
+    // charge, fall through and return a normal payload so the client can show
+    // its own branded failure overlay (with reason).
+    const isFinalNonSuccess = chargeStatus === "failed" || chargeStatus === "cancelled";
+    if (!tapRedirectUrl && chargeStatus !== "succeeded" && !isFinalNonSuccess) {
       console.error("No redirect URL from Tap:", JSON.stringify(tapData));
       await adminClient
         .from("tap_charges")
@@ -934,6 +939,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Surface a human-readable decline / status reason so the client can render
+    // it inside our own custom failure overlay (no Tap-hosted result page).
+    const tapMessage =
+      (typeof tapData?.response?.message === "string" && tapData.response.message) ||
+      (typeof tapData?.acquirer?.message === "string" && tapData.acquirer.message) ||
+      (typeof tapData?.response?.code === "string" ? `Code ${tapData.response.code}` : null) ||
+      null;
+
     return new Response(
       JSON.stringify({
         charge_id: tapData.id,
@@ -941,6 +954,8 @@ Deno.serve(async (req) => {
         redirect_url: tapRedirectUrl,
         amount: finalAmount,
         currency: tapChargeCurrency,
+        tap_status: tapData.status,
+        tap_message: tapMessage,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -1558,8 +1573,9 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
   }
 
   const tapRedirectUrl = tapData.transaction?.url || null;
+  const isFinalNonSuccess = chargeStatus === "failed" || chargeStatus === "cancelled";
 
-  if (!tapRedirectUrl && chargeStatus !== "succeeded") {
+  if (!tapRedirectUrl && chargeStatus !== "succeeded" && !isFinalNonSuccess) {
     await adminClient
       .from("tap_charges")
       .update({ status: "failed", error_message: "No payment page URL received" })
@@ -1570,6 +1586,12 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
     );
   }
 
+  const tapMessage =
+    (typeof tapData?.response?.message === "string" && tapData.response.message) ||
+    (typeof tapData?.acquirer?.message === "string" && tapData.acquirer.message) ||
+    (typeof tapData?.response?.code === "string" ? `Code ${tapData.response.code}` : null) ||
+    null;
+
   return new Response(
     JSON.stringify({
       charge_id: tapData.id,
@@ -1577,6 +1599,8 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
       redirect_url: tapRedirectUrl,
       amount: finalAmount,
       currency: "SAR",
+      tap_status: tapData.status,
+      tap_message: tapMessage,
     }),
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );

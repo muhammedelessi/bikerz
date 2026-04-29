@@ -10,7 +10,10 @@ interface UseTapPaymentReturn {
   status: PaymentStatus;
   error: string | null;
   chargeId: string | null;
+  /** Tap 3-DS challenge URL — render in an in-page iframe (Option B custom UI). */
+  challengeUrl: string | null;
   submitPayment: (config: TapPaymentConfig) => Promise<void>;
+  cancelChallenge: () => void;
   reset: () => void;
 }
 
@@ -19,46 +22,34 @@ export function useTapPayment(): UseTapPaymentReturn {
   const [status, setStatus] = useState<PaymentStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [chargeId, setChargeId] = useState<string | null>(null);
+  const [challengeUrl, setChallengeUrl] = useState<string | null>(null);
   const statusRef = useRef<PaymentStatus>('idle');
-  const popupRef = useRef<Window | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const updateStatus = useCallback((s: PaymentStatus) => {
     statusRef.current = s;
     setStatus(s);
   }, []);
 
-  const clearPoll = useCallback(() => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-  }, []);
-
-  const verifyCharge = useCallback(async (chargeId: string) => {
+  const verifyCharge = useCallback(async (cid: string) => {
     updateStatus('verifying');
     try {
       const maxAttempts = 5;
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-        const data = await verifyChargeOnce(chargeId);
-
+        const data = await verifyChargeOnce(cid);
         if (data?.status === 'succeeded') {
           updateStatus('succeeded');
           return;
         }
-
         if (data?.status === 'failed' || data?.status === 'cancelled') {
-          setError('Payment was declined. Please try again.');
+          setError(data?.message || 'Payment was declined. Please try again.');
           updateStatus('failed');
           return;
         }
-
         if (attempt < maxAttempts - 1) {
           await new Promise(r => setTimeout(r, 3000));
         }
       }
-
-      setError('Payment is still being confirmed. Please wait a moment and try again from the success page if needed.');
+      setError('Payment is still being confirmed. Please wait a moment and try again.');
       updateStatus('failed');
     } catch (err: any) {
       setError(err.message || 'Payment verification failed');
@@ -66,51 +57,23 @@ export function useTapPayment(): UseTapPaymentReturn {
     }
   }, [updateStatus]);
 
-  // Listen for postMessage from popup (3DS callback)
+  // Listen for postMessage from the in-page 3-DS iframe (or popup fallback).
   useEffect(() => {
     const handler = (event: MessageEvent) => {
-      if (event.data?.type === 'TAP_3DS_COMPLETE') {
-        clearPoll();
-        const tapId = event.data.tap_id;
-        const courseId = event.data.course_id;
-        if (popupRef.current && !popupRef.current.closed) {
-          popupRef.current.close();
-        }
-        popupRef.current = null;
-        if (tapId) {
-          setChargeId(tapId);
-          const isBundle = Boolean(event.data?.bundle);
-          const isBooking = Boolean(event.data?.booking);
-          const tc = typeof event.data?.trainer_course_id === 'string' ? event.data.trainer_course_id : '';
-          if (isBundle) {
-            window.location.assign(`/payment-success?bundle=1&tap_id=${encodeURIComponent(tapId)}`);
-            return;
-          }
-          if (isBooking && tc) {
-            window.location.assign(
-              `/booking-payment-complete?tap_id=${encodeURIComponent(tapId)}&tc=${encodeURIComponent(tc)}`,
-            );
-            return;
-          }
-          if (courseId) {
-            window.location.assign(`/payment-success?course=${encodeURIComponent(courseId)}&tap_id=${encodeURIComponent(tapId)}`);
-            return;
-          }
-          verifyCharge(tapId);
-        } else {
-          setError('Payment response missing. Please try again.');
-          updateStatus('failed');
-        }
+      if (event.data?.type !== 'TAP_3DS_COMPLETE') return;
+      const tapId = event.data.tap_id;
+      setChallengeUrl(null);
+      if (tapId) {
+        setChargeId(tapId);
+        verifyCharge(tapId);
+      } else {
+        setError('Payment response missing. Please try again.');
+        updateStatus('failed');
       }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [verifyCharge, updateStatus, clearPoll]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => clearPoll();
-  }, [clearPoll]);
+  }, [verifyCharge, updateStatus]);
 
   const submitPayment = useCallback(async (config: TapPaymentConfig) => {
     const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -122,9 +85,10 @@ export function useTapPayment(): UseTapPaymentReturn {
 
     updateStatus('processing');
     setError(null);
+    setChallengeUrl(null);
 
     try {
-      const data = await createCharge(
+      const data: any = await createCharge(
         config,
         currentSession.access_token,
         currentSession.user.id,
@@ -138,38 +102,23 @@ export function useTapPayment(): UseTapPaymentReturn {
         return;
       }
 
-      if (data.redirect_url) {
-        // Open popup for payment
-        const w = 500;
-        const h = 650;
-        const left = window.screenX + (window.outerWidth - w) / 2;
-        const top = window.screenY + (window.outerHeight - h) / 2;
-        const popup = window.open(
-          data.redirect_url,
-          'TapPayment',
-          `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`,
+      // Immediate decline / cancel — surface our own branded failure overlay
+      // instead of redirecting to Tap's hosted result page.
+      if (data.status === 'failed' || data.status === 'cancelled') {
+        setError(
+          data.tap_message ||
+            (config.isRTL ? 'تم رفض الدفع. يرجى المحاولة مرة أخرى.' : 'Payment was declined. Please try again.'),
         );
+        updateStatus('failed');
+        return;
+      }
 
-        if (!popup || popup.closed) {
-          // Popup blocked — fallback to redirect
-          window.location.href = data.redirect_url;
-          return;
-        }
-
-        popupRef.current = popup;
-
-        // Poll for popup close (user closed without completing)
-        pollRef.current = setInterval(() => {
-          if (popupRef.current && popupRef.current.closed) {
-            clearPoll();
-            popupRef.current = null;
-            if (statusRef.current === 'processing') {
-              // User closed popup without completing
-              setError(config.isRTL ? 'تم إغلاق نافذة الدفع' : 'Payment window was closed');
-              updateStatus('failed');
-            }
-          }
-        }, 500);
+      if (data.redirect_url) {
+        // Render Tap's 3-DS challenge inside our own modal iframe — user never
+        // sees a Tap-hosted page; on completion the static callback page posts
+        // back the tap_id and our overlay verifies + finishes the flow.
+        setChallengeUrl(data.redirect_url);
+        updateStatus('challenging_3ds');
       } else {
         setError('Payment gateway did not return a payment page.');
         updateStatus('failed');
@@ -179,18 +128,20 @@ export function useTapPayment(): UseTapPaymentReturn {
       setError(err.message || 'Payment failed. Please try again.');
       updateStatus('failed');
     }
-  }, [detectedCountry, updateStatus, clearPoll]);
+  }, [detectedCountry, updateStatus]);
+
+  const cancelChallenge = useCallback(() => {
+    setChallengeUrl(null);
+    setError('Payment was cancelled.');
+    updateStatus('failed');
+  }, [updateStatus]);
 
   const reset = useCallback(() => {
-    clearPoll();
-    if (popupRef.current && !popupRef.current.closed) {
-      popupRef.current.close();
-    }
-    popupRef.current = null;
+    setChallengeUrl(null);
     setChargeId(null);
     updateStatus('idle');
     setError(null);
-  }, [updateStatus, clearPoll]);
+  }, [updateStatus]);
 
-  return { status, error, chargeId, submitPayment, reset };
+  return { status, error, chargeId, challengeUrl, submitPayment, cancelChallenge, reset };
 }
