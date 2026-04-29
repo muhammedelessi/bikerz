@@ -613,20 +613,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </AnimatePresence>
         </div>
 
-        {/* Back button on Step 2 — prominent, bordered, easy to spot. Only when Step 1 wasn't auto-skipped. */}
-        {step === "payment" && !autoSkippedInfo && (
-          <div className="px-4 sm:px-5 pb-3">
-            <button
-              type="button"
-              onClick={() => setStep("info")}
-              className="inline-flex items-center gap-2 h-11 px-4 rounded-xl border-2 border-border bg-background text-sm font-semibold text-foreground hover:bg-muted hover:border-primary/40 active:scale-[0.98] transition-all shadow-sm min-h-[44px]"
-              aria-label={isRTL ? "رجوع للخطوة الأولى لتعديل البيانات" : "Back to step 1 to edit info"}
-            >
-              <BackArrowIcon className="w-4 h-4" />
-              <span>{isRTL ? "رجوع لتعديل البيانات" : "Back to edit info"}</span>
-            </button>
-          </div>
-        )}
+
 
         {/* Footer */}
         <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-border flex-shrink-0 flex gap-2">
