@@ -18,6 +18,8 @@ import { enrollUserInCourse, incrementCouponUsage } from "@/services/supabase.se
 import CheckoutInfoStep from "@/components/checkout/CheckoutInfoStep";
 import CheckoutPaymentStep from "@/components/checkout/CheckoutPaymentStep";
 import CheckoutStatusOverlay from "@/components/checkout/CheckoutStatusOverlay";
+import CheckoutStepIndicator from "@/components/checkout/CheckoutStepIndicator";
+import EmbeddedCardForm from "@/components/checkout/EmbeddedCardForm";
 import type { CheckoutCourse } from "@/types/payment";
 import { navigateToSignup } from "@/lib/authReturnUrl";
 import { recordCheckoutPaymentPageVisit } from "@/services/checkoutVisitAnalytics";
