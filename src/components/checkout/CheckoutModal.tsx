@@ -571,32 +571,30 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 exchangeRate={exchangeRate}
                 isSAR={isSAR}
                 onSubmitPayment={handleSubmitPayment}
+                cardFormSlot={
+                  showEmbeddedCard ? (
+                    <EmbeddedCardForm
+                      isRTL={isRTL}
+                      active={showEmbeddedCard}
+                      amount={tapChargeInfo.amount}
+                      currency={tapChargeInfo.currency}
+                      customerName={form.fullName}
+                      customerEmail={form.email}
+                      customerPhoneCountryCode={cardPhoneCountryCode}
+                      customerPhoneNumber={cardPhoneNumber}
+                      onApiReady={handleCardApiReady}
+                      onStatusChange={handleCardSdkStatusChange}
+                      onApplePayToken={(tokenId) => {
+                        // Apple Pay sheet completed — submit immediately, bypassing
+                        // the card SDK tokenize step (we already have a tok_xxx).
+                        void handleSubmitPayment(tokenId);
+                      }}
+                    />
+                  ) : null
+                }
               />
             )}
           </AnimatePresence>
-
-          {/* Embedded Tap Card form — only on Step 2, only when there's an amount to charge. */}
-          {showEmbeddedCard && (
-            <div className="mt-5">
-              <EmbeddedCardForm
-                isRTL={isRTL}
-                active={showEmbeddedCard}
-                amount={tapChargeInfo.amount}
-                currency={tapChargeInfo.currency}
-                customerName={form.fullName}
-                customerEmail={form.email}
-                customerPhoneCountryCode={cardPhoneCountryCode}
-                customerPhoneNumber={cardPhoneNumber}
-                onApiReady={handleCardApiReady}
-                onStatusChange={handleCardSdkStatusChange}
-                onApplePayToken={(tokenId) => {
-                  // Apple Pay sheet completed — submit immediately, bypassing
-                  // the card SDK tokenize step (we already have a tok_xxx).
-                  void handleSubmitPayment(tokenId);
-                }}
-              />
-            </div>
-          )}
         </div>
 
         {/* Back button on Step 2 — only when Step 1 wasn't auto-skipped. */}
