@@ -1045,6 +1045,8 @@
       "enrolledSuccess": "تم تسجيلك في الدورة بنجاح",
       "startLearningNow": "ابدأ التعلم الآن",
       "paymentFailed": "فشل الدفع",
+      "noDeductionNotice": "لم يتم خصم أي مبلغ من بطاقتك. يمكنك مراجعة السبب أدناه ثم المحاولة مرة أخرى.",
+      "failureReasonLabel": "سبب فشل الدفع",
       "paymentErrorFallback": "حدث خطأ أثناء الدفع. يرجى المحاولة مرة أخرى.",
       "tryAgain": "حاول مرة أخرى"
     },

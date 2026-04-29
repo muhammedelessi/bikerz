@@ -41,7 +41,7 @@ export function useTapPayment(): UseTapPaymentReturn {
           return;
         }
         if (data?.status === 'failed' || data?.status === 'cancelled') {
-          setError(data?.message || 'Payment was declined. Please try again.');
+          setError(data?.tap_message || data?.message || 'Payment was declined. Please try again.');
           updateStatus('failed');
           return;
         }
