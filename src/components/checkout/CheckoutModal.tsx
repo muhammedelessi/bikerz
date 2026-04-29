@@ -18,6 +18,8 @@ import { enrollUserInCourse, incrementCouponUsage } from "@/services/supabase.se
 import CheckoutInfoStep from "@/components/checkout/CheckoutInfoStep";
 import CheckoutPaymentStep from "@/components/checkout/CheckoutPaymentStep";
 import CheckoutStatusOverlay from "@/components/checkout/CheckoutStatusOverlay";
+import CheckoutStepIndicator from "@/components/checkout/CheckoutStepIndicator";
+import EmbeddedCardForm from "@/components/checkout/EmbeddedCardForm";
 import type { CheckoutCourse } from "@/types/payment";
 import { navigateToSignup } from "@/lib/authReturnUrl";
 import { recordCheckoutPaymentPageVisit } from "@/services/checkoutVisitAnalytics";
@@ -50,7 +52,27 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { sendCourseStatus } = useGHLFormWebhook();
   const { handleGuestSignup, guestSigningUp } = useGuestSignup();
 
-  const [step, setStep] = useState<"info" | "payment">("payment");
+  // Default to "info" — for returning customers with a complete profile, the
+  // open-effect below auto-advances to "payment" right after prefillAndAutoAdvance().
+  const [step, setStep] = useState<"info" | "payment">("info");
+  /** True once we've evaluated the profile completeness on open. Hides Step 1 indicator
+   *  when the user was auto-skipped past it. */
+  const [autoSkippedInfo, setAutoSkippedInfo] = useState(false);
+  /** Tokenize handle wired up from the embedded card form. */
+  const cardApiRef = useRef<{ tokenize: () => Promise<string> } | null>(null);
+  const [cardSdkStatus, setCardSdkStatus] = useState<{
+    sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null;
+  }>({ sdkLoading: false, sdkReady: false, cardValid: false, sdkError: null });
+  const [tokenizing, setTokenizing] = useState(false);
+  const handleCardApiReady = useCallback((api: { tokenize: () => Promise<string> }) => {
+    cardApiRef.current = api;
+  }, []);
+  const handleCardSdkStatusChange = useCallback(
+    (s: { sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null }) => {
+      setCardSdkStatus(s);
+    },
+    [],
+  );
 
   const priceInfo = useMemo(
     () => getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0),
@@ -85,16 +107,56 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const formatLocal = useCallback((amount: number) => `${amount} ${currSym}`, [currSym]);
 
+  /**
+   * Compute the actual currency + amount that will be charged on the card.
+   * Mirrors the same fallback logic used in handleSubmitPayment so the embedded
+   * Tap iframe always shows the user the exact amount they're about to pay.
+   */
+  const tapChargeInfo = useMemo(() => {
+    const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
+    const localCurrency = priceInfo.currency as string;
+    if (TAP_SUPPORTED.includes(localCurrency)) {
+      return { currency: localCurrency, amount: discountedPrice };
+    }
+    const sarAmt = isSAR || exchangeRate <= 0 ? discountedPrice : Math.ceil(discountedPrice / exchangeRate);
+    return { currency: "SAR", amount: sarAmt };
+  }, [priceInfo.currency, discountedPrice, isSAR, exchangeRate]);
+
+  /** Phone country code for the SDK (e.g. "966" without the +). */
+  const cardPhoneCountryCode = useMemo(() => {
+    const raw = form.actualPrefix || "";
+    return raw.replace(/^\+/, "").trim();
+  }, [form.actualPrefix]);
+  const cardPhoneNumber = useMemo(() => {
+    const v = (form.phone || "").trim().replace(/[^0-9]/g, "");
+    return v.startsWith("0") ? v.slice(1) : v;
+  }, [form.phone]);
+
+  /** Skip the embedded SDK entirely when the order is free (100%-off coupon). */
+  const isFreeEnrollment = discountedPrice <= 0 && !!promo.appliedCoupon;
+  const showEmbeddedCard = step === "payment" && !isFreeEnrollment;
+
   useEffect(() => {
     if (!open) {
-      setStep("payment");
+      setStep("info");
+      setAutoSkippedInfo(false);
       promo.resetPromo();
       tap.reset();
       form.resetForm();
       return;
     }
     if (user) {
-      form.prefillAndAutoAdvance();
+      // prefillAndAutoAdvance() returns true when the profile already has full name +
+      // billing — in that case skip Step 1 to preserve the conversion-friendly flow.
+      void form.prefillAndAutoAdvance().then((complete) => {
+        if (complete) {
+          setStep("payment");
+          setAutoSkippedInfo(true);
+        } else {
+          setStep("info");
+          setAutoSkippedInfo(false);
+        }
+      });
     }
   }, [open, user]);
 
@@ -263,6 +325,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     const courseDisplayName = isRTL && course.title_ar ? course.title_ar : course.title;
 
+    // Tokenize the card client-side first so the secret-key backend only ever
+    // sees a tok_xxx — raw card details never leave Tap's iframe.
+    let tokenId: string | undefined;
+    if (cardApiRef.current) {
+      try {
+        setTokenizing(true);
+        tokenId = await cardApiRef.current.tokenize();
+      } catch (err: any) {
+        setTokenizing(false);
+        toast.error(err?.message || (isRTL ? "تعذّر التحقق من بيانات البطاقة" : "Could not validate card details"));
+        return;
+      } finally {
+        setTokenizing(false);
+      }
+    }
+
     await tap.submitPayment({
       courseId: course.id,
       currency: paymentCurrency,
@@ -278,6 +356,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       amount: paymentAmount,
       courseName: courseDisplayName,
       isRTL,
+      tokenId,
     });
   }, [
     user,
@@ -357,6 +436,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   : "Complete Purchase"}
             </DialogTitle>
           </DialogHeader>
+
+          {/* Step 1 / Step 2 indicator (hidden when the user was auto-skipped past Step 1) */}
+          <div className="mt-3">
+            <CheckoutStepIndicator currentStep={step} isRTL={isRTL} hideInfoStep={autoSkippedInfo} />
+          </div>
 
           {/* Course info */}
           <div className="flex items-center gap-3 mt-3">
@@ -489,7 +573,39 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               />
             )}
           </AnimatePresence>
+
+          {/* Embedded Tap Card form — only on Step 2, only when there's an amount to charge. */}
+          {showEmbeddedCard && (
+            <div className="mt-5">
+              <EmbeddedCardForm
+                isRTL={isRTL}
+                active={showEmbeddedCard}
+                amount={tapChargeInfo.amount}
+                currency={tapChargeInfo.currency}
+                customerName={form.fullName}
+                customerEmail={form.email}
+                customerPhoneCountryCode={cardPhoneCountryCode}
+                customerPhoneNumber={cardPhoneNumber}
+                onApiReady={handleCardApiReady}
+                onStatusChange={handleCardSdkStatusChange}
+              />
+            </div>
+          )}
         </div>
+
+        {/* Back button on Step 2 — only when Step 1 wasn't auto-skipped. */}
+        {step === "payment" && !autoSkippedInfo && (
+          <div className="px-4 sm:px-5 -mt-2">
+            <button
+              type="button"
+              onClick={() => setStep("info")}
+              className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <BackArrowIcon className="w-3.5 h-3.5" />
+              {isRTL ? "رجوع لتعديل البيانات" : "Back to edit info"}
+            </button>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-border flex-shrink-0 flex gap-2">
@@ -550,12 +666,27 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               className="flex-1 h-11 rounded-xl text-sm font-bold"
               variant="cta"
               onClick={handleSubmitPayment}
-              disabled={tap.status === "processing" || guestSigningUp || !isPaymentReady}
+              disabled={tap.status === "processing" || guestSigningUp || !isPaymentReady || tokenizing || (showEmbeddedCard && (!cardSdkStatus.sdkReady || !cardSdkStatus.cardValid))}
             >
               {guestSigningUp ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin me-2" />
                   {isRTL ? "جاري إنشاء الحساب..." : "Creating account..."}
+                </>
+              ) : tokenizing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin me-2" />
+                  {isRTL ? "جاري التحقق من البطاقة..." : "Validating card..."}
+                </>
+              ) : showEmbeddedCard && !cardSdkStatus.sdkReady ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin me-2" />
+                  {isRTL ? "جاري تحميل نموذج الدفع..." : "Loading payment form..."}
+                </>
+              ) : showEmbeddedCard && !cardSdkStatus.cardValid ? (
+                <>
+                  <CreditCard className="w-4 h-4 me-2" />
+                  {isRTL ? "أدخل بيانات البطاقة" : "Enter card details"}
                 </>
               ) : tap.status === "processing" ? (
                 <>
