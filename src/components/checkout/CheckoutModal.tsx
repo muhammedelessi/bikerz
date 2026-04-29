@@ -666,7 +666,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               className="flex-1 h-11 rounded-xl text-sm font-bold"
               variant="cta"
               onClick={handleSubmitPayment}
-              disabled={tap.status === "processing" || guestSigningUp || !isPaymentReady}
+              disabled={tap.status === "processing" || guestSigningUp || !isPaymentReady || tokenizing || (showEmbeddedCard && (!cardSdkStatus.sdkReady || !cardSdkStatus.cardValid))}
             >
               {guestSigningUp ? (
                 <>
