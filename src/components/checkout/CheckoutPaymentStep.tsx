@@ -237,7 +237,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                         setPromoOpen(false);
                       }}
                       disabled={paymentStatus === "processing"}
-                      className="shrink-0 text-xs font-semibold text-emerald-900/80 dark:text-emerald-100/80 hover:text-emerald-950 dark:hover:text-emerald-50 underline underline-offset-2 disabled:opacity-50"
+                      className="shrink-0 min-h-[36px] px-2 -mx-2 text-xs font-semibold text-emerald-900/80 dark:text-emerald-100/80 hover:text-emerald-950 dark:hover:text-emerald-50 underline underline-offset-2 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
                     >
                       {isRTL ? "إزالة" : "Remove"}
                     </button>
@@ -298,7 +298,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                         setPromoOpen(false);
                         setPromoCode("");
                       }}
-                      className="text-[11px] text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+                      className="min-h-[36px] px-2 -mx-2 text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
                     >
                       {isRTL ? "إلغاء" : "Cancel"}
                     </button>
@@ -373,28 +373,29 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                 </div>
               )}
 
-              {/* Equivalent amount info — for all non-SAR currencies */}
+              {/* Equivalent amount info — for all non-SAR currencies.
+                  Show the user's local-currency total + the SAR equivalent
+                  they'll see on their card statement (Tap charges in SAR
+                  for currencies it doesn't directly support). */}
               {!isSAR &&
                 exchangeRate > 0 &&
                 (() => {
-                  const TAP_SUPPORTED = ["KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
-                  const isSupported = TAP_SUPPORTED.some((c) => currencyLabel.includes(c));
                   const sarEquivalent = Math.ceil(totalWithVat / exchangeRate);
+                  const sarLabel = isRTL ? "ر.س" : "SAR";
 
                   return (
                     <div className="flex items-center justify-center gap-1.5 flex-wrap text-center px-2 py-2 rounded-lg bg-muted/40 mt-1">
                       <span className="text-[12px] text-muted-foreground">
                         {isRTL ? "سيتم خصم" : "You will be charged"}
                       </span>
-                      <span className="text-[12px] font-bold text-primary flex items-center gap-1">
-                        {isSupported ? `${totalWithVat} ${currencyLabel}` : `${totalWithVat} ${currencyLabel}`}
+                      <span className="text-[12px] font-bold text-primary tabular-nums">
+                        {totalWithVat} {currencyLabel}
                       </span>
                       <span className="text-[12px] text-muted-foreground">
-                        {isRTL ? " أي ما يعادل" : "equivalent to"}
+                        {isRTL ? "أي ما يعادل" : "equivalent to"}
                       </span>
-                      <span className="text-[12px] font-bold text-foreground">
-                        {sarEquivalent}
-                        <span>{" SAR "}</span>
+                      <span className="text-[12px] font-bold text-foreground tabular-nums">
+                        {sarEquivalent} {sarLabel}
                       </span>
                     </div>
                   );
@@ -508,6 +509,10 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                       }}
                       placeholder="5XXXXXXXX"
                       dir="ltr"
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="tel-national"
                       className={`flex-1 ${errors.phone ? "border-destructive" : ""}`}
                     />
                   </div>

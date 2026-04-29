@@ -14,6 +14,10 @@ interface UseTapPaymentReturn {
   challengeUrl: string | null;
   submitPayment: (config: TapPaymentConfig) => Promise<void>;
   cancelChallenge: () => void;
+  /** Re-poll Tap for the latest status of the current charge — used by the
+   *  "still confirming" recovery UI so the user can recover without retrying
+   *  a payment that may have actually succeeded. */
+  recheckStatus: () => Promise<void>;
   reset: () => void;
 }
 
@@ -24,12 +28,25 @@ export function useTapPayment(): UseTapPaymentReturn {
   const [chargeId, setChargeId] = useState<string | null>(null);
   const [challengeUrl, setChallengeUrl] = useState<string | null>(null);
   const statusRef = useRef<PaymentStatus>('idle');
+  const chargeIdRef = useRef<string | null>(null);
 
   const updateStatus = useCallback((s: PaymentStatus) => {
     statusRef.current = s;
     setStatus(s);
   }, []);
 
+  const setChargeIdSafe = useCallback((cid: string | null) => {
+    chargeIdRef.current = cid;
+    setChargeId(cid);
+  }, []);
+
+  /**
+   * Verify a charge with backoff. We treat exhausting the polling window as
+   * "still processing" rather than "failed" — Tap may finalize the charge
+   * after our last attempt, and showing "failed" here is what causes users
+   * to retry and get double-charged. The recheckStatus() escape hatch lets
+   * the recovery UI re-poll on demand.
+   */
   const verifyCharge = useCallback(async (cid: string) => {
     updateStatus('verifying');
     try {
@@ -49,23 +66,45 @@ export function useTapPayment(): UseTapPaymentReturn {
           await new Promise(r => setTimeout(r, 3000));
         }
       }
-      setError('Payment is still being confirmed. Please wait a moment and try again.');
-      updateStatus('failed');
+      // Polling window exhausted — DO NOT mark as failed (would tempt the
+      // user to pay again on a possibly-successful charge). Surface a
+      // distinct "still confirming" state that the UI can render with a
+      // refresh CTA instead of a retry CTA.
+      setError(null);
+      updateStatus('confirming');
     } catch (err: any) {
       setError(err.message || 'Payment verification failed');
       updateStatus('failed');
     }
   }, [updateStatus]);
 
+  /**
+   * Allow the recovery UI to re-poll the verify endpoint when the user clicks
+   * "Refresh" on the "still confirming" state. Reuses the same backoff cap.
+   */
+  const recheckStatus = useCallback(async () => {
+    const cid = chargeIdRef.current;
+    if (!cid) return;
+    await verifyCharge(cid);
+  }, [verifyCharge]);
+
   // Listen for postMessage from the in-page 3-DS iframe (or popup fallback).
+  // SECURITY: only accept messages from our own origin. Without this guard,
+  // any embedded iframe / extension could spoof a TAP_3DS_COMPLETE event and
+  // trigger verifyCharge with an attacker-supplied charge_id.
   useEffect(() => {
     const handler = (event: MessageEvent) => {
+      // The 3DS callback page (/tap-3ds-callback.html) is served from our own
+      // origin, so legitimate messages will always satisfy this check.
+      if (event.origin !== window.location.origin) {
+        return;
+      }
       if (event.data?.type !== 'TAP_3DS_COMPLETE') return;
       const tapId = event.data.tap_id;
       console.log('[TapPayment] 3DS callback received, tap_id=', tapId);
       setChallengeUrl(null);
-      if (tapId) {
-        setChargeId(tapId);
+      if (tapId && typeof tapId === 'string' && tapId.startsWith('chg_')) {
+        setChargeIdSafe(tapId);
         verifyCharge(tapId);
       } else {
         setError('Payment response missing. Please try again.');
@@ -74,7 +113,7 @@ export function useTapPayment(): UseTapPaymentReturn {
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [verifyCharge, updateStatus]);
+  }, [verifyCharge, updateStatus, setChargeIdSafe]);
 
   const submitPayment = useCallback(async (config: TapPaymentConfig) => {
     const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -97,7 +136,7 @@ export function useTapPayment(): UseTapPaymentReturn {
       );
 
       console.log('[TapPayment] createCharge response:', { status: data?.status, hasRedirect: !!data?.redirect_url, msg: data?.tap_message });
-      setChargeId(data?.charge_id ?? null);
+      setChargeIdSafe(data?.charge_id ?? null);
 
       if (data.status === 'succeeded') {
         updateStatus('succeeded');
@@ -130,20 +169,22 @@ export function useTapPayment(): UseTapPaymentReturn {
       setError(err.message || 'Payment failed. Please try again.');
       updateStatus('failed');
     }
-  }, [detectedCountry, updateStatus]);
+  }, [detectedCountry, updateStatus, setChargeIdSafe]);
 
   const cancelChallenge = useCallback(() => {
     setChallengeUrl(null);
-    setError('Payment was cancelled.');
-    updateStatus('failed');
+    setError(null);
+    // Soft cancel — user closed the 3DS modal themselves. Reset to idle
+    // instead of 'failed' so we don't show a harsh red error UI.
+    updateStatus('idle');
   }, [updateStatus]);
 
   const reset = useCallback(() => {
     setChallengeUrl(null);
-    setChargeId(null);
+    setChargeIdSafe(null);
     updateStatus('idle');
     setError(null);
-  }, [updateStatus]);
+  }, [updateStatus, setChargeIdSafe]);
 
-  return { status, error, chargeId, challengeUrl, submitPayment, cancelChallenge, reset };
+  return { status, error, chargeId, challengeUrl, submitPayment, cancelChallenge, recheckStatus, reset };
 }

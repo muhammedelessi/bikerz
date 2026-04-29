@@ -7,8 +7,10 @@
 //   whitelisted in Tap.
 // - All other origins (production: academy.bikerz.com) get the LIVE key.
 //
-// The matching switch happens in tap-create-charge so a tok_test_… token is
-// always paired with the test secret key, and tok_… (live) with the live key.
+// SECURITY: when a preview origin is detected we MUST NOT silently fall back
+// to the live key — that would let staging/dev tabs initiate real charges
+// against a live merchant account. If the test key env is missing, fail closed
+// with a 503 so the misconfiguration is loud and visible.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -42,14 +44,43 @@ Deno.serve(async (req) => {
   const liveKey = Deno.env.get("TAP_PUBLIC_KEY");
   const testKey = Deno.env.get("TAP_PUBLIC_TEST_KEY");
 
-  console.log(`[tap-config] origin=${origin || "(none)"} usePreviewKey=${usePreviewKey} hasTestKey=${!!testKey} hasLiveKey=${!!liveKey}`);
+  console.log(
+    `[tap-config] origin=${origin || "(none)"} usePreviewKey=${usePreviewKey} hasTestKey=${!!testKey} hasLiveKey=${!!liveKey}`,
+  );
 
-  const tapPublicKey = usePreviewKey ? (testKey || liveKey) : liveKey;
+  // Fail-closed: a preview origin without a test key MUST NOT fall back to live.
+  if (usePreviewKey && !testKey) {
+    console.error(
+      "[tap-config] Preview origin requested but TAP_PUBLIC_TEST_KEY is not configured. Refusing to serve live key on preview.",
+    );
+    return new Response(
+      JSON.stringify({
+        error:
+          "Test payment key is not configured for this environment. Set TAP_PUBLIC_TEST_KEY in Supabase Secrets to enable preview/dev checkout.",
+      }),
+      { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  const tapPublicKey = usePreviewKey ? testKey : liveKey;
 
   if (!tapPublicKey) {
     return new Response(
       JSON.stringify({ error: "Payment not configured" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  // Sanity: a key marked test for a non-preview origin (or vice versa) is a
+  // sign of swapped env vars. Log loudly but still serve — the operator will
+  // see this in function logs.
+  if (usePreviewKey && !tapPublicKey.startsWith("pk_test")) {
+    console.warn(
+      `[tap-config] Preview origin received non-test key (prefix=${tapPublicKey.slice(0, 7)}). Check TAP_PUBLIC_TEST_KEY value.`,
+    );
+  } else if (!usePreviewKey && tapPublicKey.startsWith("pk_test")) {
+    console.warn(
+      "[tap-config] Production origin received a test key. Check TAP_PUBLIC_KEY value.",
     );
   }
 

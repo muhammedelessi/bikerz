@@ -110,7 +110,24 @@ Deno.serve(async (req) => {
 
     const liveSecret = Deno.env.get("TAP_SECRET_KEY");
     const testSecret = Deno.env.get("TAP_SECRET_TEST_KEY");
-    const tapSecretKey = isPreviewEnv ? (testSecret || liveSecret) : liveSecret;
+
+    // SECURITY: preview/dev origins must use the TEST secret. Falling back to
+    // the live secret here would charge real cards from staging tabs against
+    // tok_test tokens (and emit confusing errors). Fail closed instead.
+    if (isPreviewEnv && !testSecret) {
+      console.error(
+        "[tap-create-charge] Preview origin requested but TAP_SECRET_TEST_KEY is not configured. Refusing to fall back to live secret.",
+      );
+      return new Response(
+        JSON.stringify({
+          error:
+            "Test payment key is not configured for this environment. Set TAP_SECRET_TEST_KEY in Supabase Secrets to enable preview/dev checkout.",
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const tapSecretKey = isPreviewEnv ? testSecret : liveSecret;
 
     if (!tapSecretKey) {
       return new Response(
@@ -124,6 +141,18 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Payment service misconfigured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Sanity: in preview mode the secret should be a test secret (sk_test_...).
+    // If it's a live secret, log loudly so the operator sees the misconfig.
+    if (isPreviewEnv && !tapSecretKey.startsWith("sk_test")) {
+      console.warn(
+        `[tap-create-charge] Preview origin using non-test secret (prefix=${tapSecretKey.slice(0, 7)}). Check TAP_SECRET_TEST_KEY value.`,
+      );
+    } else if (!isPreviewEnv && tapSecretKey.startsWith("sk_test")) {
+      console.warn(
+        "[tap-create-charge] Production origin using a test secret. Check TAP_SECRET_KEY value.",
       );
     }
 

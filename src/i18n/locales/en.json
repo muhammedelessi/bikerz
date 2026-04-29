@@ -1052,10 +1052,19 @@
       "noDeductionNotice": "No amount was deducted from your card. Please review the reason below and try again.",
       "failureReasonLabel": "Reason for failure",
       "paymentErrorFallback": "An error occurred. Please try again.",
-      "tryAgain": "Try Again"
+      "tryAgain": "Try Again",
+      "confirmingTitle": "Confirming your payment",
+      "confirmingBody": "We're checking with your bank. Your payment may have already gone through. Please press \"Refresh status\" in a moment to check — do not retry the payment, as that could charge you twice.",
+      "refreshStatus": "Refresh status"
     },
     "paymentMethodIcons": {
       "acceptedPaymentMethods": "Accepted Payment Methods"
+    },
+    "whatsAppHelp": {
+      "idle": "Need help? Chat on WhatsApp",
+      "processing": "Taking longer than expected? Chat with us",
+      "confirming": "Not sure if you were charged? Chat with us",
+      "failed": "Need help? Chat with us"
     }
   },
   "payment": {

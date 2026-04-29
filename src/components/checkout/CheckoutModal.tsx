@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Loader2, CreditCard } from "lucide-react";
 import { toast } from "sonner";
@@ -21,6 +21,8 @@ import CheckoutStatusOverlay from "@/components/checkout/CheckoutStatusOverlay";
 import CheckoutStepIndicator from "@/components/checkout/CheckoutStepIndicator";
 import EmbeddedCardForm from "@/components/checkout/EmbeddedCardForm";
 import Checkout3DSModal from "@/components/checkout/Checkout3DSModal";
+import ResponsiveCheckoutShell from "@/components/checkout/ResponsiveCheckoutShell";
+import CheckoutWhatsAppHelp from "@/components/checkout/CheckoutWhatsAppHelp";
 import type { CheckoutCourse } from "@/types/payment";
 import { navigateToSignup } from "@/lib/authReturnUrl";
 import { recordCheckoutPaymentPageVisit } from "@/services/checkoutVisitAnalytics";
@@ -364,7 +366,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     user,
     discountedPrice,
     promo.appliedCoupon,
-    course,
+    // Use individual fields so a parent re-render that produces a new course
+    // object reference doesn't recreate handleSubmitPayment unnecessarily.
+    course.id,
+    course.title,
+    course.title_ar,
     form,
     tap,
     basePrice,
@@ -378,20 +384,30 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     sendCourseStatus,
     t,
     navigate,
-    isRTL,
   ]);
 
   useEffect(() => {
     if (tap.status === "succeeded") {
-      navigate(`/payment-success?course=${course.id}&tap_id=tap_success`);
+      // Pass the actual chargeId so the success page can verify and render
+      // the receipt. Hardcoding `tap_success` here breaks server-side
+      // verification and leaves the user without a valid receipt link.
+      const chargeParam = tap.chargeId ? `&tap_id=${encodeURIComponent(tap.chargeId)}` : "";
+      navigate(`/payment-success?course=${course.id}${chargeParam}`);
     }
-  }, [tap.status, course.id, navigate]);
+  }, [tap.status, tap.chargeId, course.id, navigate]);
 
-  const isPaymentReady = form.isInfoValid && !tap.error && tap.status !== "processing" && tap.status !== "verifying" && tap.status !== "challenging_3ds";
+  const isPaymentReady =
+    form.isInfoValid &&
+    !tap.error &&
+    tap.status !== "processing" &&
+    tap.status !== "verifying" &&
+    tap.status !== "confirming" &&
+    tap.status !== "challenging_3ds";
 
   const isStatusOverlay =
     tap.status === "processing" ||
     tap.status === "verifying" ||
+    tap.status === "confirming" ||
     tap.status === "succeeded";
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
@@ -402,26 +418,40 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   }
 
   if (isStatusOverlay) {
+    // Lock the modal while a charge is mid-flight — closing during
+    // processing/verifying/confirming doesn't cancel the charge, it just
+    // hides our status UI and confuses the user about whether they were billed.
+    const lockClose =
+      tap.status === "processing" ||
+      tap.status === "verifying" ||
+      tap.status === "confirming" ||
+      tap.status === "challenging_3ds";
+
     return (
       <>
-        <Dialog open={open} onOpenChange={onOpenChange}>
-          <DialogContent className="sm:max-w-md">
-            <div>
-              <CheckoutStatusOverlay
-                paymentStatus={tap.status}
-                paymentError={tap.error}
-                courseId={course.id}
-                onSuccess={onSuccess}
-                onOpenChange={onOpenChange}
-                onRetry={() => {
-                  tap.reset();
-                  setStep("payment");
-                }}
-                navigate={navigate}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
+        <ResponsiveCheckoutShell
+          open={open}
+          onOpenChange={onOpenChange}
+          preventClose={lockClose}
+          a11yLabel={isRTL ? "حالة الدفع" : "Payment status"}
+          className="sm:max-w-md"
+        >
+          <div className="overflow-y-auto">
+            <CheckoutStatusOverlay
+              paymentStatus={tap.status}
+              paymentError={tap.error}
+              courseId={course.id}
+              onSuccess={onSuccess}
+              onOpenChange={onOpenChange}
+              onRetry={() => {
+                tap.reset();
+                setStep("payment");
+              }}
+              onRecheck={tap.recheckStatus}
+              navigate={navigate}
+            />
+          </div>
+        </ResponsiveCheckoutShell>
         {tap.challengeUrl && (
           <Checkout3DSModal url={tap.challengeUrl} onCancel={tap.cancelChallenge} />
         )}
@@ -430,11 +460,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="relative sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden border-2 border-border bg-card p-0 gap-0"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
+    <ResponsiveCheckoutShell
+      open={open}
+      onOpenChange={onOpenChange}
+      a11yLabel={
+        step === "info"
+          ? (isRTL ? "معلومات الدفع" : "Billing information")
+          : (isRTL ? "إتمام الشراء" : "Complete purchase")
+      }
+    >
         {/* Header */}
         <div className="bg-muted/30 p-4 sm:p-5 border-b-2 border-border flex-shrink-0">
           <DialogHeader>
@@ -625,7 +659,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
 
         {/* Footer */}
-        <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-border flex-shrink-0 flex gap-2">
+        <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-border flex-shrink-0 flex flex-col gap-3">
+          {/* Persistent WhatsApp help — visible on both steps so a hesitant
+              user can ping support without abandoning. The link variant is
+              quiet so it doesn't compete with the primary Pay CTA. */}
+          <div className="flex justify-center">
+            <CheckoutWhatsAppHelp
+              context="idle"
+              variant="inline"
+              courseId={course.id}
+            />
+          </div>
+          <div className="flex gap-2">
           {step === "info" ? (
             <Button
               className="flex-1 btn-cta"
@@ -736,6 +781,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               )}
             </Button>
           )}
+          </div>
         </div>
 
         {tap.status === "failed" && (
@@ -751,13 +797,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   tap.reset();
                   setStep("payment");
                 }}
+                onRecheck={tap.recheckStatus}
                 navigate={navigate}
               />
             </div>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+    </ResponsiveCheckoutShell>
   );
 };
 

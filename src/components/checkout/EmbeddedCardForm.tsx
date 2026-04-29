@@ -13,8 +13,9 @@
  *   without leaking SDK state into them.
  */
 import React, { useMemo, useCallback, useLayoutEffect } from "react";
-import { Loader2, Lock, ShieldCheck, AlertTriangle, CreditCard } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Lock, ShieldCheck, AlertTriangle, CreditCard, RefreshCw } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
 import { useTapCardSdk } from "@/hooks/checkout/useTapCardSdk";
 import { useTapApplePaySdk } from "@/hooks/checkout/useTapApplePaySdk";
@@ -51,6 +52,20 @@ interface EmbeddedCardFormProps {
 
 const CONTAINER_ID = "tap-card-sdk-container";
 const APPLE_PAY_CONTAINER_ID = "tap-apple-pay-container";
+
+/** Friendly card-brand label for the small chip shown when the BIN matches. */
+function brandLabel(brand: string | null): string | null {
+  if (!brand) return null;
+  const u = brand.toUpperCase();
+  if (u.includes("VISA")) return "Visa";
+  if (u.includes("MASTER")) return "Mastercard";
+  if (u === "MADA" || u.includes("MADA")) return "mada";
+  if (u.includes("AMEX") || u.includes("AMERICAN")) return "Amex";
+  if (u.includes("DISCOVER")) return "Discover";
+  if (u.includes("JCB")) return "JCB";
+  if (u.includes("UNION")) return "UnionPay";
+  return brand;
+}
 
 const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
   isRTL,
@@ -118,7 +133,7 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
       ],
     );
 
-  const { sdkLoading, sdkReady, cardValid, sdkError, tokenize } = useTapCardSdk({
+  const { sdkLoading, sdkReady, cardValid, sdkError, cardBrand, tokenize, reinit } = useTapCardSdk({
     containerId: CONTAINER_ID,
     enabled: active,
     config,
@@ -184,9 +199,16 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
 
   if (!active) return null;
 
+  const detectedBrand = brandLabel(cardBrand);
+
   return (
     <div className="space-y-3">
-      {/* Apple Pay — auto-hidden on non-Apple/non-Safari devices via the SDK's capability check */}
+      {/*
+        Apple Pay — only render the container + divider once we've actually
+        confirmed the SDK rendered the button. Earlier code rendered a divider
+        with placeholder space for ~800ms even when Apple Pay was unavailable,
+        which looked broken. The wrapper stays display:none until available.
+      */}
       <div className={applePayAvailable ? "space-y-3" : "hidden"}>
         <div id={APPLE_PAY_CONTAINER_ID} className="min-h-[44px] [&>*]:!w-full" />
         <div className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -198,6 +220,8 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
 
       {/* Branded card frame: sand-tinted background, primary header strip, primary border on valid */}
       <div
+        role="region"
+        aria-label={isRTL ? "نموذج بيانات البطاقة الآمن" : "Secure card details form"}
         className={[
           "relative overflow-hidden rounded-2xl border-2 transition-all duration-300",
           "bg-[#C6BFAA]/15 dark:bg-[#C6BFAA]/5",
@@ -213,6 +237,15 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
             <span className="text-sm font-semibold tracking-wide">
               {isRTL ? "بيانات البطاقة" : "Card Details"}
             </span>
+            {/* Live brand chip — appears once Tap identifies the BIN */}
+            {detectedBrand && (
+              <span
+                className="ml-1 inline-flex items-center rounded-full bg-primary-foreground/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground"
+                aria-live="polite"
+              >
+                {detectedBrand}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1.5 text-[11px] font-medium opacity-90">
             <Lock className="w-3 h-3" />
@@ -223,7 +256,11 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
         {/* Iframe container — SDK injects its UI here */}
         <div className="relative">
           {(sdkLoading || (!sdkReady && !sdkError)) && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+            <div
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm"
+              role="status"
+              aria-live="polite"
+            >
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
               <p className="text-xs text-muted-foreground">
                 {isRTL ? "جارٍ تحميل نموذج الدفع الآمن…" : "Loading secure payment form…"}
@@ -231,10 +268,22 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
             </div>
           )}
 
-          <div id={CONTAINER_ID} className="[&>iframe]:!block [&>iframe]:!w-full" />
+          {/*
+            Iframe host. min-h ensures the loading overlay has room before the
+            SDK injects its content; touch-action prevents iOS Safari from
+            inheriting page-level pinch-zoom into the OTP/card iframe.
+          */}
+          <div
+            id={CONTAINER_ID}
+            className="min-h-[200px] [&>iframe]:!block [&>iframe]:!w-full"
+            style={{ touchAction: "manipulation" }}
+          />
 
           {cardValid && (
-            <div className="border-t border-primary/15 bg-primary/5 px-4 py-2">
+            <div
+              className="border-t border-primary/15 bg-primary/5 px-4 py-2"
+              aria-live="polite"
+            >
               <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 {isRTL ? "بيانات البطاقة مكتملة ✓" : "Card details complete ✓"}
@@ -244,10 +293,27 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
         </div>
       </div>
 
+      {/* Recoverable error: SDK init / load failure. Show a Reload button so
+          the user doesn't have to close the entire modal to retry. */}
       {sdkError && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="text-xs">{sdkError}</AlertDescription>
+          <AlertTitle className="text-sm">
+            {isRTL ? "تعذّر تحميل نموذج البطاقة" : "Could not load card form"}
+          </AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p className="text-xs">{sdkError}</p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={reinit}
+              className="h-9"
+            >
+              <RefreshCw className="w-3.5 h-3.5 me-2" />
+              {isRTL ? "إعادة المحاولة" : "Reload form"}
+            </Button>
+          </AlertDescription>
         </Alert>
       )}
 
