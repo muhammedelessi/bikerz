@@ -109,14 +109,25 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   useEffect(() => {
     if (!open) {
-      setStep("payment");
+      setStep("info");
+      setAutoSkippedInfo(false);
       promo.resetPromo();
       tap.reset();
       form.resetForm();
       return;
     }
     if (user) {
-      form.prefillAndAutoAdvance();
+      // prefillAndAutoAdvance() returns true when the profile already has full name +
+      // billing — in that case skip Step 1 to preserve the conversion-friendly flow.
+      void form.prefillAndAutoAdvance().then((complete) => {
+        if (complete) {
+          setStep("payment");
+          setAutoSkippedInfo(true);
+        } else {
+          setStep("info");
+          setAutoSkippedInfo(false);
+        }
+      });
     }
   }, [open, user]);
 
