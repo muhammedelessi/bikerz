@@ -79,6 +79,56 @@ function isApplePayBundleError(err: unknown): boolean {
   }
 }
 
+/**
+ * Translate raw SDK error payloads (often axios-style "Request failed with
+ * status code 400") into actionable, multilingual user-facing strings.
+ *
+ * The Tap CardSDK iframe makes its own HTTP calls; when those fail it bubbles
+ * up an axios error verbatim. Showing "Request failed with status code 400"
+ * to the user is hostile and unactionable. Map known shapes to friendly
+ * messages and fall back to a generic-but-helpful default.
+ */
+function friendlySdkError(err: unknown, isRTL: boolean): string {
+  // Best-effort message extraction.
+  let raw = "";
+  try {
+    if (typeof err === "string") raw = err;
+    else if (err && typeof err === "object") {
+      const o = err as Record<string, unknown>;
+      raw =
+        (typeof o.message === "string" && o.message) ||
+        (typeof o.description === "string" && o.description) ||
+        JSON.stringify(err);
+    }
+  } catch {
+    raw = String(err ?? "");
+  }
+  const lower = raw.toLowerCase();
+
+  // Axios-style network failure — Tap SDK's HTTP request was rejected.
+  if (
+    /request failed with status code\s*\d+/i.test(raw) ||
+    lower.includes("network error") ||
+    lower.includes("failed to fetch")
+  ) {
+    return isRTL
+      ? "تعذّر الاتصال بمزود الدفع. تأكد من الاتصال بالإنترنت ثم اضغط إعادة المحاولة."
+      : "Could not reach the payment provider. Check your connection and tap Reload.";
+  }
+
+  // Tap surfaces validation issues with this exact text in some builds.
+  if (lower.includes("invalid") && (lower.includes("card") || lower.includes("number"))) {
+    return isRTL
+      ? "بيانات البطاقة غير صحيحة. الرجاء التأكد من رقم البطاقة وتاريخ الانتهاء."
+      : "Card details are invalid. Please re-check your card number and expiry.";
+  }
+
+  // Generic fallback — short, suggests action.
+  return isRTL
+    ? "تعذّر تحميل نموذج الدفع. حاول إعادة التحميل أو تواصل معنا عبر واتساب."
+    : "Could not load the payment form. Please reload or contact support.";
+}
+
 export interface UseTapCardSdkOptions {
   /** Stable id of the div that hosts the iframe. */
   containerId: string;
@@ -211,10 +261,16 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
           onError: (err: unknown) => {
             if (cancelled) return;
             if (isApplePayBundleError(err)) return;
-            const message =
-              (err && typeof err === "object" && "message" in (err as Record<string, unknown>)
-                ? String((err as { message?: unknown }).message ?? "")
-                : "") || "Card form error. Please try again.";
+            // Always log the raw payload — operators need this for diagnosis.
+            // Tap's SDK is opaque about what went wrong, so we keep the full
+            // shape available in the console even though we hide it from users.
+            try {
+              console.error("[TapCardSdk] onError payload:", err);
+            } catch { /* ignore */ }
+            const isRTL =
+              typeof document !== "undefined" &&
+              document.documentElement.getAttribute("dir") === "rtl";
+            const message = friendlySdkError(err, isRTL);
             setSdkError(message);
             const pending = tokenizeResolversRef.current;
             if (pending) {
