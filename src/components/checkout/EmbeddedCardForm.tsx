@@ -86,39 +86,58 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
 
   const config: Omit<TapCardConfig, "publicKey" | "onReady" | "onSuccess" | "onError" | "onValidInput" | "onInvalidInput"> =
     useMemo(
-      () => ({
-        transaction: { amount, currency },
-        customer: {
-          name: [
-            {
-              lang: isRTL ? "AR" : "EN",
-              first: firstName || customerName || "Customer",
-              last: lastName || "",
-            },
-          ],
-          editable: false,
-          contact: {
-            email: customerEmail,
-            phone:
-              customerPhoneCountryCode && customerPhoneNumber
-                ? { countryCode: customerPhoneCountryCode, number: customerPhoneNumber }
-                : undefined,
+      () => {
+        // Build a defensive customer object — Tap's tokenize endpoint 400s on
+        // empty strings in optional fields (last name, phone), so we OMIT
+        // anything we don't have rather than passing "".
+        const safeFirst = (firstName || customerName || "Customer").trim();
+        const safeLast = (lastName || "").trim();
+        const safeEmail = (customerEmail || "").trim();
+        const phone =
+          customerPhoneCountryCode && customerPhoneNumber
+            ? { countryCode: customerPhoneCountryCode.trim(), number: customerPhoneNumber.trim() }
+            : undefined;
+        const contact: { email?: string; phone?: { countryCode: string; number: string } } = {};
+        if (safeEmail) contact.email = safeEmail;
+        if (phone) contact.phone = phone;
+
+        return {
+          transaction: { amount, currency },
+          customer: {
+            // Tap accepts lowercase ISO-639 codes here; uppercase ("AR"/"EN")
+            // works on some SDK builds but 400s on others — lowercase is
+            // universally accepted.
+            name: [
+              {
+                lang: isRTL ? "ar" : "en",
+                first: safeFirst,
+                ...(safeLast ? { last: safeLast } : {}),
+              },
+            ],
+            // `editable: false` is not part of Tap's documented schema and
+            // some merchant configs reject it — drop it.
+            ...(Object.keys(contact).length > 0 ? { contact } : {}),
           },
-        },
-        acceptance: {
-          supportedBrands: ["VISA", "MASTERCARD", "MADA", "AMERICAN_EXPRESS"],
-          supportedCards: "ALL",
-        },
-        fields: { cardHolder: true },
-        addons: { loader: true, saveCard: false, displayPaymentBrands: true },
-        interface: {
-          locale: isRTL ? "AR" : "EN",
-          theme: theme === "dark" ? "DARK" : "LIGHT",
-          edges: "CURVED",
-          direction: isRTL ? "RTL" : "LTR",
-          colorStyle: "#CC4E1D", // BIKERZ primary
-        },
-      }),
+          acceptance: {
+            // Tap expects the literal string "ALL" or an explicit array; we
+            // pass "ALL" so the merchant's whatever-they-have-enabled set is
+            // respected. Mixing supportedBrands + supportedCards has caused
+            // 400s on some test merchants — keep it minimal.
+            supportedPaymentAuthentications: ["3DS"],
+          },
+          fields: { cardHolder: true },
+          // `displayPaymentBrands` is not in Tap's docs and isn't required
+          // for our flow — drop it to avoid an unexpected-field 400.
+          addons: { loader: true, saveCard: false },
+          interface: {
+            locale: isRTL ? "ar" : "en",
+            theme: theme === "dark" ? "dark" : "light",
+            edges: "curved",
+            direction: isRTL ? "rtl" : "ltr",
+            colorStyle: "#CC4E1D", // BIKERZ primary
+          },
+        };
+      },
       [
         amount,
         currency,

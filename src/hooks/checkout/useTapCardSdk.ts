@@ -87,14 +87,20 @@ function isApplePayBundleError(err: unknown): boolean {
  * up an axios error verbatim. Showing "Request failed with status code 400"
  * to the user is hostile and unactionable. Map known shapes to friendly
  * messages and fall back to a generic-but-helpful default.
+ *
+ * The `isTestMode` flag adds a hint to 4xx errors that the user might be
+ * entering a real card while we're on a test publishable key — Tap's
+ * tokenize endpoint rejects real cards in test mode with a generic 400.
  */
-function friendlySdkError(err: unknown, isRTL: boolean): string {
+function friendlySdkError(err: unknown, isRTL: boolean, isTestMode: boolean): string {
   // Best-effort message extraction.
   let raw = "";
+  let statusCode: number | null = null;
   try {
     if (typeof err === "string") raw = err;
     else if (err && typeof err === "object") {
       const o = err as Record<string, unknown>;
+      if (typeof o.statusCode === "number") statusCode = o.statusCode;
       raw =
         (typeof o.message === "string" && o.message) ||
         (typeof o.description === "string" && o.description) ||
@@ -104,6 +110,24 @@ function friendlySdkError(err: unknown, isRTL: boolean): string {
     raw = String(err ?? "");
   }
   const lower = raw.toLowerCase();
+  const statusMatch = raw.match(/status code\s*(\d+)/i);
+  if (statusMatch) statusCode = Number(statusMatch[1]);
+
+  // 400 from /v2/card/token in TEST mode almost always means a real card was
+  // entered (test mode rejects production card numbers). Surface the actual
+  // cause so the user doesn't keep retrying with the same card.
+  if (statusCode === 400 && isTestMode) {
+    return isRTL
+      ? "هذه بيئة اختبار: استخدم بطاقة اختبار مثل 4111 1111 1111 1111 (انتهاء أي تاريخ مستقبلي، CVV أي 3 أرقام). البطاقات الحقيقية مرفوضة هنا."
+      : "This is a test environment. Use a test card like 4111 1111 1111 1111 (any future expiry, any 3-digit CVV). Real cards are rejected here.";
+  }
+
+  // 400/422 from tokenize on live key — usually a card-validation issue.
+  if (statusCode === 400 || statusCode === 422) {
+    return isRTL
+      ? "تعذّر التحقق من بيانات البطاقة. الرجاء التأكد من الرقم وتاريخ الانتهاء وCVV ثم إعادة المحاولة."
+      : "Could not validate card details. Please re-check the number, expiry, and CVV.";
+  }
 
   // Axios-style network failure — Tap SDK's HTTP request was rejected.
   if (
@@ -270,7 +294,8 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
             const isRTL =
               typeof document !== "undefined" &&
               document.documentElement.getAttribute("dir") === "rtl";
-            const message = friendlySdkError(err, isRTL);
+            const isTestMode = publicKey.startsWith("pk_test");
+            const message = friendlySdkError(err, isRTL, isTestMode);
             setSdkError(message);
             const pending = tokenizeResolversRef.current;
             if (pending) {

@@ -5,10 +5,13 @@
  * Reference: https://developers.tap.company/docs/card-sdk-web-v2
  */
 
-export type TapCardLocale = "EN" | "AR";
-export type TapCardTheme = "LIGHT" | "DARK";
-export type TapCardEdges = "CURVED" | "STRAIGHT";
-export type TapCardDirection = "LTR" | "RTL";
+// Tap's SDK accepts both upper and lower case for these enums depending on
+// the build; lowercase is what their current docs show, uppercase is what
+// older builds emit. Allow either so callers don't have to remember which.
+export type TapCardLocale = "EN" | "AR" | "en" | "ar";
+export type TapCardTheme = "LIGHT" | "DARK" | "light" | "dark";
+export type TapCardEdges = "CURVED" | "STRAIGHT" | "curved" | "straight";
+export type TapCardDirection = "LTR" | "RTL" | "ltr" | "rtl";
 
 export interface TapCardCustomerName {
   lang: TapCardLocale;
@@ -37,6 +40,8 @@ export interface TapCardConfig {
   acceptance?: {
     supportedBrands?: string[];
     supportedCards?: "ALL" | string[];
+    /** ["3DS"] forces 3-D Secure authentication on every charge. */
+    supportedPaymentAuthentications?: string[];
   };
   fields?: { cardHolder?: boolean };
   addons?: {
