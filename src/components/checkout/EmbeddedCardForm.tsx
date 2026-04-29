@@ -221,9 +221,9 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
         </div>
 
         {/* Iframe container — SDK injects its UI here */}
-        <div className="relative bg-card">
+        <div className="relative">
           {(sdkLoading || (!sdkReady && !sdkError)) && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-card/80 backdrop-blur-sm">
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
               <p className="text-xs text-muted-foreground">
                 {isRTL ? "جارٍ تحميل نموذج الدفع الآمن…" : "Loading secure payment form…"}
