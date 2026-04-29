@@ -62,6 +62,7 @@ export function useTapPayment(): UseTapPaymentReturn {
     const handler = (event: MessageEvent) => {
       if (event.data?.type !== 'TAP_3DS_COMPLETE') return;
       const tapId = event.data.tap_id;
+      console.log('[TapPayment] 3DS callback received, tap_id=', tapId);
       setChallengeUrl(null);
       if (tapId) {
         setChargeId(tapId);
@@ -95,6 +96,7 @@ export function useTapPayment(): UseTapPaymentReturn {
         detectedCountry,
       );
 
+      console.log('[TapPayment] createCharge response:', { status: data?.status, hasRedirect: !!data?.redirect_url, msg: data?.tap_message });
       setChargeId(data?.charge_id ?? null);
 
       if (data.status === 'succeeded') {
