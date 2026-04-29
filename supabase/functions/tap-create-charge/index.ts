@@ -934,6 +934,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Surface a human-readable decline / status reason so the client can render
+    // it inside our own custom failure overlay (no Tap-hosted result page).
+    const tapMessage =
+      (typeof tapData?.response?.message === "string" && tapData.response.message) ||
+      (typeof tapData?.acquirer?.message === "string" && tapData.acquirer.message) ||
+      (typeof tapData?.response?.code === "string" ? `Code ${tapData.response.code}` : null) ||
+      null;
+
     return new Response(
       JSON.stringify({
         charge_id: tapData.id,
@@ -941,6 +949,8 @@ Deno.serve(async (req) => {
         redirect_url: tapRedirectUrl,
         amount: finalAmount,
         currency: tapChargeCurrency,
+        tap_status: tapData.status,
+        tap_message: tapMessage,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
