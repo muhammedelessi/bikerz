@@ -518,7 +518,7 @@ const ApplyTrainer: React.FC = () => {
   return (
     <div
       dir={isRTL ? "rtl" : "ltr"}
-      className="w-full max-w-3xl min-w-0 mx-auto px-3 sm:px-6 py-4 sm:py-6"
+      className="w-full max-w-3xl min-w-0 mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-28 sm:pb-32"
     >
       {/* Header */}
       <div className="mb-4 sm:mb-6 space-y-1">
@@ -1034,14 +1034,15 @@ const ApplyTrainer: React.FC = () => {
       </div>
 
       {/*
-        Footer navigation rendered INLINE at the bottom of the form.
-        Earlier this was a `fixed` overlay; in production its wide blurred surface
-        kept intercepting clicks meant for the sidebar (and pointer-events tricks
-        couldn't reliably fix it across browsers). An inline footer eliminates the
-        problem entirely — the user simply scrolls to see Previous/Next/Submit.
+        Footer navigation
+        - `pointer-events-none` on the outer bar so the wide blurred surface NEVER
+          intercepts clicks meant for the sidebar / other UI.
+        - `pointer-events-auto` on the inner button row so the buttons themselves
+          stay clickable.
+        - `lg:start-[280px]` keeps the bar from rendering on top of the desktop sidebar.
       */}
-      <div className="mt-6 sm:mt-8 rounded-2xl border border-border/40 bg-card safe-area-bottom">
-        <div className="px-3 sm:px-4 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+      <div className="pointer-events-none fixed bottom-0 inset-x-0 lg:start-[280px] z-20 bg-background/95 backdrop-blur-md border-t border-border safe-area-bottom">
+        <div className="pointer-events-auto max-w-3xl w-full min-w-0 mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <Button
             variant="outline"
             onClick={goPrev}

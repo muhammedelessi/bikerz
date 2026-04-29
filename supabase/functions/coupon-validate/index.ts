@@ -181,16 +181,11 @@ Deno.serve(async (req) => {
       return res(400, { valid: false, error: "Coupon not found" });
     }
 
-    // Count usages by OTHER users only. The current user re-validating their own
-    // pending code (e.g. re-opening checkout, toggling promo) must not be blocked
-    // by their own prior validate/charge attempts — the charge flow re-checks the
-    // cap atomically when actually consuming the code.
     const { count: usageCount, error: usageCountErr } = await adminClient
       .from("coupon_series_usage")
       .select("id", { count: "exact", head: true })
       .eq("series_id", series.id)
-      .eq("code_number", parsed.number)
-      .neq("user_id", userId);
+      .eq("code_number", parsed.number);
     if (usageCountErr) {
       console.error("Series usage count error:", usageCountErr.message);
       return res(500, { error: "Validation failed" });
@@ -199,13 +194,20 @@ Deno.serve(async (req) => {
       return res(400, { valid: false, error: "Code already used" });
     }
 
-    /*
-      The previous per-user uniqueness check has been removed: it blocked the
-      same user from using a code more than once even when the admin had set
-      `max_uses_per_code` to a higher value (e.g. 4). The global usage count
-      check above already enforces the cap — once the code reaches
-      `max_uses_per_code` total uses, it stops working for everyone.
-    */
+    const { data: alreadyUsedByUser, error: usedByUserErr } = await adminClient
+      .from("coupon_series_usage")
+      .select("id")
+      .eq("series_id", series.id)
+      .eq("code_number", parsed.number)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (usedByUserErr && usedByUserErr.code !== "PGRST116") {
+      console.error("Series user usage check error:", usedByUserErr.message);
+      return res(500, { error: "Validation failed" });
+    }
+    if (alreadyUsedByUser?.id) {
+      return res(400, { valid: false, error: "Already used by you" });
+    }
 
     const originalAmount = Number(amount);
     const discount = computeSeriesDiscount(

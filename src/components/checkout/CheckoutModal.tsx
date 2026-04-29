@@ -8,12 +8,10 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/components/ThemeProvider";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCheckoutForm } from "@/hooks/checkout/useCheckoutForm";
 import { useCheckoutPromo } from "@/hooks/checkout/useCheckoutPromo";
 import { useTapPayment } from "@/hooks/useTapPayment";
-import { useTapCardSdk } from "@/hooks/checkout/useTapCardSdk";
 import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
 import { useGuestSignup } from "@/hooks/checkout/useGuestSignup";
 import { enrollUserInCourse, incrementCouponUsage } from "@/services/supabase.service";
@@ -23,8 +21,6 @@ import CheckoutStatusOverlay from "@/components/checkout/CheckoutStatusOverlay";
 import type { CheckoutCourse } from "@/types/payment";
 import { navigateToSignup } from "@/lib/authReturnUrl";
 import { recordCheckoutPaymentPageVisit } from "@/services/checkoutVisitAnalytics";
-
-const TAP_SUPPORTED_CURRENCIES = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"] as const;
 
 interface CheckoutModalProps {
   open: boolean;
@@ -49,13 +45,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user, profile } = useAuth();
-  const { theme } = useTheme();
   const navigate = useNavigate();
   const { getCoursePriceInfo, getCurrencySymbol, isSAR, exchangeRate } = useCurrency();
   const { sendCourseStatus } = useGHLFormWebhook();
   const { handleGuestSignup, guestSigningUp } = useGuestSignup();
 
-  const [step, setStep] = useState<"info" | "payment">("info");
+  const [step, setStep] = useState<"info" | "payment">("payment");
 
   const priceInfo = useMemo(
     () => getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0),
@@ -69,18 +64,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const form = useCheckoutForm(open);
   const promo = useCheckoutPromo(course.id, basePrice);
   const tap = useTapPayment();
-  /**
-   * Lifted promo-panel state — when the user opens the discount field, the
-   * footer's primary CTA swaps from "Pay Now" to "Apply code". Single, focused
-   * action prevents accidental payment without applying the discount.
-   */
-  const [promoOpen, setPromoOpen] = useState(false);
-  // Auto-close the panel once a code is applied (the green confirmation card replaces the input).
-  useEffect(() => {
-    if (promo.promoApplied && promoOpen) setPromoOpen(false);
-  }, [promo.promoApplied, promoOpen]);
 
-  // Discount & price — computed before tapCard so we pass the right initial amount
   const discountAmount = promo.appliedCoupon ? promo.appliedCoupon.discount_amount : 0;
   const discountedPrice = promo.appliedCoupon ? promo.appliedCoupon.final_amount : basePrice;
   const discountLabel = promo.appliedCoupon
@@ -88,45 +72,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       ? `${promo.appliedCoupon.discount_value}%`
       : `${Math.round((promo.appliedCoupon.discount_amount / basePrice) * 100)}%`
     : "";
-  const paymentQuote = useMemo(() => {
-    const localCurrency = priceInfo.currency as string;
-
-    if (TAP_SUPPORTED_CURRENCIES.includes(localCurrency as (typeof TAP_SUPPORTED_CURRENCIES)[number])) {
-      return {
-        currency: localCurrency,
-        amount: discountedPrice,
-      };
-    }
-
-    return {
-      currency: "SAR",
-      amount: isSAR || exchangeRate <= 0 ? discountedPrice : Math.ceil(discountedPrice / exchangeRate),
-    };
-  }, [discountedPrice, exchangeRate, isSAR, priceInfo.currency]);
-
-  // Extract phone country code digits (e.g. "+966_SA" → "966")
-  const phoneCountryCode = useMemo(() => {
-    const raw = form.phonePrefix || '';
-    return raw.replace(/^\+/, '').split('_')[0] || '966';
-  }, [form.phonePrefix]);
-
-  const tapCard = useTapCardSdk({
-    containerId: 'tap-card-element',
-    amount: paymentQuote.amount,
-    currency: paymentQuote.currency,
-    locale: isRTL ? 'ar' : 'en',
-    theme,
-    customerName: form.fullName,
-    customerEmail: form.email,
-    customerPhone: form.phone,
-    phoneCountryCode,
-  });
 
   const formatLocal = useCallback((amount: number) => `${amount} ${currSym}`, [currSym]);
 
   useEffect(() => {
     if (!open) {
-      setStep("info");
+      setStep("payment");
       promo.resetPromo();
       tap.reset();
       form.resetForm();
@@ -135,47 +86,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (user) {
       form.prefillAndAutoAdvance();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user]);
-
-  // Init Tap Card SDK only when the payment step becomes active
-  // (the #tap-card-element container must be in the DOM first)
-  useEffect(() => {
-    if (step === "payment" && open) {
-      tapCard.reinit();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, open]);
-
-  /**
-   * If the URL carries `?code=XYZ`, validate and apply it as soon as the modal
-   * opens for an authenticated user.
-   */
-  const urlCodeAppliedRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!open || !user) return;
-    let code: string | null = null;
-    try {
-      const params = new URLSearchParams(window.location.search);
-      code = params.get("code") || params.get("coupon");
-    } catch {
-      /* ignore */
-    }
-    if (!code) return;
-    const trimmed = code.trim().toUpperCase();
-    if (!trimmed || urlCodeAppliedRef.current === trimmed) return;
-    urlCodeAppliedRef.current = trimmed;
-    void promo.applyCodeFromUrl(trimmed);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, user]);
-
-  // Keep SDK amount in sync when a coupon changes the price
-  useEffect(() => {
-    if (tapCard.sdkReady) {
-      tapCard.updateAmount(paymentQuote.amount, paymentQuote.currency);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentQuote.amount, paymentQuote.currency]);
 
   useEffect(() => {
     if (!open || user) return;
@@ -222,6 +133,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     onPaymentStarted?.();
 
     const composedAddress = [form.effectiveCity, form.effectiveCountry].filter(Boolean).join(", ");
+    const localCurrency = priceInfo.currency as string;
 
     // Free enrollment (100% coupon)
     if (discountedPrice === 0 && promo.appliedCoupon) {
@@ -258,7 +170,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           city: form.effectiveCity,
           address: composedAddress,
           amount: "0",
-          currency: paymentQuote.currency,
+          currency: localCurrency,
           dateOfBirth: profile?.date_of_birth || "",
           gender: profile?.gender || "",
           silent: true,
@@ -270,8 +182,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
-    const paymentCurrency = paymentQuote.currency;
-    const paymentAmount = paymentQuote.amount;
+    // Tap supported currencies
+    const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
+
+    let paymentCurrency: string;
+    let paymentAmount: number;
+
+    if (TAP_SUPPORTED.includes(localCurrency)) {
+      paymentCurrency = localCurrency;
+      paymentAmount = discountedPrice;
+    } else {
+      paymentCurrency = "SAR";
+      paymentAmount = isSAR || exchangeRate <= 0 ? discountedPrice : Math.ceil(discountedPrice / exchangeRate);
+    }
 
     // Save checkout data for PaymentSuccess webhook
     try {
@@ -306,18 +229,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     const courseDisplayName = isRTL && course.title_ar ? course.title_ar : course.title;
 
-    // ── Tokenise card before creating the charge ──────────────────────────
-    let resolvedTokenId: string | undefined;
-    if (tapCard.sdkReady) {
-      const tokenId = await tapCard.tokenize();
-      if (!tokenId) {
-        // SDK will surface its own error via tapCard.sdkError
-        toast.error(isRTL ? 'فشل في قراءة بيانات البطاقة، يرجى المحاولة مرة أخرى' : 'Card tokenisation failed. Please try again.');
-        return;
-      }
-      resolvedTokenId = tokenId;
-    }
-
     await tap.submitPayment({
       courseId: course.id,
       currency: paymentCurrency,
@@ -332,7 +243,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       couponCode: promo.appliedCoupon?.coupon_code || promo.promoCode?.trim().toUpperCase() || undefined,
       amount: paymentAmount,
       courseName: courseDisplayName,
-      tokenId: resolvedTokenId,
       isRTL,
     });
   }, [
@@ -347,8 +257,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     isSAR,
     exchangeRate,
     isRTL,
-    paymentQuote.amount,
-    paymentQuote.currency,
     profile,
     onPaymentStarted,
     onSuccess,
@@ -364,15 +272,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   }, [tap.status, course.id, navigate]);
 
-  // Pay button is enabled only once the card form is valid (all fields filled).
-  // Also blocked while SDK is still loading to prevent falling back to src_all.
-  const isPaymentReady =
-    form.isInfoValid &&
-    !tap.error &&
-    tap.status !== "processing" &&
-    tap.status !== "verifying" &&
-    !tapCard.sdkLoading &&
-    (tapCard.sdkReady ? tapCard.cardValid : false);
+  const isPaymentReady = form.isInfoValid && !tap.error && tap.status !== "processing" && tap.status !== "verifying";
 
   const isStatusOverlay = tap.status === "verifying" || tap.status === "succeeded" || tap.status === "failed";
 
@@ -416,45 +316,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <DialogTitle className="text-lg font-bold">
               {step === "info"
                 ? isRTL
-                  ? "معلومات الفاتورة"
+                  ? "معلومات الدفع"
                   : "Billing Information"
                 : isRTL
-                  ? "بيانات البطاقة"
-                  : "Card Details"}
+                  ? "إتمام الشراء"
+                  : "Complete Purchase"}
             </DialogTitle>
           </DialogHeader>
-
-          {/* Step indicator */}
-          <div className="flex items-center gap-2 mt-2">
-            {/* Step 1 */}
-            <div className="flex items-center gap-1.5">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                step === "info" ? "bg-primary text-primary-foreground" : "bg-primary/20 text-primary"
-              }`}>
-                {step === "payment" ? "✓" : "1"}
-              </div>
-              <span className={`text-xs font-medium transition-colors ${
-                step === "info" ? "text-foreground" : "text-muted-foreground"
-              }`}>
-                {isRTL ? "البيانات" : "Info"}
-              </span>
-            </div>
-            {/* Connector */}
-            <div className={`flex-1 h-px transition-colors ${step === "payment" ? "bg-primary" : "bg-border"}`} />
-            {/* Step 2 */}
-            <div className="flex items-center gap-1.5">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                step === "payment" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-              }`}>
-                2
-              </div>
-              <span className={`text-xs font-medium transition-colors ${
-                step === "payment" ? "text-foreground" : "text-muted-foreground"
-              }`}>
-                {isRTL ? "الدفع" : "Payment"}
-              </span>
-            </div>
-          </div>
 
           {/* Course info */}
           <div className="flex items-center gap-3 mt-3">
@@ -539,17 +407,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 promoCode={promo.promoCode}
                 setPromoCode={promo.setPromoCode}
                 promoApplied={promo.promoApplied}
-                promoLoading={promo.promoLoading}
                 appliedCoupon={promo.appliedCoupon}
-                invalidCode={promo.invalidCode}
                 handleApplyPromo={promo.handleApplyPromo}
                 clearPromo={promo.clearPromo}
                 discountLabel={discountLabel}
                 discountAmount={discountAmount}
                 discountedPrice={discountedPrice}
-                originalPrice={basePrice}
-                promoOpen={promoOpen}
-                onPromoOpenChange={setPromoOpen}
                 fullName={form.fullName}
                 setFullName={form.setFullName}
                 email={form.email}
@@ -584,10 +447,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 exchangeRate={exchangeRate}
                 isSAR={isSAR}
                 onSubmitPayment={handleSubmitPayment}
-                tapCardContainerId="tap-card-element"
-                tapCardLoading={tapCard.sdkLoading}
-                tapCardValid={tapCard.cardValid}
-                tapCardError={tapCard.sdkError}
               />
             )}
           </AnimatePresence>
@@ -596,9 +455,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         {/* Footer */}
         <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-border flex-shrink-0 flex gap-2">
           {step === "info" ? (
-            /* ── Step 1: Next button (full width) ── */
             <Button
-              className="flex-1 h-11 btn-cta"
+              className="flex-1 btn-cta"
               onClick={handleNextStep}
               disabled={form.profileSaving || !form.isInfoValid}
             >
@@ -606,104 +464,58 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {isRTL ? "التالي" : "Next"}
               <ArrowIcon className="w-4 h-4 ms-2" />
             </Button>
-          ) : (
-            /* ── Step 2: Back icon + CTA ── */
-            <>
-              {/* Back button — hidden while promo panel is open to keep footer clean */}
-              {!promoOpen && (
-                <Button
-                  variant="outline"
-                  className="h-11 px-3 rounded-xl shrink-0"
-                  onClick={() => setStep("info")}
-                  disabled={tap.status === "processing"}
-                  aria-label={isRTL ? "رجوع" : "Back"}
-                >
-                  <BackArrowIcon className="w-4 h-4" />
-                </Button>
-              )}
-
-              {/* CTA — Apply code / Free enroll / Pay Now */}
-              {promoOpen && !promo.promoApplied ? (
-                <Button
-                  className="flex-1 h-11 rounded-xl text-sm font-bold"
-                  variant="cta"
-                  onClick={promo.handleApplyPromo}
-                  disabled={!promo.promoCode || promo.promoLoading || tap.status === "processing"}
-                >
-                  {promo.promoLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin me-2" />
-                      {isRTL ? "جارٍ التحقق..." : "Verifying…"}
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="w-4 h-4 me-2" />
-                      {isRTL ? "تطبيق الكود" : "Apply code"}
-                    </>
-                  )}
-                </Button>
-              ) : discountedPrice <= 0 && promo.appliedCoupon ? (
-                <Button
-                  className="flex-1 h-11"
-                  variant="cta"
-                  onClick={handleSubmitPayment}
-                  disabled={tap.status === "processing" || !isPaymentReady}
-                >
-                  {tap.status === "processing" ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin me-2" />
-                      {isRTL ? "جاري التسجيل..." : "Enrolling..."}
-                    </>
-                  ) : isRTL ? "سجّل مجاناً" : "Enroll for Free"}
-                </Button>
+          ) : discountedPrice <= 0 && promo.appliedCoupon ? (
+            <Button
+              className="flex-1"
+              variant="cta"
+              onClick={handleSubmitPayment}
+              disabled={tap.status === "processing" || !isPaymentReady}
+            >
+              {tap.status === "processing" ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin me-2" />
+                  {isRTL ? "جاري التسجيل..." : "Enrolling..."}
+                </>
+              ) : isRTL ? (
+                "سجّل مجاناً"
               ) : (
-                <Button
-                  className="flex-1 h-11 rounded-xl text-sm font-bold"
-                  variant="cta"
-                  onClick={handleSubmitPayment}
-                  disabled={tap.status === "processing" || guestSigningUp || !isPaymentReady}
-                >
-                  {guestSigningUp ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin me-2" />
-                      {isRTL ? "جاري إنشاء الحساب..." : "Creating account..."}
-                    </>
-                  ) : tap.status === "processing" ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin me-2" />
-                      {isRTL ? "جاري تجهيز الدفع..." : "Preparing payment..."}
-                    </>
-                  ) : tapCard.sdkLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin me-2" />
-                      {isRTL ? "جارٍ تحميل نموذج الدفع..." : "Loading payment form..."}
-                    </>
-                  ) : !tapCard.cardValid ? (
-                    <>
-                      <CreditCard className="w-4 h-4 me-2" />
-                      {isRTL ? "أدخل بيانات البطاقة" : "Enter card details"}
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="w-4 h-4 me-2" />
-                      {(() => {
-                        const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
-                        const showLocal = TAP_SUPPORTED.includes(priceInfo.currency as string);
-                        const displayAmt = showLocal
-                          ? discountedPrice
-                          : isSAR || exchangeRate <= 0
-                            ? discountedPrice
-                            : Math.ceil(discountedPrice / exchangeRate);
-                        const displaySym = showLocal ? currSym : isRTL ? "ر.س" : "SAR";
-                        return isRTL
-                          ? `ادفع الآن — ${displayAmt} ${displaySym}`
-                          : `Pay Now — ${displayAmt} ${displaySym}`;
-                      })()}
-                    </>
-                  )}
-                </Button>
+                "Enroll for Free"
               )}
-            </>
+            </Button>
+          ) : (
+            <Button
+              className="flex-1 h-11 rounded-xl text-sm font-bold"
+              variant="cta"
+              onClick={handleSubmitPayment}
+              disabled={tap.status === "processing" || guestSigningUp || !isPaymentReady}
+            >
+              {guestSigningUp ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin me-2" />
+                  {isRTL ? "جاري إنشاء الحساب..." : "Creating account..."}
+                </>
+              ) : tap.status === "processing" ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin me-2" />
+                  {isRTL ? "جاري تجهيز الدفع..." : "Preparing payment..."}
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-4 h-4 me-2" />
+                  {(() => {
+                    const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
+                    const showLocal = TAP_SUPPORTED.includes(priceInfo.currency as string);
+                    const displayAmt = showLocal
+                      ? discountedPrice
+                      : isSAR || exchangeRate <= 0
+                        ? discountedPrice
+                        : Math.ceil(discountedPrice / exchangeRate);
+                    const displaySym = showLocal ? currSym : isRTL ? "ر.س" : "SAR";
+                    return isRTL ? `ادفع الآن` : `Pay Now`;
+                  })()}
+                </>
+              )}
+            </Button>
           )}
         </div>
 

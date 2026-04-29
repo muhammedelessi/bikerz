@@ -25,22 +25,34 @@ async function fetchDurationFromGoogleApi(videoId: string): Promise<number | nul
   return null;
 }
 
+async function fetchDurationFromInvidious(videoId: string): Promise<number | null> {
+  const mirrors = [
+    "https://invidious.privacyredirect.com",
+    "https://vid.puffyan.us",
+    "https://inv.nadeko.net",
+  ];
+  for (const base of mirrors) {
+    try {
+      const r = await fetch(`${base}/api/v1/videos/${encodeURIComponent(videoId)}`);
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (typeof j.lengthSeconds === "number") return j.lengthSeconds;
+    } catch {
+      /* next mirror */
+    }
+  }
+  return null;
+}
+
 async function fetchOneDuration(videoId: string): Promise<number | null> {
-  // Only the official YouTube Data API is CORS-friendly. Public Invidious mirrors
-  // (privacyredirect, puffyan, nadeko, …) used to be a fallback but most have
-  // either been shut down, return 502, or strip CORS headers — they only added
-  // console noise without ever succeeding from the browser. Return null when no
-  // API key is configured; callers (e.g. ChampionVideoTeaserCard) already
-  // gracefully handle a missing duration.
-  return fetchDurationFromGoogleApi(videoId);
+  const fromGoogle = await fetchDurationFromGoogleApi(videoId);
+  if (fromGoogle != null) return fromGoogle;
+  return fetchDurationFromInvidious(videoId);
 }
 
 /**
  * Resolve YouTube durations for a list of video IDs (deduped).
- * Uses VITE_YOUTUBE_API_KEY when set; without it the hook resolves to an empty
- * map and the UI hides the duration overlay rather than spamming failed
- * cross-origin requests. The preferred source of truth is the cached
- * `champion_videos.duration_seconds` column populated at upload time.
+ * Uses VITE_YOUTUBE_API_KEY when set, otherwise tries public Invidious mirrors (best-effort).
  */
 export function useYoutubeVideoDurations(youtubeIds: (string | null | undefined)[]) {
   const unique = [...new Set(youtubeIds.filter((id): id is string => !!id && id.length === 11))];

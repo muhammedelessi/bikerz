@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import confetti from "canvas-confetti";
 import bikerLogo from "@/assets/bikerz-logo.webp";
 import { trackPurchase } from "@/utils/metaPixel";
-import { trackGoogleAdsPurchase } from "@/utils/googleAds";
 import { useGHLFormWebhook } from "@/hooks/useGHLFormWebhook";
 import { clearBundleSelection } from "@/lib/bundleSelectionStorage";
 import type { User } from "@supabase/supabase-js";
@@ -294,11 +293,6 @@ const PaymentSuccess: React.FC = () => {
           value: Number(amountStr) || 0,
           currency: "SAR",
         });
-        trackGoogleAdsPurchase({
-          transaction_id: tapId,
-          value: Number(amountStr) || 0,
-          currency: "SAR",
-        });
       }
 
       const n8nBase = {
@@ -342,11 +336,6 @@ const PaymentSuccess: React.FC = () => {
         content_name: course.title,
         content_ids: [courseId],
         content_type: "product",
-        value: course.price ?? 0,
-        currency: "SAR",
-      });
-      trackGoogleAdsPurchase({
-        transaction_id: tapId,
         value: course.price ?? 0,
         currency: "SAR",
       });

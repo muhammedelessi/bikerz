@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Gift, Shield, Check, Lock, XCircle, Pencil, X, Phone, MapPin, User, AlertTriangle, CreditCard, Loader2 } from "lucide-react";
+import { Gift, Shield, Check, Lock, XCircle, Pencil, X, Phone, MapPin, User, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,18 +22,12 @@ interface CheckoutPaymentStepProps {
   promoCode: string;
   setPromoCode: (v: string) => void;
   promoApplied: boolean;
-  /** Loading state while we validate the code against the server. */
-  promoLoading?: boolean;
   appliedCoupon: AppliedCoupon | null;
-  /** Last failed validation message — when set, the input shows red + inline error. */
-  invalidCode?: string | null;
   handleApplyPromo: () => void;
   clearPromo: () => void;
   discountLabel: string;
   discountAmount: number;
   discountedPrice: number;
-  /** Original (pre-discount) price — used to render the strikethrough next to the new total. */
-  originalPrice?: number;
   fullName: string;
   setFullName: (v: string) => void;
   email: string;
@@ -72,17 +66,6 @@ interface CheckoutPaymentStepProps {
   onSubmitPayment: () => void;
   /** Bundle checkout: hide promo + duplicate pricing; order box shows contact fields only */
   bundleMode?: boolean;
-  /** Lifted state: whether the promo input panel is open. Controlled by the parent modal so the footer can swap Pay → Apply. */
-  promoOpen?: boolean;
-  onPromoOpenChange?: (open: boolean) => void;
-  /** Tap Card SDK container id — when provided the embedded card form is shown */
-  tapCardContainerId?: string;
-  /** true while the SDK iframe is loading */
-  tapCardLoading?: boolean;
-  /** true once all card fields are valid (enables Pay button) */
-  tapCardValid?: boolean;
-  /** SDK-level error message */
-  tapCardError?: string | null;
 }
 
 const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
@@ -93,15 +76,12 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     promoCode,
     setPromoCode,
     promoApplied,
-    promoLoading = false,
     appliedCoupon,
-    invalidCode = null,
     handleApplyPromo,
     clearPromo,
     discountLabel,
     discountAmount,
     discountedPrice,
-    originalPrice,
     fullName,
     setFullName,
     email,
@@ -137,26 +117,9 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     isSAR = true,
     onSubmitPayment,
     bundleMode = false,
-    promoOpen: promoOpenProp,
-    onPromoOpenChange,
-    tapCardContainerId,
-    tapCardLoading = false,
-    tapCardValid = false,
-    tapCardError,
   }) => {
     const { t } = useTranslation();
     const [editOpen, setEditOpen] = useState(false);
-    /**
-     * Promo input is hidden by default — user reveals it via the small link below the total.
-     * State is controlled when `promoOpen` / `onPromoOpenChange` are provided (CheckoutModal lifts
-     * it up so the footer can swap the Pay button for an Apply button), uncontrolled otherwise.
-     */
-    const [internalPromoOpen, setInternalPromoOpen] = useState(false);
-    const promoOpen = promoOpenProp ?? internalPromoOpen;
-    const setPromoOpen = (next: boolean) => {
-      if (onPromoOpenChange) onPromoOpenChange(next);
-      else setInternalPromoOpen(next);
-    };
 
     const billingIssueLines = useMemo(
       () =>
@@ -199,202 +162,189 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
       <>
         <motion.div
           key="payment"
-          initial={{ opacity: 0, x: isRTL ? -24 : 24, y: 6 }}
-          animate={{ opacity: 1, x: 0, y: 0 }}
-          exit={{ opacity: 0, x: isRTL ? 24 : -24, y: -6 }}
-          transition={{ duration: 0.22, ease: "easeOut" }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
           className={bundleMode ? "space-y-4" : "space-y-5"}
         >
-          {/*
-            Promo Code (collapsed-by-default UX)
-            - No field visible until the user clicks the small "Do you have a discount code?" link.
-            - On open, the [input] [Apply] row slides in (300ms via AnimatePresence + height/opacity).
-            - Success: green confirmation card with "Code X applied — You saved Y SAR" + Remove button.
-            - Failure: input gets a red border + "Invalid code" inline message.
-            - Auto-uppercase is enforced in the hook (`setPromoCode` lowercases→uppercases).
-          */}
+          {/* Promo Code */}
           {!bundleMode && (
-            <AnimatePresence mode="wait" initial={false}>
-              {promoApplied && appliedCoupon ? (
-                /* === Applied state — strong, unambiguous confirmation === */
-                <motion.div
-                  key="promo-applied"
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.25 }}
-                  className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2.5 sm:px-4 sm:py-3"
-                >
-                  <div className="flex items-start gap-2 sm:gap-3">
-                    <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
-                      <Check className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
-                        {isRTL
-                          ? `تم تطبيق كود ${appliedCoupon.coupon_code ?? promoCode} بنجاح`
-                          : `Code ${appliedCoupon.coupon_code ?? promoCode} applied successfully`}
-                      </p>
-                      <p className="text-xs text-emerald-800/80 dark:text-emerald-200/80 mt-0.5">
-                        {isRTL
-                          ? `تم خصم ${discountLabel} من سعر الكورس 🎉 تهانينا`
-                          : `${discountLabel} discount applied 🎉 Congratulations`}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        clearPromo();
-                        setPromoOpen(false);
-                      }}
-                      disabled={paymentStatus === "processing"}
-                      className="shrink-0 text-xs font-semibold text-emerald-900/80 dark:text-emerald-100/80 hover:text-emerald-950 dark:hover:text-emerald-50 underline underline-offset-2 disabled:opacity-50"
-                    >
-                      {isRTL ? "إزالة" : "Remove"}
-                    </button>
-                  </div>
-                </motion.div>
-              ) : promoOpen ? (
-                /* === Open input row — slides in at 300ms === */
-                <motion.div
-                  key="promo-open"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="overflow-hidden"
-                >
-                  <div className="space-y-2 px-3 sm:px-4 pt-1">
-                    <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                      <Gift className="w-3.5 h-3.5 text-primary" />
-                      {isRTL ? "كود الخصم" : "Discount code"}
-                    </Label>
-                    <Input
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          if (promoCode && !promoLoading) handleApplyPromo();
-                        }
-                      }}
-                      placeholder="MOH301"
-                      disabled={promoLoading || paymentStatus === "processing"}
-                      autoFocus
-                      autoCapitalize="characters"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      dir="ltr"
-                      className={`w-full h-8 px-3 text-center uppercase tracking-[0.2em] font-mono text-sm placeholder:tracking-normal placeholder:text-muted-foreground/40 ${
-                        invalidCode
-                          ? "border-destructive/60 bg-destructive/5 focus-visible:ring-destructive/30"
-                          : ""
-                      }`}
-                    />
-                    {invalidCode ? (
-                      <p className="text-xs text-destructive flex items-center gap-1">
-                        <AlertTriangle className="w-3.5 h-3.5" />
-                        {isRTL ? "كود غير صالح" : "Invalid code"}
-                      </p>
-                    ) : (
-                      <p className="text-[11px] text-muted-foreground/80">
-                        {isRTL
-                          ? "اضغط زر «تطبيق الكود» أدناه للتحقق."
-                          : "Tap the “Apply code” button below to verify."}
-                      </p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPromoOpen(false);
-                        setPromoCode("");
-                      }}
-                      className="text-[11px] text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
-                    >
-                      {isRTL ? "إلغاء" : "Cancel"}
-                    </button>
-                  </div>
-                </motion.div>
-              ) : (
-                /* === Default state — just a small gray link === */
-                <motion.button
-                  key="promo-link"
-                  type="button"
-                  onClick={() => setPromoOpen(true)}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="group flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition-all hover:border-primary hover:bg-primary/10 hover:shadow-sm"
-                >
-                  <Gift className="w-4 h-4 transition-transform group-hover:scale-110" />
-                  <span>{isRTL ? "هل لديك كود خصم؟" : "Do you have a discount code?"}</span>
-                </motion.button>
-              )}
-            </AnimatePresence>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              <Gift className="w-3.5 h-3.5 text-primary" />
+              {isRTL ? "رمز الخصم" : "Promo Code"}
+            </Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value)}
+                  placeholder={isRTL ? "أدخل رمز الخصم" : "Enter promo code"}
+                  disabled={promoApplied || paymentStatus === "processing"}
+                  className="w-full pe-8 h-9"
+                />
+                {promoCode && !promoApplied && (
+                  <button
+                    type="button"
+                    onClick={() => setPromoCode("")}
+                    className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                )}
+                {promoApplied && (
+                  <button
+                    type="button"
+                    onClick={clearPromo}
+                    className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="default"
+                onClick={handleApplyPromo}
+                disabled={!promoCode || promoApplied || paymentStatus === "processing"}
+              >
+                {promoApplied ? (isRTL ? "مطبق" : "Applied") : isRTL ? "تطبيق" : "Apply"}
+              </Button>
+            </div>
+            {promoApplied && appliedCoupon && (
+              <p className="text-xs text-primary flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" />
+                {isRTL
+                  ? `تم تطبيق خصم ${discountLabel}`
+                  : `${discountLabel} discount applied`}
+              </p>
+            )}
+          </div>
           )}
 
-          {/* ── Tap Embedded Card Form ───────────────────────────────── */}
-          {tapCardContainerId && !bundleMode && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                <CreditCard className="w-3.5 h-3.5 text-primary" />
-                {isRTL ? "بيانات البطاقة" : "Card Details"}
+          {/* Order Summary */}
+          <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
+            <div className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                {bundleMode
+                  ? isRTL
+                    ? "بياناتك للتواصل"
+                    : "Your details"
+                  : isRTL
+                    ? "ملخص الطلب"
+                    : "Order Summary"}
+              </p>
+              <button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors shrink-0"
+              >
+                <Pencil className="w-3 h-3" />
+                {isRTL ? "تعديل" : "Edit"}
+              </button>
+            </div>
+            <div className="p-4 space-y-2.5">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5" />
+                  {isRTL ? "الاسم" : "Name"}
+                </span>
+                <span className="font-medium truncate max-w-[200px]">{fullName}</span>
               </div>
-
-              {/* SDK mounts here — must NOT be conditionally removed from DOM */}
-              <div className={`relative rounded-xl overflow-hidden border-2 transition-all duration-300 bg-muted/10 min-h-[180px] ${
-                tapCardValid
-                  ? 'border-primary/70 shadow-[0_0_0_3px_hsl(var(--primary)/0.12)]'
-                  : 'border-border'
-              }`}>
-                {tapCardLoading && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-card/95 rounded-xl gap-4 px-5">
-                    <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                      <span className="text-xs font-medium text-muted-foreground text-center">
-                        {isRTL ? "جارٍ تحميل نموذج الدفع الآمن..." : "Loading secure payment form..."}
-                      </span>
-                    </div>
-                    {/* Skeleton placeholder */}
-                    <div className="w-full space-y-2">
-                      <div className="h-10 bg-muted/50 rounded-lg animate-pulse" />
-                      <div className="flex gap-2">
-                        <div className="h-10 bg-muted/50 rounded-lg animate-pulse flex-1" />
-                        <div className="h-10 bg-muted/50 rounded-lg animate-pulse flex-1" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div id={tapCardContainerId} className="w-full" />
-              </div>
-
-              {/* Card validity indicator */}
-              {!tapCardLoading && !tapCardError && (
-                <div className={`flex items-center gap-1.5 text-xs transition-colors ${
-                  tapCardValid ? 'text-emerald-500' : 'text-muted-foreground/50'
-                }`}>
-                  {tapCardValid ? (
-                    <>
-                      <Check className="w-3.5 h-3.5" />
-                      <span>{isRTL ? "بيانات البطاقة مكتملة ✓" : "Card details complete ✓"}</span>
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="w-3.5 h-3.5" />
-                      <span>{isRTL ? "أدخل بيانات بطاقتك أعلاه" : "Enter your card details above"}</span>
-                    </>
-                  )}
+              {displayPhone && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5" />
+                    {isRTL ? "الهاتف" : "Phone"}
+                  </span>
+                  <span className="font-medium font-mono" dir="ltr">
+                    {displayPhone}
+                  </span>
                 </div>
               )}
+              {(effectiveCity || effectiveCountry) && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {isRTL ? "العنوان" : "Address"}
+                  </span>
+                  <span className="font-medium truncate max-w-[200px]">
+                    {[displayCity, displayCountry].filter(Boolean).join(", ")}
+                  </span>
+                </div>
+              )}
+              {!bundleMode && (
+                <>
+                  <Separator className="my-1" />
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{isRTL ? "الدورة" : "Course"}</span>
+                    <span className="font-medium truncate max-w-[200px]">
+                      {isRTL && courseTitleAr ? courseTitleAr : courseTitle}
+                    </span>
+                  </div>
+                  {promoApplied && appliedCoupon && (
+                    <div className="flex justify-between text-sm text-primary">
+                      <span>
+                        {isRTL ? "الخصم" : "Discount"} ({discountLabel})
+                      </span>
+                      <span>-{formatLocal(discountAmount)}</span>
+                    </div>
+                  )}
+                  <Separator className="my-1" />
+                  <div className="flex justify-between font-bold text-base">
+                    <span>
+                      {isRTL
+                        ? vatPct > 0
+                          ? "الإجمالي (شامل الضريبة)"
+                          : "الإجمالي"
+                        : vatPct > 0
+                          ? "Total (incl. VAT)"
+                          : "Total"}
+                    </span>
+                    <span className="text-primary">
+                      {totalWithVat} {currencyLabel}
+                    </span>
+                  </div>
 
-              {tapCardError && (
-                <p className="text-xs text-destructive flex items-center gap-1">
-                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                  {tapCardError}
-                </p>
+                  {/* Equivalent amount info — for all non-SAR currencies */}
+                  {!isSAR &&
+                    exchangeRate > 0 &&
+                    (() => {
+                      const TAP_SUPPORTED = ["KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
+                      const isSupported = TAP_SUPPORTED.some((c) => currencyLabel.includes(c));
+                      const sarEquivalent = Math.ceil(totalWithVat / exchangeRate);
+
+                      return (
+                        <div className="flex items-center justify-center gap-1.5 flex-wrap text-center px-2 py-2 rounded-lg bg-muted/40 mt-1">
+                          <span className="text-[12px] text-muted-foreground">
+                            {isRTL ? "سيتم خصم" : "You will be charged"}
+                          </span>
+                          <span className="text-[12px] font-bold text-primary flex items-center gap-1">
+                            {isSupported ? `${totalWithVat} ${currencyLabel}` : `${totalWithVat} ${currencyLabel}`}
+                          </span>
+                          <span className="text-[12px] text-muted-foreground">
+                            {isRTL ? " أي ما يعادل" : "equivalent to"}
+                          </span>
+                          <span className="text-[12px] font-bold text-foreground">
+                            {sarEquivalent}
+                            <span>{" SAR "}</span>
+                          </span>
+                        </div>
+                      );
+                    })()}
+
+                  {vatPct > 0 && (
+                    <div className="pt-2 border-t border-border/50">
+                      <p className="text-[11px] text-muted-foreground text-center">
+                        {isRTL ? "الرقم الضريبي" : "VAT Number"}:{" "}
+                        <span className="font-mono font-medium text-foreground/70">311508395300003</span>
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
-          )}
+          </div>
 
           {billingIncomplete && paymentStatus === "idle" && (
             <Alert variant="destructive" className="text-start">
@@ -417,30 +367,26 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
             </Alert>
           )}
 
-          {/* Trust Badges */}
-          <div className="flex flex-col items-center gap-2 pt-1 pb-1">
+          {/* Trust Badge */}
+          <div className="flex flex-col items-center gap-2 pt-2">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Lock className="w-3.5 h-3.5 text-primary" />
               <span>
                 {bundleMode
-                  ? isRTL ? "دفع إلكتروني مؤمّن" : "Secure online payment"
-                  : isRTL ? "مُؤمّن بواسطة Tap Payments" : "Secured by Tap Payments"}
+                  ? isRTL
+                    ? "دفع إلكتروني مؤمّن"
+                    : "Secure online payment"
+                  : isRTL
+                    ? "مُؤمّن بواسطة Tap Payments"
+                    : "Secured by Tap Payments"}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 flex-wrap justify-center">
-              {["VISA", "Mastercard", "MADA"].map((card) => (
-                <span
-                  key={card}
-                  className="px-2 py-0.5 rounded border border-border/50 text-[10px] font-semibold text-muted-foreground/70 bg-muted/20 tracking-wide"
-                >
-                  {card}
-                </span>
-              ))}
-              <span className="text-muted-foreground/20 text-xs">•</span>
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
                 <Shield className="w-3 h-3" />
                 <span>3D Secure</span>
               </div>
+              <span className="text-muted-foreground/20">|</span>
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
                 <Shield className="w-3 h-3" />
                 <span>PCI DSS</span>

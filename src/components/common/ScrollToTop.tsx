@@ -54,47 +54,19 @@ const ScrollToTop = () => {
 
   // Safety: periodically check for orphaned scroll locks when no dialogs are open
   useEffect(() => {
-    const isStuck = () => {
+    const checkInterval = setInterval(() => {
       const html = document.documentElement;
-      const body = document.body;
       const hasLock = html.hasAttribute('data-scroll-locked');
-      const bodyHidden = body.style.overflow === 'hidden';
-      const bodyClicksDisabled = body.style.pointerEvents === 'none';
-      return hasLock || bodyHidden || bodyClicksDisabled;
-    };
+      const hasOpenDialog = document.querySelector('[data-state="open"][role="dialog"]');
+      const hasOpenDrawer = document.querySelector('[vaul-drawer][data-state="open"]');
 
-    const hasLiveOverlay = () => {
-      // Any open Radix Dialog, AlertDialog, Drawer, Vaul drawer, etc.
-      return Boolean(
-        document.querySelector('[data-state="open"][role="dialog"]') ||
-          document.querySelector('[data-state="open"][role="alertdialog"]') ||
-          document.querySelector('[vaul-drawer][data-state="open"]') ||
-          document.querySelector('[data-radix-portal] [data-state="open"]'),
-      );
-    };
-
-    const checkAndClear = () => {
-      if (isStuck() && !hasLiveOverlay()) {
+      // If scroll is locked but no dialog/drawer is actually open, clear the lock
+      if (hasLock && !hasOpenDialog && !hasOpenDrawer) {
         clearStaleScrollLocks();
       }
-    };
+    }, 2000);
 
-    // Periodic safety net (covers slow leaks)
-    const checkInterval = setInterval(checkAndClear, 1000);
-
-    // Reactive safety net: if the user clicks anywhere and the body is locked
-    // without a real overlay, clear immediately so the click can take effect on
-    // the next interaction. Capture-phase so we run before any handler.
-    const onPointerDown = () => {
-      // Run on the next tick so any legitimate dialog has a chance to register first
-      setTimeout(checkAndClear, 0);
-    };
-    document.addEventListener('pointerdown', onPointerDown, { capture: true });
-
-    return () => {
-      clearInterval(checkInterval);
-      document.removeEventListener('pointerdown', onPointerDown, { capture: true } as EventListenerOptions);
-    };
+    return () => clearInterval(checkInterval);
   }, []);
 
   return null;

@@ -29,8 +29,6 @@ export function installBikerzProductionTrackers() {
     document.head.appendChild(s);
     window.gtag("js", new Date());
     window.gtag("config", "G-DDQSM0LN66", { send_page_view: true });
-    // Google Ads conversion tracking (shares the same gtag.js loader as GA4)
-    window.gtag("config", "AW-310996704");
   });
 
   // —— Microsoft Clarity ——
