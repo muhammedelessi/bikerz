@@ -231,7 +231,7 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
             </div>
           )}
 
-          <div id={CONTAINER_ID} className="min-h-[280px] px-3 py-3" />
+          <div id={CONTAINER_ID} className="[&>iframe]:!block [&>iframe]:!w-full" />
 
           {cardValid && (
             <div className="border-t border-primary/15 bg-primary/5 px-4 py-2">
