@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 
-import { ChevronRight, LogOut, Menu, X } from "lucide-react";
+import { Award, ChevronRight, LogOut, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LanguageToggle from "@/components/common/LanguageToggle";
 import LogoutConfirmDialog from "@/components/common/LogoutConfirmDialog";
@@ -319,6 +319,14 @@ const Navbar: React.FC = () => {
                 {user
                   ? (
                     <>
+                      <Link to="/dashboard/apply-trainer">
+                        <Button variant="outline" size="sm" className="gap-2 border-primary/30 text-primary hover:bg-primary/10">
+                          <Award className="w-4 h-4" aria-hidden />
+                          <span className="hidden xl:inline text-sm font-semibold">
+                            {t("nav.applyTrainer")}
+                          </span>
+                        </Button>
+                      </Link>
                       <Link to="/dashboard">
                         <Button variant="ghost" size="sm" className="gap-2">
                           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
@@ -530,6 +538,19 @@ const Navbar: React.FC = () => {
                         </span>
                       </div>
                       {profile?.full_name || t("nav.dashboard")}
+                    </Button>
+                  </Link>
+                  <Link
+                    to="/dashboard/apply-trainer"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block"
+                  >
+                    <Button
+                      variant="outline"
+                      className="w-full h-12 justify-start text-start text-base gap-3 border-primary/30 text-primary hover:bg-primary/10"
+                    >
+                      <Award className="w-5 h-5" aria-hidden />
+                      <span className="font-semibold">{t("nav.applyTrainer")}</span>
                     </Button>
                   </Link>
                   <LogoutConfirmDialog onConfirm={handleSignOut}>
