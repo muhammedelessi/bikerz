@@ -437,6 +437,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </DialogTitle>
           </DialogHeader>
 
+          {/* Step 1 / Step 2 indicator (hidden when the user was auto-skipped past Step 1) */}
+          <div className="mt-3">
+            <CheckoutStepIndicator currentStep={step} isRTL={isRTL} hideInfoStep={autoSkippedInfo} />
+          </div>
+
           {/* Course info */}
           <div className="flex items-center gap-3 mt-3">
             <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
