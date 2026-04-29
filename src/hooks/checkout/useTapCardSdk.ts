@@ -113,17 +113,18 @@ function friendlySdkError(err: unknown, isRTL: boolean, isTestMode: boolean): st
   const statusMatch = raw.match(/status code\s*(\d+)/i);
   if (statusMatch) statusCode = Number(statusMatch[1]);
 
-  // 400 from /v2/card/token in TEST mode almost always means a real card was
-  // entered (test mode rejects production card numbers). Surface the actual
-  // cause so the user doesn't keep retrying with the same card.
-  if (statusCode === 400 && isTestMode) {
-    return isRTL
-      ? "هذه بيئة اختبار: استخدم بطاقة اختبار مثل 4111 1111 1111 1111 (انتهاء أي تاريخ مستقبلي، CVV أي 3 أرقام). البطاقات الحقيقية مرفوضة هنا."
-      : "This is a test environment. Use a test card like 4111 1111 1111 1111 (any future expiry, any 3-digit CVV). Real cards are rejected here.";
-  }
-
-  // 400/422 from tokenize on live key — usually a card-validation issue.
+  // 400/422 from tokenize: the Tap iframe POSTs to /v2/card/token and the
+  // response body has the real cause (currency-not-allowed, card-not-allowed,
+  // missing-required-field…) but the SDK swallows it. Tell the user to
+  // double-check the card and offer support — and on test keys we add a
+  // hint about test card numbers WITHOUT blaming the user (the cause is
+  // often a misconfigured test merchant, not real-card-on-test-mode).
   if (statusCode === 400 || statusCode === 422) {
+    if (isTestMode) {
+      return isRTL
+        ? "تعذّر التحقق من بطاقتك. تأكد من البيانات أو جرّب بطاقة اختبار (4111 1111 1111 1111). إذا استمر الخطأ تواصل معنا."
+        : "Could not validate your card. Double-check the details or try a test card (4111 1111 1111 1111). If the error persists, contact support.";
+    }
     return isRTL
       ? "تعذّر التحقق من بيانات البطاقة. الرجاء التأكد من الرقم وتاريخ الانتهاء وCVV ثم إعادة المحاولة."
       : "Could not validate card details. Please re-check the number, expiry, and CVV.";
