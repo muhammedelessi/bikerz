@@ -133,17 +133,46 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
         }
         container.innerHTML = "";
 
-        const fullConfig: TapCardConfig = {
+        const setValidityFromPayload = (payload: unknown, fallback?: boolean) => {
+          if (cancelled) return;
+          if (typeof payload === "boolean") {
+            setCardValid(payload);
+            return;
+          }
+          if (payload && typeof payload === "object") {
+            const record = payload as Record<string, unknown>;
+            const nestedCandidates = [record, record.data, record.payload]
+              .filter((value): value is Record<string, unknown> => !!value && typeof value === "object");
+            for (const candidate of nestedCandidates) {
+              const values = [candidate.valid, candidate.isValid, candidate.invalid, candidate.isInvalid];
+              for (const value of values) {
+                if (typeof value === "boolean") {
+                  setCardValid(value === candidate.invalid || value === candidate.isInvalid ? !value : value);
+                  return;
+                }
+              }
+            }
+          }
+          if (typeof fallback === "boolean") setCardValid(fallback);
+        };
+
+        const fullConfig = {
           publicKey,
           ...configRef.current,
           onReady: () => {
             if (!cancelled) setSdkReady(true);
           },
-          onValidInput: () => {
-            if (!cancelled) setCardValid(true);
+          onValidInput: (data: unknown) => {
+            setValidityFromPayload(data, true);
           },
-          onInvalidInput: () => {
-            if (!cancelled) setCardValid(false);
+          onValidInputChange: (data: unknown) => {
+            setValidityFromPayload(data, true);
+          },
+          onInvalidInput: (data: unknown) => {
+            setValidityFromPayload(data, false);
+          },
+          onInvalidInputChange: (data: unknown) => {
+            setValidityFromPayload(data, false);
           },
           onError: (err) => {
             if (cancelled) return;
@@ -223,19 +252,27 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
         const data = event.data;
         if (!data || typeof data !== "object") return;
 
-        // Accept any of the common shapes Tap uses across SDK builds.
-        const payload = (data as Record<string, unknown>);
-        const candidates = [
-          payload.valid,
-          payload.isValid,
-          (payload.data as Record<string, unknown> | undefined)?.valid,
-          (payload.data as Record<string, unknown> | undefined)?.isValid,
-          (payload.payload as Record<string, unknown> | undefined)?.valid,
-          (payload.payload as Record<string, unknown> | undefined)?.isValid,
-        ];
-        const validFlag = candidates.find((v) => typeof v === "boolean") as boolean | undefined;
-        if (typeof validFlag === "boolean") {
-          setCardValid(validFlag);
+        const payload = data as Record<string, unknown>;
+        const objects = [payload, payload.data, payload.payload]
+          .filter((value): value is Record<string, unknown> => !!value && typeof value === "object");
+
+        for (const candidate of objects) {
+          if (typeof candidate.valid === "boolean") {
+            setCardValid(candidate.valid);
+            return;
+          }
+          if (typeof candidate.isValid === "boolean") {
+            setCardValid(candidate.isValid);
+            return;
+          }
+          if (typeof candidate.invalid === "boolean") {
+            setCardValid(!candidate.invalid);
+            return;
+          }
+          if (typeof candidate.isInvalid === "boolean") {
+            setCardValid(!candidate.isInvalid);
+            return;
+          }
         }
       } catch {
         /* ignore malformed messages */
