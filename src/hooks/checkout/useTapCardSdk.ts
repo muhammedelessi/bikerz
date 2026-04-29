@@ -213,10 +213,10 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
         reject(new Error("Card form is not ready yet"));
         return;
       }
-      if (!cardValid) {
-        reject(new Error("Please complete the card details"));
-        return;
-      }
+      // Note: we intentionally don't gate on `cardValid` here. Some Tap SDK
+      // builds don't emit onValidInput/onInvalidInput; in that case the SDK's
+      // own tokenize() will reject with a validation error, which is the
+      // authoritative signal.
       if (!window.CardSDK?.tokenize) {
         reject(new Error("Card SDK is not available"));
         return;
