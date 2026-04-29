@@ -139,8 +139,8 @@ Deno.serve(async (req) => {
 
       if (!chargeUserId) {
         console.warn("Cannot create DB record: no user_id in charge metadata or auth");
-        return new Response(
-          JSON.stringify({ status, charge_id, warning: "no_user_context" }),
+      return new Response(
+          JSON.stringify({ status, charge_id, warning: "no_user_context", message: tapMessage }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
