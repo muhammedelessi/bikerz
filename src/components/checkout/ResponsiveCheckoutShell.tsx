@@ -90,8 +90,13 @@ const ResponsiveCheckoutShell: React.FC<ResponsiveCheckoutShellProps> = ({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
+        // CRITICAL: do NOT add `relative` here. shadcn DialogContent already
+        // sets `fixed`, which establishes a containing block for absolute
+        // children — adding `relative` overrides `fixed` via tailwind-merge,
+        // and on long pages the dialog ends up rendered far below the viewport
+        // (only visible when the page is short, e.g. on small mobile widths).
         className={[
-          "relative sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden border-2 border-border bg-card p-0 gap-0",
+          "sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden border-2 border-border bg-card p-0 gap-0",
           className || "",
         ].join(" ")}
         onOpenAutoFocus={(e) => e.preventDefault()}
