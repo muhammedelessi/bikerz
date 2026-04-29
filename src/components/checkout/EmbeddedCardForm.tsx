@@ -50,6 +50,7 @@ interface EmbeddedCardFormProps {
 }
 
 const CONTAINER_ID = "tap-card-sdk-container";
+const APPLE_PAY_CONTAINER_ID = "tap-apple-pay-container";
 
 const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
   isRTL,
