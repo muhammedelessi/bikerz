@@ -510,8 +510,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         {/* Content */}
         <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0">
-          <AnimatePresence mode="wait">
-            {step === "info" ? (
+          {step === "info" ? (
               <CheckoutInfoStep
                 key="info"
                 isRTL={isRTL}
