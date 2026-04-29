@@ -75,6 +75,8 @@ interface CheckoutPaymentStepProps {
   /** Lifted state: whether the promo input panel is open. Controlled by the parent modal so the footer can swap Pay → Apply. */
   promoOpen?: boolean;
   onPromoOpenChange?: (open: boolean) => void;
+  /** Optional embedded card form rendered directly below the discount section. */
+  cardFormSlot?: React.ReactNode;
 }
 
 const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
@@ -131,6 +133,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     bundleMode = false,
     promoOpen: promoOpenProp,
     onPromoOpenChange,
+    cardFormSlot,
   }) => {
     const { t } = useTranslation();
     const [editOpen, setEditOpen] = useState(false);
@@ -319,6 +322,9 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
               )}
             </AnimatePresence>
           )}
+
+          {/* Embedded card form rendered directly under the discount/promo section */}
+          {cardFormSlot}
 
           {/* Total + charge hint (Order Summary card removed) */}
           {!bundleMode && (
