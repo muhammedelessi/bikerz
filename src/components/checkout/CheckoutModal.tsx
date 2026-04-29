@@ -388,7 +388,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const isPaymentReady = form.isInfoValid && !tap.error && tap.status !== "processing" && tap.status !== "verifying";
 
-  const isStatusOverlay = tap.status === "verifying" || tap.status === "succeeded" || tap.status === "failed";
+  const isStatusOverlay = tap.status === "processing" || tap.status === "verifying" || tap.status === "succeeded" || tap.status === "failed";
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
   const BackArrowIcon = isRTL ? ArrowRight : ArrowLeft;
