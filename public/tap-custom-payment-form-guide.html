@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>دليل دمج Tap — نموذج الدفع المخصص داخل Bikerz</title>
+<style>
+  :root {
+    --bg: #0b1220;
+    --panel: #111a2e;
+    --panel-2: #16213b;
+    --border: #1f2c4a;
+    --text: #e7ecf5;
+    --muted: #9aa7c2;
+    --accent: #4f8cff;
+    --accent-soft: rgba(79,140,255,.12);
+    --ok: #2dd4a7;
+    --ok-soft: rgba(45,212,167,.12);
+    --warn: #ffb84d;
+    --warn-soft: rgba(255,184,77,.12);
+    --bad: #ff6b6b;
+    --bad-soft: rgba(255,107,107,.12);
+    --code-bg: #0a1428;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Tajawal", "Cairo", system-ui, sans-serif;
+    background: linear-gradient(180deg, #0a1124 0%, #0b1220 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+    padding: 32px 16px 64px;
+  }
+  .wrap {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+  header.hero {
+    text-align: center;
+    padding: 24px 16px 36px;
+  }
+  header.hero h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    letter-spacing: -.5px;
+  }
+  header.hero p { margin: 0; color: var(--muted); }
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    margin-bottom: 12px;
+    border: 1px solid rgba(79,140,255,.25);
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin: 20px 0;
+    box-shadow: 0 6px 24px rgba(0,0,0,.25);
+  }
+  .card h2 {
+    margin: 0 0 12px;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card h3 {
+    margin: 18px 0 8px;
+    font-size: 16px;
+  }
+  .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 14px;
+  }
+  .table th, .table td {
+    text-align: right;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .table th {
+    background: var(--panel-2);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .pill {
+    display: inline-block;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 999px;
+  }
+  .pill.ok   { background: var(--ok-soft);   color: var(--ok);   border:1px solid rgba(45,212,167,.3); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); border:1px solid rgba(255,184,77,.3); }
+  .pill.bad  { background: var(--bad-soft);  color: var(--bad);  border:1px solid rgba(255,107,107,.3); }
+  .alert {
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin: 14px 0;
+    border: 1px solid;
+    font-size: 14px;
+  }
+  .alert.info { background: var(--accent-soft); border-color: rgba(79,140,255,.3); color: #b9d0ff; }
+  .alert.ok   { background: var(--ok-soft);     border-color: rgba(45,212,167,.3); color: #9fe9d2; }
+  .alert.warn { background: var(--warn-soft);   border-color: rgba(255,184,77,.3); color: #ffd596; }
+  code, pre {
+    font-family: "JetBrains Mono", Consolas, ui-monospace, monospace;
+    direction: ltr;
+    text-align: left;
+    unicode-bidi: embed;
+  }
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #ffd791;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 14px 16px;
+    border-radius: 10px;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    line-height: 1.55;
+    color: #d6e3ff;
+    margin: 10px 0 16px;
+  }
+  pre .k { color: #8ab4ff; }
+  pre .s { color: #a5e9b6; }
+  pre .c { color: #6f7d99; font-style: italic; }
+  pre .p { color: #ffd791; }
+  ul, ol { padding-right: 20px; margin: 8px 0 12px; }
+  li { margin: 6px 0; }
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px dashed rgba(79,140,255,.4); }
+  a:hover { color: #82adff; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin: 12px 0;
+  }
+  @media (max-width: 720px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  .step {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .step h4 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .kicker {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .toc {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin: 0 0 24px;
+  }
+  .toc ol { margin: 6px 0 0; }
+  .check { color: var(--ok); font-weight: 700; }
+  .x { color: var(--bad); font-weight: 700; }
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 14px 0;
+    direction: ltr;
+    justify-content: center;
+  }
+  .flow .node {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    text-align: center;
+    min-width: 130px;
+  }
+  .flow .arrow { color: var(--accent); font-weight: 700; }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    margin-top: 32px;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="badge">Tap Payments · academy.bikerz.com</span>
+    <h1>دليل دمج نموذج الدفع المخصص (Custom Card Form)</h1>
+    <p>شرح موحّد لكل اللي ذكرته رسائل Tap وكيف تترجم لخطوات تنفيذ على Bikerz.</p>
+  </header>
+
+  <div class="toc">
+    <div class="kicker">المحتوى</div>
+    <ol>
+      <li><a href="#emails">ملخص الإيميلين</a></li>
+      <li><a href="#why">ليش الـ Card SDK مهم لك؟</a></li>
+      <li><a href="#current">الوضع الحالي عندك في الكود</a></li>
+      <li><a href="#sdk">الخطوة 1 — Card SDK Web v2</a></li>
+      <li><a href="#keys">الخطوة 2 — مفاتيح API</a></li>
+      <li><a href="#applepay">الخطوة 3 — Apple Pay</a></li>
+      <li><a href="#intl">الخطوة 4 — البطاقات الدولية</a></li>
+      <li><a href="#flow">شكل الـ flow الجديد</a></li>
+      <li><a href="#plan">خطة التنفيذ المقترحة</a></li>
+    </ol>
+  </div>
+
+  <!-- ═════════════ EMAILS SUMMARY ═════════════ -->
+  <section id="emails" class="card">
+    <h2>📩 ملخص الإيميلين</h2>
+
+    <h3>إيميل Hanan (الجانب التجاري)</h3>
+    <table class="table">
+      <thead>
+        <tr><th>البند</th><th>الحالة</th><th>الأهمية للنموذج المخصص</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>تعدد العملات</td>
+          <td><span class="pill ok">مفعّل</span></td>
+          <td>تشحن العميل بعملته (USD/AED/EGP) بدل تحويل كل شي لـ SAR.</td>
+        </tr>
+        <tr>
+          <td>Visa/Mastercard دولية</td>
+          <td><span class="pill bad">غير مفعّلة</span></td>
+          <td>بدون استكمال الاتفاقية، البطاقات الأجنبية بترفض حتى لو الفورم شغال.</td>
+        </tr>
+        <tr>
+          <td>الدعم التقني</td>
+          <td><span class="pill warn">القناة</span></td>
+          <td><code>integrations@tap.company</code> — مرجع أي مشكلة دمج.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>إيميل Rawan (الجانب التقني — الأهم)</h3>
+    <ul>
+      <li><strong>Card SDK Web v2</strong> — هذا اللي بيخليك تجمع البطاقة داخل موقعك.</li>
+      <li><strong>API Keys</strong> — تجيبها من <code>os.tap.company</code>.</li>
+      <li><strong>Apple Pay</strong> — يلزمها رفع ملف تحقق دومين + whitelist.</li>
+      <li><strong>HTTPS وpublic key</strong> — متطلبات أساسية.</li>
+    </ul>
+  </section>
+
+  <!-- ═════════════ WHY ═════════════ -->
+  <section id="why" class="card">
+    <h2>💡 ليش الـ Card SDK مهم؟</h2>
+    <div class="grid">
+      <div class="step">
+        <h4><span class="x">✗</span> الفلو الحالي (Hosted)</h4>
+        <p>العميل يضغط "ادفع" → يتحوّل لصفحة Tap الخارجية → يرجع لموقعك.</p>
+        <ul>
+          <li>conversion rate أقل بسبب الـ redirect</li>
+          <li>المستخدم يحس إنه طلع برّا الموقع</li>
+        </ul>
+      </div>
+      <div class="step">
+        <h4><span class="check">✓</span> الفلو المستهدف (Embedded SDK)</h4>
+        <p>حقول البطاقة تظهر داخل صفحة الـ checkout عندك كـ iframes آمنة من Tap.</p>
+        <ul>
+          <li>تجربة أسلس → conversion أعلى</li>
+          <li>PCI compliance يبقى على Tap (مش عليك)</li>
+          <li>3DS فقط يفتح iframe صغير عند الحاجة</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════ CURRENT ═════════════ -->
+  <section id="current" class="card">
+    <h2>🔧 الوضع الحالي عندك في الكود</h2>
+    <p>راجعت الـ <code>tap-create-charge</code> Edge Function عندك. النتيجة:</p>
+    <pre><span class="c">// supabase/functions/tap-create-charge/index.ts</span>
+source: {
+  id: token_id || <span class="s">"src_all"</span>   <span class="c">// ← الـ backend جاهز يستقبل token!</span>
+}</pre>
+    <div class="alert ok">
+      <strong>خبر طيّب:</strong> الـ backend عندك بالفعل يقبل <code>token_id</code> اللي بيرجع من الـ SDK. الناقص فقط
+      هو <strong>دمج الـ SDK في الـ frontend</strong> وتمرير الـ token بدل <code>src_all</code>. يعني التعديل أصغر مما تتوقع.
+    </div>
+  </section>
+
+  <!-- ═════════════ STEP 1 ═════════════ -->
+  <section id="sdk" class="card">
+    <h2><span class="num">1</span> Card SDK Web v2</h2>
+    <p>الرابط الرسمي: <a href="https://developers.tap.company/docs/card-sdk-web-v2" target="_blank">developers.tap.company/docs/card-sdk-web-v2</a></p>
+
+    <h3>كيف يشتغل؟</h3>
+    <ol>
+      <li>تضيف script للـ SDK في الصفحة.</li>
+      <li>تستدعي <code>tap.create({ publicKey })</code> ثم <code>card.mount(...)</code> — تظهر الحقول كـ iframes.</li>
+      <li>عند الضغط على "ادفع" تستدعي <code>tap.tokenize()</code> → ترجعلك <code>tok_xxxxx</code>.</li>
+      <li>تبعت الـ <code>tok_xxxxx</code> للـ Edge Function <code>tap-create-charge</code>.</li>
+      <li>الـ backend يكمّل بنفس الكود الموجود حالياً.</li>
+    </ol>
+
+    <h3>سكتش بسيط للـ frontend</h3>
+    <pre><span class="c">// CheckoutPaymentStep.tsx</span>
+<span class="k">const</span> tap = window.<span class="p">Tap</span>(publicKey);
+<span class="k">const</span> elements = tap.elements();
+<span class="k">const</span> card = elements.create(<span class="s">"card"</span>);
+card.mount(<span class="s">"#card-element"</span>);
+
+<span class="k">async function</span> handlePay() {
+  <span class="k">const</span> { id, error } = <span class="k">await</span> tap.tokenize(card);
+  <span class="k">if</span> (error) <span class="k">return</span> showError(error.message);
+
+  <span class="c">// نفس الـ Edge Function — بس مع token_id</span>
+  <span class="k">await</span> supabase.functions.invoke(<span class="s">"tap-create-charge"</span>, {
+    body: { course_id, amount, <span class="p">token_id</span>: id }
+  });
+}</pre>
+  </section>
+
+  <!-- ═════════════ STEP 2 ═════════════ -->
+  <section id="keys" class="card">
+    <h2><span class="num">2</span> مفاتيح API — من TapOS</h2>
+    <ol>
+      <li>ادخل <a href="https://os.tap.company/" target="_blank">os.tap.company</a></li>
+      <li>اذهب إلى <strong>Accounts → Operators → (Merchant)</strong></li>
+      <li>تجد ٤ مفاتيح:</li>
+    </ol>
+    <table class="table">
+      <thead><tr><th>المفتاح</th><th>وين يستخدم؟</th></tr></thead>
+      <tbody>
+        <tr><td><code>pk_test_xxx</code></td><td>frontend SDK · بيئة الـ staging</td></tr>
+        <tr><td><code>sk_test_xxx</code></td><td>backend · بيئة الـ staging</td></tr>
+        <tr><td><code>pk_live_xxx</code></td><td>frontend SDK · production</td></tr>
+        <tr><td><code>sk_live_xxx</code></td><td>backend · production</td></tr>
+      </tbody>
+    </table>
+    <div class="alert warn">
+      <strong>تحذير:</strong> الـ <code>sk_*</code> ما يلمس الـ frontend أبداً — يبقى في Supabase Secrets فقط
+      (موجود الآن باسم <code>TAP_SECRET_KEY</code>). الـ <code>pk_*</code> هو اللي يتحط في الـ frontend.
+    </div>
+  </section>
+
+  <!-- ═════════════ STEP 3 ═════════════ -->
+  <section id="applepay" class="card">
+    <h2><span class="num">3</span> Apple Pay (اختياري — لكن يرفع الـ conversion كثير)</h2>
+    <ol>
+      <li>Tap بترسلك ملف <code>apple-developer-merchantid-domain-association</code>.</li>
+      <li>تحطه في:
+        <pre>public/.well-known/apple-developer-merchantid-domain-association</pre>
+        ليصبح متاح على:
+        <pre>https://academy.bikerz.com/.well-known/apple-developer-merchantid-domain-association</pre>
+      </li>
+      <li>ترد على Rawan تأكد إن الملف up.</li>
+      <li>Tap تعمل whitelist للدومين + تفعّل Apple Pay على حسابك.</li>
+    </ol>
+    <h3>متطلبات Apple Pay</h3>
+    <ul>
+      <li><span class="check">✓</span> HTTPS — موجود عندك</li>
+      <li><span class="check">✓</span> Public key في الفرونت</li>
+      <li><span class="x">✗</span> Localhost ما يشتغل — لازم بيئة فعلية</li>
+      <li><span class="check">✓</span> Apple Pay مفعّل على حساب Tap</li>
+    </ul>
+    <p class="kicker" style="margin-top:10px">دليل الدمج: <a href="https://developers.tap.company/docs/apple-pay-web" target="_blank">developers.tap.company/docs/apple-pay-web</a></p>
+  </section>
+
+  <!-- ═════════════ STEP 4 ═════════════ -->
+  <section id="intl" class="card">
+    <h2><span class="num">4</span> البطاقات الدولية (Visa / Mastercard)</h2>
+    <p>إيميل Hanan أكّد إن البطاقات الدولية <strong>غير مفعّلة حالياً</strong>. لو ناوي تبيع كورسات لعملاء برّا الخليج
+    (مصر، أمريكا، الإمارات...) لازم تستكمل الاتفاقية:</p>
+    <p style="text-align:center">
+      <a href="https://forms.gle/QdarEW1CKRt97BGv5" target="_blank" style="display:inline-block;background:var(--accent);color:#fff;padding:10px 20px;border-radius:8px;border:0;font-weight:600">
+        فتح فورم استكمال الاتفاقية ↗
+      </a>
+    </p>
+    <div class="alert info">
+      بدون استكمال الاتفاقية: حتى لو الـ Card SDK شغال 100% والعميل دخل بياناته، الـ charge بترفض من البنك المُصدر للبطاقة الدولية.
+    </div>
+  </section>
+
+  <!-- ═════════════ FLOW ═════════════ -->
+  <section id="flow" class="card">
+    <h2>🔄 شكل الـ flow الجديد</h2>
+    <div class="flow">
+      <div class="node">User يدخل بيانات البطاقة في iframe</div>
+      <div class="arrow">→</div>
+      <div class="node">tap.tokenize() →<br><code>tok_xxx</code></div>
+      <div class="arrow">→</div>
+      <div class="node">Edge Function<br><code>tap-create-charge</code></div>
+      <div class="arrow">→</div>
+      <div class="node">Tap API<br>charge created</div>
+    </div>
+    <div class="flow">
+      <div class="node">3DS مطلوب؟</div>
+      <div class="arrow">→</div>
+      <div class="node">iframe صغير<br>للتحقق من البنك</div>
+      <div class="arrow">→</div>
+      <div class="node"><code>tap-3ds-callback.html</code><br>(موجود حالياً)</div>
+      <div class="arrow">→</div>
+      <div class="node">webhook<br><code>CHARGE.SUCCEEDED</code></div>
+    </div>
+    <div class="alert ok">
+      الـ webhook (<code>tap-webhook</code>) ما يحتاج أي تعديل — نفس الـ event يصل من Tap سواء الدفع
+      كان embedded أو hosted.
+    </div>
+  </section>
+
+  <!-- ═════════════ PLAN ═════════════ -->
+  <section id="plan" class="card">
+    <h2>📋 خطة التنفيذ المقترحة</h2>
+
+    <div class="step">
+      <h4><span class="num">1</span> استخراج المفاتيح وإعداد البيئة</h4>
+      <ul>
+        <li>جيب <code>pk_test</code> و <code>sk_test</code> من TapOS.</li>
+        <li>ضيف <code>VITE_TAP_PUBLIC_KEY</code> في <code>.env.local</code>.</li>
+        <li>تأكد إن <code>TAP_SECRET_KEY</code> محدّث في Supabase secrets.</li>
+      </ul>
+    </div>
+    <div class="step" style="margin-top:12px">
+      <h4><span class="num">2</span> دمج الـ SDK في checkout</h4>
+      <ul>
+        <li>ضيف script tag للـ SDK في <code>index.html</code>.</li>
+        <li>عدّل <code>CheckoutPaymentStep.tsx</code> ليعرض حقول Tap بدل redirect.</li>
+        <li>عند submit: استدعي <code>tap.tokenize()</code> ومرّر الـ <code>token_id</code> للـ Edge Function.</li>
+      </ul>
+    </div>
+    <div class="step" style="margin-top:12px">
+      <h4><span class="num">3</span> اختبار</h4>
+      <ul>
+        <li>بكروت Tap التجريبية (مفصّلة في توثيقهم).</li>
+        <li>تأكد من 3DS callback — لازم يرجّعك للموقع تلقائياً.</li>
+      </ul>
+    </div>
+    <div class="step" style="margin-top:12px">
+      <h4><span class="num">4</span> Apple Pay (Phase 2)</h4>
+      <ul>
+        <li>ارفع ملف <code>.well-known/</code>.</li>
+        <li>أكد لـ Rawan ليتم whitelist.</li>
+        <li>ضيف زر Apple Pay فوق الفورم العادي.</li>
+      </ul>
+    </div>
+    <div class="step" style="margin-top:12px">
+      <h4><span class="num">5</span> فعّل البطاقات الدولية</h4>
+      <ul>
+        <li>استكمل الفورم <a href="https://forms.gle/QdarEW1CKRt97BGv5" target="_blank">من هنا</a>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    صُمّم خصيصاً لـ Bikerz — Merchant ID <code>38039414</code>
+  </footer>
+
+</div>
+</body>
+</html>
