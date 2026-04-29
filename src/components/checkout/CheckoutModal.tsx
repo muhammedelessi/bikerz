@@ -401,18 +401,20 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md">
-          <CheckoutStatusOverlay
-            paymentStatus={tap.status}
-            paymentError={tap.error}
-            courseId={course.id}
-            onSuccess={onSuccess}
-            onOpenChange={onOpenChange}
-            onRetry={() => {
-              tap.reset();
-              setStep("payment");
-            }}
-            navigate={navigate}
-          />
+          <div>
+            <CheckoutStatusOverlay
+              paymentStatus={tap.status}
+              paymentError={tap.error}
+              courseId={course.id}
+              onSuccess={onSuccess}
+              onOpenChange={onOpenChange}
+              onRetry={() => {
+                tap.reset();
+                setStep("payment");
+              }}
+              navigate={navigate}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     );
