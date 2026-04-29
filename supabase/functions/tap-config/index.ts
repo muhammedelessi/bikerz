@@ -42,6 +42,8 @@ Deno.serve(async (req) => {
   const liveKey = Deno.env.get("TAP_PUBLIC_KEY");
   const testKey = Deno.env.get("TAP_PUBLIC_TEST_KEY");
 
+  console.log(`[tap-config] origin=${origin || "(none)"} usePreviewKey=${usePreviewKey} hasTestKey=${!!testKey} hasLiveKey=${!!liveKey}`);
+
   const tapPublicKey = usePreviewKey ? (testKey || liveKey) : liveKey;
 
   if (!tapPublicKey) {
