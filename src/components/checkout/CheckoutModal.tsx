@@ -481,10 +481,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </div>
         </div>
 
-        {/* Sticky Back-to-Step-1 bar — pinned to the top of the scroll area on Step 2,
-            stays visible while card details / promo code scroll beneath it. */}
+        {/* Pinned Back-to-Step-1 bar — sits between header and scrollable content on Step 2,
+            so it stays visible while card details / promo code scroll beneath it. */}
         {step === "payment" && !autoSkippedInfo && (
-          <div className="sticky top-0 z-10 px-4 sm:px-5 py-2.5 bg-background/95 backdrop-blur-sm border-b border-border flex-shrink-0">
+          <div className="px-4 sm:px-5 py-2.5 bg-muted/30 border-b border-border flex-shrink-0">
             <button
               type="button"
               onClick={() => setStep("info")}
