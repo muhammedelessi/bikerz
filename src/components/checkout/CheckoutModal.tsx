@@ -589,6 +589,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 customerPhoneNumber={cardPhoneNumber}
                 onApiReady={handleCardApiReady}
                 onStatusChange={handleCardSdkStatusChange}
+                onApplePayToken={(tokenId) => {
+                  // Apple Pay sheet completed — submit immediately, bypassing
+                  // the card SDK tokenize step (we already have a tok_xxx).
+                  void handleSubmitPayment(tokenId);
+                }}
               />
             </div>
           )}
