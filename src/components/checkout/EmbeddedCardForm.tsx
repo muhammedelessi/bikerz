@@ -13,7 +13,7 @@
  *   without leaking SDK state into them.
  */
 import React, { useMemo } from "react";
-import { Loader2, Lock, Shield, ShieldCheck, AlertTriangle, CreditCard } from "lucide-react";
+import { Loader2, Lock, ShieldCheck, AlertTriangle, CreditCard } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useTheme } from "@/components/ThemeProvider";
 import { useTapCardSdk } from "@/hooks/checkout/useTapCardSdk";
