@@ -144,12 +144,21 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
             const nestedCandidates = [record, record.data, record.payload]
               .filter((value): value is Record<string, unknown> => !!value && typeof value === "object");
             for (const candidate of nestedCandidates) {
-              const values = [candidate.valid, candidate.isValid, candidate.invalid, candidate.isInvalid];
-              for (const value of values) {
-                if (typeof value === "boolean") {
-                  setCardValid(value === candidate.invalid || value === candidate.isInvalid ? !value : value);
-                  return;
-                }
+              if (typeof candidate.valid === "boolean") {
+                setCardValid(candidate.valid);
+                return;
+              }
+              if (typeof candidate.isValid === "boolean") {
+                setCardValid(candidate.isValid);
+                return;
+              }
+              if (typeof candidate.invalid === "boolean") {
+                setCardValid(!candidate.invalid);
+                return;
+              }
+              if (typeof candidate.isInvalid === "boolean") {
+                setCardValid(!candidate.isInvalid);
+                return;
               }
             }
           }
