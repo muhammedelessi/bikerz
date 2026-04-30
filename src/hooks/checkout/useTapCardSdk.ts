@@ -332,19 +332,49 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
         const inst = window.CardSDK.renderTapCard(containerId, fullConfig);
         instanceRef.current = inst ?? null;
 
-        // Real readiness deadline: if `onReady` has not fired within 8 s,
-        // surface a clear error with a Reload button (handled by EmbeddedCardForm).
-        // Previously we set sdkReady=true after 1.2 s unconditionally, which
-        // lied to the parent and let the user click Pay against an unmounted
-        // iframe. Trust the SDK's onReady — if it never comes, fail loudly.
+        // Fallback readiness detection: some SDK builds (and some
+        // domain configurations on live mode) never fire `onReady`,
+        // even though the iframe renders and is fully usable. Poll the
+        // container for an iframe child and flip `sdkReady` ourselves
+        // once one appears with a non-zero size. This prevents the
+        // "Card form is taking too long…" error from showing on a
+        // form that's actually working.
+        const readyPollStart = Date.now();
+        const readyPollId = window.setInterval(() => {
+          if (cancelled || readyFiredRef.current) {
+            window.clearInterval(readyPollId);
+            return;
+          }
+          const host = document.getElementById(containerId);
+          const iframe = host?.querySelector("iframe") as HTMLIFrameElement | null;
+          if (iframe && iframe.offsetHeight > 40) {
+            readyFiredRef.current = true;
+            setSdkReady(true);
+            window.clearInterval(readyPollId);
+            if (readyTimeoutId) clearTimeout(readyTimeoutId);
+          } else if (Date.now() - readyPollStart > SDK_READY_TIMEOUT_MS + 5000) {
+            window.clearInterval(readyPollId);
+          }
+        }, 500);
+
+        // Real readiness deadline: if neither `onReady` nor the iframe
+        // poll has flipped readiness within the timeout, surface a
+        // clear error with a Reload button (handled by EmbeddedCardForm).
         readyTimeoutId = setTimeout(() => {
           if (cancelled) return;
-          // Read the latest readiness from the DOM-bound flag rather than
-          // the captured `sdkReady` value (which is always `false` at
-          // effect-mount time and would fire the error even after a
-          // successful onReady). `readyFiredRef` is flipped synchronously
-          // inside onReady above.
           if (readyFiredRef.current) return;
+          // Final last-ditch check: if the iframe exists at all, accept it
+          // as ready rather than blocking the user. Better to let them try
+          // the form than show a scary error on a working iframe.
+          const host = document.getElementById(containerId);
+          const iframe = host?.querySelector("iframe") as HTMLIFrameElement | null;
+          if (iframe) {
+            readyFiredRef.current = true;
+            setSdkReady(true);
+            window.clearInterval(readyPollId);
+            return;
+          }
+          window.clearInterval(readyPollId);
           setSdkError(
             "Card form is taking too long to load. Please reload the form or check your internet connection.",
           );
