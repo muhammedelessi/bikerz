@@ -1,5 +1,6 @@
 /**
- * Browser-friendly country / geo hints (avoid ipapi.co: CORS on some origins + strict rate limits).
+ * Browser-friendly country / geo hints.
+ * Uses multiple fallback APIs for reliability.
  */
 
 export function normalizeCountryCode(raw: string | null | undefined): string | null {
@@ -14,45 +15,66 @@ function countryFromIpWhoPayload(data: unknown): string | null {
   return normalizeCountryCode(o.country_code);
 }
 
-function countryFromGeoJsPayload(data: unknown): string | null {
+function countryFromCountryIsPayload(data: unknown): string | null {
   if (!data || typeof data !== "object") return null;
-  const o = data as { country?: string; country_code?: string; iso_code?: string };
-  return normalizeCountryCode(o.country_code || o.iso_code || o.country);
+  const o = data as { country?: string };
+  return normalizeCountryCode(o.country);
+}
+
+function countryFromIpApiPayload(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const o = data as { country_code?: string; country?: string };
+  return normalizeCountryCode(o.country_code || o.country);
 }
 
 async function tryGeoResponse(
   url: string,
   pick: (j: unknown) => string | null,
   signal?: AbortSignal,
+  timeoutMs = 5000,
 ): Promise<string | null> {
-  const res = await fetch(url, signal ? { signal } : undefined);
-  if (!res.ok) return null;
-  const ct = res.headers.get("content-type") || "";
-  if (ct.includes("json")) {
-    const j: unknown = await res.json();
-    return pick(j);
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timer = setTimeout(() => controller?.abort(), timeoutMs);
+
+  // Combine external signal with timeout
+  const combinedSignal = signal
+    ? (typeof AbortSignal !== "undefined" && "any" in AbortSignal
+        ? (AbortSignal as any).any([signal, controller?.signal].filter(Boolean))
+        : controller?.signal)
+    : controller?.signal;
+
+  try {
+    const res = await fetch(url, combinedSignal ? { signal: combinedSignal } : undefined);
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const ct = res.headers.get("content-type") || "";
+    if (ct.includes("json")) {
+      const j: unknown = await res.json();
+      return pick(j);
+    }
+    return normalizeCountryCode(await res.text());
+  } catch {
+    clearTimeout(timer);
+    return null;
   }
-  return normalizeCountryCode(await res.text());
 }
 
 /** ISO country code only (no city). */
 export async function fetchCountryCodeFromPublicGeoApis(signal?: AbortSignal): Promise<string | null> {
-  try {
-    const fromIpWho = await tryGeoResponse("https://ipwho.is/", countryFromIpWhoPayload, signal);
-    if (fromIpWho) return fromIpWho;
-  } catch {
-    /* next */
-  }
+  // Strategy: try primary, then fallbacks sequentially
+  const apis: { url: string; pick: (j: unknown) => string | null }[] = [
+    { url: "https://ipwho.is/", pick: countryFromIpWhoPayload },
+    { url: "https://api.country.is/", pick: countryFromCountryIsPayload },
+    { url: "https://ipapi.co/json/", pick: countryFromIpApiPayload },
+  ];
 
-  try {
-    const fromGeoJs = await tryGeoResponse(
-      "https://get.geojs.io/v1/ip/country-code.json",
-      countryFromGeoJsPayload,
-      signal,
-    );
-    if (fromGeoJs) return fromGeoJs;
-  } catch {
-    return null;
+  for (const api of apis) {
+    try {
+      const result = await tryGeoResponse(api.url, api.pick, signal);
+      if (result) return result;
+    } catch {
+      /* next */
+    }
   }
 
   return null;
@@ -71,11 +93,11 @@ export type PublicGeoHint = {
 export async function fetchPublicGeoHint(signal?: AbortSignal): Promise<PublicGeoHint | null> {
   try {
     const res = await fetch("https://ipwho.is/", signal ? { signal } : undefined);
-    if (!res.ok) return null;
+    if (!res.ok) throw new Error("not ok");
     const data = (await res.json()) as Record<string, unknown>;
-    if (data.success === false) return null;
+    if (data.success === false) throw new Error("failed");
     const countryCode = normalizeCountryCode(String(data.country_code ?? ""));
-    if (!countryCode) return null;
+    if (!countryCode) throw new Error("no code");
     return {
       countryCode,
       countryName: typeof data.country === "string" ? data.country : undefined,
@@ -85,6 +107,35 @@ export async function fetchPublicGeoHint(signal?: AbortSignal): Promise<PublicGe
     /* fallback */
   }
 
-  const code = await fetchCountryCodeFromPublicGeoApis(signal);
-  return code ? { countryCode: code } : null;
+  // Fallback: country.is (has no city)
+  try {
+    const res = await fetch("https://api.country.is/", signal ? { signal } : undefined);
+    if (res.ok) {
+      const data = (await res.json()) as Record<string, unknown>;
+      const code = normalizeCountryCode(String(data.country ?? ""));
+      if (code) return { countryCode: code };
+    }
+  } catch {
+    /* fallback */
+  }
+
+  // Last resort: ipapi.co
+  try {
+    const res = await fetch("https://ipapi.co/json/", signal ? { signal } : undefined);
+    if (res.ok) {
+      const data = (await res.json()) as Record<string, unknown>;
+      const code = normalizeCountryCode(String(data.country_code ?? data.country ?? ""));
+      if (code) {
+        return {
+          countryCode: code,
+          countryName: typeof data.country_name === "string" ? data.country_name : undefined,
+          city: typeof data.city === "string" ? data.city : undefined,
+        };
+      }
+    }
+  } catch {
+    /* give up */
+  }
+
+  return null;
 }
