@@ -18,6 +18,14 @@ interface UseTapPaymentReturn {
    *  "still confirming" recovery UI so the user can recover without retrying
    *  a payment that may have actually succeeded. */
   recheckStatus: () => Promise<void>;
+  /**
+   * Surface a pre-charge failure (e.g. tokenize() rejected by Tap, browser
+   * crashed mid-flow) into the same status-overlay infrastructure that the
+   * post-charge `failed` state uses. Keeps the UX consistent: the user
+   * always sees the same failure card with a localized reason and a
+   * Retry CTA, no matter where in the funnel the error happened.
+   */
+  setExternalError: (message: string) => void;
   reset: () => void;
 }
 
@@ -231,5 +239,10 @@ export function useTapPayment(): UseTapPaymentReturn {
     setError(null);
   }, [updateStatus, setChargeIdSafe]);
 
-  return { status, error, chargeId, challengeUrl, submitPayment, cancelChallenge, recheckStatus, reset };
+  const setExternalError = useCallback((message: string) => {
+    setError(message || 'Payment failed. Please try again.');
+    updateStatus('failed');
+  }, [updateStatus]);
+
+  return { status, error, chargeId, challengeUrl, submitPayment, cancelChallenge, recheckStatus, setExternalError, reset };
 }

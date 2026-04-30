@@ -333,8 +333,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         setTokenizing(true);
         tokenId = await cardApiRef.current.tokenize();
       } catch (err: any) {
+        // Route tokenize failures through the same `failed` overlay used
+        // for post-charge errors. A toast was too easy to miss — users
+        // were clicking Pay and seeing the form re-render with no
+        // explanation. The overlay surfaces the reason persistently
+        // with a Retry CTA.
         setTokenizing(false);
-        toast.error(err?.message || (isRTL ? "تعذّر التحقق من بيانات البطاقة" : "Could not validate card details"));
+        const fallback = isRTL ? "تعذّر التحقق من بيانات البطاقة" : "Could not validate card details";
+        tap.setExternalError(err?.message || fallback);
         return;
       } finally {
         setTokenizing(false);
