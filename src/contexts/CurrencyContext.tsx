@@ -561,8 +561,11 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const getCourseCurrency = useCallback(
     (courseId: string): CurrencyCode => {
       const entry = getCountryPriceEntry(courseId);
-      // Keep currency aligned with the user's detected currency.
-      return entry ? currencyCode : currencyCode;
+      if (entry) {
+        const entryCurrency = (entry.currency || currencyCode) as CurrencyCode;
+        return entryCurrency in CURRENCY_META ? entryCurrency : currencyCode;
+      }
+      return currencyCode;
     },
     [getCountryPriceEntry, currencyCode],
   );
