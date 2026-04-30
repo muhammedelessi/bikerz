@@ -52,28 +52,53 @@ if (typeof window !== "undefined") {
 
 export async function sendGHLFormData(data: FormWebhookData): Promise<boolean> {
   const { isRTL, silent, ...rest } = data;
+
+  // Build a SPARSE payload — include only fields the caller actually
+  // populated. Sending empty strings, null booleans, "[]" for courses, or
+  // "not purchased" sentinels for non-purchase events used to fill the
+  // CRM with noise (e.g. ticket events arriving with empty purchase
+  // fields, purchase events arriving with empty ticket fields). The
+  // CRM workflow filters by event-type fields anyway, so omitting
+  // irrelevant ones makes each event self-describing.
+  //
+  // ALWAYS included (identity + analytics): email, full_name, phone,
+  //   country (ISO-2), city, source.
+  // ONLY-IF-SET (purchase): courseName, amount, currency, orderStatus,
+  //   totalPurchased, courses.
+  // ONLY-IF-SET (support ticket): ticket_subject, ticket_message,
+  //   ticket_category.
+  // ONLY-IF-SET (signup survey): has_motorcycle, considering_purchase.
+  // Profile fields (dateOfBirth, gender) are sent via the dedicated
+  //   profile webhook (sendGHLProfileData) — don't duplicate them here.
   const payload: Record<string, unknown> = {
-    full_name: rest.full_name || "",
-    email: rest.email || "",
-    phone: rest.phone || "",
+    email: (rest.email || "").trim(),
+    full_name: (rest.full_name || "").trim(),
+    phone: (rest.phone || "").trim(),
     country: toCountryCode(rest.country) || "",
-    city: rest.city || "",
-    address: rest.address || "",
-    courseName: rest.courseName || "",
-    amount: rest.amount || "",
-    currency: rest.currency || "",
-    orderStatus: rest.orderStatus || "not purchased",
-    courses: rest.courses || "[]",
-    totalPurchased: rest.totalPurchased ?? 0,
-    dateOfBirth: rest.dateOfBirth || "",
-    gender: rest.gender || "",
+    city: (rest.city || "").trim(),
     source: getVisitSource(),
-    ticket_subject: rest.ticket_subject || "",
-    ticket_message: rest.ticket_message || "",
-    ticket_category: rest.ticket_category || "",
-    has_motorcycle: rest.has_motorcycle ?? null,
-    considering_purchase: rest.considering_purchase ?? null,
   };
+
+  // Purchase fields — only when this is a purchase event.
+  if (rest.courseName) payload.courseName = rest.courseName;
+  if (rest.amount) payload.amount = rest.amount;
+  if (rest.currency) payload.currency = rest.currency;
+  if (rest.orderStatus) payload.orderStatus = rest.orderStatus;
+  if (rest.totalPurchased != null && rest.totalPurchased > 0) {
+    payload.totalPurchased = rest.totalPurchased;
+  }
+  if (rest.courses && rest.courses !== "[]") payload.courses = rest.courses;
+
+  // Support-ticket fields.
+  if (rest.ticket_subject) payload.ticket_subject = rest.ticket_subject;
+  if (rest.ticket_message) payload.ticket_message = rest.ticket_message;
+  if (rest.ticket_category) payload.ticket_category = rest.ticket_category;
+
+  // Signup-survey answers — bool/null tri-state, send only when user answered.
+  if (rest.has_motorcycle != null) payload.has_motorcycle = rest.has_motorcycle;
+  if (rest.considering_purchase != null) {
+    payload.considering_purchase = rest.considering_purchase;
+  }
 
   try {
     // Theory-course purchase webhook (and other form events that include

@@ -225,7 +225,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     onPaymentStarted?.();
 
-    const composedAddress = [form.effectiveCity, form.effectiveCountry].filter(Boolean).join(", ");
     const localCurrency = priceInfo.currency as string;
 
     // Free enrollment (100% coupon)
@@ -255,17 +254,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             finalAmount: 0,
           });
         }
+        // Free enrollment — no Tap webhook will fire, so the frontend is
+        // the only path that informs GHL. Profile fields (DOB/gender) are
+        // sent by the separate profile webhook; don't duplicate them here.
         sendCourseStatus(user.id, course.id, course.title, "purchased", {
           full_name: form.fullName,
           email: form.email,
           phone: form.fullPhone,
           country: form.effectiveCountry,
           city: form.effectiveCity,
-          address: composedAddress,
           amount: "0",
           currency: localCurrency,
-          dateOfBirth: profile?.date_of_birth || "",
-          gender: profile?.gender || "",
           silent: true,
         });
         onSuccess();
@@ -306,17 +305,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       /* ignore */
     }
 
+    // Pre-charge "pending" event — lets GHL track checkout starts (useful
+    // for abandonment workflows). The authoritative "purchased" / "cancelled"
+    // signal comes from the tap-webhook backend after Tap confirms, so we
+    // intentionally don't fire a follow-up here.
     sendCourseStatus(user.id, course.id, course.title, "pending", {
       full_name: form.fullName,
       email: form.email,
       phone: form.fullPhone,
       country: form.effectiveCountry,
       city: form.effectiveCity,
-      address: composedAddress,
       amount: String(paymentAmount),
       currency: paymentCurrency,
-      dateOfBirth: profile?.date_of_birth || "",
-      gender: profile?.gender || "",
       silent: true,
     });
 

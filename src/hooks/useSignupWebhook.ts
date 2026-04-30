@@ -44,18 +44,17 @@ export function useSignupWebhook() {
     const cityEnglish = resolveCityEnglish(data.city || "", data.country || "");
     const phoneCleaned = normalizePhone(data.phone || "");
 
+    // Signup-survey event — only send fields that matter for this event:
+    // identity + survey answers. Profile fields (DOB / gender) go through
+    // the dedicated profile webhook. Defaults like
+    // `orderStatus: "not purchased"`, `courses: "[]"`, `totalPurchased: 0`
+    // were noise — sendGHLFormData now omits them automatically.
     return sendGHLFormData({
       full_name: data.full_name || "",
       email: data.email || "",
       phone: phoneCleaned,
       country: countryEnglish,
       city: cityEnglish,
-      address: [cityEnglish, countryEnglish].filter(Boolean).join(", "),
-      dateOfBirth: data.date_of_birth || "",
-      gender: data.gender || "",
-      orderStatus: "not purchased",
-      courses: "[]",
-      totalPurchased: 0,
       has_motorcycle: data.has_motorcycle,
       considering_purchase: data.considering_purchase,
       silent: data.silent,
