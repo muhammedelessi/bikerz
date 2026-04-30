@@ -53,9 +53,16 @@ const PaymentProgressSteps: React.FC<PaymentProgressStepsProps> = ({ paymentStat
   const [startedAt] = useState(() => Date.now());
 
   // Tick every 250 ms so timed stages flip in near-real-time without a
-  // wasteful 60 fps loop.
+  // wasteful 60 fps loop. challenging_3ds is included so the bank-confirm
+  // stage keeps animating while the user is on the 3DS iframe.
   useEffect(() => {
-    if (paymentStatus !== "processing" && paymentStatus !== "verifying" && paymentStatus !== "confirming" && paymentStatus !== "succeeded") {
+    if (
+      paymentStatus !== "processing" &&
+      paymentStatus !== "verifying" &&
+      paymentStatus !== "confirming" &&
+      paymentStatus !== "challenging_3ds" &&
+      paymentStatus !== "succeeded"
+    ) {
       return;
     }
     const id = setInterval(() => setNow(Date.now() - startedAt), 250);
@@ -71,7 +78,9 @@ const PaymentProgressSteps: React.FC<PaymentProgressStepsProps> = ({ paymentStat
     const order: StageId[] = ["validating", "encrypting", "bank", "finalizing", "enrolling"];
     const idx = order.indexOf(stageId);
 
-    // Status-driven gates
+    // Status-driven gates. challenging_3ds is treated as still on the
+    // "bank" stage — the user is waiting on their bank's OTP, not yet
+    // finalizing the charge.
     const reachedFinalizing = paymentStatus === "verifying" || paymentStatus === "confirming" || paymentStatus === "succeeded";
     const reachedEnrolling = paymentStatus === "succeeded";
 

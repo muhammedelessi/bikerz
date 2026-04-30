@@ -410,6 +410,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     tap.status === "processing" ||
     tap.status === "verifying" ||
     tap.status === "confirming" ||
+    // CRITICAL: include challenging_3ds so the early-return branch
+    // renders Checkout3DSModal. Without this the user clicks Pay,
+    // backend returns a 3DS redirect_url, status flips to
+    // challenging_3ds — but the regular checkout UI keeps rendering
+    // and the 3DS iframe is never mounted, so the user sees the form
+    // "reload" with no error and no way forward.
+    tap.status === "challenging_3ds" ||
     tap.status === "succeeded";
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;

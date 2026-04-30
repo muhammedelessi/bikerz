@@ -36,13 +36,22 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
   const [rechecking, setRechecking] = useState(false);
   const localizedPaymentError = paymentError ? translateTapPaymentDisplayError(paymentError, t) : null;
 
-  if (paymentStatus === 'processing' || paymentStatus === 'verifying') {
+  // Treat `challenging_3ds` like `processing` here — the 3DS modal renders
+  // OVER this status overlay, so the user sees the OTP iframe foregrounded
+  // with the "we're processing your payment" reassurance behind it. Without
+  // this case, the overlay returned `null` and (combined with the missing
+  // case in CheckoutModal.isStatusOverlay) the user saw nothing happen.
+  if (
+    paymentStatus === 'processing' ||
+    paymentStatus === 'verifying' ||
+    paymentStatus === 'challenging_3ds'
+  ) {
     const titleKey =
-      paymentStatus === 'processing'
+      paymentStatus === 'processing' || paymentStatus === 'challenging_3ds'
         ? 'checkout.statusOverlay.processingPayment'
         : 'checkout.statusOverlay.verifyingPayment';
     const subKey =
-      paymentStatus === 'processing'
+      paymentStatus === 'processing' || paymentStatus === 'challenging_3ds'
         ? 'checkout.statusOverlay.doNotClosePage'
         : 'checkout.statusOverlay.pleaseWaitMoment';
     return (
