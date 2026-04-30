@@ -502,10 +502,12 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     (courseId: string, sarPrice: number, courseDiscountPct = 0, opts?: { vatPercent?: number | null }): CoursePriceInfo => {
       const entry = getCountryPriceEntry(courseId);
       if (entry) {
-        const ccy = currencyCode;
+        const entryCurrency = (entry.currency || currencyCode) as CurrencyCode;
+        const ccy = entryCurrency in CURRENCY_META ? entryCurrency : currencyCode;
         const origNoVat = Math.ceil(entry.original_price);
-        const entryVat = (entry as any).vat_percentage ?? (detectedCountry === "SA" ? 15 : 0);
-        const finalPrice = entryVat > 0 ? Math.ceil(entry.price * (1 + entryVat / 100)) : Math.ceil(entry.price);
+        const entryVat = entry.vat_percentage ?? 0;
+        // Country prices are already tax-inclusive final prices — do NOT add VAT again
+        const finalPrice = Math.ceil(entry.price);
         return {
           originalPrice: origNoVat,
           discountPct: entry.discount_percentage,
