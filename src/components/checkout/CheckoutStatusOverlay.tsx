@@ -1,4 +1,4 @@
-import React, { forwardRef, memo, useState } from 'react';
+import React, { forwardRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, CheckCircle2, XCircle, Sparkles, RefreshCw, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,9 +24,14 @@ interface CheckoutStatusOverlayProps {
 // forwardRef so Radix Dialog/Drawer Portal + framer Presence can forward
 // a ref into this overlay for mount-tracking. Without forwardRef React
 // emits "Function components cannot be given refs" on every state change
-// during checkout. The ref attaches to the outer wrapper that's
-// always present (the role="status"/"alert" motion.div per branch).
-const CheckoutStatusOverlay = memo(forwardRef<HTMLDivElement, CheckoutStatusOverlayProps>(({
+// during checkout.
+//
+// Note: the previous version composed memo(forwardRef(...)). vaul's
+// Presence wrapper rejected it at runtime with "Component is not a
+// function" — so we drop memo (the parent CheckoutModal already
+// memoizes status state and the overlay only renders during a single
+// payment, performance hit is negligible).
+const CheckoutStatusOverlay = forwardRef<HTMLDivElement, CheckoutStatusOverlayProps>(({
   paymentStatus,
   paymentError,
   courseId,
@@ -240,7 +245,7 @@ const CheckoutStatusOverlay = memo(forwardRef<HTMLDivElement, CheckoutStatusOver
   }
 
   return null;
-}));
+});
 
 CheckoutStatusOverlay.displayName = 'CheckoutStatusOverlay';
 
