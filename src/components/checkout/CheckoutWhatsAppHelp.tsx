@@ -42,14 +42,14 @@ interface CheckoutWhatsAppHelpProps {
   variant?: "inline" | "pill";
 }
 
-const CheckoutWhatsAppHelp: React.FC<CheckoutWhatsAppHelpProps> = ({
+const CheckoutWhatsAppHelp = React.forwardRef<HTMLAnchorElement, CheckoutWhatsAppHelpProps>(({
   context,
   delayMs = 0,
   courseId,
   reason,
   chargeId,
   variant = "pill",
-}) => {
+}, ref) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const [visible, setVisible] = useState(delayMs <= 0);
@@ -74,6 +74,7 @@ const CheckoutWhatsAppHelp: React.FC<CheckoutWhatsAppHelpProps> = ({
   if (variant === "inline") {
     return (
       <a
+        ref={ref}
         href={href}
         target="_blank"
         rel="noopener noreferrer"
@@ -88,6 +89,7 @@ const CheckoutWhatsAppHelp: React.FC<CheckoutWhatsAppHelpProps> = ({
 
   return (
     <a
+      ref={ref}
       href={href}
       target="_blank"
       rel="noopener noreferrer"
@@ -98,7 +100,9 @@ const CheckoutWhatsAppHelp: React.FC<CheckoutWhatsAppHelpProps> = ({
       <span>{label}</span>
     </a>
   );
-};
+});
+
+CheckoutWhatsAppHelp.displayName = "CheckoutWhatsAppHelp";
 
 interface ComposeArgs {
   context: WhatsAppHelpContext;
