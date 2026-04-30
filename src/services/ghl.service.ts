@@ -76,8 +76,12 @@ export async function sendGHLFormData(data: FormWebhookData): Promise<boolean> {
   };
 
   try {
+    // Theory-course purchase webhook (and other form events that include
+    // courseName + orderStatus). Same UUID as the server-side fallbacks in
+    // supabase/functions/ghl-form-webhook + supabase/functions/tap-webhook,
+    // so failures on either path land in the same GHL workflow.
     const res = await fetch(
-      "https://services.leadconnectorhq.com/hooks/ddAvdgekc94cWL9NBHK1/webhook-trigger/0c004a12-e140-49df-8fcf-b62b101c4e8c",
+      "https://services.leadconnectorhq.com/hooks/ddAvdgekc94cWL9NBHK1/webhook-trigger/9a3cf7c3-0405-4667-ad02-e9c89073feb4",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
