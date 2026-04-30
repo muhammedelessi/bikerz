@@ -43,9 +43,11 @@ Deno.serve(async (req) => {
 
   const liveKey = Deno.env.get("TAP_PUBLIC_KEY");
   const testKey = Deno.env.get("TAP_PUBLIC_TEST_KEY");
+  const liveMerchantId = (Deno.env.get("TAP_MERCHANT_ID") || "").trim();
+  const testMerchantId = (Deno.env.get("TAP_MERCHANT_TEST_ID") || "").trim();
 
   console.log(
-    `[tap-config] origin=${origin || "(none)"} usePreviewKey=${usePreviewKey} hasTestKey=${!!testKey} hasLiveKey=${!!liveKey}`,
+    `[tap-config] origin=${origin || "(none)"} usePreviewKey=${usePreviewKey} hasTestKey=${!!testKey} hasLiveKey=${!!liveKey} hasLiveMid=${!!liveMerchantId} hasTestMid=${!!testMerchantId}`,
   );
 
   // Fail-closed: a preview origin without a test key MUST NOT fall back to live.
@@ -84,9 +86,12 @@ Deno.serve(async (req) => {
     );
   }
 
+  const merchantId = usePreviewKey ? testMerchantId : liveMerchantId;
+
   return new Response(
     JSON.stringify({
       public_key: tapPublicKey,
+      merchant_id: merchantId || null,
       environment: tapPublicKey.startsWith("pk_test") ? "test" : "live",
     }),
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
