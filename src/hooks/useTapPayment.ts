@@ -89,17 +89,39 @@ export function useTapPayment(): UseTapPaymentReturn {
   }, [verifyCharge]);
 
   // Listen for postMessage from the in-page 3-DS iframe (or popup fallback).
-  // SECURITY: only accept messages from our own origin. Without this guard,
-  // any embedded iframe / extension could spoof a TAP_3DS_COMPLETE event and
-  // trigger verifyCharge with an attacker-supplied charge_id.
+  //
+  // SECURITY: only accept messages from a same-host origin. We compare
+  // `hostname` (not full origin) so that test environments (Lovable preview
+  // proxying through `xxx.lovableproject.com` while the 3DS callback comes
+  // back from `bikerz.lovable.app`) still work. Production checkout always
+  // has callback + parent on `academy.bikerz.com` so this is still strict
+  // enough to block cross-origin spoofing.
   useEffect(() => {
     const handler = (event: MessageEvent) => {
-      // The 3DS callback page (/tap-3ds-callback.html) is served from our own
-      // origin, so legitimate messages will always satisfy this check.
-      if (event.origin !== window.location.origin) {
+      // Only react to TAP_3DS_COMPLETE messages — ignore everything else
+      // (Lovable analytics, Sonner toasts, etc.) early so the security
+      // log below isn't drowned in noise.
+      if (event.data?.type !== 'TAP_3DS_COMPLETE') return;
+
+      let parentHost = '';
+      let messageHost = '';
+      try {
+        parentHost = new URL(window.location.href).hostname;
+        messageHost = new URL(event.origin).hostname;
+      } catch {
+        /* malformed origin → reject */
+      }
+      if (!parentHost || !messageHost || parentHost !== messageHost) {
+        // Log loudly so prod issues are diagnosable — silent rejects were the
+        // cause of the user-reported "stuck on bank verification" bug.
+        console.warn(
+          '[TapPayment] Rejected 3DS callback from foreign origin:',
+          event.origin,
+          'expected hostname:', parentHost,
+        );
         return;
       }
-      if (event.data?.type !== 'TAP_3DS_COMPLETE') return;
+
       const tapId = event.data.tap_id;
       console.log('[TapPayment] 3DS callback received, tap_id=', tapId);
       setChallengeUrl(null);
@@ -114,6 +136,29 @@ export function useTapPayment(): UseTapPaymentReturn {
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
   }, [verifyCharge, updateStatus, setChargeIdSafe]);
+
+  // 3-DS watchdog: if the iframe is open longer than 3 minutes without
+  // sending us a result, the user is almost certainly stuck on the bank's
+  // page and won't recover without a nudge. Transition to "confirming"
+  // (not "failed") because the charge MAY still settle — the
+  // CheckoutStatusOverlay then shows a "Check status" / "Try again" CTA
+  // instead of leaving the user with a hung modal and no message.
+  useEffect(() => {
+    if (status !== 'challenging_3ds') return;
+    const id = setTimeout(() => {
+      console.warn('[TapPayment] 3DS watchdog: no callback in 3 minutes, surfacing recovery UI');
+      setChallengeUrl(null);
+      const cid = chargeIdRef.current;
+      if (cid) {
+        // Re-poll Tap; it'll resolve to succeeded/failed/confirming.
+        verifyCharge(cid);
+      } else {
+        setError('Bank verification timed out. Please try again.');
+        updateStatus('failed');
+      }
+    }, 180_000);
+    return () => clearTimeout(id);
+  }, [status, verifyCharge, updateStatus]);
 
   const submitPayment = useCallback(async (config: TapPaymentConfig) => {
     const { data: { session: currentSession } } = await supabase.auth.getSession();
