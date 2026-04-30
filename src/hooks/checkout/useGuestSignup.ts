@@ -55,6 +55,7 @@ export function useGuestSignup() {
         });
 
         sendGHLProfileData({
+          event_type: "guest_signup",
           user_id: data.user.id,
           full_name: fullName.trim(),
           email: email.trim(),

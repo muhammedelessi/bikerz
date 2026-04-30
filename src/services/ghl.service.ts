@@ -122,13 +122,28 @@ export async function sendGHLFormData(data: FormWebhookData): Promise<boolean> {
 }
 
 // ─── Profile-only webhook ────────────────────────────────────────────────────
-// Dedicated webhook for user profile data (registration + profile updates).
-// Sends ONLY the personal profile fields below — nothing else.
+// Dedicated webhook for user identity events (signup + profile updates).
+// One URL, multiple event types — disambiguated by the `event_type` field
+// so GHL workflows can branch (welcome email for `signup`, change-detection
+// for `profile_update`, high-intent funnel for `course_page`, etc.).
 
 const GHL_PROFILE_WEBHOOK_URL =
-  "https://services.leadconnectorhq.com/hooks/ddAvdgekc94cWL9NBHK1/webhook-trigger/dbd98231-b486-4e88-9693-9e63962dbfd7";
+  "https://services.leadconnectorhq.com/hooks/ddAvdgekc94cWL9NBHK1/webhook-trigger/d5e018c9-941d-4425-a382-6f90569dd61b";
+
+/**
+ * Allowed values for the `event_type` field in the profile webhook payload.
+ *
+ * - "signup"          — new account from the regular Sign Up form
+ * - "course_page"     — new account from the free-preview-ended prompt on
+ *                       a course page (higher purchase intent)
+ * - "guest_signup"    — new account auto-created during checkout for guests
+ * - "profile_update"  — existing user edited their profile fields
+ */
+export type ProfileEventType = "signup" | "course_page" | "guest_signup" | "profile_update";
 
 export interface ProfileWebhookData {
+  /** Required for routing. Defaults to "profile_update" when omitted. */
+  event_type?: ProfileEventType;
   user_id?: string | null;
   email?: string | null;
   /** Full name string — gets split into firstname/lastname before sending. */
@@ -158,23 +173,33 @@ export async function sendGHLProfileData(data: ProfileWebhookData): Promise<bool
   const nationality = data.nationality ?? "";
   const { firstname, lastname } = splitNameForWebhook(data.full_name ?? "");
 
+  // Always-included fields: event_type (for GHL routing) + user_id + email.
+  // Everything else is sparse — omitted when empty so the CRM inbox doesn't
+  // get noise (signup events that haven't filled DOB yet, profile updates
+  // that didn't touch postal_code, etc.).
   const payload: Record<string, unknown> = {
+    event_type: data.event_type || "profile_update",
     user_id: data.user_id ?? "",
-    email: data.email ?? "",
-    firstname,
-    lastname,
-    date_of_birth: data.date_of_birth ?? "",
-    gender: data.gender ?? "",
-    nationality: resolveCountryEnglish(nationality) || "",
-    nationality_code: toCountryCode(nationality) || "",
-    rider_nickname: data.rider_nickname ?? "",
-    phone: data.phone ?? "",
-    country: resolveCountryEnglish(country) || "",
-    country_code: toCountryCode(country) || "",
-    city: resolveCityEnglish(city, country) || "",
-    postal_code: data.postal_code ?? "",
-    avatar_url: data.avatar_url ?? "",
+    email: (data.email ?? "").trim(),
   };
+
+  if (firstname) payload.firstname = firstname;
+  if (lastname) payload.lastname = lastname;
+  if (data.date_of_birth) payload.date_of_birth = data.date_of_birth;
+  if (data.gender) payload.gender = data.gender;
+  if (nationality) {
+    payload.nationality = resolveCountryEnglish(nationality);
+    payload.nationality_code = toCountryCode(nationality);
+  }
+  if (data.rider_nickname) payload.rider_nickname = data.rider_nickname;
+  if (data.phone) payload.phone = data.phone;
+  if (country) {
+    payload.country = resolveCountryEnglish(country);
+    payload.country_code = toCountryCode(country);
+  }
+  if (city) payload.city = resolveCityEnglish(city, country);
+  if (data.postal_code) payload.postal_code = data.postal_code;
+  if (data.avatar_url) payload.avatar_url = data.avatar_url;
 
   try {
     const res = await fetch(GHL_PROFILE_WEBHOOK_URL, {

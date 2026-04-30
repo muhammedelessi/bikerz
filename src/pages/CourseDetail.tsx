@@ -56,7 +56,7 @@ import { trackViewContent } from "@/utils/metaPixel";
 import StarRating from "@/components/course/StarRating";
 import CourseCard from "@/components/course/CourseCard";
 import { fetchEnrollmentsWithLiveProgress, type EnrollmentWithProgress } from "@/lib/enrollmentProgress";
-import { setReturnUrl } from "@/lib/authReturnUrl";
+import { setReturnUrl, setSignupOrigin } from "@/lib/authReturnUrl";
 import {
   getGuestPreviewState,
   setGuestPreviewState,
@@ -536,6 +536,8 @@ const CourseDetail: React.FC = () => {
   const handlePreviewPromptSignup = useCallback(() => {
     if (!id) return;
     setReturnUrl(`/courses/${id}`);
+    // Tag this as a high-intent course-page signup so GHL can branch.
+    setSignupOrigin("course_page");
     navigate("/signup");
   }, [id, navigate]);
 
