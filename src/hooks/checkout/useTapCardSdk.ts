@@ -257,6 +257,7 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
           onReady: () => {
             if (cancelled) return;
             if (readyTimeoutId) clearTimeout(readyTimeoutId);
+            readyFiredRef.current = true;
             setSdkReady(true);
           },
           onValidInput: (data: unknown) => {
