@@ -23,8 +23,15 @@ import type {
 const SDK_SRC = "https://tap-sdks.b-cdn.net/card/1.0.2/index.js";
 const SCRIPT_ID = "tap-card-sdk-v2-script";
 
-/** How long to wait for `onReady` before declaring the iframe stuck. */
-const SDK_READY_TIMEOUT_MS = 8000;
+/**
+ * How long to wait for `onReady` before declaring the iframe stuck.
+ * The SDK script is ~985KB and Tap's iframe makes additional network
+ * requests on first paint; on slow mobile connections (3G, congested
+ * Wi-Fi) 8s was firing prematurely while the form was still loading
+ * successfully a moment later. 25s is conservative but safer than
+ * showing the user a scary "reload" message on a working form.
+ */
+const SDK_READY_TIMEOUT_MS = 25000;
 
 /** Ensure the SDK script is in the document exactly once across the whole app. */
 function loadSdkScript(): Promise<void> {
@@ -188,6 +195,7 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
   const [reinitNonce, setReinitNonce] = useState(0);
 
   const instanceRef = useRef<TapCardSdkInstance | null>(null);
+  const readyFiredRef = useRef(false);
   const tokenizeResolversRef = useRef<{
     resolve: (token: string) => void;
     reject: (err: Error) => void;
@@ -206,6 +214,7 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
     setSdkReady(false);
     setCardValid(false);
     setCardBrand(null);
+    readyFiredRef.current = false;
 
     (async () => {
       try {
@@ -248,6 +257,7 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
           onReady: () => {
             if (cancelled) return;
             if (readyTimeoutId) clearTimeout(readyTimeoutId);
+            readyFiredRef.current = true;
             setSdkReady(true);
           },
           onValidInput: (data: unknown) => {
@@ -329,7 +339,12 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
         // iframe. Trust the SDK's onReady — if it never comes, fail loudly.
         readyTimeoutId = setTimeout(() => {
           if (cancelled) return;
-          if (sdkReady) return; // already fired in onReady
+          // Read the latest readiness from the DOM-bound flag rather than
+          // the captured `sdkReady` value (which is always `false` at
+          // effect-mount time and would fire the error even after a
+          // successful onReady). `readyFiredRef` is flipped synchronously
+          // inside onReady above.
+          if (readyFiredRef.current) return;
           setSdkError(
             "Card form is taking too long to load. Please reload the form or check your internet connection.",
           );
