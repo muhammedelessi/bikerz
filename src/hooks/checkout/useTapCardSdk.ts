@@ -59,21 +59,28 @@ function loadSdkScript(): Promise<void> {
 }
 
 /**
- * Cache the publishable key per origin. tap-config returns a different key on
- * preview vs production, so a global cache would serve a stale key after the
- * environment shifts (e.g. opening the same dev tab on two hosts).
+ * Cache the publishable key + merchant id per origin. tap-config returns a
+ * different key on preview vs production, so a global cache would serve a
+ * stale key after the environment shifts (e.g. opening the same dev tab on
+ * two hosts).
  */
-const publicKeyCache = new Map<string, string>();
-async function fetchPublicKey(): Promise<string> {
+interface TapPublicConfig { publicKey: string; merchantId: string | null }
+const publicConfigCache = new Map<string, TapPublicConfig>();
+async function fetchPublicConfig(): Promise<TapPublicConfig> {
   const cacheKey = typeof window !== "undefined" ? window.location.origin : "default";
-  const cached = publicKeyCache.get(cacheKey);
+  const cached = publicConfigCache.get(cacheKey);
   if (cached) return cached;
   const { data, error } = await supabase.functions.invoke("tap-config", {});
   if (error) throw new Error(error.message || "Could not load payment configuration");
-  const key = (data as { public_key?: string } | null)?.public_key;
+  const payload = (data as { public_key?: string; merchant_id?: string | null } | null) || {};
+  const key = payload.public_key;
   if (!key) throw new Error("Payment service is not configured");
-  publicKeyCache.set(cacheKey, key);
-  return key;
+  const cfg: TapPublicConfig = {
+    publicKey: key,
+    merchantId: typeof payload.merchant_id === "string" && payload.merchant_id.trim() ? payload.merchant_id.trim() : null,
+  };
+  publicConfigCache.set(cacheKey, cfg);
+  return cfg;
 }
 
 /** Detect whether an SDK error message is the harmless Apple Pay bundle_id mismatch. */
@@ -218,7 +225,7 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
 
     (async () => {
       try {
-        const [publicKey] = await Promise.all([fetchPublicKey(), loadSdkScript()]);
+        const [{ publicKey, merchantId }] = await Promise.all([fetchPublicConfig(), loadSdkScript()]);
         if (cancelled) return;
         if (!window.CardSDK?.renderTapCard) {
           throw new Error("Tap Card SDK did not initialize");
@@ -251,9 +258,16 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
           return undefined;
         };
 
+        // Strip any caller-supplied empty merchant.id and override with the
+        // one returned from tap-config (Tap requires a real `mid` in live mode
+        // — passing an empty string makes the iframe POST `mid=` and the SDK
+        // request comes back as 400).
+        const { merchant: _ignoredMerchant, ...restConfig } = configRef.current as Record<string, unknown>;
+        void _ignoredMerchant;
         const fullConfig = {
           publicKey,
-          ...configRef.current,
+          ...(restConfig as typeof configRef.current),
+          ...(merchantId ? { merchant: { id: merchantId } } : {}),
           onReady: () => {
             if (cancelled) return;
             if (readyTimeoutId) clearTimeout(readyTimeoutId);
@@ -444,7 +458,7 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
   const reinit = useCallback(() => {
     // Bust the public-key cache too — if the SDK failed because of a stale
     // key (e.g. preview→prod env switch), reinit should re-fetch.
-    publicKeyCache.clear();
+    publicConfigCache.clear();
     setReinitNonce((n) => n + 1);
   }, []);
 

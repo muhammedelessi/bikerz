@@ -108,8 +108,11 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
         //   https://developers.tap.company/docs/card-sdk-web-v2
         // Lowercase enum values are what their docs show; some SDK builds
         // accept uppercase but lowercase is the safer universal choice.
+        // NOTE: `merchant.id` is intentionally NOT set here — useTapCardSdk
+        // injects it from tap-config (TAP_MERCHANT_ID secret). Passing
+        // `{ id: "" }` made the SDK build a request with `mid=` empty, which
+        // Tap rejects with HTTP 400 in live mode.
         return {
-          merchant: { id: "" },
           transaction: { amount, currency },
           customer: {
             id: "",
