@@ -236,6 +236,21 @@ const DeferredSocialProof = () => {
   );
 };
 
+/**
+ * Apple Pay domain verification redirect.
+ * Lovable's hosting cannot serve files from dot-directories (.well-known/),
+ * so React Router intercepts the path. This component immediately sends the
+ * browser to the Supabase Edge Function that holds the verification file.
+ */
+const ApplePayDomainVerify = () => {
+  useEffect(() => {
+    window.location.replace(
+      "https://gifovgwlxwuiibfzyvwb.supabase.co/functions/v1/apple-pay-verify"
+    );
+  }, []);
+  return null;
+};
+
 /** Floating WhatsApp CTA is for public / learner UX only, not admin consoles. */
 const WhatsAppFloatingButtonGate = () => {
   const { pathname } = useLocation();
@@ -682,6 +697,19 @@ const AppRoutes = () => (
         {/* Meta product feed redirect */}
         <Route path="/datafeed.xml" element={<DataFeed />} />
         <Route path="/datafeed" element={<DataFeed />} />
+
+        {/*
+          Apple Pay domain verification — must come before the * catch-all.
+          Lovable's hosting serves index.html for unknown paths (including
+          dot-directories), so React Router receives this request. We redirect
+          the browser to the Supabase Edge Function that holds the file content.
+          The _redirects 301 rule handles direct server-to-server fetches
+          (Apple/Tap verification bots that never load the React bundle).
+        */}
+        <Route
+          path="/.well-known/apple-developer-merchantid-domain-association"
+          element={<ApplePayDomainVerify />}
+        />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
