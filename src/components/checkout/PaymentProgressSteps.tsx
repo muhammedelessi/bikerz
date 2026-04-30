@@ -20,7 +20,7 @@
  * still gets the success state. If it's slower, the bank-verification stage
  * just keeps spinning (which is the truthful state anyway).
  */
-import React, { useEffect, useState } from "react";
+import React, { forwardRef, useEffect, useState } from "react";
 import { CheckCircle2, Loader2, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PaymentStatus } from "@/types/payment";
@@ -29,6 +29,13 @@ interface PaymentProgressStepsProps {
   paymentStatus: PaymentStatus;
   isRTL: boolean;
 }
+
+// forwardRef wrapper — the parent CheckoutStatusOverlay wraps this in a
+// motion.div / framer Presence which tries to forward a ref to its
+// children for mount/unmount detection. Without this we get a noisy
+// "Function components cannot be given refs" dev warning on every
+// payment attempt. The ref is attached to the outer <ol> so the
+// presence machinery has a real DOM node to track.
 
 type StageId = "validating" | "encrypting" | "bank" | "finalizing" | "enrolling";
 
@@ -48,7 +55,7 @@ const STAGES: Stage[] = [
   { id: "enrolling", labelEn: "Enrolling you in the course", labelAr: "تسجيلك في الدورة", delayMs: 999_999 }, // gated by status
 ];
 
-const PaymentProgressSteps: React.FC<PaymentProgressStepsProps> = ({ paymentStatus, isRTL }) => {
+const PaymentProgressSteps = forwardRef<HTMLOListElement, PaymentProgressStepsProps>(({ paymentStatus, isRTL }, ref) => {
   const [now, setNow] = useState(0);
   const [startedAt] = useState(() => Date.now());
 
@@ -110,6 +117,7 @@ const PaymentProgressSteps: React.FC<PaymentProgressStepsProps> = ({ paymentStat
 
   return (
     <ol
+      ref={ref}
       className="w-full max-w-sm space-y-2.5"
       aria-label={isRTL ? "مراحل عملية الدفع" : "Payment progress"}
     >
@@ -147,6 +155,8 @@ const PaymentProgressSteps: React.FC<PaymentProgressStepsProps> = ({ paymentStat
       })}
     </ol>
   );
-};
+});
+
+PaymentProgressSteps.displayName = "PaymentProgressSteps";
 
 export default PaymentProgressSteps;

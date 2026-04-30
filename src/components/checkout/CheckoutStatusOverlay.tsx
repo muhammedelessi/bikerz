@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { forwardRef, memo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, CheckCircle2, XCircle, Sparkles, RefreshCw, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,12 @@ interface CheckoutStatusOverlayProps {
   navigate: (path: string) => void;
 }
 
-const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
+// forwardRef so Radix Dialog/Drawer Portal + framer Presence can forward
+// a ref into this overlay for mount-tracking. Without forwardRef React
+// emits "Function components cannot be given refs" on every state change
+// during checkout. The ref attaches to the outer wrapper that's
+// always present (the role="status"/"alert" motion.div per branch).
+const CheckoutStatusOverlay = memo(forwardRef<HTMLDivElement, CheckoutStatusOverlayProps>(({
   paymentStatus,
   paymentError,
   courseId,
@@ -30,7 +35,7 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
   onRetry,
   onRecheck,
   navigate,
-}) => {
+}, ref) => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const [rechecking, setRechecking] = useState(false);
@@ -56,6 +61,7 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
         : 'checkout.statusOverlay.pleaseWaitMoment';
     return (
       <motion.div
+        ref={ref}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="flex flex-col items-center justify-center px-4 py-10 text-center gap-1"
@@ -103,6 +109,7 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
     };
     return (
       <motion.div
+        ref={ref}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="flex flex-col items-center justify-center py-8 px-4 text-center"
@@ -148,6 +155,7 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
   if (paymentStatus === 'succeeded') {
     return (
       <motion.div
+        ref={ref}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="flex flex-col items-center justify-center py-8 text-center"
@@ -182,6 +190,7 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
     const reason = localizedPaymentError || t('checkout.statusOverlay.paymentErrorFallback');
     return (
       <motion.div
+        ref={ref}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="flex flex-col items-center justify-center py-8 px-4 text-center"
@@ -231,7 +240,7 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
   }
 
   return null;
-});
+}));
 
 CheckoutStatusOverlay.displayName = 'CheckoutStatusOverlay';
 

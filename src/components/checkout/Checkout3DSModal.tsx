@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { forwardRef, useEffect, useState } from 'react';
 import { Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -6,6 +6,10 @@ interface Checkout3DSModalProps {
   url: string;
   onCancel: () => void;
 }
+
+// forwardRef so the parent (Radix Dialog Portal / framer Presence) can
+// attach a ref to the outermost element for mount-tracking without
+// triggering a "Function components cannot be given refs" dev warning.
 
 /** In-page 3-D Secure iframe — replaces Tap's hosted result page so the user
  *  never leaves our branded UI. The iframe loads Tap's challenge page; on
@@ -29,7 +33,7 @@ interface Checkout3DSModalProps {
  *  often missed. The watchdog in useTapPayment additionally times out after
  *  3 min and routes to the recovery overlay.
  */
-const Checkout3DSModal: React.FC<Checkout3DSModalProps> = ({ url, onCancel }) => {
+const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ url, onCancel }, ref) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === 'rtl';
   const [showStuckHint, setShowStuckHint] = useState(false);
@@ -54,6 +58,7 @@ const Checkout3DSModal: React.FC<Checkout3DSModalProps> = ({ url, onCancel }) =>
 
   return (
     <div
+      ref={ref}
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-6"
       role="dialog"
       aria-modal="true"
@@ -131,6 +136,8 @@ const Checkout3DSModal: React.FC<Checkout3DSModalProps> = ({ url, onCancel }) =>
       </div>
     </div>
   );
-};
+});
+
+Checkout3DSModal.displayName = "Checkout3DSModal";
 
 export default Checkout3DSModal;
