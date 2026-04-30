@@ -104,45 +104,53 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
         if (safeEmail) contact.email = safeEmail;
         if (phone) contact.phone = phone;
 
-        // Mirror Tap's documented v2 config exactly:
+        // Tap's live merchant validates the SDK config more strictly than
+        // the test merchant. On production we were seeing the iframe POST
+        // to /v2/card/index.html with `customer=""` in the URL and getting
+        // back a 400 (test merchant happily ignored the empty fields).
+        // Fix: OMIT every field we don't have a real value for instead of
+        // sending it as an empty string. The docs at
         //   https://developers.tap.company/docs/card-sdk-web-v2
-        // Lowercase enum values are what their docs show; some SDK builds
-        // accept uppercase but lowercase is the safer universal choice.
+        // show all of these as optional, so leaving them out is canonical.
         // NOTE: `merchant.id` is intentionally NOT set here — useTapCardSdk
-        // injects it from tap-config (TAP_MERCHANT_ID secret). Passing
-        // `{ id: "" }` made the SDK build a request with `mid=` empty, which
-        // Tap rejects with HTTP 400 in live mode.
+        // injects it from tap-config's TAP_MERCHANT_ID secret. Passing
+        // `{ id: "" }` made the SDK build a request with `mid=` empty,
+        // which Tap rejects with HTTP 400 in live mode.
+        // Local var renamed to avoid shadowing the `customerName` PROP
+        // that's still used in the dependency list below.
+        const nameEntries = [
+          {
+            lang: isRTL ? ("ar" as const) : ("en" as const),
+            first: safeFirst,
+            ...(safeLast ? { last: safeLast } : {}),
+          },
+        ];
+
         return {
           transaction: { amount, currency },
           customer: {
-            id: "",
-            name: [
-              {
-                lang: isRTL ? "ar" : "en",
-                first: safeFirst,
-                last: safeLast,
-                middle: "",
-              },
-            ],
-            nameOnCard: safeFullName,
-            editable: false,
+            // No customer.id — when we don't have a saved Tap customer,
+            // sending "" causes a live-merchant 400. Omit instead.
+            name: nameEntries,
+            ...(safeFullName ? { nameOnCard: safeFullName } : {}),
+            // Drop `editable: false` — undocumented field, was a 400
+            // contributor on stricter merchant configs.
             ...(Object.keys(contact).length > 0 ? { contact } : {}),
           },
           acceptance: {
             supportedBrands: ["AMERICAN_EXPRESS", "VISA", "MASTERCARD", "MADA"],
-            supportedCards: "ALL",
+            supportedCards: "ALL" as const,
             supportedPaymentAuthentications: ["3DS"],
           },
           fields: { cardHolder: true },
           addons: { loader: true, saveCard: false, displayPaymentBrands: true },
           interface: {
-            locale: isRTL ? "ar" : "en",
-            theme: theme === "dark" ? "dark" : "light",
-            edges: "curved",
-            direction: isRTL ? "rtl" : "ltr",
-            // Tap's docs show "colored" or a hex; some builds 400 on hex when
-            // the merchant doesn't allow custom theming. Stick with the
-            // documented "colored" keyword to maximize compatibility.
+            locale: isRTL ? ("ar" as const) : ("en" as const),
+            theme: theme === "dark" ? ("dark" as const) : ("light" as const),
+            edges: "curved" as const,
+            direction: isRTL ? ("rtl" as const) : ("ltr" as const),
+            // "colored" keyword renders the merchant's brand color rather
+            // than a custom hex (which some merchants block).
             colorStyle: "colored",
           },
         };
