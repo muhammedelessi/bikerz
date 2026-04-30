@@ -195,6 +195,7 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
   const [reinitNonce, setReinitNonce] = useState(0);
 
   const instanceRef = useRef<TapCardSdkInstance | null>(null);
+  const readyFiredRef = useRef(false);
   const tokenizeResolversRef = useRef<{
     resolve: (token: string) => void;
     reject: (err: Error) => void;
