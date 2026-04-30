@@ -67,8 +67,8 @@ import {
 import { getSupabaseStorageWebpUrl } from "@/lib/supabaseStorageImage";
 import type { LcpPreloadLink } from "@/components/common/SEOHead";
 import PromoPopup from "@/components/common/PromoPopup";
+import CheckoutModal from "@/components/checkout/CheckoutModal";
 
-const CheckoutModalLazy = lazy(() => import("@/components/checkout/CheckoutModal"));
 const CourseReviewsLazy = lazy(() => import("@/components/course/CourseReviews"));
 
 interface Lesson {
@@ -1904,27 +1904,25 @@ const CourseDetail: React.FC = () => {
 
         {/* Checkout Modal */}
         {course && (
-          <Suspense fallback={null}>
-            <CheckoutModalLazy
-              open={showCheckout}
-              onOpenChange={setShowCheckout}
-              visitSource="course_detail"
-              course={{
-                id: course.id,
-                title: course.title,
-                title_ar: course.title_ar,
-                price: course.price,
-                discount_percentage: effectiveDiscount,
-                thumbnail_url: course.thumbnail_url,
-              }}
-              vatPct={getCoursePriceInfo(course.id, course.price, effectiveDiscount).vatPct ?? 0}
-              onSuccess={() => {
-                queryClient.invalidateQueries({ queryKey: ["enrollment", id, user?.id] });
-                navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
-              }}
-              onPaymentStarted={() => setIsPaymentProcessing(true)}
-            />
-          </Suspense>
+          <CheckoutModal
+            open={showCheckout}
+            onOpenChange={setShowCheckout}
+            visitSource="course_detail"
+            course={{
+              id: course.id,
+              title: course.title,
+              title_ar: course.title_ar,
+              price: course.price,
+              discount_percentage: effectiveDiscount,
+              thumbnail_url: course.thumbnail_url,
+            }}
+            vatPct={getCoursePriceInfo(course.id, course.price, effectiveDiscount).vatPct ?? 0}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ["enrollment", id, user?.id] });
+              navigate(`/payment-success?course=${id}&tap_id=free_enrollment`);
+            }}
+            onPaymentStarted={() => setIsPaymentProcessing(true)}
+          />
         )}
 
         {/* Spacer for sticky bottom bar on mobile */}
