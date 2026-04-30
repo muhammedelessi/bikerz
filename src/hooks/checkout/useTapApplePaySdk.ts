@@ -81,15 +81,20 @@ function loadSdkScript(): Promise<void> {
   });
 }
 
-let cachedPublicKey: string | null = null;
-async function fetchPublicKey(): Promise<string> {
-  if (cachedPublicKey) return cachedPublicKey;
+interface TapPublicConfig { publicKey: string; merchantId: string | null }
+let cachedPublicConfig: TapPublicConfig | null = null;
+async function fetchPublicConfig(): Promise<TapPublicConfig> {
+  if (cachedPublicConfig) return cachedPublicConfig;
   const { data, error } = await supabase.functions.invoke("tap-config", {});
   if (error) throw new Error(error.message || "Could not load payment configuration");
-  const key = (data as { public_key?: string } | null)?.public_key;
+  const payload = (data as { public_key?: string; merchant_id?: string | null } | null) || {};
+  const key = payload.public_key;
   if (!key) throw new Error("Payment service is not configured");
-  cachedPublicKey = key;
-  return key;
+  cachedPublicConfig = {
+    publicKey: key,
+    merchantId: typeof payload.merchant_id === "string" && payload.merchant_id.trim() ? payload.merchant_id.trim() : null,
+  };
+  return cachedPublicConfig;
 }
 
 export interface UseTapApplePayOptions {
@@ -143,7 +148,7 @@ export function useTapApplePaySdk(opts: UseTapApplePayOptions): UseTapApplePayRe
 
     (async () => {
       try {
-        const [publicKey] = await Promise.all([fetchPublicKey(), loadSdkScript()]);
+        const [{ publicKey, merchantId }] = await Promise.all([fetchPublicConfig(), loadSdkScript()]);
         if (cancelled) return;
         if (!window.ApplePaySDK?.renderApplePayButton) {
           throw new Error("Apple Pay SDK did not initialize");
@@ -156,9 +161,14 @@ export function useTapApplePaySdk(opts: UseTapApplePayOptions): UseTapApplePayRe
         if (!container) throw new Error("Apple Pay container not ready");
         container.innerHTML = "";
 
+        // Override merchant.id with the env-managed value from tap-config.
+        const { merchant: _ignoredMerchant, ...restConfig } = configRef.current as Record<string, unknown>;
+        void _ignoredMerchant;
+
         const inst = window.ApplePaySDK.renderApplePayButton(containerId, {
           publicKey,
-          ...configRef.current,
+          ...(restConfig as typeof configRef.current),
+          ...(merchantId ? { merchant: { id: merchantId } } : {}),
           onCanMakePayments: (canPay) => {
             if (!cancelled) setAvailable(!!canPay);
           },
