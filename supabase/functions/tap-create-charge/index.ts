@@ -970,6 +970,21 @@ function resolveTapPhone(
     }
   }
 
+  // Fallback: if the phone starts with + and has enough digits, extract country code heuristically
+  if (raw.startsWith("+") && digits.length >= 7) {
+    // Try common country code lengths (1-3 digits) and use rest as number
+    const cc = digits.length > 10 ? digits.slice(0, digits.length - 9) : digits.slice(0, 3);
+    const num = digits.slice(cc.length);
+    if (num.length >= 4) {
+      return { country_code: cc, number: num };
+    }
+  }
+
+  // Last resort: treat all digits as number with default country code
+  if (digits.length >= 7 && digits.length <= 15) {
+    return { country_code: "966", number: digits };
+  }
+
   return undefined;
 }
 
