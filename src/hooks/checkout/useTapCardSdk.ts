@@ -117,13 +117,14 @@ function friendlySdkError(err: unknown, isRTL: boolean, isTestMode: boolean): st
   // response body has the real cause (currency-not-allowed, card-not-allowed,
   // missing-required-field…) but the SDK swallows it. Tell the user to
   // double-check the card and offer support — and on test keys we add a
-  // hint about test card numbers WITHOUT blaming the user (the cause is
-  // often a misconfigured test merchant, not real-card-on-test-mode).
+  // hint with Tap's actual test card numbers (per their docs at
+  // https://developers.tap.company/reference/testing-cards) so the user
+  // knows the exact card+expiry+cvv triple that's guaranteed to succeed.
   if (statusCode === 400 || statusCode === 422) {
     if (isTestMode) {
       return isRTL
-        ? "تعذّر التحقق من بطاقتك. تأكد من البيانات أو جرّب بطاقة اختبار (4111 1111 1111 1111). إذا استمر الخطأ تواصل معنا."
-        : "Could not validate your card. Double-check the details or try a test card (4111 1111 1111 1111). If the error persists, contact support.";
+        ? "تعذّر التحقق من بطاقتك. استخدم بطاقة اختبار Tap: ‎4508 7500 1574 1019‎، انتهاء ‎01/39‎، CVV ‎100‎. إذا استمر الخطأ تواصل معنا."
+        : "Could not validate your card. Use a Tap test card: 4508 7500 1574 1019, expiry 01/39, CVV 100. If the error persists, contact support.";
     }
     return isRTL
       ? "تعذّر التحقق من بيانات البطاقة. الرجاء التأكد من الرقم وتاريخ الانتهاء وCVV ثم إعادة المحاولة."
