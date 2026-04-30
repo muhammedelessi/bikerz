@@ -278,7 +278,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const loadCountryPrices = async () => {
       const { data } = await supabase
         .from("course_country_prices")
-        .select("course_id, country_code, price, currency, original_price, discount_percentage");
+        .select("course_id, country_code, price, currency, original_price, discount_percentage, vat_percentage");
       if (data) {
         setCountryPrices(
           data.map((d) => ({
@@ -288,6 +288,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             discount_percentage: Number(d.discount_percentage) || 0,
             price: Number(d.price),
             currency: d.currency,
+            vat_percentage: Number(d.vat_percentage) || 0,
           })),
         );
       }
