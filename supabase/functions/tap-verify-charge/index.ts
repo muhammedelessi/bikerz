@@ -91,9 +91,25 @@ Deno.serve(async (req) => {
     if (!tapResponse.ok) {
       const errText = await tapResponse.text().catch(() => "");
       console.error("Tap verify API error:", tapResponse.status, errText.substring(0, 200));
+      // Parse Tap's error description so the client can show a meaningful message
+      // instead of a generic 400 that crashes the modal.
+      let tapErrorMsg: string | null = null;
+      try {
+        const parsed = JSON.parse(errText);
+        if (Array.isArray(parsed?.errors) && parsed.errors[0]?.description) {
+          tapErrorMsg = String(parsed.errors[0].description);
+        }
+      } catch { /* ignore */ }
+      // Return 200 with a `failed` status so the frontend renders the
+      // standard payment-failure overlay (with retry CTA) instead of throwing.
       return new Response(
-        JSON.stringify({ error: "Failed to verify charge" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          status: "failed",
+          charge_id,
+          message: tapErrorMsg || "Payment could not be verified.",
+          tap_message: tapErrorMsg,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
