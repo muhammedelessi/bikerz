@@ -166,6 +166,7 @@ interface CountryPrice {
   discount_percentage: number;
   price: number;
   currency: string;
+  vat_percentage: number;
 }
 
 export interface CoursePriceInfo {
