@@ -225,7 +225,7 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
 
     (async () => {
       try {
-        const [publicKey] = await Promise.all([fetchPublicKey(), loadSdkScript()]);
+        const [{ publicKey, merchantId }] = await Promise.all([fetchPublicConfig(), loadSdkScript()]);
         if (cancelled) return;
         if (!window.CardSDK?.renderTapCard) {
           throw new Error("Tap Card SDK did not initialize");
@@ -258,9 +258,16 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
           return undefined;
         };
 
+        // Strip any caller-supplied empty merchant.id and override with the
+        // one returned from tap-config (Tap requires a real `mid` in live mode
+        // — passing an empty string makes the iframe POST `mid=` and the SDK
+        // request comes back as 400).
+        const { merchant: _ignoredMerchant, ...restConfig } = configRef.current as Record<string, unknown>;
+        void _ignoredMerchant;
         const fullConfig = {
           publicKey,
-          ...configRef.current,
+          ...(restConfig as typeof configRef.current),
+          ...(merchantId ? { merchant: { id: merchantId } } : {}),
           onReady: () => {
             if (cancelled) return;
             if (readyTimeoutId) clearTimeout(readyTimeoutId);
@@ -451,7 +458,7 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
   const reinit = useCallback(() => {
     // Bust the public-key cache too — if the SDK failed because of a stale
     // key (e.g. preview→prod env switch), reinit should re-fetch.
-    publicKeyCache.clear();
+    publicConfigCache.clear();
     setReinitNonce((n) => n + 1);
   }, []);
 
