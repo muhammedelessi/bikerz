@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-
-import { DialogHeader } from "@/components/ui/dialog";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { AnimatePresence } from "framer-motion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Loader2, CreditCard, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -20,11 +18,6 @@ import { enrollUserInCourse, incrementCouponUsage } from "@/services/supabase.se
 import CheckoutInfoStep from "@/components/checkout/CheckoutInfoStep";
 import CheckoutPaymentStep from "@/components/checkout/CheckoutPaymentStep";
 import CheckoutStatusOverlay from "@/components/checkout/CheckoutStatusOverlay";
-import CheckoutStepIndicator from "@/components/checkout/CheckoutStepIndicator";
-import EmbeddedCardForm from "@/components/checkout/EmbeddedCardForm";
-import Checkout3DSModal from "@/components/checkout/Checkout3DSModal";
-import ResponsiveCheckoutShell from "@/components/checkout/ResponsiveCheckoutShell";
-import CheckoutWhatsAppHelp from "@/components/checkout/CheckoutWhatsAppHelp";
 import type { CheckoutCourse } from "@/types/payment";
 import { navigateToSignup } from "@/lib/authReturnUrl";
 import { recordCheckoutPaymentPageVisit } from "@/services/checkoutVisitAnalytics";
@@ -57,24 +50,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { sendCourseStatus } = useGHLFormWebhook();
   const { handleGuestSignup, guestSigningUp } = useGuestSignup();
 
-  // Default to "info" — for returning customers with a complete profile, the
-  // open-effect below auto-advances to "payment" right after prefillAndAutoAdvance().
-  const [step, setStep] = useState<"info" | "payment">("info");
-  /** Tokenize handle wired up from the embedded card form. */
-  const cardApiRef = useRef<{ tokenize: () => Promise<string> } | null>(null);
-  const [cardSdkStatus, setCardSdkStatus] = useState<{
-    sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null;
-  }>({ sdkLoading: false, sdkReady: false, cardValid: false, sdkError: null });
-  const [tokenizing, setTokenizing] = useState(false);
-  const handleCardApiReady = useCallback((api: { tokenize: () => Promise<string> }) => {
-    cardApiRef.current = api;
-  }, []);
-  const handleCardSdkStatusChange = useCallback(
-    (s: { sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null }) => {
-      setCardSdkStatus(s);
-    },
-    [],
-  );
+  const [step, setStep] = useState<"info" | "payment">("payment");
 
   const priceInfo = useMemo(
     () => getCoursePriceInfo(course.id, course.price, course.discount_percentage || 0),
@@ -88,7 +64,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const form = useCheckoutForm(open);
   const promo = useCheckoutPromo(course.id, basePrice);
   const tap = useTapPayment();
-  const isMobile = useIsMobile();
   /**
    * Lifted promo-panel state — when the user opens the discount field, the
    * footer's primary CTA swaps from "Pay Now" to "Apply code". Single, focused
@@ -110,52 +85,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const formatLocal = useCallback((amount: number) => `${amount} ${currSym}`, [currSym]);
 
-  /**
-   * Compute the actual currency + amount that will be charged on the card.
-   * Mirrors the same fallback logic used in handleSubmitPayment so the embedded
-   * Tap iframe always shows the user the exact amount they're about to pay.
-   */
-  const tapChargeInfo = useMemo(() => {
-    const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
-    const localCurrency = priceInfo.currency as string;
-    if (TAP_SUPPORTED.includes(localCurrency)) {
-      return { currency: localCurrency, amount: discountedPrice };
-    }
-    const sarAmt = isSAR || exchangeRate <= 0 ? discountedPrice : Math.ceil(discountedPrice / exchangeRate);
-    return { currency: "SAR", amount: sarAmt };
-  }, [priceInfo.currency, discountedPrice, isSAR, exchangeRate]);
-
-  /** Phone country code for the SDK (e.g. "966" without the +). */
-  const cardPhoneCountryCode = useMemo(() => {
-    const raw = form.actualPrefix || "";
-    return raw.replace(/^\+/, "").trim();
-  }, [form.actualPrefix]);
-  const cardPhoneNumber = useMemo(() => {
-    const v = (form.phone || "").trim().replace(/[^0-9]/g, "");
-    return v.startsWith("0") ? v.slice(1) : v;
-  }, [form.phone]);
-
-  /** Skip the embedded SDK entirely when the order is free (100%-off coupon). */
-  const isFreeEnrollment = discountedPrice <= 0 && !!promo.appliedCoupon;
-  const showEmbeddedCard = step === "payment" && !isFreeEnrollment;
-
   useEffect(() => {
     if (!open) {
-      setStep("info");
+      setStep("payment");
       promo.resetPromo();
       tap.reset();
       form.resetForm();
       return;
     }
     if (user) {
-      // ALWAYS show Step 1 first — even when the profile is already complete.
-      // Reasoning: users want to confirm their billing details before paying;
-      // it builds trust ("I see exactly what's being submitted") and lets
-      // them tweak the phone or address inline without going back later.
-      // The fields are silently prefilled, so it's a one-click confirm —
-      // not a re-typing chore.
-      void form.prefillAndAutoAdvance();
-      setStep("info");
+      form.prefillAndAutoAdvance();
     }
   }, [open, user]);
 
@@ -211,7 +150,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setStep("payment");
   }, [form]);
 
-  const handleSubmitPayment = useCallback(async (preTokenizedTokenId?: string) => {
+  const handleSubmitPayment = useCallback(async () => {
     if (!user) {
       navigateToSignup(navigate);
       return;
@@ -227,6 +166,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     onPaymentStarted?.();
 
+    const composedAddress = [form.effectiveCity, form.effectiveCountry].filter(Boolean).join(", ");
     const localCurrency = priceInfo.currency as string;
 
     // Free enrollment (100% coupon)
@@ -256,17 +196,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             finalAmount: 0,
           });
         }
-        // Free enrollment — no Tap webhook will fire, so the frontend is
-        // the only path that informs GHL. Profile fields (DOB/gender) are
-        // sent by the separate profile webhook; don't duplicate them here.
         sendCourseStatus(user.id, course.id, course.title, "purchased", {
           full_name: form.fullName,
           email: form.email,
           phone: form.fullPhone,
           country: form.effectiveCountry,
           city: form.effectiveCity,
+          address: composedAddress,
           amount: "0",
           currency: localCurrency,
+          dateOfBirth: profile?.date_of_birth || "",
+          gender: profile?.gender || "",
           silent: true,
         });
         onSuccess();
@@ -307,45 +247,21 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       /* ignore */
     }
 
-    // Pre-charge "pending" event — lets GHL track checkout starts (useful
-    // for abandonment workflows). The authoritative "purchased" / "cancelled"
-    // signal comes from the tap-webhook backend after Tap confirms, so we
-    // intentionally don't fire a follow-up here.
     sendCourseStatus(user.id, course.id, course.title, "pending", {
       full_name: form.fullName,
       email: form.email,
       phone: form.fullPhone,
       country: form.effectiveCountry,
       city: form.effectiveCity,
+      address: composedAddress,
       amount: String(paymentAmount),
       currency: paymentCurrency,
+      dateOfBirth: profile?.date_of_birth || "",
+      gender: profile?.gender || "",
       silent: true,
     });
 
     const courseDisplayName = isRTL && course.title_ar ? course.title_ar : course.title;
-
-    // Tokenize the card client-side first so the secret-key backend only ever
-    // sees a tok_xxx — raw card details never leave Tap's iframe. Apple Pay
-    // already supplies a token (preTokenizedTokenId), so skip the card SDK call.
-    let tokenId: string | undefined = preTokenizedTokenId;
-    if (!tokenId && cardApiRef.current) {
-      try {
-        setTokenizing(true);
-        tokenId = await cardApiRef.current.tokenize();
-      } catch (err: any) {
-        // Route tokenize failures through the same `failed` overlay used
-        // for post-charge errors. A toast was too easy to miss — users
-        // were clicking Pay and seeing the form re-render with no
-        // explanation. The overlay surfaces the reason persistently
-        // with a Retry CTA.
-        setTokenizing(false);
-        const fallback = isRTL ? "تعذّر التحقق من بيانات البطاقة" : "Could not validate card details";
-        tap.setExternalError(err?.message || fallback);
-        return;
-      } finally {
-        setTokenizing(false);
-      }
-    }
 
     await tap.submitPayment({
       courseId: course.id,
@@ -362,17 +278,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       amount: paymentAmount,
       courseName: courseDisplayName,
       isRTL,
-      tokenId,
     });
   }, [
     user,
     discountedPrice,
     promo.appliedCoupon,
-    // Use individual fields so a parent re-render that produces a new course
-    // object reference doesn't recreate handleSubmitPayment unnecessarily.
-    course.id,
-    course.title,
-    course.title_ar,
+    course,
     form,
     tap,
     basePrice,
@@ -386,38 +297,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     sendCourseStatus,
     t,
     navigate,
+    isRTL,
   ]);
 
   useEffect(() => {
     if (tap.status === "succeeded") {
-      // Pass the actual chargeId so the success page can verify and render
-      // the receipt. Hardcoding `tap_success` here breaks server-side
-      // verification and leaves the user without a valid receipt link.
-      const chargeParam = tap.chargeId ? `&tap_id=${encodeURIComponent(tap.chargeId)}` : "";
-      navigate(`/payment-success?course=${course.id}${chargeParam}`);
+      navigate(`/payment-success?course=${course.id}&tap_id=tap_success`);
     }
-  }, [tap.status, tap.chargeId, course.id, navigate]);
+  }, [tap.status, course.id, navigate]);
 
-  const isPaymentReady =
-    form.isInfoValid &&
-    !tap.error &&
-    tap.status !== "processing" &&
-    tap.status !== "verifying" &&
-    tap.status !== "confirming" &&
-    tap.status !== "challenging_3ds";
+  const isPaymentReady = form.isInfoValid && !tap.error && tap.status !== "processing" && tap.status !== "verifying";
 
-  const isStatusOverlay =
-    tap.status === "processing" ||
-    tap.status === "verifying" ||
-    tap.status === "confirming" ||
-    // CRITICAL: include challenging_3ds so the early-return branch
-    // renders Checkout3DSModal. Without this the user clicks Pay,
-    // backend returns a 3DS redirect_url, status flips to
-    // challenging_3ds — but the regular checkout UI keeps rendering
-    // and the 3DS iframe is never mounted, so the user sees the form
-    // "reload" with no error and no way forward.
-    tap.status === "challenging_3ds" ||
-    tap.status === "succeeded";
+  const isStatusOverlay = tap.status === "verifying" || tap.status === "succeeded" || tap.status === "failed";
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
   const BackArrowIcon = isRTL ? ArrowRight : ArrowLeft;
@@ -427,101 +318,49 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   }
 
   if (isStatusOverlay) {
-    // Lock the modal while a charge is mid-flight — closing during
-    // processing/verifying/confirming doesn't cancel the charge, it just
-    // hides our status UI and confuses the user about whether they were billed.
-    const lockClose =
-      tap.status === "processing" ||
-      tap.status === "verifying" ||
-      tap.status === "confirming" ||
-      tap.status === "challenging_3ds";
-
     return (
-      <>
-        <ResponsiveCheckoutShell
-          open={open}
-          onOpenChange={onOpenChange}
-          preventClose={lockClose}
-          a11yLabel={isRTL ? "حالة الدفع" : "Payment status"}
-          className="sm:max-w-md"
-        >
-          <div className="overflow-y-auto">
-            <CheckoutStatusOverlay
-              paymentStatus={tap.status}
-              paymentError={tap.error}
-              courseId={course.id}
-              onSuccess={onSuccess}
-              onOpenChange={onOpenChange}
-              onRetry={() => {
-                tap.reset();
-                setStep("payment");
-              }}
-              onRecheck={tap.recheckStatus}
-              navigate={navigate}
-            />
-          </div>
-        </ResponsiveCheckoutShell>
-        {tap.challengeUrl && (
-          <Checkout3DSModal url={tap.challengeUrl} onCancel={tap.cancelChallenge} />
-        )}
-      </>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <CheckoutStatusOverlay
+            paymentStatus={tap.status}
+            paymentError={tap.error}
+            courseId={course.id}
+            onSuccess={onSuccess}
+            onOpenChange={onOpenChange}
+            onRetry={() => {
+              tap.reset();
+              setStep("payment");
+            }}
+            navigate={navigate}
+          />
+        </DialogContent>
+      </Dialog>
     );
   }
 
   return (
-    <ResponsiveCheckoutShell
-      open={open}
-      onOpenChange={onOpenChange}
-      a11yLabel={
-        step === "info"
-          ? (isRTL ? "معلومات الدفع" : "Billing information")
-          : (isRTL ? "إتمام الشراء" : "Complete purchase")
-      }
-    >
-        {/* Header. Mobile uses a denser single-row layout: title + step
-            indicator stack horizontally and the course thumbnail/title/price
-            sit on one line so the whole header fits in ~80px instead of
-            ~150px. Desktop keeps the spacious original treatment. */}
-        <div className={[
-          "bg-muted/30 border-b-2 border-border flex-shrink-0",
-          isMobile ? "px-4 py-3" : "p-4 sm:p-5",
-        ].join(" ")}>
-          {isMobile ? (
-            <div className="flex items-center justify-between gap-3 mb-2">
-              <h2 className="text-sm font-bold leading-none tracking-tight">
-                {step === "info"
-                  ? (isRTL ? "معلومات الدفع" : "Billing Info")
-                  : (isRTL ? "إتمام الشراء" : "Complete Purchase")}
-              </h2>
-              <CheckoutStepIndicator currentStep={step} isRTL={isRTL} />
-            </div>
-          ) : (
-            <>
-              <DialogHeader>
-                {/* Visible heading — the accessible Title for screen readers
-                    lives in ResponsiveCheckoutShell as sr-only, so this is
-                    a plain h2 to avoid duplicate Radix Title nodes. */}
-                <h2 className="text-lg font-bold leading-none tracking-tight">
-                  {step === "info"
-                    ? (isRTL ? "معلومات الدفع" : "Billing Information")
-                    : (isRTL ? "إتمام الشراء" : "Complete Purchase")}
-                </h2>
-              </DialogHeader>
-              <div className="mt-3">
-                <CheckoutStepIndicator currentStep={step} isRTL={isRTL} />
-              </div>
-            </>
-          )}
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden border-2 border-border bg-card p-0 gap-0"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        {/* Header */}
+        <div className="bg-muted/30 p-4 sm:p-5 border-b-2 border-border flex-shrink-0">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">
+              {step === "info"
+                ? isRTL
+                  ? "معلومات الدفع"
+                  : "Billing Information"
+                : isRTL
+                  ? "إتمام الشراء"
+                  : "Complete Purchase"}
+            </DialogTitle>
+          </DialogHeader>
 
-          {/* Course info — single row, smaller thumb on mobile */}
-          <div className={[
-            "flex items-center gap-3",
-            isMobile ? "mt-0" : "mt-3",
-          ].join(" ")}>
-            <div className={[
-              "rounded-lg overflow-hidden bg-muted flex-shrink-0",
-              isMobile ? "w-9 h-9" : "w-12 h-12",
-            ].join(" ")}>
+          {/* Course info */}
+          <div className="flex items-center gap-3 mt-3">
+            <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
               {course.thumbnail_url ? (
                 <img
                   src={course.thumbnail_url}
@@ -534,99 +373,33 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 />
               ) : (
                 <div className="w-full h-full bg-primary/20 flex items-center justify-center">
-                  <CreditCard className={isMobile ? "w-4 h-4 text-primary" : "w-5 h-5 text-primary"} />
+                  <CreditCard className="w-5 h-5 text-primary" />
                 </div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className={[
-                "font-semibold text-foreground truncate",
-                isMobile ? "text-xs" : "text-sm",
-              ].join(" ")}>
+              <h3 className="font-semibold text-sm text-foreground truncate">
                 {isRTL && course.title_ar ? course.title_ar : course.title}
               </h3>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 {priceInfo.discountPct > 0 && (
-                  <span className="text-[10px] text-muted-foreground line-through">
+                  <span className="text-xs text-muted-foreground line-through">
                     {formatLocal(priceInfo.originalPrice)}
                   </span>
                 )}
-                <span className={[
-                  "font-bold text-primary",
-                  isMobile ? "text-sm" : "text-base",
-                ].join(" ")}>
-                  {formatLocal(discountedPrice)}
-                </span>
+                <span className="text-base font-bold text-primary">{formatLocal(discountedPrice)}</span>
                 {promo.promoApplied && discountLabel && (
-                  <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">{discountLabel}</span>
+                  <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">{discountLabel}</span>
                 )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Step-2 status bar — confirms who's being charged + single-click
-            edit shortcut. On mobile we collapse to a single line (no
-            "Billing details" caption) so the iframe gets ~25px more room
-            without losing the trust signal or the edit affordance. */}
-        {step === "payment" && (
-          <div className={[
-            "bg-muted/30 border-b border-border flex-shrink-0 flex items-center justify-between gap-3",
-            isMobile ? "px-4 py-1.5" : "px-4 sm:px-5 py-2.5",
-          ].join(" ")}>
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div className={[
-                "shrink-0 inline-flex items-center justify-center rounded-full bg-primary/10 text-primary",
-                isMobile ? "h-5 w-5" : "h-7 w-7",
-              ].join(" ")}>
-                <Check className={isMobile ? "w-3 h-3" : "w-3.5 h-3.5"} />
-              </div>
-              <div className="min-w-0">
-                {!isMobile && (
-                  <p className="text-[11px] text-muted-foreground leading-tight">
-                    {isRTL ? "بيانات الفاتورة" : "Billing details"}
-                  </p>
-                )}
-                <p className="text-xs font-semibold text-foreground truncate" dir="auto">
-                  {form.fullName || (isRTL ? "—" : "—")}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setStep("info")}
-              className={[
-                "inline-flex items-center gap-1.5 rounded-lg border border-border bg-background font-semibold text-foreground hover:bg-muted hover:border-primary/40 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                isMobile ? "h-7 px-2 text-[11px] min-h-[28px]" : "h-9 px-3 text-xs min-h-[36px]",
-              ].join(" ")}
-              aria-label={isRTL ? "رجوع للخطوة الأولى لتعديل البيانات" : "Back to step 1 to edit info"}
-            >
-              <BackArrowIcon className={isMobile ? "w-3 h-3" : "w-3.5 h-3.5"} />
-              <span>{isRTL ? "تعديل" : "Edit"}</span>
-            </button>
-          </div>
-        )}
-
-        {/* Content — animated step transitions.
-            • info → payment : slide in from the leading edge (right in LTR, left in RTL)
-            • payment → info : slide in from the trailing edge
-            mode="wait" ensures the outgoing step finishes before the incoming
-            one mounts, so the embedded card SDK iframe never overlaps the
-            previous step during the transition. */}
-        <div className={[
-          "overflow-y-auto flex-1 min-h-0 relative",
-          // Mobile: tight padding so the iframe + footer fit above the fold.
-          isMobile ? "px-3 py-2.5" : "p-4 sm:p-5",
-        ].join(" ")}>
-          <AnimatePresence mode="wait" initial={false}>
+        {/* Content */}
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0">
+          <AnimatePresence mode="wait">
             {step === "info" ? (
-              <motion.div
-                key="step-info"
-                initial={{ opacity: 0, x: isRTL ? -24 : 24 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: isRTL ? 24 : -24 }}
-                transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
-              >
               <CheckoutInfoStep
                 key="info"
                 isRTL={isRTL}
@@ -659,15 +432,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 errors={form.errors}
                 setErrors={form.setErrors}
               />
-              </motion.div>
             ) : (
-              <motion.div
-                key="step-payment"
-                initial={{ opacity: 0, x: isRTL ? -24 : 24 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: isRTL ? 24 : -24 }}
-                transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
-              >
               <CheckoutPaymentStep
                 key="payment"
                 isRTL={isRTL}
@@ -721,73 +486,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 exchangeRate={exchangeRate}
                 isSAR={isSAR}
                 onSubmitPayment={handleSubmitPayment}
-                cardFormSlot={
-                  showEmbeddedCard ? (
-                    <EmbeddedCardForm
-                      isRTL={isRTL}
-                      active={showEmbeddedCard}
-                      amount={tapChargeInfo.amount}
-                      currency={tapChargeInfo.currency}
-                      customerName={form.fullName}
-                      customerEmail={form.email}
-                      customerPhoneCountryCode={cardPhoneCountryCode}
-                      customerPhoneNumber={cardPhoneNumber}
-                      onApiReady={handleCardApiReady}
-                      onStatusChange={handleCardSdkStatusChange}
-                      onApplePayToken={(tokenId) => {
-                        // Apple Pay sheet completed — submit immediately, bypassing
-                        // the card SDK tokenize step (we already have a tok_xxx).
-                        void handleSubmitPayment(tokenId);
-                      }}
-                    />
-                  ) : null
-                }
               />
-              </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-
-
         {/* Footer */}
-        <div className={[
-          "border-t-2 border-border flex-shrink-0 flex flex-col",
-          // Mobile: snug padding + smaller gap so the Pay button stays above
-          // any safe-area inset without pushing the form content up.
-          isMobile
-            ? "px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] gap-1.5"
-            : "p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] gap-3",
-        ].join(" ")}>
-          {/* Persistent WhatsApp help — visible on both steps so a hesitant
-              user can ping support without abandoning. The link variant is
-              quiet so it doesn't compete with the primary Pay CTA. */}
-          <div className="flex justify-center">
-            <CheckoutWhatsAppHelp
-              context="idle"
-              variant="inline"
-              courseId={course.id}
-            />
-          </div>
-          <div className="flex gap-2">
+        <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-border flex-shrink-0 flex gap-2">
           {step === "info" ? (
             <Button
-              className="flex-1 h-11 rounded-xl text-sm font-bold btn-cta"
+              className="flex-1 btn-cta"
               onClick={handleNextStep}
               disabled={form.profileSaving || !form.isInfoValid}
             >
-              {form.profileSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin me-2" />
-                  {isRTL ? "جاري الحفظ..." : "Saving..."}
-                </>
-              ) : (
-                <>
-                  <CreditCard className="w-4 h-4 me-2" />
-                  {isRTL ? "الذهاب للدفع" : "Continue to payment"}
-                  <ArrowIcon className="w-4 h-4 ms-2" />
-                </>
-              )}
+              {form.profileSaving && <Loader2 className="w-4 h-4 animate-spin me-2" />}
+              {isRTL ? "التالي" : "Next"}
+              <ArrowIcon className="w-4 h-4 ms-2" />
             </Button>
           ) : promoOpen && !promo.promoApplied ? (
             /*
@@ -817,7 +531,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <Button
               className="flex-1"
               variant="cta"
-              onClick={() => handleSubmitPayment()}
+              onClick={handleSubmitPayment}
               disabled={tap.status === "processing" || !isPaymentReady}
             >
               {tap.status === "processing" ? (
@@ -835,28 +549,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <Button
               className="flex-1 h-11 rounded-xl text-sm font-bold"
               variant="cta"
-              onClick={() => handleSubmitPayment()}
-              disabled={tap.status === "processing" || guestSigningUp || !isPaymentReady || tokenizing || (showEmbeddedCard && (!cardSdkStatus.sdkReady || !cardSdkStatus.cardValid))}
+              onClick={handleSubmitPayment}
+              disabled={tap.status === "processing" || guestSigningUp || !isPaymentReady}
             >
               {guestSigningUp ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin me-2" />
                   {isRTL ? "جاري إنشاء الحساب..." : "Creating account..."}
-                </>
-              ) : tokenizing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin me-2" />
-                  {isRTL ? "جاري التحقق من البطاقة..." : "Validating card..."}
-                </>
-              ) : showEmbeddedCard && !cardSdkStatus.sdkReady ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin me-2" />
-                  {isRTL ? "جاري تحميل نموذج الدفع..." : "Loading payment form..."}
-                </>
-              ) : showEmbeddedCard && !cardSdkStatus.cardValid ? (
-                <>
-                  <CreditCard className="w-4 h-4 me-2" />
-                  {isRTL ? "أكمل بيانات البطاقة" : "Complete card details"}
                 </>
               ) : tap.status === "processing" ? (
                 <>
@@ -889,29 +588,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               )}
             </Button>
           )}
-          </div>
         </div>
 
         {tap.status === "failed" && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 sm:p-5">
-            <div className="w-full max-w-md rounded-2xl border-2 border-border bg-card shadow-2xl">
-              <CheckoutStatusOverlay
-                paymentStatus={tap.status}
-                paymentError={tap.error}
-                courseId={course.id}
-                onSuccess={onSuccess}
-                onOpenChange={onOpenChange}
-                onRetry={() => {
-                  tap.reset();
-                  setStep("payment");
-                }}
-                onRecheck={tap.recheckStatus}
-                navigate={navigate}
-              />
-            </div>
+          <div className="p-4 border-t-2 border-border flex-shrink-0">
+            <Button className="w-full" variant="outline" onClick={() => onOpenChange(false)}>
+              {isRTL ? "إغلاق" : "Close"}
+            </Button>
           </div>
         )}
-    </ResponsiveCheckoutShell>
+      </DialogContent>
+    </Dialog>
   );
 };
 

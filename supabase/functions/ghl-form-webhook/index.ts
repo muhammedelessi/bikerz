@@ -37,26 +37,23 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json()
-    const { full_name, email, phone, city, country, courseName, amount, orderStatus, source, courses, totalPurchased } = body
+    const { full_name, email, phone, city, country, address, courseName, amount, orderStatus, source, courses, totalPurchased, dateOfBirth, gender } = body
 
-    // Sparse payload — only ship fields the caller actually populated.
-    // Profile fields (DOB / gender) live in the dedicated profile webhook,
-    // and `address` is just `city, country` — the CRM can compose it on
-    // its side without us duplicating data.
     const payload: Record<string, unknown> = {
       email: email || user.email || '',
       phone: phone || '',
       full_name: full_name || '',
       city: city || '',
       country: country || '',
+      address: address || '',
+      courseName: courseName || '',
+      amount: amount || '',
       source: source || 'direct',
-    }
-    if (courseName) payload.courseName = courseName
-    if (amount) payload.amount = amount
-    if (orderStatus) payload.orderStatus = orderStatus
-    if (courses && courses !== '[]') payload.courses = courses
-    if (typeof totalPurchased === 'number' && totalPurchased > 0) {
-      payload.totalPurchased = totalPurchased
+      orderStatus: orderStatus || 'not purchased',
+      courses: courses || '[]',
+      totalPurchased: totalPurchased ?? 0,
+      dateOfBirth: dateOfBirth || '',
+      gender: gender || '',
     }
 
     console.log('GHL form webhook payload:', JSON.stringify(payload))

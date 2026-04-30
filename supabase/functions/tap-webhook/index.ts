@@ -315,25 +315,22 @@ async function upsertAndSendGHLWebhook(
       totalPurchased = (row as any)?.total_purchased ?? 0;
     }
 
-    // Sparse payload — match the frontend sender's contract: identity +
-    // course details + status. `address` is just `city, country` glued
-    // together; the CRM can compose it on its side. `courses` and
-    // `totalPurchased` are only meaningful when the user has at least one
-    // purchase, so omit defaults.
-    const payload: Record<string, unknown> = {
+    const address = [profile?.city, profile?.country, profile?.postal_code].filter(Boolean).join(", ");
+
+    const payload = {
       email: authUser?.user?.email || (verifiedCharge?.receipt as Record<string, unknown>)?.email || "",
       phone: profile?.phone || "",
       full_name: profile?.full_name || "",
       city: profile?.city || "",
       country: profile?.country || "",
+      address,
+      courseName,
+      amount: String(verifiedCharge?.amount || charge.amount || ""),
       source: "direct",
       orderStatus: ghlOrderStatus,
+      courses: coursesJson,
+      totalPurchased,
     };
-    if (courseName) payload.courseName = courseName;
-    const amountStr = String(verifiedCharge?.amount || charge.amount || "");
-    if (amountStr) payload.amount = amountStr;
-    if (totalPurchased > 0) payload.totalPurchased = totalPurchased;
-    if (coursesJson && coursesJson !== "[]") payload.courses = coursesJson;
 
     console.log("Sending GHL webhook for status:", status, "payload:", JSON.stringify(payload));
 

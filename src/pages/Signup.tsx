@@ -21,7 +21,7 @@ import logoLight from "@/assets/logo-light.png";
 import { useTheme } from "@/components/ThemeProvider";
 import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
 import { COUNTRIES } from "@/data/countryCityData";
-import { consumeReturnUrl, consumeSignupOrigin } from "@/lib/authReturnUrl";
+import { consumeReturnUrl } from "@/lib/authReturnUrl";
 import { fetchPublicGeoHint } from "@/lib/publicGeoCountry";
 import { activateFreeTrialForCourse, consumeTrialOfferPending } from "@/lib/guestPreview";
 import { FormAlert, FormField } from "@/components/ui/form-field";
@@ -191,25 +191,13 @@ const Signup: React.FC = () => {
       console.error("GHL signup sync failed:", syncErr);
     }
 
-    // Dedicated profile webhook — fires once on registration. The
-    // `event_type` defaults to "signup" but is overridden to "course_page"
-    // when the user landed here from a free-preview-ended prompt (higher
-    // purchase intent — GHL can branch on this for a different welcome
-    // sequence). The origin flag is set in CourseDetail.handlePreviewPromptSignup.
-    const eventType = consumeSignupOrigin();
+    // Dedicated profile webhook — fires once on registration
     sendGHLProfileData({
-      event_type: eventType === "course_page" ? "course_page" : "signup",
       user_id: userId,
       email: userEmail,
       full_name: fullName,
       phone: fullPhone,
       country: countryName,
-      // Default nationality to the country of residence so GHL has the
-      // field populated from day one — true for the vast majority of our
-      // users (Saudi residents are usually Saudi nationals). Users who
-      // need a different nationality can override it on the profile page,
-      // which fires a "profile_update" event with the corrected value.
-      nationality: countryName,
       city: cityName,
     }).catch((err) => {
       console.error("[GHL] Registration profile webhook error:", err);

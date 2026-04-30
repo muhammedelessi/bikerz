@@ -33,7 +33,7 @@ function effectiveCourseDiscountCheckout(c: CheckoutCourse): number {
 
 const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tiers }) => {
   const { isRTL } = useLanguage();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { sendWithCourses } = useGHLFormWebhook();
   const tap = useTapPayment();
@@ -116,6 +116,8 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
     if (!form.validateInfo()) return;
     await form.saveProfileData();
 
+    const composedAddress = [form.effectiveCity, form.effectiveCountry].filter(Boolean).join(', ');
+
     try {
       sessionStorage.setItem(
         'bikerz_checkout_data',
@@ -132,20 +134,19 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
       /* ignore */
     }
 
-    // Bundle "pending" event — abandonment-tracking only. The authoritative
-    // "purchased" signal comes from tap-webhook on the backend. Profile
-    // fields (DOB/gender) live in the dedicated profile webhook; don't
-    // resend them with every purchase.
     void sendWithCourses(user.id, {
       full_name: form.fullName,
       email: form.email,
       phone: form.fullPhone,
       country: form.effectiveCountry,
       city: form.effectiveCity,
+      address: composedAddress,
       amount: String(calc.finalPrice),
       currency: 'SAR',
       orderStatus: 'pending',
       courseName: isRTL ? 'باقة كورسات' : 'Course bundle',
+      dateOfBirth: profile?.date_of_birth || '',
+      gender: profile?.gender || '',
       silent: true,
     });
 
@@ -176,6 +177,7 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
     calc.discountPct,
     tap,
     sendWithCourses,
+    profile,
     isRTL,
     navigate,
     currencyCode,

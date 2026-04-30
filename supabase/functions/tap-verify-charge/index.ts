@@ -91,25 +91,9 @@ Deno.serve(async (req) => {
     if (!tapResponse.ok) {
       const errText = await tapResponse.text().catch(() => "");
       console.error("Tap verify API error:", tapResponse.status, errText.substring(0, 200));
-      // Parse Tap's error description so the client can show a meaningful message
-      // instead of a generic 400 that crashes the modal.
-      let tapErrorMsg: string | null = null;
-      try {
-        const parsed = JSON.parse(errText);
-        if (Array.isArray(parsed?.errors) && parsed.errors[0]?.description) {
-          tapErrorMsg = String(parsed.errors[0].description);
-        }
-      } catch { /* ignore */ }
-      // Return 200 with a `failed` status so the frontend renders the
-      // standard payment-failure overlay (with retry CTA) instead of throwing.
       return new Response(
-        JSON.stringify({
-          status: "failed",
-          charge_id,
-          message: tapErrorMsg || "Payment could not be verified.",
-          tap_message: tapErrorMsg,
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Failed to verify charge" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -124,11 +108,6 @@ Deno.serve(async (req) => {
     }
 
     const status = mapTapStatus(tapCharge.status);
-    const tapMessage =
-      (typeof tapCharge?.response?.message === "string" && tapCharge.response.message) ||
-      (typeof tapCharge?.acquirer?.message === "string" && tapCharge.acquirer.message) ||
-      (typeof tapCharge?.response?.code === "string" ? `Code ${tapCharge.response.code}` : null) ||
-      null;
 
     // Use service role client for DB operations
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
@@ -156,7 +135,7 @@ Deno.serve(async (req) => {
       if (!chargeUserId) {
         console.warn("Cannot create DB record: no user_id in charge metadata or auth");
         return new Response(
-          JSON.stringify({ status, charge_id, warning: "no_user_context", message: tapMessage }),
+          JSON.stringify({ status, charge_id, warning: "no_user_context" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -228,7 +207,7 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ status, charge_id, message: tapMessage }),
+        JSON.stringify({ status, charge_id }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -318,7 +297,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ status, charge_id, message: tapMessage }),
+      JSON.stringify({ status, charge_id }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {

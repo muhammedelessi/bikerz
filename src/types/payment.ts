@@ -1,10 +1,5 @@
 export type PaymentMethod = 'card' | 'apple_pay' | 'google_pay';
-/**
- * `confirming` — verification polling exhausted without a definitive result.
- * The charge MAY have succeeded; the UI must offer "Refresh" instead of "Retry"
- * so the user doesn't double-pay. See useTapPayment.verifyCharge for details.
- */
-export type PaymentStatus = 'idle' | 'processing' | 'challenging_3ds' | 'verifying' | 'confirming' | 'succeeded' | 'failed';
+export type PaymentStatus = 'idle' | 'processing' | 'verifying' | 'succeeded' | 'failed';
 
 export type TapPaymentKind = 'course' | 'training_booking' | 'course_bundle';
 

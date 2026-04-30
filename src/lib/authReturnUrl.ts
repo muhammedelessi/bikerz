@@ -1,38 +1,6 @@
 import type { NavigateFunction } from "react-router-dom";
 
 const KEY = "bikerz_return_url";
-const ORIGIN_KEY = "bikerz_signup_origin";
-
-/**
- * Tag GHL on what triggered a user signup. Set by the caller right before
- * navigating to `/signup`; consumed once by the signup page after the
- * account is created so the GHL profile webhook can include an
- * `event_type` ("signup", "course_page", "guest_signup", "profile_update").
- *
- * `course_page` specifically marks signups initiated from the "free
- * preview ended — create an account to continue" toast, which is a
- * higher-intent flow than a generic top-bar "Sign up" click.
- */
-export type SignupOrigin = "signup" | "course_page" | "guest_signup" | "profile_update";
-
-export function setSignupOrigin(origin: SignupOrigin): void {
-  try {
-    sessionStorage.setItem(ORIGIN_KEY, origin);
-  } catch {
-    /* ignore */
-  }
-}
-
-/** Read and clear the one-time signup origin. Defaults to "signup" when unset. */
-export function consumeSignupOrigin(): SignupOrigin {
-  try {
-    const v = sessionStorage.getItem(ORIGIN_KEY) as SignupOrigin | null;
-    if (v) sessionStorage.removeItem(ORIGIN_KEY);
-    return v || "signup";
-  } catch {
-    return "signup";
-  }
-}
 
 /** Persist current path + query so user returns here after signup/login. */
 export function setReturnUrlFromCurrentLocation(): void {

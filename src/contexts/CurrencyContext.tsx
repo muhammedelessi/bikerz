@@ -27,56 +27,7 @@ export type CurrencyCode =
   | "DJF"
   | "ILS"
   | "USD"
-  | "GBP"
-  | "EUR"
-  | "CAD"
-  | "AUD"
-  | "NZD"
-  | "CHF"
-  | "SEK"
-  | "NOK"
-  | "DKK"
-  | "PLN"
-  | "CZK"
-  | "HUF"
-  | "RON"
-  | "BGN"
-  | "TRY"
-  | "RUB"
-  | "UAH"
-  | "PKR"
-  | "INR"
-  | "BDT"
-  | "LKR"
-  | "NPR"
-  | "AFN"
-  | "IRR"
-  | "CNY"
-  | "JPY"
-  | "KRW"
-  | "HKD"
-  | "TWD"
-  | "SGD"
-  | "MYR"
-  | "IDR"
-  | "THB"
-  | "PHP"
-  | "VND"
-  | "ZAR"
-  | "NGN"
-  | "KES"
-  | "GHS"
-  | "TZS"
-  | "UGX"
-  | "ETB"
-  | "XOF"
-  | "XAF"
-  | "MXN"
-  | "BRL"
-  | "ARS"
-  | "CLP"
-  | "COP"
-  | "PEN";
+  | "GBP";
 
 interface CurrencyMeta {
   symbol: string;
@@ -108,55 +59,6 @@ const CURRENCY_META: Record<CurrencyCode, CurrencyMeta> = {
   ILS: { symbol: "ILS", symbolAr: "₪" },
   USD: { symbol: "USD", symbolAr: "$" },
   GBP: { symbol: "GBP", symbolAr: "£" },
-  EUR: { symbol: "EUR", symbolAr: "€" },
-  CAD: { symbol: "CAD", symbolAr: "$" },
-  AUD: { symbol: "AUD", symbolAr: "$" },
-  NZD: { symbol: "NZD", symbolAr: "$" },
-  CHF: { symbol: "CHF", symbolAr: "Fr" },
-  SEK: { symbol: "SEK", symbolAr: "kr" },
-  NOK: { symbol: "NOK", symbolAr: "kr" },
-  DKK: { symbol: "DKK", symbolAr: "kr" },
-  PLN: { symbol: "PLN", symbolAr: "zł" },
-  CZK: { symbol: "CZK", symbolAr: "Kč" },
-  HUF: { symbol: "HUF", symbolAr: "Ft" },
-  RON: { symbol: "RON", symbolAr: "lei" },
-  BGN: { symbol: "BGN", symbolAr: "лв" },
-  TRY: { symbol: "TRY", symbolAr: "₺" },
-  RUB: { symbol: "RUB", symbolAr: "₽" },
-  UAH: { symbol: "UAH", symbolAr: "₴" },
-  PKR: { symbol: "PKR", symbolAr: "₨" },
-  INR: { symbol: "INR", symbolAr: "₹" },
-  BDT: { symbol: "BDT", symbolAr: "৳" },
-  LKR: { symbol: "LKR", symbolAr: "₨" },
-  NPR: { symbol: "NPR", symbolAr: "₨" },
-  AFN: { symbol: "AFN", symbolAr: "؋" },
-  IRR: { symbol: "IRR", symbolAr: "﷼" },
-  CNY: { symbol: "CNY", symbolAr: "¥" },
-  JPY: { symbol: "JPY", symbolAr: "¥" },
-  KRW: { symbol: "KRW", symbolAr: "₩" },
-  HKD: { symbol: "HKD", symbolAr: "$" },
-  TWD: { symbol: "TWD", symbolAr: "$" },
-  SGD: { symbol: "SGD", symbolAr: "$" },
-  MYR: { symbol: "MYR", symbolAr: "RM" },
-  IDR: { symbol: "IDR", symbolAr: "Rp" },
-  THB: { symbol: "THB", symbolAr: "฿" },
-  PHP: { symbol: "PHP", symbolAr: "₱" },
-  VND: { symbol: "VND", symbolAr: "₫" },
-  ZAR: { symbol: "ZAR", symbolAr: "R" },
-  NGN: { symbol: "NGN", symbolAr: "₦" },
-  KES: { symbol: "KES", symbolAr: "KSh" },
-  GHS: { symbol: "GHS", symbolAr: "₵" },
-  TZS: { symbol: "TZS", symbolAr: "TSh" },
-  UGX: { symbol: "UGX", symbolAr: "USh" },
-  ETB: { symbol: "ETB", symbolAr: "Br" },
-  XOF: { symbol: "XOF", symbolAr: "CFA" },
-  XAF: { symbol: "XAF", symbolAr: "FCFA" },
-  MXN: { symbol: "MXN", symbolAr: "$" },
-  BRL: { symbol: "BRL", symbolAr: "R$" },
-  ARS: { symbol: "ARS", symbolAr: "$" },
-  CLP: { symbol: "CLP", symbolAr: "$" },
-  COP: { symbol: "COP", symbolAr: "$" },
-  PEN: { symbol: "PEN", symbolAr: "S/" },
 };
 
 /** Placeholder course id for `getCoursePriceInfo` when pricing SAR training offers like video courses */
@@ -188,59 +90,9 @@ const CURRENCY_FULL_NAME_AR: Record<CurrencyCode, string> = {
   ILS: "شيكل إسرائيلي",
   USD: "دولار أمريكي",
   GBP: "جنيه إسترليني",
-  EUR: "يورو",
-  CAD: "دولار كندي",
-  AUD: "دولار أسترالي",
-  NZD: "دولار نيوزيلندي",
-  CHF: "فرنك سويسري",
-  SEK: "كرونة سويدية",
-  NOK: "كرونة نرويجية",
-  DKK: "كرونة دنماركية",
-  PLN: "زلوتي بولندي",
-  CZK: "كرونة تشيكية",
-  HUF: "فورنت مجري",
-  RON: "ليو روماني",
-  BGN: "ليف بلغاري",
-  TRY: "ليرة تركية",
-  RUB: "روبل روسي",
-  UAH: "هريفنيا أوكرانية",
-  PKR: "روبية باكستانية",
-  INR: "روبية هندية",
-  BDT: "تاكا بنغلاديشي",
-  LKR: "روبية سريلانكية",
-  NPR: "روبية نيبالية",
-  AFN: "أفغاني",
-  IRR: "ريال إيراني",
-  CNY: "يوان صيني",
-  JPY: "ين ياباني",
-  KRW: "وون كوري",
-  HKD: "دولار هونغ كونغ",
-  TWD: "دولار تايواني",
-  SGD: "دولار سنغافوري",
-  MYR: "رينغيت ماليزي",
-  IDR: "روبية إندونيسية",
-  THB: "بات تايلندي",
-  PHP: "بيزو فلبيني",
-  VND: "دونغ فيتنامي",
-  ZAR: "راند جنوب أفريقي",
-  NGN: "نايرا نيجيري",
-  KES: "شلن كيني",
-  GHS: "سيدي غاني",
-  TZS: "شلن تنزاني",
-  UGX: "شلن أوغندي",
-  ETB: "بير إثيوبي",
-  XOF: "فرنك غرب أفريقي",
-  XAF: "فرنك وسط أفريقي",
-  MXN: "بيزو مكسيكي",
-  BRL: "ريال برازيلي",
-  ARS: "بيزو أرجنتيني",
-  CLP: "بيزو تشيلي",
-  COP: "بيزو كولومبي",
-  PEN: "سول بيروفي",
 };
 
 const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
-  // GCC + Arab world
   SA: "SAR",
   AE: "AED",
   KW: "KWD",
@@ -264,98 +116,10 @@ const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
   DJ: "DJF",
   PS: "ILS",
   IL: "ILS",
-  // Anglosphere
-  US: "USD",
   GB: "GBP",
-  CA: "CAD",
-  AU: "AUD",
-  NZ: "NZD",
-  IE: "EUR",
-  // Eurozone
-  DE: "EUR",
-  FR: "EUR",
-  IT: "EUR",
-  ES: "EUR",
-  NL: "EUR",
-  BE: "EUR",
-  AT: "EUR",
-  PT: "EUR",
-  FI: "EUR",
-  GR: "EUR",
-  LU: "EUR",
-  SK: "EUR",
-  SI: "EUR",
-  EE: "EUR",
-  LV: "EUR",
-  LT: "EUR",
-  CY: "EUR",
-  MT: "EUR",
-  HR: "EUR",
-  // Other Europe
-  CH: "CHF",
-  SE: "SEK",
-  NO: "NOK",
-  DK: "DKK",
-  PL: "PLN",
-  CZ: "CZK",
-  HU: "HUF",
-  RO: "RON",
-  BG: "BGN",
-  TR: "TRY",
-  RU: "RUB",
-  UA: "UAH",
-  // South Asia
-  PK: "PKR",
-  IN: "INR",
-  BD: "BDT",
-  LK: "LKR",
-  NP: "NPR",
-  AF: "AFN",
-  IR: "IRR",
-  // East / SE Asia
-  CN: "CNY",
-  JP: "JPY",
-  KR: "KRW",
-  HK: "HKD",
-  TW: "TWD",
-  SG: "SGD",
-  MY: "MYR",
-  ID: "IDR",
-  TH: "THB",
-  PH: "PHP",
-  VN: "VND",
-  // Sub-Saharan Africa
-  ZA: "ZAR",
-  NG: "NGN",
-  KE: "KES",
-  GH: "GHS",
-  TZ: "TZS",
-  UG: "UGX",
-  ET: "ETB",
-  SN: "XOF",
-  CI: "XOF",
-  ML: "XOF",
-  BF: "XOF",
-  BJ: "XOF",
-  TG: "XOF",
-  NE: "XOF",
-  GW: "XOF",
-  CM: "XAF",
-  GA: "XAF",
-  CG: "XAF",
-  TD: "XAF",
-  CF: "XAF",
-  GQ: "XAF",
-  // Latin America
-  MX: "MXN",
-  BR: "BRL",
-  AR: "ARS",
-  CL: "CLP",
-  CO: "COP",
-  PE: "PEN",
 };
 
-// Fallback rates (SAR → X) used if live fetch fails. Live rates from open.er-api.com override these.
+// Fallback rates (SAR → X) used if live fetch fails
 const FALLBACK_RATES: Record<CurrencyCode, number> = {
   SAR: 1,
   AED: 0.979,
@@ -381,57 +145,7 @@ const FALLBACK_RATES: Record<CurrencyCode, number> = {
   ILS: 0.837,
   USD: 0.267,
   GBP: 0.211,
-  EUR: 0.247,
-  CAD: 0.367,
-  AUD: 0.41,
-  NZD: 0.448,
-  CHF: 0.235,
-  SEK: 2.83,
-  NOK: 2.85,
-  DKK: 1.84,
-  PLN: 1.08,
-  CZK: 6.13,
-  HUF: 96.4,
-  RON: 1.23,
-  BGN: 0.483,
-  TRY: 9.16,
-  RUB: 24.6,
-  UAH: 11.05,
-  PKR: 74.5,
-  INR: 22.5,
-  BDT: 31.8,
-  LKR: 80.6,
-  NPR: 36.0,
-  AFN: 19.0,
-  IRR: 11250,
-  CNY: 1.93,
-  JPY: 41.5,
-  KRW: 365,
-  HKD: 2.08,
-  TWD: 8.55,
-  SGD: 0.36,
-  MYR: 1.26,
-  IDR: 4250,
-  THB: 9.45,
-  PHP: 15.5,
-  VND: 6750,
-  ZAR: 4.95,
-  NGN: 415,
-  KES: 34.5,
-  GHS: 4.05,
-  TZS: 705,
-  UGX: 990,
-  ETB: 33.0,
-  XOF: 162,
-  XAF: 162,
-  MXN: 5.05,
-  BRL: 1.55,
-  ARS: 268,
-  CLP: 256,
-  COP: 1090,
-  PEN: 1.0,
 };
-
 
 const VAT_RATE = 15; // Saudi VAT — server always charges 15%
 

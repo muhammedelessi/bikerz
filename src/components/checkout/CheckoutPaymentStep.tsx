@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
 import SearchableDropdown from "@/components/checkout/SearchableDropdown";
@@ -13,7 +14,6 @@ import type { DropdownOption } from "@/components/checkout/SearchableDropdown";
 import type { PaymentStatus, AppliedCoupon } from "@/types/payment";
 import type { ValidationErrors } from "@/types/payment";
 import { COUNTRIES } from "@/data/countryCityData";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CheckoutPaymentStepProps {
   isRTL: boolean;
@@ -75,8 +75,6 @@ interface CheckoutPaymentStepProps {
   /** Lifted state: whether the promo input panel is open. Controlled by the parent modal so the footer can swap Pay → Apply. */
   promoOpen?: boolean;
   onPromoOpenChange?: (open: boolean) => void;
-  /** Optional embedded card form rendered directly below the discount section. */
-  cardFormSlot?: React.ReactNode;
 }
 
 const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
@@ -133,10 +131,8 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     bundleMode = false,
     promoOpen: promoOpenProp,
     onPromoOpenChange,
-    cardFormSlot,
   }) => {
     const { t } = useTranslation();
-    const isMobile = useIsMobile();
     const [editOpen, setEditOpen] = useState(false);
     /**
      * Promo input is hidden by default — user reveals it via the small link below the total.
@@ -194,9 +190,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          // Tighter rhythm on mobile so the iframe + footer fit above the
-          // fold; spacing is generous on desktop where vertical room is plentiful.
-          className={bundleMode ? "space-y-3 sm:space-y-4" : "space-y-3 sm:space-y-5"}
+          className={bundleMode ? "space-y-4" : "space-y-5"}
         >
           {/*
             Promo Code (collapsed-by-default UX)
@@ -241,7 +235,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                         setPromoOpen(false);
                       }}
                       disabled={paymentStatus === "processing"}
-                      className="shrink-0 min-h-[36px] px-2 -mx-2 text-xs font-semibold text-emerald-900/80 dark:text-emerald-100/80 hover:text-emerald-950 dark:hover:text-emerald-50 underline underline-offset-2 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
+                      className="shrink-0 text-xs font-semibold text-emerald-900/80 dark:text-emerald-100/80 hover:text-emerald-950 dark:hover:text-emerald-50 underline underline-offset-2 disabled:opacity-50"
                     >
                       {isRTL ? "إزالة" : "Remove"}
                     </button>
@@ -302,7 +296,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                         setPromoOpen(false);
                         setPromoCode("");
                       }}
-                      className="min-h-[36px] px-2 -mx-2 text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
+                      className="text-[11px] text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
                     >
                       {isRTL ? "إلغاء" : "Cancel"}
                     </button>
@@ -326,99 +320,152 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
             </AnimatePresence>
           )}
 
-          {/* Embedded card form rendered directly under the discount/promo section */}
-          {cardFormSlot}
-
-          {/* Total + charge hint. On mobile, this whole card is hidden — the
-              header already displays the discounted price prominently and the
-              Pay button below repeats it as part of its label, so a separate
-              "Total" card was just eating vertical space the user needs to
-              see the card iframe + Pay button without scrolling. */}
-          {!bundleMode && !isMobile && (
-            <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2.5">
-              <div className="flex justify-between font-bold text-base items-baseline gap-2">
-                <span>
-                  {isRTL
-                    ? vatPct > 0
-                      ? "الإجمالي (شامل الضريبة)"
-                      : "الإجمالي"
-                    : vatPct > 0
-                      ? "Total (incl. VAT)"
-                      : "Total"}
+          {/* Order Summary */}
+          <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
+            <div className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                {bundleMode
+                  ? isRTL
+                    ? "بياناتك للتواصل"
+                    : "Your details"
+                  : isRTL
+                    ? "ملخص الطلب"
+                    : "Order Summary"}
+              </p>
+              <button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors shrink-0"
+              >
+                <Pencil className="w-3 h-3" />
+                {isRTL ? "تعديل" : "Edit"}
+              </button>
+            </div>
+            <div className="p-4 space-y-2.5">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5" />
+                  {isRTL ? "الاسم" : "Name"}
                 </span>
-                <span className="flex items-baseline gap-2">
-                  {promoApplied && originalPrice != null && originalPrice > totalWithVat ? (
-                    <motion.span
-                      key="old-price"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-xs font-medium text-muted-foreground line-through tabular-nums"
-                    >
-                      {formatLocal(originalPrice)}
-                    </motion.span>
-                  ) : null}
-                  <AnimatePresence mode="popLayout" initial={false}>
-                    <motion.span
-                      key={`total-${totalWithVat}`}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.3, ease: "easeOut" }}
-                      className="text-primary tabular-nums"
-                    >
-                      {totalWithVat} {currencyLabel}
-                    </motion.span>
-                  </AnimatePresence>
-                </span>
+                <span className="font-medium truncate max-w-[200px]">{fullName}</span>
               </div>
-
-              {promoApplied && appliedCoupon && (
-                <div className="flex justify-between text-xs text-primary">
-                  <span>
-                    {isRTL ? "الخصم المطبّق" : "Discount applied"} ({discountLabel})
+              {displayPhone && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5" />
+                    {isRTL ? "الهاتف" : "Phone"}
                   </span>
-                  <span>-{formatLocal(discountAmount)}</span>
+                  <span className="font-medium font-mono" dir="ltr">
+                    {displayPhone}
+                  </span>
                 </div>
               )}
-
-              {/* Equivalent amount info — for all non-SAR currencies.
-                  Show the user's local-currency total + the SAR equivalent
-                  they'll see on their card statement (Tap charges in SAR
-                  for currencies it doesn't directly support). */}
-              {!isSAR &&
-                exchangeRate > 0 &&
-                (() => {
-                  const sarEquivalent = Math.ceil(totalWithVat / exchangeRate);
-                  const sarLabel = isRTL ? "ر.س" : "SAR";
-
-                  return (
-                    <div className="flex items-center justify-center gap-1.5 flex-wrap text-center px-2 py-2 rounded-lg bg-muted/40 mt-1">
-                      <span className="text-[12px] text-muted-foreground">
-                        {isRTL ? "سيتم خصم" : "You will be charged"}
-                      </span>
-                      <span className="text-[12px] font-bold text-primary tabular-nums">
-                        {totalWithVat} {currencyLabel}
-                      </span>
-                      <span className="text-[12px] text-muted-foreground">
-                        {isRTL ? "أي ما يعادل" : "equivalent to"}
-                      </span>
-                      <span className="text-[12px] font-bold text-foreground tabular-nums">
-                        {sarEquivalent} {sarLabel}
-                      </span>
-                    </div>
-                  );
-                })()}
-
-              {vatPct > 0 && (
-                <div className="pt-2 border-t border-border/50">
-                  <p className="text-[11px] text-muted-foreground text-center">
-                    {isRTL ? "الرقم الضريبي" : "VAT Number"}:{" "}
-                    <span className="font-mono font-medium text-foreground/70">311508395300003</span>
-                  </p>
+              {(effectiveCity || effectiveCountry) && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {isRTL ? "العنوان" : "Address"}
+                  </span>
+                  <span className="font-medium truncate max-w-[200px]">
+                    {[displayCity, displayCountry].filter(Boolean).join(", ")}
+                  </span>
                 </div>
+              )}
+              {!bundleMode && (
+                <>
+                  <Separator className="my-1" />
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{isRTL ? "الدورة" : "Course"}</span>
+                    <span className="font-medium truncate max-w-[200px]">
+                      {isRTL && courseTitleAr ? courseTitleAr : courseTitle}
+                    </span>
+                  </div>
+                  {promoApplied && appliedCoupon && (
+                    <div className="flex justify-between text-sm text-primary">
+                      <span>
+                        {isRTL ? "الخصم" : "Discount"} ({discountLabel})
+                      </span>
+                      <span>-{formatLocal(discountAmount)}</span>
+                    </div>
+                  )}
+                  <Separator className="my-1" />
+                  <div className="flex justify-between font-bold text-base items-baseline gap-2">
+                    <span>
+                      {isRTL
+                        ? vatPct > 0
+                          ? "الإجمالي (شامل الضريبة)"
+                          : "الإجمالي"
+                        : vatPct > 0
+                          ? "Total (incl. VAT)"
+                          : "Total"}
+                    </span>
+                    <span className="flex items-baseline gap-2">
+                      {/* Old price strikethrough — only when a discount is applied */}
+                      {promoApplied && originalPrice != null && originalPrice > totalWithVat ? (
+                        <motion.span
+                          key="old-price"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="text-xs font-medium text-muted-foreground line-through tabular-nums"
+                        >
+                          {formatLocal(originalPrice)}
+                        </motion.span>
+                      ) : null}
+                      {/* New total — animated transition between old & new amounts */}
+                      <AnimatePresence mode="popLayout" initial={false}>
+                        <motion.span
+                          key={`total-${totalWithVat}`}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.3, ease: "easeOut" }}
+                          className="text-primary tabular-nums"
+                        >
+                          {totalWithVat} {currencyLabel}
+                        </motion.span>
+                      </AnimatePresence>
+                    </span>
+                  </div>
+
+                  {/* Equivalent amount info — for all non-SAR currencies */}
+                  {!isSAR &&
+                    exchangeRate > 0 &&
+                    (() => {
+                      const TAP_SUPPORTED = ["KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
+                      const isSupported = TAP_SUPPORTED.some((c) => currencyLabel.includes(c));
+                      const sarEquivalent = Math.ceil(totalWithVat / exchangeRate);
+
+                      return (
+                        <div className="flex items-center justify-center gap-1.5 flex-wrap text-center px-2 py-2 rounded-lg bg-muted/40 mt-1">
+                          <span className="text-[12px] text-muted-foreground">
+                            {isRTL ? "سيتم خصم" : "You will be charged"}
+                          </span>
+                          <span className="text-[12px] font-bold text-primary flex items-center gap-1">
+                            {isSupported ? `${totalWithVat} ${currencyLabel}` : `${totalWithVat} ${currencyLabel}`}
+                          </span>
+                          <span className="text-[12px] text-muted-foreground">
+                            {isRTL ? " أي ما يعادل" : "equivalent to"}
+                          </span>
+                          <span className="text-[12px] font-bold text-foreground">
+                            {sarEquivalent}
+                            <span>{" SAR "}</span>
+                          </span>
+                        </div>
+                      );
+                    })()}
+
+                  {vatPct > 0 && (
+                    <div className="pt-2 border-t border-border/50">
+                      <p className="text-[11px] text-muted-foreground text-center">
+                        {isRTL ? "الرقم الضريبي" : "VAT Number"}:{" "}
+                        <span className="font-mono font-medium text-foreground/70">311508395300003</span>
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
-          )}
+          </div>
 
           {billingIncomplete && paymentStatus === "idle" && (
             <Alert variant="destructive" className="text-start">
@@ -441,13 +488,8 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
             </Alert>
           )}
 
-          {/* Trust badge. Mobile: one tight line so it doesn't push the
-              Pay button below the fold. Desktop: stacked layout keeps the
-              individual security marks (3D Secure, PCI DSS) visible. */}
-          <div className={isMobile
-            ? "flex items-center justify-center gap-2 pt-1 text-[11px] text-muted-foreground"
-            : "flex flex-col items-center gap-2 pt-2"
-          }>
+          {/* Trust Badge */}
+          <div className="flex flex-col items-center gap-2 pt-2">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Lock className="w-3.5 h-3.5 text-primary" />
               <span>
@@ -460,18 +502,12 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                     : "Secured by Tap Payments"}
               </span>
             </div>
-            {isMobile ? (
-              <span className="text-muted-foreground/40">·</span>
-            ) : null}
-            <div className={isMobile
-              ? "flex items-center gap-2 text-[10px] text-muted-foreground/60"
-              : "flex items-center gap-3"
-            }>
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
                 <Shield className="w-3 h-3" />
                 <span>3D Secure</span>
               </div>
-              {!isMobile && <span className="text-muted-foreground/20">|</span>}
+              <span className="text-muted-foreground/20">|</span>
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
                 <Shield className="w-3 h-3" />
                 <span>PCI DSS</span>
@@ -480,142 +516,136 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
           </div>
         </motion.div>
 
-        {editOpen ? (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-[420px] rounded-2xl border border-border bg-card p-4 shadow-2xl sm:p-5">
-              <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
-                <h3 className="text-base font-bold text-foreground">
-                  {isRTL ? "تعديل المعلومات" : "Edit Information"}
-                </h3>
-                <Button type="button" variant="ghost" size="icon" onClick={() => setEditOpen(false)}>
-                  <X className="w-4 h-4" />
-                </Button>
+        {/* Edit Info Dialog */}
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="sm:max-w-[420px] w-full bg-card border-border">
+            <DialogHeader>
+              <DialogTitle className="text-base font-bold">
+                {isRTL ? "تعديل المعلومات" : "Edit Information"}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">{isRTL ? "الاسم الكامل" : "Full Name"}</Label>
+                <Input
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder={isRTL ? "الاسم الكامل" : "Full name"}
+                  dir={isRTL ? "rtl" : "ltr"}
+                  className={errors.fullName ? "border-destructive" : undefined}
+                />
+                {errors.fullName ? (
+                  <p className="text-xs text-destructive">{errors.fullName}</p>
+                ) : null}
               </div>
 
-              <div className="space-y-4 py-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">{isRTL ? "الاسم الكامل" : "Full Name"}</Label>
-                  <Input
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder={isRTL ? "الاسم الكامل" : "Full name"}
-                    dir={isRTL ? "rtl" : "ltr"}
-                    className={errors.fullName ? "border-destructive" : undefined}
-                  />
-                  {errors.fullName ? <p className="text-xs text-destructive">{errors.fullName}</p> : null}
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">{isRTL ? "رقم الهاتف" : "Phone Number"}</Label>
-                  <div className="flex gap-2" dir="ltr">
-                    <div className="w-[110px] flex-shrink-0">
-                      <SearchableDropdown
-                        options={phonePrefixOptions}
-                        value={phonePrefix}
-                        onChange={setPhonePrefix}
-                        placeholder="+---"
-                        searchPlaceholder="Search..."
-                        selectedLabelBuilder={(option) => (option?.value.split("_")[0] ? option.value.split("_")[0] : "")}
-                        dir="ltr"
-                      />
-                    </div>
-                    <Input
-                      value={phone}
-                      onChange={(e) => {
-                        let val = e.target.value.replace(/[^0-9]/g, "");
-                        if (val.startsWith("0")) val = val.slice(1);
-                        setPhone(val);
-                      }}
-                      placeholder="5XXXXXXXX"
-                      dir="ltr"
-                      type="tel"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      autoComplete="tel-national"
-                      className={`flex-1 ${errors.phone ? "border-destructive" : ""}`}
-                    />
-                  </div>
-                  {errors.phone ? <p className="text-xs text-destructive">{errors.phone}</p> : null}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">{isRTL ? "الدولة" : "Country"}</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">{isRTL ? "رقم الهاتف" : "Phone Number"}</Label>
+                <div className="flex gap-2" dir="ltr">
+                  <div className="w-[110px] flex-shrink-0">
                     <SearchableDropdown
-                      options={countryOptions}
-                      value={isOtherCountry ? "__other__" : selectedCountryCode}
-                      onChange={handleCountryChange}
-                      placeholder={isRTL ? "اختر الدولة" : "Select country"}
-                      searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
-                      dir={isRTL ? "rtl" : "ltr"}
+                      options={phonePrefixOptions}
+                      value={phonePrefix}
+                      onChange={setPhonePrefix}
+                      placeholder="+---"
+                      searchPlaceholder="Search..."
+                      selectedLabelBuilder={(option) => (option?.value.split("_")[0] ? option.value.split("_")[0] : "")}
+                      dir="ltr"
                     />
-                    {isOtherCountry ? (
-                      <Input
-                        value={countryManual}
-                        onChange={(e) => {
-                          setCountryManual(e.target.value);
-                          setCountry(e.target.value);
-                        }}
-                        placeholder={isRTL ? "اسم الدولة" : "Country name"}
-                        className={errors.country ? "border-destructive" : undefined}
-                      />
-                    ) : null}
-                    {errors.country ? <p className="text-xs text-destructive">{errors.country}</p> : null}
                   </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">{isRTL ? "المدينة" : "City"}</Label>
-                    {isOtherCountry ? (
-                      <Input
-                        value={cityManual}
-                        onChange={(e) => setCityManual(e.target.value)}
-                        placeholder={isRTL ? "اسم المدينة" : "City name"}
-                        className={errors.city ? "border-destructive" : undefined}
-                      />
-                    ) : (
-                      <>
-                        <SearchableDropdown
-                          options={cityOptions}
-                          value={isOtherCity ? "__other__" : city}
-                          onChange={handleCityChange}
-                          placeholder={isRTL ? "اختر المدينة" : "Select city"}
-                          searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
-                          dir={isRTL ? "rtl" : "ltr"}
-                        />
-                        {isOtherCity ? (
-                          <Input
-                            value={cityManual}
-                            onChange={(e) => setCityManual(e.target.value)}
-                            placeholder={isRTL ? "اسم المدينة" : "City name"}
-                            className={errors.city ? "border-destructive" : undefined}
-                          />
-                        ) : null}
-                      </>
-                    )}
-                    {errors.city ? <p className="text-xs text-destructive">{errors.city}</p> : null}
-                  </div>
+                  <Input
+                    value={phone}
+                    onChange={(e) => {
+                      let val = e.target.value.replace(/[^0-9]/g, "");
+                      if (val.startsWith("0")) val = val.slice(1);
+                      setPhone(val);
+                    }}
+                    placeholder="5XXXXXXXX"
+                    dir="ltr"
+                    className={`flex-1 ${errors.phone ? "border-destructive" : ""}`}
+                  />
                 </div>
+                {errors.phone ? <p className="text-xs text-destructive">{errors.phone}</p> : null}
               </div>
 
-              <div className="flex gap-2 border-t border-border pt-4">
-                <Button
-                  type="button"
-                  className="flex-1"
-                  onClick={() => {
-                    if (validateBilling && !validateBilling()) return;
-                    setEditOpen(false);
-                  }}
-                >
-                  <Check className="w-4 h-4 me-2" />
-                  {isRTL ? "تم" : "Done"}
-                </Button>
-                <Button type="button" variant="ghost" onClick={() => setEditOpen(false)}>
-                  <X className="w-4 h-4" />
-                </Button>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">{isRTL ? "الدولة" : "Country"}</Label>
+                  <SearchableDropdown
+                    options={countryOptions}
+                    value={isOtherCountry ? "__other__" : selectedCountryCode}
+                    onChange={handleCountryChange}
+                    placeholder={isRTL ? "اختر الدولة" : "Select country"}
+                    searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
+                    dir={isRTL ? "rtl" : "ltr"}
+                  />
+                  {isOtherCountry && (
+                    <Input
+                      value={countryManual}
+                      onChange={(e) => {
+                        setCountryManual(e.target.value);
+                        setCountry(e.target.value);
+                      }}
+                      placeholder={isRTL ? "اسم الدولة" : "Country name"}
+                      className={errors.country ? "border-destructive" : undefined}
+                    />
+                  )}
+                  {errors.country ? <p className="text-xs text-destructive">{errors.country}</p> : null}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">{isRTL ? "المدينة" : "City"}</Label>
+                  {isOtherCountry ? (
+                    <Input
+                      value={cityManual}
+                      onChange={(e) => setCityManual(e.target.value)}
+                      placeholder={isRTL ? "اسم المدينة" : "City name"}
+                      className={errors.city ? "border-destructive" : undefined}
+                    />
+                  ) : (
+                    <>
+                      <SearchableDropdown
+                        options={cityOptions}
+                        value={isOtherCity ? "__other__" : city}
+                        onChange={handleCityChange}
+                        placeholder={isRTL ? "اختر المدينة" : "Select city"}
+                        searchPlaceholder={isRTL ? "ابحث..." : "Search..."}
+                        dir={isRTL ? "rtl" : "ltr"}
+                      />
+                      {isOtherCity && (
+                        <Input
+                          value={cityManual}
+                          onChange={(e) => setCityManual(e.target.value)}
+                          placeholder={isRTL ? "اسم المدينة" : "City name"}
+                          className={errors.city ? "border-destructive" : undefined}
+                        />
+                      )}
+                    </>
+                  )}
+                  {errors.city ? <p className="text-xs text-destructive">{errors.city}</p> : null}
+                </div>
               </div>
             </div>
-          </div>
-        ) : null}
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                type="button"
+                className="flex-1"
+                onClick={() => {
+                  if (validateBilling && !validateBilling()) return;
+                  setEditOpen(false);
+                }}
+              >
+                <Check className="w-4 h-4 me-2" />
+                {isRTL ? "تم" : "Done"}
+              </Button>
+              <Button variant="ghost" onClick={() => setEditOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </>
     );
   },

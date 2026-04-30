@@ -87,47 +87,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    // Origin-based key switching: requests from preview/dev environments use
-    // the Tap TEST secret key (so they can charge tok_test_… tokens issued by
-    // the test publishable key returned from tap-config). Production uses live.
-    // Must match the logic in supabase/functions/tap-config/index.ts.
-    const reqOrigin = req.headers.get("origin") || req.headers.get("referer");
-    let isPreviewEnv = false;
-    try {
-      if (reqOrigin) {
-        const host = new URL(reqOrigin).hostname.toLowerCase();
-        isPreviewEnv =
-          host === "localhost" ||
-          host === "127.0.0.1" ||
-          host.endsWith(".lovableproject.com") ||
-          host.endsWith(".lovable.app") ||
-          host.endsWith(".lovable.dev");
-      }
-    } catch {
-      isPreviewEnv = false;
-    }
-
-    const liveSecret = Deno.env.get("TAP_SECRET_KEY");
-    const testSecret = Deno.env.get("TAP_SECRET_TEST_KEY");
-
-    // SECURITY: preview/dev origins must use the TEST secret. Falling back to
-    // the live secret here would charge real cards from staging tabs against
-    // tok_test tokens (and emit confusing errors). Fail closed instead.
-    if (isPreviewEnv && !testSecret) {
-      console.error(
-        "[tap-create-charge] Preview origin requested but TAP_SECRET_TEST_KEY is not configured. Refusing to fall back to live secret.",
-      );
-      return new Response(
-        JSON.stringify({
-          error:
-            "Test payment key is not configured for this environment. Set TAP_SECRET_TEST_KEY in Supabase Secrets to enable preview/dev checkout.",
-        }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    const tapSecretKey = isPreviewEnv ? testSecret : liveSecret;
+    const tapSecretKey = Deno.env.get("TAP_SECRET_KEY");
 
     if (!tapSecretKey) {
       return new Response(
@@ -137,27 +97,12 @@ Deno.serve(async (req) => {
     }
 
     if (tapSecretKey.startsWith("pk_")) {
-      console.error("TAP secret key slot contains a publishable key instead of secret key");
+      console.error("TAP_SECRET_KEY contains a publishable key instead of secret key");
       return new Response(
         JSON.stringify({ error: "Payment service misconfigured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // Sanity: in preview mode the secret should be a test secret (sk_test_...).
-    // If it's a live secret, log loudly so the operator sees the misconfig.
-    if (isPreviewEnv && !tapSecretKey.startsWith("sk_test")) {
-      console.warn(
-        `[tap-create-charge] Preview origin using non-test secret (prefix=${tapSecretKey.slice(0, 7)}). Check TAP_SECRET_TEST_KEY value.`,
-      );
-    } else if (!isPreviewEnv && tapSecretKey.startsWith("sk_test")) {
-      console.warn(
-        "[tap-create-charge] Production origin using a test secret. Check TAP_SECRET_KEY value.",
-      );
-    }
-
-    console.log(`[tap-create-charge] mode=${isPreviewEnv ? "TEST" : "LIVE"} origin=${reqOrigin || "(none)"}`);
-
 
     // Verify user
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
@@ -625,95 +570,7 @@ Deno.serve(async (req) => {
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
-      // ── Recover stuck charges before allowing a new one ──
-      // If the user has any recent (last 24h) tap_charges for this same course in
-      // `pending`/`processing`/`succeeded` state, verify them with Tap (source of
-      // truth). If any captured, enroll the user and refuse the new charge so the
-      // card is NOT charged a second time.
-      const recentCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data: recentCharges } = await adminClient
-        .from("tap_charges")
-        .select("id, charge_id, status, metadata")
-        .eq("user_id", userId)
-        .eq("course_id", courseIdTrim)
-        .in("status", ["pending", "processing", "succeeded"])
-        .gte("created_at", recentCutoff)
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-      if (recentCharges && recentCharges.length > 0) {
-        for (const rc of recentCharges) {
-          if (!rc.charge_id || !String(rc.charge_id).startsWith("chg_")) continue;
-          try {
-            const verifyRes = await fetch(`https://api.tap.company/v2/charges/${rc.charge_id}`, {
-              headers: { Authorization: `Bearer ${tapSecretKey}`, Accept: "application/json" },
-              signal: AbortSignal.timeout(8000),
-            });
-            if (!verifyRes.ok) continue;
-            const tapCharge = await verifyRes.json();
-            const realStatus = mapTapStatus(tapCharge.status);
-
-            // Persist the latest status from Tap
-            if (realStatus !== rc.status) {
-              await adminClient
-                .from("tap_charges")
-                .update({
-                  status: realStatus,
-                  webhook_verified: true,
-                  tap_response: sanitizeTapResponse(tapCharge),
-                  payment_method: tapCharge.source?.payment_method || null,
-                  card_brand: tapCharge.source?.payment_type || null,
-                  card_last_four: tapCharge.source?.payment?.last_four || null,
-                  error_message: realStatus === "failed"
-                    ? tapCharge.response?.message || "Payment failed"
-                    : null,
-                })
-                .eq("id", rc.id);
-            }
-
-            if (realStatus === "succeeded") {
-              // Enroll the user (idempotent: unique (user_id, course_id))
-              const { error: enrollErr } = await adminClient
-                .from("course_enrollments")
-                .insert({ user_id: userId, course_id: courseIdTrim });
-              if (enrollErr && !enrollErr.message.includes("duplicate")) {
-                console.error("Recovery enrollment error:", enrollErr.message);
-              }
-
-              return new Response(
-                JSON.stringify({
-                  charge_id: rc.charge_id,
-                  status: "succeeded",
-                  duplicate: true,
-                  recovered: true,
-                  error:
-                    "A previous payment for this course was already successful. Your card was not charged again.",
-                }),
-                { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-              );
-            }
-
-            if (realStatus === "processing") {
-              return new Response(
-                JSON.stringify({
-                  charge_id: rc.charge_id,
-                  status: "processing",
-                  duplicate: true,
-                  error:
-                    "A previous payment for this course is still being processed. Please wait a moment and refresh — do not pay again.",
-                }),
-                { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-              );
-            }
-          } catch (recoveryErr) {
-            console.warn("Recovery verify failed for charge:", rc.charge_id, recoveryErr);
-            // Don't block — fall through to the normal flow
-          }
-        }
-      }
     }
-
 
     // ── Insert pending charge record ──
     // Sanitize device_info: plain string, max 200 chars
@@ -951,12 +808,7 @@ Deno.serve(async (req) => {
 
     const tapRedirectUrl = tapData.transaction?.url || null;
 
-    // Only treat "no redirect URL" as a gateway error when the charge is in a
-    // pending-style state. If Tap has already declined/failed/cancelled the
-    // charge, fall through and return a normal payload so the client can show
-    // its own branded failure overlay (with reason).
-    const isFinalNonSuccess = chargeStatus === "failed" || chargeStatus === "cancelled";
-    if (!tapRedirectUrl && chargeStatus !== "succeeded" && !isFinalNonSuccess) {
+    if (!tapRedirectUrl && chargeStatus !== "succeeded") {
       console.error("No redirect URL from Tap:", JSON.stringify(tapData));
       await adminClient
         .from("tap_charges")
@@ -968,14 +820,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Surface a human-readable decline / status reason so the client can render
-    // it inside our own custom failure overlay (no Tap-hosted result page).
-    const tapMessage =
-      (typeof tapData?.response?.message === "string" && tapData.response.message) ||
-      (typeof tapData?.acquirer?.message === "string" && tapData.acquirer.message) ||
-      (typeof tapData?.response?.code === "string" ? `Code ${tapData.response.code}` : null) ||
-      null;
-
     return new Response(
       JSON.stringify({
         charge_id: tapData.id,
@@ -983,8 +827,6 @@ Deno.serve(async (req) => {
         redirect_url: tapRedirectUrl,
         amount: finalAmount,
         currency: tapChargeCurrency,
-        tap_status: tapData.status,
-        tap_message: tapMessage,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -1092,40 +934,6 @@ function stripEmptyTapValues(value: unknown): unknown {
   return value;
 }
 
-/** Maps common free-text country names (EN/AR) to ISO-2 codes for libphonenumber region hints. */
-const COUNTRY_NAME_TO_ISO: Record<string, string> = {
-  "saudi arabia": "SA", "ksa": "SA", "السعودية": "SA", "المملكة العربية السعودية": "SA",
-  "uae": "AE", "united arab emirates": "AE", "الإمارات": "AE",
-  "kuwait": "KW", "الكويت": "KW",
-  "bahrain": "BH", "البحرين": "BH",
-  "qatar": "QA", "قطر": "QA",
-  "oman": "OM", "عُمان": "OM", "عمان": "OM",
-  "egypt": "EG", "مصر": "EG",
-  "jordan": "JO", "الأردن": "JO",
-  "iraq": "IQ", "العراق": "IQ",
-  "lebanon": "LB", "لبنان": "LB",
-  "palestine": "PS", "فلسطين": "PS", "state of palestine": "PS",
-  "yemen": "YE", "اليمن": "YE",
-  "syria": "SY", "سوريا": "SY",
-  "morocco": "MA", "المغرب": "MA",
-  "algeria": "DZ", "الجزائر": "DZ",
-  "tunisia": "TN", "تونس": "TN",
-  "libya": "LY", "ليبيا": "LY",
-  "sudan": "SD", "السودان": "SD",
-  "turkey": "TR", "تركيا": "TR",
-  "united states": "US", "usa": "US", "us": "US",
-  "united kingdom": "GB", "uk": "GB",
-};
-
-/** Common phone-prefix → ISO-2 (used when the number itself starts with a known country calling code). */
-const PREFIX_TO_ISO: Array<[string, string]> = [
-  ["966", "SA"], ["971", "AE"], ["965", "KW"], ["973", "BH"], ["974", "QA"],
-  ["968", "OM"], ["962", "JO"], ["20", "EG"], ["964", "IQ"], ["961", "LB"],
-  ["970", "PS"], ["972", "PS"], ["967", "YE"], ["963", "SY"], ["212", "MA"],
-  ["213", "DZ"], ["216", "TN"], ["218", "LY"], ["249", "SD"], ["90", "TR"],
-  ["1", "US"], ["44", "GB"],
-];
-
 /** Tap expects `country_code` + national `number` (no leading 0). Uses `profileCountry` hint when ISO-2. */
 function resolveTapPhone(
   rawInput: unknown,
@@ -1135,46 +943,22 @@ function resolveTapPhone(
   if (!raw) return undefined;
 
   const countryStr = trimStr(profileCountry);
-  const isoFromCountry = /^[A-Z]{2}$/i.test(countryStr)
-    ? countryStr.toUpperCase()
-    : COUNTRY_NAME_TO_ISO[countryStr.toLowerCase()] || "";
-  const defaultRegion = isoFromCountry || "SA";
-
-  const digits = raw.replace(/\D/g, "");
-  const startsWithPlus = raw.trim().startsWith("+");
+  const defaultRegion = /^[A-Z]{2}$/i.test(countryStr) ? countryStr.toUpperCase() : "SA";
 
   const attempts: Array<{ input: string; region?: string }> = [
     { input: raw, region: defaultRegion },
+    { input: raw, region: "SA" },
   ];
-  if (defaultRegion !== "SA") attempts.push({ input: raw, region: "SA" });
 
-  // If the input has no +, try prepending it (covers digits-only inputs that already include the country code).
-  if (!startsWithPlus && digits.length >= 8) {
+  const digits = raw.replace(/\D/g, "");
+  if (!raw.trim().startsWith("+") && digits.length >= 10) {
     attempts.push({ input: `+${digits}` });
   }
-
-  // If the input has no + and starts with a known country calling code, try that region explicitly.
-  if (!startsWithPlus && digits.length >= 8) {
-    for (const [pfx, iso] of PREFIX_TO_ISO) {
-      if (digits.startsWith(pfx) && digits.length >= pfx.length + 7) {
-        attempts.push({ input: `+${digits}`, region: iso });
-        // Also try the national portion (without the calling-code prefix) parsed under that region.
-        attempts.push({ input: digits.slice(pfx.length), region: iso });
-      }
-    }
-  }
-
-  // Saudi-specific local-format fallbacks (legacy behavior).
-  if (!startsWithPlus && digits.length === 10 && digits.startsWith("05")) {
+  if (!raw.includes("+") && digits.length === 10 && digits.startsWith("05")) {
     attempts.push({ input: `+966${digits.slice(1)}` });
   }
-  if (!startsWithPlus && digits.length === 9 && digits.startsWith("5")) {
+  if (!raw.includes("+") && digits.length === 9 && digits.startsWith("5")) {
     attempts.push({ input: `+966${digits}` });
-  }
-
-  // Last-ditch: try parsing with the resolved region but stripping any leading 0.
-  if (!startsWithPlus && digits.startsWith("0")) {
-    attempts.push({ input: digits.replace(/^0+/, ""), region: defaultRegion });
   }
 
   for (const { input, region } of attempts) {
@@ -1183,17 +967,6 @@ function resolveTapPhone(
       : parsePhoneNumberFromString(input);
     if (p?.isValid()) {
       return { country_code: String(p.countryCallingCode), number: String(p.nationalNumber) };
-    }
-  }
-
-  // Soft fallback: if we have a clearly-formatted "+<cc><national>" but libphonenumber's strict
-  // validation rejects it (rare regional edge cases), still pass it through to Tap so the user
-  // isn't blocked. Tap will perform its own validation and surface a precise error if needed.
-  if (startsWithPlus && digits.length >= 8) {
-    for (const [pfx] of PREFIX_TO_ISO) {
-      if (digits.startsWith(pfx) && digits.length >= pfx.length + 7) {
-        return { country_code: pfx, number: digits.slice(pfx.length) };
-      }
     }
   }
 
@@ -1602,9 +1375,8 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
   }
 
   const tapRedirectUrl = tapData.transaction?.url || null;
-  const isFinalNonSuccess = chargeStatus === "failed" || chargeStatus === "cancelled";
 
-  if (!tapRedirectUrl && chargeStatus !== "succeeded" && !isFinalNonSuccess) {
+  if (!tapRedirectUrl && chargeStatus !== "succeeded") {
     await adminClient
       .from("tap_charges")
       .update({ status: "failed", error_message: "No payment page URL received" })
@@ -1615,12 +1387,6 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
     );
   }
 
-  const tapMessage =
-    (typeof tapData?.response?.message === "string" && tapData.response.message) ||
-    (typeof tapData?.acquirer?.message === "string" && tapData.acquirer.message) ||
-    (typeof tapData?.response?.code === "string" ? `Code ${tapData.response.code}` : null) ||
-    null;
-
   return new Response(
     JSON.stringify({
       charge_id: tapData.id,
@@ -1628,8 +1394,6 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
       redirect_url: tapRedirectUrl,
       amount: finalAmount,
       currency: "SAR",
-      tap_status: tapData.status,
-      tap_message: tapMessage,
     }),
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );

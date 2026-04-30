@@ -119,106 +119,24 @@ const TAP_EXACT: Record<string, string> = {
   "Verification request failed": "checkout.tapErrors.verificationFailed",
 };
 
-/**
- * Pattern-matched bank decline / Tap-acquirer messages.
- *
- * Tap surfaces the bank's reason verbatim (e.g. "Insufficient funds",
- * "Do not honor", or just "Code 51" for an ISO-8583 code). Each pattern
- * maps to an i18n key that resolves to an *actionable* message — telling
- * the user what to do next ("try another card", "contact your bank",
- * "check OTP") instead of a generic "Payment failed".
- *
- * Order matters: more specific patterns must come before generic ones.
- * All regex flags use `i` for case-insensitive matching.
- */
-const TAP_PATTERNS: Array<{ test: RegExp; key: string }> = [
-  // --- Funds / limits ---
-  { test: /insufficient (funds|balance)|not enough (funds|balance|money)/i, key: "checkout.tapErrors.insufficientFunds" },
-  { test: /^code\s*51\b/i, key: "checkout.tapErrors.insufficientFunds" },
-  { test: /exceed.*(limit|amount|withdrawal)|limit.*exceeded|withdrawal.*limit|over.*(limit|the limit)/i, key: "checkout.tapErrors.exceedsLimit" },
-  { test: /^code\s*61\b/i, key: "checkout.tapErrors.exceedsLimit" },
-
-  // --- Card status ---
-  { test: /(card|number).*expired|expired.*card|expir(y|ed) date/i, key: "checkout.tapErrors.cardExpired" },
-  { test: /^code\s*54\b/i, key: "checkout.tapErrors.cardExpired" },
-  { test: /lost (card|or stolen)|stolen card|reported lost/i, key: "checkout.tapErrors.lostStolen" },
-  { test: /^code\s*(41|43)\b/i, key: "checkout.tapErrors.lostStolen" },
-  { test: /restricted (card)?|card (is )?restricted/i, key: "checkout.tapErrors.restrictedCard" },
-  { test: /^code\s*62\b/i, key: "checkout.tapErrors.restrictedCard" },
-  { test: /pickup card|pick up card|pick-up card/i, key: "checkout.tapErrors.pickupCard" },
-  { test: /^code\s*04\b/i, key: "checkout.tapErrors.pickupCard" },
-  { test: /invalid (card|number|account)|incorrect card/i, key: "checkout.tapErrors.invalidCard" },
-  { test: /^code\s*(14|15)\b/i, key: "checkout.tapErrors.invalidCard" },
-
-  // --- 3-D Secure / authentication ---
-  { test: /3.?d.?s.*(fail|invalid|incorrect|error)|authentication.*(fail|invalid|incorrect|error)|otp.*(fail|invalid|incorrect|wrong)/i, key: "checkout.tapErrors.authFailed" },
-  { test: /not enrolled|3.?d.?s.*(not.*available|unavailable|disabled)|card not eligible/i, key: "checkout.tapErrors.notEnrolled" },
-
-  // --- Bank decisions ---
-  { test: /do not hono(u)?r|do_not_honou?r|honou?r declined/i, key: "checkout.tapErrors.doNotHonor" },
-  { test: /^code\s*05\b/i, key: "checkout.tapErrors.doNotHonor" },
-  { test: /suspected fraud|fraud (detected|suspected)|risky transaction/i, key: "checkout.tapErrors.suspectedFraud" },
-  { test: /^code\s*59\b/i, key: "checkout.tapErrors.suspectedFraud" },
-  { test: /transaction not (permitted|allowed)|not allowed (for|on) (card|cardholder)/i, key: "checkout.tapErrors.notPermitted" },
-  { test: /^code\s*(57|58|62)\b/i, key: "checkout.tapErrors.notPermitted" },
-
-  // --- Issuer / acquirer ---
-  { test: /issuer.*(unavailable|not available|down|inoperative)|acquirer.*(unavailable|not available|down)/i, key: "checkout.tapErrors.issuerUnavailable" },
-  { test: /^code\s*(91|92)\b/i, key: "checkout.tapErrors.issuerUnavailable" },
-
-  // --- System / network ---
-  { test: /system (error|malfunction|unavailable)|gateway (error|down|timeout|unavailable)|internal (server )?error/i, key: "checkout.tapErrors.systemError" },
-  { test: /^code\s*(96|06)\b/i, key: "checkout.tapErrors.systemError" },
-  { test: /timeout|timed out|connection (lost|reset)/i, key: "checkout.tapErrors.timeout" },
-
-  // --- User actions ---
-  { test: /cancel(led|ed)? by user|user cancel|customer cancel/i, key: "checkout.tapErrors.userCancelled" },
-
-  // --- Generic fallbacks (last) ---
-  { test: /declin(ed|e)\b|reject(ed|e)\b|refused/i, key: "checkout.tapErrors.declined" },
-];
-
-/**
- * Map Tap / edge-function errors shown on the checkout failure overlay.
- *
- * Resolution order (first match wins):
- *   1. Exact match in TAP_EXACT (curated English strings from our backend).
- *   2. Pattern match in TAP_PATTERNS (bank decline reasons + ISO-8583 codes).
- *   3. "Minimum purchase amount is X" → coupon-min-amount template.
- *   4. Coupon-validation messages.
- *   5. Generic fallback ("Payment error. Please try again.").
- *
- * Step 2 is the meaningful improvement over older versions: instead of
- * showing "An error occurred" for "Insufficient funds", the user sees
- * "Insufficient balance — try another card or top up" in their language.
- */
+/** Map Tap / edge-function English errors shown on checkout failure overlay. */
 export function translateTapPaymentDisplayError(raw: string | null | undefined, t: TFunction): string {
   const s = String(raw || "").trim();
   if (!s) {
     return t("checkout.statusOverlay.paymentErrorFallback");
   }
-  // 1. Exact match (curated)
-  const exactKey = TAP_EXACT[s];
-  if (exactKey) {
-    return t(exactKey);
+  const key = TAP_EXACT[s];
+  if (key) {
+    return t(key);
   }
-  // 2. Pattern match (bank declines + ISO codes)
-  for (const { test, key } of TAP_PATTERNS) {
-    if (test.test(s)) {
-      return t(key);
-    }
-  }
-  // 3. Coupon "minimum amount" template
   if (/^Minimum purchase amount is\s+/i.test(s)) {
     const m = s.match(/^Minimum purchase amount is\s+(.+)$/i);
     if (m) {
       return t("checkout.couponErrors.minimumAmount", { amount: m[1].trim() });
     }
   }
-  // 4. Coupon errors
   if (COUPON_EXACT[s]) {
     return translateCouponValidationMessage(s, t);
   }
-  // 5. Fallback
   return t("checkout.statusOverlay.paymentErrorFallback");
 }

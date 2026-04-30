@@ -434,11 +434,8 @@ export function useUserProfile() {
 
       const mergedProfile = { ...profile, ...changedUpdates };
 
-      // Dedicated profile webhook — only the user's personal profile fields.
-      // event_type="profile_update" lets GHL distinguish edits from new
-      // signups so it can run change-detection workflows instead of welcome.
+      // Dedicated profile webhook — only the user's personal profile fields
       sendGHLProfileData({
-        event_type: "profile_update",
         user_id: user.id,
         email: user.email ?? null,
         full_name: mergedProfile?.full_name ?? null,
