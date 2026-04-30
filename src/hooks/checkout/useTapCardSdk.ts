@@ -214,6 +214,7 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
     setSdkReady(false);
     setCardValid(false);
     setCardBrand(null);
+    readyFiredRef.current = false;
 
     (async () => {
       try {
