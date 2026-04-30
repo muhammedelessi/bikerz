@@ -61,6 +61,9 @@ export function useGuestSignup() {
           email: email.trim(),
           phone: rawPhone,
           country: profileData.country,
+          // Default nationality = residence country (matches Signup.tsx).
+          // The user can override on their profile later.
+          nationality: profileData.country,
           city: profileData.city,
           postal_code: profileData.postalCode || "",
         }).catch((err) => {

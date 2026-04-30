@@ -204,6 +204,12 @@ const Signup: React.FC = () => {
       full_name: fullName,
       phone: fullPhone,
       country: countryName,
+      // Default nationality to the country of residence so GHL has the
+      // field populated from day one — true for the vast majority of our
+      // users (Saudi residents are usually Saudi nationals). Users who
+      // need a different nationality can override it on the profile page,
+      // which fires a "profile_update" event with the corrected value.
+      nationality: countryName,
       city: cityName,
     }).catch((err) => {
       console.error("[GHL] Registration profile webhook error:", err);
