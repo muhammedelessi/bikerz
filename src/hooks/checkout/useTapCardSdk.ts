@@ -59,21 +59,28 @@ function loadSdkScript(): Promise<void> {
 }
 
 /**
- * Cache the publishable key per origin. tap-config returns a different key on
- * preview vs production, so a global cache would serve a stale key after the
- * environment shifts (e.g. opening the same dev tab on two hosts).
+ * Cache the publishable key + merchant id per origin. tap-config returns a
+ * different key on preview vs production, so a global cache would serve a
+ * stale key after the environment shifts (e.g. opening the same dev tab on
+ * two hosts).
  */
-const publicKeyCache = new Map<string, string>();
-async function fetchPublicKey(): Promise<string> {
+interface TapPublicConfig { publicKey: string; merchantId: string | null }
+const publicConfigCache = new Map<string, TapPublicConfig>();
+async function fetchPublicConfig(): Promise<TapPublicConfig> {
   const cacheKey = typeof window !== "undefined" ? window.location.origin : "default";
-  const cached = publicKeyCache.get(cacheKey);
+  const cached = publicConfigCache.get(cacheKey);
   if (cached) return cached;
   const { data, error } = await supabase.functions.invoke("tap-config", {});
   if (error) throw new Error(error.message || "Could not load payment configuration");
-  const key = (data as { public_key?: string } | null)?.public_key;
+  const payload = (data as { public_key?: string; merchant_id?: string | null } | null) || {};
+  const key = payload.public_key;
   if (!key) throw new Error("Payment service is not configured");
-  publicKeyCache.set(cacheKey, key);
-  return key;
+  const cfg: TapPublicConfig = {
+    publicKey: key,
+    merchantId: typeof payload.merchant_id === "string" && payload.merchant_id.trim() ? payload.merchant_id.trim() : null,
+  };
+  publicConfigCache.set(cacheKey, cfg);
+  return cfg;
 }
 
 /** Detect whether an SDK error message is the harmless Apple Pay bundle_id mismatch. */
