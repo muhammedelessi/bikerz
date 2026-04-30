@@ -13,6 +13,7 @@ import type { DropdownOption } from "@/components/checkout/SearchableDropdown";
 import type { PaymentStatus, AppliedCoupon } from "@/types/payment";
 import type { ValidationErrors } from "@/types/payment";
 import { COUNTRIES } from "@/data/countryCityData";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CheckoutPaymentStepProps {
   isRTL: boolean;
@@ -135,6 +136,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     cardFormSlot,
   }) => {
     const { t } = useTranslation();
+    const isMobile = useIsMobile();
     const [editOpen, setEditOpen] = useState(false);
     /**
      * Promo input is hidden by default — user reveals it via the small link below the total.
@@ -192,7 +194,9 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className={bundleMode ? "space-y-4" : "space-y-5"}
+          // Tighter rhythm on mobile so the iframe + footer fit above the
+          // fold; spacing is generous on desktop where vertical room is plentiful.
+          className={bundleMode ? "space-y-3 sm:space-y-4" : "space-y-3 sm:space-y-5"}
         >
           {/*
             Promo Code (collapsed-by-default UX)
@@ -325,8 +329,12 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
           {/* Embedded card form rendered directly under the discount/promo section */}
           {cardFormSlot}
 
-          {/* Total + charge hint (Order Summary card removed) */}
-          {!bundleMode && (
+          {/* Total + charge hint. On mobile, this whole card is hidden — the
+              header already displays the discounted price prominently and the
+              Pay button below repeats it as part of its label, so a separate
+              "Total" card was just eating vertical space the user needs to
+              see the card iframe + Pay button without scrolling. */}
+          {!bundleMode && !isMobile && (
             <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2.5">
               <div className="flex justify-between font-bold text-base items-baseline gap-2">
                 <span>
@@ -433,8 +441,13 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
             </Alert>
           )}
 
-          {/* Trust Badge */}
-          <div className="flex flex-col items-center gap-2 pt-2">
+          {/* Trust badge. Mobile: one tight line so it doesn't push the
+              Pay button below the fold. Desktop: stacked layout keeps the
+              individual security marks (3D Secure, PCI DSS) visible. */}
+          <div className={isMobile
+            ? "flex items-center justify-center gap-2 pt-1 text-[11px] text-muted-foreground"
+            : "flex flex-col items-center gap-2 pt-2"
+          }>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Lock className="w-3.5 h-3.5 text-primary" />
               <span>
@@ -447,12 +460,18 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
                     : "Secured by Tap Payments"}
               </span>
             </div>
-            <div className="flex items-center gap-3">
+            {isMobile ? (
+              <span className="text-muted-foreground/40">·</span>
+            ) : null}
+            <div className={isMobile
+              ? "flex items-center gap-2 text-[10px] text-muted-foreground/60"
+              : "flex items-center gap-3"
+            }>
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
                 <Shield className="w-3 h-3" />
                 <span>3D Secure</span>
               </div>
-              <span className="text-muted-foreground/20">|</span>
+              {!isMobile && <span className="text-muted-foreground/20">|</span>}
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
                 <Shield className="w-3 h-3" />
                 <span>PCI DSS</span>

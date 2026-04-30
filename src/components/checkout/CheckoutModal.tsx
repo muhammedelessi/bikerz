@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { DialogHeader } from "@/components/ui/dialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Loader2, CreditCard, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -87,6 +88,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const form = useCheckoutForm(open);
   const promo = useCheckoutPromo(course.id, basePrice);
   const tap = useTapPayment();
+  const isMobile = useIsMobile();
   /**
    * Lifted promo-panel state — when the user opens the discount field, the
    * footer's primary CTA swaps from "Pay Now" to "Apply code". Single, focused
@@ -463,31 +465,50 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           : (isRTL ? "إتمام الشراء" : "Complete purchase")
       }
     >
-        {/* Header */}
-        <div className="bg-muted/30 p-4 sm:p-5 border-b-2 border-border flex-shrink-0">
-          <DialogHeader>
-            {/* Visible heading — the accessible Title for screen readers
-                lives in ResponsiveCheckoutShell as sr-only, so this is a
-                plain h2 to avoid duplicate Radix Title nodes. */}
-            <h2 className="text-lg font-bold leading-none tracking-tight">
-              {step === "info"
-                ? isRTL
-                  ? "معلومات الدفع"
-                  : "Billing Information"
-                : isRTL
-                  ? "إتمام الشراء"
-                  : "Complete Purchase"}
-            </h2>
-          </DialogHeader>
+        {/* Header. Mobile uses a denser single-row layout: title + step
+            indicator stack horizontally and the course thumbnail/title/price
+            sit on one line so the whole header fits in ~80px instead of
+            ~150px. Desktop keeps the spacious original treatment. */}
+        <div className={[
+          "bg-muted/30 border-b-2 border-border flex-shrink-0",
+          isMobile ? "px-4 py-3" : "p-4 sm:p-5",
+        ].join(" ")}>
+          {isMobile ? (
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <h2 className="text-sm font-bold leading-none tracking-tight">
+                {step === "info"
+                  ? (isRTL ? "معلومات الدفع" : "Billing Info")
+                  : (isRTL ? "إتمام الشراء" : "Complete Purchase")}
+              </h2>
+              <CheckoutStepIndicator currentStep={step} isRTL={isRTL} />
+            </div>
+          ) : (
+            <>
+              <DialogHeader>
+                {/* Visible heading — the accessible Title for screen readers
+                    lives in ResponsiveCheckoutShell as sr-only, so this is
+                    a plain h2 to avoid duplicate Radix Title nodes. */}
+                <h2 className="text-lg font-bold leading-none tracking-tight">
+                  {step === "info"
+                    ? (isRTL ? "معلومات الدفع" : "Billing Information")
+                    : (isRTL ? "إتمام الشراء" : "Complete Purchase")}
+                </h2>
+              </DialogHeader>
+              <div className="mt-3">
+                <CheckoutStepIndicator currentStep={step} isRTL={isRTL} />
+              </div>
+            </>
+          )}
 
-          {/* Step 1 / Step 2 indicator (hidden when the user was auto-skipped past Step 1) */}
-          <div className="mt-3">
-            <CheckoutStepIndicator currentStep={step} isRTL={isRTL} />
-          </div>
-
-          {/* Course info */}
-          <div className="flex items-center gap-3 mt-3">
-            <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+          {/* Course info — single row, smaller thumb on mobile */}
+          <div className={[
+            "flex items-center gap-3",
+            isMobile ? "mt-0" : "mt-3",
+          ].join(" ")}>
+            <div className={[
+              "rounded-lg overflow-hidden bg-muted flex-shrink-0",
+              isMobile ? "w-9 h-9" : "w-12 h-12",
+            ].join(" ")}>
               {course.thumbnail_url ? (
                 <img
                   src={course.thumbnail_url}
@@ -500,45 +521,59 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 />
               ) : (
                 <div className="w-full h-full bg-primary/20 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-primary" />
+                  <CreditCard className={isMobile ? "w-4 h-4 text-primary" : "w-5 h-5 text-primary"} />
                 </div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-sm text-foreground truncate">
+              <h3 className={[
+                "font-semibold text-foreground truncate",
+                isMobile ? "text-xs" : "text-sm",
+              ].join(" ")}>
                 {isRTL && course.title_ar ? course.title_ar : course.title}
               </h3>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 {priceInfo.discountPct > 0 && (
-                  <span className="text-xs text-muted-foreground line-through">
+                  <span className="text-[10px] text-muted-foreground line-through">
                     {formatLocal(priceInfo.originalPrice)}
                   </span>
                 )}
-                <span className="text-base font-bold text-primary">{formatLocal(discountedPrice)}</span>
+                <span className={[
+                  "font-bold text-primary",
+                  isMobile ? "text-sm" : "text-base",
+                ].join(" ")}>
+                  {formatLocal(discountedPrice)}
+                </span>
                 {promo.promoApplied && discountLabel && (
-                  <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">{discountLabel}</span>
+                  <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">{discountLabel}</span>
                 )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Step-2 status bar: shows a one-line summary of who is paying +
-            an inline edit shortcut. Replaces the prior plain "Back" button —
-            now the user sees their confirmed details (name, email) front and
-            center, which builds trust ("yes, that's me, going to charge that
-            card") and gives a single click to edit. The bar is sticky between
-            header and scrollable content. */}
+        {/* Step-2 status bar — confirms who's being charged + single-click
+            edit shortcut. On mobile we collapse to a single line (no
+            "Billing details" caption) so the iframe gets ~25px more room
+            without losing the trust signal or the edit affordance. */}
         {step === "payment" && (
-          <div className="px-4 sm:px-5 py-2.5 bg-muted/30 border-b border-border flex-shrink-0 flex items-center justify-between gap-3">
+          <div className={[
+            "bg-muted/30 border-b border-border flex-shrink-0 flex items-center justify-between gap-3",
+            isMobile ? "px-4 py-1.5" : "px-4 sm:px-5 py-2.5",
+          ].join(" ")}>
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Check className="w-3.5 h-3.5" />
+              <div className={[
+                "shrink-0 inline-flex items-center justify-center rounded-full bg-primary/10 text-primary",
+                isMobile ? "h-5 w-5" : "h-7 w-7",
+              ].join(" ")}>
+                <Check className={isMobile ? "w-3 h-3" : "w-3.5 h-3.5"} />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground leading-tight">
-                  {isRTL ? "بيانات الفاتورة" : "Billing details"}
-                </p>
+                {!isMobile && (
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    {isRTL ? "بيانات الفاتورة" : "Billing details"}
+                  </p>
+                )}
                 <p className="text-xs font-semibold text-foreground truncate" dir="auto">
                   {form.fullName || (isRTL ? "—" : "—")}
                 </p>
@@ -547,10 +582,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <button
               type="button"
               onClick={() => setStep("info")}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-border bg-background text-xs font-semibold text-foreground hover:bg-muted hover:border-primary/40 active:scale-[0.98] transition-all min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className={[
+                "inline-flex items-center gap-1.5 rounded-lg border border-border bg-background font-semibold text-foreground hover:bg-muted hover:border-primary/40 active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                isMobile ? "h-7 px-2 text-[11px] min-h-[28px]" : "h-9 px-3 text-xs min-h-[36px]",
+              ].join(" ")}
               aria-label={isRTL ? "رجوع للخطوة الأولى لتعديل البيانات" : "Back to step 1 to edit info"}
             >
-              <BackArrowIcon className="w-3.5 h-3.5" />
+              <BackArrowIcon className={isMobile ? "w-3 h-3" : "w-3.5 h-3.5"} />
               <span>{isRTL ? "تعديل" : "Edit"}</span>
             </button>
           </div>
@@ -562,7 +600,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             mode="wait" ensures the outgoing step finishes before the incoming
             one mounts, so the embedded card SDK iframe never overlaps the
             previous step during the transition. */}
-        <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0 relative">
+        <div className={[
+          "overflow-y-auto flex-1 min-h-0 relative",
+          // Mobile: tight padding so the iframe + footer fit above the fold.
+          isMobile ? "px-3 py-2.5" : "p-4 sm:p-5",
+        ].join(" ")}>
           <AnimatePresence mode="wait" initial={false}>
             {step === "info" ? (
               <motion.div
@@ -696,7 +738,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
 
         {/* Footer */}
-        <div className="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-border flex-shrink-0 flex flex-col gap-3">
+        <div className={[
+          "border-t-2 border-border flex-shrink-0 flex flex-col",
+          // Mobile: snug padding + smaller gap so the Pay button stays above
+          // any safe-area inset without pushing the form content up.
+          isMobile
+            ? "px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] gap-1.5"
+            : "p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] gap-3",
+        ].join(" ")}>
           {/* Persistent WhatsApp help — visible on both steps so a hesitant
               user can ping support without abandoning. The link variant is
               quiet so it doesn't compete with the primary Pay CTA. */}

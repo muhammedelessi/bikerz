@@ -20,6 +20,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { useTapCardSdk } from "@/hooks/checkout/useTapCardSdk";
 import { useTapApplePaySdk } from "@/hooks/checkout/useTapApplePaySdk";
 import { splitFullName } from "@/lib/nameUtils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { TapCardConfig } from "@/types/tapCardSdk";
 
 interface EmbeddedCardFormProps {
@@ -81,6 +82,7 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
   onApplePayToken,
 }) => {
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
 
   const { firstName, lastName } = useMemo(() => splitFullName(customerName), [customerName]);
 
@@ -253,26 +255,39 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
             : "border-[#C6BFAA]/60 dark:border-[#C6BFAA]/20",
         ].join(" ")}
       >
-        {/* Branded header */}
-        <div className="flex items-center justify-between gap-2 bg-primary px-4 py-2.5 text-primary-foreground">
-          <div className="flex items-center gap-2">
-            <CreditCard className="w-4 h-4" />
-            <span className="text-sm font-semibold tracking-wide">
+        {/* Branded header. Mobile uses a slimmer strip (px-3 py-1.5,
+            smaller text, "256-bit encrypted" abbreviated to a lock icon
+            only) so we save ~12px of vertical space on small viewports
+            without losing the brand color cue. */}
+        <div className={[
+          "flex items-center justify-between gap-2 bg-primary text-primary-foreground",
+          isMobile ? "px-3 py-1.5" : "px-4 py-2.5",
+        ].join(" ")}>
+          <div className="flex items-center gap-2 min-w-0">
+            <CreditCard className={isMobile ? "w-3.5 h-3.5" : "w-4 h-4"} />
+            <span className={[
+              "font-semibold tracking-wide",
+              isMobile ? "text-xs" : "text-sm",
+            ].join(" ")}>
               {isRTL ? "بيانات البطاقة" : "Card Details"}
             </span>
-            {/* Live brand chip — appears once Tap identifies the BIN */}
             {detectedBrand && (
               <span
-                className="ml-1 inline-flex items-center rounded-full bg-primary-foreground/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground"
+                className={[
+                  "ml-1 inline-flex items-center rounded-full bg-primary-foreground/15 font-bold uppercase tracking-wide text-primary-foreground",
+                  isMobile ? "px-1.5 py-0 text-[9px]" : "px-2 py-0.5 text-[10px]",
+                ].join(" ")}
                 aria-live="polite"
               >
                 {detectedBrand}
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] font-medium opacity-90">
-            <Lock className="w-3 h-3" />
-            <span>{isRTL ? "تشفير 256-bit" : "256-bit encrypted"}</span>
+          <div className="flex items-center gap-1 text-[11px] font-medium opacity-90 shrink-0">
+            <Lock className={isMobile ? "w-3 h-3" : "w-3 h-3"} />
+            {!isMobile && (
+              <span>{isRTL ? "تشفير 256-bit" : "256-bit encrypted"}</span>
+            )}
           </div>
         </div>
 
@@ -302,7 +317,11 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
             style={{ touchAction: "manipulation" }}
           />
 
-          {cardValid && (
+          {/* "Card details complete" affirmation. On mobile the primary
+              border + shadow already signals validity; the extra strip
+              just eats space. Keep it on desktop where vertical room is
+              generous and the visual reassurance is welcome. */}
+          {cardValid && !isMobile && (
             <div
               className="border-t border-primary/15 bg-primary/5 px-4 py-2"
               aria-live="polite"
