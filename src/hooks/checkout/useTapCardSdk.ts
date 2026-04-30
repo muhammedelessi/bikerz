@@ -336,7 +336,12 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
         // iframe. Trust the SDK's onReady — if it never comes, fail loudly.
         readyTimeoutId = setTimeout(() => {
           if (cancelled) return;
-          if (sdkReady) return; // already fired in onReady
+          // Read the latest readiness from the DOM-bound flag rather than
+          // the captured `sdkReady` value (which is always `false` at
+          // effect-mount time and would fire the error even after a
+          // successful onReady). `readyFiredRef` is flipped synchronously
+          // inside onReady above.
+          if (readyFiredRef.current) return;
           setSdkError(
             "Card form is taking too long to load. Please reload the form or check your internet connection.",
           );
