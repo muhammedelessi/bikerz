@@ -23,8 +23,15 @@ import type {
 const SDK_SRC = "https://tap-sdks.b-cdn.net/card/1.0.2/index.js";
 const SCRIPT_ID = "tap-card-sdk-v2-script";
 
-/** How long to wait for `onReady` before declaring the iframe stuck. */
-const SDK_READY_TIMEOUT_MS = 8000;
+/**
+ * How long to wait for `onReady` before declaring the iframe stuck.
+ * The SDK script is ~985KB and Tap's iframe makes additional network
+ * requests on first paint; on slow mobile connections (3G, congested
+ * Wi-Fi) 8s was firing prematurely while the form was still loading
+ * successfully a moment later. 25s is conservative but safer than
+ * showing the user a scary "reload" message on a working form.
+ */
+const SDK_READY_TIMEOUT_MS = 25000;
 
 /** Ensure the SDK script is in the document exactly once across the whole app. */
 function loadSdkScript(): Promise<void> {
