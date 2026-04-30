@@ -1,1 +1,6 @@
+# Serve Apple Pay domain verification file as static — must be before SPA catch-all.
+# Without this, Netlify/Lovable's "/* → index.html" rule intercepts the request
+# and React Router serves a 404 instead of the verification hex file.
+/.well-known/*  /.well-known/:splat  200
+
 /datafeed.xml https://gifovgwlxwuiibfzyvwb.supabase.co/functions/v1/meta-product-feed 301
