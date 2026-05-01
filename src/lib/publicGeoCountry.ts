@@ -8,6 +8,12 @@ export function normalizeCountryCode(raw: string | null | undefined): string | n
   return /^[A-Z]{2}$/.test(c) ? c : null;
 }
 
+function getSupabaseFunctionBaseUrl(): string | null {
+  const base = String(import.meta.env.VITE_SUPABASE_URL ?? "").trim();
+  if (!base) return null;
+  return `${base}/functions/v1`;
+}
+
 function countryFromIpWhoPayload(data: unknown): string | null {
   if (!data || typeof data !== "object") return null;
   const o = data as { success?: boolean; country_code?: string };
@@ -59,8 +65,30 @@ async function tryGeoResponse(
   }
 }
 
+async function tryBackendGeoResponse(signal?: AbortSignal): Promise<string | null> {
+  const baseUrl = getSupabaseFunctionBaseUrl();
+  if (!baseUrl) return null;
+
+  try {
+    const res = await fetch(`${baseUrl}/geo-country`, {
+      headers: {
+        apikey: String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ""),
+      },
+      signal,
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { countryCode?: string; country_code?: string };
+    return normalizeCountryCode(data.countryCode || data.country_code);
+  } catch {
+    return null;
+  }
+}
+
 /** ISO country code only (no city). */
 export async function fetchCountryCodeFromPublicGeoApis(signal?: AbortSignal): Promise<string | null> {
+  const backendCountry = await tryBackendGeoResponse(signal);
+  if (backendCountry) return backendCountry;
+
   // Strategy: try primary, then fallbacks sequentially
   const apis: { url: string; pick: (j: unknown) => string | null }[] = [
     { url: "https://ipwho.is/", pick: countryFromIpWhoPayload },
@@ -91,6 +119,11 @@ export type PublicGeoHint = {
  * Country + optional city/name for forms (prefers ipwho.is payload; falls back to country code only).
  */
 export async function fetchPublicGeoHint(signal?: AbortSignal): Promise<PublicGeoHint | null> {
+  const backendCountry = await tryBackendGeoResponse(signal);
+  if (backendCountry) {
+    return { countryCode: backendCountry };
+  }
+
   try {
     const res = await fetch("https://ipwho.is/", signal ? { signal } : undefined);
     if (!res.ok) throw new Error("not ok");
