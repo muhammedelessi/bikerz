@@ -152,6 +152,7 @@ const VAT_RATE = 15; // Saudi VAT — server always charges 15%
 const RATES_CACHE_KEY = "bikerz_exchange_rates";
 const CURRENCY_CACHE_KEY = "bikerz_currency";
 const COUNTRY_CACHE_KEY = "bikerz_detected_country";
+const COUNTRY_CACHE_TIME_KEY = "bikerz_detected_country_at";
 const CACHE_TTL_MS = 3600_000; // 1 hour
 
 interface CachedRates {
@@ -369,6 +370,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           setCurrencyCodeState("ILS");
           try {
             sessionStorage.setItem(COUNTRY_CACHE_KEY, "PS");
+            sessionStorage.setItem(COUNTRY_CACHE_TIME_KEY, String(Date.now()));
             sessionStorage.setItem(CURRENCY_CACHE_KEY, "ILS");
           } catch {
             // Ignore restricted-storage environments on iOS
@@ -385,13 +387,18 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const detectLocation = async () => {
       let cachedCountry: string | null = null;
+      let cachedCountryAt: string | null = null;
       try {
         cachedCountry = sessionStorage.getItem(COUNTRY_CACHE_KEY);
+        cachedCountryAt = sessionStorage.getItem(COUNTRY_CACHE_TIME_KEY);
       } catch {
         cachedCountry = null;
+        cachedCountryAt = null;
       }
       const normalizedCache = normalizeCountryCode(cachedCountry);
-      if (normalizedCache) {
+      const cacheAgeMs = cachedCountryAt ? Date.now() - Number(cachedCountryAt) : Number.POSITIVE_INFINITY;
+      const isCountryCacheFresh = Number.isFinite(cacheAgeMs) && cacheAgeMs < CACHE_TTL_MS;
+      if (normalizedCache && isCountryCacheFresh) {
         setDetectedCountry(normalizedCache);
         const detected = COUNTRY_TO_CURRENCY[normalizedCache];
         if (detected) {
@@ -423,6 +430,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           setDetectedCountry(country);
           try {
             sessionStorage.setItem(COUNTRY_CACHE_KEY, country);
+            sessionStorage.setItem(COUNTRY_CACHE_TIME_KEY, String(Date.now()));
           } catch {
             // Ignore restricted-storage environments on iOS
           }
