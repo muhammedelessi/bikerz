@@ -18,6 +18,23 @@ const corsHeaders = {
 
 const PAYMENT_TIMEOUT = 30000; // 30s timeout for Tap API
 
+function getTapErrorDescription(tapData: Record<string, any>): string {
+  return tapData?.errors?.[0]?.description || "Payment failed";
+}
+
+function getTapErrorCode(tapData: Record<string, any>): string | null {
+  const code = tapData?.errors?.[0]?.code;
+  if (code == null) return null;
+  const trimmed = String(code).trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function isTapSourceAlreadyUsed(tapData: Record<string, any>): boolean {
+  const code = getTapErrorCode(tapData);
+  const description = getTapErrorDescription(tapData);
+  return code === "1126" || /source\s+already\s+used|create\s+the\s+new\s+source/i.test(description);
+}
+
 function trimStr(v: unknown): string {
   if (v == null) return "";
   return String(v).trim();
@@ -771,18 +788,33 @@ Deno.serve(async (req) => {
 
     if (!tapResponse.ok) {
       console.error("Tap API error:", JSON.stringify(tapData));
+      const tapErrorDescription = getTapErrorDescription(tapData);
+      const tapErrorCode = getTapErrorCode(tapData);
       await adminClient
         .from("tap_charges")
         .update({
           status: "failed",
-          error_message: tapData?.errors?.[0]?.description || "Payment gateway error",
+          error_message: tapErrorDescription || "Payment gateway error",
           tap_response: sanitizeTapResponse(tapData),
         })
         .eq("id", chargeRecord.id);
+
+      if (isTapSourceAlreadyUsed(tapData)) {
+        return new Response(
+          JSON.stringify({
+            error: tapErrorDescription,
+            code: tapErrorCode,
+            fallback: true,
+            retry_action: "retokenize",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
         JSON.stringify({
-          error: tapData?.errors?.[0]?.description || "Payment failed",
-          code: tapData?.errors?.[0]?.code,
+          error: tapErrorDescription,
+          code: tapErrorCode,
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -1348,18 +1380,33 @@ async function processCourseBundlePayment(ctx: BundleCtx): Promise<Response> {
   }
 
   if (!tapResponse.ok) {
+    const tapErrorDescription = getTapErrorDescription(tapData);
+    const tapErrorCode = getTapErrorCode(tapData);
     await adminClient
       .from("tap_charges")
       .update({
         status: "failed",
-        error_message: tapData?.errors?.[0]?.description || "Payment gateway error",
+        error_message: tapErrorDescription || "Payment gateway error",
         tap_response: sanitizeTapResponse(tapData),
       })
       .eq("id", chargeRecord.id);
+
+    if (isTapSourceAlreadyUsed(tapData)) {
+      return new Response(
+        JSON.stringify({
+          error: tapErrorDescription,
+          code: tapErrorCode,
+          fallback: true,
+          retry_action: "retokenize",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     return new Response(
       JSON.stringify({
-        error: tapData?.errors?.[0]?.description || "Payment failed",
-        code: tapData?.errors?.[0]?.code,
+        error: tapErrorDescription,
+        code: tapErrorCode,
       }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

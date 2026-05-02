@@ -1,6 +1,17 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { TapPaymentConfig } from '@/types/payment';
 
+export class RecoverableTapSourceUsedError extends Error {
+  code = '1126';
+  fallback = true;
+  retryAction = 'retokenize' as const;
+
+  constructor(message = 'Source already used, Please create the new source') {
+    super(message);
+    this.name = 'RecoverableTapSourceUsedError';
+  }
+}
+
 async function messageFromFunctionsHttpError(error: unknown): Promise<string | null> {
   if (!error || typeof error !== 'object') return null;
   const ctx = (error as { context?: unknown }).context;
@@ -14,6 +25,25 @@ async function messageFromFunctionsHttpError(error: unknown): Promise<string | n
     return null;
   }
   return null;
+}
+
+function maybeThrowRecoverableTapError(data: unknown): void {
+  if (!data || typeof data !== 'object') return;
+  const payload = data as {
+    error?: unknown;
+    code?: unknown;
+    fallback?: unknown;
+    retry_action?: unknown;
+  };
+  const msg = typeof payload.error === 'string' ? payload.error : '';
+  const code = payload.code == null ? '' : String(payload.code);
+  const wantsFallback = payload.fallback === true;
+  const retryAction = String(payload.retry_action ?? '');
+  const isSourceUsed = code === '1126' || /source\s+already\s+used|create\s+the\s+new\s+source/i.test(msg);
+
+  if (wantsFallback && retryAction === 'retokenize' && isSourceUsed) {
+    throw new RecoverableTapSourceUsedError(msg || undefined);
+  }
 }
 
 export function parseDeviceInfo(): string {
@@ -92,6 +122,7 @@ export async function createCharge(
       exchangeRatePerSar: config.exchangeRatePerSar ?? null,
     };
     const { data, error } = await supabase.functions.invoke('tap-create-charge', { body });
+    maybeThrowRecoverableTapError(data);
     if (data && typeof data === 'object' && 'error' in data && data.error) {
       throw new Error(String(data.error));
     }
@@ -170,6 +201,8 @@ export async function createCharge(
   const { data, error } = await supabase.functions.invoke('tap-create-charge', {
     body,
   });
+
+  maybeThrowRecoverableTapError(data);
 
   if (data && typeof data === 'object' && 'error' in data && data.error) {
     const msg = String(data.error);
