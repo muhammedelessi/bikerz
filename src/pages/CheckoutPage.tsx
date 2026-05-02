@@ -435,10 +435,11 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
     <div className="min-h-[100dvh] bg-background flex flex-col">
       <Navbar />
 
-      <main className="flex-1 pt-[var(--navbar-h)] pb-12">
-        <div className="page-container py-6">
-          {/* Header row: back link + step indicator */}
-          <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+      <main className="flex-1 pt-[var(--navbar-h)] pb-6">
+        <div className="page-container py-3 sm:py-4">
+          {/* Header row: back link + step indicator. Compact — keeps the
+              form + Pay button above the fold on a 900px-tall laptop. */}
+          <div className="flex items-center justify-between gap-3 mb-3 sm:mb-4 flex-wrap">
             <button
               type="button"
               onClick={() => navigate(`/courses/${course.id}`)}
@@ -454,43 +455,36 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
           </div>
 
           {/* 2-column layout — form on left, summary on right (desktop) */}
-          <div className="grid lg:grid-cols-[1fr_360px] gap-6 lg:gap-8 items-start">
+          <div className="grid lg:grid-cols-[1fr_320px] gap-4 lg:gap-5 items-start">
             {/* MAIN: form / payment */}
             <div className="rounded-2xl border-2 border-border bg-card shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-b from-muted/40 to-muted/15 border-b-2 border-border px-5 py-4 sm:px-6 sm:py-5">
-                <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
+              <div className="bg-gradient-to-b from-muted/40 to-muted/15 border-b border-border px-4 py-3 sm:px-5 sm:py-3.5">
+                <h1 className="text-base sm:text-lg font-extrabold tracking-tight text-foreground">
                   {step === "info"
                     ? (isRTL ? "معلومات الفوترة" : "Billing Information")
                     : (isRTL ? "إتمام الشراء" : "Complete Your Purchase")}
                 </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  {step === "info"
-                    ? (isRTL ? "نحتاج بياناتك لإصدار الفاتورة وتأكيد التسجيل" : "We need your details to issue the invoice and confirm enrollment")
-                    : (isRTL ? "ادفع بأمان واستلم وصولك للكورس فوراً" : "Pay securely and get instant access to your course")}
-                </p>
               </div>
 
               {/* Step 2 status pill */}
               {step === "payment" && (
-                <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border-b border-emerald-500/20 px-5 py-2.5 flex items-center justify-between gap-3">
+                <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border-b border-emerald-500/20 px-4 sm:px-5 py-2 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <div className="shrink-0 inline-flex items-center justify-center rounded-full bg-emerald-500 text-white h-6 w-6">
-                      <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                    <div className="shrink-0 inline-flex items-center justify-center rounded-full bg-emerald-500 text-white h-5 w-5">
+                      <Check className="w-3 h-3" strokeWidth={3} />
                     </div>
-                    <div className="min-w-0 flex flex-col leading-tight">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700/80 dark:text-emerald-300/80">
-                        {isRTL ? "تم تأكيد البيانات" : "Details confirmed"}
+                    <p className="text-xs font-semibold text-foreground truncate" dir="auto">
+                      <span className="text-[10px] uppercase tracking-wider text-emerald-700/80 dark:text-emerald-300/80 me-2">
+                        {isRTL ? "البيانات" : "Details"}
                       </span>
-                      <p className="text-xs font-semibold text-foreground truncate" dir="auto">
-                        {form.fullName || "—"}
-                      </p>
-                    </div>
+                      {form.fullName || "—"}
+                    </p>
                   </div>
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="h-9 px-3 text-xs"
+                    className="h-7 px-2.5 text-[11px]"
                     onClick={() => setStep("info")}
                   >
                     {isRTL ? "تعديل" : "Edit"}
@@ -498,8 +492,10 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
                 </div>
               )}
 
-              {/* Content area with animated step transitions */}
-              <div className="p-5 sm:p-6">
+              {/* Content area with animated step transitions. Tighter padding
+                  than the modal so the Pay button stays above the fold on
+                  laptop displays. */}
+              <div className="p-4 sm:p-5">
                 <AnimatePresence mode="wait" initial={false}>
                   {step === "info" ? (
                     <motion.div
@@ -601,6 +597,8 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
                         exchangeRate={exchangeRate}
                         isSAR={isSAR}
                         onSubmitPayment={() => handleSubmitPayment()}
+                        hideInlineSummary
+                        hideTrustBadges
                         cardFormSlot={
                           showEmbeddedCard ? (
                             <EmbeddedCardForm
@@ -627,10 +625,10 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
               </div>
 
               {/* CTA footer */}
-              <div className="border-t-2 border-border px-5 py-4 sm:px-6 sm:py-5 bg-muted/20">
+              <div className="border-t border-border px-4 py-3 sm:px-5 sm:py-3.5 bg-muted/20">
                 {step === "info" ? (
                   <Button
-                    className="w-full h-12 rounded-xl text-sm font-bold btn-cta shadow-md hover:shadow-lg transition-shadow"
+                    className="w-full h-11 rounded-xl text-sm font-bold btn-cta shadow-md hover:shadow-lg transition-shadow"
                     onClick={handleNextStep}
                     disabled={form.profileSaving || !form.isInfoValid}
                   >
@@ -648,7 +646,7 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
                   </Button>
                 ) : promoOpen && !promo.promoApplied ? (
                   <Button
-                    className="w-full h-12 rounded-xl text-sm font-bold"
+                    className="w-full h-11 rounded-xl text-sm font-bold"
                     variant="cta"
                     onClick={promo.handleApplyPromo}
                     disabled={!promo.promoCode || promo.promoLoading || tap.status === "processing"}
@@ -667,7 +665,7 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
                   </Button>
                 ) : isFreeEnrollment ? (
                   <Button
-                    className="w-full h-12 rounded-xl text-sm font-bold"
+                    className="w-full h-11 rounded-xl text-sm font-bold"
                     variant="cta"
                     onClick={() => handleSubmitPayment()}
                     disabled={tap.status === "processing" || !isPaymentReady}
@@ -681,7 +679,7 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
                   </Button>
                 ) : (
                   <Button
-                    className="w-full h-12 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-shadow"
+                    className="w-full h-11 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-shadow"
                     variant="cta"
                     onClick={() => handleSubmitPayment()}
                     disabled={

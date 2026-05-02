@@ -77,6 +77,12 @@ interface CheckoutPaymentStepProps {
   onPromoOpenChange?: (open: boolean) => void;
   /** Optional embedded card form rendered directly below the discount section. */
   cardFormSlot?: React.ReactNode;
+  /** Hide the inline order summary card — used by the standalone CheckoutPage
+   *  where the sticky sidebar already shows the same data. */
+  hideInlineSummary?: boolean;
+  /** Hide the trust badges row — used by the standalone CheckoutPage where the
+   *  sidebar carries them instead, so we don't duplicate. */
+  hideTrustBadges?: boolean;
 }
 
 const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
@@ -135,6 +141,8 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     promoOpen: promoOpenProp,
     onPromoOpenChange,
     cardFormSlot,
+    hideInlineSummary = false,
+    hideTrustBadges = false,
   } = props;
     const { t } = useTranslation();
     const isMobile = useIsMobile();
@@ -329,8 +337,10 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
 
           {/* Compact order summary — always visible on mobile + desktop.
               Provides a clear, persistent reference of what the user is about
-              to pay, even if they scroll past the original modal header. */}
-          {!bundleMode && (
+              to pay, even if they scroll past the original modal header.
+              Hidden on the standalone /checkout page where the sticky
+              sidebar already covers this data. */}
+          {!bundleMode && !hideInlineSummary && (
             <div className="rounded-xl border border-border bg-card/60 p-3 sm:p-4 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -393,9 +403,10 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
           {/* Embedded card form rendered directly under the discount/promo section */}
           {cardFormSlot}
 
-          {/* Detailed total breakdown — desktop-only; mobile relies on the
-              compact summary above + the Pay button label. */}
-          {!bundleMode && !isMobile && (
+          {/* Detailed total breakdown — desktop modal only. Skipped on the
+              standalone /checkout page (sidebar carries this), and on mobile
+              (the compact summary above + Pay button label are enough). */}
+          {!bundleMode && !isMobile && !hideInlineSummary && (
             <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2.5">
               <div className="flex justify-between font-bold text-base items-baseline gap-2">
                 <span>
@@ -505,7 +516,9 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
           {/* Unified trust strip — single horizontal line on both mobile and
               desktop. Visually grouped with subtle separators so all three
               signals (Tap, 3D Secure, PCI DSS) read as one cohesive badge
-              rather than competing labels. */}
+              rather than competing labels. Hidden on /checkout page (sidebar
+              renders an equivalent strip). */}
+          {!hideTrustBadges && (
           <div className="flex items-center justify-center flex-wrap gap-x-3 gap-y-1.5 pt-1.5 pb-0.5">
             <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80">
               <Lock className="w-3.5 h-3.5 text-primary" />
@@ -530,6 +543,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
               <span>PCI DSS</span>
             </div>
           </div>
+          )}
         </motion.div>
 
         {editOpen ? (

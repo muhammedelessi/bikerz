@@ -74,15 +74,15 @@ const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
   return (
     <aside
       className={[
-        "w-full lg:w-[360px] shrink-0",
-        sticky ? "lg:sticky lg:top-[calc(var(--navbar-h)+1rem)]" : "",
+        "w-full lg:w-[320px] shrink-0",
+        sticky ? "lg:sticky lg:top-[calc(var(--navbar-h)+0.75rem)]" : "",
       ].join(" ")}
       aria-label={isRTL ? "ملخص الطلب" : "Order summary"}
     >
-      <div className="rounded-2xl border-2 border-border bg-card p-4 sm:p-5 shadow-sm space-y-4">
+      <div className="rounded-2xl border-2 border-border bg-card p-3.5 sm:p-4 shadow-sm space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-extrabold uppercase tracking-wider text-foreground">
+          <h2 className="text-[11px] font-extrabold uppercase tracking-wider text-foreground">
             {isRTL ? "ملخص الطلب" : "Order Summary"}
           </h2>
           {promoApplied && discountLabel && (
@@ -93,37 +93,32 @@ const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
           )}
         </div>
 
-        {/* Course card */}
-        <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 border border-border/60">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0 ring-1 ring-border">
+        {/* Course card — single row, smaller thumb */}
+        <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-muted/30 border border-border/60">
+          <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0 ring-1 ring-border">
             {courseThumbnailUrl ? (
               <img
                 src={courseThumbnailUrl}
                 alt={courseTitle}
-                width={160}
-                height={160}
+                width={96}
+                height={96}
                 className="w-full h-full object-cover"
                 loading="lazy"
                 decoding="async"
               />
             ) : (
               <div className="w-full h-full bg-primary/20 flex items-center justify-center">
-                <CreditCard className="w-7 h-7 text-primary" />
+                <CreditCard className="w-5 h-5 text-primary" />
               </div>
             )}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-              {isRTL ? "الكورس" : "Course"}
-            </p>
-            <h3 className="text-sm font-bold text-foreground leading-snug line-clamp-3">
-              {courseTitle}
-            </h3>
-          </div>
+          <h3 className="flex-1 text-xs font-bold text-foreground leading-snug line-clamp-2">
+            {courseTitle}
+          </h3>
         </div>
 
-        {/* Price breakdown */}
-        <div className="space-y-2 text-sm">
+        {/* Price breakdown — compact */}
+        <div className="space-y-1.5 text-xs">
           {promoApplied && originalPrice > discountedPrice && (
             <>
               <div className="flex justify-between text-muted-foreground">
@@ -137,11 +132,11 @@ const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
               <div className="border-t border-border" />
             </>
           )}
-          <div className="flex justify-between items-baseline pt-1">
-            <span className="text-base font-bold">
+          <div className="flex justify-between items-baseline pt-0.5">
+            <span className="text-sm font-bold">
               {isRTL
-                ? vatPct > 0 ? "الإجمالي شامل الضريبة" : "الإجمالي"
-                : vatPct > 0 ? "Total (incl. VAT)" : "Total"}
+                ? vatPct > 0 ? "الإجمالي" : "الإجمالي"
+                : vatPct > 0 ? "Total" : "Total"}
             </span>
             <AnimatePresence mode="popLayout" initial={false}>
               <motion.span
@@ -150,7 +145,7 @@ const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="text-xl font-extrabold text-primary tabular-nums"
+                className="text-lg font-extrabold text-primary tabular-nums"
               >
                 {formatLocal(discountedPrice)}
               </motion.span>
@@ -159,20 +154,12 @@ const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
 
           {/* Currency conversion hint */}
           {sarEquivalent != null && (
-            <div className="rounded-lg bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground text-center leading-snug">
-              {isRTL ? "سيُخصم على بطاقتك " : "Charged on your card: "}
+            <div className="rounded-md bg-muted/40 px-2 py-1.5 text-[10px] text-muted-foreground text-center leading-tight">
+              {isRTL ? "تُخصم على بطاقتك " : "Charged: "}
               <span className="font-bold text-foreground tabular-nums">
                 {sarEquivalent} {sarLabel}
               </span>
             </div>
-          )}
-
-          {/* VAT note */}
-          {vatPct > 0 && (
-            <p className="text-[10px] text-muted-foreground text-center pt-1">
-              {isRTL ? "الرقم الضريبي" : "VAT Number"}:{" "}
-              <span className="font-mono font-medium text-foreground/70">311508395300003</span>
-            </p>
           )}
         </div>
 
@@ -181,34 +168,33 @@ const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
           <button
             type="button"
             onClick={onEditBilling}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted hover:border-primary/40 active:scale-[0.98] transition-all min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-foreground hover:bg-muted hover:border-primary/40 active:scale-[0.98] transition-all min-h-[34px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            <Pencil className="w-3.5 h-3.5" />
+            <Pencil className="w-3 h-3" />
             {isRTL ? "تعديل بيانات الفوترة" : "Edit billing details"}
           </button>
         )}
 
-        {/* Trust signals */}
-        <div className="space-y-2 pt-1 border-t border-border">
-          <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-foreground/80 pt-3">
-            <Lock className="w-3.5 h-3.5 text-primary" />
-            <span>{isRTL ? "مُؤمّن بواسطة Tap Payments" : "Secured by Tap Payments"}</span>
+        {/* Trust signals — compact single row */}
+        <div className="flex items-center justify-center flex-wrap gap-x-2 gap-y-1 pt-2 border-t border-border">
+          <div className="inline-flex items-center gap-1 text-[10px] font-semibold text-foreground/80">
+            <Lock className="w-3 h-3 text-primary" />
+            <span>Tap Payments</span>
           </div>
-          <div className="flex items-center justify-center gap-3 text-[10px] font-medium text-muted-foreground">
-            <div className="inline-flex items-center gap-1">
-              <Shield className="w-3 h-3" />
-              <span>3D Secure</span>
-            </div>
-            <span className="text-muted-foreground/30">•</span>
-            <div className="inline-flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3" />
-              <span>PCI DSS</span>
-            </div>
+          <span className="text-muted-foreground/30">•</span>
+          <div className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+            <Shield className="w-3 h-3" />
+            <span>3D Secure</span>
+          </div>
+          <span className="text-muted-foreground/30">•</span>
+          <div className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+            <ShieldCheck className="w-3 h-3" />
+            <span>PCI DSS</span>
           </div>
         </div>
 
-        {/* WhatsApp help — visible from the start so hesitant users can ask */}
-        <div className="flex justify-center pt-1">
+        {/* WhatsApp help */}
+        <div className="flex justify-center">
           <CheckoutWhatsAppHelp context="idle" variant="inline" courseId={courseId} />
         </div>
       </div>
