@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useState } from "react";
+import React, { forwardRef, memo, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { Gift, Shield, ShieldCheck, Check, Lock, Pencil, X, Phone, MapPin, User, AlertTriangle, Loader2 } from "lucide-react";
@@ -79,8 +79,9 @@ interface CheckoutPaymentStepProps {
   cardFormSlot?: React.ReactNode;
 }
 
-const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
-  ({
+const CheckoutPaymentStep = memo(
+  forwardRef<HTMLDivElement, CheckoutPaymentStepProps>((props, _ref) => {
+    const {
     isRTL,
     currencyLabel,
     formatLocal,
@@ -134,7 +135,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
     promoOpen: promoOpenProp,
     onPromoOpenChange,
     cardFormSlot,
-  }) => {
+  } = props;
     const { t } = useTranslation();
     const isMobile = useIsMobile();
     const [editOpen, setEditOpen] = useState(false);
@@ -669,7 +670,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
         ) : null}
       </>
     );
-  },
+  }),
 );
 
 CheckoutPaymentStep.displayName = "CheckoutPaymentStep";
