@@ -1,5 +1,12 @@
 export type PaymentMethod = 'card' | 'apple_pay' | 'google_pay';
-export type PaymentStatus = 'idle' | 'processing' | 'verifying' | 'succeeded' | 'failed';
+/**
+ * `challenging_3ds` — Tap returned a redirect_url for bank verification.
+ *   The inline 3DS iframe is open and waiting for the user to enter their OTP.
+ * `confirming`       — verification polling exhausted without a definitive result.
+ *   The charge MAY have succeeded; the UI must offer "Refresh" instead of "Retry"
+ *   so the user doesn't double-pay. See useTapPayment.verifyCharge for details.
+ */
+export type PaymentStatus = 'idle' | 'processing' | 'challenging_3ds' | 'verifying' | 'confirming' | 'succeeded' | 'failed';
 
 export type TapPaymentKind = 'course' | 'training_booking' | 'course_bundle';
 

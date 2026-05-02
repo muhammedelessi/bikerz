@@ -45,6 +45,7 @@ import { applyTrainingPlatformMarkupSar, trainingCustomerChargeTotalSar } from '
 import BookingTimeDisplay from '@/components/common/BookingTimeDisplay';
 import { formatBookingTime, formatTimeFromMinutesSinceMidnight, pgTimeStringToMinutes } from '@/utils/formatDateTime';
 import { joinFullName, splitFullName } from '@/lib/nameUtils';
+import Checkout3DSModal from '@/components/checkout/Checkout3DSModal';
 
 export type TrainingBookingTrainingMini = { id: string; name_ar: string; name_en: string };
 
@@ -698,6 +699,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
   const loginHref = `/login?returnTo=${encodeURIComponent(loginReturnPath)}`;
 
   return (
+    <>
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'} lang={language}>
       {/* Step indicator */}
       <div className="flex items-center gap-2 sm:gap-3">
@@ -1388,6 +1390,11 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
         </AnimatePresence>
       )}
     </div>
+    {/* Inline 3DS modal — opens when Tap returns a redirect_url for card verification */}
+    {tap.challengeUrl && (
+      <Checkout3DSModal url={tap.challengeUrl} onCancel={tap.cancelChallenge} />
+    )}
+  </>
   );
 };
 

@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCurrency, TRAINING_PRICE_PLACEHOLDER_COURSE_ID } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useTapPayment } from '@/hooks/useTapPayment';
+import Checkout3DSModal from '@/components/checkout/Checkout3DSModal';
 import { writePendingTrainingBooking, clearPendingTrainingBooking } from '@/lib/trainingBookingStorage';
 import { insertUserTrainingBooking } from '@/lib/trainingBookingInsert';
 import {
@@ -354,6 +355,7 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
   const isDateSelected = (d: Date) => selectedDate && format(d, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-w-lg max-h-[90vh] overflow-y-auto sm:max-w-lg"
@@ -752,6 +754,11 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
         )}
       </DialogContent>
     </Dialog>
+    {/* Inline 3DS modal — opens when Tap returns a redirect_url for card verification */}
+    {tap.challengeUrl && (
+      <Checkout3DSModal url={tap.challengeUrl} onCancel={tap.cancelChallenge} />
+    )}
+  </>
   );
 };
 

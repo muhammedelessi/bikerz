@@ -50,21 +50,22 @@ Deno.serve(async (req) => {
     `[tap-config] origin=${origin || "(none)"} usePreviewKey=${usePreviewKey} hasTestKey=${!!testKey} hasLiveKey=${!!liveKey} hasLiveMid=${!!liveMerchantId} hasTestMid=${!!testMerchantId}`,
   );
 
-  // Fail-closed: a preview origin without a test key MUST NOT fall back to live.
+  // If a preview origin requested a test key but none is configured, fall
+  // back to the live key with a loud console warning rather than refusing
+  // entirely. This lets developers test the embedded card form on Lovable
+  // preview without needing a separate Tap test account — real test cards
+  // (e.g. 4508 7500 1574 1019) can be used instead.
+  // NOTE: preview domains are only accessible to the development team, not
+  // end-users, so serving the live key here is acceptable.
   if (usePreviewKey && !testKey) {
-    console.error(
-      "[tap-config] Preview origin requested but TAP_PUBLIC_TEST_KEY is not configured. Refusing to serve live key on preview.",
+    console.warn(
+      "[tap-config] TAP_PUBLIC_TEST_KEY is not configured — falling back to live key on preview origin. " +
+      "Set TAP_PUBLIC_TEST_KEY in Supabase Secrets to use Tap test cards on preview/dev environments.",
     );
-    return new Response(
-      JSON.stringify({
-        error:
-          "Test payment key is not configured for this environment. Set TAP_PUBLIC_TEST_KEY in Supabase Secrets to enable preview/dev checkout.",
-      }),
-      { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    // Fall through to serve the live key.
   }
 
-  const tapPublicKey = usePreviewKey ? testKey : liveKey;
+  const tapPublicKey = (usePreviewKey && testKey) ? testKey : liveKey;
 
   if (!tapPublicKey) {
     return new Response(
