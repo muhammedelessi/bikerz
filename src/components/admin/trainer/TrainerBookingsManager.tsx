@@ -31,6 +31,7 @@ import { Check, CheckCheck, X, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import BookingTimeDisplay from '@/components/common/BookingTimeDisplay';
 import type { Json } from '@/integrations/supabase/types';
+import { SkillEvaluationEditor } from './SkillEvaluationEditor';
 
 export type TrainerManagerMode = 'admin' | 'self';
 
@@ -531,6 +532,12 @@ export const TrainerBookingsManager: React.FC<{
                   )}
                 </ul>
               </div>
+              <SkillEvaluationEditor
+                bookingId={detailRow.id}
+                trainerId={detailRow.trainer_id}
+                trainingId={detailRow.training_id}
+                isRTL={isRTL}
+              />
             </div>
           ) : null}
           <DialogFooter>

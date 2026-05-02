@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Clock, GraduationCap, Users, Wrench } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Clock, GraduationCap, Star, Users, Video, Wrench } from "lucide-react";
 import type { TrainerCourseRow } from "@/lib/trainingBookingUtils";
 import { translateTrainerCourseLocation } from "@/lib/trainerCourseLocation";
 import { COUNTRIES } from "@/data/countryCityData";
@@ -23,6 +23,7 @@ import { useTrainingPlatformPricing } from "@/hooks/useTrainingPlatformPricing";
 import { applyTrainingPlatformMarkupSar } from "@/lib/trainingPlatformMarkup";
 import TrainingCurriculumAccordion from "@/components/training/TrainingCurriculumAccordion";
 import { parseTrainingSessions } from "@/lib/trainingSessionCurriculum";
+import { parseTrainingVideos, parseTrainingSkills, toEmbeddableVideoUrl } from "@/lib/trainingExtras";
 
 type TrainerSupply = { name_ar: string; name_en: string };
 
@@ -163,6 +164,14 @@ const TrainingDetail: React.FC = () => {
     () => parseTrainingSessions((training as ({ sessions?: unknown } | null))?.sessions),
     [training],
   );
+  const videos = useMemo(
+    () => parseTrainingVideos((training as ({ videos?: unknown } | null))?.videos),
+    [training],
+  );
+  const skills = useMemo(
+    () => parseTrainingSkills((training as ({ skills?: unknown } | null))?.skills),
+    [training],
+  );
 
   const trainingTitle = training ? (isRTL ? training.name_ar : training.name_en) : "";
   const seoDescription = useMemo(() => {
@@ -276,50 +285,108 @@ const TrainingDetail: React.FC = () => {
               )}
 
               <section className="space-y-8">
-                <Card className="border-border/70 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-lg">
-                      {isRTL ? "المعلومات" : "Information"}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {supplies.length > 0 ? (
-                      <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
-                        <p className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                          <Wrench className="h-4 w-4 text-primary" />
-                          {isRTL ? "ما يوفره المدرب" : "Trainer Supplies"}
-                        </p>
-                        <ul className="space-y-1.5 text-sm">
-                          {supplies.map((item, idx) => (
-                            <li key={`${item.name_en}-${idx}`} className="flex items-center gap-2">
-                              <Wrench className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                              <span>{isRTL ? item.name_ar : item.name_en}</span>
-                            </li>
-                          ))}
-                        </ul>
+                {videos.length > 0 && (
+                  <Card className="border-border/70 shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Video className="h-5 w-5 text-primary" />
+                        {isRTL ? "فيديوهات التدريب" : "Training Videos"}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {videos.map((v, i) => {
+                          const embed = toEmbeddableVideoUrl(v.url);
+                          const title = (isRTL ? v.title_ar : v.title_en) || (isRTL ? `فيديو ${i + 1}` : `Video ${i + 1}`);
+                          return (
+                            <div key={`${v.url}-${i}`} className="space-y-2">
+                              <div className="relative w-full overflow-hidden rounded-xl border border-border/60 bg-muted aspect-video">
+                                <iframe
+                                  src={embed}
+                                  title={title}
+                                  loading="lazy"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                  allowFullScreen
+                                  className="absolute inset-0 w-full h-full"
+                                />
+                              </div>
+                              <p className="text-sm font-medium text-foreground">{title}</p>
+                            </div>
+                          );
+                        })}
                       </div>
-                    ) : null}
+                    </CardContent>
+                  </Card>
+                )}
 
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-base font-semibold">
-                          {isRTL ? "تفاصيل الجلسات" : "Session Details"}
-                        </h3>
-                        <Badge variant="secondary">{curriculumSessions.length}</Badge>
-                      </div>
+                {(supplies.length > 0 || curriculumSessions.length > 0 || skills.length > 0) && (
+                  <Card className="border-border/70 shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="text-lg">
+                        {isRTL ? "المعلومات" : "Information"}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {supplies.length > 0 ? (
+                        <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                          <p className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                            <Wrench className="h-4 w-4 text-primary" />
+                            {isRTL ? "ما يوفره المدرب" : "Trainer Supplies"}
+                          </p>
+                          <ul className="space-y-1.5 text-sm">
+                            {supplies.map((item, idx) => (
+                              <li key={`${item.name_en}-${idx}`} className="flex items-center gap-2">
+                                <Wrench className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                <span>{isRTL ? item.name_ar : item.name_en}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+
+                      {skills.length > 0 ? (
+                        <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                          <p className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                            <Star className="h-4 w-4 text-primary" />
+                            {isRTL ? "المهارات التي ستتعلمها" : "Skills You Will Learn"}
+                          </p>
+                          <ul className="space-y-2 text-sm">
+                            {skills.map((s, idx) => {
+                              const name = isRTL ? s.name_ar || s.name_en : s.name_en || s.name_ar;
+                              const desc = isRTL ? s.description_ar : s.description_en;
+                              return (
+                                <li key={`${name}-${idx}`} className="flex items-start gap-2">
+                                  <Star className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-foreground">{name}</p>
+                                    {desc ? (
+                                      <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+                                    ) : null}
+                                  </div>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      ) : null}
+
                       {curriculumSessions.length > 0 ? (
-                        <TrainingCurriculumAccordion
-                          sessions={curriculumSessions}
-                          isRTL={isRTL}
-                        />
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          {isRTL ? "لا توجد تفاصيل جلسات متاحة حالياً." : "No session details available yet."}
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-base font-semibold">
+                              {isRTL ? "تفاصيل الجلسات" : "Session Details"}
+                            </h3>
+                            <Badge variant="secondary">{curriculumSessions.length}</Badge>
+                          </div>
+                          <TrainingCurriculumAccordion
+                            sessions={curriculumSessions}
+                            isRTL={isRTL}
+                          />
+                        </div>
+                      ) : null}
+                    </CardContent>
+                  </Card>
+                )}
 
                 {training.type === "theory" ? (
                   <section className="rounded-2xl border border-border/70 bg-muted/20 p-6 sm:p-8 text-center">
