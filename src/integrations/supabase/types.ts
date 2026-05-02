@@ -2930,6 +2930,13 @@ export type Database = {
             foreignKeyName: "trainer_availability_trainer_id_fkey"
             columns: ["trainer_id"]
             isOneToOne: false
+            referencedRelation: "public_trainers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_availability_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
             referencedRelation: "trainers"
             referencedColumns: ["id"]
           },
@@ -2980,6 +2987,13 @@ export type Database = {
             foreignKeyName: "trainer_courses_trainer_id_fkey"
             columns: ["trainer_id"]
             isOneToOne: false
+            referencedRelation: "public_trainers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_courses_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
             referencedRelation: "trainers"
             referencedColumns: ["id"]
           },
@@ -3021,6 +3035,13 @@ export type Database = {
           training_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "trainer_reviews_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "public_trainers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "trainer_reviews_trainer_id_fkey"
             columns: ["trainer_id"]
@@ -3253,6 +3274,13 @@ export type Database = {
             foreignKeyName: "training_bookings_trainer_id_fkey"
             columns: ["trainer_id"]
             isOneToOne: false
+            referencedRelation: "public_trainers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_bookings_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
             referencedRelation: "trainers"
             referencedColumns: ["id"]
           },
@@ -3294,6 +3322,13 @@ export type Database = {
           training_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "training_students_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "public_trainers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "training_students_trainer_id_fkey"
             columns: ["trainer_id"]
@@ -4298,6 +4333,135 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      public_profiles: {
+        Row: {
+          avatar_url: string | null
+          bike_brand: string | null
+          bike_model: string | null
+          courses_sold_count: number | null
+          created_at: string | null
+          engine_size_cc: number | null
+          experience_level: string | null
+          full_name: string | null
+          km_logged: number | null
+          rank_override: boolean | null
+          rider_nickname: string | null
+          riding_experience_years: number | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bike_brand?: string | null
+          bike_model?: string | null
+          courses_sold_count?: number | null
+          created_at?: string | null
+          engine_size_cc?: number | null
+          experience_level?: string | null
+          full_name?: string | null
+          km_logged?: number | null
+          rank_override?: boolean | null
+          rider_nickname?: string | null
+          riding_experience_years?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bike_brand?: string | null
+          bike_model?: string | null
+          courses_sold_count?: number | null
+          created_at?: string | null
+          engine_size_cc?: number | null
+          experience_level?: string | null
+          full_name?: string | null
+          km_logged?: number | null
+          rank_override?: boolean | null
+          rider_nickname?: string | null
+          riding_experience_years?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      public_trainers: {
+        Row: {
+          album_photos: string[] | null
+          availability_blocked_dates: string[] | null
+          availability_settings: Json | null
+          availability_special_hours: Json | null
+          bike_entries: Json | null
+          bike_photos: string[] | null
+          bike_type: string | null
+          bio_ar: string | null
+          bio_en: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          id: string | null
+          language_levels: Json | null
+          license_type: string | null
+          motorbike_brand: string | null
+          name_ar: string | null
+          name_en: string | null
+          photo_url: string | null
+          profit_ratio: number | null
+          services: string[] | null
+          status: Database["public"]["Enums"]["trainer_status"] | null
+          user_id: string | null
+          years_of_experience: number | null
+        }
+        Insert: {
+          album_photos?: string[] | null
+          availability_blocked_dates?: string[] | null
+          availability_settings?: Json | null
+          availability_special_hours?: Json | null
+          bike_entries?: Json | null
+          bike_photos?: string[] | null
+          bike_type?: string | null
+          bio_ar?: string | null
+          bio_en?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string | null
+          language_levels?: Json | null
+          license_type?: string | null
+          motorbike_brand?: string | null
+          name_ar?: string | null
+          name_en?: string | null
+          photo_url?: string | null
+          profit_ratio?: number | null
+          services?: string[] | null
+          status?: Database["public"]["Enums"]["trainer_status"] | null
+          user_id?: string | null
+          years_of_experience?: number | null
+        }
+        Update: {
+          album_photos?: string[] | null
+          availability_blocked_dates?: string[] | null
+          availability_settings?: Json | null
+          availability_special_hours?: Json | null
+          bike_entries?: Json | null
+          bike_photos?: string[] | null
+          bike_type?: string | null
+          bio_ar?: string | null
+          bio_en?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string | null
+          language_levels?: Json | null
+          license_type?: string | null
+          motorbike_brand?: string | null
+          name_ar?: string | null
+          name_en?: string | null
+          photo_url?: string | null
+          profit_ratio?: number | null
+          services?: string[] | null
+          status?: Database["public"]["Enums"]["trainer_status"] | null
+          user_id?: string | null
+          years_of_experience?: number | null
+        }
+        Relationships: []
       }
       test_questions_student: {
         Row: {

@@ -195,7 +195,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
     staleTime: 0,
     refetchOnMount: 'always',
     queryFn: async () => {
-      const { data, error } = await supabase.from('trainers').select('*').eq('id', trainerId).maybeSingle();
+      const { data, error } = await supabase.from('trainers').select('id,name_ar,name_en,photo_url,bio_ar,bio_en,country,city,bike_type,years_of_experience,services,status,profit_ratio,motorbike_brand,license_type,bike_photos,album_photos,bike_entries,availability_blocked_dates,availability_special_hours,availability_settings,language_levels,user_id,created_at').eq('id', trainerId).maybeSingle();
       if (error) throw error;
       return data;
     },

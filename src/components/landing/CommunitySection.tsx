@@ -47,7 +47,7 @@ const CommunitySection: React.FC<CommunitySectionProps> = ({ content, contentLoa
     queryKey: ['hero-stats'],
     queryFn: async () => {
       const [profilesRes, lessonsRes, enrollmentsRes, coursesRes] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('user_id', { count: 'exact', head: true }),
         supabase.from('lessons').select('*', { count: 'exact', head: true }).eq('is_published', true),
         supabase.from('course_enrollments').select('progress_percentage'),
         supabase.from('courses').select('*', { count: 'exact', head: true }).eq('is_published', true),
