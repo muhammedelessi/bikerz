@@ -114,30 +114,42 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Retrieve charge from Tap API (source of truth)
-    let tapResponse: Response;
-    try {
-      tapResponse = await fetch(`https://api.tap.company/v2/charges/${charge_id}`, {
-        headers: {
-          Authorization: `Bearer ${tapSecretKey}`,
-          Accept: "application/json",
-        },
-        signal: AbortSignal.timeout(VERIFY_TIMEOUT),
-      });
-    } catch (fetchErr: any) {
-      console.error("Tap API timeout/network error during verify:", fetchErr.message);
-      return new Response(
-        JSON.stringify({ error: "Payment verification timed out. Please refresh to check status." }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Retrieve charge from Tap API (source of truth). Try each candidate key until 200.
+    let tapResponse: Response | null = null;
+    let lastStatus = 0;
+    let lastErrText = "";
+    for (let i = 0; i < candidateKeys.length; i += 1) {
+      const key = candidateKeys[i];
+      try {
+        const r = await fetch(`https://api.tap.company/v2/charges/${charge_id}`, {
+          headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
+          signal: AbortSignal.timeout(VERIFY_TIMEOUT),
+        });
+        if (r.ok) {
+          tapResponse = r;
+          break;
+        }
+        lastStatus = r.status;
+        lastErrText = await r.text().catch(() => "");
+        // 429 from Tap means we should stop hammering immediately
+        if (r.status === 429) break;
+        // Brief pause between keys to stay under Tap's rate limit
+        if (i < candidateKeys.length - 1) await new Promise((res) => setTimeout(res, 250));
+      } catch (fetchErr: any) {
+        console.error("Tap API timeout/network error during verify:", fetchErr.message);
+        return new Response(
+          JSON.stringify({ error: "Payment verification timed out. Please refresh to check status." }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
-    if (!tapResponse.ok) {
-      const errText = await tapResponse.text().catch(() => "");
-      console.error("Tap verify API error:", tapResponse.status, errText.substring(0, 200));
+    if (!tapResponse) {
+      console.error("Tap verify API error after all keys:", lastStatus, lastErrText.substring(0, 200));
+      const isRateLimited = lastStatus === 429;
       return new Response(
-        JSON.stringify({ error: "Failed to verify charge" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: isRateLimited ? "Payment gateway busy. Please refresh in a moment." : "Failed to verify charge" }),
+        { status: isRateLimited ? 503 : 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
