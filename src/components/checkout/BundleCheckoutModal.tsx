@@ -187,7 +187,14 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
     if (cardApiRef.current) {
       try {
         setTokenizing(true);
+        // Force a fresh card iframe on retry — Tap rejects token reuse
+        // with code 1126 "Source already used".
+        if (lastTokenIdRef.current) {
+          cardApiRef.current.reinit();
+          await new Promise((r) => setTimeout(r, 250));
+        }
         tokenId = await cardApiRef.current.tokenize();
+        lastTokenIdRef.current = tokenId;
       } catch (err: any) {
         setTokenizing(false);
         const fallback = isRTL ? 'تعذّر التحقق من بيانات البطاقة' : 'Could not validate card details';
