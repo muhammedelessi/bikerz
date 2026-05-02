@@ -54,13 +54,6 @@ const TrainingCurriculumAccordion: React.FC<Props> = ({ sessions, isRTL, classNa
                     <Clock className="w-3.5 h-3.5" />
                     {session.duration_hours}
                     {isRTL ? 'س' : 'h'}
-                  </span>
-                  <span className="text-muted-foreground text-xs">·</span>
-                  <span className="flex items-center gap-1 text-amber-600 text-xs shrink-0">
-                    <Trophy className="w-3.5 h-3.5" />
-                    {session.points}
-                    {isRTL ? 'ن' : 'pts'}
-                  </span>
                 </button>
                 {expanded ? (
                   <div className="px-4 pb-3 pt-0 border-t border-border/40 bg-muted/10">
