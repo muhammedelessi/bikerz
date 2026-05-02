@@ -670,7 +670,7 @@ const CheckoutPaymentStep = memo(
         ) : null}
       </>
     );
-  },
+  }),
 );
 
 CheckoutPaymentStep.displayName = "CheckoutPaymentStep";
