@@ -1039,6 +1039,33 @@ const AdminTrainings: React.FC = () => {
                         />
                       </div>
                     </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                      <div className="space-y-1">
+                        <Label className="flex items-center gap-1.5">
+                          <Trophy className="h-3.5 w-3.5 text-amber-500" />
+                          {isRTL ? 'النقاط لهذه المهارة' : 'Points for this skill'}
+                        </Label>
+                        <p className="text-[10px] text-muted-foreground">
+                          {isRTL
+                            ? 'تُمنح عند إتقان المتدرب لهذه المهارة'
+                            : 'Awarded when the trainee masters this skill'}
+                        </p>
+                        <Input
+                          type="number"
+                          min={0}
+                          dir="ltr"
+                          value={s.points}
+                          onChange={(e) =>
+                            setSkills((prev) =>
+                              prev.map((x, idx) =>
+                                idx === i ? { ...x, points: parseInt(e.target.value, 10) || 0 } : x,
+                              ),
+                            )
+                          }
+                          placeholder="10"
+                        />
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
