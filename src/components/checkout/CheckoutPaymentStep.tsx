@@ -135,7 +135,7 @@ const CheckoutPaymentStep = memo(
     promoOpen: promoOpenProp,
     onPromoOpenChange,
     cardFormSlot,
-  }) => {
+  } = props;
     const { t } = useTranslation();
     const isMobile = useIsMobile();
     const [editOpen, setEditOpen] = useState(false);
