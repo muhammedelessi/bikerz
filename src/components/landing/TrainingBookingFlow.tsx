@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCurrency, TRAINING_PRICE_PLACEHOLDER_COURSE_ID } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useTapPayment } from '@/hooks/useTapPayment';
+import { RecoverableTapSourceUsedError } from '@/services/payment.service';
 import { writePendingTrainingBooking, clearPendingTrainingBooking, type PendingTrainingSessionSlot } from '@/lib/trainingBookingStorage';
 import { sessionCountLabel } from '@/lib/trainingBookingSessions';
 import { insertUserTrainingBooking } from '@/lib/trainingBookingInsert';
@@ -610,8 +611,8 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
 
     setPaying(true);
     try {
-      await tap.submitPayment({
-        paymentKind: 'training_booking',
+      const buildSubmit = (tokenId?: string) => ({
+        paymentKind: 'training_booking' as const,
         trainerCourseId: selectedCourse.id,
         trainingId: training.id,
         currency: paymentCurrency,
@@ -621,7 +622,15 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
         customerPhone: phoneOut,
         courseName: isRTL ? training.name_ar : training.name_en,
         isRTL,
+        tokenId,
       });
+
+      try {
+        await tap.submitPayment(buildSubmit());
+      } catch (err) {
+        if (!(err instanceof RecoverableTapSourceUsedError)) throw err;
+        await tap.submitPayment(buildSubmit());
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (msg) toast.error(msg);
