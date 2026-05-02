@@ -836,7 +836,216 @@ const AdminTrainings: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Section: Background Image */}
+          {/* Section: Videos (multiple practical training videos) */}
+          <Card className="order-5">
+            <CardContent className="p-6 space-y-5" dir={fieldDir}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1 text-start">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                    <Video className="h-4 w-4" />
+                    {isRTL ? 'فيديوهات التدريب' : 'Training Videos'}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {isRTL
+                      ? 'أضف رابط يوتيوب أو Bunny لكل فيديو. يمكنك إضافة أكثر من فيديو.'
+                      : 'Paste YouTube or Bunny embed URLs. You can add multiple videos.'}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 shrink-0 self-end sm:self-auto"
+                  onClick={() => setVideos((prev) => [...prev, { title_ar: '', title_en: '', url: '' }])}
+                >
+                  <Plus className="h-4 w-4" />
+                  {isRTL ? 'إضافة فيديو' : 'Add video'}
+                </Button>
+              </div>
+
+              {videos.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">
+                  {isRTL ? 'لا توجد فيديوهات بعد.' : 'No videos added yet.'}
+                </div>
+              ) : null}
+
+              <div className="space-y-3">
+                {videos.map((v, i) => (
+                  <div key={i} className="rounded-xl border border-border bg-card p-3 sm:p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground">
+                        {isRTL ? `فيديو ${i + 1}` : `Video ${i + 1}`}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                        onClick={() => setVideos((prev) => prev.filter((_, idx) => idx !== i))}
+                        aria-label={isRTL ? 'حذف الفيديو' : 'Remove video'}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" dir="ltr">
+                      <div className="space-y-1 order-1 sm:order-2">
+                        <Label dir="rtl">عنوان الفيديو</Label>
+                        <Input
+                          dir="rtl"
+                          placeholder="مثال: شرح وضعيات الجلوس"
+                          value={v.title_ar}
+                          onChange={(e) =>
+                            setVideos((prev) => prev.map((x, idx) => (idx === i ? { ...x, title_ar: e.target.value } : x)))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1 order-2 sm:order-1">
+                        <Label dir="ltr">Video Title</Label>
+                        <Input
+                          dir="ltr"
+                          placeholder="e.g. Riding Posture Walkthrough"
+                          value={v.title_en}
+                          onChange={(e) =>
+                            setVideos((prev) => prev.map((x, idx) => (idx === i ? { ...x, title_en: e.target.value } : x)))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label>{isRTL ? 'رابط الفيديو' : 'Video URL'}</Label>
+                      <Input
+                        type="url"
+                        dir="ltr"
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        value={v.url}
+                        onChange={(e) =>
+                          setVideos((prev) => prev.map((x, idx) => (idx === i ? { ...x, url: e.target.value } : x)))
+                        }
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Section: Skills (what the trainee will learn — used for trainer evaluation 1–5) */}
+          <Card className="order-5">
+            <CardContent className="p-6 space-y-5" dir={fieldDir}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1 text-start">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                    <Star className="h-4 w-4" />
+                    {isRTL ? 'المهارات التي سيتعلمها المتدرب' : 'Skills the Trainee Will Learn'}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {isRTL
+                      ? 'سيستخدم المدرب هذه المهارات لتقييم المتدرب من 1 إلى 5 لكل مهارة بعد كل حجز.'
+                      : "The trainer will use these skills to score the student from 1 to 5 per skill after each booking."}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 shrink-0 self-end sm:self-auto"
+                  onClick={() =>
+                    setSkills((prev) => [
+                      ...prev,
+                      { name_ar: '', name_en: '', description_ar: '', description_en: '' },
+                    ])
+                  }
+                >
+                  <Plus className="h-4 w-4" />
+                  {isRTL ? 'إضافة مهارة' : 'Add skill'}
+                </Button>
+              </div>
+
+              {skills.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">
+                  {isRTL ? 'لا توجد مهارات بعد.' : 'No skills added yet.'}
+                </div>
+              ) : null}
+
+              <div className="space-y-3">
+                {skills.map((s, i) => (
+                  <div key={i} className="rounded-xl border border-border bg-card p-3 sm:p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground">
+                        {isRTL ? `المهارة ${i + 1}` : `Skill ${i + 1}`}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                        onClick={() => setSkills((prev) => prev.filter((_, idx) => idx !== i))}
+                        aria-label={isRTL ? 'حذف المهارة' : 'Remove skill'}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" dir="ltr">
+                      <div className="space-y-1 order-1 sm:order-2">
+                        <Label dir="rtl">اسم المهارة</Label>
+                        <Input
+                          dir="rtl"
+                          placeholder="مثال: الفرملة الآمنة"
+                          value={s.name_ar}
+                          onChange={(e) =>
+                            setSkills((prev) => prev.map((x, idx) => (idx === i ? { ...x, name_ar: e.target.value } : x)))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1 order-2 sm:order-1">
+                        <Label dir="ltr">Skill Name</Label>
+                        <Input
+                          dir="ltr"
+                          placeholder="e.g. Safe Braking"
+                          value={s.name_en}
+                          onChange={(e) =>
+                            setSkills((prev) => prev.map((x, idx) => (idx === i ? { ...x, name_en: e.target.value } : x)))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" dir="ltr">
+                      <div className="space-y-1 order-1 sm:order-2">
+                        <Label dir="rtl">{isRTL ? 'وصف (اختياري)' : 'Description (optional)'}</Label>
+                        <Textarea
+                          dir="rtl"
+                          rows={2}
+                          placeholder="شرح مختصر للمهارة"
+                          value={s.description_ar}
+                          onChange={(e) =>
+                            setSkills((prev) =>
+                              prev.map((x, idx) => (idx === i ? { ...x, description_ar: e.target.value } : x)),
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1 order-2 sm:order-1">
+                        <Label dir="ltr">{isRTL ? 'Description (optional)' : 'Description (optional)'}</Label>
+                        <Textarea
+                          dir="ltr"
+                          rows={2}
+                          placeholder="Short description"
+                          value={s.description_en}
+                          onChange={(e) =>
+                            setSkills((prev) =>
+                              prev.map((x, idx) => (idx === i ? { ...x, description_en: e.target.value } : x)),
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+
           <Card className="order-6">
             <CardContent className="p-6 space-y-4">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{isRTL ? 'صورة الخلفية' : 'Background Image'}</h3>
