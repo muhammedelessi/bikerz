@@ -357,8 +357,16 @@ const TrainingDetail: React.FC = () => {
                               return (
                                 <li key={`${name}-${idx}`} className="flex items-start gap-2">
                                   <Star className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
-                                  <div className="min-w-0">
-                                    <p className="font-medium text-foreground">{name}</p>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <p className="font-medium text-foreground">{name}</p>
+                                      {s.points > 0 ? (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                                          <Trophy className="h-3 w-3" />
+                                          {s.points} {isRTL ? "نقطة" : "pts"}
+                                        </span>
+                                      ) : null}
+                                    </div>
                                     {desc ? (
                                       <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
                                     ) : null}
