@@ -38,10 +38,11 @@ interface EmbeddedCardFormProps {
   /** Local subscriber number (no leading 0). */
   customerPhoneNumber: string;
   /**
-   * Called once on mount with a `tokenize` function. Parent stores the ref and
-   * calls it from its own "Pay Now" button so we don't duplicate footer UI.
+   * Called once on mount with a `tokenize` function and `reinit` to force a
+   * fresh card iframe (needed after a failed charge — Tap rejects the same
+   * tok_xxx twice with code 1126 "Source already used").
    */
-  onApiReady: (api: { tokenize: () => Promise<string> }) => void;
+  onApiReady: (api: { tokenize: () => Promise<string>; reinit: () => void }) => void;
   /** Live status the parent uses to enable/disable its Pay button + show messaging. */
   onStatusChange: (status: { sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null }) => void;
   /**
