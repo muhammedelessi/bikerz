@@ -2,9 +2,8 @@ import React, { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
-  User, Mail, MapPin, Pencil, Info, ShieldCheck,
+  User, MapPin, Pencil, Info, ShieldCheck,
 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
 import SearchableDropdown from '@/components/checkout/SearchableDropdown';
 import type { DropdownOption } from '@/components/checkout/SearchableDropdown';
@@ -60,9 +59,13 @@ const SectionCard: React.FC<{
   title: string;
   subtitle?: string;
   children: React.ReactNode;
-}> = ({ icon: Icon, title, subtitle, children }) => (
-  <section className="rounded-2xl border border-border bg-card/40 p-3.5 sm:p-4 space-y-3.5">
-    <header className="flex items-center gap-2.5">
+  /** When true, lay children out as a 2-col grid on desktop (>=md). Children
+   *  default to spanning a single column; pass `className="md:col-span-2"` to
+   *  any child that should occupy the full row. */
+  twoColumn?: boolean;
+}> = ({ icon: Icon, title, subtitle, children, twoColumn = false }) => (
+  <section className="rounded-2xl border border-border bg-card/40 p-3.5 sm:p-4">
+    <header className="flex items-center gap-2.5 mb-3.5">
       <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
         <Icon className="w-4 h-4" />
       </span>
@@ -73,7 +76,15 @@ const SectionCard: React.FC<{
         )}
       </div>
     </header>
-    {children}
+    <div
+      className={
+        twoColumn
+          ? "grid grid-cols-1 md:grid-cols-2 gap-3.5"
+          : "space-y-3.5"
+      }
+    >
+      {children}
+    </div>
   </section>
 );
 
@@ -130,90 +141,80 @@ const CheckoutInfoStep: React.FC<CheckoutInfoStepProps> = memo(({
         </div>
       )}
 
-      {/* Personal Information Section */}
+      {/* Personal Information Section — 2-col on desktop:
+          row 1: First | Last name (NameFields handles its own sub-grid; the
+                 wrapper FormField spans both columns so the label sits above
+                 both inputs as a single group)
+          row 2: Email | Phone
+      */}
       <SectionCard
         icon={User}
         title={isRTL ? 'المعلومات الشخصية' : 'Personal Information'}
         subtitle={isRTL ? 'الاسم الذي سيظهر على الفاتورة' : 'Name shown on your invoice'}
+        twoColumn
       >
-        {/* Name */}
-        <FormField label={`${t('fields.firstName.label')} ${t('fields.lastName.label')}`} error={errors.fullName} required>
-          {hasNamePrefilled && !isEditingName ? (
-            <div className="flex items-center justify-between rounded-lg border border-input bg-muted/30 px-3 py-2 h-11">
-              <div className="flex items-center gap-2 min-w-0">
-                <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <span className="text-sm font-medium text-foreground truncate">{fullName}</span>
+        {/* Name — spans full row on desktop because NameFields renders its
+            own internal first/last 2-col layout. Without col-span-2 the
+            label would only cover one half and the input would overflow. */}
+        <div className="md:col-span-2">
+          <FormField label={`${t('fields.firstName.label')} ${t('fields.lastName.label')}`} error={errors.fullName} required>
+            {hasNamePrefilled && !isEditingName ? (
+              <div className="flex items-center justify-between rounded-lg border border-input bg-muted/30 px-3 py-2 h-11">
+                <div className="flex items-center gap-2 min-w-0">
+                  <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <span className="text-sm font-medium text-foreground truncate">{fullName}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingName(true)}
+                  className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  aria-label={isRTL ? 'تعديل الاسم' : 'Edit name'}
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{isRTL ? 'تعديل' : 'Edit'}</span>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsEditingName(true)}
-                className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                aria-label={isRTL ? 'تعديل الاسم' : 'Edit name'}
-              >
-                <Pencil className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{isRTL ? 'تعديل' : 'Edit'}</span>
-              </button>
-            </div>
-          ) : (
-            <NameFields
-              firstName={firstName}
-              lastName={lastName}
-              onFirstNameChange={(val) => {
-                setFullName(joinFullName(val, lastName));
-                setErrors(prev => ({ ...prev, firstName: undefined, fullName: undefined }));
-              }}
-              onLastNameChange={(val) => {
-                setFullName(joinFullName(firstName, val));
-                setErrors(prev => ({ ...prev, lastName: undefined, fullName: undefined }));
-              }}
-              firstNameError={errors.firstName}
-              lastNameError={errors.lastName}
-              required
-            />
-          )}
-        </FormField>
-
-        {/* Email */}
-        <FormField
-          label={t('fields.email.label')}
-          error={errors.email}
-          required
-        >
-          {user ? (
-            <div className="flex items-center rounded-lg border border-input bg-muted/30 px-3 py-2 h-11">
-              <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0 me-2" />
-              <span className="text-sm text-foreground truncate" dir="ltr">{email}</span>
-              <span className="ms-auto inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                <ShieldCheck className="w-3 h-3" />
-                <span className="hidden sm:inline">{isRTL ? 'موثّق' : 'Verified'}</span>
-              </span>
-            </div>
-          ) : (
-            <div className="relative">
-              <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
-                placeholder={t('fields.email.placeholder')}
-                className={`ps-11 h-11 ${errors.email ? 'border-destructive' : ''}`}
+            ) : (
+              <NameFields
+                firstName={firstName}
+                lastName={lastName}
+                onFirstNameChange={(val) => {
+                  setFullName(joinFullName(val, lastName));
+                  setErrors(prev => ({ ...prev, firstName: undefined, fullName: undefined }));
+                }}
+                onLastNameChange={(val) => {
+                  setFullName(joinFullName(firstName, val));
+                  setErrors(prev => ({ ...prev, lastName: undefined, fullName: undefined }));
+                }}
+                firstNameError={errors.firstName}
+                lastNameError={errors.lastName}
+                required
               />
-            </div>
-          )}
-        </FormField>
+            )}
+          </FormField>
+        </div>
 
-        {/* Phone */}
-        <PhoneField
-          phonePrefix={phonePrefix}
-          phoneNumber={phone}
-          onPrefixChange={setPhonePrefix}
-          onNumberChange={(val) => {
-            setPhone(val);
-            setErrors(prev => ({ ...prev, phone: undefined }));
-          }}
-          error={errors.phone}
-          required
-        />
+        {/* Email field is intentionally hidden from this step — for logged-in
+            users we always have it from auth context, and we still pass it
+            through to Tap + the GHL webhook. Showing a redundant read-only
+            row was just visual noise. The same is true for the new-user
+            flow because every checkout requires authentication first
+            (CheckoutPage redirects to /signup when no user). */}
+
+        {/* Phone — full row on desktop (no longer paired with Email). */}
+        <div className="md:col-span-2">
+          <PhoneField
+            phonePrefix={phonePrefix}
+            phoneNumber={phone}
+            onPrefixChange={setPhonePrefix}
+            onNumberChange={(val) => {
+              setPhone(val);
+              setErrors(prev => ({ ...prev, phone: undefined }));
+            }}
+            error={errors.phone}
+            required
+          />
+        </div>
       </SectionCard>
 
       {/* Billing Address Section */}
