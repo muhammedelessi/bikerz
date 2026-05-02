@@ -109,9 +109,11 @@ const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ ur
         <iframe
           src={url}
           title="3D Secure"
+          dir="ltr"
           className="flex-1 w-full bg-white"
-          allow="payment *"
-          sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation-by-user-activation allow-popups"
+          style={{ direction: 'ltr', minHeight: 0, touchAction: 'auto' }}
+          allow="payment *; publickey-credentials-get *"
+          sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation allow-top-navigation-by-user-activation allow-popups allow-popups-to-escape-sandbox allow-modals"
           referrerPolicy="no-referrer-when-downgrade"
         />
 
