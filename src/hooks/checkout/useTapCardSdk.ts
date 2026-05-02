@@ -502,7 +502,7 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
       // a moment to remount and fire onReady — a hard reject here would
       // surface a misleading "Card form is not ready yet" to the user.
       const start = Date.now();
-      const WAIT_MS = 8000;
+      const WAIT_MS = 12000; // bumped from 8s to give slow networks more headroom
       const tryStart = () => {
         if (sdkReadyRef.current && window.CardSDK?.tokenize) {
           tokenizeResolversRef.current = { resolve, reject };
@@ -515,7 +515,16 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
           return;
         }
         if (Date.now() - start >= WAIT_MS) {
-          reject(new Error("Card form is not ready yet"));
+          // Friendly message; CheckoutModal/BundleCheckoutModal further
+          // translates this for the user via their own catch path.
+          const isRTL =
+            typeof document !== "undefined" &&
+            document.documentElement.getAttribute("dir") === "rtl";
+          reject(new Error(
+            isRTL
+              ? "نموذج البطاقة لم يكتمل تحميله بعد. الرجاء الانتظار ثانية ثم المحاولة من جديد."
+              : "The card form hasn't finished loading. Please wait a moment and try again.",
+          ));
           return;
         }
         setTimeout(tryStart, 100);

@@ -250,14 +250,29 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
         // occasionally hands back a previously-consumed token. Reinit the
         // iframe, get a fresh tok_xxx, and resubmit ONCE.
         const msg = String(err?.message || '');
-        const isReused = /Source already used/i.test(msg) || /\b1126\b/.test(msg);
+        const errName = String(err?.name || '');
+        const errCode = String(err?.code || '');
+        const isReused =
+          errName === 'RecoverableTapSourceUsedError' ||
+          errCode === '1126' ||
+          /Source already used/i.test(msg) ||
+          /\b1126\b/.test(msg);
         if (!isReused || !cardApiRef.current) throw err;
 
-        cardApiRef.current.reinit();
-        await new Promise((r) => setTimeout(r, 350));
-        const freshToken = await cardApiRef.current.tokenize();
-        lastTokenIdRef.current = freshToken;
-        await tap.submitPayment(buildSubmit(freshToken));
+        try {
+          cardApiRef.current.reinit();
+          await new Promise((r) => setTimeout(r, 700));
+          const freshToken = await cardApiRef.current.tokenize();
+          lastTokenIdRef.current = freshToken;
+          await tap.submitPayment(buildSubmit(freshToken));
+        } catch (retryErr: any) {
+          console.error('[BundleCheckout] Auto-retry after Tap 1126 failed:', retryErr);
+          const friendly = isRTL
+            ? 'تعذّرت إعادة المحاولة تلقائياً. الرجاء إدخال بيانات البطاقة من جديد ثم اضغط ادفع.'
+            : "Couldn't retry automatically. Please re-enter your card details and tap Pay again.";
+          tap.setExternalError(friendly);
+          try { cardApiRef.current?.reinit(); } catch { /* ignore */ }
+        }
       }
     } finally {
       submittingRef.current = false;

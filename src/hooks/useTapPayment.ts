@@ -218,7 +218,20 @@ export function useTapPayment(): UseTapPaymentReturn {
         updateStatus('failed');
       }
     } catch (err: any) {
-      if (err instanceof RecoverableTapSourceUsedError) {
+      // Robust recoverable-error detection. We can't rely on `instanceof`
+      // alone because Vite's HMR sometimes hands us a freshly-evaluated copy
+      // of the class while the thrown error was constructed from the OLD
+      // module — same shape, different identity, and `instanceof` is false.
+      // Fall back to inspecting `name`, `code`, and the message text so the
+      // recovery path always fires for Tap error 1126 regardless of HMR
+      // module identity.
+      const isRecoverable =
+        err instanceof RecoverableTapSourceUsedError ||
+        err?.name === 'RecoverableTapSourceUsedError' ||
+        err?.code === '1126' ||
+        /source\s+already\s+used|create\s+the\s+new\s+source/i.test(err?.message ?? '');
+
+      if (isRecoverable) {
         console.info('[TapPayment] Retokenizing after Tap rejected a previously used source');
         setError(null);
         updateStatus('idle');

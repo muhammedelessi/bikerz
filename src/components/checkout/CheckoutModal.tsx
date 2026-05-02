@@ -409,14 +409,39 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         // returns a cached token without a fresh remount). Auto-recover:
         // reinit the iframe, get a brand-new token, and resubmit ONCE.
         const msg = String(err?.message || "");
-        const isReused = /Source already used/i.test(msg) || /\b1126\b/.test(msg);
+        const errName = String(err?.name || "");
+        const errCode = String(err?.code || "");
+        const isReused =
+          errName === "RecoverableTapSourceUsedError" ||
+          errCode === "1126" ||
+          /Source already used/i.test(msg) ||
+          /\b1126\b/.test(msg);
         if (!isReused || !cardApiRef.current || preTokenizedTokenId) throw err;
 
-        cardApiRef.current.reinit();
-        await new Promise((r) => setTimeout(r, 350));
-        const freshToken = await cardApiRef.current.tokenize();
-        lastTokenIdRef.current = freshToken;
-        await tap.submitPayment(buildSubmit(freshToken));
+        // Auto-recovery path: reinit the iframe, wait for it to come back
+        // online, fetch a fresh token, then resubmit. If anything in this
+        // chain fails (slow network, SDK rejected the new tokenize, etc.)
+        // we surface it as a clear "couldn't retry automatically — please
+        // re-enter card details" message instead of an unhandled promise
+        // rejection that just shows a blank failure overlay.
+        try {
+          cardApiRef.current.reinit();
+          // 700ms: enough time for the cleanup → fetch config → script load
+          // chain to start the new mount cycle. tokenize() then polls up to
+          // 8s for sdkReady, so total recovery budget is ~8.7s.
+          await new Promise((r) => setTimeout(r, 700));
+          const freshToken = await cardApiRef.current.tokenize();
+          lastTokenIdRef.current = freshToken;
+          await tap.submitPayment(buildSubmit(freshToken));
+        } catch (retryErr: any) {
+          console.error("[Checkout] Auto-retry after Tap 1126 failed:", retryErr);
+          const friendly = isRTL
+            ? "تعذّرت إعادة المحاولة تلقائياً. الرجاء إدخال بيانات البطاقة من جديد ثم اضغط ادفع."
+            : "Couldn't retry automatically. Please re-enter your card details and tap Pay again.";
+          tap.setExternalError(friendly);
+          // Reinit one more time so the next manual attempt starts clean.
+          try { cardApiRef.current?.reinit(); } catch { /* ignore */ }
+        }
       }
     } finally {
       // Always release the submission lock — successful or not, the next
