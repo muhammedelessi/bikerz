@@ -65,13 +65,14 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
   const [step, setStep] = useState<'info' | 'payment'>('info');
 
   // Embedded card form state
-  const cardApiRef = useRef<{ tokenize: () => Promise<string> } | null>(null);
+  const cardApiRef = useRef<{ tokenize: () => Promise<string>; reinit: () => void } | null>(null);
+  const lastTokenIdRef = useRef<string | null>(null);
   const [cardSdkStatus, setCardSdkStatus] = useState<{
     sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null;
   }>({ sdkLoading: false, sdkReady: false, cardValid: false, sdkError: null });
   const [tokenizing, setTokenizing] = useState(false);
 
-  const handleCardApiReady = useCallback((api: { tokenize: () => Promise<string> }) => {
+  const handleCardApiReady = useCallback((api: { tokenize: () => Promise<string>; reinit: () => void }) => {
     cardApiRef.current = api;
   }, []);
   const handleCardSdkStatusChange = useCallback(
