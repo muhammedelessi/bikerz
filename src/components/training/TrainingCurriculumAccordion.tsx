@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, ChevronDown, Clock, Trophy } from 'lucide-react';
+import { Check, ChevronDown, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { TrainingSessionCurriculum } from '@/lib/trainingSessionCurriculum';
