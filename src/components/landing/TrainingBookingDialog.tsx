@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCurrency, TRAINING_PRICE_PLACEHOLDER_COURSE_ID } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useTapPayment } from '@/hooks/useTapPayment';
+import { RecoverableTapSourceUsedError } from '@/services/payment.service';
 import Checkout3DSModal from '@/components/checkout/Checkout3DSModal';
 import { writePendingTrainingBooking, clearPendingTrainingBooking } from '@/lib/trainingBookingStorage';
 import { insertUserTrainingBooking } from '@/lib/trainingBookingInsert';
@@ -335,8 +336,8 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
 
     setPaying(true);
     try {
-      await tap.submitPayment({
-        paymentKind: 'training_booking',
+      const buildSubmit = (tokenId?: string) => ({
+        paymentKind: 'training_booking' as const,
         trainerCourseId: selectedCourse.id,
         trainingId: training.id,
         currency: paymentCurrency,
@@ -346,7 +347,15 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
         customerPhone: phoneOut,
         courseName: isRTL ? training.name_ar : training.name_en,
         isRTL,
+        tokenId,
       });
+
+      try {
+        await tap.submitPayment(buildSubmit());
+      } catch (err) {
+        if (!(err instanceof RecoverableTapSourceUsedError)) throw err;
+        await tap.submitPayment(buildSubmit());
+      }
     } catch {
       setPaying(false);
     }
