@@ -183,14 +183,21 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
   });
 
   /**
-   * Detect the misconfiguration that's been silently breaking checkout in
-   * Lovable preview / localhost: live Tap key on a non-production domain.
-   * Tap rejects /v2/card/token with HTTP 400 in this combo (the live key
-   * is whitelisted only for academy.bikerz.com), but the iframe paints
-   * fine, so the user sees a working-looking card form that fails the
-   * moment they tap Pay — usually with no overlay because the error
-   * fires deep inside the SDK iframe and the parent only sees a generic
-   * rejection. Surface a loud bilingual banner so the cause is obvious.
+   * Detect the two misconfigurations that have been silently breaking
+   * checkout in Lovable preview / localhost:
+   *
+   * 1. LIVE key on a dev domain — Tap rejects /v2/card/token with HTTP 400
+   *    because live keys are whitelisted only for production domains.
+   * 2. Domain not whitelisted on the Tap account — even the TEST key
+   *    requires the merchant's "Whitelisted Domains" to include the
+   *    current origin, otherwise the iframe loads but tokenize() hangs
+   *    forever (postMessage from the iframe to the parent gets dropped
+   *    by the SDK's internal origin check).
+   *
+   * Both surface as "I clicked Pay and nothing happened." We render a
+   * loud bilingual banner ABOVE the card form whenever we're on a dev
+   * domain so the cause + fix are visible BEFORE the user wastes a
+   * card attempt.
    */
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
   const isDevHost =
@@ -200,6 +207,7 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
     hostname.endsWith(".lovable.app") ||
     hostname.endsWith(".lovable.dev");
   const showLiveOnDevWarning = environment === "live" && isDevHost;
+  const showTestOnDevHint = environment === "test" && isDevHost;
 
   // Bubble status to parent on every change.
   useLayoutEffect(() => {
@@ -266,6 +274,37 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
 
   return (
     <div className="space-y-3">
+      {/* Test-mode hint — visible on dev domains when the test key is
+          loaded. Tells the user (a) they're in test mode (so a real card
+          won't actually charge) and (b) the EXACT test card to use. Also
+          warns that if tokenize hangs, the dev domain probably isn't on
+          the merchant's whitelist (Tap dashboard → Settings → Integration
+          → Whitelisted Domains). */}
+      {showTestOnDevHint && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] leading-snug text-amber-800 dark:text-amber-200 space-y-1">
+          <p className="font-semibold">
+            {isRTL ? "وضع الاختبار — لن تُخصم أي مبالغ" : "Test mode — no real charges"}
+          </p>
+          <p>
+            {isRTL ? "استخدم بطاقة Tap التجريبية:" : "Use the Tap test card:"}{" "}
+            <code className="font-mono">4508 7500 1574 1019</code>{" "}
+            <span className="opacity-70">·</span>{" "}
+            <code className="font-mono">01/39</code>{" "}
+            <span className="opacity-70">·</span>{" "}
+            <code className="font-mono">CVV 100</code>
+          </p>
+          <p className="opacity-80">
+            {isRTL
+              ? "إذا لم يستجب الزر بعد الضغط، أضف "
+              : "If Pay seems unresponsive, whitelist "}
+            <code className="font-mono text-[10px]">{hostname}</code>
+            {isRTL
+              ? " في حساب Tap (Settings → Integration → Whitelisted Domains)."
+              : " on your Tap account (Settings → Integration → Whitelisted Domains)."}
+          </p>
+        </div>
+      )}
+
       {/* Diagnostic banner — silent failure prevention for dev/preview.
           When using the LIVE key on localhost or *.lovable.app domains,
           Tap silently 400s on tokenize with no overlay. This banner makes

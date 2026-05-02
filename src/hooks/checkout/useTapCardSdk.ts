@@ -508,31 +508,76 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
         return;
       }
 
+      const isRTLNow =
+        typeof document !== "undefined" &&
+        document.documentElement.getAttribute("dir") === "rtl";
+
+      /**
+       * Resolve/reject wrappers that ALSO clear the response timeout below.
+       * If onSuccess/onError fire normally we want to cancel the timeout so
+       * we don't double-reject. If neither fires (Tap SDK postMessage gets
+       * dropped because the dev domain isn't whitelisted on the merchant)
+       * the timeout fires a clear bilingual rejection instead of leaving
+       * the user staring at a stuck spinner forever.
+       */
+      let responseTimer: ReturnType<typeof setTimeout> | null = null;
+      const cleanupTimer = () => {
+        if (responseTimer) {
+          clearTimeout(responseTimer);
+          responseTimer = null;
+        }
+      };
+      const wrappedResolve = (token: string) => {
+        cleanupTimer();
+        resolve(token);
+      };
+      const wrappedReject = (err: Error) => {
+        cleanupTimer();
+        reject(err);
+      };
+
       // Wait for SDK readiness with a short poll. After reinit() (used to
       // recover from Tap error 1126 "Source already used"), the iframe needs
       // a moment to remount and fire onReady — a hard reject here would
       // surface a misleading "Card form is not ready yet" to the user.
       const start = Date.now();
       const WAIT_MS = 12000; // bumped from 8s to give slow networks more headroom
+      // Once we've actually called window.CardSDK.tokenize(), the SDK should
+      // fire onSuccess or onError within seconds. If neither fires within 30s,
+      // it's almost always a domain-not-whitelisted issue (Tap drops the
+      // postMessage from the iframe back to the parent because the parent's
+      // origin isn't allowed on the merchant). Reject with a clear message
+      // so the user isn't stranded.
+      const RESPONSE_TIMEOUT_MS = 30000;
       const tryStart = () => {
         if (sdkReadyRef.current && window.CardSDK?.tokenize) {
-          tokenizeResolversRef.current = { resolve, reject };
+          tokenizeResolversRef.current = { resolve: wrappedResolve, reject: wrappedReject };
           try {
             window.CardSDK.tokenize();
+            // Arm the response watchdog ONLY after the SDK call dispatched
+            // — before that, the tokenize promise is gated by the readiness
+            // poll above and shouldn't share its budget.
+            responseTimer = setTimeout(() => {
+              const pending = tokenizeResolversRef.current;
+              if (!pending) return; // already resolved
+              tokenizeResolversRef.current = null;
+              pending.reject(new Error(
+                isRTLNow
+                  ? "بوابة الدفع لم تردّ خلال 30 ثانية. تأكد أن الدومين الحالي مسجّل في حساب Tap (Settings → Integration → Whitelisted Domains)، أو جرّب على academy.bikerz.com."
+                  : "Payment gateway didn't respond within 30s. Make sure the current domain is whitelisted on your Tap account (Settings → Integration → Whitelisted Domains), or try on academy.bikerz.com.",
+              ));
+            }, RESPONSE_TIMEOUT_MS);
           } catch (err) {
             tokenizeResolversRef.current = null;
-            reject(err instanceof Error ? err : new Error("Tokenization failed"));
+            wrappedReject(err instanceof Error ? err : new Error("Tokenization failed"));
           }
           return;
         }
         if (Date.now() - start >= WAIT_MS) {
           // Friendly message; CheckoutModal/BundleCheckoutModal further
           // translates this for the user via their own catch path.
-          const isRTL =
-            typeof document !== "undefined" &&
-            document.documentElement.getAttribute("dir") === "rtl";
-          reject(new Error(
-            isRTL
+          wrappedReject(new Error(
+            isRTLNow
               ? "نموذج البطاقة لم يكتمل تحميله بعد. الرجاء الانتظار ثانية ثم المحاولة من جديد."
               : "The card form hasn't finished loading. Please wait a moment and try again.",
           ));
