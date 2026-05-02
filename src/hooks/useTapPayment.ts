@@ -218,11 +218,13 @@ export function useTapPayment(): UseTapPaymentReturn {
         updateStatus('failed');
       }
     } catch (err: any) {
-      console.error('[TapPayment] error:', err);
       if (err instanceof RecoverableTapSourceUsedError) {
+        console.info('[TapPayment] Retokenizing after Tap rejected a previously used source');
+        setError(null);
         updateStatus('idle');
         throw err;
       }
+      console.error('[TapPayment] error:', err);
       setError(err.message || 'Payment failed. Please try again.');
       updateStatus('failed');
     }
