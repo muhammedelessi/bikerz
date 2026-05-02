@@ -36,20 +36,35 @@ Deno.serve(async (req) => {
       originHost.endsWith(".lovable.app") ||
       originHost.endsWith(".lovable.dev");
 
-    let tapSecretKey: string | undefined;
+    // Build an ordered, deduped list of candidate Tap secret keys to try.
+    // Charges may have been created with a different domain's key than the verifier
+    // sees in `origin` (esp. after 3DS redirect or cross-domain flows). We try the
+    // most-likely key first based on origin, then fall back to all configured keys.
+    const preferred: (string | undefined)[] = [];
     if (originHost === "bikerz.com" || originHost.endsWith(".bikerz.com")) {
-      tapSecretKey = isPreviewHost
-        ? (env("TAP_SK_TEST_BIKERZ") ?? env("TAP_SECRET_TEST_KEY") ?? env("TAP_SECRET_KEY"))
-        : (env("TAP_SK_LIVE_BIKERZ") ?? env("TAP_SECRET_KEY"));
+      preferred.push(
+        isPreviewHost ? env("TAP_SK_TEST_BIKERZ") : env("TAP_SK_LIVE_BIKERZ"),
+        env("TAP_SK_LIVE_BIKERZ"),
+        env("TAP_SK_TEST_BIKERZ"),
+      );
     } else if (originHost === "lovable.app" || originHost.endsWith(".lovable.app")) {
-      tapSecretKey = env("TAP_SK_TEST_LOVABLE_APP") ?? env("TAP_SK_LIVE_LOVABLE_APP") ?? env("TAP_SECRET_KEY");
+      preferred.push(env("TAP_SK_LIVE_LOVABLE_APP"), env("TAP_SK_TEST_LOVABLE_APP"));
     } else if (originHost === "lovableproject.com" || originHost.endsWith(".lovableproject.com")) {
-      tapSecretKey = env("TAP_SK_TEST_LOVABLEPROJECT") ?? env("TAP_SK_LIVE_LOVABLEPROJECT") ?? env("TAP_SECRET_KEY");
-    } else {
-      tapSecretKey = env("TAP_SECRET_TEST_KEY") ?? env("TAP_SK_TEST_BIKERZ") ?? env("TAP_SECRET_KEY");
+      preferred.push(env("TAP_SK_TEST_LOVABLEPROJECT"), env("TAP_SK_LIVE_LOVABLEPROJECT"));
     }
+    const candidateKeys = Array.from(new Set([
+      ...preferred,
+      env("TAP_SK_LIVE_BIKERZ"),
+      env("TAP_SK_LIVE_LOVABLE_APP"),
+      env("TAP_SK_LIVE_LOVABLEPROJECT"),
+      env("TAP_SK_TEST_BIKERZ"),
+      env("TAP_SK_TEST_LOVABLE_APP"),
+      env("TAP_SK_TEST_LOVABLEPROJECT"),
+      env("TAP_SECRET_KEY"),
+      env("TAP_SECRET_TEST_KEY"),
+    ].filter((v): v is string => typeof v === "string" && v.length > 0)));
 
-    if (!tapSecretKey) {
+    if (candidateKeys.length === 0) {
       return new Response(
         JSON.stringify({ error: "Payment service not configured for this domain" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
