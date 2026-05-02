@@ -190,7 +190,14 @@ const AdminTrainings: React.FC = () => {
   });
 
   const saveMutation = useRM({
-    mutationFn: async (data: typeof form & { id?: string; background_image?: string | null; trainer_supplies?: TrainerSupply[]; sessions?: TrainingSessionCurriculum[] }) => {
+    mutationFn: async (data: typeof form & {
+      id?: string;
+      background_image?: string | null;
+      trainer_supplies?: TrainerSupply[];
+      sessions?: TrainingSessionCurriculum[];
+      videos?: TrainingVideo[];
+      skills?: TrainingSkill[];
+    }) => {
       const { id, ...rest } = data;
       const payload: Record<string, unknown> = {
         name_ar: rest.name_ar,
@@ -205,6 +212,8 @@ const AdminTrainings: React.FC = () => {
         background_image: rest.background_image ?? null,
         trainer_supplies: trainingsJsonify(rest.trainer_supplies ?? []),
         sessions: trainingsJsonify(rest.sessions ?? []),
+        videos: trainingsJsonify(rest.videos ?? []),
+        skills: trainingsJsonify(rest.skills ?? []),
       };
 
       const upsert = async (body: Record<string, unknown>) => {
@@ -234,6 +243,16 @@ const AdminTrainings: React.FC = () => {
             : 'Saved without trainer supplies — apply the trainer_supplies migration.',
         );
         delete body.trainer_supplies;
+        ({ error } = await upsert(body));
+      }
+
+      if (error && isMissingTrainingsColumnError(error, 'videos')) {
+        delete body.videos;
+        ({ error } = await upsert(body));
+      }
+
+      if (error && isMissingTrainingsColumnError(error, 'skills')) {
+        delete body.skills;
         ({ error } = await upsert(body));
       }
 
