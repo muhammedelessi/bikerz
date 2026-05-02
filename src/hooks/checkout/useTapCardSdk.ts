@@ -66,19 +66,63 @@ function loadSdkScript(): Promise<void> {
  */
 interface TapPublicConfig { publicKey: string; merchantId: string | null }
 const publicConfigCache = new Map<string, TapPublicConfig>();
+
+/**
+ * Hardcoded fallback merchant ID — paired with the live publishable key
+ * pk_live_7dycFMf1L4SJupgOYI5PCmbG (Bikerz Academy account).
+ *
+ * Why hardcode: the merchant ID is NOT a secret — it appears in every Tap
+ * iframe URL as `mid=...` and in any browser network log. The Tap SDK
+ * REQUIRES it in live mode (HTTP 400 otherwise). If the Supabase Edge
+ * Function fails to return it (mis-deployment, env var typo, propagation
+ * delay), this fallback keeps the checkout from breaking.
+ *
+ * Override path: setting TAP_MERCHANT_ID in Supabase Secrets always wins —
+ * the fallback is only used when the backend response is null/missing.
+ */
+const FALLBACK_LIVE_MERCHANT_ID = "19777245";
+const FALLBACK_LIVE_KEY_PREFIX = "pk_live_";
+
 async function fetchPublicConfig(): Promise<TapPublicConfig> {
   const cacheKey = typeof window !== "undefined" ? window.location.origin : "default";
   const cached = publicConfigCache.get(cacheKey);
   if (cached) return cached;
   const { data, error } = await supabase.functions.invoke("tap-config", {});
-  if (error) throw new Error(error.message || "Could not load payment configuration");
+  if (error) {
+    console.error("[useTapCardSdk] tap-config invoke failed:", error);
+    throw new Error(error.message || "Could not load payment configuration");
+  }
   const payload = (data as { public_key?: string; merchant_id?: string | null } | null) || {};
   const key = payload.public_key;
-  if (!key) throw new Error("Payment service is not configured");
-  const cfg: TapPublicConfig = {
-    publicKey: key,
-    merchantId: typeof payload.merchant_id === "string" && payload.merchant_id.trim() ? payload.merchant_id.trim() : null,
-  };
+  if (!key) {
+    console.error("[useTapCardSdk] tap-config returned no public_key:", payload);
+    throw new Error("Payment service is not configured");
+  }
+
+  let merchantId =
+    typeof payload.merchant_id === "string" && payload.merchant_id.trim()
+      ? payload.merchant_id.trim()
+      : null;
+
+  // Defensive fallback: in live mode Tap rejects the iframe load with 400
+  // when `mid` is empty. If the backend didn't supply one but we recognize
+  // the live key prefix, use the known account merchant ID. This unblocks
+  // production checkout even when Supabase env vars are mis-configured.
+  if (!merchantId && key.startsWith(FALLBACK_LIVE_KEY_PREFIX)) {
+    console.warn(
+      "[useTapCardSdk] tap-config returned no merchant_id for a live key — " +
+      "using hardcoded fallback. Set TAP_MERCHANT_ID in Supabase Secrets to override."
+    );
+    merchantId = FALLBACK_LIVE_MERCHANT_ID;
+  }
+
+  console.info(
+    "[useTapCardSdk] tap-config:",
+    `keyPrefix=${key.slice(0, 8)}...`,
+    `mid=${merchantId || "(none)"}`,
+  );
+
+  const cfg: TapPublicConfig = { publicKey: key, merchantId };
   publicConfigCache.set(cacheKey, cfg);
   return cfg;
 }

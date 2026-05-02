@@ -99,9 +99,14 @@ Deno.serve(async (req) => {
     console.error(
       "[tap-config] CRITICAL: serving live key without TAP_MERCHANT_ID. " +
       "Tap SDK will fail with HTTP 400 (mid= empty). " +
-      "Set TAP_MERCHANT_ID in Supabase Secrets to your live merchant id (e.g. 19777245).",
+      "Set TAP_MERCHANT_ID in Supabase Secrets to your live merchant id (e.g. 19777245). " +
+      "Frontend will use a hardcoded fallback in this case.",
     );
   }
+
+  console.log(
+    `[tap-config] response: keyPrefix=${tapPublicKey.slice(0, 8)} mid=${merchantId || "(empty)"} env=${isLiveKeyServed ? "live" : "test"}`,
+  );
 
   return new Response(
     JSON.stringify({
