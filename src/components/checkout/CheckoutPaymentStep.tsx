@@ -670,7 +670,7 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
         ) : null}
       </>
     );
-  }),
+  },
 );
 
 CheckoutPaymentStep.displayName = "CheckoutPaymentStep";
