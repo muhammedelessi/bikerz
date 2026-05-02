@@ -15,10 +15,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, X, Eye, Percent, Wrench, Trophy, Clock, ChevronDown } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, BookOpen, AlertTriangle, ArrowLeft, ArrowRight, ImagePlus, X, Eye, Percent, Wrench, Trophy, Clock, ChevronDown, Video, Star, ExternalLink } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { TrainingSessionCurriculum } from '@/lib/trainingSessionCurriculum';
 import { parseTrainingSessions } from '@/lib/trainingSessionCurriculum';
+import {
+  parseTrainingVideos,
+  parseTrainingSkills,
+  type TrainingVideo,
+  type TrainingSkill,
+} from '@/lib/trainingExtras';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
