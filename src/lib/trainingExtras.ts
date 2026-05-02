@@ -12,6 +12,7 @@ export type TrainingSkill = {
   name_en: string;
   description_ar: string;
   description_en: string;
+  points: number;
 };
 
 export function parseTrainingVideos(raw: unknown): TrainingVideo[] {
