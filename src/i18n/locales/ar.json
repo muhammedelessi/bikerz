@@ -1038,6 +1038,8 @@
       "countryRequired": "الدولة مطلوبة"
     },
     "statusOverlay": {
+      "processingPayment": "جارٍ معالجة الدفع",
+      "doNotClosePage": "يرجى عدم إغلاق هذه الصفحة — نقوم بتأمين عمليتك.",
       "verifyingPayment": "جاري التحقق من الدفع...",
       "pleaseWaitMoment": "يرجى الانتظار لحظة",
       "paymentSuccessful": "🎉 تم الدفع بنجاح!",
@@ -1045,7 +1047,12 @@
       "startLearningNow": "ابدأ التعلم الآن",
       "paymentFailed": "فشل الدفع",
       "paymentErrorFallback": "حدث خطأ أثناء الدفع. يرجى المحاولة مرة أخرى.",
-      "tryAgain": "حاول مرة أخرى"
+      "tryAgain": "حاول مرة أخرى",
+      "noDeductionNotice": "لم يتم خصم أي مبلغ من بطاقتك.",
+      "failureReasonLabel": "سبب الفشل",
+      "confirmingTitle": "ما زلنا نؤكّد مع البنك…",
+      "confirmingBody": "قد تكون عمليتك نجحت بالفعل، لكن التأكيد يستغرق وقتاً أطول من المعتاد. اضغط تحديث للتحقق، أو راجعنا لاحقاً — لن نخصم منك مرتين.",
+      "refreshStatus": "تحديث الحالة"
     },
     "paymentMethodIcons": {
       "acceptedPaymentMethods": "طرق الدفع المتاحة"

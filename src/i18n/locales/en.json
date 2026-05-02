@@ -1042,14 +1042,21 @@
       "countryRequired": "Country is required"
     },
     "statusOverlay": {
+      "processingPayment": "Processing your payment",
+      "doNotClosePage": "Please don't close this page — we're securing your transaction.",
       "verifyingPayment": "Verifying payment...",
       "pleaseWaitMoment": "Please wait a moment",
       "paymentSuccessful": "🎉 Payment Successful!",
       "enrolledSuccess": "You have been enrolled in the course",
       "startLearningNow": "Start Learning Now",
       "paymentFailed": "Payment Failed",
-      "paymentErrorFallback": "An error occurred. Please try again.",
-      "tryAgain": "Try Again"
+      "paymentErrorFallback": "An error occurred during payment. Please try again.",
+      "tryAgain": "Try Again",
+      "noDeductionNotice": "No charge has been made to your card.",
+      "failureReasonLabel": "Reason",
+      "confirmingTitle": "Still confirming with your bank…",
+      "confirmingBody": "Your payment may have already succeeded but the confirmation is taking longer than usual. Refresh to check, or check back later — we won't charge you again.",
+      "refreshStatus": "Refresh status"
     },
     "paymentMethodIcons": {
       "acceptedPaymentMethods": "Accepted Payment Methods"

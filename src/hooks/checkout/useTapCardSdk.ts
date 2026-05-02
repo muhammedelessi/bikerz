@@ -173,12 +173,27 @@ function friendlySdkError(err: unknown, isRTL: boolean, isTestMode: boolean): st
 
   // 400/422 from tokenize: the Tap iframe POSTs to /v2/card/token and the
   // response body has the real cause (currency-not-allowed, card-not-allowed,
-  // missing-required-field…) but the SDK swallows it. Tell the user to
-  // double-check the card and offer support — and on test keys we add a
-  // hint with Tap's actual test card numbers (per their docs at
-  // https://developers.tap.company/reference/testing-cards) so the user
-  // knows the exact card+expiry+cvv triple that's guaranteed to succeed.
+  // missing-required-field, domain-not-whitelisted…) but the SDK swallows it.
+  //
+  // Domain check: when running on localhost / preview origins with a LIVE key
+  // (because TAP_PUBLIC_TEST_KEY isn't configured in Supabase), Tap rejects
+  // tokenization unless the dev domain is whitelisted in the live merchant
+  // dashboard — which it shouldn't be. The right answer is "use a test key in
+  // dev". Detect this case and show a developer-friendly hint.
   if (statusCode === 400 || statusCode === 422) {
+    const host = typeof window !== "undefined" ? window.location.hostname : "";
+    const isDevHost =
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host.endsWith(".lovableproject.com") ||
+      host.endsWith(".lovable.app") ||
+      host.endsWith(".lovable.dev");
+
+    if (!isTestMode && isDevHost) {
+      return isRTL
+        ? `Tap يرفض التوكينة على هذا الدومين (${host}) لأنك تستخدم مفتاح Live. أضف TAP_PUBLIC_TEST_KEY و TAP_MERCHANT_TEST_ID في Supabase Secrets لتفعيل وضع الاختبار في التطوير.`
+        : `Tap is rejecting tokenization on this dev domain (${host}) because you're on the LIVE key. Add TAP_PUBLIC_TEST_KEY + TAP_MERCHANT_TEST_ID to Supabase Secrets to enable test mode for development.`;
+    }
     if (isTestMode) {
       return isRTL
         ? "تعذّر التحقق من بطاقتك. استخدم بطاقة اختبار Tap: ‎4508 7500 1574 1019‎، انتهاء ‎01/39‎، CVV ‎100‎. إذا استمر الخطأ تواصل معنا."
