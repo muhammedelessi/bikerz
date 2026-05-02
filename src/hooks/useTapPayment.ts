@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { createCharge, verifyChargeOnce } from '@/services/payment.service';
+import { RecoverableTapSourceUsedError, createCharge, verifyChargeOnce } from '@/services/payment.service';
 import type { PaymentStatus, TapPaymentConfig } from '@/types/payment';
 
 export type { PaymentMethod, PaymentStatus, TapPaymentConfig } from '@/types/payment';
@@ -219,6 +219,10 @@ export function useTapPayment(): UseTapPaymentReturn {
       }
     } catch (err: any) {
       console.error('[TapPayment] error:', err);
+      if (err instanceof RecoverableTapSourceUsedError) {
+        updateStatus('idle');
+        throw err;
+      }
       setError(err.message || 'Payment failed. Please try again.');
       updateStatus('failed');
     }
