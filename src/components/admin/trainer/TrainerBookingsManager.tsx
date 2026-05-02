@@ -531,7 +531,13 @@ export const TrainerBookingsManager: React.FC<{
                     })
                   )}
                 </ul>
-              </div>
+              <SkillEvaluationEditor
+                bookingId={detailRow.id}
+                trainerId={detailRow.trainer_id}
+                trainingId={detailRow.training_id}
+                isRTL={isRTL}
+              />
+            </div>
             </div>
           ) : null}
           <DialogFooter>
