@@ -1,17 +1,48 @@
 /**
  * Browser-friendly country / geo hints.
- * Uses multiple fallback APIs for reliability.
+ * Prioritizes backend hints and fails fast when public geo providers are blocked.
  */
+
+const BACKEND_GEO_TIMEOUT_MS = 1200;
+const PUBLIC_GEO_TIMEOUT_MS = 1500;
+
+let cachedCountryCode: string | null | undefined;
+let cachedGeoHint: PublicGeoHint | null | undefined;
 
 export function normalizeCountryCode(raw: string | null | undefined): string | null {
   const c = (raw ?? "").trim().toUpperCase();
   return /^[A-Z]{2}$/.test(c) ? c : null;
 }
 
+export type PublicGeoHint = {
+  countryCode: string;
+  countryName?: string;
+  /** City string from provider (often English). */
+  city?: string;
+};
+
 function getSupabaseFunctionBaseUrl(): string | null {
   const base = String(import.meta.env.VITE_SUPABASE_URL ?? "").trim();
   if (!base) return null;
   return `${base}/functions/v1`;
+}
+
+function mergeSignals(signal?: AbortSignal, timeoutMs = PUBLIC_GEO_TIMEOUT_MS) {
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timeoutId = window.setTimeout(() => controller?.abort(), timeoutMs);
+
+  const combinedSignal = signal
+    ? (typeof AbortSignal !== "undefined" && "any" in AbortSignal
+        ? (AbortSignal as AbortSignalConstructor & { any: (signals: AbortSignal[]) => AbortSignal }).any(
+            [signal, controller?.signal].filter(Boolean) as AbortSignal[],
+          )
+        : controller?.signal)
+    : controller?.signal;
+
+  return {
+    signal: combinedSignal,
+    cleanup: () => window.clearTimeout(timeoutId),
+  };
 }
 
 function countryFromIpWhoPayload(data: unknown): string | null {
@@ -33,142 +64,147 @@ function countryFromIpApiPayload(data: unknown): string | null {
   return normalizeCountryCode(o.country_code || o.country);
 }
 
-async function tryGeoResponse(
-  url: string,
-  pick: (j: unknown) => string | null,
-  signal?: AbortSignal,
-  timeoutMs = 5000,
-): Promise<string | null> {
-  const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-  const timer = setTimeout(() => controller?.abort(), timeoutMs);
+function hintFromIpWhoPayload(data: unknown): PublicGeoHint | null {
+  if (!data || typeof data !== "object") return null;
+  const o = data as { success?: boolean; country_code?: string; country?: string; city?: string };
+  if (o.success === false) return null;
+  const countryCode = normalizeCountryCode(o.country_code);
+  if (!countryCode) return null;
+  return {
+    countryCode,
+    countryName: typeof o.country === "string" ? o.country : undefined,
+    city: typeof o.city === "string" ? o.city : undefined,
+  };
+}
 
-  // Combine external signal with timeout
-  const combinedSignal = signal
-    ? (typeof AbortSignal !== "undefined" && "any" in AbortSignal
-        ? (AbortSignal as any).any([signal, controller?.signal].filter(Boolean))
-        : controller?.signal)
-    : controller?.signal;
+function hintFromCountryIsPayload(data: unknown): PublicGeoHint | null {
+  const countryCode = countryFromCountryIsPayload(data);
+  return countryCode ? { countryCode } : null;
+}
+
+function hintFromIpApiPayload(data: unknown): PublicGeoHint | null {
+  if (!data || typeof data !== "object") return null;
+  const o = data as { country_code?: string; country?: string; country_name?: string; city?: string };
+  const countryCode = normalizeCountryCode(o.country_code || o.country);
+  if (!countryCode) return null;
+  return {
+    countryCode,
+    countryName: typeof o.country_name === "string" ? o.country_name : undefined,
+    city: typeof o.city === "string" ? o.city : undefined,
+  };
+}
+
+async function tryGeoResponse<T>(
+  url: string,
+  pick: (payload: unknown) => T | null,
+  signal?: AbortSignal,
+  timeoutMs = PUBLIC_GEO_TIMEOUT_MS,
+): Promise<T | null> {
+  const request = mergeSignals(signal, timeoutMs);
 
   try {
-    const res = await fetch(url, combinedSignal ? { signal: combinedSignal } : undefined);
-    clearTimeout(timer);
+    const res = await fetch(url, request.signal ? { signal: request.signal, cache: "no-store" } : { cache: "no-store" });
     if (!res.ok) return null;
     const ct = res.headers.get("content-type") || "";
     if (ct.includes("json")) {
-      const j: unknown = await res.json();
-      return pick(j);
+      return pick(await res.json());
     }
-    return normalizeCountryCode(await res.text());
+    return pick(await res.text());
   } catch {
-    clearTimeout(timer);
     return null;
+  } finally {
+    request.cleanup();
   }
+}
+
+async function firstSuccessful<T>(tasks: Array<Promise<T | null>>): Promise<T | null> {
+  if (typeof Promise.any === "function") {
+    try {
+      return await Promise.any(
+        tasks.map((task) =>
+          task.then((result) => (result ? result : Promise.reject(new Error("no result")))),
+        ),
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  const settled = await Promise.all(tasks.map((task) => task.catch(() => null)));
+  return settled.find((value): value is T => value != null) ?? null;
 }
 
 async function tryBackendGeoResponse(signal?: AbortSignal): Promise<string | null> {
   const baseUrl = getSupabaseFunctionBaseUrl();
   if (!baseUrl) return null;
 
+  const request = mergeSignals(signal, BACKEND_GEO_TIMEOUT_MS);
+
   try {
     const res = await fetch(`${baseUrl}/geo-country`, {
       headers: {
         apikey: String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ""),
       },
-      signal,
+      signal: request.signal,
+      cache: "no-store",
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { countryCode?: string; country_code?: string };
     return normalizeCountryCode(data.countryCode || data.country_code);
   } catch {
     return null;
+  } finally {
+    request.cleanup();
   }
 }
 
 /** ISO country code only (no city). */
 export async function fetchCountryCodeFromPublicGeoApis(signal?: AbortSignal): Promise<string | null> {
-  const backendCountry = await tryBackendGeoResponse(signal);
-  if (backendCountry) return backendCountry;
+  if (cachedCountryCode !== undefined) return cachedCountryCode;
 
-  // Strategy: try primary, then fallbacks sequentially
-  const apis: { url: string; pick: (j: unknown) => string | null }[] = [
-    { url: "https://ipwho.is/", pick: countryFromIpWhoPayload },
-    { url: "https://api.country.is/", pick: countryFromCountryIsPayload },
-    { url: "https://ipapi.co/json/", pick: countryFromIpApiPayload },
-  ];
-
-  for (const api of apis) {
-    try {
-      const result = await tryGeoResponse(api.url, api.pick, signal);
-      if (result) return result;
-    } catch {
-      /* next */
-    }
-  }
-
-  return null;
-}
-
-export type PublicGeoHint = {
-  countryCode: string;
-  countryName?: string;
-  /** City string from provider (often English). */
-  city?: string;
-};
-
-/**
- * Country + optional city/name for forms (prefers ipwho.is payload; falls back to country code only).
- */
-export async function fetchPublicGeoHint(signal?: AbortSignal): Promise<PublicGeoHint | null> {
   const backendCountry = await tryBackendGeoResponse(signal);
   if (backendCountry) {
-    return { countryCode: backendCountry };
+    cachedCountryCode = backendCountry;
+    return backendCountry;
   }
 
-  try {
-    const res = await fetch("https://ipwho.is/", signal ? { signal } : undefined);
-    if (!res.ok) throw new Error("not ok");
-    const data = (await res.json()) as Record<string, unknown>;
-    if (data.success === false) throw new Error("failed");
-    const countryCode = normalizeCountryCode(String(data.country_code ?? ""));
-    if (!countryCode) throw new Error("no code");
-    return {
-      countryCode,
-      countryName: typeof data.country === "string" ? data.country : undefined,
-      city: typeof data.city === "string" ? data.city : undefined,
-    };
-  } catch {
-    /* fallback */
+  const publicCountry = await firstSuccessful<string>([
+    tryGeoResponse("https://ipwho.is/", countryFromIpWhoPayload, signal),
+    tryGeoResponse("https://api.country.is/", countryFromCountryIsPayload, signal),
+    tryGeoResponse("https://ipapi.co/json/", countryFromIpApiPayload, signal),
+  ]);
+
+  cachedCountryCode = publicCountry;
+  return publicCountry;
+}
+
+/**
+ * Country + optional city/name for forms (tries richer providers in parallel, then falls back to country-only).
+ */
+export async function fetchPublicGeoHint(signal?: AbortSignal): Promise<PublicGeoHint | null> {
+  if (cachedGeoHint !== undefined) return cachedGeoHint;
+  if (cachedCountryCode) {
+    cachedGeoHint = { countryCode: cachedCountryCode };
+    return cachedGeoHint;
   }
 
-  // Fallback: country.is (has no city)
-  try {
-    const res = await fetch("https://api.country.is/", signal ? { signal } : undefined);
-    if (res.ok) {
-      const data = (await res.json()) as Record<string, unknown>;
-      const code = normalizeCountryCode(String(data.country ?? ""));
-      if (code) return { countryCode: code };
-    }
-  } catch {
-    /* fallback */
+  const backendCountry = await tryBackendGeoResponse(signal);
+  if (backendCountry) {
+    cachedCountryCode = backendCountry;
+    cachedGeoHint = { countryCode: backendCountry };
+    return cachedGeoHint;
   }
 
-  // Last resort: ipapi.co
-  try {
-    const res = await fetch("https://ipapi.co/json/", signal ? { signal } : undefined);
-    if (res.ok) {
-      const data = (await res.json()) as Record<string, unknown>;
-      const code = normalizeCountryCode(String(data.country_code ?? data.country ?? ""));
-      if (code) {
-        return {
-          countryCode: code,
-          countryName: typeof data.country_name === "string" ? data.country_name : undefined,
-          city: typeof data.city === "string" ? data.city : undefined,
-        };
-      }
-    }
-  } catch {
-    /* give up */
+  const publicHint = await firstSuccessful<PublicGeoHint>([
+    tryGeoResponse("https://ipwho.is/", hintFromIpWhoPayload, signal),
+    tryGeoResponse("https://api.country.is/", hintFromCountryIsPayload, signal),
+    tryGeoResponse("https://ipapi.co/json/", hintFromIpApiPayload, signal),
+  ]);
+
+  if (publicHint?.countryCode) {
+    cachedCountryCode = publicHint.countryCode;
   }
 
-  return null;
+  cachedGeoHint = publicHint;
+  return publicHint;
 }
