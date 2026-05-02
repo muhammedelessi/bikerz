@@ -115,10 +115,10 @@ Deno.serve(async (req) => {
     // The frontend always sends an Origin / Referer header. We use it to
     // pick the matching SK_* env var, falling back to the legacy
     // TAP_SECRET_KEY if the per-domain one isn't configured.
-    const requestOrigin = req.headers.get("origin") || req.headers.get("referer") || "";
+    const requestSource = req.headers.get("origin") || req.headers.get("referer") || "";
     let originHost = "";
     try {
-      originHost = new URL(requestOrigin).hostname.toLowerCase();
+      originHost = new URL(requestSource).hostname.toLowerCase();
     } catch { /* leave empty */ }
 
     const isPreviewHost =
