@@ -18,11 +18,40 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const tapSecretKey = Deno.env.get("TAP_SECRET_KEY");
+
+    // ── Pick the right Tap secret key for the calling origin ──
+    // See tap-create-charge for the full reasoning. Same logic, kept inline
+    // so this function stays self-contained.
+    const env = (name: string): string | undefined => {
+      const v = Deno.env.get(name);
+      return v && v.trim() ? v.trim() : undefined;
+    };
+    const requestOrigin = req.headers.get("origin") || req.headers.get("referer") || "";
+    let originHost = "";
+    try { originHost = new URL(requestOrigin).hostname.toLowerCase(); } catch { /* ignore */ }
+    const isPreviewHost =
+      originHost === "localhost" ||
+      originHost === "127.0.0.1" ||
+      originHost.endsWith(".lovableproject.com") ||
+      originHost.endsWith(".lovable.app") ||
+      originHost.endsWith(".lovable.dev");
+
+    let tapSecretKey: string | undefined;
+    if (originHost === "bikerz.com" || originHost.endsWith(".bikerz.com")) {
+      tapSecretKey = isPreviewHost
+        ? (env("TAP_SK_TEST_BIKERZ") ?? env("TAP_SECRET_TEST_KEY") ?? env("TAP_SECRET_KEY"))
+        : (env("TAP_SK_LIVE_BIKERZ") ?? env("TAP_SECRET_KEY"));
+    } else if (originHost === "lovable.app" || originHost.endsWith(".lovable.app")) {
+      tapSecretKey = env("TAP_SK_TEST_LOVABLE_APP") ?? env("TAP_SK_LIVE_LOVABLE_APP") ?? env("TAP_SECRET_KEY");
+    } else if (originHost === "lovableproject.com" || originHost.endsWith(".lovableproject.com")) {
+      tapSecretKey = env("TAP_SK_TEST_LOVABLEPROJECT") ?? env("TAP_SK_LIVE_LOVABLEPROJECT") ?? env("TAP_SECRET_KEY");
+    } else {
+      tapSecretKey = env("TAP_SECRET_TEST_KEY") ?? env("TAP_SK_TEST_BIKERZ") ?? env("TAP_SECRET_KEY");
+    }
 
     if (!tapSecretKey) {
       return new Response(
-        JSON.stringify({ error: "Payment service not configured" }),
+        JSON.stringify({ error: "Payment service not configured for this domain" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

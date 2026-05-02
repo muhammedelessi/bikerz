@@ -68,14 +68,17 @@ interface TapPublicConfig { publicKey: string; merchantId: string | null }
 const publicConfigCache = new Map<string, TapPublicConfig>();
 
 /**
- * Hardcoded fallback merchant ID — paired with the live publishable key
- * pk_live_7dycFMf1L4SJupgOYI5PCmbG (Bikerz Academy account).
+ * Hardcoded fallback merchant ID for the Bikerz Academy Tap account.
  *
  * Why hardcode: the merchant ID is NOT a secret — it appears in every Tap
  * iframe URL as `mid=...` and in any browser network log. The Tap SDK
  * REQUIRES it in live mode (HTTP 400 otherwise). If the Supabase Edge
  * Function fails to return it (mis-deployment, env var typo, propagation
  * delay), this fallback keeps the checkout from breaking.
+ *
+ * The same merchant id (19777245) is shared across all three registered
+ * domains (bikerz.com, lovable.app, lovableproject.com) — only the
+ * publishable/secret keys differ per domain. So a single fallback works.
  *
  * Override path: setting TAP_MERCHANT_ID in Supabase Secrets always wins —
  * the fallback is only used when the backend response is null/missing.

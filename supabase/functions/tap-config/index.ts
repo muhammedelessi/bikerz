@@ -1,21 +1,96 @@
-// Returns the Tap public key to the frontend (publishable key, safe to expose).
+// Returns the Tap public key + merchant id to the frontend, picking the
+// correct key set for the calling origin.
 //
-// Origin-based key switching:
-// - Requests originating from preview environments (*.lovableproject.com,
-//   *.lovable.app, localhost, 127.0.0.1) get the TEST publishable key so the
-//   embedded card SDK renders correctly without requiring those domains to be
-//   whitelisted in Tap.
-// - All other origins (production: academy.bikerz.com) get the LIVE key.
+// Tap registered THREE separate API key sets — one per parent domain — for
+// our merchant 19777245:
 //
-// SECURITY: when a preview origin is detected we MUST NOT silently fall back
-// to the live key — that would let staging/dev tabs initiate real charges
-// against a live merchant account. If the test key env is missing, fail closed
-// with a 503 so the misconfiguration is loud and visible.
+//   bikerz.com           (covers academy.bikerz.com)
+//   lovable.app          (covers bikerz.lovable.app + any other staging)
+//   lovableproject.com   (covers per-session preview subdomains)
+//
+// Each set has live + test public/secret keys. We MUST serve the public key
+// that matches the request's origin — pairing a key from one domain with a
+// page on another domain fails the SDK iframe's postMessage origin check
+// (the symptom users saw before this change: "Failed to execute postMessage…
+// target origin does not match recipient window's origin").
+//
+// Backwards compatibility: if a per-domain env var is missing, fall back to
+// the legacy single-set vars (TAP_PUBLIC_KEY, TAP_PUBLIC_TEST_KEY) so an
+// incomplete migration doesn't take checkout offline.
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+type DomainTag = "bikerz" | "lovable_app" | "lovableproject" | "unknown";
+
+interface KeySet {
+  publicKeyLive: string | undefined;
+  publicKeyTest: string | undefined;
+  domain: DomainTag;
+}
+
+function getEnv(name: string): string | undefined {
+  const v = Deno.env.get(name);
+  return v && v.trim() ? v.trim() : undefined;
+}
+
+/**
+ * Map the request's origin to the correct domain bucket and read the matching
+ * env vars. Localhost / unknown hosts fall through to the bikerz test bucket
+ * so devs can still use Tap test cards locally; live charges from unknown
+ * origins are NOT served (returns undefined publicKeyLive).
+ */
+function selectKeySet(origin: string | null): KeySet {
+  let host = "";
+  try {
+    host = new URL(origin || "").hostname.toLowerCase();
+  } catch {
+    host = "";
+  }
+
+  // ── bikerz.com (covers academy.bikerz.com, www.bikerz.com, …) ──
+  if (host === "bikerz.com" || host.endsWith(".bikerz.com")) {
+    return {
+      publicKeyLive:
+        getEnv("TAP_PK_LIVE_BIKERZ") ?? getEnv("TAP_PUBLIC_KEY"),
+      publicKeyTest:
+        getEnv("TAP_PK_TEST_BIKERZ") ?? getEnv("TAP_PUBLIC_TEST_KEY"),
+      domain: "bikerz",
+    };
+  }
+
+  // ── lovable.app (e.g. bikerz.lovable.app) ──
+  if (host === "lovable.app" || host.endsWith(".lovable.app")) {
+    return {
+      publicKeyLive: getEnv("TAP_PK_LIVE_LOVABLE_APP"),
+      publicKeyTest: getEnv("TAP_PK_TEST_LOVABLE_APP"),
+      domain: "lovable_app",
+    };
+  }
+
+  // ── lovableproject.com (preview sessions) ──
+  if (host === "lovableproject.com" || host.endsWith(".lovableproject.com")) {
+    return {
+      publicKeyLive: getEnv("TAP_PK_LIVE_LOVABLEPROJECT"),
+      publicKeyTest: getEnv("TAP_PK_TEST_LOVABLEPROJECT"),
+      domain: "lovableproject",
+    };
+  }
+
+  // ── localhost / 127.0.0.1 / unknown ──
+  // Use bikerz test keys so local dev still works against Tap. Don't expose
+  // any LIVE key here — unknown origins shouldn't be able to initiate real
+  // charges.
+  return {
+    publicKeyLive: undefined,
+    publicKeyTest:
+      getEnv("TAP_PK_TEST_BIKERZ") ?? getEnv("TAP_PUBLIC_TEST_KEY"),
+    domain: "unknown",
+  };
+}
 
 function isPreviewOrigin(origin: string | null): boolean {
   if (!origin) return false;
@@ -40,80 +115,74 @@ Deno.serve(async (req) => {
 
   const origin = req.headers.get("origin") || req.headers.get("referer");
   const usePreviewKey = isPreviewOrigin(origin);
+  const keys = selectKeySet(origin);
 
-  const liveKey = Deno.env.get("TAP_PUBLIC_KEY");
-  const testKey = Deno.env.get("TAP_PUBLIC_TEST_KEY");
-  const liveMerchantId = (Deno.env.get("TAP_MERCHANT_ID") || "").trim();
-  const testMerchantId = (Deno.env.get("TAP_MERCHANT_TEST_ID") || "").trim();
-
-  console.log(
-    `[tap-config] origin=${origin || "(none)"} usePreviewKey=${usePreviewKey} hasTestKey=${!!testKey} hasLiveKey=${!!liveKey} hasLiveMid=${!!liveMerchantId} hasTestMid=${!!testMerchantId}`,
-  );
-
-  // If a preview origin requested a test key but none is configured, fall
-  // back to the live key with a loud console warning rather than refusing
-  // entirely. This lets developers test the embedded card form on Lovable
-  // preview without needing a separate Tap test account — real test cards
-  // (e.g. 4508 7500 1574 1019) can be used instead.
-  // NOTE: preview domains are only accessible to the development team, not
-  // end-users, so serving the live key here is acceptable.
-  if (usePreviewKey && !testKey) {
-    console.warn(
-      "[tap-config] TAP_PUBLIC_TEST_KEY is not configured — falling back to live key on preview origin. " +
-      "Set TAP_PUBLIC_TEST_KEY in Supabase Secrets to use Tap test cards on preview/dev environments.",
-    );
-    // Fall through to serve the live key.
+  // Pick the right key for the requested mode (test vs live).
+  // Preview/dev origins prefer the test key; production origins prefer live.
+  // If the preferred one is missing, fall back to the other (with a warning)
+  // so checkout doesn't go down because of a half-configured deployment.
+  let tapPublicKey: string | undefined;
+  if (usePreviewKey) {
+    tapPublicKey = keys.publicKeyTest ?? keys.publicKeyLive;
+    if (!keys.publicKeyTest && keys.publicKeyLive) {
+      console.warn(
+        `[tap-config] preview origin (${keys.domain}) has no test key — serving live key. ` +
+        "Set the matching TAP_PK_TEST_* secret to fix.",
+      );
+    }
+  } else {
+    tapPublicKey = keys.publicKeyLive ?? keys.publicKeyTest;
+    if (!keys.publicKeyLive && keys.publicKeyTest) {
+      console.warn(
+        `[tap-config] production origin (${keys.domain}) has no live key — falling back to test key. ` +
+        "Charges will be sandboxed. Set the matching TAP_PK_LIVE_* secret to fix.",
+      );
+    }
   }
-
-  const tapPublicKey = (usePreviewKey && testKey) ? testKey : liveKey;
 
   if (!tapPublicKey) {
+    console.error(
+      `[tap-config] no key available for origin=${origin || "(none)"} domain=${keys.domain}. ` +
+      "Add TAP_PK_LIVE_* / TAP_PK_TEST_* secrets for this domain in Supabase.",
+    );
     return new Response(
-      JSON.stringify({ error: "Payment not configured" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "Payment not configured for this domain" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 
-  // Sanity: a key marked test for a non-preview origin (or vice versa) is a
-  // sign of swapped env vars. Log loudly but still serve — the operator will
-  // see this in function logs.
-  if (usePreviewKey && !tapPublicKey.startsWith("pk_test")) {
-    console.warn(
-      `[tap-config] Preview origin received non-test key (prefix=${tapPublicKey.slice(0, 7)}). Check TAP_PUBLIC_TEST_KEY value.`,
-    );
-  } else if (!usePreviewKey && tapPublicKey.startsWith("pk_test")) {
-    console.warn(
-      "[tap-config] Production origin received a test key. Check TAP_PUBLIC_KEY value.",
-    );
-  }
-
-  // CRITICAL: merchant ID must match the actual key being served, not the
-  // origin. When the preview origin falls back to the live key, the merchant
-  // ID must also be the LIVE one — pairing a live key with a test/empty
-  // merchant ID makes the Tap SDK iframe POST `mid=` empty and Tap rejects
-  // the request with HTTP 400 (live mode requires a real `mid`).
   const isLiveKeyServed = !tapPublicKey.startsWith("pk_test");
+
+  // Merchant ID is shared across all key sets (same Tap account, same
+  // merchant). Test mode often uses a different mid, but Tap confirmed the
+  // same value (19777245) works for both modes on this account.
+  const liveMerchantId =
+    getEnv("TAP_MERCHANT_ID") ?? "";
+  const testMerchantId =
+    getEnv("TAP_MERCHANT_TEST_ID") ?? liveMerchantId;
   const merchantId = isLiveKeyServed ? liveMerchantId : testMerchantId;
+
+  console.log(
+    `[tap-config] origin=${origin || "(none)"} domain=${keys.domain} ` +
+    `mode=${isLiveKeyServed ? "live" : "test"} keyPrefix=${tapPublicKey.slice(0, 8)} ` +
+    `mid=${merchantId || "(empty)"}`,
+  );
 
   if (isLiveKeyServed && !merchantId) {
     console.error(
       "[tap-config] CRITICAL: serving live key without TAP_MERCHANT_ID. " +
       "Tap SDK will fail with HTTP 400 (mid= empty). " +
-      "Set TAP_MERCHANT_ID in Supabase Secrets to your live merchant id (e.g. 19777245). " +
-      "Frontend will use a hardcoded fallback in this case.",
+      "Set TAP_MERCHANT_ID in Supabase Secrets to your live merchant id (e.g. 19777245).",
     );
   }
-
-  console.log(
-    `[tap-config] response: keyPrefix=${tapPublicKey.slice(0, 8)} mid=${merchantId || "(empty)"} env=${isLiveKeyServed ? "live" : "test"}`,
-  );
 
   return new Response(
     JSON.stringify({
       public_key: tapPublicKey,
       merchant_id: merchantId || null,
       environment: isLiveKeyServed ? "live" : "test",
+      domain: keys.domain,
     }),
-    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );
 });

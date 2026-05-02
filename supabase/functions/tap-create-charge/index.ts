@@ -104,17 +104,70 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const tapSecretKey = Deno.env.get("TAP_SECRET_KEY");
+
+    // ── Pick the right Tap SECRET key for the calling origin ──
+    //
+    // Tap registered separate key sets per parent domain (bikerz.com,
+    // lovable.app, lovableproject.com). The secret key on the server side
+    // MUST match the public key the SDK iframe used on the client side —
+    // otherwise Tap rejects the charge with a key/merchant mismatch error.
+    //
+    // The frontend always sends an Origin / Referer header. We use it to
+    // pick the matching SK_* env var, falling back to the legacy
+    // TAP_SECRET_KEY if the per-domain one isn't configured.
+    const requestOrigin = req.headers.get("origin") || req.headers.get("referer") || "";
+    let originHost = "";
+    try {
+      originHost = new URL(requestOrigin).hostname.toLowerCase();
+    } catch { /* leave empty */ }
+
+    const isPreviewHost =
+      originHost === "localhost" ||
+      originHost === "127.0.0.1" ||
+      originHost.endsWith(".lovableproject.com") ||
+      originHost.endsWith(".lovable.app") ||
+      originHost.endsWith(".lovable.dev");
+
+    const env = (name: string): string | undefined => {
+      const v = Deno.env.get(name);
+      return v && v.trim() ? v.trim() : undefined;
+    };
+
+    let tapSecretKey: string | undefined;
+    let domainTag: string;
+    if (originHost === "bikerz.com" || originHost.endsWith(".bikerz.com")) {
+      domainTag = "bikerz";
+      tapSecretKey = isPreviewHost
+        ? (env("TAP_SK_TEST_BIKERZ") ?? env("TAP_SECRET_TEST_KEY") ?? env("TAP_SECRET_KEY"))
+        : (env("TAP_SK_LIVE_BIKERZ") ?? env("TAP_SECRET_KEY"));
+    } else if (originHost === "lovable.app" || originHost.endsWith(".lovable.app")) {
+      domainTag = "lovable_app";
+      // Preview-style host but Tap registered live keys for lovable.app, so
+      // honour both based on whether the explicit SK_TEST is configured.
+      tapSecretKey = env("TAP_SK_TEST_LOVABLE_APP") ?? env("TAP_SK_LIVE_LOVABLE_APP") ?? env("TAP_SECRET_KEY");
+    } else if (originHost === "lovableproject.com" || originHost.endsWith(".lovableproject.com")) {
+      domainTag = "lovableproject";
+      tapSecretKey = env("TAP_SK_TEST_LOVABLEPROJECT") ?? env("TAP_SK_LIVE_LOVABLEPROJECT") ?? env("TAP_SECRET_KEY");
+    } else {
+      domainTag = "fallback";
+      // Unknown / localhost — prefer test, then legacy single-key.
+      tapSecretKey = env("TAP_SECRET_TEST_KEY") ?? env("TAP_SK_TEST_BIKERZ") ?? env("TAP_SECRET_KEY");
+    }
+
+    console.log(
+      `[tap-create-charge] originHost=${originHost || "(none)"} domain=${domainTag} ` +
+      `keyPrefix=${tapSecretKey ? tapSecretKey.slice(0, 8) : "(none)"}`,
+    );
 
     if (!tapSecretKey) {
       return new Response(
-        JSON.stringify({ error: "Payment service not configured" }),
+        JSON.stringify({ error: "Payment service not configured for this domain" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (tapSecretKey.startsWith("pk_")) {
-      console.error("TAP_SECRET_KEY contains a publishable key instead of secret key");
+      console.error("TAP secret key env var contains a publishable key (pk_*) instead of secret (sk_*)");
       return new Response(
         JSON.stringify({ error: "Payment service misconfigured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
