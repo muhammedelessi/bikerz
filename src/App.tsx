@@ -115,6 +115,7 @@ const ProfileHome = lazyPage(() => import("./pages/ProfileHome"));
 const AccountSettingsPage = lazyPage(() => import("./pages/AccountSettingsPage"));
 const NotFound = lazyPage(() => import("./pages/NotFound"));
 const PaymentSuccess = lazyPage(() => import("./pages/PaymentSuccess"));
+const CheckoutPage = lazyPage(() => import("./pages/CheckoutPage"));
 const BookingPaymentComplete = lazyPage(() => import("./pages/BookingPaymentComplete"));
 const BookingSuccess = lazyPage(() => import("./pages/BookingSuccess"));
 const MyBookings = lazyPage(() => import("./pages/MyBookings"));
@@ -266,6 +267,14 @@ const AppRoutes = () => (
         <Route path="/trainers" element={<Trainers />} />
         <Route path="/trainers/:id" element={<TrainerProfile />} />
         <Route path="/courses/:id" element={<CourseDetail />} />
+        <Route
+          path="/checkout/:courseId"
+          element={
+            <ProtectedRoute>
+              <CheckoutPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/login"
           element={

@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useGamification } from '@/hooks/useGamification';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 import {
   Accordion,
@@ -155,6 +156,15 @@ const CourseLearn: React.FC = () => {
   const [showWelcome, setShowWelcome] = useState(() => searchParams.get('welcome') === '1');
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
+  const isMobileLearn = useIsMobile();
+  /** Desktop: navigate to /checkout/:id page. Mobile: open the existing drawer modal. */
+  const openCheckoutFromLearn = useCallback(() => {
+    if (isMobileLearn) {
+      setShowCheckout(true);
+    } else if (id) {
+      navigate(`/checkout/${id}?source=course_learn`);
+    }
+  }, [isMobileLearn, id, navigate]);
   const [guestPreview, setGuestPreview] = useState<GuestPreviewState | null>(null);
   const [showGuestSoftGate, setShowGuestSoftGate] = useState(false);
   const [guestSoftDismissed, setGuestSoftDismissed] = useState(false);
@@ -1756,7 +1766,7 @@ const CourseLearn: React.FC = () => {
           onBuyNow={() => {
             setShowPurchaseModal(false);
             if (user) {
-              setShowCheckout(true);
+              openCheckoutFromLearn();
             } else {
               navigate('/login', { state: { from: `/courses/${id}` } });
             }

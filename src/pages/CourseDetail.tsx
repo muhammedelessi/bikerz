@@ -12,6 +12,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -143,6 +144,24 @@ const CourseDetail: React.FC = () => {
   const [stickyCtaLoading, setStickyCtaLoading] = useState(false);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
+
+  const isMobileDevice = useIsMobile();
+  /**
+   * Routes the "Enroll" click to the right surface:
+   *   - Mobile: opens the existing CheckoutModal drawer (better UX in narrow viewports)
+   *   - Desktop: navigates to the standalone /checkout/:id page (more room, real URL)
+   * Use this helper from every Enroll button instead of `setShowCheckout(true)` directly.
+   */
+  const openCheckout = useCallback(
+    (source = "course_detail") => {
+      if (isMobileDevice) {
+        setShowCheckout(true);
+      } else if (id) {
+        navigate(`/checkout/${id}?source=${encodeURIComponent(source)}`);
+      }
+    },
+    [isMobileDevice, id, navigate],
+  );
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   const [autoExpandedOnce, setAutoExpandedOnce] = useState(false);
   const [paymentVerifying, setPaymentVerifying] = useState(false);
@@ -557,7 +576,7 @@ const CourseDetail: React.FC = () => {
   useEffect(() => {
     if (searchParams.get("checkout") === "true" && course && !isEnrolled) {
       if (user) {
-        setShowCheckout(true);
+        openCheckout("auto_param");
       } else {
         navigate(`/signup?returnTo=${encodeURIComponent(`/courses/${id}?checkout=true`)}`);
       }
@@ -816,7 +835,7 @@ const CourseDetail: React.FC = () => {
                           className="btn-cta h-9 text-sm hidden lg:inline-flex"
                           onClick={() =>
                             user
-                              ? setShowCheckout(true)
+                              ? openCheckout("sticky_header")
                               : navigate(`/signup?returnTo=${encodeURIComponent(`/courses/${id}?checkout=true`)}`)
                           }
                         >
@@ -1348,7 +1367,7 @@ const CourseDetail: React.FC = () => {
                               onClick={() => {
                                 setCtaLoading(true);
                                 window.setTimeout(() => {
-                                  setShowCheckout(true);
+                                  openCheckout("course_card_cta");
                                   setCtaLoading(false);
                                 }, 150);
                               }}
@@ -1989,7 +2008,7 @@ const CourseDetail: React.FC = () => {
                       if (user) {
                         setStickyCtaLoading(true);
                         window.setTimeout(() => {
-                          setShowCheckout(true);
+                          openCheckout("sticky_bottom_cta");
                           setStickyCtaLoading(false);
                         }, 150);
                       } else {
