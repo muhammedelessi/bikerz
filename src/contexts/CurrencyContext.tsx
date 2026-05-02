@@ -385,6 +385,17 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setCurrencyCodeState("SAR");
     };
 
+    // Hard global watchdog: regardless of network conditions, never keep
+    // the app in a "detecting" state for more than 4 seconds. This guarantees
+    // that countries which block public geo APIs still get a safe default
+    // (SAR) and a fully interactive UI.
+    let watchdogFired = false;
+    const watchdog = window.setTimeout(() => {
+      watchdogFired = true;
+      applyGeoFallback();
+      setIsDetecting(false);
+    }, 4000);
+
     const detectLocation = async () => {
       let cachedCountry: string | null = null;
       let cachedCountryAt: string | null = null;
@@ -422,9 +433,10 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       try {
         const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-        const timeout = setTimeout(() => controller?.abort(), 8000);
+        const timeout = setTimeout(() => controller?.abort(), 3500);
         const country = await fetchCountryCodeFromPublicGeoApis(controller?.signal);
         clearTimeout(timeout);
+        if (watchdogFired) return;
 
         if (country) {
           setDetectedCountry(country);
@@ -457,11 +469,20 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } catch {
         applyGeoFallback();
       } finally {
-        setIsDetecting(false);
+        if (!watchdogFired) setIsDetecting(false);
       }
     };
 
-    detectLocation();
+    // Outer safety net — detectLocation must NEVER throw uncaught.
+    Promise.resolve()
+      .then(() => detectLocation())
+      .catch(() => {
+        applyGeoFallback();
+        setIsDetecting(false);
+      })
+      .finally(() => {
+        window.clearTimeout(watchdog);
+      });
   }, []);
 
   const setCurrency = useCallback((code: CurrencyCode) => {
