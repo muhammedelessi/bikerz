@@ -433,9 +433,10 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       try {
         const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-        const timeout = setTimeout(() => controller?.abort(), 8000);
+        const timeout = setTimeout(() => controller?.abort(), 3500);
         const country = await fetchCountryCodeFromPublicGeoApis(controller?.signal);
         clearTimeout(timeout);
+        if (watchdogFired) return;
 
         if (country) {
           setDetectedCountry(country);
@@ -468,11 +469,20 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } catch {
         applyGeoFallback();
       } finally {
-        setIsDetecting(false);
+        if (!watchdogFired) setIsDetecting(false);
       }
     };
 
-    detectLocation();
+    // Outer safety net — detectLocation must NEVER throw uncaught.
+    Promise.resolve()
+      .then(() => detectLocation())
+      .catch(() => {
+        applyGeoFallback();
+        setIsDetecting(false);
+      })
+      .finally(() => {
+        window.clearTimeout(watchdog);
+      });
   }, []);
 
   const setCurrency = useCallback((code: CurrencyCode) => {
