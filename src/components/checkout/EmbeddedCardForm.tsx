@@ -315,12 +315,21 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
         <div className="relative">
           {(sdkLoading || (!sdkReady && !sdkError)) && (
             <div
-              className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm"
+              className="absolute inset-0 z-10 flex flex-col gap-3 bg-card p-4"
               role="status"
               aria-live="polite"
+              aria-label={isRTL ? "جارٍ تحميل نموذج الدفع الآمن" : "Loading secure payment form"}
             >
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-              <p className="text-xs text-muted-foreground">
+              {/* Card number row */}
+              <div className="h-11 w-full rounded-lg bg-gradient-to-r from-muted via-muted/40 to-muted bg-[length:200%_100%] animate-shimmer" />
+              {/* Expiry + CVV row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="h-11 rounded-lg bg-gradient-to-r from-muted via-muted/40 to-muted bg-[length:200%_100%] animate-shimmer" />
+                <div className="h-11 rounded-lg bg-gradient-to-r from-muted via-muted/40 to-muted bg-[length:200%_100%] animate-shimmer" />
+              </div>
+              {/* Cardholder name row */}
+              <div className="h-11 w-full rounded-lg bg-gradient-to-r from-muted via-muted/40 to-muted bg-[length:200%_100%] animate-shimmer" />
+              <p className="mt-1 text-center text-[11px] text-muted-foreground">
                 {isRTL ? "جارٍ تحميل نموذج الدفع الآمن…" : "Loading secure payment form…"}
               </p>
             </div>
