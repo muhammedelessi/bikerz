@@ -164,6 +164,14 @@ const TrainingDetail: React.FC = () => {
     () => parseTrainingSessions((training as ({ sessions?: unknown } | null))?.sessions),
     [training],
   );
+  const videos = useMemo(
+    () => parseTrainingVideos((training as ({ videos?: unknown } | null))?.videos),
+    [training],
+  );
+  const skills = useMemo(
+    () => parseTrainingSkills((training as ({ skills?: unknown } | null))?.skills),
+    [training],
+  );
 
   const trainingTitle = training ? (isRTL ? training.name_ar : training.name_en) : "";
   const seoDescription = useMemo(() => {
