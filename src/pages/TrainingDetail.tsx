@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Clock, GraduationCap, Users, Wrench } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Clock, GraduationCap, Star, Users, Video, Wrench } from "lucide-react";
 import type { TrainerCourseRow } from "@/lib/trainingBookingUtils";
 import { translateTrainerCourseLocation } from "@/lib/trainerCourseLocation";
 import { COUNTRIES } from "@/data/countryCityData";
@@ -23,6 +23,7 @@ import { useTrainingPlatformPricing } from "@/hooks/useTrainingPlatformPricing";
 import { applyTrainingPlatformMarkupSar } from "@/lib/trainingPlatformMarkup";
 import TrainingCurriculumAccordion from "@/components/training/TrainingCurriculumAccordion";
 import { parseTrainingSessions } from "@/lib/trainingSessionCurriculum";
+import { parseTrainingVideos, parseTrainingSkills, toEmbeddableVideoUrl } from "@/lib/trainingExtras";
 
 type TrainerSupply = { name_ar: string; name_en: string };
 
