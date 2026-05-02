@@ -16,7 +16,6 @@ const TrainingCurriculumAccordion: React.FC<Props> = ({ sessions, isRTL, classNa
   if (!sessions.length) return null;
 
   const totalHours = sessions.reduce((t, s) => t + s.duration_hours, 0);
-  const totalPts = sessions.reduce((t, s) => t + s.points, 0);
 
   return (
     <Card className={cn('border-border/60', className)}>
