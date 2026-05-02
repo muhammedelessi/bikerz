@@ -244,6 +244,13 @@ export interface UseTapCardSdkReturn {
   sdkError: string | null;
   /** Detected card brand from the BIN (e.g. "VISA", "MASTERCARD", "MADA"), null until typed. */
   cardBrand: string | null;
+  /**
+   * "live" | "test" | null — environment derived from the pk prefix that
+   * tap-config returned. Used by the parent to show a developer-friendly
+   * warning when the live key is being served on a dev/preview domain
+   * (which Tap rejects with HTTP 400 on tokenize).
+   */
+  environment: "live" | "test" | null;
   /** Trigger tokenization. Resolves with the tok_xxx string. */
   tokenize: () => Promise<string>;
   /** Force-recreate the iframe (use after big config changes if updateCardConfiguration is unavailable). */
@@ -258,6 +265,7 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
   const [cardValid, setCardValid] = useState(false);
   const [sdkError, setSdkError] = useState<string | null>(null);
   const [cardBrand, setCardBrand] = useState<string | null>(null);
+  const [environment, setEnvironment] = useState<"live" | "test" | null>(null);
   const [reinitNonce, setReinitNonce] = useState(0);
 
   const instanceRef = useRef<TapCardSdkInstance | null>(null);
@@ -293,6 +301,9 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
       try {
         const [{ publicKey, merchantId }] = await Promise.all([fetchPublicConfig(), loadSdkScript()]);
         if (cancelled) return;
+        // Surface the environment so the parent UI can show a "use a test
+        // card on this dev domain" banner when needed.
+        setEnvironment(publicKey.startsWith("pk_test") ? "test" : "live");
         if (!window.CardSDK?.renderTapCard) {
           throw new Error("Tap Card SDK did not initialize");
         }
@@ -543,5 +554,5 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
     setReinitNonce((n) => n + 1);
   }, []);
 
-  return { sdkLoading, sdkReady, cardValid, sdkError, cardBrand, tokenize, reinit };
+  return { sdkLoading, sdkReady, cardValid, sdkError, cardBrand, environment, tokenize, reinit };
 }

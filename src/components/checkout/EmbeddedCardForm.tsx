@@ -176,11 +176,30 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
       ],
     );
 
-  const { sdkLoading, sdkReady, cardValid, sdkError, cardBrand, tokenize, reinit } = useTapCardSdk({
+  const { sdkLoading, sdkReady, cardValid, sdkError, cardBrand, environment, tokenize, reinit } = useTapCardSdk({
     containerId: CONTAINER_ID,
     enabled: active,
     config,
   });
+
+  /**
+   * Detect the misconfiguration that's been silently breaking checkout in
+   * Lovable preview / localhost: live Tap key on a non-production domain.
+   * Tap rejects /v2/card/token with HTTP 400 in this combo (the live key
+   * is whitelisted only for academy.bikerz.com), but the iframe paints
+   * fine, so the user sees a working-looking card form that fails the
+   * moment they tap Pay — usually with no overlay because the error
+   * fires deep inside the SDK iframe and the parent only sees a generic
+   * rejection. Surface a loud bilingual banner so the cause is obvious.
+   */
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const isDevHost =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname.endsWith(".lovableproject.com") ||
+    hostname.endsWith(".lovable.app") ||
+    hostname.endsWith(".lovable.dev");
+  const showLiveOnDevWarning = environment === "live" && isDevHost;
 
   // Bubble status to parent on every change.
   useLayoutEffect(() => {
@@ -247,6 +266,56 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
 
   return (
     <div className="space-y-3">
+      {/* Diagnostic banner — silent failure prevention for dev/preview.
+          When using the LIVE key on localhost or *.lovable.app domains,
+          Tap silently 400s on tokenize with no overlay. This banner makes
+          the cause + fix visible BEFORE the user wastes a card attempt. */}
+      {showLiveOnDevWarning && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle className="text-sm">
+            {isRTL ? "بيئة الاختبار غير مهيّأة" : "Test environment not configured"}
+          </AlertTitle>
+          <AlertDescription className="space-y-1.5 text-xs">
+            <p>
+              {isRTL ? (
+                <>
+                  أنت تستخدم مفتاح Tap الحقيقي (live) على دومين تطوير{" "}
+                  <code className="font-mono text-[10px] bg-destructive/10 px-1 rounded">
+                    {hostname}
+                  </code>
+                  . سيرفض Tap التوكينة بـ HTTP 400 لأن هذا الدومين غير مسجّل في حساب Live.
+                </>
+              ) : (
+                <>
+                  You're using the LIVE Tap key on a dev domain (
+                  <code className="font-mono text-[10px] bg-destructive/10 px-1 rounded">
+                    {hostname}
+                  </code>
+                  ). Tap will reject tokenization with HTTP 400 because this domain isn't
+                  whitelisted on your Live merchant.
+                </>
+              )}
+            </p>
+            <p className="font-semibold">
+              {isRTL ? "الحل:" : "Fix:"}
+            </p>
+            <ul className="list-disc ps-4 space-y-0.5">
+              <li>
+                {isRTL
+                  ? "أضف TAP_PUBLIC_TEST_KEY و TAP_MERCHANT_TEST_ID في Supabase Secrets"
+                  : "Add TAP_PUBLIC_TEST_KEY + TAP_MERCHANT_TEST_ID to Supabase Secrets"}
+              </li>
+              <li>
+                {isRTL
+                  ? "أو اختبر مباشرة على academy.bikerz.com"
+                  : "Or test directly on academy.bikerz.com"}
+              </li>
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/*
         Apple Pay — only render the container + divider once we've actually
         confirmed the SDK rendered the button. Earlier code rendered a divider

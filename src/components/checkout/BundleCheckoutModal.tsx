@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, CreditCard } from 'lucide-react';
+import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -215,7 +216,10 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
         setTokenizing(false);
         submittingRef.current = false;
         const fallback = isRTL ? 'تعذّر التحقق من بيانات البطاقة' : 'Could not validate card details';
-        tap.setExternalError(err?.message || fallback);
+        const friendly = err?.message || fallback;
+        console.error('[BundleCheckout] tokenize() rejected:', err);
+        tap.setExternalError(friendly);
+        toast.error(friendly);
         return;
       } finally {
         setTokenizing(false);

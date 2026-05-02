@@ -371,7 +371,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         setTokenizing(false);
         submittingRef.current = false;
         const fallback = isRTL ? "تعذّر التحقق من بيانات البطاقة" : "Could not validate card details";
-        tap.setExternalError(err?.message || fallback);
+        const friendly = err?.message || fallback;
+        // Belt-and-braces: log to console, surface in the failure overlay,
+        // AND fire a toast — silent failures here have repeatedly bitten
+        // users in dev where the overlay can be visually missed.
+        console.error("[Checkout] tokenize() rejected:", err);
+        tap.setExternalError(friendly);
+        toast.error(friendly);
         return;
       } finally {
         setTokenizing(false);
