@@ -385,6 +385,17 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setCurrencyCodeState("SAR");
     };
 
+    // Hard global watchdog: regardless of network conditions, never keep
+    // the app in a "detecting" state for more than 4 seconds. This guarantees
+    // that countries which block public geo APIs still get a safe default
+    // (SAR) and a fully interactive UI.
+    let watchdogFired = false;
+    const watchdog = window.setTimeout(() => {
+      watchdogFired = true;
+      applyGeoFallback();
+      setIsDetecting(false);
+    }, 4000);
+
     const detectLocation = async () => {
       let cachedCountry: string | null = null;
       let cachedCountryAt: string | null = null;
