@@ -334,13 +334,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (!tokenId && cardApiRef.current) {
       try {
         setTokenizing(true);
+        // If we already used a token in this modal session (previous attempt
+        // failed / 3DS timed out), force-remount the Tap card iframe so the
+        // next tokenize() returns a fresh tok_xxx. Tap rejects token reuse
+        // with error 1126 "Source already used".
+        if (lastTokenIdRef.current) {
+          cardApiRef.current.reinit();
+          // Give the SDK a tick to remount before tokenizing again.
+          await new Promise((r) => setTimeout(r, 250));
+        }
         tokenId = await cardApiRef.current.tokenize();
+        lastTokenIdRef.current = tokenId;
       } catch (err: any) {
-        // Route tokenize failures through the same `failed` overlay used
-        // for post-charge errors. A toast was too easy to miss — users
-        // were clicking Pay and seeing the form re-render with no
-        // explanation. The overlay surfaces the reason persistently
-        // with a Retry CTA.
         setTokenizing(false);
         const fallback = isRTL ? "تعذّر التحقق من بيانات البطاقة" : "Could not validate card details";
         tap.setExternalError(err?.message || fallback);
@@ -348,6 +353,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       } finally {
         setTokenizing(false);
       }
+    } else if (tokenId) {
+      // Apple Pay / re-supplied token — track it too so any later card retry
+      // forces a clean reinit.
+      lastTokenIdRef.current = tokenId;
     }
 
     await tap.submitPayment({
