@@ -38,9 +38,15 @@ interface EmbeddedCardFormProps {
   /** Local subscriber number (no leading 0). */
   customerPhoneNumber: string;
   /**
-   * Called once on mount with a `tokenize` function and `reinit` to force a
-   * fresh card iframe (needed after a failed charge — Tap rejects the same
-   * tok_xxx twice with code 1126 "Source already used").
+   * Called once on mount with the SDK API surface. Parent stores the ref and
+   * uses it from its own "Pay Now" button so we don't duplicate footer UI.
+   *
+   * - tokenize(): ask the iframe to produce a fresh `tok_xxx`. Tap tokens are
+   *   single-use, so each successful charge MUST be preceded by a fresh call.
+   * - reinit(): destroy + remount the iframe. Use this after a failed charge
+   *   that consumed the previous token (Tap error 1126 "Source already used")
+   *   so the user gets a clean form and a NEW token on retry, instead of a
+   *   stale one.
    */
   onApiReady: (api: { tokenize: () => Promise<string>; reinit: () => void }) => void;
   /** Live status the parent uses to enable/disable its Pay button + show messaging. */
@@ -181,7 +187,8 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
     onStatusChange({ sdkLoading, sdkReady, cardValid, sdkError });
   }, [sdkLoading, sdkReady, cardValid, sdkError, onStatusChange]);
 
-  // Hand the tokenize + reinit fns up to the parent once.
+  // Hand the SDK API up to the parent. Re-runs whenever tokenize/reinit
+  // identities change so the parent always holds the current closure.
   React.useEffect(() => {
     onApiReady({ tokenize, reinit });
   }, [tokenize, reinit, onApiReady]);

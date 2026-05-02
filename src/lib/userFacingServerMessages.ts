@@ -174,6 +174,16 @@ const TAP_PATTERNS: Array<{ test: RegExp; key: string }> = [
   // --- User actions ---
   { test: /cancel(led|ed)? by user|user cancel|customer cancel/i, key: "checkout.tapErrors.userCancelled" },
 
+  // --- Token / source already used (Tap code 1126) ---
+  // Tap tokens are single-use. If the same `tok_xxx` is sent twice (double-click,
+  // retry without re-entering card), Tap rejects with this error. The fix is to
+  // re-enter the card details so a fresh token is generated. We translate to an
+  // actionable message that nudges the user toward that outcome.
+  {
+    test: /source\s+already\s+used|already\s+used.*source|create\s+the\s+new\s+source|\b1126\b/i,
+    key: "checkout.tapErrors.sourceAlreadyUsed",
+  },
+
   // --- Generic fallbacks (last) ---
   { test: /declin(ed|e)\b|reject(ed|e)\b|refused/i, key: "checkout.tapErrors.declined" },
 ];

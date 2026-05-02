@@ -66,11 +66,16 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
 
   // Embedded card form state
   const cardApiRef = useRef<{ tokenize: () => Promise<string>; reinit: () => void } | null>(null);
+  /** Last token we sent — Tap rejects reuse with code 1126, so if we see the
+   *  same token come back from the SDK we force a reinit before submitting. */
   const lastTokenIdRef = useRef<string | null>(null);
   const [cardSdkStatus, setCardSdkStatus] = useState<{
     sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null;
   }>({ sdkLoading: false, sdkReady: false, cardValid: false, sdkError: null });
   const [tokenizing, setTokenizing] = useState(false);
+  /** Idempotency guard against duplicate Pay clicks — see CheckoutModal.tsx
+   *  for full reasoning (Tap error 1126: "Source already used"). */
+  const submittingRef = useRef(false);
 
   const handleCardApiReady = useCallback((api: { tokenize: () => Promise<string>; reinit: () => void }) => {
     cardApiRef.current = api;
@@ -141,11 +146,22 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
   }, [open, user, primaryCourseId]);
 
   const handleSubmitPayment = useCallback(async () => {
+    // Idempotency guard — see CheckoutModal.tsx for context (Tap error 1126).
+    if (submittingRef.current) {
+      console.warn("[BundleCheckout] handleSubmitPayment called while already submitting — ignoring");
+      return;
+    }
+    submittingRef.current = true;
+
     if (!user) {
+      submittingRef.current = false;
       navigateToSignup(navigate);
       return;
     }
-    if (!form.validateInfo()) return;
+    if (!form.validateInfo()) {
+      submittingRef.current = false;
+      return;
+    }
     await form.saveProfileData();
 
     const composedAddress = [form.effectiveCity, form.effectiveCountry].filter(Boolean).join(', ');
@@ -197,6 +213,7 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
         lastTokenIdRef.current = tokenId;
       } catch (err: any) {
         setTokenizing(false);
+        submittingRef.current = false;
         const fallback = isRTL ? 'تعذّر التحقق من بيانات البطاقة' : 'Could not validate card details';
         tap.setExternalError(err?.message || fallback);
         return;
@@ -205,25 +222,29 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
       }
     }
 
-    await tap.submitPayment({
-      paymentKind: 'course_bundle',
-      bundleCourseIds: courses.map((c) => c.id),
-      bundleOriginalSar: calc.totalOriginal,
-      bundleDiscountPct: calc.discountPct,
-      bundleFinalSar: calc.finalPrice,
-      currency: 'SAR',
-      amount: calc.finalPrice,
-      currencyCodeForPricing: currencyCode,
-      exchangeRatePerSar: exchangeRate > 0 ? exchangeRate : undefined,
-      customerName: form.fullName,
-      customerEmail: form.email,
-      customerPhone: form.fullPhone,
-      billingCity: form.effectiveCity,
-      billingCountry: form.effectiveCountry,
-      courseName: isRTL ? 'باقة كورسات' : 'Course bundle',
-      isRTL,
-      tokenId,
-    });
+    try {
+      await tap.submitPayment({
+        paymentKind: 'course_bundle',
+        bundleCourseIds: courses.map((c) => c.id),
+        bundleOriginalSar: calc.totalOriginal,
+        bundleDiscountPct: calc.discountPct,
+        bundleFinalSar: calc.finalPrice,
+        currency: 'SAR',
+        amount: calc.finalPrice,
+        currencyCodeForPricing: currencyCode,
+        exchangeRatePerSar: exchangeRate > 0 ? exchangeRate : undefined,
+        customerName: form.fullName,
+        customerEmail: form.email,
+        customerPhone: form.fullPhone,
+        billingCity: form.effectiveCity,
+        billingCountry: form.effectiveCountry,
+        courseName: isRTL ? 'باقة كورسات' : 'Course bundle',
+        isRTL,
+        tokenId,
+      });
+    } finally {
+      submittingRef.current = false;
+    }
   }, [
     user,
     form,
@@ -525,7 +546,12 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
                   variant="outline"
                   className="mt-1"
                   onClick={() => {
+                    // Reset state + reinit the embedded card form so the next
+                    // attempt produces a FRESH token (Tap tokens are single-use;
+                    // retrying with a stale token = error 1126).
                     tap.reset();
+                    cardApiRef.current?.reinit();
+                    submittingRef.current = false;
                     setCardSdkStatus({ sdkLoading: false, sdkReady: false, cardValid: false, sdkError: null });
                   }}
                 >

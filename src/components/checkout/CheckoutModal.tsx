@@ -60,7 +60,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Default to "info" — for returning customers with a complete profile, the
   // open-effect below auto-advances to "payment" right after prefillAndAutoAdvance().
   const [step, setStep] = useState<"info" | "payment">("info");
-  /** Tokenize + reinit handles wired up from the embedded card form. */
+  /** Tokenize + reinit handles wired up from the embedded card form.
+   *  reinit() is called on retry so we never re-submit a consumed token. */
   const cardApiRef = useRef<{ tokenize: () => Promise<string>; reinit: () => void } | null>(null);
   /** Last token we sent — Tap rejects reuse with code 1126, so we force a
    *  reinit before tokenizing again on every retry after the first attempt. */
@@ -69,6 +70,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null;
   }>({ sdkLoading: false, sdkReady: false, cardValid: false, sdkError: null });
   const [tokenizing, setTokenizing] = useState(false);
+  /** Hard guard against duplicate submissions that bypass the disabled-button state.
+   *  React StrictMode + click latency can fire two clicks before the disabled
+   *  prop applies, leading to two `submitPayment` calls reusing the same
+   *  one-shot token (Tap error 1126: "Source already used"). Pairs with
+   *  lastTokenIdRef above — the ref catches reuse, this guard catches the
+   *  race that produces it in the first place. */
+  const submittingRef = useRef(false);
   const handleCardApiReady = useCallback((api: { tokenize: () => Promise<string>; reinit: () => void }) => {
     cardApiRef.current = api;
   }, []);
@@ -215,12 +223,24 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   }, [form]);
 
   const handleSubmitPayment = useCallback(async (preTokenizedTokenId?: string) => {
+    // Idempotency guard — refuse duplicate submissions even if the disabled
+    // button state hasn't applied yet. Without this, a quick double-click (or
+    // a StrictMode re-fire in dev) can send the same token twice and the
+    // second call gets Tap error 1126: "Source already used".
+    if (submittingRef.current) {
+      console.warn("[Checkout] handleSubmitPayment called while already submitting — ignoring");
+      return;
+    }
+    submittingRef.current = true;
+
     if (!user) {
+      submittingRef.current = false;
       navigateToSignup(navigate);
       return;
     }
 
     if (!form.validateInfo()) {
+      submittingRef.current = false;
       toast.error(
         isRTL ? "يرجى تصحيح بيانات الفوترة قبل الدفع" : "Please fix your billing details before paying.",
       );
@@ -275,6 +295,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         onSuccess();
       } catch (err: any) {
         toast.error(err.message || "Enrollment failed");
+      } finally {
+        submittingRef.current = false;
       }
       return;
     }
@@ -347,6 +369,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         lastTokenIdRef.current = tokenId;
       } catch (err: any) {
         setTokenizing(false);
+        submittingRef.current = false;
         const fallback = isRTL ? "تعذّر التحقق من بيانات البطاقة" : "Could not validate card details";
         tap.setExternalError(err?.message || fallback);
         return;
@@ -359,23 +382,31 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       lastTokenIdRef.current = tokenId;
     }
 
-    await tap.submitPayment({
-      courseId: course.id,
-      currency: paymentCurrency,
-      customerName: form.fullName,
-      customerEmail: form.email,
-      customerPhone: form.fullPhone,
-      billingCity: form.effectiveCity,
-      billingCountry: form.effectiveCountry,
-      couponId: promo.appliedCoupon?.coupon_id,
-      couponSeriesId: promo.appliedCoupon?.coupon_series_id || undefined,
-      couponNumber: promo.appliedCoupon?.coupon_number ?? undefined,
-      couponCode: promo.appliedCoupon?.coupon_code || promo.promoCode?.trim().toUpperCase() || undefined,
-      amount: paymentAmount,
-      courseName: courseDisplayName,
-      isRTL,
-      tokenId,
-    });
+    try {
+      await tap.submitPayment({
+        courseId: course.id,
+        currency: paymentCurrency,
+        customerName: form.fullName,
+        customerEmail: form.email,
+        customerPhone: form.fullPhone,
+        billingCity: form.effectiveCity,
+        billingCountry: form.effectiveCountry,
+        couponId: promo.appliedCoupon?.coupon_id,
+        couponSeriesId: promo.appliedCoupon?.coupon_series_id || undefined,
+        couponNumber: promo.appliedCoupon?.coupon_number ?? undefined,
+        couponCode: promo.appliedCoupon?.coupon_code || promo.promoCode?.trim().toUpperCase() || undefined,
+        amount: paymentAmount,
+        courseName: courseDisplayName,
+        isRTL,
+        tokenId,
+      });
+    } finally {
+      // Always release the submission lock — successful or not, the next
+      // attempt must be allowed to fire (and will be guarded by status flags
+      // anyway). Without this, a transient backend error would leave the
+      // checkout permanently locked.
+      submittingRef.current = false;
+    }
   }, [
     user,
     discountedPrice,
@@ -465,7 +496,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               onSuccess={onSuccess}
               onOpenChange={onOpenChange}
               onRetry={() => {
+                // Reset tap state, then force the embedded card form to
+                // re-mount via reinit() — Tap tokens are single-use, so a
+                // retry MUST start with a fresh iframe (otherwise the next
+                // tokenize() can return the consumed token and Tap rejects
+                // with code 1126: "Source already used").
                 tap.reset();
+                cardApiRef.current?.reinit();
+                submittingRef.current = false;
                 setStep("payment");
               }}
               onRecheck={tap.recheckStatus}

@@ -1018,7 +1018,8 @@
       "invalidRequest": "طلب دفع غير صالح",
       "createRecordFailed": "تعذر إنشاء سجل الدفع",
       "unexpected": "حدث خطأ غير متوقع",
-      "requestFailed": "فشل طلب الدفع"
+      "requestFailed": "فشل طلب الدفع",
+      "sourceAlreadyUsed": "تم استخدام بيانات البطاقة مسبقاً. الرجاء إعادة إدخال بيانات البطاقة والمحاولة مرة أخرى."
     },
     "couponAutoApplied": "تم تطبيق الكوبون تلقائياً!",
     "failedToCreateAccount": "فشل إنشاء الحساب",

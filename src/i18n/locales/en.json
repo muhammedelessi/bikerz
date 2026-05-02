@@ -1022,7 +1022,8 @@
       "invalidRequest": "Invalid payment request",
       "createRecordFailed": "Could not create payment record",
       "unexpected": "An unexpected error occurred",
-      "requestFailed": "Payment request failed"
+      "requestFailed": "Payment request failed",
+      "sourceAlreadyUsed": "This card session has already been used. Please re-enter your card details and try again."
     },
     "couponAutoApplied": "Coupon auto-applied!",
     "failedToCreateAccount": "Failed to create account",
