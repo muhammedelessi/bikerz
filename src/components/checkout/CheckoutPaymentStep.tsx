@@ -79,8 +79,9 @@ interface CheckoutPaymentStepProps {
   cardFormSlot?: React.ReactNode;
 }
 
-const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
-  ({
+const CheckoutPaymentStep = memo(
+  forwardRef<HTMLDivElement, CheckoutPaymentStepProps>((props, _ref) => {
+    const {
     isRTL,
     currencyLabel,
     formatLocal,
