@@ -115,6 +115,8 @@ const AdminTrainings: React.FC = () => {
   const [newSupply, setNewSupply] = useState({ name_ar: '', name_en: '' });
   const [sessions, setSessions] = useState<TrainingSessionCurriculum[]>([]);
   const [openSessionIndex, setOpenSessionIndex] = useState<number | null>(null);
+  const [videos, setVideos] = useState<TrainingVideo[]>([]);
+  const [skills, setSkills] = useState<TrainingSkill[]>([]);
 
   const { data: trainings, isLoading } = useRQ({
     queryKey: ['admin-trainings'],
