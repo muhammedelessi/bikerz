@@ -88,11 +88,6 @@ const TrainingCurriculumAccordion: React.FC<Props> = ({ sessions, isRTL, classNa
             <span className="text-foreground font-medium">
               {totalHours} {isRTL ? 'ساعات' : 'hrs'}
             </span>
-            <span className="mx-1">·</span>
-            <span className="text-amber-600 font-semibold inline-flex items-center gap-1">
-              <Trophy className="w-3.5 h-3.5" />
-              {totalPts} {isRTL ? 'نقطة' : 'pts'}
-            </span>
           </span>
         </div>
       </CardContent>
