@@ -60,13 +60,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Default to "info" — for returning customers with a complete profile, the
   // open-effect below auto-advances to "payment" right after prefillAndAutoAdvance().
   const [step, setStep] = useState<"info" | "payment">("info");
-  /** Tokenize handle wired up from the embedded card form. */
-  const cardApiRef = useRef<{ tokenize: () => Promise<string> } | null>(null);
+  /** Tokenize + reinit handles wired up from the embedded card form. */
+  const cardApiRef = useRef<{ tokenize: () => Promise<string>; reinit: () => void } | null>(null);
+  /** Last token we sent — Tap rejects reuse with code 1126, so we force a
+   *  reinit before tokenizing again on every retry after the first attempt. */
+  const lastTokenIdRef = useRef<string | null>(null);
   const [cardSdkStatus, setCardSdkStatus] = useState<{
     sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null;
   }>({ sdkLoading: false, sdkReady: false, cardValid: false, sdkError: null });
   const [tokenizing, setTokenizing] = useState(false);
-  const handleCardApiReady = useCallback((api: { tokenize: () => Promise<string> }) => {
+  const handleCardApiReady = useCallback((api: { tokenize: () => Promise<string>; reinit: () => void }) => {
     cardApiRef.current = api;
   }, []);
   const handleCardSdkStatusChange = useCallback(
@@ -331,13 +334,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (!tokenId && cardApiRef.current) {
       try {
         setTokenizing(true);
+        // If we already used a token in this modal session (previous attempt
+        // failed / 3DS timed out), force-remount the Tap card iframe so the
+        // next tokenize() returns a fresh tok_xxx. Tap rejects token reuse
+        // with error 1126 "Source already used".
+        if (lastTokenIdRef.current) {
+          cardApiRef.current.reinit();
+          // Give the SDK a tick to remount before tokenizing again.
+          await new Promise((r) => setTimeout(r, 250));
+        }
         tokenId = await cardApiRef.current.tokenize();
+        lastTokenIdRef.current = tokenId;
       } catch (err: any) {
-        // Route tokenize failures through the same `failed` overlay used
-        // for post-charge errors. A toast was too easy to miss — users
-        // were clicking Pay and seeing the form re-render with no
-        // explanation. The overlay surfaces the reason persistently
-        // with a Retry CTA.
         setTokenizing(false);
         const fallback = isRTL ? "تعذّر التحقق من بيانات البطاقة" : "Could not validate card details";
         tap.setExternalError(err?.message || fallback);
@@ -345,6 +353,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       } finally {
         setTokenizing(false);
       }
+    } else if (tokenId) {
+      // Apple Pay / re-supplied token — track it too so any later card retry
+      // forces a clean reinit.
+      lastTokenIdRef.current = tokenId;
     }
 
     await tap.submitPayment({
