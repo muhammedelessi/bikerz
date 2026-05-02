@@ -304,6 +304,8 @@ const AdminTrainings: React.FC = () => {
     });
     setSupplies([]);
     setSessions([]);
+    setVideos([]);
+    setSkills([]);
     setOpenSessionIndex(null);
     setNewSupply({ name_ar: '', name_en: '' });
     setImageFile(null);
