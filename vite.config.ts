@@ -36,6 +36,12 @@ export default defineConfig(({ mode }) => {
         ],
       },
       workbox: {
+        // skipWaiting: true  — the new service worker activates immediately
+        // instead of waiting for all tabs to close. Paired with clientsClaim
+        // this ensures users get the updated JS bundle on the very next page
+        // load, without having to close their browser tab first.
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,avif,woff2,woff,ttf,json}"],
         runtimeCaching: [
           {

@@ -1,0 +1,108 @@
+/**
+ * Type declarations for Tap Payments Card SDK v2 (window.CardSDK).
+ * Loaded dynamically from https://tap-sdks.b-cdn.net/card/1.0.2/index.js.
+ *
+ * Reference: https://developers.tap.company/docs/card-sdk-web-v2
+ */
+
+// Tap's SDK accepts both upper and lower case for these enums depending on
+// the build; lowercase is what their current docs show, uppercase is what
+// older builds emit. Allow either so callers don't have to remember which.
+export type TapCardLocale = "EN" | "AR" | "en" | "ar";
+export type TapCardTheme = "LIGHT" | "DARK" | "light" | "dark";
+export type TapCardEdges = "CURVED" | "STRAIGHT" | "curved" | "straight";
+export type TapCardDirection = "LTR" | "RTL" | "ltr" | "rtl";
+
+export interface TapCardCustomerName {
+  lang: TapCardLocale;
+  first?: string;
+  last?: string;
+  middle?: string;
+}
+
+export interface TapCardConfig {
+  publicKey: string;
+  merchant?: { id?: string };
+  transaction: {
+    amount: number;
+    currency: string;
+  };
+  customer?: {
+    id?: string;
+    name?: TapCardCustomerName[];
+    nameOnCard?: string;
+    editable?: boolean;
+    contact?: {
+      email?: string;
+      phone?: { countryCode: string; number: string };
+    };
+  };
+  acceptance?: {
+    supportedBrands?: string[];
+    supportedCards?: "ALL" | string[];
+    /** ["3DS"] forces 3-D Secure authentication on every charge. */
+    supportedPaymentAuthentications?: string[];
+  };
+  fields?: { cardHolder?: boolean };
+  addons?: {
+    loader?: boolean;
+    saveCard?: boolean;
+    displayPaymentBrands?: boolean;
+  };
+  interface?: {
+    locale?: TapCardLocale;
+    theme?: TapCardTheme;
+    edges?: TapCardEdges;
+    direction?: TapCardDirection;
+    /** Hex color used for the active border, focus rings, and brand accents. */
+    colorStyle?: string;
+  };
+  onReady?: () => void;
+  onFocus?: () => void;
+  onBinIdentification?: (data: unknown) => void;
+  onValidInput?: (data: unknown) => void;
+  onInvalidInput?: (data: unknown) => void;
+  onError?: (data: unknown) => void;
+  onSuccess?: (data: TapTokenizeResult) => void;
+  onChangeSaveCardLater?: (isSaveCardSelected: boolean) => void;
+}
+
+/** Subset of the token response returned via onSuccess. The `id` (tok_xxx) is what we forward to the backend. */
+export interface TapTokenizeResult {
+  id: string;
+  status?: string;
+  type?: string;
+  card?: {
+    brand?: string;
+    last_four?: string;
+    first_six?: string;
+  };
+  [key: string]: unknown;
+}
+
+export interface TapCardSdkInstance {
+  unmount?: () => void;
+}
+
+export interface TapCardSdkGlobal {
+  renderTapCard: (containerId: string, config: TapCardConfig) => TapCardSdkInstance;
+  tokenize: () => void;
+  resetCardInputs?: () => void;
+  saveCard?: () => void;
+  updateCardConfiguration?: (partial: Partial<TapCardConfig>) => void;
+  updateTheme?: (theme: "dark" | "light") => void;
+  loadSavedCard?: (cardId: string) => void;
+  Theme?: Record<TapCardTheme, TapCardTheme>;
+  Locale?: Record<TapCardLocale, TapCardLocale>;
+  Edges?: Record<TapCardEdges, TapCardEdges>;
+  Direction?: Record<TapCardDirection, TapCardDirection>;
+  Currencies?: Record<string, string>;
+}
+
+declare global {
+  interface Window {
+    CardSDK?: TapCardSdkGlobal;
+  }
+}
+
+export {};

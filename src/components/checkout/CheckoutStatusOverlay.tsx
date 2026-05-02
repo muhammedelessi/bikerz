@@ -1,11 +1,13 @@
-import React, { memo } from 'react';
+import React, { forwardRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, CheckCircle2, XCircle, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Sparkles, RefreshCw, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import type { PaymentStatus } from '@/types/payment';
 import { translateTapPaymentDisplayError } from '@/lib/userFacingServerMessages';
+import PaymentProgressSteps from '@/components/checkout/PaymentProgressSteps';
+import CheckoutWhatsAppHelp from '@/components/checkout/CheckoutWhatsAppHelp';
 
 interface CheckoutStatusOverlayProps {
   paymentStatus: PaymentStatus;
@@ -14,36 +16,143 @@ interface CheckoutStatusOverlayProps {
   onSuccess: () => void;
   onOpenChange: (open: boolean) => void;
   onRetry: () => void;
+  /** Called by the "Refresh" button on the `confirming` state to re-poll Tap. */
+  onRecheck?: () => Promise<void>;
   navigate: (path: string) => void;
 }
 
-const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
+// forwardRef so Radix Dialog/Drawer Portal + framer Presence can forward
+// a ref into this overlay for mount-tracking. Without forwardRef React
+// emits "Function components cannot be given refs" on every state change
+// during checkout.
+//
+// Note: the previous version composed memo(forwardRef(...)). vaul's
+// Presence wrapper rejected it at runtime with "Component is not a
+// function" — so we drop memo (the parent CheckoutModal already
+// memoizes status state and the overlay only renders during a single
+// payment, performance hit is negligible).
+const CheckoutStatusOverlay = forwardRef<HTMLDivElement, CheckoutStatusOverlayProps>(({
   paymentStatus,
   paymentError,
   courseId,
   onSuccess,
   onOpenChange,
   onRetry,
+  onRecheck,
   navigate,
-}) => {
+}, ref) => {
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
+  const [rechecking, setRechecking] = useState(false);
   const localizedPaymentError = paymentError ? translateTapPaymentDisplayError(paymentError, t) : null;
 
-  if (paymentStatus === 'verifying') {
+  // Treat `challenging_3ds` like `processing` here — the 3DS modal renders
+  // OVER this status overlay, so the user sees the OTP iframe foregrounded
+  // with the "we're processing your payment" reassurance behind it. Without
+  // this case, the overlay returned `null` and (combined with the missing
+  // case in CheckoutModal.isStatusOverlay) the user saw nothing happen.
+  if (
+    paymentStatus === 'processing' ||
+    paymentStatus === 'verifying' ||
+    paymentStatus === 'challenging_3ds'
+  ) {
+    const titleKey =
+      paymentStatus === 'processing' || paymentStatus === 'challenging_3ds'
+        ? 'checkout.statusOverlay.processingPayment'
+        : 'checkout.statusOverlay.verifyingPayment';
+    const subKey =
+      paymentStatus === 'processing' || paymentStatus === 'challenging_3ds'
+        ? 'checkout.statusOverlay.doNotClosePage'
+        : 'checkout.statusOverlay.pleaseWaitMoment';
     return (
       <motion.div
+        ref={ref}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex flex-col items-center justify-center py-12 text-center"
+        className="flex flex-col items-center justify-center px-4 py-10 text-center gap-1"
+        role="status"
+        aria-live="polite"
       >
-        <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
         <h4 className="text-lg font-bold text-foreground mb-1">
-          {t('checkout.statusOverlay.verifyingPayment')}
+          {t(titleKey)}
         </h4>
-        <p className="text-sm text-muted-foreground">
-          {t('checkout.statusOverlay.pleaseWaitMoment')}
+        <p className="text-sm text-muted-foreground mb-5">
+          {t(subKey)}
         </p>
+        {/* Stepped progress replaces the lonely spinner — gives users
+            concrete forward motion so they're less likely to abandon
+            during the slow bank-confirmation step. */}
+        <PaymentProgressSteps paymentStatus={paymentStatus} isRTL={isRTL} />
+        {/* WhatsApp help — only shows on slow charges (after 8s) so we
+            don't distract during the fast happy path. */}
+        <div className="mt-5">
+          <CheckoutWhatsAppHelp
+            context="processing"
+            delayMs={8000}
+            courseId={courseId}
+          />
+        </div>
+      </motion.div>
+    );
+  }
+
+  /**
+   * `confirming` — verification polling exhausted. The charge MAY have
+   * succeeded but Tap hasn't confirmed yet. CRITICAL: do NOT show "Try Again"
+   * here — the user could double-pay on a charge that's about to succeed.
+   * Instead show a "Refresh" CTA that re-polls verifyCharge.
+   */
+  if (paymentStatus === 'confirming') {
+    const handleRefresh = async () => {
+      if (!onRecheck || rechecking) return;
+      setRechecking(true);
+      try {
+        await onRecheck();
+      } finally {
+        setRechecking(false);
+      }
+    };
+    return (
+      <motion.div
+        ref={ref}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center justify-center py-8 px-4 text-center"
+        role="status"
+        aria-live="polite"
+      >
+        <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-4">
+          <Clock className="w-8 h-8 text-amber-500" />
+        </div>
+        <h4 className="text-xl font-bold text-foreground mb-2">
+          {t('checkout.statusOverlay.confirmingTitle')}
+        </h4>
+        <p className="mb-5 max-w-md text-sm text-muted-foreground leading-relaxed">
+          {t('checkout.statusOverlay.confirmingBody')}
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2 w-full max-w-md">
+          <Button variant="cta" className="flex-1" onClick={handleRefresh} disabled={rechecking}>
+            {rechecking ? (
+              <Loader2 className="w-4 h-4 animate-spin me-2" />
+            ) : (
+              <RefreshCw className="w-4 h-4 me-2" />
+            )}
+            {t('checkout.statusOverlay.refreshStatus')}
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => {
+              onOpenChange(false);
+              navigate(`/courses/${courseId}`);
+            }}
+          >
+            {isRTL ? 'العودة لاحقاً' : 'Check later'}
+          </Button>
+        </div>
+        <div className="mt-4">
+          <CheckoutWhatsAppHelp context="confirming" courseId={courseId} />
+        </div>
       </motion.div>
     );
   }
@@ -51,9 +160,12 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
   if (paymentStatus === 'succeeded') {
     return (
       <motion.div
+        ref={ref}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="flex flex-col items-center justify-center py-8 text-center"
+        role="status"
+        aria-live="assertive"
       >
         <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
           <CheckCircle2 className="w-8 h-8 text-primary" />
@@ -80,11 +192,15 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
   }
 
   if (paymentStatus === 'failed') {
+    const reason = localizedPaymentError || t('checkout.statusOverlay.paymentErrorFallback');
     return (
       <motion.div
+        ref={ref}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center justify-center py-8 text-center"
+        className="flex flex-col items-center justify-center py-8 px-4 text-center"
+        role="alert"
+        aria-live="assertive"
       >
         <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
           <XCircle className="w-8 h-8 text-destructive" />
@@ -92,12 +208,38 @@ const CheckoutStatusOverlay: React.FC<CheckoutStatusOverlayProps> = memo(({
         <h4 className="text-xl font-bold text-foreground mb-2">
           {t('checkout.statusOverlay.paymentFailed')}
         </h4>
-        <p className="text-muted-foreground mb-4">
-          {localizedPaymentError || t('checkout.statusOverlay.paymentErrorFallback')}
+        <p className="mb-4 max-w-md text-sm text-muted-foreground leading-relaxed">
+          {t('checkout.statusOverlay.noDeductionNotice')}
         </p>
-        <Button variant="outline" onClick={onRetry}>
-          {t('checkout.statusOverlay.tryAgain')}
-        </Button>
+        <div
+          dir={isRTL ? 'rtl' : 'ltr'}
+          className="w-full max-w-md mb-5 rounded-xl border-2 border-destructive/30 bg-destructive/5 p-4 text-start"
+        >
+          <p className="text-xs font-semibold uppercase tracking-wide text-destructive mb-1">
+            {t('checkout.statusOverlay.failureReasonLabel')}
+          </p>
+          <p className="text-sm font-medium text-foreground leading-relaxed break-words">
+            {reason}
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 w-full max-w-md">
+          <Button variant="cta" className="flex-1" onClick={onRetry}>
+            {t('checkout.statusOverlay.tryAgain')}
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => {
+              onOpenChange(false);
+              navigate(`/courses/${courseId}`);
+            }}
+          >
+            {t('payment.backToCourse')}
+          </Button>
+        </div>
+        <div className="mt-4">
+          <CheckoutWhatsAppHelp context="failed" reason={reason} courseId={courseId} />
+        </div>
       </motion.div>
     );
   }

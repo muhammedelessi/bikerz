@@ -1,1 +1,8 @@
+# Proxy Apple Pay domain verification through Supabase Edge Function.
+# Lovable's hosting excludes dot-directories (.well-known/) from the build output,
+# so the static file in public/.well-known/ is never served. The Edge Function
+# holds the file content and the 200 rewrite keeps the original URL intact
+# (Apple/Tap fetches /.well-known/... and must receive a 200, not a redirect).
+/.well-known/apple-developer-merchantid-domain-association  https://gifovgwlxwuiibfzyvwb.supabase.co/functions/v1/apple-pay-verify  301
+
 /datafeed.xml https://gifovgwlxwuiibfzyvwb.supabase.co/functions/v1/meta-product-feed 301

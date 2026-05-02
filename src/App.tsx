@@ -236,6 +236,15 @@ const DeferredSocialProof = () => {
   );
 };
 
+const ApplePayDomainVerify = () => {
+  useEffect(() => {
+    window.location.replace(
+      "https://gifovgwlxwuiibfzyvwb.supabase.co/functions/v1/apple-pay-verify"
+    );
+  }, []);
+  return null;
+};
+
 /** Floating WhatsApp CTA is for public / learner UX only, not admin consoles. */
 const WhatsAppFloatingButtonGate = () => {
   const { pathname } = useLocation();
@@ -682,6 +691,16 @@ const AppRoutes = () => (
         {/* Meta product feed redirect */}
         <Route path="/datafeed.xml" element={<DataFeed />} />
         <Route path="/datafeed" element={<DataFeed />} />
+
+        {/*
+          Apple Pay domain verification — must come before the * catch-all.
+          Lovable's hosting serves index.html for dot-directories so React Router
+          receives this request. Redirect to the Supabase Edge Function.
+        */}
+        <Route
+          path="/.well-known/apple-developer-merchantid-domain-association"
+          element={<ApplePayDomainVerify />}
+        />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
