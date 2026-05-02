@@ -36,20 +36,35 @@ Deno.serve(async (req) => {
       originHost.endsWith(".lovable.app") ||
       originHost.endsWith(".lovable.dev");
 
-    let tapSecretKey: string | undefined;
+    // Build an ordered, deduped list of candidate Tap secret keys to try.
+    // Charges may have been created with a different domain's key than the verifier
+    // sees in `origin` (esp. after 3DS redirect or cross-domain flows). We try the
+    // most-likely key first based on origin, then fall back to all configured keys.
+    const preferred: (string | undefined)[] = [];
     if (originHost === "bikerz.com" || originHost.endsWith(".bikerz.com")) {
-      tapSecretKey = isPreviewHost
-        ? (env("TAP_SK_TEST_BIKERZ") ?? env("TAP_SECRET_TEST_KEY") ?? env("TAP_SECRET_KEY"))
-        : (env("TAP_SK_LIVE_BIKERZ") ?? env("TAP_SECRET_KEY"));
+      preferred.push(
+        isPreviewHost ? env("TAP_SK_TEST_BIKERZ") : env("TAP_SK_LIVE_BIKERZ"),
+        env("TAP_SK_LIVE_BIKERZ"),
+        env("TAP_SK_TEST_BIKERZ"),
+      );
     } else if (originHost === "lovable.app" || originHost.endsWith(".lovable.app")) {
-      tapSecretKey = env("TAP_SK_TEST_LOVABLE_APP") ?? env("TAP_SK_LIVE_LOVABLE_APP") ?? env("TAP_SECRET_KEY");
+      preferred.push(env("TAP_SK_LIVE_LOVABLE_APP"), env("TAP_SK_TEST_LOVABLE_APP"));
     } else if (originHost === "lovableproject.com" || originHost.endsWith(".lovableproject.com")) {
-      tapSecretKey = env("TAP_SK_TEST_LOVABLEPROJECT") ?? env("TAP_SK_LIVE_LOVABLEPROJECT") ?? env("TAP_SECRET_KEY");
-    } else {
-      tapSecretKey = env("TAP_SECRET_TEST_KEY") ?? env("TAP_SK_TEST_BIKERZ") ?? env("TAP_SECRET_KEY");
+      preferred.push(env("TAP_SK_TEST_LOVABLEPROJECT"), env("TAP_SK_LIVE_LOVABLEPROJECT"));
     }
+    const candidateKeys = Array.from(new Set([
+      ...preferred,
+      env("TAP_SK_LIVE_BIKERZ"),
+      env("TAP_SK_LIVE_LOVABLE_APP"),
+      env("TAP_SK_LIVE_LOVABLEPROJECT"),
+      env("TAP_SK_TEST_BIKERZ"),
+      env("TAP_SK_TEST_LOVABLE_APP"),
+      env("TAP_SK_TEST_LOVABLEPROJECT"),
+      env("TAP_SECRET_KEY"),
+      env("TAP_SECRET_TEST_KEY"),
+    ].filter((v): v is string => typeof v === "string" && v.length > 0)));
 
-    if (!tapSecretKey) {
+    if (candidateKeys.length === 0) {
       return new Response(
         JSON.stringify({ error: "Payment service not configured for this domain" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -99,30 +114,42 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Retrieve charge from Tap API (source of truth)
-    let tapResponse: Response;
-    try {
-      tapResponse = await fetch(`https://api.tap.company/v2/charges/${charge_id}`, {
-        headers: {
-          Authorization: `Bearer ${tapSecretKey}`,
-          Accept: "application/json",
-        },
-        signal: AbortSignal.timeout(VERIFY_TIMEOUT),
-      });
-    } catch (fetchErr: any) {
-      console.error("Tap API timeout/network error during verify:", fetchErr.message);
-      return new Response(
-        JSON.stringify({ error: "Payment verification timed out. Please refresh to check status." }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Retrieve charge from Tap API (source of truth). Try each candidate key until 200.
+    let tapResponse: Response | null = null;
+    let lastStatus = 0;
+    let lastErrText = "";
+    for (let i = 0; i < candidateKeys.length; i += 1) {
+      const key = candidateKeys[i];
+      try {
+        const r = await fetch(`https://api.tap.company/v2/charges/${charge_id}`, {
+          headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
+          signal: AbortSignal.timeout(VERIFY_TIMEOUT),
+        });
+        if (r.ok) {
+          tapResponse = r;
+          break;
+        }
+        lastStatus = r.status;
+        lastErrText = await r.text().catch(() => "");
+        // 429 from Tap means we should stop hammering immediately
+        if (r.status === 429) break;
+        // Brief pause between keys to stay under Tap's rate limit
+        if (i < candidateKeys.length - 1) await new Promise((res) => setTimeout(res, 250));
+      } catch (fetchErr: any) {
+        console.error("Tap API timeout/network error during verify:", fetchErr.message);
+        return new Response(
+          JSON.stringify({ error: "Payment verification timed out. Please refresh to check status." }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
-    if (!tapResponse.ok) {
-      const errText = await tapResponse.text().catch(() => "");
-      console.error("Tap verify API error:", tapResponse.status, errText.substring(0, 200));
+    if (!tapResponse) {
+      console.error("Tap verify API error after all keys:", lastStatus, lastErrText.substring(0, 200));
+      const isRateLimited = lastStatus === 429;
       return new Response(
-        JSON.stringify({ error: "Failed to verify charge" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: isRateLimited ? "Payment gateway busy. Please refresh in a moment." : "Failed to verify charge" }),
+        { status: isRateLimited ? 503 : 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
