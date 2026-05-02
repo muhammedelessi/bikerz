@@ -181,10 +181,10 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
     onStatusChange({ sdkLoading, sdkReady, cardValid, sdkError });
   }, [sdkLoading, sdkReady, cardValid, sdkError, onStatusChange]);
 
-  // Hand the tokenize fn up to the parent once.
+  // Hand the tokenize + reinit fns up to the parent once.
   React.useEffect(() => {
-    onApiReady({ tokenize });
-  }, [tokenize, onApiReady]);
+    onApiReady({ tokenize, reinit });
+  }, [tokenize, reinit, onApiReady]);
 
   // ---- Apple Pay (only renders on supported Safari/Apple devices) ----
   const applePayConfig = useMemo(
