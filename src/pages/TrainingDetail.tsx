@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Clock, GraduationCap, Star, Users, Video, Wrench } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Clock, GraduationCap, Star, Trophy, Users, Video, Wrench } from "lucide-react";
 import type { TrainerCourseRow } from "@/lib/trainingBookingUtils";
 import { translateTrainerCourseLocation } from "@/lib/trainerCourseLocation";
 import { COUNTRIES } from "@/data/countryCityData";
