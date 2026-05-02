@@ -186,18 +186,18 @@ export const TrainerAddTrainingPage: React.FC<Props> = ({ trainerId, existingTra
         {loadingList ? (
           <Skeleton className="h-10 w-full rounded-md" />
         ) : (
-          <Select value={trainingId} onValueChange={setTrainingId}>
-            <SelectTrigger>
+          <Select value={trainingId} onValueChange={setTrainingId} dir={isRTL ? "rtl" : "ltr"}>
+            <SelectTrigger dir={isRTL ? "rtl" : "ltr"} className={isRTL ? "text-right" : "text-left"}>
               <SelectValue placeholder={tx("اختر تدريب من الكتالوج", "Select a training from the catalog")} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent dir={isRTL ? "rtl" : "ltr"} className={isRTL ? "text-right" : "text-left"}>
               {availableTrainings.length === 0 ? (
                 <div className="p-3 text-center text-xs text-muted-foreground">
                   {tx("لا توجد تدريبات متاحة للإضافة", "No more trainings available")}
                 </div>
               ) : (
                 availableTrainings.map((tr) => (
-                  <SelectItem key={tr.id} value={tr.id}>
+                  <SelectItem key={tr.id} value={tr.id} className={isRTL ? "text-right" : "text-left"}>
                     {isRTL ? tr.name_ar : tr.name_en}
                   </SelectItem>
                 ))
