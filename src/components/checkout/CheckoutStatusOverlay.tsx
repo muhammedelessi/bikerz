@@ -163,21 +163,33 @@ const CheckoutStatusOverlay = forwardRef<HTMLDivElement, CheckoutStatusOverlayPr
         ref={ref}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center justify-center py-8 text-center"
+        className="flex flex-col items-center justify-center py-8 px-4 text-center"
         role="status"
         aria-live="assertive"
       >
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-          <CheckCircle2 className="w-8 h-8 text-primary" />
+        {/* Animated success ring with concentric pulses */}
+        <div className="relative mb-5">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: [0, 1.2, 1] }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="w-20 h-20 rounded-full bg-emerald-500/15 flex items-center justify-center"
+          >
+            <div className="w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+              <CheckCircle2 className="w-9 h-9 text-white" strokeWidth={2.5} />
+            </div>
+          </motion.div>
         </div>
-        <h4 className="text-xl font-bold text-foreground mb-2">
+        <h4 className="text-2xl font-extrabold text-foreground mb-2 tracking-tight">
           {t('checkout.statusOverlay.paymentSuccessful')}
         </h4>
-        <p className="text-muted-foreground mb-4">
+        <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">
           {t('checkout.statusOverlay.enrolledSuccess')}
         </p>
         <Button
           variant="cta"
+          size="lg"
+          className="h-12 px-8 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-shadow"
           onClick={() => {
             onSuccess();
             onOpenChange(false);

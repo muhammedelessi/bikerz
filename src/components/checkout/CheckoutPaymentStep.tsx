@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Gift, Shield, Check, Lock, Pencil, X, Phone, MapPin, User, AlertTriangle, Loader2 } from "lucide-react";
+import { Gift, Shield, ShieldCheck, Check, Lock, Pencil, X, Phone, MapPin, User, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -326,14 +326,74 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
             </AnimatePresence>
           )}
 
+          {/* Compact order summary — always visible on mobile + desktop.
+              Provides a clear, persistent reference of what the user is about
+              to pay, even if they scroll past the original modal header. */}
+          {!bundleMode && (
+            <div className="rounded-xl border border-border bg-card/60 p-3 sm:p-4 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {isRTL ? "تفاصيل الطلب" : "Order summary"}
+                </span>
+                {promoApplied && discountLabel && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                    <Check className="w-3 h-3" />
+                    {discountLabel}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-baseline justify-between gap-2 pt-1">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {isRTL
+                    ? vatPct > 0 ? "الإجمالي شامل الضريبة" : "الإجمالي"
+                    : vatPct > 0 ? "Total (incl. VAT)" : "Total"}
+                </span>
+                <span className="flex items-baseline gap-2">
+                  {promoApplied && originalPrice != null && originalPrice > totalWithVat ? (
+                    <motion.span
+                      key="old-price"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-xs font-medium text-muted-foreground line-through tabular-nums"
+                    >
+                      {formatLocal(originalPrice)}
+                    </motion.span>
+                  ) : null}
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.span
+                      key={`total-${totalWithVat}`}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                      className="text-base sm:text-lg font-extrabold text-primary tabular-nums"
+                    >
+                      {totalWithVat} {currencyLabel}
+                    </motion.span>
+                  </AnimatePresence>
+                </span>
+              </div>
+
+              {/* Currency conversion hint (only when not SAR) */}
+              {!isSAR && exchangeRate > 0 && (() => {
+                const sarEquivalent = Math.ceil(totalWithVat / exchangeRate);
+                const sarLabel = isRTL ? "ر.س" : "SAR";
+                return (
+                  <p className="text-[11px] text-muted-foreground text-center bg-muted/30 rounded-md py-1.5 px-2 leading-tight">
+                    {isRTL ? "سيُخصم على بطاقتك" : "Charged on your card"}:{" "}
+                    <span className="font-bold text-foreground tabular-nums">{sarEquivalent} {sarLabel}</span>
+                  </p>
+                );
+              })()}
+            </div>
+          )}
+
           {/* Embedded card form rendered directly under the discount/promo section */}
           {cardFormSlot}
 
-          {/* Total + charge hint. On mobile, this whole card is hidden — the
-              header already displays the discounted price prominently and the
-              Pay button below repeats it as part of its label, so a separate
-              "Total" card was just eating vertical space the user needs to
-              see the card iframe + Pay button without scrolling. */}
+          {/* Detailed total breakdown — desktop-only; mobile relies on the
+              compact summary above + the Pay button label. */}
           {!bundleMode && !isMobile && (
             <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2.5">
               <div className="flex justify-between font-bold text-base items-baseline gap-2">
@@ -441,41 +501,32 @@ const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
             </Alert>
           )}
 
-          {/* Trust badge. Mobile: one tight line so it doesn't push the
-              Pay button below the fold. Desktop: stacked layout keeps the
-              individual security marks (3D Secure, PCI DSS) visible. */}
-          <div className={isMobile
-            ? "flex items-center justify-center gap-2 pt-1 text-[11px] text-muted-foreground"
-            : "flex flex-col items-center gap-2 pt-2"
-          }>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {/* Unified trust strip — single horizontal line on both mobile and
+              desktop. Visually grouped with subtle separators so all three
+              signals (Tap, 3D Secure, PCI DSS) read as one cohesive badge
+              rather than competing labels. */}
+          <div className="flex items-center justify-center flex-wrap gap-x-3 gap-y-1.5 pt-1.5 pb-0.5">
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80">
               <Lock className="w-3.5 h-3.5 text-primary" />
               <span>
                 {bundleMode
                   ? isRTL
-                    ? "دفع إلكتروني مؤمّن"
-                    : "Secure online payment"
+                    ? "دفع آمن"
+                    : "Secure payment"
                   : isRTL
-                    ? "مُؤمّن بواسطة Tap Payments"
-                    : "Secured by Tap Payments"}
+                    ? "Tap Payments"
+                    : "Tap Payments"}
               </span>
             </div>
-            {isMobile ? (
-              <span className="text-muted-foreground/40">·</span>
-            ) : null}
-            <div className={isMobile
-              ? "flex items-center gap-2 text-[10px] text-muted-foreground/60"
-              : "flex items-center gap-3"
-            }>
-              <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
-                <Shield className="w-3 h-3" />
-                <span>3D Secure</span>
-              </div>
-              {!isMobile && <span className="text-muted-foreground/20">|</span>}
-              <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
-                <Shield className="w-3 h-3" />
-                <span>PCI DSS</span>
-              </div>
+            <span className="text-muted-foreground/30">•</span>
+            <div className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+              <Shield className="w-3 h-3" />
+              <span>3D Secure</span>
+            </div>
+            <span className="text-muted-foreground/30">•</span>
+            <div className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+              <ShieldCheck className="w-3 h-3" />
+              <span>PCI DSS</span>
             </div>
           </div>
         </motion.div>

@@ -59,7 +59,7 @@ const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ ur
   return (
     <div
       ref={ref}
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-6"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={isRTL ? 'تأكيد البطاقة' : 'Card verification'}
@@ -69,19 +69,26 @@ const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ ur
         means the soft keyboard (for OTP entry) shrinks the available area
         without the iframe extending below the visible region.
       */}
-      <div className="relative flex w-full max-w-md flex-col overflow-hidden rounded-xl border-2 border-border bg-card shadow-2xl"
+      <div className="relative flex w-full max-w-md flex-col overflow-hidden rounded-2xl border-2 border-border bg-card shadow-2xl"
            style={{ height: 'min(100dvh - 24px, 720px)' }}>
-        <div className="px-4 py-3 border-b-2 border-border bg-muted/30 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground min-w-0">
-            <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
-            <span className="truncate">
-              {isRTL ? 'تأكيد البطاقة (3D Secure)' : 'Card Verification (3D Secure)'}
+        <div className="px-4 py-3 border-b-2 border-border bg-gradient-to-b from-muted/40 to-muted/20 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-2.5 text-sm font-semibold text-foreground min-w-0">
+            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <ShieldCheck className="w-4 h-4" />
             </span>
+            <div className="min-w-0 flex flex-col leading-tight">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
+                {isRTL ? 'تحقّق آمن' : 'Secure verification'}
+              </span>
+              <span className="truncate text-xs font-bold text-foreground">
+                {isRTL ? 'تأكيد البطاقة 3D Secure' : 'Card Verification (3D Secure)'}
+              </span>
+            </div>
           </div>
           <button
             type="button"
             onClick={onCancel}
-            className="shrink-0 min-h-[36px] px-3 text-xs font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded border border-transparent hover:border-border"
+            className="shrink-0 min-h-[36px] px-3 text-xs font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md border border-border bg-background hover:border-destructive/40"
             aria-label={isRTL ? 'إلغاء التحقق' : 'Cancel verification'}
           >
             {isRTL ? 'إلغاء' : 'Cancel'}
@@ -90,9 +97,9 @@ const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ ur
 
         {/* Reassurance strip — tells the user they're on a real verification
             step, not stuck. Loader spins to confirm motion. */}
-        <div className="px-4 py-2 bg-primary/5 border-b border-primary/20 flex items-center gap-2 text-xs text-foreground/80 flex-shrink-0">
+        <div className="px-4 py-2.5 bg-primary/5 border-b border-primary/20 flex items-center gap-2 text-xs text-foreground/80 flex-shrink-0">
           <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
-          <span>
+          <span className="leading-tight">
             {isRTL
               ? 'بنك بطاقتك يطلب رمز التحقق (OTP). أدخل الرمز لإتمام الدفع.'
               : "Your bank is requesting a verification code (OTP). Enter it to complete the payment."}

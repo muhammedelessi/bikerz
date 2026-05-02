@@ -2,7 +2,7 @@ import React, { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
-  User, Mail, MapPin, Pencil, Info,
+  User, Mail, MapPin, Pencil, Info, ShieldCheck,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
@@ -50,6 +50,33 @@ interface CheckoutInfoStepProps {
   setErrors: (fn: (prev: ValidationErrors) => ValidationErrors) => void;
 }
 
+/**
+ * Visual section card — wraps a group of related fields with an icon header.
+ * Adds clear visual hierarchy on both mobile and desktop without taking
+ * excessive vertical space.
+ */
+const SectionCard: React.FC<{
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}> = ({ icon: Icon, title, subtitle, children }) => (
+  <section className="rounded-2xl border border-border bg-card/40 p-3.5 sm:p-4 space-y-3.5">
+    <header className="flex items-center gap-2.5">
+      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <Icon className="w-4 h-4" />
+      </span>
+      <div className="min-w-0">
+        <h4 className="font-semibold text-foreground text-sm leading-tight">{title}</h4>
+        {subtitle && (
+          <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{subtitle}</p>
+        )}
+      </div>
+    </header>
+    {children}
+  </section>
+);
+
 const CheckoutInfoStep: React.FC<CheckoutInfoStepProps> = memo(({
   isRTL, user,
   fullName, setFullName, hasNamePrefilled, isEditingName, setIsEditingName,
@@ -78,11 +105,21 @@ const CheckoutInfoStep: React.FC<CheckoutInfoStepProps> = memo(({
       initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
-      className="space-y-4"
+      className="space-y-3 sm:space-y-4"
     >
+      {/* Welcome strip — sets the tone, builds trust */}
+      <div className="flex items-center gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-2.5">
+        <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" />
+        <p className="text-xs text-foreground/80 leading-tight">
+          {isRTL
+            ? 'بياناتك محمية ولا تُستخدم إلا لإصدار الفاتورة وتأكيد التسجيل.'
+            : 'Your details are protected and only used for invoicing and enrollment confirmation.'}
+        </p>
+      </div>
+
       {/* Missing fields warning */}
       {user && missingFields.length > 0 && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+        <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
           <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
           <div className="text-xs text-amber-700 dark:text-amber-300">
             <p className="font-semibold mb-0.5">
@@ -94,95 +131,97 @@ const CheckoutInfoStep: React.FC<CheckoutInfoStepProps> = memo(({
       )}
 
       {/* Personal Information Section */}
-      <div className="flex items-center gap-2 mb-1">
-        <User className="w-4 h-4 text-primary" />
-        <h4 className="font-semibold text-foreground">
-          {isRTL ? 'المعلومات الشخصية' : 'Personal Information'}
-        </h4>
-      </div>
-
-      {/* Name */}
-      <FormField label={`${t('fields.firstName.label')} ${t('fields.lastName.label')}`} error={errors.fullName} required>
-        {hasNamePrefilled && !isEditingName ? (
-          <div className="flex items-center justify-between rounded-md border border-input bg-muted/30 px-3 py-2 h-10">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-sm font-medium text-foreground">{fullName}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsEditingName(true)}
-              className="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        ) : (
-          <NameFields
-            firstName={firstName}
-            lastName={lastName}
-            onFirstNameChange={(val) => {
-              setFullName(joinFullName(val, lastName));
-              setErrors(prev => ({ ...prev, firstName: undefined, fullName: undefined }));
-            }}
-            onLastNameChange={(val) => {
-              setFullName(joinFullName(firstName, val));
-              setErrors(prev => ({ ...prev, lastName: undefined, fullName: undefined }));
-            }}
-            firstNameError={errors.firstName}
-            lastNameError={errors.lastName}
-            required
-          />
-        )}
-      </FormField>
-
-      {/* Email */}
-      <FormField
-        label={t('fields.email.label')}
-        error={errors.email}
-        required
+      <SectionCard
+        icon={User}
+        title={isRTL ? 'المعلومات الشخصية' : 'Personal Information'}
+        subtitle={isRTL ? 'الاسم الذي سيظهر على الفاتورة' : 'Name shown on your invoice'}
       >
-        {user ? (
-          <div className="flex items-center rounded-md border border-input bg-muted/30 px-3 py-2 h-10">
-            <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0 me-2" />
-            <span className="text-sm text-foreground truncate" dir="ltr">{email}</span>
-          </div>
-        ) : (
-          <div className="relative">
-            <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
-              placeholder={t('fields.email.placeholder')}
-              className={`ps-11 ${errors.email ? 'border-destructive' : ''}`}
+        {/* Name */}
+        <FormField label={`${t('fields.firstName.label')} ${t('fields.lastName.label')}`} error={errors.fullName} required>
+          {hasNamePrefilled && !isEditingName ? (
+            <div className="flex items-center justify-between rounded-lg border border-input bg-muted/30 px-3 py-2 h-11">
+              <div className="flex items-center gap-2 min-w-0">
+                <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-sm font-medium text-foreground truncate">{fullName}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditingName(true)}
+                className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label={isRTL ? 'تعديل الاسم' : 'Edit name'}
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{isRTL ? 'تعديل' : 'Edit'}</span>
+              </button>
+            </div>
+          ) : (
+            <NameFields
+              firstName={firstName}
+              lastName={lastName}
+              onFirstNameChange={(val) => {
+                setFullName(joinFullName(val, lastName));
+                setErrors(prev => ({ ...prev, firstName: undefined, fullName: undefined }));
+              }}
+              onLastNameChange={(val) => {
+                setFullName(joinFullName(firstName, val));
+                setErrors(prev => ({ ...prev, lastName: undefined, fullName: undefined }));
+              }}
+              firstNameError={errors.firstName}
+              lastNameError={errors.lastName}
+              required
             />
-          </div>
-        )}
-      </FormField>
+          )}
+        </FormField>
 
-      {/* Phone */}
-      <PhoneField
-        phonePrefix={phonePrefix}
-        phoneNumber={phone}
-        onPrefixChange={setPhonePrefix}
-        onNumberChange={(val) => {
-          setPhone(val);
-          setErrors(prev => ({ ...prev, phone: undefined }));
-        }}
-        error={errors.phone}
-        required
-      />
+        {/* Email */}
+        <FormField
+          label={t('fields.email.label')}
+          error={errors.email}
+          required
+        >
+          {user ? (
+            <div className="flex items-center rounded-lg border border-input bg-muted/30 px-3 py-2 h-11">
+              <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0 me-2" />
+              <span className="text-sm text-foreground truncate" dir="ltr">{email}</span>
+              <span className="ms-auto inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                <ShieldCheck className="w-3 h-3" />
+                <span className="hidden sm:inline">{isRTL ? 'موثّق' : 'Verified'}</span>
+              </span>
+            </div>
+          ) : (
+            <div className="relative">
+              <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
+                placeholder={t('fields.email.placeholder')}
+                className={`ps-11 h-11 ${errors.email ? 'border-destructive' : ''}`}
+              />
+            </div>
+          )}
+        </FormField>
+
+        {/* Phone */}
+        <PhoneField
+          phonePrefix={phonePrefix}
+          phoneNumber={phone}
+          onPrefixChange={setPhonePrefix}
+          onNumberChange={(val) => {
+            setPhone(val);
+            setErrors(prev => ({ ...prev, phone: undefined }));
+          }}
+          error={errors.phone}
+          required
+        />
+      </SectionCard>
 
       {/* Billing Address Section */}
-      <div className="rounded-lg border border-border p-3 space-y-3 mt-2">
-        <div className="flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-primary" />
-          <h4 className="font-semibold text-foreground text-sm">
-            {isRTL ? 'عنوان الفاتورة' : 'Billing Address'}
-          </h4>
-        </div>
-
+      <SectionCard
+        icon={MapPin}
+        title={isRTL ? 'عنوان الفاتورة' : 'Billing Address'}
+        subtitle={isRTL ? 'مطلوب من بوابة الدفع' : 'Required by the payment gateway'}
+      >
         <CountryCityPicker
           country={isOtherCountry ? '__other__' : selectedCountryCode}
           city={isOtherCity ? '__other__' : city}
@@ -196,7 +235,7 @@ const CheckoutInfoStep: React.FC<CheckoutInfoStepProps> = memo(({
           cityError={errors.city}
           required
         />
-      </div>
+      </SectionCard>
     </motion.div>
   );
 });

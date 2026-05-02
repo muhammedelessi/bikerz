@@ -69,10 +69,10 @@ const ResponsiveCheckoutShell: React.FC<ResponsiveCheckoutShellProps> = ({
       >
         <DrawerContent
           className={[
-            // 92dvh — leaves a small breathing strip so the drag handle is reachable.
+            // 95dvh — slightly taller for a more "full screen" feel on payment.
             // dvh adapts to the soft keyboard on iOS so the Pay button never gets
             // trapped beneath the keyboard.
-            "max-h-[92dvh] flex flex-col p-0 gap-0 border-2 border-border bg-card overflow-hidden",
+            "max-h-[95dvh] flex flex-col p-0 gap-0 border-2 border-b-0 border-border bg-card overflow-hidden rounded-t-2xl shadow-2xl",
             className || "",
           ].join(" ")}
         >
