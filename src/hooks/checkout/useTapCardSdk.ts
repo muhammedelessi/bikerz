@@ -262,6 +262,13 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
 
   const instanceRef = useRef<TapCardSdkInstance | null>(null);
   const readyFiredRef = useRef(false);
+  // Mirror sdkReady in a ref so tokenize() can poll for readiness after a
+  // reinit() (recovery from "Source already used") without needing to be
+  // re-created via the useCallback dep array.
+  const sdkReadyRef = useRef(false);
+  useEffect(() => {
+    sdkReadyRef.current = sdkReady;
+  }, [sdkReady]);
   const tokenizeResolversRef = useRef<{
     resolve: (token: string) => void;
     reject: (err: Error) => void;
