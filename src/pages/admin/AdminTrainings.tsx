@@ -55,6 +55,8 @@ interface Training {
   default_session_duration_hours?: number;
   trainer_supplies?: unknown;
   sessions?: unknown;
+  videos?: unknown;
+  skills?: unknown;
 }
 
 type TrainerSupply = { name_ar: string; name_en: string };
