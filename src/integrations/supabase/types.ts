@@ -3127,6 +3127,53 @@ export type Database = {
         }
         Relationships: []
       }
+      training_booking_skill_evaluations: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          note: string | null
+          score: number
+          skill_index: number
+          skill_name_ar: string | null
+          skill_name_en: string | null
+          trainer_id: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          score: number
+          skill_index: number
+          skill_name_ar?: string | null
+          skill_name_en?: string | null
+          trainer_id: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          score?: number
+          skill_index?: number
+          skill_name_ar?: string | null
+          skill_name_en?: string | null
+          trainer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_booking_skill_evaluations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "training_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_bookings: {
         Row: {
           amount: number
@@ -3276,9 +3323,11 @@ export type Database = {
           name_ar: string
           name_en: string
           sessions: Json
+          skills: Json
           status: Database["public"]["Enums"]["training_status"]
           trainer_supplies: Json | null
           type: Database["public"]["Enums"]["training_type"]
+          videos: Json
         }
         Insert: {
           background_image?: string | null
@@ -3292,9 +3341,11 @@ export type Database = {
           name_ar?: string
           name_en?: string
           sessions?: Json
+          skills?: Json
           status?: Database["public"]["Enums"]["training_status"]
           trainer_supplies?: Json | null
           type?: Database["public"]["Enums"]["training_type"]
+          videos?: Json
         }
         Update: {
           background_image?: string | null
@@ -3308,9 +3359,11 @@ export type Database = {
           name_ar?: string
           name_en?: string
           sessions?: Json
+          skills?: Json
           status?: Database["public"]["Enums"]["training_status"]
           trainer_supplies?: Json | null
           type?: Database["public"]["Enums"]["training_type"]
+          videos?: Json
         }
         Relationships: []
       }
