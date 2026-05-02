@@ -15,7 +15,20 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const tapSecretKey = Deno.env.get("TAP_SECRET_KEY")!;
+
+    // Webhooks don't carry domain info, so try every configured Tap secret
+    // key (per-domain live + test, then legacy fallback) until one succeeds.
+    const env = (k: string) => Deno.env.get(k);
+    const candidateKeys = [
+      env("TAP_SK_LIVE_BIKERZ"),
+      env("TAP_SK_TEST_BIKERZ"),
+      env("TAP_SK_LIVE_LOVABLE_APP"),
+      env("TAP_SK_TEST_LOVABLE_APP"),
+      env("TAP_SK_LIVE_LOVABLEPROJECT"),
+      env("TAP_SK_TEST_LOVABLEPROJECT"),
+      env("TAP_SECRET_KEY"),
+      env("TAP_SECRET_TEST_KEY"),
+    ].filter((v): v is string => typeof v === "string" && v.length > 0);
 
     const body = await req.json();
 
@@ -31,15 +44,28 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify charge by retrieving it from Tap API (source of truth)
-    const verifyResponse = await fetch(`https://api.tap.company/v2/charges/${chargeId}`, {
-      headers: {
-        Authorization: `Bearer ${tapSecretKey}`,
-      },
-    });
+    // Verify charge by retrieving it from Tap API (source of truth).
+    // Iterate through keys until one authenticates successfully.
+    let verifyResponse: Response | null = null;
+    let lastStatus = 0;
+    for (const key of candidateKeys) {
+      const r = await fetch(`https://api.tap.company/v2/charges/${chargeId}`, {
+        headers: { Authorization: `Bearer ${key}` },
+      });
+      if (r.ok) {
+        verifyResponse = r;
+        break;
+      }
+      lastStatus = r.status;
+      // 401/403 = wrong merchant key, try next. Other errors = real failure.
+      if (r.status !== 401 && r.status !== 403) {
+        verifyResponse = r;
+        break;
+      }
+    }
 
-    if (!verifyResponse.ok) {
-      console.error("Failed to verify charge with Tap API:", verifyResponse.status);
+    if (!verifyResponse || !verifyResponse.ok) {
+      console.error("Failed to verify charge with Tap API:", lastStatus || verifyResponse?.status);
       return new Response(
         JSON.stringify({ error: "Charge verification failed" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
