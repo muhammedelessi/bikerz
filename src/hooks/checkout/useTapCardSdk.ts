@@ -489,10 +489,6 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
 
   const tokenize = useCallback((): Promise<string> => {
     return new Promise((resolve, reject) => {
-      if (!sdkReady) {
-        reject(new Error("Card form is not ready yet"));
-        return;
-      }
       // Reject overlapping tokenize calls instead of overwriting the previous
       // resolver. Without this, a double-click on "Pay Now" leaves the first
       // promise hanging forever and the user sees a stuck spinner.
@@ -500,26 +496,36 @@ export function useTapCardSdk(opts: UseTapCardSdkOptions): UseTapCardSdkReturn {
         reject(new Error("Tokenization already in progress"));
         return;
       }
-      // Note: we intentionally don't gate on `cardValid` here. Some Tap SDK
-      // builds don't emit onValidInput/onInvalidInput; in that case the SDK's
-      // own tokenize() will reject with a validation error, which is the
-      // authoritative signal.
-      if (!window.CardSDK?.tokenize) {
-        reject(new Error("Card SDK is not available"));
-        return;
-      }
-      tokenizeResolversRef.current = { resolve, reject };
-      try {
-        window.CardSDK.tokenize();
-      } catch (err) {
-        tokenizeResolversRef.current = null;
-        reject(err instanceof Error ? err : new Error("Tokenization failed"));
-      }
+
+      // Wait for SDK readiness with a short poll. After reinit() (used to
+      // recover from Tap error 1126 "Source already used"), the iframe needs
+      // a moment to remount and fire onReady — a hard reject here would
+      // surface a misleading "Card form is not ready yet" to the user.
+      const start = Date.now();
+      const WAIT_MS = 8000;
+      const tryStart = () => {
+        if (sdkReadyRef.current && window.CardSDK?.tokenize) {
+          tokenizeResolversRef.current = { resolve, reject };
+          try {
+            window.CardSDK.tokenize();
+          } catch (err) {
+            tokenizeResolversRef.current = null;
+            reject(err instanceof Error ? err : new Error("Tokenization failed"));
+          }
+          return;
+        }
+        if (Date.now() - start >= WAIT_MS) {
+          reject(new Error("Card form is not ready yet"));
+          return;
+        }
+        setTimeout(tryStart, 100);
+      };
+      tryStart();
     });
-    // sdkReady is the only state we need to gate on; other deps cause
-    // unnecessary re-creations and break stable refs in callers.
+    // No deps — tokenize reads readiness from sdkReadyRef so the callback
+    // identity stays stable across re-renders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sdkReady]);
+  }, []);
 
   const reinit = useCallback(() => {
     // Bust the public-key cache too — if the SDK failed because of a stale
