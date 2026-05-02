@@ -12,6 +12,7 @@ export type TrainingSkill = {
   name_en: string;
   description_ar: string;
   description_en: string;
+  points: number;
 };
 
 export function parseTrainingVideos(raw: unknown): TrainingVideo[] {
@@ -38,6 +39,7 @@ export function parseTrainingSkills(raw: unknown): TrainingSkill[] {
         name_en: String(o.name_en ?? '').trim(),
         description_ar: String(o.description_ar ?? '').trim(),
         description_en: String(o.description_en ?? '').trim(),
+        points: Number.isFinite(Number(o.points)) ? Math.max(0, Math.floor(Number(o.points))) : 0,
       };
     })
     .filter((s) => s.name_ar.length > 0 || s.name_en.length > 0);

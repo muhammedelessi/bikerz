@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, ChevronDown, Clock, Trophy } from 'lucide-react';
+import { Check, ChevronDown, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { TrainingSessionCurriculum } from '@/lib/trainingSessionCurriculum';
@@ -16,7 +16,6 @@ const TrainingCurriculumAccordion: React.FC<Props> = ({ sessions, isRTL, classNa
   if (!sessions.length) return null;
 
   const totalHours = sessions.reduce((t, s) => t + s.duration_hours, 0);
-  const totalPts = sessions.reduce((t, s) => t + s.points, 0);
 
   return (
     <Card className={cn('border-border/60', className)}>
@@ -56,12 +55,6 @@ const TrainingCurriculumAccordion: React.FC<Props> = ({ sessions, isRTL, classNa
                     {session.duration_hours}
                     {isRTL ? 'س' : 'h'}
                   </span>
-                  <span className="text-muted-foreground text-xs">·</span>
-                  <span className="flex items-center gap-1 text-amber-600 text-xs shrink-0">
-                    <Trophy className="w-3.5 h-3.5" />
-                    {session.points}
-                    {isRTL ? 'ن' : 'pts'}
-                  </span>
                 </button>
                 {expanded ? (
                   <div className="px-4 pb-3 pt-0 border-t border-border/40 bg-muted/10">
@@ -94,11 +87,6 @@ const TrainingCurriculumAccordion: React.FC<Props> = ({ sessions, isRTL, classNa
             {isRTL ? 'الإجمالي:' : 'Total:'}{' '}
             <span className="text-foreground font-medium">
               {totalHours} {isRTL ? 'ساعات' : 'hrs'}
-            </span>
-            <span className="mx-1">·</span>
-            <span className="text-amber-600 font-semibold inline-flex items-center gap-1">
-              <Trophy className="w-3.5 h-3.5" />
-              {totalPts} {isRTL ? 'نقطة' : 'pts'}
             </span>
           </span>
         </div>

@@ -527,235 +527,75 @@ const AdminTrainings: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Section: Sessions curriculum */}
+          {/* Section: Sessions (count + duration only — points moved to skills) */}
           <Card className="order-4">
             <CardContent className="p-6 space-y-5" dir={fieldDir}>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider text-start">
-                  {isRTL ? 'الجلسات' : 'Sessions'}
-                </h3>
-                <Button type="button" variant="outline" size="sm" className="gap-1.5 shrink-0 self-end sm:self-auto" onClick={addSession}>
-                  <Plus className="h-4 w-4" />
-                  {isRTL ? 'إضافة جلسة' : 'Add session'}
-                </Button>
-              </div>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider text-start">
+                {isRTL ? 'الجلسات' : 'Sessions'}
+              </h3>
               <p className="text-xs text-muted-foreground">
                 {isRTL
-                  ? 'أضف الجلسات بالترتيب. كل جلسة تحتوي على عنوان، مدة، نقاط، وأهداف تعليمية واضحة.'
-                  : 'Add sessions in order. Each session includes title, duration, points, and clear learning objectives.'}
+                  ? 'حدّد عدد الجلسات ومدة كل جلسة. سيتم استخدام هذه القيم كقيم افتراضية عند الحجز.'
+                  : 'Set how many sessions this training has and how long each session lasts. These are used as defaults when booking.'}
               </p>
-
-              <div className="space-y-3">
-                {sessions.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">
-                    <p>{isRTL ? 'لا توجد جلسات بعد.' : 'No sessions added yet.'}</p>
-                    <Button type="button" variant="secondary" size="sm" className="mt-3 gap-1.5" onClick={addSession}>
-                      <Plus className="h-4 w-4" />
-                      {isRTL ? 'ابدأ بإضافة أول جلسة' : 'Add your first session'}
-                    </Button>
-                  </div>
-                ) : null}
-                {sessions.map((session, i) => (
-                  <Collapsible
-                    key={i}
-                    open={openSessionIndex === i}
-                    onOpenChange={(next) => setOpenSessionIndex(next ? i : null)}
-                    className="rounded-xl border border-border bg-card overflow-hidden"
-                  >
-                    <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2 sm:px-4">
-                      <CollapsibleTrigger asChild>
-                        <button
-                          type="button"
-                          className="group flex flex-1 min-w-0 items-center gap-2 text-start py-1"
-                        >
-                          <ChevronDown
-                            className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${openSessionIndex === i ? 'rotate-180' : ''}`}
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2 text-sm">
-                              <span className="font-semibold text-primary">
-                                {isRTL ? `الجلسة ${session.session_number}` : `Session ${session.session_number}`}
-                              </span>
-                              {(isRTL ? session.title_ar : session.title_en) ? (
-                                <>
-                                  <span className="text-muted-foreground">·</span>
-                                  <span className="truncate max-w-[200px] text-foreground">
-                                    {isRTL ? session.title_ar : session.title_en}
-                                  </span>
-                                </>
-                              ) : null}
-                              <span className="text-muted-foreground">·</span>
-                              <span className="flex items-center gap-1 text-muted-foreground">
-                                <Clock className="w-3.5 h-3.5" />
-                                {session.duration_hours} {isRTL ? 'ساعة' : 'hrs'}
-                              </span>
-                              <span className="text-muted-foreground">·</span>
-                              <span className="flex items-center gap-1 text-amber-500">
-                                <Trophy className="w-3.5 h-3.5" />
-                                {session.points} {isRTL ? 'نقطة' : 'pts'}
-                              </span>
-                              {session.objectives.length > 0 ? (
-                                <>
-                                  <span className="text-muted-foreground">·</span>
-                                  <span className="text-muted-foreground text-xs">
-                                    {session.objectives.length} {isRTL ? 'أهداف' : 'objectives'}
-                                  </span>
-                                </>
-                              ) : null}
-                            </div>
-                          </div>
-                        </button>
-                      </CollapsibleTrigger>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 shrink-0 text-destructive hover:bg-destructive/10"
-                        onClick={() => removeSession(i)}
-                        aria-label={isRTL ? 'حذف الجلسة' : 'Remove session'}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <CollapsibleContent>
-                      <div className="space-y-4 p-4 sm:p-5">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" dir="ltr">
-                          <div className="space-y-2 order-1 sm:order-2 rounded-lg border border-border/60 p-3">
-                            <Label dir="rtl">عنوان الجلسة</Label>
-                            <Input
-                              value={session.title_ar}
-                              onChange={(e) => updateSession(i, 'title_ar', e.target.value)}
-                              placeholder="مثال: مقدمة في قيادة الدراجة"
-                              dir="rtl"
-                            />
-                          </div>
-                          <div className="space-y-2 order-2 sm:order-1 rounded-lg border border-border/60 p-3">
-                            <Label dir="ltr">Session Title</Label>
-                            <Input
-                              value={session.title_en}
-                              onChange={(e) => updateSession(i, 'title_en', e.target.value)}
-                              placeholder="e.g. Introduction to Motorcycle Riding"
-                              dir="ltr"
-                            />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <div className="space-y-0.5 min-h-[36px]">
-                              <Label>{isRTL ? 'عدد الساعات' : 'Duration (hours)'}</Label>
-                              <p className="text-[10px] text-muted-foreground">
-                                {isRTL ? '\u00a0' : '\u00a0'}
-                              </p>
-                            </div>
-                            <Input
-                              type="number"
-                              min={0.5}
-                              step={0.5}
-                              dir="ltr"
-                              value={session.duration_hours}
-                              onChange={(e) =>
-                                updateSession(i, 'duration_hours', parseFloat(e.target.value) || 0)
-                              }
-                              placeholder="2"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <div className="space-y-0.5 min-h-[36px]">
-                              <Label>{isRTL ? 'النقاط' : 'Points'}</Label>
-                              <p className="text-[10px] text-muted-foreground font-normal">
-                                {isRTL ? '(تُمنح عند إتمام الجلسة)' : '(awarded on completion)'}
-                              </p>
-                            </div>
-                            <Input
-                              type="number"
-                              min={0}
-                              dir="ltr"
-                              value={session.points}
-                              onChange={(e) =>
-                                updateSession(i, 'points', parseInt(e.target.value, 10) || 0)
-                              }
-                              placeholder="10"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2 rounded-lg border border-border/60 p-3">
-                          <Label>{isRTL ? 'ماذا ستتعلم في هذه الجلسة' : "What You'll Learn"}</Label>
-                          <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-center text-xs text-muted-foreground" dir="ltr">
-                            <span className="order-2 sm:order-1" dir="ltr">{isRTL ? 'Objective (EN)' : 'Objective (EN)'}</span>
-                            <span className="order-1 sm:order-2 text-right" dir="rtl">{isRTL ? 'الهدف (AR)' : 'Objective (AR)'}</span>
-                            <span className="order-3">&nbsp;</span>
-                          </div>
-                          {session.objectives.map((obj, oi) => (
-                            <div
-                              key={oi}
-                              className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-center"
-                              dir="ltr"
-                            >
-                              <Input
-                                value={obj.en}
-                                onChange={(e) => updateObjective(i, oi, 'en', e.target.value)}
-                                placeholder="e.g. Learn correct sitting posture"
-                                dir="ltr"
-                                className="order-2 sm:order-1"
-                              />
-                              <Input
-                                value={obj.ar}
-                                onChange={(e) => updateObjective(i, oi, 'ar', e.target.value)}
-                                placeholder="مثال: تعلم وضعية الجلوس الصحيحة"
-                                dir="rtl"
-                                className="order-1 sm:order-2"
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:bg-destructive/10 h-9 w-9 sm:h-8 sm:w-8 justify-self-start order-3"
-                                onClick={() => removeObjective(i, oi)}
-                                aria-label={isRTL ? 'حذف الهدف' : 'Remove objective'}
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          ))}
-                          {session.objectives.length === 0 ? (
-                            <p className="text-xs text-muted-foreground">
-                              {isRTL ? 'لا توجد أهداف تعليمية بعد. أضف هدفاً واحداً على الأقل.' : 'No objectives yet. Add at least one learning objective.'}
-                            </p>
-                          ) : null}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="gap-1.5 h-8 text-xs"
-                            onClick={() => addObjective(i)}
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                            {isRTL ? 'إضافة هدف تعليمي' : 'Add Learning Objective'}
-                          </Button>
-                        </div>
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                ))}
-              </div>
-
-              {sessions.length > 0 ? (
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 px-4 py-3 rounded-xl bg-muted/30 text-sm">
-                  <span className="text-muted-foreground">
-                    {isRTL ? `${sessions.length} جلسات` : `${sessions.length} sessions`}
-                  </span>
-                  <span className="text-muted-foreground hidden sm:inline">·</span>
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <Clock className="w-3.5 h-3.5" />
-                    {sessions.reduce((t, s) => t + s.duration_hours, 0)} {isRTL ? 'ساعة' : 'hrs'}
-                  </span>
-                  <span className="text-muted-foreground hidden sm:inline">·</span>
-                  <span className="flex items-center gap-1 text-amber-500 font-semibold">
-                    <Trophy className="w-3.5 h-3.5" />
-                    {sessions.reduce((t, s) => t + s.points, 0)} {isRTL ? 'نقطة' : 'pts'}
-                  </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    {isRTL ? 'عدد الجلسات' : 'Number of sessions'}
+                  </Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    step={1}
+                    dir="ltr"
+                    value={form.default_sessions_count}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        default_sessions_count: Math.max(1, parseInt(e.target.value, 10) || 1),
+                      }))
+                    }
+                    placeholder="1"
+                  />
                 </div>
-              ) : null}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    {isRTL ? 'مدة كل جلسة (ساعات)' : 'Hours per session'}
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0.25}
+                    step={0.25}
+                    dir="ltr"
+                    value={form.default_session_duration_hours}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        default_session_duration_hours: Math.max(
+                          0.25,
+                          parseFloat(e.target.value) || 0.25,
+                        ),
+                      }))
+                    }
+                    placeholder="2"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 px-4 py-3 rounded-xl bg-muted/30 text-sm">
+                <span className="text-muted-foreground">
+                  {isRTL
+                    ? `${form.default_sessions_count} جلسات`
+                    : `${form.default_sessions_count} sessions`}
+                </span>
+                <span className="text-muted-foreground">·</span>
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <Clock className="w-3.5 h-3.5" />
+                  {(form.default_sessions_count * form.default_session_duration_hours).toFixed(2)}{' '}
+                  {isRTL ? 'ساعة إجمالاً' : 'hrs total'}
+                </span>
+              </div>
             </CardContent>
           </Card>
 
@@ -952,7 +792,7 @@ const AdminTrainings: React.FC = () => {
                   onClick={() =>
                     setSkills((prev) => [
                       ...prev,
-                      { name_ar: '', name_en: '', description_ar: '', description_en: '' },
+                      { name_ar: '', name_en: '', description_ar: '', description_en: '', points: 10 },
                     ])
                   }
                 >
@@ -1036,6 +876,33 @@ const AdminTrainings: React.FC = () => {
                               prev.map((x, idx) => (idx === i ? { ...x, description_en: e.target.value } : x)),
                             )
                           }
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                      <div className="space-y-1">
+                        <Label className="flex items-center gap-1.5">
+                          <Trophy className="h-3.5 w-3.5 text-amber-500" />
+                          {isRTL ? 'النقاط لهذه المهارة' : 'Points for this skill'}
+                        </Label>
+                        <p className="text-[10px] text-muted-foreground">
+                          {isRTL
+                            ? 'تُمنح عند إتقان المتدرب لهذه المهارة'
+                            : 'Awarded when the trainee masters this skill'}
+                        </p>
+                        <Input
+                          type="number"
+                          min={0}
+                          dir="ltr"
+                          value={s.points}
+                          onChange={(e) =>
+                            setSkills((prev) =>
+                              prev.map((x, idx) =>
+                                idx === i ? { ...x, points: parseInt(e.target.value, 10) || 0 } : x,
+                              ),
+                            )
+                          }
+                          placeholder="10"
                         />
                       </div>
                     </div>
