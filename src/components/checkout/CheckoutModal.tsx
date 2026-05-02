@@ -60,13 +60,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Default to "info" — for returning customers with a complete profile, the
   // open-effect below auto-advances to "payment" right after prefillAndAutoAdvance().
   const [step, setStep] = useState<"info" | "payment">("info");
-  /** Tokenize handle wired up from the embedded card form. */
-  const cardApiRef = useRef<{ tokenize: () => Promise<string> } | null>(null);
+  /** Tokenize + reinit handles wired up from the embedded card form. */
+  const cardApiRef = useRef<{ tokenize: () => Promise<string>; reinit: () => void } | null>(null);
+  /** Last token we sent — Tap rejects reuse with code 1126, so we force a
+   *  reinit before tokenizing again on every retry after the first attempt. */
+  const lastTokenIdRef = useRef<string | null>(null);
   const [cardSdkStatus, setCardSdkStatus] = useState<{
     sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null;
   }>({ sdkLoading: false, sdkReady: false, cardValid: false, sdkError: null });
   const [tokenizing, setTokenizing] = useState(false);
-  const handleCardApiReady = useCallback((api: { tokenize: () => Promise<string> }) => {
+  const handleCardApiReady = useCallback((api: { tokenize: () => Promise<string>; reinit: () => void }) => {
     cardApiRef.current = api;
   }, []);
   const handleCardSdkStatusChange = useCallback(
