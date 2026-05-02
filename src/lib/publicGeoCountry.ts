@@ -30,12 +30,13 @@ function getSupabaseFunctionBaseUrl(): string | null {
 function mergeSignals(signal?: AbortSignal, timeoutMs = PUBLIC_GEO_TIMEOUT_MS) {
   const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
   const timeoutId = window.setTimeout(() => controller?.abort(), timeoutMs);
+  const abortSignalWithAny = AbortSignal as typeof AbortSignal & {
+    any?: (signals: AbortSignal[]) => AbortSignal;
+  };
 
   const combinedSignal = signal
-    ? (typeof AbortSignal !== "undefined" && "any" in AbortSignal
-        ? (AbortSignal as AbortSignalConstructor & { any: (signals: AbortSignal[]) => AbortSignal }).any(
-            [signal, controller?.signal].filter(Boolean) as AbortSignal[],
-          )
+    ? (typeof AbortSignal !== "undefined" && typeof abortSignalWithAny.any === "function"
+        ? abortSignalWithAny.any([signal, controller?.signal].filter(Boolean) as AbortSignal[])
         : controller?.signal)
     : controller?.signal;
 
@@ -118,20 +119,35 @@ async function tryGeoResponse<T>(
 }
 
 async function firstSuccessful<T>(tasks: Array<Promise<T | null>>): Promise<T | null> {
-  if (typeof Promise.any === "function") {
-    try {
-      return await Promise.any(
-        tasks.map((task) =>
-          task.then((result) => (result ? result : Promise.reject(new Error("no result")))),
-        ),
-      );
-    } catch {
-      return null;
+  return await new Promise<T | null>((resolve) => {
+    if (!tasks.length) {
+      resolve(null);
+      return;
     }
-  }
 
-  const settled = await Promise.all(tasks.map((task) => task.catch(() => null)));
-  return settled.find((value): value is T => value != null) ?? null;
+    let pending = tasks.length;
+
+    const finishIfDone = () => {
+      pending -= 1;
+      if (pending <= 0) {
+        resolve(null);
+      }
+    };
+
+    for (const task of tasks) {
+      task
+        .then((result) => {
+          if (result != null) {
+            resolve(result);
+            return;
+          }
+          finishIfDone();
+        })
+        .catch(() => {
+          finishIfDone();
+        });
+    }
+  });
 }
 
 async function tryBackendGeoResponse(signal?: AbortSignal): Promise<string | null> {
