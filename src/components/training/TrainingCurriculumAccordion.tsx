@@ -54,6 +54,7 @@ const TrainingCurriculumAccordion: React.FC<Props> = ({ sessions, isRTL, classNa
                     <Clock className="w-3.5 h-3.5" />
                     {session.duration_hours}
                     {isRTL ? 'س' : 'h'}
+                  </span>
                 </button>
                 {expanded ? (
                   <div className="px-4 pb-3 pt-0 border-t border-border/40 bg-muted/10">
