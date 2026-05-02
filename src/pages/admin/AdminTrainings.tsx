@@ -364,7 +364,16 @@ const AdminTrainings: React.FC = () => {
         id: editingTraining?.id,
         trainer_supplies: supplies,
         sessions,
-      } as typeof form & { id?: string; background_image?: string | null; trainer_supplies: TrainerSupply[]; sessions: TrainingSessionCurriculum[] });
+        videos,
+        skills,
+      } as typeof form & {
+        id?: string;
+        background_image?: string | null;
+        trainer_supplies: TrainerSupply[];
+        sessions: TrainingSessionCurriculum[];
+        videos: TrainingVideo[];
+        skills: TrainingSkill[];
+      });
     } catch {
       toast.error(isRTL ? 'فشل رفع الصورة' : 'Image upload failed');
       setUploadingImage(false);
