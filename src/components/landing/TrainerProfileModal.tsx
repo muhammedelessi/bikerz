@@ -22,7 +22,7 @@ const TrainerProfileModal: React.FC<TrainerProfileModalProps> = ({ trainerId, on
     queryKey: ['trainer-profile', trainerId],
     queryFn: async () => {
       if (!trainerId) return null;
-      const { data, error } = await supabase.from('trainers').select('*').eq('id', trainerId).single();
+      const { data, error } = await supabase.from('trainers').select('id,name_ar,name_en,photo_url,bio_ar,bio_en,country,city,bike_type,years_of_experience,services,status,profit_ratio,motorbike_brand,license_type,bike_photos,album_photos,bike_entries,availability_blocked_dates,availability_special_hours,availability_settings,language_levels,user_id,created_at').eq('id', trainerId).single();
       if (error) throw error;
       return data;
     },
