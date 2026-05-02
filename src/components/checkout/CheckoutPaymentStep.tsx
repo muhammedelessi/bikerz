@@ -1,4 +1,4 @@
-import React, { forwardRef, memo, useMemo, useState } from "react";
+import React, { memo, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { Gift, Shield, ShieldCheck, Check, Lock, Pencil, X, Phone, MapPin, User, AlertTriangle, Loader2 } from "lucide-react";
@@ -79,8 +79,8 @@ interface CheckoutPaymentStepProps {
   cardFormSlot?: React.ReactNode;
 }
 
-const CheckoutPaymentStep = memo(
-  forwardRef<HTMLDivElement, CheckoutPaymentStepProps>((props, _ref) => {
+const CheckoutPaymentStep: React.FC<CheckoutPaymentStepProps> = memo(
+  (props) => {
     const {
     isRTL,
     currencyLabel,
@@ -670,7 +670,7 @@ const CheckoutPaymentStep = memo(
         ) : null}
       </>
     );
-  }),
+  },
 );
 
 CheckoutPaymentStep.displayName = "CheckoutPaymentStep";
