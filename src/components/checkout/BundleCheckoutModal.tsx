@@ -222,26 +222,43 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
       }
     }
 
+    const buildSubmit = (tid: string | undefined) => ({
+      paymentKind: 'course_bundle' as const,
+      bundleCourseIds: courses.map((c) => c.id),
+      bundleOriginalSar: calc.totalOriginal,
+      bundleDiscountPct: calc.discountPct,
+      bundleFinalSar: calc.finalPrice,
+      currency: 'SAR',
+      amount: calc.finalPrice,
+      currencyCodeForPricing: currencyCode,
+      exchangeRatePerSar: exchangeRate > 0 ? exchangeRate : undefined,
+      customerName: form.fullName,
+      customerEmail: form.email,
+      customerPhone: form.fullPhone,
+      billingCity: form.effectiveCity,
+      billingCountry: form.effectiveCountry,
+      courseName: isRTL ? 'باقة كورسات' : 'Course bundle',
+      isRTL,
+      tokenId: tid,
+    });
+
     try {
-      await tap.submitPayment({
-        paymentKind: 'course_bundle',
-        bundleCourseIds: courses.map((c) => c.id),
-        bundleOriginalSar: calc.totalOriginal,
-        bundleDiscountPct: calc.discountPct,
-        bundleFinalSar: calc.finalPrice,
-        currency: 'SAR',
-        amount: calc.finalPrice,
-        currencyCodeForPricing: currencyCode,
-        exchangeRatePerSar: exchangeRate > 0 ? exchangeRate : undefined,
-        customerName: form.fullName,
-        customerEmail: form.email,
-        customerPhone: form.fullPhone,
-        billingCity: form.effectiveCity,
-        billingCountry: form.effectiveCountry,
-        courseName: isRTL ? 'باقة كورسات' : 'Course bundle',
-        isRTL,
-        tokenId,
-      });
+      try {
+        await tap.submitPayment(buildSubmit(tokenId));
+      } catch (err: any) {
+        // Auto-recover from Tap error 1126 "Source already used" — the SDK
+        // occasionally hands back a previously-consumed token. Reinit the
+        // iframe, get a fresh tok_xxx, and resubmit ONCE.
+        const msg = String(err?.message || '');
+        const isReused = /Source already used/i.test(msg) || /\b1126\b/.test(msg);
+        if (!isReused || !cardApiRef.current) throw err;
+
+        cardApiRef.current.reinit();
+        await new Promise((r) => setTimeout(r, 350));
+        const freshToken = await cardApiRef.current.tokenize();
+        lastTokenIdRef.current = freshToken;
+        await tap.submitPayment(buildSubmit(freshToken));
+      }
     } finally {
       submittingRef.current = false;
     }

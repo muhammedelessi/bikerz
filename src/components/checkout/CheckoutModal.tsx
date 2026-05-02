@@ -382,24 +382,42 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       lastTokenIdRef.current = tokenId;
     }
 
+    const buildSubmit = (tid: string | undefined) => ({
+      courseId: course.id,
+      currency: paymentCurrency,
+      customerName: form.fullName,
+      customerEmail: form.email,
+      customerPhone: form.fullPhone,
+      billingCity: form.effectiveCity,
+      billingCountry: form.effectiveCountry,
+      couponId: promo.appliedCoupon?.coupon_id,
+      couponSeriesId: promo.appliedCoupon?.coupon_series_id || undefined,
+      couponNumber: promo.appliedCoupon?.coupon_number ?? undefined,
+      couponCode: promo.appliedCoupon?.coupon_code || promo.promoCode?.trim().toUpperCase() || undefined,
+      amount: paymentAmount,
+      courseName: courseDisplayName,
+      isRTL,
+      tokenId: tid,
+    });
+
     try {
-      await tap.submitPayment({
-        courseId: course.id,
-        currency: paymentCurrency,
-        customerName: form.fullName,
-        customerEmail: form.email,
-        customerPhone: form.fullPhone,
-        billingCity: form.effectiveCity,
-        billingCountry: form.effectiveCountry,
-        couponId: promo.appliedCoupon?.coupon_id,
-        couponSeriesId: promo.appliedCoupon?.coupon_series_id || undefined,
-        couponNumber: promo.appliedCoupon?.coupon_number ?? undefined,
-        couponCode: promo.appliedCoupon?.coupon_code || promo.promoCode?.trim().toUpperCase() || undefined,
-        amount: paymentAmount,
-        courseName: courseDisplayName,
-        isRTL,
-        tokenId,
-      });
+      try {
+        await tap.submitPayment(buildSubmit(tokenId));
+      } catch (err: any) {
+        // Tap error 1126 = "Source already used". Happens when the card SDK
+        // hands us a token that was already consumed (sometimes the SDK
+        // returns a cached token without a fresh remount). Auto-recover:
+        // reinit the iframe, get a brand-new token, and resubmit ONCE.
+        const msg = String(err?.message || "");
+        const isReused = /Source already used/i.test(msg) || /\b1126\b/.test(msg);
+        if (!isReused || !cardApiRef.current || preTokenizedTokenId) throw err;
+
+        cardApiRef.current.reinit();
+        await new Promise((r) => setTimeout(r, 350));
+        const freshToken = await cardApiRef.current.tokenize();
+        lastTokenIdRef.current = freshToken;
+        await tap.submitPayment(buildSubmit(freshToken));
+      }
     } finally {
       // Always release the submission lock — successful or not, the next
       // attempt must be allowed to fire (and will be guarded by status flags
