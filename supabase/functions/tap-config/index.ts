@@ -87,13 +87,27 @@ Deno.serve(async (req) => {
     );
   }
 
-  const merchantId = usePreviewKey ? testMerchantId : liveMerchantId;
+  // CRITICAL: merchant ID must match the actual key being served, not the
+  // origin. When the preview origin falls back to the live key, the merchant
+  // ID must also be the LIVE one — pairing a live key with a test/empty
+  // merchant ID makes the Tap SDK iframe POST `mid=` empty and Tap rejects
+  // the request with HTTP 400 (live mode requires a real `mid`).
+  const isLiveKeyServed = !tapPublicKey.startsWith("pk_test");
+  const merchantId = isLiveKeyServed ? liveMerchantId : testMerchantId;
+
+  if (isLiveKeyServed && !merchantId) {
+    console.error(
+      "[tap-config] CRITICAL: serving live key without TAP_MERCHANT_ID. " +
+      "Tap SDK will fail with HTTP 400 (mid= empty). " +
+      "Set TAP_MERCHANT_ID in Supabase Secrets to your live merchant id (e.g. 19777245).",
+    );
+  }
 
   return new Response(
     JSON.stringify({
       public_key: tapPublicKey,
       merchant_id: merchantId || null,
-      environment: tapPublicKey.startsWith("pk_test") ? "test" : "live",
+      environment: isLiveKeyServed ? "live" : "test",
     }),
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
