@@ -952,7 +952,7 @@ const AdminTrainings: React.FC = () => {
                   onClick={() =>
                     setSkills((prev) => [
                       ...prev,
-                      { name_ar: '', name_en: '', description_ar: '', description_en: '' },
+                      { name_ar: '', name_en: '', description_ar: '', description_en: '', points: 10 },
                     ])
                   }
                 >
