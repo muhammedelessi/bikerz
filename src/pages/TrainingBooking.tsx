@@ -173,7 +173,13 @@ const TrainingBooking: React.FC = () => {
                   {isRTL ? 'اختر التاريخ والوقت، ثم أكمل بياناتك والدفع بأمان.' : 'Choose your date and time, then enter your details and pay securely.'}
                 </p>
                 <TrainingBookingFlow
-                  training={{ id: training.id, name_ar: training.name_ar, name_en: training.name_en }}
+                  training={{
+                    id: training.id,
+                    name_ar: training.name_ar,
+                    name_en: training.name_en,
+                    default_sessions_count: (training as { default_sessions_count?: number | null }).default_sessions_count ?? null,
+                    default_session_duration_hours: (training as { default_session_duration_hours?: number | null }).default_session_duration_hours ?? null,
+                  }}
                   selectedCourse={selectedCourse}
                   curriculumSessions={curriculum}
                   loginReturnPath={bookingPath}
