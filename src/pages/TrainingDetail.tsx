@@ -102,13 +102,38 @@ const TrainingDetail: React.FC = () => {
       const rows = (data || []) as Omit<TrainerCourseRow, "trainers">[];
       const trainerIds = Array.from(new Set(rows.map((r) => r.trainer_id).filter(Boolean)));
       if (trainerIds.length === 0) return rows.map((r) => ({ ...r, trainers: null })) as TrainerCourseRow[];
-      const { data: trainersData, error: trainersErr } = await supabase
-        .from("public_trainers")
-        // email + phone are pulled so the trainer card on the training
-        // detail page can render contact pills (and stay in sync with the
-        // trainer's own profile page which now also shows them).
-        .select("id,name_ar,name_en,photo_url,bio_ar,bio_en,country,city,email,phone,years_of_experience")
-        .in("id", trainerIds);
+      // Try the new column set first (with email + phone exposed by the
+      // 20260503110145 migration). If the migration hasn't been applied
+      // yet on this environment, PostgREST returns a 400 with a
+      // "column does not exist" message — fall back to the legacy
+      // column set so the page still renders. Once the migration is
+      // applied the fallback path is never taken.
+      let trainersData: Array<Record<string, unknown>> | null = null;
+      let trainersErr: { message?: string; code?: string; details?: string } | null = null;
+      {
+        const r = await supabase
+          .from("public_trainers")
+          .select("id,name_ar,name_en,photo_url,bio_ar,bio_en,country,city,email,phone,years_of_experience")
+          .in("id", trainerIds);
+        trainersData = r.data as Array<Record<string, unknown>> | null;
+        trainersErr = r.error;
+      }
+      const isMissingColumn =
+        !!trainersErr &&
+        /column[\s\S]*does not exist|could not find/i.test(
+          `${trainersErr.message ?? ""} ${trainersErr.details ?? ""}`,
+        );
+      if (trainersErr && isMissingColumn) {
+        console.warn(
+          "[TrainingDetail] public_trainers missing email/phone — apply migration 20260503110145 to enable contact pills",
+        );
+        const r2 = await supabase
+          .from("public_trainers")
+          .select("id,name_ar,name_en,photo_url,bio_ar,bio_en,country,city,years_of_experience")
+          .in("id", trainerIds);
+        trainersData = r2.data as Array<Record<string, unknown>> | null;
+        trainersErr = r2.error;
+      }
       if (trainersErr) throw trainersErr;
       const tMap = new Map((trainersData || []).map((t) => [t.id, t]));
       return rows.map((r) => ({ ...r, trainers: tMap.get(r.trainer_id) ?? null })) as TrainerCourseRow[];
