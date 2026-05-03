@@ -734,6 +734,14 @@ const ApplyTrainer: React.FC = () => {
               descAr="أضف الدراجات التي تجيد التدريب عليها — صورة الدراجة إجبارية"
               descEn="Add bikes you can teach on — bike photo is required"
             />
+            <div
+              role="note"
+              className="rounded-xl border border-primary/30 bg-primary/5 p-3 sm:p-4 text-sm text-foreground/90"
+            >
+              {isRTL
+                ? "يجب إضافة الدراجات المتاحة لديك للتدريب عليها مع إرفاق صورة لكل دراجة، حتى يتمكن الطلاب من اختيار التدريب على الدراجة المناسبة."
+                : "You must add the bikes available for training and attach a photo for each one, so students can choose the right bike to train on."}
+            </div>
             <BikeGarage
               entries={form.bikeEntries}
               onChange={(entries) => setForm({ ...form, bikeEntries: entries })}
