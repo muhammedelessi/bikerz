@@ -46,9 +46,12 @@ interface HeaderContent {
   };
 }
 
-function extraAfterCoursesNav(t: (key: string, opts?: { lng?: string }) => string): MenuItem[] {
-  // Hide Trainings & Trainers in production release, keep visible in dev
-  const showTrainerFeatures = import.meta.env.DEV;
+const ALLOWED_TRAINER_FEATURES_IPS = new Set<string>(["51.36.221.220"]);
+
+function extraAfterCoursesNav(
+  t: (key: string, opts?: { lng?: string }) => string,
+  showTrainerFeatures: boolean,
+): MenuItem[] {
   return [
     ...(showTrainerFeatures
       ? [
