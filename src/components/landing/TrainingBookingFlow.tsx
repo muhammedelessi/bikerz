@@ -347,13 +347,16 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
   const isFreeBooking = chargeSarTotal <= 0;
 
   const perSessionDurationHours = useMemo(() => {
+    // Prefer the training's admin-defined default duration so trainer-set values
+    // are respected. Fall back to the curriculum's per-session duration only when
+    // no training default is set, then to the legacy course duration.
+    const fromTraining = Number(training.default_session_duration_hours);
+    if (Number.isFinite(fromTraining) && fromTraining > 0) return fromTraining;
     if (curriculumSessions && curriculumSessions.length > 0) {
       const idx = Math.min(activeSessionIndex, curriculumSessions.length - 1);
       const v = Number(curriculumSessions[idx].duration_hours);
       if (Number.isFinite(v) && v > 0) return v;
     }
-    const fromTraining = Number(training.default_session_duration_hours);
-    if (Number.isFinite(fromTraining) && fromTraining > 0) return fromTraining;
     return Number(selectedCourse.duration_hours) || 0;
   }, [
     selectedCourse.duration_hours,
