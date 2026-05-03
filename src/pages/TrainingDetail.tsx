@@ -467,10 +467,10 @@ const TrainingDetail: React.FC = () => {
                           const stats = reviewStats?.[tr.id];
                           const sess = curriculumSessions.length > 0
                             ? curriculumSessions.length
-                            : Math.max(1, Number(tc.sessions_count ?? 1));
+                            : Math.max(1, Number(training.default_sessions_count) || 1);
                           const hours = curriculumSessions.length > 0
                             ? Math.round((curriculumSessions.reduce((sum, s) => sum + s.duration_hours, 0) / curriculumSessions.length) * 100) / 100
-                            : Number(tc.duration_hours);
+                            : Number(training.default_session_duration_hours) || 0;
                           const locRaw = translateTrainerCourseLocation(tc.location, isRTL) || String(tc.location ?? "").trim();
                           const countryEntry = COUNTRIES.find((c) => c.code === tr.country || c.en === tr.country);
                           const cityEntry = countryEntry?.cities.find((c) => c.en === tr.city);
