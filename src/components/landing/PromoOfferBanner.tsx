@@ -31,10 +31,11 @@ const PromoOfferBanner: React.FC = () => {
         .limit(1)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) return null;
       return data;
     },
     staleTime: 10 * 60 * 1000,
+    retry: false,
   });
 
   if (!promo) return null;

@@ -95,7 +95,7 @@ const LessonDiscussion: React.FC<LessonDiscussionProps> = ({ lessonId, lessonTit
     queryFn: async () => {
       if (userIds.length === 0) return [];
       const { data, error } = await supabase
-        .from('profiles')
+        .from('public_profiles')
         .select('user_id, full_name, avatar_url')
         .in('user_id', userIds);
 

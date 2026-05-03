@@ -45,7 +45,7 @@ const CourseReviews: React.FC<CourseReviewsProps> = ({ courseId, isEnrolled }) =
       let profilesMap: Record<string, { name: string; avatar: string | null }> = {};
       if (realReviewUserIds.length > 0) {
         const { data: profiles } = await supabase
-          .from("profiles")
+          .from("public_profiles")
           .select("user_id, full_name, avatar_url")
           .in("user_id", realReviewUserIds);
         if (profiles) {
