@@ -348,7 +348,7 @@ const ApplyTrainer: React.FC = () => {
       return !!(loc.country && loc.city);
     }
     if (s === 2) {
-      return !!(form.licenseType && form.yearsExperience > 0 && form.summary.trim().length >= 30);
+      return !!(form.yearsExperience > 0 && form.summary.trim().length >= 30);
     }
     if (s === 3) {
       return form.bikeEntries.length > 0 && form.bikeEntries.every((b) => b.photos.length > 0);
@@ -665,30 +665,32 @@ const ApplyTrainer: React.FC = () => {
               descEn="License, years of experience, and summary"
             />
 
-            <FormField label={isRTL ? "نوع الرخصة *" : "License Type *"}>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                {LICENSES.map((lic) => (
-                  <button
-                    key={lic.id}
-                    type="button"
-                    onClick={() => setForm({ ...form, licenseType: lic.id })}
-                    className={cn(
-                      "flex flex-col items-center gap-1 p-2.5 sm:p-3 rounded-xl border-2 transition-all min-h-[88px] sm:min-h-0",
-                      form.licenseType === lic.id
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-muted/20 text-muted-foreground hover:border-primary/40",
-                    )}
-                  >
-                    <span className="text-base font-bold">{lic.id}</span>
-                    <span className="text-[10px] text-center leading-tight">
-                      {isRTL ? lic.labelAr.split("—")[1]?.trim() : lic.labelEn.split("—")[1]?.trim()}
-                    </span>
-                    <span className="text-[9px] opacity-60">{lic.desc}</span>
-                  </button>
-                ))}
-              </div>
-            </FormField>
-
+            {/* License Type — temporarily hidden, optional */}
+            {false && (
+              <FormField label={isRTL ? "نوع الرخصة" : "License Type"}>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                  {LICENSES.map((lic) => (
+                    <button
+                      key={lic.id}
+                      type="button"
+                      onClick={() => setForm({ ...form, licenseType: lic.id })}
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2.5 sm:p-3 rounded-xl border-2 transition-all min-h-[88px] sm:min-h-0",
+                        form.licenseType === lic.id
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-muted/20 text-muted-foreground hover:border-primary/40",
+                      )}
+                    >
+                      <span className="text-base font-bold">{lic.id}</span>
+                      <span className="text-[10px] text-center leading-tight">
+                        {isRTL ? lic.labelAr.split("—")[1]?.trim() : lic.labelEn.split("—")[1]?.trim()}
+                      </span>
+                      <span className="text-[9px] opacity-60">{lic.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </FormField>
+            )}
             <FormField
               label={isRTL ? "ادخل سنوات الخبرة" : "Enter years of experience"}
             >
@@ -732,6 +734,14 @@ const ApplyTrainer: React.FC = () => {
               descAr="أضف الدراجات التي تجيد التدريب عليها — صورة الدراجة إجبارية"
               descEn="Add bikes you can teach on — bike photo is required"
             />
+            <div
+              role="note"
+              className="rounded-xl border border-primary/30 bg-primary/5 p-3 sm:p-4 text-sm text-foreground/90"
+            >
+              {isRTL
+                ? "يجب إضافة الدراجات المتاحة لديك للتدريب عليها مع إرفاق صورة لكل دراجة، حتى يتمكن الطلاب من اختيار التدريب على الدراجة المناسبة."
+                : "You must add the bikes available for training and attach a photo for each one, so students can choose the right bike to train on."}
+            </div>
             <BikeGarage
               entries={form.bikeEntries}
               onChange={(entries) => setForm({ ...form, bikeEntries: entries })}
