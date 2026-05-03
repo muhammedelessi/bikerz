@@ -96,6 +96,9 @@ function isPreviewOrigin(origin: string | null): boolean {
   if (!origin) return false;
   try {
     const host = new URL(origin).hostname.toLowerCase();
+    // Production hosts — always serve LIVE keys, never test.
+    if (host === "bikerz.lovable.app") return false;
+    if (host === "bikerz.com" || host.endsWith(".bikerz.com")) return false;
     return (
       host === "localhost" ||
       host === "127.0.0.1" ||

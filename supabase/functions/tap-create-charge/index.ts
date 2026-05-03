@@ -121,12 +121,21 @@ Deno.serve(async (req) => {
       originHost = new URL(requestSource).hostname.toLowerCase();
     } catch { /* leave empty */ }
 
+    // Hosts that must ALWAYS charge live (never sandboxed), even though
+    // some live on lovable.app subdomains.
+    const isProductionHost =
+      originHost === "bikerz.com" ||
+      originHost.endsWith(".bikerz.com") ||
+      originHost === "bikerz.lovable.app";
+
     const isPreviewHost =
-      originHost === "localhost" ||
-      originHost === "127.0.0.1" ||
-      originHost.endsWith(".lovableproject.com") ||
-      originHost.endsWith(".lovable.app") ||
-      originHost.endsWith(".lovable.dev");
+      !isProductionHost && (
+        originHost === "localhost" ||
+        originHost === "127.0.0.1" ||
+        originHost.endsWith(".lovableproject.com") ||
+        originHost.endsWith(".lovable.app") ||
+        originHost.endsWith(".lovable.dev")
+      );
 
     const env = (name: string): string | undefined => {
       const v = Deno.env.get(name);
@@ -137,14 +146,13 @@ Deno.serve(async (req) => {
     let domainTag: string;
     if (originHost === "bikerz.com" || originHost.endsWith(".bikerz.com")) {
       domainTag = "bikerz";
-      tapSecretKey = isPreviewHost
-        ? (env("TAP_SK_TEST_BIKERZ") ?? env("TAP_SECRET_TEST_KEY") ?? env("TAP_SECRET_KEY"))
-        : (env("TAP_SK_LIVE_BIKERZ") ?? env("TAP_SECRET_KEY"));
+      tapSecretKey = env("TAP_SK_LIVE_BIKERZ") ?? env("TAP_SECRET_KEY");
     } else if (originHost === "lovable.app" || originHost.endsWith(".lovable.app")) {
       domainTag = "lovable_app";
-      // Preview-style host but Tap registered live keys for lovable.app, so
-      // honour both based on whether the explicit SK_TEST is configured.
-      tapSecretKey = env("TAP_SK_TEST_LOVABLE_APP") ?? env("TAP_SK_LIVE_LOVABLE_APP") ?? env("TAP_SECRET_KEY");
+      // bikerz.lovable.app is the published production host — force LIVE.
+      tapSecretKey = isProductionHost
+        ? (env("TAP_SK_LIVE_LOVABLE_APP") ?? env("TAP_SECRET_KEY"))
+        : (env("TAP_SK_TEST_LOVABLE_APP") ?? env("TAP_SK_LIVE_LOVABLE_APP") ?? env("TAP_SECRET_KEY"));
     } else if (originHost === "lovableproject.com" || originHost.endsWith(".lovableproject.com")) {
       domainTag = "lovableproject";
       tapSecretKey = env("TAP_SK_TEST_LOVABLEPROJECT") ?? env("TAP_SK_LIVE_LOVABLEPROJECT") ?? env("TAP_SECRET_KEY");
