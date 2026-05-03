@@ -348,7 +348,7 @@ const ApplyTrainer: React.FC = () => {
       return !!(loc.country && loc.city);
     }
     if (s === 2) {
-      return !!(form.licenseType && form.yearsExperience > 0 && form.summary.trim().length >= 30);
+      return !!(form.yearsExperience > 0 && form.summary.trim().length >= 30);
     }
     if (s === 3) {
       return form.bikeEntries.length > 0 && form.bikeEntries.every((b) => b.photos.length > 0);
