@@ -543,7 +543,7 @@ export const TrainerBookingsManager: React.FC<{
               />
             </div>
           ) : null}
-          <DialogFooter>
+          <DialogFooter className="px-6 py-3 border-t border-border/60 shrink-0">
             <Button type="button" variant="outline" onClick={() => setDetailRow(null)}>
               {isRTL ? 'إغلاق' : 'Close'}
             </Button>
