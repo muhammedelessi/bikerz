@@ -161,6 +161,14 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
   const [paying, setPaying] = useState(false);
   const today = useMemo(() => startOfDay(new Date()), []);
 
+  // Tick every minute so slots that cross the 24h threshold while the user is
+  // on the page get re-evaluated and visually disabled without needing a refresh.
+  const [, setNowTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setNowTick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const trainerId = selectedCourse.trainer_id;
   const courseKey = selectedCourse.id;
 
@@ -1020,8 +1028,21 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                                     key={slot}
                                     type="button"
                                     disabled={disabled}
+                                    aria-disabled={disabled}
                                     onClick={() => {
-                                      if (!disabled) setSelectedSlot(slot);
+                                      if (disabled) return;
+                                      // Defensive re-check at click time: if the slot has crossed
+                                      // the 24h threshold between render and click, refuse silently
+                                      // and surface a toast so the UI stays trustworthy.
+                                      if (isSlotTooSoon(dateStr, slot)) {
+                                        toast.error(
+                                          isRTL
+                                            ? 'يجب الحجز قبل 24 ساعة على الأقل من موعد الجلسة'
+                                            : 'You must book at least 24 hours before the session',
+                                        );
+                                        return;
+                                      }
+                                      setSelectedSlot(slot);
                                     }}
                                     title={
                                       tooSoon
@@ -1039,7 +1060,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                                       selected
                                         ? 'border-primary bg-primary/10 shadow-md scale-[1.02]'
                                         : disabled
-                                          ? 'border-border bg-muted/30 opacity-40 cursor-not-allowed'
+                                          ? 'border-border bg-muted/30 opacity-40 cursor-not-allowed pointer-events-none'
                                           : 'border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer',
                                     )}
                                   >
