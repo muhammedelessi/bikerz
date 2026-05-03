@@ -438,12 +438,16 @@ const HondaApplication: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
       <Navbar />
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-8 sm:py-12 space-y-6 pt-[calc(var(--navbar-h)+3rem)]">
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-8 sm:py-12 space-y-6 pt-[calc(var(--navbar-h)+8rem)]">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="mx-auto w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mb-1">
-            <ShieldCheck className="w-7 h-7 text-primary" />
-          </div>
+          <img
+            src={hondaLogo}
+            alt="Honda"
+            className="mx-auto h-20 sm:h-24 w-auto object-contain mb-3"
+            loading="eager"
+            decoding="async"
+          />
           <h1 className="text-2xl sm:text-3xl font-bold">
             {isRTL ? 'برنامج ملاك هوندا' : 'Honda Owners Program'}
           </h1>
