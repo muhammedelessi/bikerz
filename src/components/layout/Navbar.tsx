@@ -153,7 +153,7 @@ const Navbar: React.FC = () => {
   };
 
   const menuItems = useMemo(() => {
-    const hiddenLinks = new Set(["/trainings", "/trainers", "/mentors"]);
+    const hiddenLinks = new Set(["/mentors"]);
     const defaultItems: MenuItem[] = [
       {
         id: "home",
