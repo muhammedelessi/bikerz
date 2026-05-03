@@ -179,7 +179,21 @@ const HondaApplication: React.FC = () => {
           contentType: docFile.type,
           upsert: false,
         });
-      if (upErr) throw upErr;
+      if (upErr) {
+        // Friendlier message for the most common cause we've seen in
+        // staging: the storage migration didn't apply (or was rolled
+        // back), so the bucket literally doesn't exist yet.
+        // The raw "Bucket not found" message is opaque to end users.
+        const lower = (upErr.message || '').toLowerCase();
+        if (lower.includes('bucket') && lower.includes('not found')) {
+          throw new Error(
+            isRTL
+              ? 'خدمة رفع الوثائق ليست جاهزة بعد. يرجى المحاولة بعد دقيقة، أو التواصل مع الدعم.'
+              : 'Document upload service is not ready yet. Please retry in a minute or contact support.',
+          );
+        }
+        throw upErr;
+      }
 
       // If a previous application exists in pending_ai (≤3 attempts), reuse it
       // so ai_attempts continues to increment correctly. Otherwise insert new.
@@ -273,7 +287,7 @@ const HondaApplication: React.FC = () => {
     return (
       <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
         <Navbar />
-        <main className="max-w-2xl mx-auto px-4 py-12 space-y-4">
+        <main className="max-w-2xl mx-auto px-4 py-12 space-y-4 pt-[calc(var(--navbar-h)+1.5rem)]">
           <Skeleton className="h-12 w-full rounded-2xl" />
           <Skeleton className="h-72 w-full rounded-2xl" />
         </main>
@@ -401,7 +415,7 @@ const HondaApplication: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
       <Navbar />
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-8 sm:py-12 space-y-6">
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-8 sm:py-12 space-y-6 pt-[calc(var(--navbar-h)+1.5rem)]">
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="mx-auto w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mb-1">
@@ -604,7 +618,7 @@ const StatusShell: React.FC<{ isRTL: boolean; children: React.ReactNode }> = ({
 }) => (
   <div className="min-h-screen bg-background flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
     <Navbar />
-    <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-12">{children}</main>
+    <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-12 pt-[calc(var(--navbar-h)+1.5rem)]">{children}</main>
     <Footer />
   </div>
 );
