@@ -4639,6 +4639,10 @@ export type Database = {
       check_email_exists: { Args: { p_email: string }; Returns: boolean }
       check_google_provider: { Args: { p_email: string }; Returns: boolean }
       check_phone_exists: { Args: { p_phone: string }; Returns: boolean }
+      enroll_self_with_free_coupon: {
+        Args: { p_coupon_code: string; p_course_id: string }
+        Returns: Json
+      }
       get_all_user_emails: {
         Args: never
         Returns: {
