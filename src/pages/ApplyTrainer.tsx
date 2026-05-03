@@ -665,30 +665,32 @@ const ApplyTrainer: React.FC = () => {
               descEn="License, years of experience, and summary"
             />
 
-            <FormField label={isRTL ? "نوع الرخصة *" : "License Type *"}>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                {LICENSES.map((lic) => (
-                  <button
-                    key={lic.id}
-                    type="button"
-                    onClick={() => setForm({ ...form, licenseType: lic.id })}
-                    className={cn(
-                      "flex flex-col items-center gap-1 p-2.5 sm:p-3 rounded-xl border-2 transition-all min-h-[88px] sm:min-h-0",
-                      form.licenseType === lic.id
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-muted/20 text-muted-foreground hover:border-primary/40",
-                    )}
-                  >
-                    <span className="text-base font-bold">{lic.id}</span>
-                    <span className="text-[10px] text-center leading-tight">
-                      {isRTL ? lic.labelAr.split("—")[1]?.trim() : lic.labelEn.split("—")[1]?.trim()}
-                    </span>
-                    <span className="text-[9px] opacity-60">{lic.desc}</span>
-                  </button>
-                ))}
-              </div>
-            </FormField>
-
+            {/* License Type — temporarily hidden, optional */}
+            {false && (
+              <FormField label={isRTL ? "نوع الرخصة" : "License Type"}>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                  {LICENSES.map((lic) => (
+                    <button
+                      key={lic.id}
+                      type="button"
+                      onClick={() => setForm({ ...form, licenseType: lic.id })}
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2.5 sm:p-3 rounded-xl border-2 transition-all min-h-[88px] sm:min-h-0",
+                        form.licenseType === lic.id
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-muted/20 text-muted-foreground hover:border-primary/40",
+                      )}
+                    >
+                      <span className="text-base font-bold">{lic.id}</span>
+                      <span className="text-[10px] text-center leading-tight">
+                        {isRTL ? lic.labelAr.split("—")[1]?.trim() : lic.labelEn.split("—")[1]?.trim()}
+                      </span>
+                      <span className="text-[9px] opacity-60">{lic.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </FormField>
+            )}
             <FormField
               label={isRTL ? "ادخل سنوات الخبرة" : "Enter years of experience"}
             >
