@@ -81,7 +81,7 @@ const HondaApplication: React.FC = () => {
     enabled: !!user,
     queryFn: async (): Promise<HondaApplication | null> => {
       if (!user) return null;
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('honda_applications')
         .select('*')
         .eq('user_id', user.id)
