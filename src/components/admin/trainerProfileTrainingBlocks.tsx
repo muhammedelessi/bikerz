@@ -140,27 +140,16 @@ export const TrainerCourseEditDialog: React.FC<{
         <DialogHeader>
           <DialogTitle>{isRTL ? 'تعديل التعيين' : 'Edit assignment'}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs">{isRTL ? 'السعر (ر.س)' : 'Price (SAR)'}</Label>
             <Input type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} dir="ltr" className="h-10" />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">{isRTL ? 'عدد الجلسات' : 'Sessions'}</Label>
-            <Input
-              type="number"
-              min={1}
-              step={1}
-              value={editSessions}
-              onChange={(e) => setEditSessions(e.target.value)}
-              dir="ltr"
-              className="h-10"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">{isRTL ? 'مدة كل جلسة (ساعات)' : 'Hours / session'}</Label>
-            <Input type="number" min={0.25} step={0.25} value={editDur} onChange={(e) => setEditDur(e.target.value)} dir="ltr" className="h-10" />
-          </div>
+          <p className="text-[11px] text-muted-foreground">
+            {isRTL
+              ? 'عدد الجلسات ومدة كل جلسة تُحدَّد من صفحة التدريب نفسها.'
+              : 'Sessions count and duration are set from the training page itself.'}
+          </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
