@@ -90,6 +90,7 @@ type HondaApplication = {
   ai_attempts: number;
   ai_decision: string | null;
   ai_decision_reason: string | null;
+  ai_last_response: { reason_ar?: string; reason_en?: string } | null;
   status:
     | 'pending_ai'
     | 'needs_manual_review'
@@ -546,11 +547,18 @@ const HondaApplication: React.FC = () => {
                     ? `محاولة ${attemptsUsed + 1} من 3`
                     : `Attempt ${attemptsUsed + 1} of 3`}
                 </p>
-                {application.ai_decision_reason && (
-                  <p className="text-muted-foreground break-words">
-                    {application.ai_decision_reason}
-                  </p>
-                )}
+                {(() => {
+                  const reasonText = isRTL
+                    ? application.ai_last_response?.reason_ar ||
+                      application.ai_decision_reason
+                    : application.ai_last_response?.reason_en ||
+                      application.ai_decision_reason;
+                  return reasonText ? (
+                    <p className="text-muted-foreground break-words">
+                      {reasonText}
+                    </p>
+                  ) : null;
+                })()}
                 <p className="text-xs text-muted-foreground">
                   {isRTL
                     ? `تبقّى لك ${attemptsRemaining} ${
