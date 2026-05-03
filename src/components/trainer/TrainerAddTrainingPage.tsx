@@ -368,12 +368,62 @@ export const TrainerAddTrainingPage: React.FC<Props> = ({ trainerId, existingTra
                 onChange={(e) => setPrice(Math.max(0, parseFloat(e.target.value) || 0))}
                 dir="ltr"
               />
-              <p className="text-[11px] leading-relaxed text-muted-foreground bg-muted/40 border border-border rounded-md p-2">
-                {tx(
-                  "ملاحظة: هذا هو السعر الذي ستحصل عليه. ستتم إضافة عمولات المنصة والضرائب تلقائيًا من قبل الإدارة في قسم التسعير، وسيظهر للطالب السعر النهائي شاملاً تلك العمولات.",
-                  "Note: This is the price you receive. Platform commissions and taxes will be added automatically by admin in the pricing section, and students will see the final price including those fees."
+              <div className="rounded-md border border-border bg-muted/40 p-3 space-y-2">
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  {tx(
+                    "هذا هو السعر الذي ستحصل عليه. ستتم إضافة عمولات المنصة والضرائب تلقائيًا، وسيظهر للطالب السعر النهائي التالي:",
+                    "This is the price you receive. Platform commissions and taxes are added automatically. Students will see the following final price:"
+                  )}
+                </p>
+                {price > 0 ? (
+                  <div className="space-y-1.5 text-xs" dir="ltr">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">
+                        {tx("سعرك (صافي)", "Your price (net)")}
+                      </span>
+                      <span className="font-medium tabular-nums">{fmt(breakdown.trainerBaseSar)} SAR</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">
+                        {tx(`عمولة المنصة (${markupPercent}%)`, `Platform commission (${markupPercent}%)`)}
+                      </span>
+                      <span className="tabular-nums">
+                        +{fmt((price * markupPercent) / 100)} SAR
+                      </span>
+                    </div>
+                    {extraFeesPercent > 0 ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">
+                          {tx(`رسوم تحويل ومرافق (${extraFeesPercent}%)`, `Transfer & utility fees (${extraFeesPercent}%)`)}
+                        </span>
+                        <span className="tabular-nums">
+                          +{fmt((price * extraFeesPercent) / 100)} SAR
+                        </span>
+                      </div>
+                    ) : null}
+                    <div className="flex items-center justify-between border-t border-border/60 pt-1.5">
+                      <span className="text-muted-foreground">
+                        {tx("المجموع قبل الضريبة", "Subtotal before VAT")}
+                      </span>
+                      <span className="tabular-nums">{fmt(breakdown.subtotalBeforeVatSar)} SAR</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">
+                        {tx(`ضريبة القيمة المضافة (${vatPercent}%)`, `VAT (${vatPercent}%)`)}
+                      </span>
+                      <span className="tabular-nums">+{fmt(breakdown.vatAmountSar)} SAR</span>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-border pt-1.5 font-semibold text-foreground">
+                      <span>{tx("السعر الذي يدفعه الطالب", "Price the student pays")}</span>
+                      <span className="tabular-nums">{fmt(breakdown.totalChargedSar)} SAR</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground/80">
+                    {tx("أدخل سعرًا لعرض التفاصيل.", "Enter a price to see the breakdown.")}
+                  </p>
                 )}
-              </p>
+              </div>
             </div>
           </div>
         </div>
