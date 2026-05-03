@@ -1246,7 +1246,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                               {durationBookingLabel(
                                 curriculumSessions && curriculumSessions.length > 0
                                   ? curriculumSessions.reduce((sum, s) => sum + s.duration_hours, 0)
-                                  : Number(selectedCourse.duration_hours) * sessionsNeeded,
+                                  : perSessionDurationHours * sessionsNeeded,
                                 isRTL,
                               )}
                             </span>
