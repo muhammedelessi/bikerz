@@ -98,7 +98,7 @@ export function useVideoComments(videoId: string | null | undefined) {
       if (userIds.length === 0) return rows;
 
       const { data: profiles } = await (supabase as any)
-        .from("profiles")
+        .from("public_profiles")
         .select("user_id, full_name, avatar_url")
         .in("user_id", userIds);
 
