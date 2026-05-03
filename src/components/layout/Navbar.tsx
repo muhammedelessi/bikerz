@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 
-import { ChevronRight, LogOut, Menu, X } from "lucide-react";
+import { ChevronRight, LogOut, Menu, X, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LanguageToggle from "@/components/common/LanguageToggle";
 import LogoutConfirmDialog from "@/components/common/LogoutConfirmDialog";
@@ -119,6 +119,41 @@ const Navbar: React.FC = () => {
       return data?.value as HeaderContent;
     },
   });
+
+  // Drives the Honda Owners CTA visibility. We hide the chip once the user
+  // is approved (they already have free access to "What If") to avoid
+  // sending them through the form a second time.
+  // The query is cheap because of the (user_id, status) index in the
+  // honda_applications table; result is cached per-user via the key.
+  const { data: hondaStatus } = useQuery({
+    queryKey: ["honda-status", user?.id],
+    enabled: !!user,
+    staleTime: 60_000,
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await (supabase as unknown as {
+        from: (t: string) => {
+          select: (s: string) => {
+            eq: (k: string, v: string) => {
+              order: (c: string, o: { ascending: boolean }) => {
+                limit: (n: number) => {
+                  maybeSingle: () => Promise<{ data: { status?: string } | null }>;
+                };
+              };
+            };
+          };
+        };
+      })
+        .from("honda_applications")
+        .select("status")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return (data?.status as string | undefined) ?? null;
+    },
+  });
+  const showHondaCTA = !user || hondaStatus !== "approved";
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -327,6 +362,26 @@ const Navbar: React.FC = () => {
                 {showLanguageToggle && <LanguageToggle />}
               </div>
               <div className="hidden lg:flex items-center gap-2">
+                {/* Honda Owners chip — visible to everyone (logged-in or not).
+                    Hidden once the current user has an `approved` Honda
+                    application, since the CTA's purpose has been served
+                    (the "What If" course is now free for them). The chip
+                    sits before the login/dashboard cluster so it reads
+                    naturally next to the login button per spec. */}
+                {showHondaCTA && (
+                  <Link to="/honda/apply">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 border-red-500/40 text-red-600 hover:bg-red-500/10 hover:text-red-700 hover:border-red-500/60 dark:text-red-400 dark:hover:text-red-300"
+                    >
+                      <ShieldCheck className="w-4 h-4" aria-hidden />
+                      <span className="text-sm font-semibold">
+                        {isRTL ? "مالك هوندا" : "Honda Owner"}
+                      </span>
+                    </Button>
+                  </Link>
+                )}
                 {user
                   ? (
                     <>
@@ -464,6 +519,22 @@ const Navbar: React.FC = () => {
           </div>
           {/* Nav Links */}
           <nav className="flex-1 overflow-y-auto py-3 px-3">
+            {/* Honda Owners CTA — same visibility rule as desktop. Pinned
+                to the top of the drawer because it's a feature highlight,
+                not a routine menu link. */}
+            {showHondaCTA && (
+              <Link
+                to="/honda/apply"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex w-full items-center gap-3 py-3.5 px-4 rounded-xl mb-2 text-start min-h-[48px] border-2 border-red-500/40 bg-red-500/5 text-red-700 dark:text-red-300 transition-colors hover:bg-red-500/10"
+              >
+                <ShieldCheck className="w-5 h-5 shrink-0" aria-hidden />
+                <span className="font-semibold flex-1 min-w-0">
+                  {isRTL ? "مالك هوندا — تسجيل" : "Honda Owner — register"}
+                </span>
+                <ChevronRight className={`w-4 h-4 shrink-0 ${isRTL ? "rotate-180" : ""}`} />
+              </Link>
+            )}
             <div className="space-y-0.5">
               {menuItems.map((item) => {
                 const active = isActive(item.link);

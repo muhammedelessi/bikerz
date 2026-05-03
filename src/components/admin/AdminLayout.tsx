@@ -45,6 +45,7 @@ import {
   StarIcon,
   Trophy,
   Gamepad2,
+  ShieldCheck,
 } from 'lucide-react';
 import logoDark from '@/assets/logo-dark.webp';
 import logoLight from '@/assets/logo-light.png';
@@ -72,6 +73,7 @@ interface NavItem {
   { icon: Bike, labelKey: 'bikeCatalog', href: '/admin/bike-catalog' },
   { icon: StarIcon, labelKey: 'ranks', href: '/admin/ranks' },
   { icon: Tag, labelKey: 'coupons', href: '/admin/coupons' },
+  { icon: ShieldCheck, labelKey: 'hondaApplications', href: '/admin/honda-applications' },
   { icon: BarChart3, labelKey: 'analytics', href: '/admin/analytics' },
   { icon: FileText, labelKey: 'content', href: '/admin/content' },
   { icon: Megaphone, labelKey: 'ads', href: '/admin/ads' },

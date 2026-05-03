@@ -126,6 +126,7 @@ const Ambassador = lazyPage(() => import("./pages/Ambassador"));
 const CommunityChampions = lazyPage(() => import("./pages/CommunityChampions"));
 const ChampionVideosList = lazyPage(() => import("./pages/ChampionVideosList"));
 const ChampionVideoDetail = lazyPage(() => import("./pages/ChampionVideoDetail"));
+const HondaApplication = lazyPage(() => import("./pages/HondaApplication"));
 
 // Admin Pages - lazy loaded
 const AdminHome = lazyPage(() => import("./pages/admin/AdminHome"));
@@ -142,6 +143,7 @@ const AdminSupport = lazyPage(() => import("./pages/admin/AdminSupport"));
 const AdminLessonDiscussions = lazyPage(() => import("./pages/admin/AdminLessonDiscussions"));
 const AdminContent = lazyPage(() => import("./pages/admin/AdminContent"));
 const AdminCoupons = lazyPage(() => import("./pages/admin/AdminCoupons"));
+const AdminHondaApplications = lazyPage(() => import("./pages/admin/AdminHondaApplications"));
 const AdminCourseReviews = lazyPage(() => import("./pages/admin/AdminCourseReviews"));
 const AdminCourseStudents = lazyPage(() => import("./pages/admin/AdminCourseStudents"));
 const AdminStudentDetail = lazyPage(() => import("./pages/admin/AdminStudentDetail"));
@@ -355,6 +357,11 @@ const AppRoutes = () => (
         <Route path="/community-champions" element={<CommunityChampions />} />
         <Route path="/ambassador" element={<Ambassador />} />
 
+        {/* Honda Owners application — public landing route. The page itself
+            redirects to /login if the user isn't authenticated. */}
+        <Route path="/honda/apply" element={<HondaApplication />} />
+        <Route path="/honda" element={<HondaApplication />} />
+
         {/* Protected Routes */}
         <Route
           path="/dashboard"
@@ -517,6 +524,14 @@ const AppRoutes = () => (
           element={
             <AdminRoute>
               <AdminCoupons />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/honda-applications"
+          element={
+            <AdminRoute>
+              <AdminHondaApplications />
             </AdminRoute>
           }
         />
