@@ -48,7 +48,13 @@ import { formatBookingTime, formatTimeFromMinutesSinceMidnight, pgTimeStringToMi
 import { joinFullName, splitFullName } from '@/lib/nameUtils';
 import Checkout3DSModal from '@/components/checkout/Checkout3DSModal';
 
-export type TrainingBookingTrainingMini = { id: string; name_ar: string; name_en: string };
+export type TrainingBookingTrainingMini = {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  default_sessions_count?: number | null;
+  default_session_duration_hours?: number | null;
+};
 
 export type TrainingBookingFlowProps = {
   training: TrainingBookingTrainingMini;
@@ -343,10 +349,18 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
   const perSessionDurationHours = useMemo(() => {
     if (curriculumSessions && curriculumSessions.length > 0) {
       const idx = Math.min(activeSessionIndex, curriculumSessions.length - 1);
-      return curriculumSessions[idx].duration_hours;
+      const v = Number(curriculumSessions[idx].duration_hours);
+      if (Number.isFinite(v) && v > 0) return v;
     }
-    return Number(selectedCourse.duration_hours);
-  }, [selectedCourse.duration_hours, curriculumSessions, activeSessionIndex]);
+    const fromTraining = Number(training.default_session_duration_hours);
+    if (Number.isFinite(fromTraining) && fromTraining > 0) return fromTraining;
+    return Number(selectedCourse.duration_hours) || 0;
+  }, [
+    selectedCourse.duration_hours,
+    curriculumSessions,
+    activeSessionIndex,
+    training.default_session_duration_hours,
+  ]);
 
   const durationMins = useMemo(
     () => Math.round(perSessionDurationHours * 60),
@@ -1232,7 +1246,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                               {durationBookingLabel(
                                 curriculumSessions && curriculumSessions.length > 0
                                   ? curriculumSessions.reduce((sum, s) => sum + s.duration_hours, 0)
-                                  : Number(selectedCourse.duration_hours) * sessionsNeeded,
+                                  : perSessionDurationHours * sessionsNeeded,
                                 isRTL,
                               )}
                             </span>
