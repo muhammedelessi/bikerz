@@ -255,7 +255,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     // Free enrollment (100% coupon)
     if (discountedPrice === 0 && promo.appliedCoupon) {
       try {
-        await enrollUserInCourse(user.id, course.id);
+        await enrollUserInCourse(user.id, course.id, promo.appliedCoupon?.coupon_code);
         if (promo.appliedCoupon?.coupon_id) {
           await incrementCouponUsage({
             couponId: promo.appliedCoupon.coupon_id,
