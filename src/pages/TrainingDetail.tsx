@@ -395,10 +395,19 @@ const TrainingDetail: React.FC = () => {
                             </h3>
                             <Badge variant="secondary">{curriculumSessions.length}</Badge>
                           </div>
-                          <TrainingCurriculumAccordion
-                            sessions={curriculumSessions}
-                            isRTL={isRTL}
-                          />
+                          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-card p-4 text-sm">
+                            <span className="text-muted-foreground">
+                              {isRTL ? "عدد الجلسات:" : "Sessions:"}{" "}
+                              <span className="text-foreground font-semibold">{curriculumSessions.length}</span>
+                            </span>
+                            <span className="text-border">·</span>
+                            <span className="text-muted-foreground">
+                              {isRTL ? "إجمالي الساعات:" : "Total hours:"}{" "}
+                              <span className="text-foreground font-semibold">
+                                {curriculumSessions.reduce((t, s) => t + s.duration_hours, 0)} {isRTL ? "ساعة" : "hrs"}
+                              </span>
+                            </span>
+                          </div>
                         </div>
                       ) : null}
                     </CardContent>
