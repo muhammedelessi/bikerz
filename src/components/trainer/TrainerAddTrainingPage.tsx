@@ -20,6 +20,8 @@ import { CountryCityPicker } from "@/components/ui/fields";
 import { COUNTRIES } from "@/data/countryCityData";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useTrainingPlatformPricing } from "@/hooks/useTrainingPlatformPricing";
+import { computeTrainingPricingBreakdownSar } from "@/lib/trainingPlatformMarkup";
 
 type TrainingCatalogRow = {
   id: string;
