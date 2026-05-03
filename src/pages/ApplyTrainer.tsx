@@ -661,8 +661,8 @@ const ApplyTrainer: React.FC = () => {
             <SectionHeader
               titleAr="خبرتك"
               titleEn="Your Experience"
-              descAr="نوع الرخصة وسنوات الخبرة والملخص"
-              descEn="License, years of experience, and summary"
+              descAr="سنوات الخبرة والملخص"
+              descEn="Years of experience and summary"
             />
 
             {/* License Type — temporarily hidden, optional */}
