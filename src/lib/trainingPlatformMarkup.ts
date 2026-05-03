@@ -1,8 +1,36 @@
 /** Max platform markup allowed in admin UI (percent points). */
 export const TRAINING_PLATFORM_MARKUP_MAX = 500;
 
-/** Max VAT % configurable for Saudi training charges (percent points). */
-export const TRAINING_PLATFORM_VAT_MAX = 30;
+/**
+ * Max VAT % configurable for Saudi training charges. Lifted from 30 to 1000
+ * so the admin can enter any rate they need (compound rates, regional
+ * surcharges, etc.) without us second-guessing them at the UI layer.
+ * Negative values still snap to 0 — VAT is never refunded here.
+ */
+export const TRAINING_PLATFORM_VAT_MAX = 1000;
+
+/**
+ * Combined transfer + energy-company surcharge % added on top of the
+ * platform commission, before VAT. One single field instead of two so the
+ * admin only has to think in one number; downstream calculations treat it
+ * exactly like the markup but separate so receipts can split it out.
+ */
+export const TRAINING_EXTRA_FEES_MAX = 1000;
+
+export function clampTrainingExtraFeesPercent(raw: unknown): number {
+  const n = typeof raw === "number" ? raw : Number(raw);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.min(TRAINING_EXTRA_FEES_MAX, n);
+}
+
+export function parseExtraFeesPercentFromAdminValue(value: unknown): number {
+  if (value == null) return 0;
+  if (typeof value === "number") return clampTrainingExtraFeesPercent(value);
+  if (typeof value === "object" && value !== null && "percent" in value) {
+    return clampTrainingExtraFeesPercent((value as { percent: unknown }).percent);
+  }
+  return 0;
+}
 
 /**
  * Bikerz commission: markup on the trainer's listed SAR base (stored in `trainer_courses.price`).

@@ -31,14 +31,17 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   TRAINING_PLATFORM_MARKUP_MAX,
   TRAINING_PLATFORM_VAT_MAX,
+  TRAINING_EXTRA_FEES_MAX,
   clampTrainingPlatformMarkupPercent,
   clampTrainingVatPercent,
+  clampTrainingExtraFeesPercent,
 } from '@/lib/trainingPlatformMarkup';
 import { useTrainingPlatformPricing } from '@/hooks/useTrainingPlatformPricing';
 import type { Json } from '@/integrations/supabase/types';
 
 const TRAINING_MARKUP_SETTING_KEY = 'training_platform_markup_percent';
 const TRAINING_VAT_SETTING_KEY = 'training_platform_vat_percent';
+const TRAINING_EXTRA_FEES_SETTING_KEY = 'training_extra_fees_percent';
 
 
 interface Training {
@@ -148,10 +151,12 @@ const AdminTrainings: React.FC = () => {
   const { data: pricing, isLoading: pricingLoading } = useTrainingPlatformPricing();
   const [markupDraft, setMarkupDraft] = useState('0');
   const [vatDraft, setVatDraft] = useState('0');
+  const [extraFeesDraft, setExtraFeesDraft] = useState('0');
   useEffect(() => {
     if (pricing) {
       setMarkupDraft(String(pricing.markupPercent));
       setVatDraft(String(pricing.vatPercent));
+      setExtraFeesDraft(String(pricing.extraFeesPercent));
     }
   }, [pricing]);
 
@@ -159,6 +164,7 @@ const AdminTrainings: React.FC = () => {
     mutationFn: async () => {
       const markupPct = clampTrainingPlatformMarkupPercent(parseFloat(String(markupDraft).replace(',', '.')));
       const vatPct = clampTrainingVatPercent(parseFloat(String(vatDraft).replace(',', '.')));
+      const extraFeesPct = clampTrainingExtraFeesPercent(parseFloat(String(extraFeesDraft).replace(',', '.')));
       const ts = new Date().toISOString();
       const uid = user?.id ?? null;
       const { error } = await dbFrom('admin_settings').upsert(
@@ -174,6 +180,13 @@ const AdminTrainings: React.FC = () => {
             key: TRAINING_VAT_SETTING_KEY,
             category: 'training',
             value: { percent: vatPct },
+            updated_by: uid,
+            updated_at: ts,
+          },
+          {
+            key: TRAINING_EXTRA_FEES_SETTING_KEY,
+            category: 'training',
+            value: { percent: extraFeesPct },
             updated_by: uid,
             updated_at: ts,
           },
@@ -1055,7 +1068,7 @@ const AdminTrainings: React.FC = () => {
                 </p>
               </div>
               <div className="flex flex-col gap-3 shrink-0 w-full max-w-md" dir="ltr">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs text-start block">
                       {isRTL ? 'عمولة بايكرز (%)' : 'Bikerz commission (%)'}
@@ -1073,15 +1086,38 @@ const AdminTrainings: React.FC = () => {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs text-start block">
-                      {isRTL ? 'ضريبة القيمة المضافة السعودية (%)' : 'Saudi VAT (%)'}
+                      {isRTL ? 'ضريبة القيمة المضافة (%)' : 'VAT (%)'}
                     </Label>
+                    {/* No `max` attribute: admin enters whatever rate the
+                        regulator currently requires (compound rates,
+                        regional surcharges, …). The clamp helper still
+                        rejects negatives at save time. */}
                     <Input
                       type="number"
                       min={0}
-                      max={TRAINING_PLATFORM_VAT_MAX}
                       step={0.1}
                       value={vatDraft}
                       onChange={(e) => setVatDraft(e.target.value)}
+                      className="h-10"
+                      disabled={savePricingMutation.isPending || pricingLoading}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-start block">
+                      {isRTL ? 'رسوم التحويل وشركة الطاقة (%)' : 'Transfer & energy fees (%)'}
+                    </Label>
+                    {/* Combined surcharge: covers both card-acquirer
+                        transfer overhead AND the energy/fuel-supplier
+                        cost. One single input so admins enter one number.
+                        Receipts can split the line later if a finance
+                        team asks. */}
+                    <Input
+                      type="number"
+                      min={0}
+                      max={TRAINING_EXTRA_FEES_MAX}
+                      step={0.1}
+                      value={extraFeesDraft}
+                      onChange={(e) => setExtraFeesDraft(e.target.value)}
                       className="h-10"
                       disabled={savePricingMutation.isPending || pricingLoading}
                     />
