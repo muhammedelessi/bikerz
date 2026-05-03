@@ -28,9 +28,54 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { COUNTRIES } from '@/data/countryCityData';
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+
+/**
+ * Profiles in this codebase are not consistent about how they store
+ * country: Signup writes the country CODE ("SA"), but other paths
+ * (GHL sync, older profile editor flows, manual updates) sometimes
+ * write the localised NAME ("Saudi Arabia" / "السعودية"). The
+ * CountryCityPicker only matches by code, so without this normaliser
+ * users with a name-shaped value see an empty country dropdown and
+ * the city falls through to raw English.
+ *
+ * Returns the canonical code if we can resolve it, otherwise the
+ * trimmed input verbatim (which the picker treats as a custom
+ * "Other" entry).
+ */
+function normalizeCountryToCode(raw: string | null | undefined): string {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return '';
+  // Already a code?
+  if (COUNTRIES.some((c) => c.code === trimmed)) return trimmed;
+  const lower = trimmed.toLowerCase();
+  const byName = COUNTRIES.find(
+    (c) => c.en.toLowerCase() === lower || c.ar === trimmed,
+  );
+  return byName?.code ?? trimmed;
+}
+
+/**
+ * The picker's city <Select> matches by exact `city.en` OR `city.ar`,
+ * so we normalise to the English name (the canonical form Signup
+ * writes back to profiles.city). If the country is unknown or the
+ * city isn't in our dataset, return the raw value — picker will
+ * treat it as a free-text custom entry.
+ */
+function normalizeCity(countryCode: string, raw: string | null | undefined): string {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return '';
+  const country = COUNTRIES.find((c) => c.code === countryCode);
+  if (!country) return trimmed;
+  const lower = trimmed.toLowerCase();
+  const cityEntry = country.cities.find(
+    (city) => city.en.toLowerCase() === lower || city.ar === trimmed,
+  );
+  return cityEntry?.en ?? trimmed;
+}
 
 type HondaApplication = {
   id: string;
@@ -77,9 +122,16 @@ const HondaApplication: React.FC = () => {
 
   // ── Existing application lookup ────────────────────────────────────
   // Drives the page state machine: form vs. status-card.
+  // staleTime + refetchOnWindowFocus:false stop the page from feeling
+  // like it "keeps refreshing itself" — the data only changes when the
+  // user actually submits, so there's no value in refetching on tab
+  // focus or remount within a minute.
   const applicationQuery = useQuery({
     queryKey: ['honda-application', user?.id],
     enabled: !!user,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
     queryFn: async (): Promise<HondaApplication | null> => {
       if (!user) return null;
       const { data, error } = await (supabase as any)
@@ -95,28 +147,52 @@ const HondaApplication: React.FC = () => {
   });
   const application = applicationQuery.data;
 
-  // Auto-fill from profile + redirect non-authenticated users to login.
-  // We track the first time the profile arrives via a ref so we apply the
-  // pre-fill ONCE — that way the user's edits aren't overwritten if the
-  // profile object reference changes later (e.g. after a profile sync).
+  // Auto-fill: priority is (1) existing application > (2) profile > (3) blank.
+  //
+  // The application takes priority because if the user already has a
+  // pending_ai row, those values represent what THEY just typed and
+  // submitted — losing them on remount would feel like the page "keeps
+  // refreshing and forgetting my answers."
+  //
+  // We track first-load via a ref so the prefill runs exactly once;
+  // subsequent renders (because of profile re-syncs or query refetches)
+  // never overwrite whatever the user is currently typing.
   const prefillAppliedRef = useRef(false);
   useEffect(() => {
     if (!authLoading && !user) {
       navigate(`/login?returnTo=${encodeURIComponent('/honda/apply')}`);
       return;
     }
-    if (!profile || prefillAppliedRef.current) return;
+    // Wait for both queries to settle before deciding what to prefill from.
+    if (authLoading || applicationQuery.isLoading) return;
+    if (prefillAppliedRef.current) return;
 
-    // UserProfile (src/types/auth.ts) already declares all four fields,
-    // but the AuthContext can return them as null when the profile is
-    // partially set up. Use direct access + nullish guards.
-    if (profile.full_name) setFullName(profile.full_name);
-    if (profile.country) setCountry(profile.country);
-    if (profile.city) setCity(profile.city);
-    if (profile.date_of_birth) setDob(profile.date_of_birth);
+    if (application) {
+      // Application exists — restore exactly what the user previously
+      // submitted. country/city in the row are already in canonical
+      // (code/English) form because we wrote them from this same form.
+      setFullName(application.full_name || '');
+      if (application.date_of_birth) setDob(application.date_of_birth);
+      setCountry(normalizeCountryToCode(application.country));
+      setCity(application.city || '');
+      setMotorcycleModel(application.motorcycle_model || '');
+      if (application.motorcycle_year) {
+        setMotorcycleYear(String(application.motorcycle_year));
+      }
+    } else if (profile) {
+      // No application yet — fall back to profile fields, normalising
+      // country/city because profile storage is inconsistent between
+      // signup paths (some store "SA", others store "Saudi Arabia").
+      if (profile.full_name) setFullName(profile.full_name);
+      const countryCode = normalizeCountryToCode(profile.country);
+      if (countryCode) setCountry(countryCode);
+      const cityCanonical = normalizeCity(countryCode, profile.city);
+      if (cityCanonical) setCity(cityCanonical);
+      if (profile.date_of_birth) setDob(profile.date_of_birth);
+    }
     prefillAppliedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, profile, authLoading]);
+  }, [user, profile, authLoading, application, applicationQuery.isLoading]);
 
   const yearNow = new Date().getFullYear();
 
@@ -311,7 +387,7 @@ const HondaApplication: React.FC = () => {
     return (
       <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
         <Navbar />
-        <main className="max-w-2xl mx-auto px-4 py-12 space-y-4 pt-[calc(var(--navbar-h)+3rem)]">
+        <main className="max-w-2xl mx-auto px-4 pb-12 space-y-4 pt-[calc(var(--navbar-h)+1rem)] lg:pt-[calc(var(--navbar-h)+2.5rem)]">
           <Skeleton className="h-12 w-full rounded-2xl" />
           <Skeleton className="h-72 w-full rounded-2xl" />
         </main>
@@ -439,7 +515,7 @@ const HondaApplication: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
       <Navbar />
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-8 sm:py-12 space-y-6 pt-[calc(var(--navbar-h)+5rem)]">
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 pb-8 sm:pb-12 space-y-6 pt-[calc(var(--navbar-h)+1rem)] lg:pt-[calc(var(--navbar-h)+2.5rem)]">
         {/* Header */}
         <div className="text-center space-y-2">
           <img
@@ -646,7 +722,7 @@ const StatusShell: React.FC<{ isRTL: boolean; children: React.ReactNode }> = ({
 }) => (
   <div className="min-h-screen bg-background flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
     <Navbar />
-    <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-12 pt-[calc(var(--navbar-h)+3rem)]">{children}</main>
+    <main className="flex-1 max-w-2xl w-full mx-auto px-4 pb-12 pt-[calc(var(--navbar-h)+1rem)] lg:pt-[calc(var(--navbar-h)+2.5rem)]">{children}</main>
     <Footer />
   </div>
 );
