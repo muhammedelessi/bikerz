@@ -254,9 +254,6 @@ Deno.serve(async (req) => {
   const allChecksPassed =
     aiDecision.is_motorcycle_registration_doc === true &&
     aiDecision.is_honda === true &&
-    aiDecision.name_matches === true &&
-    aiDecision.model_matches === true &&
-    aiDecision.year_matches === true &&
     typeof aiDecision.confidence === "number" &&
     aiDecision.confidence >= APPROVAL_CONFIDENCE_THRESHOLD;
 
