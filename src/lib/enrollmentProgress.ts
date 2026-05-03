@@ -21,7 +21,7 @@ export const fetchEnrollmentsWithLiveProgress = async (
   const courseIds = enrollmentRows.map((row) => row.course_id);
 
   const { data: lessonRows, error: lessonError } = await supabase
-    .from("lessons")
+    .from("lessons_public" as "lessons")
     .select("id, chapters!inner(course_id)")
     .eq("is_published", true)
     .eq("chapters.is_published", true)

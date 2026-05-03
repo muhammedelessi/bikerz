@@ -100,7 +100,7 @@ const DashboardHome: React.FC = () => {
             // Fetch lessons per chapter in order to respect chapter→lesson ordering
             for (const chapter of chapters) {
               const { data: lessons } = await supabase
-                .from('lessons')
+                .from('lessons_public' as 'lessons')
                 .select('id, title, title_ar')
                 .eq('chapter_id', chapter.id)
                 .eq('is_published', true)

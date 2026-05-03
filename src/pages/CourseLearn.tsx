@@ -267,7 +267,7 @@ const CourseLearn: React.FC = () => {
       const chaptersWithData = await Promise.all(
         (chaptersData || []).map(async (chapter) => {
           const { data: lessons, error: lessonsError } = await supabase
-            .from('lessons')
+            .from('lessons_public' as 'lessons')
             .select('*')
             .eq('chapter_id', chapter.id)
             .order('position', { ascending: true });
@@ -493,7 +493,7 @@ const CourseLearn: React.FC = () => {
           const chapterIds = courseChapters.map(ch => ch.id);
           
           const { data: courseLessons } = await supabase
-            .from('lessons')
+            .from('lessons_public' as 'lessons')
             .select('id')
             .in('chapter_id', chapterIds)
             .eq('is_published', true);
