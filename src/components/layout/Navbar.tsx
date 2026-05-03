@@ -197,9 +197,25 @@ const Navbar: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
+  const { data: clientIp } = useQuery({
+    queryKey: ["client-ip"],
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        const j = await res.json();
+        return (j?.ip as string) || "";
+      } catch {
+        return "";
+      }
+    },
+  });
+
+  const showTrainerFeatures = import.meta.env.DEV || (!!clientIp && ALLOWED_TRAINER_FEATURES_IPS.has(clientIp));
+
   const menuItems = useMemo(() => {
     const hiddenLinks = new Set<string>(["/mentors"]);
-    if (!import.meta.env.DEV) {
+    if (!showTrainerFeatures) {
       hiddenLinks.add("/trainings");
       hiddenLinks.add("/trainers");
     }
@@ -220,7 +236,7 @@ const Navbar: React.FC = () => {
         is_visible: true,
         open_in_new_tab: false,
       },
-      ...extraAfterCoursesNav(t),
+      ...extraAfterCoursesNav(t, showTrainerFeatures),
       {
         id: "about",
         title_en: t("nav.about", { lng: "en" }),
@@ -238,7 +254,7 @@ const Navbar: React.FC = () => {
 
     const merged = [...cmsItems];
     const links = new Set(merged.map((item) => item.link));
-    const missing = extraAfterCoursesNav(t).filter(
+    const missing = extraAfterCoursesNav(t, showTrainerFeatures).filter(
       (item) => !hiddenLinks.has(item.link) && !links.has(item.link),
     );
     if (missing.length === 0) return merged;
@@ -248,7 +264,7 @@ const Navbar: React.FC = () => {
     else merged.push(...missing);
 
     return merged;
-  }, [headerContent?.menu_items, t]);
+  }, [headerContent?.menu_items, t, showTrainerFeatures]);
 
   const ctaButton = headerContent?.cta_button || {
     text_en: "Start Now",
