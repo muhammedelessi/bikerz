@@ -48,7 +48,13 @@ import { formatBookingTime, formatTimeFromMinutesSinceMidnight, pgTimeStringToMi
 import { joinFullName, splitFullName } from '@/lib/nameUtils';
 import Checkout3DSModal from '@/components/checkout/Checkout3DSModal';
 
-export type TrainingBookingTrainingMini = { id: string; name_ar: string; name_en: string };
+export type TrainingBookingTrainingMini = {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  default_sessions_count?: number | null;
+  default_session_duration_hours?: number | null;
+};
 
 export type TrainingBookingFlowProps = {
   training: TrainingBookingTrainingMini;
