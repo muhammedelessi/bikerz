@@ -161,6 +161,14 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
   const [paying, setPaying] = useState(false);
   const today = useMemo(() => startOfDay(new Date()), []);
 
+  // Tick every minute so slots that cross the 24h threshold while the user is
+  // on the page get re-evaluated and visually disabled without needing a refresh.
+  const [, setNowTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setNowTick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const trainerId = selectedCourse.trainer_id;
   const courseKey = selectedCourse.id;
 
