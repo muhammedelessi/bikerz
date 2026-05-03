@@ -226,7 +226,7 @@ const HondaApplication: React.FC = () => {
         application.status === 'pending_ai' &&
         (application.ai_attempts ?? 0) < 3
       ) {
-        const { error: updErr } = await supabase
+        const { error: updErr } = await (supabase as any)
           .from('honda_applications')
           .update({
             full_name: fullName.trim(),
@@ -241,7 +241,7 @@ const HondaApplication: React.FC = () => {
         if (updErr) throw updErr;
         applicationId = application.id;
       } else {
-        const { data: ins, error: insErr } = await supabase
+        const { data: ins, error: insErr } = await (supabase as any)
           .from('honda_applications')
           .insert({
             user_id: user.id,
