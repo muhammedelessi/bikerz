@@ -1548,6 +1548,75 @@ export type Database = {
         }
         Relationships: []
       }
+      honda_applications: {
+        Row: {
+          ai_attempts: number
+          ai_decision: string | null
+          ai_decision_reason: string | null
+          ai_last_response: Json | null
+          approved_at: string | null
+          city: string
+          country: string
+          created_at: string
+          date_of_birth: string
+          full_name: string
+          id: string
+          manual_review_notes: string | null
+          manual_reviewed_at: string | null
+          manual_reviewer_id: string | null
+          motorcycle_model: string
+          motorcycle_year: number
+          registration_document_path: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_attempts?: number
+          ai_decision?: string | null
+          ai_decision_reason?: string | null
+          ai_last_response?: Json | null
+          approved_at?: string | null
+          city: string
+          country: string
+          created_at?: string
+          date_of_birth: string
+          full_name: string
+          id?: string
+          manual_review_notes?: string | null
+          manual_reviewed_at?: string | null
+          manual_reviewer_id?: string | null
+          motorcycle_model: string
+          motorcycle_year: number
+          registration_document_path: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_attempts?: number
+          ai_decision?: string | null
+          ai_decision_reason?: string | null
+          ai_last_response?: Json | null
+          approved_at?: string | null
+          city?: string
+          country?: string
+          created_at?: string
+          date_of_birth?: string
+          full_name?: string
+          id?: string
+          manual_review_notes?: string | null
+          manual_reviewed_at?: string | null
+          manual_reviewer_id?: string | null
+          motorcycle_model?: string
+          motorcycle_year?: number
+          registration_document_path?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       infrastructure_metrics: {
         Row: {
           id: string
@@ -4647,6 +4716,7 @@ export type Database = {
         Args: { p_coupon_code: string; p_course_id: string }
         Returns: Json
       }
+      ensure_honda_storage_bucket: { Args: never; Returns: undefined }
       get_all_user_emails: {
         Args: never
         Returns: {
