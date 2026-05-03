@@ -4503,12 +4503,14 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string | null
+          email: string | null
           id: string | null
           language_levels: Json | null
           license_type: string | null
           motorbike_brand: string | null
           name_ar: string | null
           name_en: string | null
+          phone: string | null
           photo_url: string | null
           profit_ratio: number | null
           services: string[] | null
@@ -4529,12 +4531,14 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string | null
           language_levels?: Json | null
           license_type?: string | null
           motorbike_brand?: string | null
           name_ar?: string | null
           name_en?: string | null
+          phone?: string | null
           photo_url?: string | null
           profit_ratio?: number | null
           services?: string[] | null
@@ -4555,12 +4559,14 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string | null
           language_levels?: Json | null
           license_type?: string | null
           motorbike_brand?: string | null
           name_ar?: string | null
           name_en?: string | null
+          phone?: string | null
           photo_url?: string | null
           profit_ratio?: number | null
           services?: string[] | null
