@@ -40,7 +40,9 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ sidebarOpen, onSidebarOpenChang
   // Show "Admin Panel" only for true admin roles — not for instructor/finance/support/moderator,
   // who are technically in ADMIN_ROLES for route-guard purposes but aren't "admins" in the UI sense.
   const showAdminLink = hasAnyRole(["super_admin", "developer", "academy_admin"]);
+  const isTrainerRole = hasAnyRole(["instructor"]);
   const { trainer } = useCurrentTrainer();
+  const hideApplyTrainer = isTrainerRole || !!trainer;
   const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
