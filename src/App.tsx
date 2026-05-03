@@ -117,6 +117,7 @@ const NotFound = lazyPage(() => import("./pages/NotFound"));
 const PaymentSuccess = lazyPage(() => import("./pages/PaymentSuccess"));
 const CheckoutPage = lazyPage(() => import("./pages/CheckoutPage"));
 const BookingPaymentComplete = lazyPage(() => import("./pages/BookingPaymentComplete"));
+const Tap3DSCallback = lazyPage(() => import("./pages/Tap3DSCallback"));
 const BookingSuccess = lazyPage(() => import("./pages/BookingSuccess"));
 const MyBookings = lazyPage(() => import("./pages/MyBookings"));
 const JoinCommunity = lazyPage(() => import("./pages/JoinCommunity"));
@@ -309,6 +310,21 @@ const AppRoutes = () => (
         <Route path="/courses/:id/learn" element={<CourseLearn />} />
         <Route path="/courses/:id/lessons/:lessonId" element={<CourseLearn />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
+        {/*
+          Tap 3-D Secure callback. The PRIMARY entry point is the static file at
+          public/tap-3ds-callback.html — boots faster than React and is what we
+          hand to Tap as `redirect.url`. These React routes are a safety net for
+          two real-world cases we've hit:
+            1) Tap's `response.aspx` and some bank gateways (BOP confirmed) drop
+               the `.html` from the path during their redirect chain. The iframe
+               then lands on `/tap-3ds-callback` and the SPA fallback served the
+               NotFound page (the 404 the user reported after submitting OTP).
+            2) Hosting environments that route `*.html` through the SPA fallback
+               anyway. Same effective fix.
+          The component does the same postMessage handshake as the static file.
+        */}
+        <Route path="/tap-3ds-callback" element={<Tap3DSCallback />} />
+        <Route path="/tap-3ds-callback.html" element={<Tap3DSCallback />} />
         <Route
           path="/booking-payment-complete"
           element={
