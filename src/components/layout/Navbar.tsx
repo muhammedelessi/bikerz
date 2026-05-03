@@ -52,7 +52,7 @@ function extraAfterCoursesNav(t: (key: string, opts?: { lng?: string }) => strin
       title_en: t("nav.trainings", { lng: "en" }),
       title_ar: t("nav.trainings", { lng: "ar" }),
       link: "/trainings",
-      is_visible: false,
+      is_visible: true,
       open_in_new_tab: false,
     },
     {
@@ -60,7 +60,7 @@ function extraAfterCoursesNav(t: (key: string, opts?: { lng?: string }) => strin
       title_en: t("nav.trainers", { lng: "en" }),
       title_ar: t("nav.trainers", { lng: "ar" }),
       link: "/trainers",
-      is_visible: false,
+      is_visible: true,
       open_in_new_tab: false,
     },
     {
