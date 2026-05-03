@@ -85,6 +85,9 @@ const TrainingDetail: React.FC = () => {
       if (error) throw error;
       return data;
     },
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
   });
 
   const { data: trainerCourses = [], isLoading: coursesLoading } = useQuery({
@@ -107,6 +110,9 @@ const TrainingDetail: React.FC = () => {
       const tMap = new Map((trainersData || []).map((t) => [t.id, t]));
       return rows.map((r) => ({ ...r, trainers: tMap.get(r.trainer_id) ?? null })) as TrainerCourseRow[];
     },
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
   });
 
   const { data: pricing } = useTrainingPlatformPricing();

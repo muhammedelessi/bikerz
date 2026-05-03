@@ -223,6 +223,9 @@ const TrainerProfile: React.FC = () => {
       if (error) throw error;
       return data;
     },
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
   });
 
   const { data: trainerCourses = [], isLoading: coursesLoading } = useQuery({

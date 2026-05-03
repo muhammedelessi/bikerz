@@ -19,6 +19,9 @@ const TrainingsSection: React.FC = () => {
       if (error) throw error;
       return data;
     },
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
   });
 
   const { data: trainerCourses } = useQuery({
@@ -28,6 +31,9 @@ const TrainingsSection: React.FC = () => {
       if (error) throw error;
       return data;
     },
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
   });
 
   const { data: reviewStats } = useQuery({

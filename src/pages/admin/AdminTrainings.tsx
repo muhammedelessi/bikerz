@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { invalidateTrainingQueries } from '@/lib/trainerCacheKeys';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdminTrainings } from '@/hooks/admin/useAdminTrainings';
 import { Card, CardContent } from '@/components/ui/card';
@@ -260,10 +261,16 @@ const AdminTrainings: React.FC = () => {
         const msg = error.message || String(error);
         throw new Error(msg);
       }
+
+      // Surface the training id (existing on edit, undefined on insert) so
+      // the onSuccess hook can fire training-scoped invalidations.
+      return { trainingId: id };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-trainings'] });
-      queryClient.invalidateQueries({ queryKey: ['all-trainings-catalog'] });
+    onSuccess: (result) => {
+      // Centralised helper covers the public listing, training detail page,
+      // training-detail-courses, and the home-page catalog — all of which
+      // were previously left stale after admin edits.
+      invalidateTrainingQueries(queryClient, result?.trainingId);
       setFormOpen(false);
       setUploadingImage(false);
       toast.success(isRTL ? 'تم الحفظ بنجاح' : 'Saved successfully');
@@ -279,10 +286,10 @@ const AdminTrainings: React.FC = () => {
     mutationFn: async (id: string) => {
       const { error } = await dbFrom('trainings').delete().eq('id', id);
       if (error) throw error;
+      return { trainingId: id };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-trainings'] });
-      queryClient.invalidateQueries({ queryKey: ['all-trainings-catalog'] });
+    onSuccess: (result) => {
+      invalidateTrainingQueries(queryClient, result?.trainingId);
       setDeleteId(null);
       toast.success(isRTL ? 'تم الحذف' : 'Deleted successfully');
     },

@@ -19,6 +19,14 @@ const TrainersSection: React.FC = () => {
       if (error) throw error;
       return data;
     },
+    // Always refetch on mount + window focus so an admin's recent edit
+    // (in another tab or within the same session) shows up here without
+    // the user having to do a hard refresh. Cache invalidations from the
+    // admin pages also reach this query, but `refetchOnMount: 'always'`
+    // is a belt-and-braces guarantee for cross-tab freshness.
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    staleTime: 30_000, // 30s
   });
 
   const { data: reviewStats } = useQuery({

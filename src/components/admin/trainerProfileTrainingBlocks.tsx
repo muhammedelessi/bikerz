@@ -23,6 +23,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { normalizeBookingSessions } from '@/lib/trainingBookingSessions';
 import { getNextSession } from '@/lib/bookingTime';
 import BookingTimeDisplay from '@/components/common/BookingTimeDisplay';
+import { invalidateTrainerCourseQueries } from '@/lib/trainerCacheKeys';
 
 export type TrainerCourseRow = {
   id: string;
@@ -116,11 +117,15 @@ export const TrainerCourseEditDialog: React.FC<{
     },
     onSuccess: () => {
       if (!tc) return;
-      queryClient.invalidateQueries({ queryKey: ['trainer-profile-courses', tc.trainer_id] });
-      queryClient.invalidateQueries({ queryKey: ['trainer-profile-view', tc.trainer_id] });
-      queryClient.invalidateQueries({ queryKey: ['trainer-admin-bookings', tc.trainer_id] });
-      queryClient.invalidateQueries({ queryKey: ['trainer-profile-bookings', tc.trainer_id] });
-      queryClient.invalidateQueries({ queryKey: ['admin-trainer-courses-summary'] });
+      // Centralised helper — covers BOTH trainer-scoped queries (admin
+      // profile view) AND training-scoped queries (public training detail
+      // page that joins trainer_courses to show offerings + prices).
+      // Without this, edits to a trainer course's price/location were
+      // visible in the admin view but stale on the public training page.
+      invalidateTrainerCourseQueries(queryClient, {
+        trainerId: tc.trainer_id,
+        trainingId: tc.training_id,
+      });
       onOpenChange(false);
       toast.success(isRTL ? 'تم الحفظ' : 'Saved');
     },
@@ -243,11 +248,10 @@ export const TrainingCourseAccordionRow: React.FC<{
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trainer-profile-courses', tc.trainer_id] });
-      queryClient.invalidateQueries({ queryKey: ['trainer-profile-view', tc.trainer_id] });
-      queryClient.invalidateQueries({ queryKey: ['trainer-admin-bookings', tc.trainer_id] });
-      queryClient.invalidateQueries({ queryKey: ['trainer-profile-bookings', tc.trainer_id] });
-      queryClient.invalidateQueries({ queryKey: ['admin-trainer-courses-summary'] });
+      invalidateTrainerCourseQueries(queryClient, {
+        trainerId: tc.trainer_id,
+        trainingId: tc.training_id,
+      });
       toast.success(isRTL ? 'تم الحذف' : 'Deleted');
       onDeleted();
     },

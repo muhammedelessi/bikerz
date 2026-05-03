@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { COUNTRIES } from '@/data/countryCityData';
 import { CountryCityPicker } from '@/components/ui/fields';
+import { invalidateTrainerCourseQueries } from '@/lib/trainerCacheKeys';
 import { toast } from 'sonner';
 
 export type AddTrainingForTrainerDialogProps = {
@@ -78,11 +79,14 @@ export const AddTrainingForTrainerDialog: React.FC<AddTrainingForTrainerDialogPr
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trainer-profile-courses', trainerId] });
-      queryClient.invalidateQueries({ queryKey: ['trainer-profile-view', trainerId] });
-      queryClient.invalidateQueries({ queryKey: ['trainer-profile-bookings', trainerId] });
+      // Centralised — also covers public training-detail-courses + the
+      // home-page training catalog, both of which list trainer offerings.
+      invalidateTrainerCourseQueries(queryClient, {
+        trainerId,
+        trainingId: form.training_id,
+      });
+      // Trainer-portal-specific keys not in the central helper.
       queryClient.invalidateQueries({ queryKey: ['trainer-profile-students', trainerId] });
-      queryClient.invalidateQueries({ queryKey: ['admin-trainer-courses-summary'] });
       queryClient.invalidateQueries({ queryKey: ['current-trainer'] });
       onOpenChange(false);
       setForm(emptyForm);

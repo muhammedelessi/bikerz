@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
+import { invalidateTrainerQueries } from '@/lib/trainerCacheKeys';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdminTrainers } from '@/hooks/admin/useAdminTrainers';
 import { useAdminTrainerApplicationsPendingCount } from '@/hooks/useAdminTrainerApplications';
@@ -538,14 +539,17 @@ const AdminTrainers: React.FC = () => {
         );
         if (tcError) throw tcError;
       }
+
+      // Surface the trainer id to onSuccess so we can fire the
+      // trainer-scoped invalidations precisely.
+      return { trainerId };
     },
-    onSuccess: (_data, submission: TrainerFormSubmission) => {
+    onSuccess: (data, submission: TrainerFormSubmission) => {
       submission.pendingAlbumFiles.forEach((p) => URL.revokeObjectURL(p.preview));
-      queryClient.invalidateQueries({ queryKey: ['admin-trainers'] });
-      queryClient.invalidateQueries({ queryKey: ['training-trainer-counts'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-trainer-courses-summary'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-training-students-by-pair'] });
-      queryClient.invalidateQueries({ queryKey: ['trainer-profile-view'] });
+      // Use the centralised helper so we don't miss public-facing query keys
+      // (the recurring "admin saves but /trainers public list shows old data"
+      // bug). See src/lib/trainerCacheKeys.ts for the full key list.
+      invalidateTrainerQueries(queryClient, data?.trainerId ?? editingTrainer?.id);
       setFormOpen(false);
       toast.success(isRTL ? 'تم الحفظ بنجاح' : 'Saved successfully');
     },
@@ -576,12 +580,13 @@ const AdminTrainers: React.FC = () => {
           console.warn('Failed to assign student role after trainer deletion:', insErr.message);
         }
       }
+
+      return { trainerId: id };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-trainers'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-trainer-courses-summary'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-training-students-by-pair'] });
-      queryClient.invalidateQueries({ queryKey: ['trainer-student-counts'] });
+    onSuccess: (data) => {
+      // Same centralised helper — covers public-trainers, the trainer's
+      // detail page, the booking flow, plus all admin-scoped keys.
+      invalidateTrainerQueries(queryClient, data?.trainerId);
       setDeleteId(null);
       toast.success(isRTL ? 'تم الحذف' : 'Deleted');
     },
