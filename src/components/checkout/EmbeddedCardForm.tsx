@@ -199,13 +199,22 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
    * domain so the cause + fix are visible BEFORE the user wastes a
    * card attempt.
    */
-  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const hostname = typeof window !== "undefined" ? window.location.hostname.toLowerCase() : "";
+  // Production hosts — never treat as dev, even though they live on
+  // *.lovable.app / *.bikerz.com infrastructure. Must mirror the
+  // isProductionHost logic in tap-create-charge / tap-config.
+  const isProductionHost =
+    hostname === "bikerz.lovable.app" ||
+    hostname === "bikerz.com" ||
+    hostname.endsWith(".bikerz.com");
   const isDevHost =
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname.endsWith(".lovableproject.com") ||
-    hostname.endsWith(".lovable.app") ||
-    hostname.endsWith(".lovable.dev");
+    !isProductionHost && (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname.endsWith(".lovableproject.com") ||
+      hostname.endsWith(".lovable.app") ||
+      hostname.endsWith(".lovable.dev")
+    );
   const showLiveOnDevWarning = environment === "live" && isDevHost;
   const showTestOnDevHint = environment === "test" && isDevHost;
 
