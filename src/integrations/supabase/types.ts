@@ -1685,6 +1685,13 @@ export type Database = {
             referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lesson_activities_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       lesson_discussions: {
@@ -1741,6 +1748,13 @@ export type Database = {
             referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lesson_discussions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       lesson_progress: {
@@ -1779,6 +1793,13 @@ export type Database = {
             referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lesson_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       lesson_resources: {
@@ -1812,6 +1833,13 @@ export type Database = {
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_resources_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2252,6 +2280,13 @@ export type Database = {
             columns: ["current_lesson_id"]
             isOneToOne: false
             referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "realtime_presence_current_lesson_id_fkey"
+            columns: ["current_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3776,6 +3811,13 @@ export type Database = {
             referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_mistake_events_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_mistake_patterns: {
@@ -3889,6 +3931,13 @@ export type Database = {
             columns: ["target_lesson_id"]
             isOneToOne: false
             referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_reinforcement_queue_target_lesson_id_fkey"
+            columns: ["target_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons_public"
             referencedColumns: ["id"]
           },
         ]
@@ -4089,6 +4138,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "video_playback_events_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "video_playback_events_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -4153,6 +4209,13 @@ export type Database = {
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_watch_behavior_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons_public"
             referencedColumns: ["id"]
           },
         ]
@@ -4236,6 +4299,13 @@ export type Database = {
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_watch_sessions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons_public"
             referencedColumns: ["id"]
           },
         ]
@@ -4330,6 +4400,43 @@ export type Database = {
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_activities_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lessons_public: {
+        Row: {
+          chapter_id: string | null
+          content_html: string | null
+          content_html_ar: string | null
+          created_at: string | null
+          description: string | null
+          description_ar: string | null
+          duration_minutes: number | null
+          id: string | null
+          is_free: boolean | null
+          is_published: boolean | null
+          position: number | null
+          title: string | null
+          title_ar: string | null
+          updated_at: string | null
+          video_provider: string | null
+          video_thumbnail: string | null
+          video_url: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lessons_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
             referencedColumns: ["id"]
           },
         ]
