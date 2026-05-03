@@ -48,14 +48,10 @@ const APPROVAL_CONFIDENCE_THRESHOLD = 0.85;
 type AIDecision = {
   is_motorcycle_registration_doc: boolean;
   is_honda: boolean;
-  name_matches: boolean;
-  model_matches: boolean;
-  year_matches: boolean;
   confidence: number;
   reason_en: string;
   reason_ar: string;
   detected_brand?: string;
-  detected_owner_name?: string;
   detected_model?: string;
   detected_year?: number;
 };
