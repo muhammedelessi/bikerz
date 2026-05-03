@@ -175,47 +175,47 @@ const HondaApplication: React.FC = () => {
     if (!user || !canSubmit || !docFile) return;
     setSubmitting(true);
     try {
-      const ext = docFile.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const ts = Date.now();
-      const filename = `${ts}.${ext}`;
-      const path = `${user.id}/${filename}`;
+      const ext = (docFile.name.split('.').pop() || 'jpg').toLowerCase();
 
-      // Pre-flight: ensure the storage bucket exists. This RPC runs as
-      // SECURITY DEFINER on the database side, so it bypasses any
-      // migration-pipeline timing where the bucket creation portion of
-      // the original migration didn't land. Cheap (single ON CONFLICT
-      // DO NOTHING) and the function is idempotent.
-      try {
-        await (supabase as unknown as {
-          rpc: (fn: string) => Promise<{ error: unknown }>;
-        }).rpc('ensure_honda_storage_bucket');
-      } catch {
-        // Soft-fail — if the RPC also doesn't exist (e.g. migration
-        // hasn't run at all), the upload below will still error with a
-        // friendlier message via our handler. We don't want to block
-        // here if the only thing missing is the RPC itself.
+      // Server-side mints a one-time signed upload URL. This bypasses
+      // RLS on storage.objects entirely — the URL itself carries the
+      // authorisation token — and the edge function ALSO ensures the
+      // bucket exists (idempotent). End result: the upload works
+      // regardless of where the storage policies / bucket are in
+      // their migration cycle.
+      const { data: prep, error: prepErr } = await supabase.functions.invoke(
+        'honda-prepare-upload',
+        { body: { ext } },
+      );
+      if (prepErr || !prep) {
+        console.error('[Honda] prepare-upload failed:', prepErr);
+        throw new Error(
+          isRTL
+            ? 'تعذر تجهيز رفع الوثيقة — حاول مرة أخرى بعد قليل.'
+            : 'Could not prepare the upload — please try again shortly.',
+        );
       }
+      const { upload_url: uploadUrl, path } = prep as {
+        upload_url: string;
+        path: string;
+      };
 
-      const { error: upErr } = await supabase.storage
-        .from('honda-registrations')
-        .upload(path, docFile, {
-          contentType: docFile.type,
-          upsert: false,
-        });
-      if (upErr) {
-        // Friendlier message for the most common cause we've seen in
-        // staging: the storage migration didn't apply (or was rolled
-        // back), so the bucket literally doesn't exist yet.
-        // The raw "Bucket not found" message is opaque to end users.
-        const lower = (upErr.message || '').toLowerCase();
-        if (lower.includes('bucket') && lower.includes('not found')) {
-          throw new Error(
-            isRTL
-              ? 'خدمة رفع الوثائق ليست جاهزة بعد. يرجى المحاولة بعد دقيقة، أو التواصل مع الدعم.'
-              : 'Document upload service is not ready yet. Please retry in a minute or contact support.',
-          );
-        }
-        throw upErr;
+      // PUT the file directly to the signed URL. The signed URL has
+      // its own auth, so we don't pass the user's bearer token — that
+      // would actually conflict.
+      const putRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': docFile.type || 'application/octet-stream' },
+        body: docFile,
+      });
+      if (!putRes.ok) {
+        const errText = await putRes.text().catch(() => '');
+        console.error('[Honda] PUT to signed URL failed:', putRes.status, errText);
+        throw new Error(
+          isRTL
+            ? 'تعذر رفع الوثيقة — حاول مرة أخرى.'
+            : 'Document upload failed — please try again.',
+        );
       }
 
       // If a previous application exists in pending_ai (≤3 attempts), reuse it
