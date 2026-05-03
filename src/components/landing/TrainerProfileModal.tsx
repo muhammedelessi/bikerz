@@ -27,6 +27,9 @@ const TrainerProfileModal: React.FC<TrainerProfileModalProps> = ({ trainerId, on
       return data;
     },
     enabled: !!trainerId,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
   });
 
   const { data: trainerCourses } = useQuery({
@@ -38,6 +41,9 @@ const TrainerProfileModal: React.FC<TrainerProfileModalProps> = ({ trainerId, on
       return data;
     },
     enabled: !!trainerId,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
   });
 
   const { data: reviews } = useQuery({

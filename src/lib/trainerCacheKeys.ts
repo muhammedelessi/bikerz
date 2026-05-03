@@ -51,10 +51,19 @@ export function invalidateTrainerQueries(
     qc.invalidateQueries({ queryKey: ["trainer-public-profile", trainerId] });
     qc.invalidateQueries({ queryKey: ["trainer-availability-public", trainerId] });
     qc.invalidateQueries({ queryKey: ["trainer-booking-extras", trainerId] });
+    qc.invalidateQueries({ queryKey: ["trainer-courses-public", trainerId] });
+    // TrainerProfileModal uses these (different naming convention)
+    qc.invalidateQueries({ queryKey: ["trainer-profile", trainerId] });
+    qc.invalidateQueries({ queryKey: ["trainer-courses", trainerId] });
+    qc.invalidateQueries({ queryKey: ["trainer-reviews", trainerId] });
   } else {
     qc.invalidateQueries({ queryKey: ["trainer-public-profile"] });
     qc.invalidateQueries({ queryKey: ["trainer-availability-public"] });
     qc.invalidateQueries({ queryKey: ["trainer-booking-extras"] });
+    qc.invalidateQueries({ queryKey: ["trainer-courses-public"] });
+    qc.invalidateQueries({ queryKey: ["trainer-profile"] });
+    qc.invalidateQueries({ queryKey: ["trainer-courses"] });
+    qc.invalidateQueries({ queryKey: ["trainer-reviews"] });
   }
 
   // ── Admin surfaces ──

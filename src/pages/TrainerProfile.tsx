@@ -241,6 +241,9 @@ const TrainerProfile: React.FC = () => {
       if (error) throw error;
       return (data || []) as TrainerCoursePublic[];
     },
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
   });
 
   const { data: studentCount = 0 } = useQuery({
