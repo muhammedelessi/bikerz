@@ -35,8 +35,10 @@ type TrainingEmbed = {
   description_en: string | null;
   level: string;
   type: string;
+  /** Canonical "number of sessions" admin-entered on the training. */
   default_sessions_count: number | null;
-  sessions: unknown; // JSONB curriculum array — shape varies, parsed at use site
+  /** Canonical "hours per session" admin-entered on the training. */
+  default_session_duration_hours: number | null;
 } | null;
 
 type TrainerCoursePublic = {
@@ -275,13 +277,11 @@ const TrainerProfile: React.FC = () => {
       const { data, error } = await supabase
         .from('trainer_courses')
         .select(
-          // default_sessions_count + sessions are the canonical source for
-          // "how many sessions does this training have". Without them, the
-          // trainer profile cards fell back to trainer_courses.sessions_count
-          // which could diverge from the value shown on the public training
-          // detail page → confusing the trainee. Pull both so we resolve to
-          // the same number on both surfaces.
-          'id, training_id, price, sessions_count, duration_hours, location, location_detail, trainings(id, name_ar, name_en, description_ar, description_en, level, type, default_sessions_count, sessions)',
+          // default_sessions_count + default_session_duration_hours are the
+          // canonical admin-entered fields. The `sessions` JSONB is OPTIONAL
+          // curriculum content and is not used to compute the displayed
+          // count/hours.
+          'id, training_id, price, sessions_count, duration_hours, location, location_detail, trainings(id, name_ar, name_en, description_ar, description_en, level, type, default_sessions_count, default_session_duration_hours)',
         )
         .eq('trainer_id', id!);
       if (error) throw error;
@@ -640,24 +640,23 @@ const TrainerProfile: React.FC = () => {
                       const title = isRTL ? tr.name_ar : tr.name_en;
                       const desc = (isRTL ? tr.description_ar : tr.description_en) || '';
                       const loc = translateTrainerCourseLocation(tc.location, isRTL) || tc.location;
-                      const hours = Number(tc.duration_hours);
-                      // Resolve session count from the SAME priority chain
-                      // that TrainingDetail uses, so the trainer's card and
-                      // the public training page can never disagree on the
-                      // number of sessions:
-                      //   1) trainings.sessions JSONB curriculum (length)
-                      //   2) trainings.default_sessions_count (the canonical
-                      //      catalog default)
-                      //   3) trainer_courses.sessions_count (legacy fallback)
-                      //   4) 1 (last-resort default to avoid "0 sessions")
-                      const curriculumLen = Array.isArray(tr.sessions) ? tr.sessions.length : 0;
+                      // Canonical sources (per product owner):
+                      //   sessions count    →  trainings.default_sessions_count
+                      //   session duration  →  trainings.default_session_duration_hours
+                      // The `sessions` JSONB is OPTIONAL curriculum content and
+                      // must NOT override these admin-entered fields. The
+                      // trainer_courses fallbacks remain only for legacy rows
+                      // where the admin hasn't filled in the canonical fields.
                       const sessions = Math.max(
                         1,
-                        curriculumLen ||
-                          Number(tr.default_sessions_count) ||
+                        Number(tr.default_sessions_count) ||
                           Number(tc.sessions_count) ||
                           1,
                       );
+                      const hours =
+                        Number(tr.default_session_duration_hours) ||
+                        Number(tc.duration_hours) ||
+                        0;
                       const TypeIcon = tr.type === 'theory' ? GraduationCap : Wrench;
                       return (
                         <Card key={tc.id} className="overflow-hidden border-border/60 shadow-sm flex flex-col">

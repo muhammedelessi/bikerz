@@ -145,13 +145,25 @@ const TrainerProfileModal: React.FC<TrainerProfileModalProps> = ({ trainerId, on
                   {trainerCourses.map((tc: any) => {
                     const training = tc.trainings;
                     if (!training) return null;
+                    // Canonical sources, same rule applied across the app:
+                    //   sessions count    →  training.default_sessions_count
+                    //   session duration  →  training.default_session_duration_hours
+                    // tc.sessions_count + tc.duration_hours kept only as
+                    // fallback for legacy trainer_courses rows where the
+                    // canonical fields were never filled.
+                    const sessions = Math.max(
+                      1,
+                      Number(training.default_sessions_count) || Number(tc.sessions_count) || 1,
+                    );
+                    const hours =
+                      Number(training.default_session_duration_hours) || Number(tc.duration_hours) || 0;
                     return (
                       <Card key={tc.id}>
                         <CardContent className="p-3 flex items-center justify-between">
                           <span className="font-medium text-sm">{isRTL ? training.name_ar : training.name_en}</span>
                           <div className="flex gap-3 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" />{Number(tc.price)} SAR</span>
-                            <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{Number(tc.duration_hours)}h</span>
+                            <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{sessions}×{hours}h</span>
                             <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{tc.location}</span>
                           </div>
                           {(tc as { location_detail?: string }).location_detail && (

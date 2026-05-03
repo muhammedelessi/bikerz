@@ -283,10 +283,11 @@ const TrainingDetail: React.FC = () => {
                     <Badge variant="outline" className={level.color}>
                       {isRTL ? level.label.ar : level.label.en}
                     </Badge>
-                    {(curriculumSessions.length > 0 || Number(training.default_sessions_count) > 0) && (
+                    {Number(training.default_sessions_count) > 0 && (
                       <Badge variant="outline" className="bg-background/50">
                         <Clock className="w-3 h-3 me-1" />
-                        {curriculumSessions.length || training.default_sessions_count} {isRTL ? "جلسات" : "sessions"}
+                        {/* Canonical admin field — overrides any curriculum length */}
+                        {training.default_sessions_count} {isRTL ? "جلسات" : "sessions"}
                       </Badge>
                     )}
                   </div>
@@ -396,13 +397,15 @@ const TrainingDetail: React.FC = () => {
                         </div>
                       ) : null}
 
-                      {(curriculumSessions.length > 0 || Number(training.default_sessions_count) > 0) ? (() => {
-                        const sessCount = curriculumSessions.length > 0
-                          ? curriculumSessions.length
-                          : Math.max(1, Number(training.default_sessions_count) || 1);
-                        const totalHours = curriculumSessions.length > 0
-                          ? curriculumSessions.reduce((t, s) => t + s.duration_hours, 0)
-                          : sessCount * (Number(training.default_session_duration_hours) || 0);
+                      {Number(training.default_sessions_count) > 0 ? (() => {
+                        // Canonical admin fields — see TrainerProfile for the
+                        // same rule: count + hours-per-session come from
+                        // trainings.default_sessions_count and
+                        // trainings.default_session_duration_hours, not from
+                        // the optional `sessions` curriculum array.
+                        const sessCount = Math.max(1, Number(training.default_sessions_count) || 1);
+                        const hoursPerSession = Number(training.default_session_duration_hours) || 0;
+                        const totalHours = sessCount * hoursPerSession;
                         return (
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
@@ -474,12 +477,11 @@ const TrainingDetail: React.FC = () => {
                           const tr = tc.trainers;
                           if (!tr) return null;
                           const stats = reviewStats?.[tr.id];
-                          const sess = curriculumSessions.length > 0
-                            ? curriculumSessions.length
-                            : Math.max(1, Number(training.default_sessions_count) || 1);
-                          const hours = curriculumSessions.length > 0
-                            ? Math.round((curriculumSessions.reduce((sum, s) => sum + s.duration_hours, 0) / curriculumSessions.length) * 100) / 100
-                            : Number(training.default_session_duration_hours) || 0;
+                          // Canonical training fields (admin-entered "عدد الجلسات"
+                          // and "مدة كل جلسة") — never derive from the optional
+                          // `sessions` curriculum array.
+                          const sess = Math.max(1, Number(training.default_sessions_count) || 1);
+                          const hours = Number(training.default_session_duration_hours) || 0;
                           const locRaw = translateTrainerCourseLocation(tc.location, isRTL) || String(tc.location ?? "").trim();
                           const countryEntry = COUNTRIES.find((c) => c.code === tr.country || c.en === tr.country);
                           const cityEntry = countryEntry?.cities.find((c) => c.en === tr.city);
