@@ -40,7 +40,9 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ sidebarOpen, onSidebarOpenChang
   // Show "Admin Panel" only for true admin roles — not for instructor/finance/support/moderator,
   // who are technically in ADMIN_ROLES for route-guard purposes but aren't "admins" in the UI sense.
   const showAdminLink = hasAnyRole(["super_admin", "developer", "academy_admin"]);
+  const isTrainerRole = hasAnyRole(["instructor"]);
   const { trainer } = useCurrentTrainer();
+  const hideApplyTrainer = isTrainerRole || !!trainer;
   const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -163,18 +165,20 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ sidebarOpen, onSidebarOpenChang
               quick "Trainer Dashboard" shortcut below it.
             */}
             <div className="mt-3 space-y-2">
-              <Link
-                to="/dashboard/apply-trainer"
-                onClick={() => onSidebarOpenChange(false)}
-                className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
-                  isApplyTrainerRoute
-                    ? "bg-primary/15 text-primary border-primary/30"
-                    : "border-border bg-card text-foreground hover:bg-muted/60 hover:border-primary/25"
-                }`}
-              >
-                <Award className="w-5 h-5 flex-shrink-0" />
-                <span className="font-semibold flex-1 min-w-0">{t("nav.applyTrainer")}</span>
-              </Link>
+              {!hideApplyTrainer && (
+                <Link
+                  to="/dashboard/apply-trainer"
+                  onClick={() => onSidebarOpenChange(false)}
+                  className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
+                    isApplyTrainerRoute
+                      ? "bg-primary/15 text-primary border-primary/30"
+                      : "border-border bg-card text-foreground hover:bg-muted/60 hover:border-primary/25"
+                  }`}
+                >
+                  <Award className="w-5 h-5 flex-shrink-0" />
+                  <span className="font-semibold flex-1 min-w-0">{t("nav.applyTrainer")}</span>
+                </Link>
+              )}
 
               {trainer ? (
                 <Link
