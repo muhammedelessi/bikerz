@@ -95,18 +95,25 @@ const HondaApplication: React.FC = () => {
   const application = applicationQuery.data;
 
   // Auto-fill from profile + redirect non-authenticated users to login.
+  // We track the first time the profile arrives via a ref so we apply the
+  // pre-fill ONCE — that way the user's edits aren't overwritten if the
+  // profile object reference changes later (e.g. after a profile sync).
+  const prefillAppliedRef = useRef(false);
   useEffect(() => {
     if (!authLoading && !user) {
       navigate(`/login?returnTo=${encodeURIComponent('/honda/apply')}`);
       return;
     }
-    if (!profile) return;
-    if (!fullName && profile.full_name) setFullName(profile.full_name);
-    if (!country && profile.country) setCountry(profile.country);
-    if (!city && profile.city) setCity(profile.city);
-    if (!dob && (profile as { date_of_birth?: string }).date_of_birth) {
-      setDob((profile as { date_of_birth?: string }).date_of_birth || '');
-    }
+    if (!profile || prefillAppliedRef.current) return;
+
+    // UserProfile (src/types/auth.ts) already declares all four fields,
+    // but the AuthContext can return them as null when the profile is
+    // partially set up. Use direct access + nullish guards.
+    if (profile.full_name) setFullName(profile.full_name);
+    if (profile.country) setCountry(profile.country);
+    if (profile.city) setCity(profile.city);
+    if (profile.date_of_birth) setDob(profile.date_of_birth);
+    prefillAppliedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profile, authLoading]);
 
@@ -172,6 +179,22 @@ const HondaApplication: React.FC = () => {
       const ts = Date.now();
       const filename = `${ts}.${ext}`;
       const path = `${user.id}/${filename}`;
+
+      // Pre-flight: ensure the storage bucket exists. This RPC runs as
+      // SECURITY DEFINER on the database side, so it bypasses any
+      // migration-pipeline timing where the bucket creation portion of
+      // the original migration didn't land. Cheap (single ON CONFLICT
+      // DO NOTHING) and the function is idempotent.
+      try {
+        await (supabase as unknown as {
+          rpc: (fn: string) => Promise<{ error: unknown }>;
+        }).rpc('ensure_honda_storage_bucket');
+      } catch {
+        // Soft-fail — if the RPC also doesn't exist (e.g. migration
+        // hasn't run at all), the upload below will still error with a
+        // friendlier message via our handler. We don't want to block
+        // here if the only thing missing is the RPC itself.
+      }
 
       const { error: upErr } = await supabase.storage
         .from('honda-registrations')
@@ -287,7 +310,7 @@ const HondaApplication: React.FC = () => {
     return (
       <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
         <Navbar />
-        <main className="max-w-2xl mx-auto px-4 py-12 space-y-4 pt-[calc(var(--navbar-h)+1.5rem)]">
+        <main className="max-w-2xl mx-auto px-4 py-12 space-y-4 pt-[calc(var(--navbar-h)+3rem)]">
           <Skeleton className="h-12 w-full rounded-2xl" />
           <Skeleton className="h-72 w-full rounded-2xl" />
         </main>
@@ -415,7 +438,7 @@ const HondaApplication: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
       <Navbar />
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-8 sm:py-12 space-y-6 pt-[calc(var(--navbar-h)+1.5rem)]">
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-8 sm:py-12 space-y-6 pt-[calc(var(--navbar-h)+3rem)]">
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="mx-auto w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mb-1">
@@ -486,8 +509,8 @@ const HondaApplication: React.FC = () => {
 
               {/* Date of birth */}
               <DateOfBirthPicker
-                value={dob}
-                onChange={setDob}
+                value={dob || null}
+                onChange={(v) => setDob(v ?? '')}
                 required
               />
 
@@ -618,7 +641,7 @@ const StatusShell: React.FC<{ isRTL: boolean; children: React.ReactNode }> = ({
 }) => (
   <div className="min-h-screen bg-background flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
     <Navbar />
-    <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-12 pt-[calc(var(--navbar-h)+1.5rem)]">{children}</main>
+    <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-12 pt-[calc(var(--navbar-h)+3rem)]">{children}</main>
     <Footer />
   </div>
 );
