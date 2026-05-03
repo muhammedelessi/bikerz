@@ -226,19 +226,40 @@ export const getPriceBreakdown = (payment: UnifiedPayment): AdminPriceBreakdown 
   };
 };
 
+const toDisplayString = (v: unknown): string | null => {
+  if (v == null) return null;
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  if (typeof v === "object") {
+    const obj = v as Record<string, unknown>;
+    const msg = obj.message ?? obj.description ?? obj.reason;
+    if (typeof msg === "string") {
+      return obj.code ? `${obj.code}: ${msg}` : msg;
+    }
+    try {
+      return JSON.stringify(v);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
 export const getFailureDetails = (payment: UnifiedPayment, isRTL: boolean) => {
   if (normalizeStatus(payment.status, payment.source) !== "rejected") return null;
   const resp = payment.tap_response || {};
   const response = resp.response as Record<string, unknown> | undefined;
   const gateway = resp.gateway as Record<string, unknown> | undefined;
-  const code = (response?.code as string) || gateway?.response?.toString() || null;
+  const rawCode = response?.code ?? gateway?.response;
+  const code = rawCode != null ? (typeof rawCode === "object" ? toDisplayString(rawCode) : String(rawCode)) : null;
   const translatedReason = getTranslatedErrorReason(code, isRTL);
-  const tapDeclineMessage = (response?.message as string) || null;
+  const tapDeclineMessage = toDisplayString(response?.message);
+  const errorMessageStr = toDisplayString(payment.error_message);
   return {
     reason:
-      translatedReason || payment.error_message || tapDeclineMessage || (isRTL ? "فشل الدفع" : "Payment failed"),
+      translatedReason || errorMessageStr || tapDeclineMessage || (isRTL ? "فشل الدفع" : "Payment failed"),
     code,
-    gatewayResponse: (gateway?.response as string) || null,
+    gatewayResponse: toDisplayString(gateway?.response),
     translatedReason,
     tapDeclineMessage,
   };
