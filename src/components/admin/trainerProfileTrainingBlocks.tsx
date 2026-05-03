@@ -108,8 +108,6 @@ export const TrainerCourseEditDialog: React.FC<{
         .from('trainer_courses')
         .update({
           price: parseFloat(editPrice) || 0,
-          sessions_count: Math.max(1, parseInt(editSessions, 10) || 1),
-          duration_hours: Math.max(0.25, parseFloat(editDur) || 0.25),
           location,
           location_detail: editLocationDetail,
         })
