@@ -87,8 +87,6 @@ export const TrainerCourseEditDialog: React.FC<{
   const queryClient = useQueryClient();
   const cardDir = isRTL ? 'rtl' : 'ltr';
   const [editPrice, setEditPrice] = useState('');
-  const [editSessions, setEditSessions] = useState('');
-  const [editDur, setEditDur] = useState('');
   const [editCountry, setEditCountry] = useState('');
   const [editCity, setEditCity] = useState('');
   const [editLocationDetail, setEditLocationDetail] = useState('');
@@ -97,8 +95,6 @@ export const TrainerCourseEditDialog: React.FC<{
     if (!tc || !open) return;
     const { countryCode, city } = parseAssignmentLocation(tc.location || '');
     setEditPrice(String(tc.price ?? ''));
-    setEditSessions(String(Math.max(1, Number(tc.sessions_count ?? 1))));
-    setEditDur(String(tc.duration_hours ?? ''));
     setEditCountry(countryCode);
     setEditCity(city);
     setEditLocationDetail(tc.location_detail || '');
@@ -112,8 +108,6 @@ export const TrainerCourseEditDialog: React.FC<{
         .from('trainer_courses')
         .update({
           price: parseFloat(editPrice) || 0,
-          sessions_count: Math.max(1, parseInt(editSessions, 10) || 1),
-          duration_hours: Math.max(0.25, parseFloat(editDur) || 0.25),
           location,
           location_detail: editLocationDetail,
         })
@@ -146,27 +140,16 @@ export const TrainerCourseEditDialog: React.FC<{
         <DialogHeader>
           <DialogTitle>{isRTL ? 'تعديل التعيين' : 'Edit assignment'}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs">{isRTL ? 'السعر (ر.س)' : 'Price (SAR)'}</Label>
             <Input type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} dir="ltr" className="h-10" />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">{isRTL ? 'عدد الجلسات' : 'Sessions'}</Label>
-            <Input
-              type="number"
-              min={1}
-              step={1}
-              value={editSessions}
-              onChange={(e) => setEditSessions(e.target.value)}
-              dir="ltr"
-              className="h-10"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">{isRTL ? 'مدة كل جلسة (ساعات)' : 'Hours / session'}</Label>
-            <Input type="number" min={0.25} step={0.25} value={editDur} onChange={(e) => setEditDur(e.target.value)} dir="ltr" className="h-10" />
-          </div>
+          <p className="text-[11px] text-muted-foreground">
+            {isRTL
+              ? 'عدد الجلسات ومدة كل جلسة تُحدَّد من صفحة التدريب نفسها.'
+              : 'Sessions count and duration are set from the training page itself.'}
+          </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
