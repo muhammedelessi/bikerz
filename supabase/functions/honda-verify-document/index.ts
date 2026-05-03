@@ -48,14 +48,10 @@ const APPROVAL_CONFIDENCE_THRESHOLD = 0.85;
 type AIDecision = {
   is_motorcycle_registration_doc: boolean;
   is_honda: boolean;
-  name_matches: boolean;
-  model_matches: boolean;
-  year_matches: boolean;
   confidence: number;
   reason_en: string;
   reason_ar: string;
   detected_brand?: string;
-  detected_owner_name?: string;
   detected_model?: string;
   detected_year?: number;
 };
@@ -173,46 +169,27 @@ Deno.serve(async (req) => {
   const systemPrompt =
     "You are an expert document verifier for a motorcycle academy. " +
     "You are shown a photograph or scan of an alleged Saudi/GCC motorcycle " +
-    "registration document. The applicant has claimed certain values on a " +
-    "form; your job is to read the document and tell us whether it (a) is " +
-    "actually a motorcycle registration, (b) lists Honda as the brand " +
-    "(Latin 'Honda' OR Arabic 'هوندا'), and (c) matches the applicant's " +
-    "claimed name / model / year. " +
-    "Be strict but reasonable: minor transliteration differences in Arabic↔Latin " +
-    "names should still match if they refer to the same person. Wrong year by " +
-    "1 should NOT match. Wrong model entirely should NOT match. " +
+    "registration document (استمارة). Your ONLY job is to verify that the " +
+    "document (a) is actually a motorcycle registration, and (b) lists " +
+    "Honda as the brand (Latin 'Honda' OR Arabic 'هوندا'). " +
+    "Do NOT compare the document to any form fields — judge the image alone. " +
     "Reply ONLY with valid minified JSON matching the exact schema given.";
 
-  const claimedFields = {
-    full_name: application.full_name,
-    motorcycle_model: application.motorcycle_model,
-    motorcycle_year: application.motorcycle_year,
-    country: application.country,
-    city: application.city,
-  };
-
   const userPrompt =
-    `The applicant claims:\n${
-      JSON.stringify(claimedFields, null, 2)
-    }\n\n` +
     `Inspect the attached document image and respond with JSON of this exact shape:\n` +
     `{\n` +
     `  "is_motorcycle_registration_doc": boolean,\n` +
     `  "is_honda": boolean,\n` +
-    `  "name_matches": boolean,\n` +
-    `  "model_matches": boolean,\n` +
-    `  "year_matches": boolean,\n` +
     `  "confidence": number (0..1),\n` +
     `  "reason_en": string (≤200 chars, why you decided),\n` +
     `  "reason_ar": string (≤200 chars, نفس السبب بالعربية),\n` +
     `  "detected_brand": string|null,\n` +
-    `  "detected_owner_name": string|null,\n` +
     `  "detected_model": string|null,\n` +
     `  "detected_year": number|null\n` +
     `}\n\n` +
     `Critical: if the image is not a motorcycle registration (e.g. a random ` +
-    `photo, an invoice, a different vehicle's papers), set ` +
-    `is_motorcycle_registration_doc=false and EVERY other boolean=false.`;
+    `photo, an invoice, a car's papers), set ` +
+    `is_motorcycle_registration_doc=false and is_honda=false.`;
 
   let aiDecision: AIDecision | null = null;
   let rawAiResponse: unknown = null;
@@ -277,9 +254,6 @@ Deno.serve(async (req) => {
   const allChecksPassed =
     aiDecision.is_motorcycle_registration_doc === true &&
     aiDecision.is_honda === true &&
-    aiDecision.name_matches === true &&
-    aiDecision.model_matches === true &&
-    aiDecision.year_matches === true &&
     typeof aiDecision.confidence === "number" &&
     aiDecision.confidence >= APPROVAL_CONFIDENCE_THRESHOLD;
 
@@ -328,7 +302,6 @@ Deno.serve(async (req) => {
     confidence: aiDecision.confidence,
     detected: {
       brand: aiDecision.detected_brand ?? null,
-      owner_name: aiDecision.detected_owner_name ?? null,
       model: aiDecision.detected_model ?? null,
       year: aiDecision.detected_year ?? null,
     },
