@@ -26,6 +26,8 @@ import { useTrainingPlatformPricing } from '@/hooks/useTrainingPlatformPricing';
 import { applyTrainingPlatformMarkupSar } from '@/lib/trainingPlatformMarkup';
 import { normalizeBookingSessions } from '@/lib/trainingBookingSessions';
 import TrainerReviewForm from '@/components/training/TrainerReviewForm';
+import { BikeGarage } from '@/components/ui/profile/BikeGarage';
+import type { BikeEntry as ProfileBikeEntry } from '@/hooks/useUserProfile';
 
 type TrainingEmbed = {
   id: string;
