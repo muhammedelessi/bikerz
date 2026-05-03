@@ -349,10 +349,18 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
   const perSessionDurationHours = useMemo(() => {
     if (curriculumSessions && curriculumSessions.length > 0) {
       const idx = Math.min(activeSessionIndex, curriculumSessions.length - 1);
-      return curriculumSessions[idx].duration_hours;
+      const v = Number(curriculumSessions[idx].duration_hours);
+      if (Number.isFinite(v) && v > 0) return v;
     }
-    return Number(selectedCourse.duration_hours);
-  }, [selectedCourse.duration_hours, curriculumSessions, activeSessionIndex]);
+    const fromTraining = Number(training.default_session_duration_hours);
+    if (Number.isFinite(fromTraining) && fromTraining > 0) return fromTraining;
+    return Number(selectedCourse.duration_hours) || 0;
+  }, [
+    selectedCourse.duration_hours,
+    curriculumSessions,
+    activeSessionIndex,
+    training.default_session_duration_hours,
+  ]);
 
   const durationMins = useMemo(
     () => Math.round(perSessionDurationHours * 60),
