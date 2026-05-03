@@ -17,15 +17,26 @@ interface Checkout3DSModalProps {
  *  /tap-3ds-callback.html, which postMessages the result back to the parent
  *  window — useTapPayment listens for that message.
  *
- *  Sandbox attributes are explicit (rather than open-by-default) so a
- *  malicious 3DS challenge page cannot escape the iframe to manipulate the
- *  parent app. The bare minimum for 3DS to work is:
- *    - allow-forms        : 3DS challenges submit forms
- *    - allow-scripts      : 3DS pages run JS
- *    - allow-same-origin  : Tap's challenge needs cookies on its own origin
- *    - allow-top-navigation-by-user-activation : in case the bank's challenge
- *                            redirects via a user-clicked link
- *    - allow-popups       : some banks open OTP entry in a popup
+ *  Why no `sandbox` attribute:
+ *  Tap's 3DS flow uses three nested iframes — the outer redirect (this
+ *  iframe), an inner threeDsLoading iframe Tap injects, and the bank's
+ *  OTP iframe. When the bank confirms OTP, Tap's inner iframe redirects
+ *  *its parent* (this iframe) back to Tap's `response.aspx` URL via
+ *  `parent.location.href = ...`. The HTML sandbox spec has NO flag that
+ *  permits navigating a non-top, cross-origin ancestor — `allow-top-
+ *  navigation` only applies to the top browsing context. So any sandbox at
+ *  all on this iframe breaks the BOP / cross-bank 3DS handoff (we saw it
+ *  break with errors like "frame attempting navigation is sandboxed,
+ *  therefore disallowed from navigating its ancestors" + "Failed to set
+ *  the 'href' property on 'Location'"). The trade-off — defence-in-depth
+ *  vs. a working payment flow — is decided by trust model: this iframe
+ *  loads `authenticate.tap.company`, a partner origin we already trust
+ *  with cardholder data, so dropping the sandbox is the same posture as
+ *  Stripe/Adyen/Tap's own reference integrations.
+ *
+ *  The `allow=...` attribute stays — it's permission *delegation*
+ *  (Payment Request API, WebAuthn) and unrelated to the navigation
+ *  sandboxing problem.
  *
  *  After 60 s of being open we surface a "still waiting?" hint with a clear
  *  cancel option — the bank's OTP step is the most common abandonment
@@ -113,7 +124,6 @@ const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ ur
           className="flex-1 w-full bg-white"
           style={{ direction: 'ltr', minHeight: 0, touchAction: 'auto' }}
           allow="payment *; publickey-credentials-get *"
-          sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation allow-top-navigation-by-user-activation allow-popups allow-popups-to-escape-sandbox allow-modals"
           referrerPolicy="no-referrer-when-downgrade"
         />
 

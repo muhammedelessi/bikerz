@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -166,6 +166,20 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
   const [notes, setNotes] = useState('');
   const [paying, setPaying] = useState(false);
   const today = useMemo(() => startOfDay(new Date()), []);
+
+  // Refs that drive the two scroll behaviors:
+  //   - datesSectionRef: outer card containing the date carousel; we
+  //     scrollIntoView() it after Next/Prev so the user lands at the day picker
+  //     instead of staying at the bottom near the buttons.
+  //   - datesScrollRef: the inner horizontal-scroll <div>; we slide it so the
+  //     first selectable date is in view (covers the "blocked dates push the
+  //     first available date off-screen" case).
+  //   - lastAutoScrolledSessionRef: tracks which session index we already
+  //     auto-scrolled for, so we don't fight the user's manual horizontal
+  //     scrolls on subsequent re-renders of the same session.
+  const datesSectionRef = useRef<HTMLDivElement>(null);
+  const datesScrollRef = useRef<HTMLDivElement>(null);
+  const lastAutoScrolledSessionRef = useRef<number>(-1);
 
   // Tick every minute so slots that cross the 24h threshold while the user is
   // on the page get re-evaluated and visually disabled without needing a refresh.
@@ -504,20 +518,31 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
     const ds = format(selectedDate, 'yyyy-MM-dd');
     const endT = slotEndTimePg(selectedSlot, perSessionDurationHours);
     const nextIdx = Math.min(activeSessionIndex + 1, sessionsNeeded - 1);
+    const isAdvancing = activeSessionIndex < sessionsNeeded - 1;
     setSessionPicks((prev) => {
       const c = [...prev];
       while (c.length < sessionsNeeded) c.push(null);
       c[activeSessionIndex] = { date: ds, start_time: selectedSlot, end_time: endT };
       return c;
     });
-    if (activeSessionIndex < sessionsNeeded - 1) setActiveSessionIndex(nextIdx);
+    if (isAdvancing) setActiveSessionIndex(nextIdx);
     const nextPick = sessionPicks[nextIdx];
-    if (activeSessionIndex < sessionsNeeded - 1 && nextPick?.date) {
+    if (isAdvancing && nextPick?.date) {
       setSelectedDate(parseLocalDateYmd(nextPick.date));
       setSelectedSlot(nextPick.start_time);
-    } else if (activeSessionIndex < sessionsNeeded - 1) {
+    } else if (isAdvancing) {
       setSelectedDate(undefined);
       setSelectedSlot(null);
+    }
+
+    // After advancing to the next session, snap the page back up to the
+    // date picker so the user isn't stranded near the bottom-of-card
+    // "Next" button. rAF gives the new session's render a chance to mount
+    // first, so the smooth scroll animates from the freshly-painted state.
+    if (isAdvancing) {
+      requestAnimationFrame(() => {
+        datesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
     }
   };
 
@@ -540,6 +565,11 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
   const handlePrevSession = () => {
     if (activeSessionIndex <= 0) return;
     setActiveSessionIndex((i) => i - 1);
+    // Mirror handleNextSession: scroll the date picker into view so going
+    // back lands the user at the day chooser, not the bottom buttons.
+    requestAnimationFrame(() => {
+      datesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
 
   const handlePay = async () => {
@@ -704,6 +734,43 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
       sessionPicks,
     ],
   );
+
+  /**
+   * Index in `next30Days` of the first date the active session can use.
+   * Drives the auto-scroll below — without it, dates blocked by the 24h
+   * cutoff or by the previous-session chronology rule push the first valid
+   * date off-screen on narrow viewports.
+   */
+  const firstAvailableDateIdx = useMemo(() => {
+    for (let i = 0; i < next30Days.length; i++) {
+      const ds = format(next30Days[i], 'yyyy-MM-dd');
+      if (canSelectDate(ds, activeSessionIndex)) return i;
+    }
+    return -1;
+  }, [next30Days, canSelectDate, activeSessionIndex]);
+
+  /**
+   * Slide the date carousel so the first selectable date is at its start
+   * edge. Runs once per (active session) — once we've auto-scrolled for a
+   * given session we record it in `lastAutoScrolledSessionRef` and stop, so
+   * the user can freely scroll horizontally afterwards without being yanked
+   * back. `inline:'start'` is RTL-aware and `block:'nearest'` keeps us from
+   * disturbing the page's vertical scroll position.
+   */
+  useEffect(() => {
+    if (slotsDataLoading) return;
+    if (firstAvailableDateIdx < 0) return;
+    if (lastAutoScrolledSessionRef.current === activeSessionIndex) return;
+    const container = datesScrollRef.current;
+    if (!container) return;
+    const btn = container.querySelector<HTMLElement>(
+      `[data-date-idx="${firstAvailableDateIdx}"]`,
+    );
+    if (!btn) return;
+    lastAutoScrolledSessionRef.current = activeSessionIndex;
+    if (firstAvailableDateIdx === 0) return; // already at the start; nothing to do
+    btn.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+  }, [firstAvailableDateIdx, slotsDataLoading, activeSessionIndex]);
 
   const isSlotChronological = useCallback(
     (slotStart: string) => {
@@ -921,7 +988,10 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                   )}
 
                   {!showNoAvailabilityCard && (
-                    <div className="rounded-2xl border border-border/60 bg-card/50 p-4 sm:p-5 shadow-sm space-y-4">
+                    <div
+                      ref={datesSectionRef}
+                      className="rounded-2xl border border-border/60 bg-card/50 p-4 sm:p-5 shadow-sm space-y-4 scroll-mt-4"
+                    >
                       <div className="text-start space-y-1">
                         <Label className="text-sm font-semibold text-foreground">
                           {isRTL ? 'اختر يوم الجلسة (30 يوماً قادمة)' : 'Pick a session day (next 30 days)'}
@@ -932,8 +1002,11 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                             : 'A day already used by another session is blocked, and each session must be after the previous one.'}
                         </p>
                       </div>
-                      <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin">
-                        {next30Days.map((date) => {
+                      <div
+                        ref={datesScrollRef}
+                        className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin"
+                      >
+                        {next30Days.map((date, idx) => {
                           const ds = format(date, 'yyyy-MM-dd');
                           const usedByOtherSession = datesUsedByOtherSessions.has(ds);
                           const enabled = canSelectDate(ds, activeSessionIndex);
@@ -943,6 +1016,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
                             <button
                               key={ds}
                               type="button"
+                              data-date-idx={idx}
                               disabled={!enabled}
                               title={
                                 usedByOtherSession
