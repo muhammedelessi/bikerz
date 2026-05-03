@@ -302,7 +302,6 @@ Deno.serve(async (req) => {
     confidence: aiDecision.confidence,
     detected: {
       brand: aiDecision.detected_brand ?? null,
-      owner_name: aiDecision.detected_owner_name ?? null,
       model: aiDecision.detected_model ?? null,
       year: aiDecision.detected_year ?? null,
     },
