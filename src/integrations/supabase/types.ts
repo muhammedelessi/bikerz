@@ -3050,6 +3050,7 @@ export type Database = {
           student_name: string
           trainer_id: string
           training_id: string | null
+          user_id: string | null
         }
         Insert: {
           comment?: string
@@ -3059,6 +3060,7 @@ export type Database = {
           student_name?: string
           trainer_id: string
           training_id?: string | null
+          user_id?: string | null
         }
         Update: {
           comment?: string
@@ -3068,6 +3070,7 @@ export type Database = {
           student_name?: string
           trainer_id?: string
           training_id?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
