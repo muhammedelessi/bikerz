@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import LanguageToggle from "@/components/common/LanguageToggle";
 import LogoutConfirmDialog from "@/components/common/LogoutConfirmDialog";
 import ThemeToggle from "@/components/ThemeToggle";
+import NotificationsDropdown from "@/components/admin/NotificationsDropdown";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -319,6 +320,13 @@ const Navbar: React.FC = () => {
                 {user
                   ? (
                     <>
+                      {/* Notifications bell — same component as admin uses,
+                          reads admin_notifications filtered by auth.uid().
+                          Works for trainers + students because the DB
+                          triggers (booking lifecycle + skill evaluations)
+                          insert rows for trainer.user_id and
+                          training_bookings.user_id. */}
+                      <NotificationsDropdown />
                       <Link to="/dashboard">
                         <Button variant="ghost" size="sm" className="gap-2">
                           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
