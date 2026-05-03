@@ -734,9 +734,13 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
             ? isRTL
               ? 'التاريخ والوقت'
               : 'Date & time'
-            : isRTL
-              ? 'البيانات والدفع'
-              : 'Details & pay'}
+            : isFreeBooking
+              ? isRTL
+                ? 'البيانات وتأكيد الحجز'
+                : 'Details & confirm'
+              : isRTL
+                ? 'البيانات والدفع'
+                : 'Details & pay'}
         </span>
       </div>
 
