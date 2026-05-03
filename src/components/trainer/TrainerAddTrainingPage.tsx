@@ -71,6 +71,16 @@ export const TrainerAddTrainingPage: React.FC<Props> = ({ trainerId, existingTra
   const [locationDetail, setLocationDetail] = useState<string>("");
   const [price, setPrice] = useState<number>(0);
 
+  const { data: platformPricing } = useTrainingPlatformPricing();
+  const markupPercent = platformPricing?.markupPercent ?? 0;
+  const vatPercent = platformPricing?.vatPercent ?? 0;
+  const extraFeesPercent = platformPricing?.extraFeesPercent ?? 0;
+  const breakdown = useMemo(
+    () => computeTrainingPricingBreakdownSar(price, markupPercent + extraFeesPercent, vatPercent),
+    [price, markupPercent, extraFeesPercent, vatPercent],
+  );
+  const fmt = (n: number) => Number(n || 0).toFixed(2);
+
   const { data: trainings, isLoading: loadingList } = useQuery({
     queryKey: ["all-trainings-catalog-full"],
     queryFn: async () => {
