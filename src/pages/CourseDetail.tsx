@@ -245,7 +245,7 @@ const CourseDetail: React.FC = () => {
       const chaptersWithLessons = await Promise.all(
         (chaptersData || []).map(async (chapter) => {
           const { data: lessons, error: lessonsError } = await supabase
-            .from("lessons")
+            .from("lessons_public" as "lessons")
             .select("*")
             .eq("chapter_id", chapter.id)
             .order("position", { ascending: true });
