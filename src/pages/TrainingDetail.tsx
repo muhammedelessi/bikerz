@@ -104,7 +104,10 @@ const TrainingDetail: React.FC = () => {
       if (trainerIds.length === 0) return rows.map((r) => ({ ...r, trainers: null })) as TrainerCourseRow[];
       const { data: trainersData, error: trainersErr } = await supabase
         .from("public_trainers")
-        .select("id,name_ar,name_en,photo_url,bio_ar,bio_en,country,city,years_of_experience")
+        // email + phone are pulled so the trainer card on the training
+        // detail page can render contact pills (and stay in sync with the
+        // trainer's own profile page which now also shows them).
+        .select("id,name_ar,name_en,photo_url,bio_ar,bio_en,country,city,email,phone,years_of_experience")
         .in("id", trainerIds);
       if (trainersErr) throw trainersErr;
       const tMap = new Map((trainersData || []).map((t) => [t.id, t]));

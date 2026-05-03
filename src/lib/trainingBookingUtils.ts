@@ -21,6 +21,9 @@ export type TrainerRow = {
   bio_en?: string | null;
   city?: string | null;
   country?: string | null;
+  /** Public contact info — exposed via public_trainers view */
+  email?: string | null;
+  phone?: string | null;
   years_of_experience?: number | null;
 };
 

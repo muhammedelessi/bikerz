@@ -43,8 +43,14 @@ import { parseTrainingSessions } from '@/lib/trainingSessionCurriculum';
 
 export type BikeEntry = {
   type: string;
+  /** Brand + model joined for legacy back-compat (e.g. "Honda CBR600"). */
   brand: string;
   photos: string[];
+  /** Optional richer detail kept around for the public trainer profile to
+   *  render the full garage card (the older 3-field shape stripped these
+   *  on save and the public page lost the subtype/model). */
+  subtype_name?: string;
+  model?: string;
 };
 
 function parseBikeEntries(raw: unknown): BikeEntry[] {
@@ -429,8 +435,16 @@ const AdminTrainers: React.FC = () => {
       const bike_type = garageEntries.map((e) => e.type_name).filter(Boolean).join(', ');
       const bikeEntries: BikeEntry[] = garageEntries.map((e) => ({
         type: e.type_name,
+        // Keep the joined string for back-compat with older readers
         brand: [e.brand, e.model].filter(Boolean).join(' '),
         photos: [...e.photos],
+        // Preserve the granular fields too — the public trainer profile
+        // uses these to render a richer "Bikes" card (subtype label,
+        // brand and model on separate lines). Without this preservation
+        // the JSONB stripped them on save and the trainee saw a flatter
+        // garage than the trainer actually configured.
+        ...(e.subtype_name ? { subtype_name: e.subtype_name } : {}),
+        ...(e.model ? { model: e.model } : {}),
       }));
 
       let trainerId: string;

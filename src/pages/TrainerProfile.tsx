@@ -17,7 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { ArrowLeft, ArrowRight, Bike, Calendar, ChevronLeft, ChevronRight, Clock, GraduationCap, MapPin, Star, Users, Wrench } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bike, Calendar, ChevronLeft, ChevronRight, Clock, GraduationCap, Mail, MapPin, Phone, Star, Users, Wrench } from 'lucide-react';
 import { translateTrainerCourseLocation } from '@/lib/trainerCourseLocation';
 import { COUNTRIES } from '@/data/countryCityData';
 import { cn } from '@/lib/utils';
@@ -35,6 +35,8 @@ type TrainingEmbed = {
   description_en: string | null;
   level: string;
   type: string;
+  default_sessions_count: number | null;
+  sessions: unknown; // JSONB curriculum array — shape varies, parsed at use site
 } | null;
 
 type TrainerCoursePublic = {
@@ -71,6 +73,10 @@ type BikeEntry = {
   type: string;
   brand: string;
   photos: string[];
+  /** New richer fields preserved by the admin trainer save (post fix).
+   *  Legacy rows don't have them; UI falls back to the joined `brand`. */
+  subtype_name?: string;
+  model?: string;
 };
 
 function parseBikeEntriesPublic(raw: unknown): BikeEntry[] {
@@ -82,6 +88,11 @@ function parseBikeEntriesPublic(raw: unknown): BikeEntry[] {
         type: String(o.type ?? '').trim(),
         brand: String(o.brand ?? ''),
         photos: Array.isArray(o.photos) ? (o.photos as unknown[]).map(String) : [],
+        // Optional richer fields. Legacy entries don't have these, so we
+        // tolerate undefined and the UI treats them as "fall back to
+        // whatever's in `brand`".
+        subtype_name: typeof o.subtype_name === 'string' ? o.subtype_name : undefined,
+        model: typeof o.model === 'string' ? o.model : undefined,
       };
     })
     .filter((e) => e.type);
@@ -106,8 +117,19 @@ type BikeCardProps = {
 function TrainerBikeCard({ bike, displayType, isRTL, onPhotoClick }: BikeCardProps) {
   const typeLabel = isRTL ? 'النوع' : 'Type';
   const brandLabel = isRTL ? 'الماركة' : 'Brand';
+  const modelLabel = isRTL ? 'الموديل' : 'Model';
+  const subtypeLabel = isRTL ? 'الفئة' : 'Category';
   const noPhotosLabel = isRTL ? 'لا توجد صور' : 'No photos';
   const photoHint = isRTL ? 'اضغط للتكبير' : 'Tap to enlarge';
+
+  // Prefer the granular `model` if present; otherwise fall back to whatever
+  // is in the joined `brand` field. Brand alone is shown when both are
+  // present so we don't repeat "Honda Honda CBR" if `brand` already
+  // contains the model.
+  const hasGranularModel = !!bike.model && bike.model.trim().length > 0;
+  const brandOnly = hasGranularModel
+    ? bike.brand.replace(bike.model!, '').trim()
+    : bike.brand;
 
   return (
     <Card
@@ -184,11 +206,29 @@ function TrainerBikeCard({ bike, displayType, isRTL, onPhotoClick }: BikeCardPro
               <p className="text-base font-bold leading-snug text-foreground">{displayType}</p>
             </div>
 
-            {bike.brand ? (
+            {bike.subtype_name ? (
+              <div className="space-y-1 border-t border-border/50 pt-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{subtypeLabel}</p>
+                <p className="text-sm font-medium leading-relaxed text-foreground/90 break-words" dir="auto" translate="no">
+                  {bike.subtype_name}
+                </p>
+              </div>
+            ) : null}
+
+            {brandOnly ? (
               <div className="space-y-1 border-t border-border/50 pt-3">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{brandLabel}</p>
                 <p className="text-sm font-medium leading-relaxed text-foreground/90 break-words" dir="auto" translate="no">
-                  {bike.brand}
+                  {brandOnly}
+                </p>
+              </div>
+            ) : null}
+
+            {hasGranularModel ? (
+              <div className="space-y-1 border-t border-border/50 pt-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{modelLabel}</p>
+                <p className="text-sm font-medium leading-relaxed text-foreground/90 break-words" dir="auto" translate="no">
+                  {bike.model}
                 </p>
               </div>
             ) : null}
@@ -219,7 +259,7 @@ const TrainerProfile: React.FC = () => {
     queryKey: ['trainer-public-profile', id],
     enabled: !!id,
     queryFn: async () => {
-      const { data, error } = await supabase.from('public_trainers').select('id,name_ar,name_en,photo_url,bio_ar,bio_en,country,city,bike_type,years_of_experience,services,status,profit_ratio,motorbike_brand,license_type,bike_photos,album_photos,bike_entries,availability_blocked_dates,availability_special_hours,availability_settings,language_levels,user_id,created_at').eq('id', id!).eq('status', 'active').maybeSingle();
+      const { data, error } = await supabase.from('public_trainers').select('id,name_ar,name_en,photo_url,bio_ar,bio_en,country,city,email,phone,bike_type,years_of_experience,services,status,profit_ratio,motorbike_brand,license_type,bike_photos,album_photos,bike_entries,availability_blocked_dates,availability_special_hours,availability_settings,language_levels,user_id,created_at').eq('id', id!).eq('status', 'active').maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -235,7 +275,13 @@ const TrainerProfile: React.FC = () => {
       const { data, error } = await supabase
         .from('trainer_courses')
         .select(
-          'id, training_id, price, sessions_count, duration_hours, location, location_detail, trainings(id, name_ar, name_en, description_ar, description_en, level, type)',
+          // default_sessions_count + sessions are the canonical source for
+          // "how many sessions does this training have". Without them, the
+          // trainer profile cards fell back to trainer_courses.sessions_count
+          // which could diverge from the value shown on the public training
+          // detail page → confusing the trainee. Pull both so we resolve to
+          // the same number on both surfaces.
+          'id, training_id, price, sessions_count, duration_hours, location, location_detail, trainings(id, name_ar, name_en, description_ar, description_en, level, type, default_sessions_count, sessions)',
         )
         .eq('trainer_id', id!);
       if (error) throw error;
@@ -466,6 +512,39 @@ const TrainerProfile: React.FC = () => {
                 </div>
               </div>
 
+              {/* Contact card — phone + email. Only renders when at least
+                  one is present so trainers without contact info don't get
+                  an empty section. Both are wrapped in tel:/mailto: links
+                  for one-tap dialing on mobile and one-click compose on
+                  desktop. */}
+              {(trainer.phone || trainer.email) && (
+                <section className="rounded-xl border border-border bg-muted/30 p-3 sm:p-4">
+                  <SectionHeader>{isRTL ? 'تواصل مع المدرب' : 'Contact the trainer'}</SectionHeader>
+                  <div className="flex flex-wrap gap-2 sm:gap-3 mt-2">
+                    {trainer.phone && (
+                      <a
+                        href={`tel:${trainer.phone.replace(/\s+/g, '')}`}
+                        className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-primary/5 hover:border-primary/40 transition-colors min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        dir="ltr"
+                      >
+                        <Phone className="h-4 w-4 text-primary" />
+                        <span className="tabular-nums">{trainer.phone}</span>
+                      </a>
+                    )}
+                    {trainer.email && (
+                      <a
+                        href={`mailto:${trainer.email}`}
+                        className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-primary/5 hover:border-primary/40 transition-colors min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        dir="ltr"
+                      >
+                        <Mail className="h-4 w-4 text-primary" />
+                        <span className="break-all">{trainer.email}</span>
+                      </a>
+                    )}
+                  </div>
+                </section>
+              )}
+
               {bio ? (
                 <section>
                   <SectionHeader>{isRTL ? 'نبذة عن المدرب' : 'About'}</SectionHeader>
@@ -562,7 +641,23 @@ const TrainerProfile: React.FC = () => {
                       const desc = (isRTL ? tr.description_ar : tr.description_en) || '';
                       const loc = translateTrainerCourseLocation(tc.location, isRTL) || tc.location;
                       const hours = Number(tc.duration_hours);
-                      const sessions = Math.max(1, Number(tc.sessions_count ?? 1));
+                      // Resolve session count from the SAME priority chain
+                      // that TrainingDetail uses, so the trainer's card and
+                      // the public training page can never disagree on the
+                      // number of sessions:
+                      //   1) trainings.sessions JSONB curriculum (length)
+                      //   2) trainings.default_sessions_count (the canonical
+                      //      catalog default)
+                      //   3) trainer_courses.sessions_count (legacy fallback)
+                      //   4) 1 (last-resort default to avoid "0 sessions")
+                      const curriculumLen = Array.isArray(tr.sessions) ? tr.sessions.length : 0;
+                      const sessions = Math.max(
+                        1,
+                        curriculumLen ||
+                          Number(tr.default_sessions_count) ||
+                          Number(tc.sessions_count) ||
+                          1,
+                      );
                       const TypeIcon = tr.type === 'theory' ? GraduationCap : Wrench;
                       return (
                         <Card key={tc.id} className="overflow-hidden border-border/60 shadow-sm flex flex-col">

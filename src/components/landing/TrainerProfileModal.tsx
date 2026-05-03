@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { Star, MapPin, Bike, Clock, Users, DollarSign } from 'lucide-react';
+import { Star, MapPin, Bike, Clock, Users, DollarSign, Phone, Mail } from 'lucide-react';
 
 interface TrainerProfileModalProps {
   trainerId: string | null;
@@ -22,7 +22,7 @@ const TrainerProfileModal: React.FC<TrainerProfileModalProps> = ({ trainerId, on
     queryKey: ['trainer-profile', trainerId],
     queryFn: async () => {
       if (!trainerId) return null;
-      const { data, error } = await supabase.from('public_trainers').select('id,name_ar,name_en,photo_url,bio_ar,bio_en,country,city,bike_type,years_of_experience,services,status,profit_ratio,motorbike_brand,license_type,bike_photos,album_photos,bike_entries,availability_blocked_dates,availability_special_hours,availability_settings,language_levels,user_id,created_at').eq('id', trainerId).single();
+      const { data, error } = await supabase.from('public_trainers').select('id,name_ar,name_en,photo_url,bio_ar,bio_en,country,city,email,phone,bike_type,years_of_experience,services,status,profit_ratio,motorbike_brand,license_type,bike_photos,album_photos,bike_entries,availability_blocked_dates,availability_special_hours,availability_settings,language_levels,user_id,created_at').eq('id', trainerId).single();
       if (error) throw error;
       return data;
     },
@@ -96,6 +96,33 @@ const TrainerProfileModal: React.FC<TrainerProfileModalProps> = ({ trainerId, on
                 </div>
               </div>
             </DialogHeader>
+
+            {/* Contact — phone + email, both wrapped in tap-to-call /
+                tap-to-email links. Renders only when at least one is set. */}
+            {(trainer.phone || trainer.email) && (
+              <div className="flex flex-wrap justify-center gap-2 -mt-1">
+                {trainer.phone && (
+                  <a
+                    href={`tel:${trainer.phone.replace(/\s+/g, '')}`}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-primary/5 hover:border-primary/40 transition-colors"
+                    dir="ltr"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-primary" />
+                    <span className="tabular-nums">{trainer.phone}</span>
+                  </a>
+                )}
+                {trainer.email && (
+                  <a
+                    href={`mailto:${trainer.email}`}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-primary/5 hover:border-primary/40 transition-colors"
+                    dir="ltr"
+                  >
+                    <Mail className="w-3.5 h-3.5 text-primary" />
+                    <span className="break-all">{trainer.email}</span>
+                  </a>
+                )}
+              </div>
+            )}
 
             {/* Bio */}
             <p className="text-muted-foreground text-sm">{isRTL ? trainer.bio_ar : trainer.bio_en}</p>
