@@ -33,10 +33,14 @@ export async function validateCoupon(code: string, courseId: string, amount: num
   return { data, error };
 }
 
-export async function enrollUserInCourse(userId: string, courseId: string) {
-  const { error } = await supabase
-    .from('course_enrollments')
-    .insert({ user_id: userId, course_id: courseId });
+export async function enrollUserInCourse(_userId: string, courseId: string, couponCode?: string) {
+  if (!couponCode) {
+    throw new Error('Self-enrollment requires a fully discounting coupon');
+  }
+  const { error } = await supabase.rpc('enroll_self_with_free_coupon', {
+    p_course_id: courseId,
+    p_coupon_code: couponCode,
+  });
   if (error && !error.message.includes('duplicate')) {
     throw new Error(error.message);
   }
