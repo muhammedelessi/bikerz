@@ -24,7 +24,7 @@ const TrainingsSection: React.FC = () => {
   const { data: trainerCourses } = useQuery({
     queryKey: ['public-trainer-courses'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('trainer_courses').select('*, trainers(*)');
+      const { data, error } = await supabase.from('trainer_courses').select('id, training_id, trainer_id');
       if (error) throw error;
       return data;
     },
