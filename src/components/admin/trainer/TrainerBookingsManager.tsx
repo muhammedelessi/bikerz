@@ -451,12 +451,15 @@ export const TrainerBookingsManager: React.FC<{
       </div>
 
       <Dialog open={!!detailRow} onOpenChange={(o) => !o && setDetailRow(null)}>
-        <DialogContent className="max-w-md" dir={dir}>
-          <DialogHeader>
+        <DialogContent
+          className="max-w-md max-h-[90vh] p-0 flex flex-col gap-0 overflow-hidden"
+          dir={dir}
+        >
+          <DialogHeader className="px-6 pt-6 pb-3 border-b border-border/60 shrink-0">
             <DialogTitle>{isRTL ? 'تفاصيل الحجز' : 'Booking details'}</DialogTitle>
           </DialogHeader>
           {detailRow ? (
-            <div className="space-y-4 text-sm">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-4 space-y-4 text-sm">
               <div className="grid grid-cols-2 gap-2">
                 <span className="text-muted-foreground">{isRTL ? 'الطالب' : 'Student'}</span>
                 <span>{detailRow.full_name}</span>
