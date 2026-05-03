@@ -387,29 +387,37 @@ const TrainingDetail: React.FC = () => {
                         </div>
                       ) : null}
 
-                      {curriculumSessions.length > 0 ? (
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-base font-semibold">
-                              {isRTL ? "تفاصيل الجلسات" : "Session Details"}
-                            </h3>
-                            <Badge variant="secondary">{curriculumSessions.length}</Badge>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-card p-4 text-sm">
-                            <span className="text-muted-foreground">
-                              {isRTL ? "عدد الجلسات:" : "Sessions:"}{" "}
-                              <span className="text-foreground font-semibold">{curriculumSessions.length}</span>
-                            </span>
-                            <span className="text-border">·</span>
-                            <span className="text-muted-foreground">
-                              {isRTL ? "إجمالي الساعات:" : "Total hours:"}{" "}
-                              <span className="text-foreground font-semibold">
-                                {curriculumSessions.reduce((t, s) => t + s.duration_hours, 0)} {isRTL ? "ساعة" : "hrs"}
+                      {(curriculumSessions.length > 0 || Number(training.default_sessions_count) > 0) ? (() => {
+                        const sessCount = curriculumSessions.length > 0
+                          ? curriculumSessions.length
+                          : Math.max(1, Number(training.default_sessions_count) || 1);
+                        const totalHours = curriculumSessions.length > 0
+                          ? curriculumSessions.reduce((t, s) => t + s.duration_hours, 0)
+                          : sessCount * (Number(training.default_session_duration_hours) || 0);
+                        return (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-base font-semibold">
+                                {isRTL ? "تفاصيل الجلسات" : "Session Details"}
+                              </h3>
+                              <Badge variant="secondary">{sessCount}</Badge>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-card p-4 text-sm">
+                              <span className="text-muted-foreground">
+                                {isRTL ? "عدد الجلسات:" : "Sessions:"}{" "}
+                                <span className="text-foreground font-semibold">{sessCount}</span>
                               </span>
-                            </span>
+                              <span className="text-border">·</span>
+                              <span className="text-muted-foreground">
+                                {isRTL ? "إجمالي الساعات:" : "Total hours:"}{" "}
+                                <span className="text-foreground font-semibold">
+                                  {totalHours} {isRTL ? "ساعة" : "hrs"}
+                                </span>
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      ) : null}
+                        );
+                      })() : null}
                     </CardContent>
                   </Card>
                 )}
@@ -459,10 +467,10 @@ const TrainingDetail: React.FC = () => {
                           const stats = reviewStats?.[tr.id];
                           const sess = curriculumSessions.length > 0
                             ? curriculumSessions.length
-                            : Math.max(1, Number(tc.sessions_count ?? 1));
+                            : Math.max(1, Number(training.default_sessions_count) || 1);
                           const hours = curriculumSessions.length > 0
                             ? Math.round((curriculumSessions.reduce((sum, s) => sum + s.duration_hours, 0) / curriculumSessions.length) * 100) / 100
-                            : Number(tc.duration_hours);
+                            : Number(training.default_session_duration_hours) || 0;
                           const locRaw = translateTrainerCourseLocation(tc.location, isRTL) || String(tc.location ?? "").trim();
                           const countryEntry = COUNTRIES.find((c) => c.code === tr.country || c.en === tr.country);
                           const cityEntry = countryEntry?.cities.find((c) => c.en === tr.city);
