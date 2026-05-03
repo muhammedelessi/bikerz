@@ -356,6 +356,12 @@ export const TrainerAddTrainingPage: React.FC<Props> = ({ trainerId, existingTra
                 onChange={(e) => setPrice(Math.max(0, parseFloat(e.target.value) || 0))}
                 dir="ltr"
               />
+              <p className="text-[11px] leading-relaxed text-muted-foreground bg-muted/40 border border-border rounded-md p-2">
+                {tx(
+                  "ملاحظة: هذا هو السعر الذي ستحصل عليه. ستتم إضافة عمولات المنصة والضرائب تلقائيًا من قبل الإدارة في قسم التسعير، وسيظهر للطالب السعر النهائي شاملاً تلك العمولات.",
+                  "Note: This is the price you receive. Platform commissions and taxes will be added automatically by admin in the pricing section, and students will see the final price including those fees."
+                )}
+              </p>
             </div>
           </div>
         </div>
