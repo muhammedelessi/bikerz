@@ -43,6 +43,23 @@ export default defineConfig(({ mode }) => {
         skipWaiting: true,
         clientsClaim: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,avif,woff2,woff,ttf,json}"],
+        // Workbox's default `navigateFallback: '/index.html'` rewrites EVERY
+        // navigation request to the SPA shell — including requests for static
+        // HTML files like /tap-3ds-callback.html. That's the SPA pattern
+        // working as designed everywhere except for "real" HTML pages we
+        // serve outside React. Without this denylist, after Tap's 3DS flow
+        // redirects the iframe to /tap-3ds-callback.html, the SW serves
+        // /index.html, React Router doesn't match the path, and NotFound
+        // renders inside the modal — the 404 the user reported after
+        // submitting OTP. Listing the path here makes the SW fall through
+        // to the normal precache fetch (the file IS in precache via the
+        // glob above) so the original static HTML is delivered.
+        navigateFallbackDenylist: [
+          /^\/tap-3ds-callback(\.html)?$/,
+          // Apple Pay merchant-id verification — also a real file that must
+          // not be rewritten to the SPA shell.
+          /^\/\.well-known\//,
+        ],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\//,
