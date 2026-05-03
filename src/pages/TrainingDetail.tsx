@@ -93,10 +93,19 @@ const TrainingDetail: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("trainer_courses")
-        .select("*, trainers(*)")
+        .select("*")
         .eq("training_id", id!);
       if (error) throw error;
-      return (data || []) as TrainerCourseRow[];
+      const rows = (data || []) as Omit<TrainerCourseRow, "trainers">[];
+      const trainerIds = Array.from(new Set(rows.map((r) => r.trainer_id).filter(Boolean)));
+      if (trainerIds.length === 0) return rows.map((r) => ({ ...r, trainers: null })) as TrainerCourseRow[];
+      const { data: trainersData, error: trainersErr } = await supabase
+        .from("public_trainers")
+        .select("id,name_ar,name_en,photo_url,bio_ar,bio_en,country,city,years_of_experience")
+        .in("id", trainerIds);
+      if (trainersErr) throw trainersErr;
+      const tMap = new Map((trainersData || []).map((t) => [t.id, t]));
+      return rows.map((r) => ({ ...r, trainers: tMap.get(r.trainer_id) ?? null })) as TrainerCourseRow[];
     },
   });
 
