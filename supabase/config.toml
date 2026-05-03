@@ -44,3 +44,14 @@ verify_jwt = false
 
 [functions.geo-country]
 verify_jwt = false
+
+# Honda Owners program — both functions verify the JWT manually inside
+# (createClient with anon key + Authorization header, then getUser()).
+# Disabling at the gateway lets the browser's CORS preflight succeed,
+# which it can't with verify_jwt=true because preflights don't carry
+# an Authorization header. Same posture as our Tap functions.
+[functions.honda-prepare-upload]
+verify_jwt = false
+
+[functions.honda-verify-document]
+verify_jwt = false
