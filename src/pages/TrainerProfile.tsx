@@ -26,6 +26,8 @@ import { useTrainingPlatformPricing } from '@/hooks/useTrainingPlatformPricing';
 import { applyTrainingPlatformMarkupSar } from '@/lib/trainingPlatformMarkup';
 import { normalizeBookingSessions } from '@/lib/trainingBookingSessions';
 import TrainerReviewForm from '@/components/training/TrainerReviewForm';
+import { BikeGarage } from '@/components/ui/profile/BikeGarage';
+import type { BikeEntry as ProfileBikeEntry } from '@/hooks/useUserProfile';
 
 type TrainingEmbed = {
   id: string;
@@ -583,20 +585,22 @@ const TrainerProfile: React.FC = () => {
               {bikeEntries.length > 0 ? (
                 <section>
                   <SectionHeader>{isRTL ? 'الدراجات' : 'Bikes'}</SectionHeader>
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6">
-                    {bikeEntries.map((bike, idx) => {
-                      const displayType = BIKE_LABELS[bike.type]?.[isRTL ? 'ar' : 'en'] || bike.type;
-                      return (
-                        <TrainerBikeCard
-                          key={`${bike.type}-${idx}`}
-                          bike={bike}
-                          displayType={displayType}
-                          isRTL={isRTL}
-                          onPhotoClick={setLightboxPhoto}
-                        />
-                      );
-                    })}
-                  </div>
+                  <BikeGarage
+                    readOnly
+                    entries={bikeEntries.map((bike, idx): ProfileBikeEntry => ({
+                      id: `${bike.type}-${idx}`,
+                      type_id: null,
+                      type_name: BIKE_LABELS[bike.type]?.[isRTL ? 'ar' : 'en'] || bike.type,
+                      subtype_id: null,
+                      subtype_name: bike.subtype_name || '',
+                      brand: bike.brand || '',
+                      model: bike.model || '',
+                      is_custom_type: false,
+                      is_custom_brand: false,
+                      photos: bike.photos || [],
+                    }))}
+                    onChange={() => {}}
+                  />
                 </section>
               ) : null}
 
