@@ -124,7 +124,7 @@ export const TrainerAddTrainingPage: React.FC<Props> = ({ trainerId, existingTra
         training_id: trainingId,
         price: price,
         sessions_count: Math.max(1, Number(selected?.default_sessions_count ?? 1)),
-        duration_hours: Math.max(0.25, Number(selected?.default_session_duration_hours ?? 2)),
+        duration_hours: Math.max(0.25, Number(selected?.default_session_duration_hours ?? 1)),
         location: locationStr,
         location_detail: locationDetail.trim() || null,
       });
