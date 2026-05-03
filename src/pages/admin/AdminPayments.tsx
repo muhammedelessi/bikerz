@@ -233,9 +233,10 @@ const AdminPayments = () => {
       if (error) throw error;
 
       if (status === "approved" && selectedPayment?.course_id) {
-        const { error: enrollError } = await supabase
-          .from("course_enrollments")
-          .insert({ user_id: selectedPayment.user_id, course_id: selectedPayment.course_id });
+        const { error: enrollError } = await (supabase as any).rpc("admin_enroll_user", {
+          p_user_id: selectedPayment.user_id,
+          p_course_id: selectedPayment.course_id,
+        });
         if (enrollError && !enrollError.message.includes("duplicate")) throw enrollError;
       }
 
