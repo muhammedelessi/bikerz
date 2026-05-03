@@ -74,12 +74,23 @@ const TrainerShowcaseCard: React.FC<TrainerShowcaseCardProps> = ({
   const body = (
     <>
       <div className="flex gap-3 min-w-0">
-        <Avatar className="h-16 w-16 shrink-0 ring-2 ring-primary/25">
-          <AvatarImage
-            src={trainer.photo_url || undefined}
-            alt={primaryName}
-            className="object-cover object-top"
-          />
+        <Avatar className="h-16 w-16 shrink-0 ring-2 ring-primary/25 bg-muted">
+          {/* Trim the photo_url so a value like " " (just whitespace) doesn't
+              render an empty <img>, which would briefly show a broken-image
+              icon before falling back. AvatarImage hides itself on load
+              error so the AvatarFallback below takes over correctly. */}
+          {(() => {
+            const photoUrl = (trainer.photo_url ?? '').trim();
+            return photoUrl ? (
+              <AvatarImage
+                src={photoUrl}
+                alt={primaryName}
+                className="object-cover object-top"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : null;
+          })()}
           <AvatarFallback className="bg-primary/10 text-primary font-bold text-lg">{primaryName.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1 text-start space-y-1">

@@ -86,7 +86,9 @@ const TrainersSection: React.FC = () => {
           <p className="text-muted-foreground max-w-2xl mx-auto">{isRTL ? 'تعرف على فريق المدربين المحترفين' : 'Meet our professional training team'}</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {trainers.map(t => {
+          {trainers.map((t) => {
+            // Same location formatting helper used by the training detail
+            // page so the headline reads identically across both surfaces.
             const countryEntry = COUNTRIES.find(
               (c) => c.code === t.country || c.en === t.country,
             );
@@ -96,45 +98,68 @@ const TrainersSection: React.FC = () => {
               countryEntry ? (isRTL ? countryEntry.ar : countryEntry.en) : t.country,
             ].filter(Boolean).join(isRTL ? '، ' : ', ');
 
-            const metaRows = [
-              {
+            // Match the meta rows produced by the training detail page so
+            // both cards have the same visual density. Without context of a
+            // specific training we can't show sessions/duration here, but
+            // we can show the trainer's bike type + services count in
+            // their place — keeping the card from looking sparse next to
+            // its training-detail counterpart.
+            const yoe = Number(t.years_of_experience);
+            const metaRows: { id: string; icon: 'clock' | 'gauge' | 'map' | 'users'; text: string }[] = [];
+            if (Number.isFinite(yoe) && yoe > 0) {
+              metaRows.push({
                 id: 'exp',
-                icon: 'clock' as const,
+                icon: 'clock',
                 text: isRTL
-                  ? `${t.years_of_experience} سنوات خبرة`
-                  : `${t.years_of_experience} years experience`,
-              },
-            ].filter(Boolean);
+                  ? `${yoe} ${yoe === 1 ? 'سنة خبرة' : 'سنوات خبرة'}`
+                  : `${yoe} ${yoe === 1 ? 'year' : 'years'} experience`,
+              });
+            }
+            if (t.bike_type) {
+              metaRows.push({
+                id: 'bike',
+                icon: 'gauge',
+                text: t.bike_type,
+              });
+            }
+            if (Array.isArray(t.services) && t.services.length > 0) {
+              metaRows.push({
+                id: 'svc',
+                icon: 'users',
+                text: isRTL
+                  ? `${t.services.length} ${t.services.length === 1 ? 'خدمة' : 'خدمات'}`
+                  : `${t.services.length} ${t.services.length === 1 ? 'service' : 'services'}`,
+              });
+            }
 
             const footer = (
-              <div className="flex">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigate(`/trainers/${t.id}`);
-                  }}
-                >
-                  {isRTL ? 'عرض الملف' : 'View Profile'}
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full font-semibold"
+                asChild
+              >
+                <Link to={`/trainers/${t.id}`}>{isRTL ? 'عرض الملف' : 'View Profile'}</Link>
+              </Button>
             );
 
+            // profileHref makes the body clickable as a single Link;
+            // wrapping the card in another <Link> (the previous setup)
+            // nested two clickable layers and broke nested buttons on
+            // some browsers. Move to the same pattern TrainingDetail uses.
             return (
-              <Link key={t.id} to={`/trainers/${t.id}`} className="block">
-                <TrainerShowcaseCard
-                  trainer={t}
-                  isRTL={isRTL}
-                  reviewStats={reviewStats?.[t.id] || null}
-                  headline={displayLocation}
-                  bioPreview={isRTL ? t.bio_ar : t.bio_en}
-                  metaRows={metaRows}
-                  footer={footer}
-                  className="cursor-pointer hover:border-primary/40 hover:shadow-lg"
-                />
-              </Link>
+              <TrainerShowcaseCard
+                key={t.id}
+                trainer={t}
+                isRTL={isRTL}
+                reviewStats={reviewStats?.[t.id] || null}
+                headline={displayLocation}
+                bioPreview={isRTL ? t.bio_ar : t.bio_en}
+                metaRows={metaRows}
+                profileHref={`/trainers/${t.id}`}
+                footer={footer}
+                className="h-full border-border/60 shadow-sm hover:border-primary/40 hover:shadow-lg transition-shadow"
+              />
             );
           })}
         </div>
