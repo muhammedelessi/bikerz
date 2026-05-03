@@ -87,8 +87,6 @@ export const TrainerCourseEditDialog: React.FC<{
   const queryClient = useQueryClient();
   const cardDir = isRTL ? 'rtl' : 'ltr';
   const [editPrice, setEditPrice] = useState('');
-  const [editSessions, setEditSessions] = useState('');
-  const [editDur, setEditDur] = useState('');
   const [editCountry, setEditCountry] = useState('');
   const [editCity, setEditCity] = useState('');
   const [editLocationDetail, setEditLocationDetail] = useState('');
@@ -97,8 +95,6 @@ export const TrainerCourseEditDialog: React.FC<{
     if (!tc || !open) return;
     const { countryCode, city } = parseAssignmentLocation(tc.location || '');
     setEditPrice(String(tc.price ?? ''));
-    setEditSessions(String(Math.max(1, Number(tc.sessions_count ?? 1))));
-    setEditDur(String(tc.duration_hours ?? ''));
     setEditCountry(countryCode);
     setEditCity(city);
     setEditLocationDetail(tc.location_detail || '');
