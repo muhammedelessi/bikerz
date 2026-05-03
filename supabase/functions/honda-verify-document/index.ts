@@ -218,17 +218,15 @@ Deno.serve(async (req) => {
   let rawAiResponse: unknown = null;
 
   try {
-    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+    const openaiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${openaiKey}`,
+        "Authorization": `Bearer ${lovableKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        // Force JSON-only output so we don't have to strip code fences.
+        model: "google/gemini-2.5-flash",
         response_format: { type: "json_object" },
-        temperature: 0, // deterministic — same doc → same decision
         messages: [
           { role: "system", content: systemPrompt },
           {
@@ -237,7 +235,7 @@ Deno.serve(async (req) => {
               { type: "text", text: userPrompt },
               {
                 type: "image_url",
-                image_url: { url: signed.signedUrl, detail: "high" },
+                image_url: { url: signed.signedUrl },
               },
             ],
           },
