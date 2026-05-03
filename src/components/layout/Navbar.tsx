@@ -47,23 +47,29 @@ interface HeaderContent {
 }
 
 function extraAfterCoursesNav(t: (key: string, opts?: { lng?: string }) => string): MenuItem[] {
+  // Hide Trainings & Trainers in production release, keep visible in dev
+  const showTrainerFeatures = import.meta.env.DEV;
   return [
-    {
-      id: "trainings",
-      title_en: t("nav.trainings", { lng: "en" }),
-      title_ar: t("nav.trainings", { lng: "ar" }),
-      link: "/trainings",
-      is_visible: true,
-      open_in_new_tab: false,
-    },
-    {
-      id: "trainers",
-      title_en: t("nav.trainers", { lng: "en" }),
-      title_ar: t("nav.trainers", { lng: "ar" }),
-      link: "/trainers",
-      is_visible: true,
-      open_in_new_tab: false,
-    },
+    ...(showTrainerFeatures
+      ? [
+          {
+            id: "trainings",
+            title_en: t("nav.trainings", { lng: "en" }),
+            title_ar: t("nav.trainings", { lng: "ar" }),
+            link: "/trainings",
+            is_visible: true,
+            open_in_new_tab: false,
+          },
+          {
+            id: "trainers",
+            title_en: t("nav.trainers", { lng: "en" }),
+            title_ar: t("nav.trainers", { lng: "ar" }),
+            link: "/trainers",
+            is_visible: true,
+            open_in_new_tab: false,
+          },
+        ]
+      : []),
     {
       id: "bundles",
       title_en: t("nav.bundles", { lng: "en" }),
@@ -154,7 +160,11 @@ const Navbar: React.FC = () => {
   };
 
   const menuItems = useMemo(() => {
-    const hiddenLinks = new Set(["/mentors"]);
+    const hiddenLinks = new Set<string>(["/mentors"]);
+    if (!import.meta.env.DEV) {
+      hiddenLinks.add("/trainings");
+      hiddenLinks.add("/trainers");
+    }
     const defaultItems: MenuItem[] = [
       {
         id: "home",
