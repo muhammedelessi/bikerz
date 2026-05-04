@@ -638,8 +638,12 @@ const HondaApplication: React.FC = () => {
                     value={motorcycleYear}
                     onChange={(e) => setMotorcycleYear(e.target.value)}
                     placeholder={String(yearNow)}
-                    required
+                    aria-invalid={!!fieldErrors.motorcycleYear}
+                    className={cn(fieldErrors.motorcycleYear && 'border-destructive focus-visible:ring-destructive')}
                   />
+                  {fieldErrors.motorcycleYear && (
+                    <p className="text-xs text-destructive">{fieldErrors.motorcycleYear}</p>
+                  )}
                 </div>
               </div>
 
@@ -661,9 +665,11 @@ const HondaApplication: React.FC = () => {
                   onClick={() => fileInputRef.current?.click()}
                   className={cn(
                     'w-full border-2 border-dashed rounded-xl px-4 py-6 text-sm transition-colors',
-                    docFile
-                      ? 'border-primary/50 bg-primary/5'
-                      : 'border-border hover:border-primary/50 hover:bg-muted/30',
+                    fieldErrors.docFile
+                      ? 'border-destructive bg-destructive/5'
+                      : docFile
+                        ? 'border-primary/50 bg-primary/5'
+                        : 'border-border hover:border-primary/50 hover:bg-muted/30',
                   )}
                 >
                   {docFile ? (
@@ -686,6 +692,9 @@ const HondaApplication: React.FC = () => {
                     </span>
                   )}
                 </button>
+                {fieldErrors.docFile && (
+                  <p className="text-xs text-destructive">{fieldErrors.docFile}</p>
+                )}
                 <p className="text-xs text-muted-foreground leading-relaxed pt-1">
                   {isRTL
                     ? 'سيتم استخدام الوثيقة فقط للتحقق من ملكيتك دراجة Honda. لن تُشارك مع أي طرف آخر.'
@@ -693,12 +702,43 @@ const HondaApplication: React.FC = () => {
                 </p>
               </div>
 
+              {/* Bottom error block — shows AI rejection reason (in the
+                  active language) or any submission/validation failure.
+                  This replaces both the top retry banner and the toast. */}
+              {formError && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 flex gap-3"
+                >
+                  <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="text-sm space-y-1 min-w-0">
+                    <p className="font-semibold text-destructive">
+                      {isRTL ? 'تعذر إكمال الطلب' : 'We couldn’t complete your request'}
+                    </p>
+                    <p className="text-foreground/80 break-words leading-relaxed">
+                      {formError}
+                    </p>
+                    {application?.status === 'pending_ai' && attemptsUsed > 0 && (
+                      <p className="text-xs text-muted-foreground pt-1">
+                        {isRTL
+                          ? `محاولة ${Math.min(attemptsUsed + 1, 3)} من 3 · تبقّى لك ${attemptsRemaining} ${
+                              attemptsRemaining === 1 ? 'محاولة' : 'محاولات'
+                            } قبل التحويل للمراجعة اليدوية.`
+                          : `Attempt ${Math.min(attemptsUsed + 1, 3)} of 3 · ${attemptsRemaining} ${
+                              attemptsRemaining === 1 ? 'attempt' : 'attempts'
+                            } remaining before manual review.`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Submit */}
               <Button
                 type="submit"
                 size="lg"
                 className="w-full"
-                disabled={!canSubmit}
+                disabled={submitting}
               >
                 {submitting ? (
                   <>
