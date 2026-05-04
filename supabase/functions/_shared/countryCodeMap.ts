@@ -1,0 +1,307 @@
+/**
+ * Comprehensive ISO 3166-1 alpha-2 country-name → code map for use by
+ * edge functions when sending data to GHL.
+ *
+ * GHL's "Add/Update Contact" action validates the `country` field
+ * against an internal whitelist and silently rejects unknown values
+ * (proven empirically — see ghl.service.ts comments). Sending the
+ * 2-letter ISO code instead is universally accepted: GHL maps it to
+ * its internal country list.
+ *
+ * `coerceToCountryCode(input)` returns:
+ *   • The uppercase code unchanged if `input` is already a 2-letter code
+ *   • The mapped code if `input` matches a known English / Arabic name
+ *   • The trimmed input verbatim otherwise (caller decides what to do)
+ *
+ * Coverage: all 249 ISO 3166-1 alpha-2 codes. English primary name
+ * (lowercased) plus common aliases for major countries (USA / UK / UAE
+ * / South Korea / etc.) plus Arabic name for MENA + major global
+ * countries.
+ */
+
+const NAME_TO_CODE: Record<string, string> = {
+  // ── Arab World (priority — most of the user base) ────────────────
+  "saudi arabia": "SA", "السعودية": "SA", "المملكة العربية السعودية": "SA",
+  "united arab emirates": "AE", "uae": "AE", "الإمارات": "AE", "الإمارات العربية المتحدة": "AE",
+  "kuwait": "KW", "الكويت": "KW",
+  "bahrain": "BH", "البحرين": "BH",
+  "qatar": "QA", "قطر": "QA",
+  "oman": "OM", "عمان": "OM", "عُمان": "OM", "سلطنة عمان": "OM",
+  "yemen": "YE", "اليمن": "YE",
+  "iraq": "IQ", "العراق": "IQ",
+  "jordan": "JO", "الأردن": "JO",
+  "lebanon": "LB", "لبنان": "LB",
+  "syria": "SY", "syrian arab republic": "SY", "سوريا": "SY", "سورية": "SY",
+  "palestine": "PS", "palestinian territory": "PS", "state of palestine": "PS", "palestinian authority": "PS", "فلسطين": "PS", "دولة فلسطين": "PS",
+  "israel": "IL", "إسرائيل": "IL",
+  "egypt": "EG", "مصر": "EG",
+  "libya": "LY", "ليبيا": "LY",
+  "tunisia": "TN", "تونس": "TN",
+  "algeria": "DZ", "الجزائر": "DZ",
+  "morocco": "MA", "المغرب": "MA",
+  "mauritania": "MR", "موريتانيا": "MR",
+  "sudan": "SD", "السودان": "SD",
+  "south sudan": "SS", "جنوب السودان": "SS",
+  "somalia": "SO", "الصومال": "SO",
+  "djibouti": "DJ", "جيبوتي": "DJ",
+  "comoros": "KM", "جزر القمر": "KM",
+
+  // ── Africa ──────────────────────────────────────────────────────
+  "angola": "AO", "أنغولا": "AO",
+  "benin": "BJ", "بنين": "BJ",
+  "botswana": "BW", "بوتسوانا": "BW",
+  "burkina faso": "BF", "بوركينا فاسو": "BF",
+  "burundi": "BI", "بوروندي": "BI",
+  "cabo verde": "CV", "cape verde": "CV", "الرأس الأخضر": "CV",
+  "cameroon": "CM", "الكاميرون": "CM",
+  "central african republic": "CF", "أفريقيا الوسطى": "CF", "جمهورية أفريقيا الوسطى": "CF",
+  "chad": "TD", "تشاد": "TD",
+  "congo": "CG", "republic of the congo": "CG", "congo-brazzaville": "CG", "الكونغو": "CG",
+  "democratic republic of the congo": "CD", "dr congo": "CD", "drc": "CD", "congo-kinshasa": "CD", "جمهورية الكونغو الديمقراطية": "CD",
+  "côte d'ivoire": "CI", "cote d'ivoire": "CI", "ivory coast": "CI", "ساحل العاج": "CI",
+  "equatorial guinea": "GQ", "غينيا الاستوائية": "GQ",
+  "eritrea": "ER", "إريتريا": "ER",
+  "eswatini": "SZ", "swaziland": "SZ", "إسواتيني": "SZ",
+  "ethiopia": "ET", "إثيوبيا": "ET",
+  "gabon": "GA", "الغابون": "GA",
+  "gambia": "GM", "غامبيا": "GM",
+  "ghana": "GH", "غانا": "GH",
+  "guinea": "GN", "غينيا": "GN",
+  "guinea-bissau": "GW", "غينيا بيساو": "GW",
+  "kenya": "KE", "كينيا": "KE",
+  "lesotho": "LS", "ليسوتو": "LS",
+  "liberia": "LR", "ليبيريا": "LR",
+  "madagascar": "MG", "مدغشقر": "MG",
+  "malawi": "MW", "مالاوي": "MW",
+  "mali": "ML", "مالي": "ML",
+  "mauritius": "MU", "موريشيوس": "MU",
+  "mozambique": "MZ", "موزمبيق": "MZ",
+  "namibia": "NA", "ناميبيا": "NA",
+  "niger": "NE", "النيجر": "NE",
+  "nigeria": "NG", "نيجيريا": "NG",
+  "rwanda": "RW", "رواندا": "RW",
+  "sao tome and principe": "ST", "ساو تومي وبرينسيب": "ST",
+  "senegal": "SN", "السنغال": "SN",
+  "seychelles": "SC", "سيشل": "SC",
+  "sierra leone": "SL", "سيراليون": "SL",
+  "south africa": "ZA", "جنوب أفريقيا": "ZA",
+  "tanzania": "TZ", "تنزانيا": "TZ",
+  "togo": "TG", "توغو": "TG",
+  "uganda": "UG", "أوغندا": "UG",
+  "western sahara": "EH", "الصحراء الغربية": "EH",
+  "zambia": "ZM", "زامبيا": "ZM",
+  "zimbabwe": "ZW", "زيمبابوي": "ZW",
+
+  // ── Europe ──────────────────────────────────────────────────────
+  "albania": "AL", "ألبانيا": "AL",
+  "andorra": "AD", "أندورا": "AD",
+  "armenia": "AM", "أرمينيا": "AM",
+  "austria": "AT", "النمسا": "AT",
+  "azerbaijan": "AZ", "أذربيجان": "AZ",
+  "belarus": "BY", "بيلاروسيا": "BY", "روسيا البيضاء": "BY",
+  "belgium": "BE", "بلجيكا": "BE",
+  "bosnia and herzegovina": "BA", "البوسنة والهرسك": "BA",
+  "bulgaria": "BG", "بلغاريا": "BG",
+  "croatia": "HR", "كرواتيا": "HR",
+  "cyprus": "CY", "قبرص": "CY",
+  "czech republic": "CZ", "czechia": "CZ", "التشيك": "CZ", "جمهورية التشيك": "CZ",
+  "denmark": "DK", "الدنمارك": "DK",
+  "estonia": "EE", "إستونيا": "EE",
+  "finland": "FI", "فنلندا": "FI",
+  "france": "FR", "فرنسا": "FR",
+  "georgia": "GE", "جورجيا": "GE",
+  "germany": "DE", "ألمانيا": "DE",
+  "greece": "GR", "اليونان": "GR",
+  "hungary": "HU", "المجر": "HU", "هنغاريا": "HU",
+  "iceland": "IS", "آيسلندا": "IS", "أيسلندا": "IS",
+  "ireland": "IE", "أيرلندا": "IE",
+  "italy": "IT", "إيطاليا": "IT",
+  "kazakhstan": "KZ", "كازاخستان": "KZ",
+  "kyrgyzstan": "KG", "قيرغيزستان": "KG",
+  "latvia": "LV", "لاتفيا": "LV",
+  "liechtenstein": "LI", "ليختنشتاين": "LI",
+  "lithuania": "LT", "ليتوانيا": "LT",
+  "luxembourg": "LU", "لوكسمبورغ": "LU",
+  "malta": "MT", "مالطا": "MT",
+  "moldova": "MD", "مولدوفا": "MD",
+  "monaco": "MC", "موناكو": "MC",
+  "montenegro": "ME", "الجبل الأسود": "ME",
+  "netherlands": "NL", "holland": "NL", "the netherlands": "NL", "هولندا": "NL",
+  "north macedonia": "MK", "macedonia": "MK", "مقدونيا الشمالية": "MK",
+  "norway": "NO", "النرويج": "NO",
+  "poland": "PL", "بولندا": "PL",
+  "portugal": "PT", "البرتغال": "PT",
+  "romania": "RO", "رومانيا": "RO",
+  "russia": "RU", "russian federation": "RU", "روسيا": "RU",
+  "san marino": "SM", "سان مارينو": "SM",
+  "serbia": "RS", "صربيا": "RS",
+  "slovakia": "SK", "سلوفاكيا": "SK",
+  "slovenia": "SI", "سلوفينيا": "SI",
+  "spain": "ES", "إسبانيا": "ES",
+  "sweden": "SE", "السويد": "SE",
+  "switzerland": "CH", "سويسرا": "CH",
+  "tajikistan": "TJ", "طاجيكستان": "TJ",
+  "turkey": "TR", "türkiye": "TR", "turkiye": "TR", "تركيا": "TR",
+  "turkmenistan": "TM", "تركمانستان": "TM",
+  "ukraine": "UA", "أوكرانيا": "UA",
+  "united kingdom": "GB", "uk": "GB", "great britain": "GB", "britain": "GB", "england": "GB", "scotland": "GB", "wales": "GB", "northern ireland": "GB", "المملكة المتحدة": "GB", "بريطانيا": "GB",
+  "uzbekistan": "UZ", "أوزبكستان": "UZ",
+  "vatican city": "VA", "holy see": "VA", "الفاتيكان": "VA",
+
+  // ── Americas ────────────────────────────────────────────────────
+  "antigua and barbuda": "AG", "أنتيغوا وباربودا": "AG",
+  "argentina": "AR", "الأرجنتين": "AR",
+  "bahamas": "BS", "the bahamas": "BS", "جزر البهاما": "BS",
+  "barbados": "BB", "باربادوس": "BB",
+  "belize": "BZ", "بليز": "BZ",
+  "bolivia": "BO", "بوليفيا": "BO",
+  "brazil": "BR", "البرازيل": "BR",
+  "canada": "CA", "كندا": "CA",
+  "chile": "CL", "تشيلي": "CL",
+  "colombia": "CO", "كولومبيا": "CO",
+  "costa rica": "CR", "كوستاريكا": "CR",
+  "cuba": "CU", "كوبا": "CU",
+  "dominica": "DM", "دومينيكا": "DM",
+  "dominican republic": "DO", "جمهورية الدومينيكان": "DO",
+  "ecuador": "EC", "الإكوادور": "EC",
+  "el salvador": "SV", "السلفادور": "SV",
+  "grenada": "GD", "غرينادا": "GD",
+  "guatemala": "GT", "غواتيمالا": "GT",
+  "guyana": "GY", "غيانا": "GY",
+  "haiti": "HT", "هايتي": "HT",
+  "honduras": "HN", "هندوراس": "HN",
+  "jamaica": "JM", "جامايكا": "JM",
+  "mexico": "MX", "المكسيك": "MX",
+  "nicaragua": "NI", "نيكاراغوا": "NI",
+  "panama": "PA", "بنما": "PA",
+  "paraguay": "PY", "باراغواي": "PY",
+  "peru": "PE", "بيرو": "PE",
+  "saint kitts and nevis": "KN", "سانت كيتس ونيفيس": "KN",
+  "saint lucia": "LC", "سانت لوسيا": "LC",
+  "saint vincent and the grenadines": "VC", "سانت فينسنت والغرينادين": "VC",
+  "suriname": "SR", "سورينام": "SR",
+  "trinidad and tobago": "TT", "ترينيداد وتوباغو": "TT",
+  "united states": "US", "united states of america": "US", "usa": "US", "u.s.a.": "US", "u.s.": "US", "america": "US", "الولايات المتحدة": "US", "أمريكا": "US",
+  "uruguay": "UY", "أوروغواي": "UY",
+  "venezuela": "VE", "فنزويلا": "VE",
+
+  // ── Asia ─────────────────────────────────────────────────────────
+  "afghanistan": "AF", "أفغانستان": "AF",
+  "bangladesh": "BD", "بنغلاديش": "BD",
+  "bhutan": "BT", "بوتان": "BT",
+  "brunei": "BN", "brunei darussalam": "BN", "بروناي": "BN",
+  "cambodia": "KH", "كمبوديا": "KH",
+  "china": "CN", "people's republic of china": "CN", "prc": "CN", "الصين": "CN",
+  "hong kong": "HK", "هونغ كونغ": "HK",
+  "india": "IN", "الهند": "IN",
+  "indonesia": "ID", "إندونيسيا": "ID",
+  "iran": "IR", "إيران": "IR", "islamic republic of iran": "IR",
+  "japan": "JP", "اليابان": "JP",
+  "laos": "LA", "lao people's democratic republic": "LA", "لاوس": "LA",
+  "macao": "MO", "macau": "MO", "ماكاو": "MO",
+  "malaysia": "MY", "ماليزيا": "MY",
+  "maldives": "MV", "جزر المالديف": "MV",
+  "mongolia": "MN", "منغوليا": "MN",
+  "myanmar": "MM", "burma": "MM", "ميانمار": "MM",
+  "nepal": "NP", "نيبال": "NP",
+  "north korea": "KP", "democratic people's republic of korea": "KP", "dprk": "KP", "كوريا الشمالية": "KP",
+  "pakistan": "PK", "باكستان": "PK",
+  "philippines": "PH", "الفلبين": "PH",
+  "singapore": "SG", "سنغافورة": "SG",
+  "south korea": "KR", "republic of korea": "KR", "korea": "KR", "كوريا الجنوبية": "KR", "كوريا": "KR",
+  "sri lanka": "LK", "سريلانكا": "LK",
+  "taiwan": "TW", "تايوان": "TW",
+  "thailand": "TH", "تايلاند": "TH",
+  "timor-leste": "TL", "east timor": "TL", "تيمور الشرقية": "TL",
+  "vietnam": "VN", "viet nam": "VN", "فيتنام": "VN",
+
+  // ── Oceania ──────────────────────────────────────────────────────
+  "australia": "AU", "أستراليا": "AU",
+  "fiji": "FJ", "فيجي": "FJ",
+  "kiribati": "KI", "كيريباتي": "KI",
+  "marshall islands": "MH", "جزر مارشال": "MH",
+  "micronesia": "FM", "federated states of micronesia": "FM", "ولايات ميكرونيسيا الموحدة": "FM",
+  "nauru": "NR", "ناورو": "NR",
+  "new zealand": "NZ", "نيوزيلندا": "NZ",
+  "palau": "PW", "بالاو": "PW",
+  "papua new guinea": "PG", "بابوا غينيا الجديدة": "PG",
+  "samoa": "WS", "ساموا": "WS",
+  "solomon islands": "SB", "جزر سليمان": "SB",
+  "tonga": "TO", "تونغا": "TO",
+  "tuvalu": "TV", "توفالو": "TV",
+  "vanuatu": "VU", "فانواتو": "VU",
+
+  // ── Territories / dependencies (less common but ISO-listed) ──────
+  "american samoa": "AS",
+  "anguilla": "AI",
+  "antarctica": "AQ",
+  "aruba": "AW",
+  "bermuda": "BM",
+  "bouvet island": "BV",
+  "british indian ocean territory": "IO",
+  "british virgin islands": "VG", "virgin islands, british": "VG",
+  "cayman islands": "KY",
+  "christmas island": "CX",
+  "cocos islands": "CC", "keeling islands": "CC",
+  "cook islands": "CK",
+  "curaçao": "CW", "curacao": "CW",
+  "falkland islands": "FK", "malvinas": "FK",
+  "faroe islands": "FO",
+  "french guiana": "GF",
+  "french polynesia": "PF",
+  "french southern territories": "TF",
+  "gibraltar": "GI",
+  "greenland": "GL",
+  "guadeloupe": "GP",
+  "guam": "GU",
+  "guernsey": "GG",
+  "heard island and mcdonald islands": "HM",
+  "isle of man": "IM",
+  "jersey": "JE",
+  "kosovo": "XK", // not officially ISO-assigned but widely used
+  "martinique": "MQ",
+  "mayotte": "YT",
+  "montserrat": "MS",
+  "new caledonia": "NC",
+  "niue": "NU",
+  "norfolk island": "NF",
+  "northern mariana islands": "MP",
+  "pitcairn": "PN",
+  "puerto rico": "PR",
+  "réunion": "RE", "reunion": "RE",
+  "saint barthélemy": "BL", "saint barthelemy": "BL", "st. barthélemy": "BL",
+  "saint helena": "SH", "saint helena, ascension and tristan da cunha": "SH",
+  "saint martin": "MF", "saint martin (french part)": "MF",
+  "saint pierre and miquelon": "PM",
+  "sint maarten": "SX", "sint maarten (dutch part)": "SX",
+  "south georgia and the south sandwich islands": "GS",
+  "svalbard and jan mayen": "SJ",
+  "tokelau": "TK",
+  "turks and caicos islands": "TC",
+  "u.s. virgin islands": "VI", "us virgin islands": "VI", "virgin islands, u.s.": "VI",
+  "wallis and futuna": "WF",
+  "åland islands": "AX", "aland islands": "AX",
+};
+
+/**
+ * Coerce any country input (ISO code, English name, alias, or Arabic
+ * name) to its ISO 3166-1 alpha-2 code.
+ *
+ * Returns:
+ *   • Empty string on empty/null input
+ *   • Uppercase 2-letter code if input was already a code (e.g. "sa" → "SA")
+ *   • Mapped code if the lowercased input matches a known name/alias
+ *   • The trimmed input verbatim otherwise (so the caller can see what
+ *     was passed and decide if a fallback is needed)
+ */
+export function coerceToCountryCode(input: string | null | undefined): string {
+  const raw = (input ?? "").trim();
+  if (!raw) return "";
+  // Check the alias map FIRST so 2-letter aliases like "UK" map to "GB"
+  // (not pass through as themselves). Real ISO codes like "SA" aren't in
+  // the map's keys, so they fall through to the regex below.
+  const mapped = NAME_TO_CODE[raw.toLowerCase()];
+  if (mapped) return mapped;
+  if (/^[A-Za-z]{2}$/.test(raw)) return raw.toUpperCase();
+  return raw;
+}

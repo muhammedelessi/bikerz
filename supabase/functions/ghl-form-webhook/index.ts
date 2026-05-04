@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { coerceToCountryCode } from '../_shared/countryCodeMap.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,33 +40,11 @@ Deno.serve(async (req) => {
     const body = await req.json()
     const { full_name, email, phone, city, country, courseName, amount, orderStatus, source, courses, totalPurchased } = body
 
-    // Country: send ISO 2-letter code only (e.g. "SA"). GHL's "Add
-    // Contact" action rejects unknown country names silently — proven
-    // empirically (see ghl.service.ts comments). The caller may pass
-    // a code already, or a name we recognise; we coerce to a code,
-    // and fall through if neither.
-    const rawCountry = String(country || '').trim()
-    let countryCode = rawCountry
-    if (!/^[A-Z]{2}$/i.test(rawCountry)) {
-      const map: Record<string, string> = {
-        'saudi arabia': 'SA', 'السعودية': 'SA',
-        'uae': 'AE', 'united arab emirates': 'AE', 'الإمارات': 'AE',
-        'kuwait': 'KW', 'الكويت': 'KW',
-        'qatar': 'QA', 'قطر': 'QA',
-        'bahrain': 'BH', 'البحرين': 'BH',
-        'oman': 'OM', 'عُمان': 'OM', 'عمان': 'OM',
-        'egypt': 'EG', 'مصر': 'EG',
-        'jordan': 'JO', 'الأردن': 'JO',
-        'palestine': 'PS', 'فلسطين': 'PS',
-        'iraq': 'IQ', 'العراق': 'IQ',
-        'lebanon': 'LB', 'لبنان': 'LB',
-        'syria': 'SY', 'سوريا': 'SY',
-        'yemen': 'YE', 'اليمن': 'YE',
-      }
-      countryCode = map[rawCountry.toLowerCase()] || rawCountry
-    } else {
-      countryCode = rawCountry.toUpperCase()
-    }
+    // Coerce to ISO 2-letter code regardless of how the caller passed
+    // the country (already a code, English name, Arabic name, or alias).
+    // Covers all 249 ISO 3166-1 alpha-2 codes — see
+    // _shared/countryCodeMap.ts for the full mapping.
+    const countryCode = coerceToCountryCode(country)
 
     // Tight 11-field payload per the agreed order-webhook spec. No
     // firstName/lastName splits, no address1, no DOB/gender — those

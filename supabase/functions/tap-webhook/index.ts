@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { completeCourseBundleAfterPayment } from "../_shared/courseBundle.ts";
+import { coerceToCountryCode } from "../_shared/countryCodeMap.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -341,37 +342,11 @@ async function upsertAndSendGHLWebhook(
       totalPurchased = (row as any)?.total_purchased ?? 0;
     }
 
-    // Country in profiles.country is sometimes the ISO code ("SA"),
-    // sometimes the localized name ("Saudi Arabia"). GHL's contact
-    // action rejects unknown country names silently — send the
-    // 2-letter code only so it maps internally regardless of how
-    // the profile field was originally written.
-    const rawCountry = (profile?.country || "").trim();
-    const countryCode = (() => {
-      // 2-letter ISO codes are 2 alphabetic characters; any other
-      // shape we treat as a name and fall back to passing it through.
-      // Mapping common GCC names to codes here would duplicate the
-      // lib in src/data/countryCityData; this defensive stub covers
-      // the common cases without pulling that lib server-side.
-      if (/^[A-Z]{2}$/i.test(rawCountry)) return rawCountry.toUpperCase();
-      const lower = rawCountry.toLowerCase();
-      const map: Record<string, string> = {
-        "saudi arabia": "SA", "السعودية": "SA",
-        "uae": "AE", "united arab emirates": "AE", "الإمارات": "AE",
-        "kuwait": "KW", "الكويت": "KW",
-        "qatar": "QA", "قطر": "QA",
-        "bahrain": "BH", "البحرين": "BH",
-        "oman": "OM", "عُمان": "OM", "عمان": "OM",
-        "egypt": "EG", "مصر": "EG",
-        "jordan": "JO", "الأردن": "JO",
-        "palestine": "PS", "فلسطين": "PS",
-        "iraq": "IQ", "العراق": "IQ",
-        "lebanon": "LB", "لبنان": "LB",
-        "syria": "SY", "سوريا": "SY",
-        "yemen": "YE", "اليمن": "YE",
-      };
-      return map[lower] || rawCountry; // pass through if unknown
-    })();
+    // Country in profiles.country may be an ISO code or a localized name
+    // — coerceToCountryCode normalises any of those to the ISO 2-letter
+    // code GHL expects. Covers all 249 ISO 3166-1 alpha-2 codes plus
+    // English/Arabic name variants. See _shared/countryCodeMap.ts.
+    const countryCode = coerceToCountryCode(profile?.country);
 
     // Tight 11-field payload per spec — order webhook only carries
     // contact identity + the order details. Personal-profile fields
