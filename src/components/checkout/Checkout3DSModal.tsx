@@ -55,6 +55,7 @@ interface Checkout3DSModalProps {
 const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ url, onCancel, onVerifyNow }, ref) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === 'rtl';
+  const [showAutoCheck, setShowAutoCheck] = useState(false);
   const [showStuckHint, setShowStuckHint] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
@@ -68,14 +69,16 @@ const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ ur
     };
   }, []);
 
-  // Show the "still waiting?" hint after 20 s. Cross-origin iframe
-  // navigation fails on most real bank flows, so the user can't rely on
-  // the redirect. Surfacing the hint early + the "Verify status now"
-  // button lets them escape within seconds instead of staring at a stuck
-  // spinner for a full minute. The background polling (useTapPayment)
-  // will also auto-resolve — this hint is a belt-and-suspenders UX.
+  // Show a subtle "auto-checking" indicator at 8 s — the user sees that
+  // the system is actively working even while the iframe looks idle.
   useEffect(() => {
-    const id = setTimeout(() => setShowStuckHint(true), 20_000);
+    const id = setTimeout(() => setShowAutoCheck(true), 8_000);
+    return () => clearTimeout(id);
+  }, []);
+
+  // Show the full "still waiting?" hint with action buttons at 15 s.
+  useEffect(() => {
+    const id = setTimeout(() => setShowStuckHint(true), 15_000);
     return () => clearTimeout(id);
   }, []);
 
@@ -142,7 +145,21 @@ const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ ur
           referrerPolicy="no-referrer-when-downgrade"
         />
 
-        {/* "Still waiting?" hint — appears after 60 s.
+        {/* Auto-check indicator — appears at 8 s, before the full stuck
+            hint. Tells the user the system is actively verifying even
+            while the iframe may look frozen. */}
+        {showAutoCheck && !showStuckHint && (
+          <div className="px-4 py-2 bg-emerald-500/10 border-t border-emerald-500/20 flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300 flex-shrink-0">
+            <RefreshCw className="w-3 h-3 animate-spin shrink-0" />
+            <span className="leading-tight font-medium">
+              {isRTL
+                ? 'نتحقق من حالة الدفع تلقائياً… بعد إدخال الرمز سيتم التحويل مباشرة.'
+                : 'Auto-checking payment status… you\'ll be redirected once confirmed.'}
+            </span>
+          </div>
+        )}
+
+        {/* "Still waiting?" hint — appears after 15 s.
             Now offers TWO actions:
               1. "Verify status now" — for users who completed OTP but are
                  stuck on Tap's loading spinner (the cross-origin redirect
