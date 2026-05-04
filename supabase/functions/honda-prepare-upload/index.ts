@@ -59,14 +59,22 @@ Deno.serve(async (req) => {
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
   // Verify the caller is an authenticated user before doing anything else.
+  // We use getClaims(token) (JWKS-based, local verification) rather than
+  // getUser() because getUser() round-trips to GoTrue and was 401-ing
+  // intermittently after the signing-keys migration even for valid
+  // sessions. getClaims gives us the same `sub` we need without the
+  // network hop.
+  const token = authHeader.replace("Bearer ", "");
   const userClient = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: authHeader } },
   });
-  const { data: userData, error: userError } = await userClient.auth.getUser();
-  if (userError || !userData?.user) {
+  const { data: claimsData, error: claimsError } =
+    await userClient.auth.getClaims(token);
+  if (claimsError || !claimsData?.claims?.sub) {
+    console.error("[honda-prepare-upload] getClaims failed:", claimsError);
     return jsonResponse(401, { error: "Unauthorized" });
   }
-  const userId = userData.user.id;
+  const userId = claimsData.claims.sub as string;
 
   // Read the requested extension off the body so the path matches the
   // file the user picked (Supabase doesn't infer it from the upload).
