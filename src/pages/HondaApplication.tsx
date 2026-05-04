@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -120,6 +119,12 @@ const HondaApplication: React.FC = () => {
   const [docFile, setDocFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Inline validation + submission errors shown ABOVE the submit button.
+  // We keep field-level errors keyed by field name so we can render a
+  // red ring + a per-field message; `formError` is the catch-all
+  // (upload failed, AI rejection reason, etc.).
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
 
   // ── Existing application lookup ────────────────────────────────────
   // Drives the page state machine: form vs. status-card.
@@ -180,6 +185,15 @@ const HondaApplication: React.FC = () => {
       if (application.motorcycle_year) {
         setMotorcycleYear(String(application.motorcycle_year));
       }
+      // If the previous AI attempt rejected this application but retries
+      // remain (status still `pending_ai`), surface the localized reason
+      // inline at the bottom of the form so the user knows what to fix.
+      if (application.status === 'pending_ai' && (application.ai_attempts ?? 0) > 0) {
+        const prevReason = isRTL
+          ? application.ai_last_response?.reason_ar || application.ai_decision_reason
+          : application.ai_last_response?.reason_en || application.ai_decision_reason;
+        if (prevReason) setFormError(prevReason);
+      }
     } else if (profile) {
       // No application yet — fall back to profile fields, normalising
       // country/city because profile storage is inconsistent between
@@ -198,28 +212,44 @@ const HondaApplication: React.FC = () => {
   const yearNow = new Date().getFullYear();
 
   // ── Validation ─────────────────────────────────────────────────────
-  const canSubmit = useMemo(() => {
-    if (submitting) return false;
-    if (!fullName.trim()) return false;
-    if (!dob) return false;
-    if (!country.trim()) return false;
-    if (!city.trim()) return false;
-    if (!motorcycleModel.trim()) return false;
+  // Submit button stays enabled so the user can click and SEE which field
+  // is wrong (instead of being silently blocked). Actual gating happens
+  // inside handleSubmit via validateForm().
+  const validateForm = (): boolean => {
+    const errs: Record<string, string> = {};
+    if (!fullName.trim()) {
+      errs.fullName = isRTL ? 'الاسم الكامل مطلوب' : 'Full name is required';
+    } else if (fullName.trim().length < 2) {
+      errs.fullName = isRTL ? 'الاسم قصير جداً' : 'Name is too short';
+    }
+    if (!dob) {
+      errs.dob = isRTL ? 'تاريخ الميلاد مطلوب' : 'Date of birth is required';
+    }
+    if (!country.trim()) {
+      errs.country = isRTL ? 'الدولة مطلوبة' : 'Country is required';
+    }
+    if (!city.trim()) {
+      errs.city = isRTL ? 'المدينة مطلوبة' : 'City is required';
+    }
+    if (!motorcycleModel.trim()) {
+      errs.motorcycleModel = isRTL ? 'موديل الدراجة مطلوب' : 'Motorcycle model is required';
+    }
     const yearNum = Number(motorcycleYear);
-    if (!Number.isFinite(yearNum) || yearNum < 1900 || yearNum > yearNow + 1) return false;
-    if (!docFile) return false;
-    return true;
-  }, [
-    submitting,
-    fullName,
-    dob,
-    country,
-    city,
-    motorcycleModel,
-    motorcycleYear,
-    docFile,
-    yearNow,
-  ]);
+    if (!motorcycleYear) {
+      errs.motorcycleYear = isRTL ? 'سنة الصنع مطلوبة' : 'Year is required';
+    } else if (!Number.isFinite(yearNum) || yearNum < 1900 || yearNum > yearNow + 1) {
+      errs.motorcycleYear = isRTL
+        ? `أدخل سنة بين 1900 و ${yearNow + 1}`
+        : `Enter a year between 1900 and ${yearNow + 1}`;
+    }
+    if (!docFile) {
+      errs.docFile = isRTL
+        ? 'يرجى رفع وثيقة تسجيل الدراجة'
+        : 'Please upload your registration document';
+    }
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
   // ── File handlers ──────────────────────────────────────────────────
   const onFileChange = (file: File | null) => {
@@ -228,21 +258,28 @@ const HondaApplication: React.FC = () => {
       return;
     }
     if (file.size > MAX_FILE_BYTES) {
-      toast.error(
-        isRTL ? 'حجم الملف يجب ألا يتجاوز 10 ميجابايت' : 'File must be 10 MB or smaller',
-      );
+      setFieldErrors((p) => ({
+        ...p,
+        docFile: isRTL ? 'حجم الملف يجب ألا يتجاوز 10 ميجابايت' : 'File must be 10 MB or smaller',
+      }));
       return;
     }
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      toast.error(
-        isRTL
+      setFieldErrors((p) => ({
+        ...p,
+        docFile: isRTL
           ? 'الصيغة غير مدعومة — استخدم JPG أو PNG أو PDF'
           : 'Unsupported format — use JPG, PNG, or PDF',
-      );
+      }));
       return;
     }
+    setFieldErrors((p) => {
+      const { docFile: _omit, ...rest } = p;
+      return rest;
+    });
     setDocFile(file);
   };
+
 
   // ── Submit ─────────────────────────────────────────────────────────
   // 1) Upload doc to storage. 2) Insert honda_applications row. 3) Call
@@ -250,17 +287,21 @@ const HondaApplication: React.FC = () => {
   // the page swaps to the result-card view.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !canSubmit || !docFile) return;
+    if (!user) return;
+    setFormError(null);
+    if (!validateForm()) {
+      setFormError(
+        isRTL
+          ? 'يرجى تصحيح الحقول المميزة بالأحمر قبل المتابعة.'
+          : 'Please correct the highlighted fields before continuing.',
+      );
+      return;
+    }
+    if (!docFile) return;
     setSubmitting(true);
     try {
       const ext = (docFile.name.split('.').pop() || 'jpg').toLowerCase();
 
-      // Server-side mints a one-time signed upload URL. This bypasses
-      // RLS on storage.objects entirely — the URL itself carries the
-      // authorisation token — and the edge function ALSO ensures the
-      // bucket exists (idempotent). End result: the upload works
-      // regardless of where the storage policies / bucket are in
-      // their migration cycle.
       const { data: prep, error: prepErr } = await supabase.functions.invoke(
         'honda-prepare-upload',
         { body: { ext } },
@@ -278,9 +319,6 @@ const HondaApplication: React.FC = () => {
         path: string;
       };
 
-      // PUT the file directly to the signed URL. The signed URL has
-      // its own auth, so we don't pass the user's bearer token — that
-      // would actually conflict.
       const putRes = await fetch(uploadUrl, {
         method: 'PUT',
         headers: { 'Content-Type': docFile.type || 'application/octet-stream' },
@@ -296,8 +334,6 @@ const HondaApplication: React.FC = () => {
         );
       }
 
-      // If a previous application exists in pending_ai (≤3 attempts), reuse it
-      // so ai_attempts continues to increment correctly. Otherwise insert new.
       let applicationId: string;
       if (
         application &&
@@ -337,47 +373,43 @@ const HondaApplication: React.FC = () => {
         applicationId = ins!.id as string;
       }
 
-      // Run AI verification.
+      // Run AI verification. All outcomes (approval / manual review /
+      // rejection-with-attempts-left) are surfaced via the page state
+      // machine after invalidateQueries refetches the row — we no longer
+      // pop a toast here. The rejection reason is rendered inline at the
+      // bottom of the form via `formError` so users can read it without
+      // it disappearing on its own.
       const { data: verifyData, error: verifyErr } = await supabase.functions.invoke(
         'honda-verify-document',
         { body: { application_id: applicationId } },
       );
       if (verifyErr) {
-        // Soft-fail: row is in DB; show a toast and refetch so the user sees
-        // a "needs manual review" state if the function bumped ai_attempts.
         console.error('[Honda] verify error:', verifyErr);
-        toast.error(
+        setFormError(
           isRTL
-            ? 'تعذر التحقق الآن — تم حفظ طلبك، فريقنا سيراجعه يدوياً'
-            : "Couldn't verify right now — your application was saved for manual review",
+            ? 'تعذر التحقق الآن — تم حفظ طلبك وسيراجعه فريقنا يدوياً.'
+            : "Couldn't verify right now — your application was saved for manual review.",
         );
       } else {
         const status = (verifyData as { status?: string })?.status;
         const reason = isRTL
           ? (verifyData as { reason_ar?: string })?.reason_ar
           : (verifyData as { reason_en?: string })?.reason_en;
-        if (status === 'approved') {
-          toast.success(
-            isRTL
-              ? 'تم القبول! كورس "فكر ماذا لو" أصبح متاحاً مجاناً.'
-              : 'Approved! The "What If" course is now free for you.',
-          );
-        } else if (status === 'needs_manual_review') {
-          toast.info(
-            isRTL
-              ? 'سيقوم فريقنا بمراجعة طلبك يدوياً'
-              : 'Your application has been queued for manual review',
-          );
-        } else if (reason) {
-          toast.error(reason);
+        // Only set inline error when the AI actively rejected this attempt
+        // AND the user still has retries (status stays `pending_ai`).
+        // Approved / needs_manual_review will swap the whole page via the
+        // status views — no inline message needed.
+        if (status === 'pending_ai' && reason) {
+          setFormError(reason);
+        } else if (status && status !== 'approved' && status !== 'needs_manual_review' && reason) {
+          setFormError(reason);
         }
       }
-      // Refresh.
       await queryClient.invalidateQueries({ queryKey: ['honda-application', user.id] });
     } catch (err) {
       console.error('[Honda] submit failed:', err);
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error(msg || (isRTL ? 'تعذر إرسال الطلب' : 'Could not submit'));
+      setFormError(msg || (isRTL ? 'تعذر إرسال الطلب' : 'Could not submit'));
     } finally {
       setSubmitting(false);
     }
@@ -536,42 +568,7 @@ const HondaApplication: React.FC = () => {
           </p>
         </div>
 
-        {/* Retry banner (only if a previous attempt failed) */}
-        {application?.status === 'pending_ai' && attemptsUsed > 0 && (
-          <Card className="border-amber-500/30 bg-amber-500/5">
-            <CardContent className="py-4 flex gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-              <div className="text-sm space-y-1 min-w-0">
-                <p className="font-semibold">
-                  {isRTL
-                    ? `محاولة ${attemptsUsed + 1} من 3`
-                    : `Attempt ${attemptsUsed + 1} of 3`}
-                </p>
-                {(() => {
-                  const reasonText = isRTL
-                    ? application.ai_last_response?.reason_ar ||
-                      application.ai_decision_reason
-                    : application.ai_last_response?.reason_en ||
-                      application.ai_decision_reason;
-                  return reasonText ? (
-                    <p className="text-muted-foreground break-words">
-                      {reasonText}
-                    </p>
-                  ) : null;
-                })()}
-                <p className="text-xs text-muted-foreground">
-                  {isRTL
-                    ? `تبقّى لك ${attemptsRemaining} ${
-                        attemptsRemaining === 1 ? 'محاولة' : 'محاولات'
-                      } قبل أن يتم تحويل الطلب لمراجعة الادمن.`
-                    : `${attemptsRemaining} ${
-                        attemptsRemaining === 1 ? 'attempt' : 'attempts'
-                      } remaining before manual review.`}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Top retry banner removed — rejection reason now appears inline at the bottom of the form. */}
 
         <Card>
           <CardHeader>
@@ -592,8 +589,12 @@ const HondaApplication: React.FC = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder={isRTL ? 'كما يظهر في الرخصة' : 'As it appears on the registration'}
-                  required
+                  aria-invalid={!!fieldErrors.fullName}
+                  className={cn(fieldErrors.fullName && 'border-destructive focus-visible:ring-destructive')}
                 />
+                {fieldErrors.fullName && (
+                  <p className="text-xs text-destructive">{fieldErrors.fullName}</p>
+                )}
               </div>
 
               {/* Date of birth */}
@@ -624,8 +625,12 @@ const HondaApplication: React.FC = () => {
                     value={motorcycleModel}
                     onChange={(e) => setMotorcycleModel(e.target.value)}
                     placeholder={isRTL ? 'مثال: CBR 500R' : 'e.g. CBR 500R'}
-                    required
+                    aria-invalid={!!fieldErrors.motorcycleModel}
+                    className={cn(fieldErrors.motorcycleModel && 'border-destructive focus-visible:ring-destructive')}
                   />
+                  {fieldErrors.motorcycleModel && (
+                    <p className="text-xs text-destructive">{fieldErrors.motorcycleModel}</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="honda-year">
@@ -641,8 +646,12 @@ const HondaApplication: React.FC = () => {
                     value={motorcycleYear}
                     onChange={(e) => setMotorcycleYear(e.target.value)}
                     placeholder={String(yearNow)}
-                    required
+                    aria-invalid={!!fieldErrors.motorcycleYear}
+                    className={cn(fieldErrors.motorcycleYear && 'border-destructive focus-visible:ring-destructive')}
                   />
+                  {fieldErrors.motorcycleYear && (
+                    <p className="text-xs text-destructive">{fieldErrors.motorcycleYear}</p>
+                  )}
                 </div>
               </div>
 
@@ -664,9 +673,11 @@ const HondaApplication: React.FC = () => {
                   onClick={() => fileInputRef.current?.click()}
                   className={cn(
                     'w-full border-2 border-dashed rounded-xl px-4 py-6 text-sm transition-colors',
-                    docFile
-                      ? 'border-primary/50 bg-primary/5'
-                      : 'border-border hover:border-primary/50 hover:bg-muted/30',
+                    fieldErrors.docFile
+                      ? 'border-destructive bg-destructive/5'
+                      : docFile
+                        ? 'border-primary/50 bg-primary/5'
+                        : 'border-border hover:border-primary/50 hover:bg-muted/30',
                   )}
                 >
                   {docFile ? (
@@ -689,6 +700,9 @@ const HondaApplication: React.FC = () => {
                     </span>
                   )}
                 </button>
+                {fieldErrors.docFile && (
+                  <p className="text-xs text-destructive">{fieldErrors.docFile}</p>
+                )}
                 <p className="text-xs text-muted-foreground leading-relaxed pt-1">
                   {isRTL
                     ? 'سيتم استخدام الوثيقة فقط للتحقق من ملكيتك دراجة Honda. لن تُشارك مع أي طرف آخر.'
@@ -696,12 +710,43 @@ const HondaApplication: React.FC = () => {
                 </p>
               </div>
 
+              {/* Bottom error block — shows AI rejection reason (in the
+                  active language) or any submission/validation failure.
+                  This replaces both the top retry banner and the toast. */}
+              {formError && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 flex gap-3"
+                >
+                  <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="text-sm space-y-1 min-w-0">
+                    <p className="font-semibold text-destructive">
+                      {isRTL ? 'تعذر إكمال الطلب' : 'We couldn’t complete your request'}
+                    </p>
+                    <p className="text-foreground/80 break-words leading-relaxed">
+                      {formError}
+                    </p>
+                    {application?.status === 'pending_ai' && attemptsUsed > 0 && (
+                      <p className="text-xs text-muted-foreground pt-1">
+                        {isRTL
+                          ? `محاولة ${Math.min(attemptsUsed + 1, 3)} من 3 · تبقّى لك ${attemptsRemaining} ${
+                              attemptsRemaining === 1 ? 'محاولة' : 'محاولات'
+                            } قبل التحويل للمراجعة اليدوية.`
+                          : `Attempt ${Math.min(attemptsUsed + 1, 3)} of 3 · ${attemptsRemaining} ${
+                              attemptsRemaining === 1 ? 'attempt' : 'attempts'
+                            } remaining before manual review.`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Submit */}
               <Button
                 type="submit"
                 size="lg"
                 className="w-full"
-                disabled={!canSubmit}
+                disabled={submitting}
               >
                 {submitting ? (
                   <>
