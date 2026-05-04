@@ -560,42 +560,7 @@ const HondaApplication: React.FC = () => {
           </p>
         </div>
 
-        {/* Retry banner (only if a previous attempt failed) */}
-        {application?.status === 'pending_ai' && attemptsUsed > 0 && (
-          <Card className="border-amber-500/30 bg-amber-500/5">
-            <CardContent className="py-4 flex gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-              <div className="text-sm space-y-1 min-w-0">
-                <p className="font-semibold">
-                  {isRTL
-                    ? `محاولة ${attemptsUsed + 1} من 3`
-                    : `Attempt ${attemptsUsed + 1} of 3`}
-                </p>
-                {(() => {
-                  const reasonText = isRTL
-                    ? application.ai_last_response?.reason_ar ||
-                      application.ai_decision_reason
-                    : application.ai_last_response?.reason_en ||
-                      application.ai_decision_reason;
-                  return reasonText ? (
-                    <p className="text-muted-foreground break-words">
-                      {reasonText}
-                    </p>
-                  ) : null;
-                })()}
-                <p className="text-xs text-muted-foreground">
-                  {isRTL
-                    ? `تبقّى لك ${attemptsRemaining} ${
-                        attemptsRemaining === 1 ? 'محاولة' : 'محاولات'
-                      } قبل أن يتم تحويل الطلب لمراجعة الادمن.`
-                    : `${attemptsRemaining} ${
-                        attemptsRemaining === 1 ? 'attempt' : 'attempts'
-                      } remaining before manual review.`}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Top retry banner removed — rejection reason now appears inline at the bottom of the form. */}
 
         <Card>
           <CardHeader>
