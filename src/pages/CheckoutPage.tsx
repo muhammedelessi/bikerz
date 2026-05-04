@@ -89,6 +89,11 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
       tap.registerCardReinit(() => {
         try {
           cardApiRef.current?.reinit();
+          // Clear the cached token. Without this the next Pay click
+          // detects lastTokenIdRef and reinits AGAIN on top of this
+          // refresh, leaving the user staring at "Validating card…"
+          // while two iframe lifecycles race.
+          lastTokenIdRef.current = null;
         } catch (e) {
           console.warn('[CheckoutPage] cardApi.reinit() threw:', e);
         }
@@ -199,6 +204,24 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
       source: visitSource,
     });
   }, [user, course.id, visitSource]);
+
+  // Proactive form reset on payment failure — prevents the "Validating
+  // card…" stuck state on the next Pay click. See CheckoutModal for the
+  // full reasoning; tl;dr: lastTokenIdRef being non-null sends the
+  // tokenize wrapper through reinit+wait+tokenize, which races visibly.
+  const lastFailedReinitRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (tap.status !== "failed") return;
+    const tag = tap.chargeId ?? `t-${Date.now()}`;
+    if (lastFailedReinitRef.current === tag) return;
+    lastFailedReinitRef.current = tag;
+    try {
+      cardApiRef.current?.reinit();
+      lastTokenIdRef.current = null;
+    } catch (e) {
+      console.warn('[CheckoutPage] post-failure reinit threw:', e);
+    }
+  }, [tap.status, tap.chargeId]);
 
   // Redirect to success page on charge success
   useEffect(() => {

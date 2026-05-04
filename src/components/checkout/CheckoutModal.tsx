@@ -86,6 +86,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     tap.registerCardReinit(() => {
       try {
         cardApiRef.current?.reinit();
+        // CRITICAL: clear the cached token. Without this, the next Pay
+        // click sees lastTokenIdRef.current and triggers a SECOND reinit
+        // — two iframe lifecycles racing leaves "جاري التحقق من البطاقة"
+        // stuck waiting for sdkReady.
+        lastTokenIdRef.current = null;
       } catch (e) {
         console.warn('[CheckoutModal] cardApi.reinit() threw:', e);
       }
@@ -490,6 +495,28 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     t,
     navigate,
   ]);
+
+  // When a payment FAILS (declined, 3DS auth-failed, etc.), proactively
+  // reset the card form. Without this, the next Pay click hits the
+  // recovery branch (lastTokenIdRef set → reinit + 250ms wait + tokenize)
+  // and the user stares at "جاري التحقق من البطاقة…" while two iframe
+  // lifecycles race. Resetting eagerly here means the next Pay click
+  // skips that branch entirely and runs against a fresh, ready iframe.
+  const lastFailedReinitRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (tap.status !== "failed") return;
+    // Use a token of the current chargeId so we don't reinit again for
+    // the same failed charge if the effect fires twice (e.g. fast renders).
+    const tag = tap.chargeId ?? `t-${Date.now()}`;
+    if (lastFailedReinitRef.current === tag) return;
+    lastFailedReinitRef.current = tag;
+    try {
+      cardApiRef.current?.reinit();
+      lastTokenIdRef.current = null;
+    } catch (e) {
+      console.warn('[CheckoutModal] post-failure reinit threw:', e);
+    }
+  }, [tap.status, tap.chargeId]);
 
   useEffect(() => {
     if (tap.status === "succeeded") {

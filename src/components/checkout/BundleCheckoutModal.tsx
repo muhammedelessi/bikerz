@@ -85,6 +85,10 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
     tap.registerCardReinit(() => {
       try {
         cardApiRef.current?.reinit();
+        // Clear the cached token so the next Pay click doesn't trigger a
+        // second reinit on top of this one (visible to the user as a
+        // stuck "Validating card…" banner).
+        lastTokenIdRef.current = null;
       } catch (e) {
         console.warn('[BundleCheckoutModal] cardApi.reinit() threw:', e);
       }
@@ -312,6 +316,24 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
     tap.status !== 'processing' &&
     tap.status !== 'verifying' &&
     tap.status !== 'challenging_3ds';
+
+  // Proactive form reset after payment failure. Mirrors CheckoutModal —
+  // without it, the next Pay click hits the lastTokenIdRef branch which
+  // spawns a second iframe lifecycle and leaves "جاري التحقق من البطاقة"
+  // visibly stuck.
+  const lastFailedReinitRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (tap.status !== 'failed') return;
+    const tag = tap.chargeId ?? `t-${Date.now()}`;
+    if (lastFailedReinitRef.current === tag) return;
+    lastFailedReinitRef.current = tag;
+    try {
+      cardApiRef.current?.reinit();
+      lastTokenIdRef.current = null;
+    } catch (e) {
+      console.warn('[BundleCheckoutModal] post-failure reinit threw:', e);
+    }
+  }, [tap.status, tap.chargeId]);
 
   const firstTitle = courses[0] ? (isRTL && courses[0].title_ar ? courses[0].title_ar : courses[0].title) : '';
   const handleNextToPayment = useCallback(() => {
