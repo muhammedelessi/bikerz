@@ -186,6 +186,15 @@ const HondaApplication: React.FC = () => {
       if (application.motorcycle_year) {
         setMotorcycleYear(String(application.motorcycle_year));
       }
+      // If the previous AI attempt rejected this application but retries
+      // remain (status still `pending_ai`), surface the localized reason
+      // inline at the bottom of the form so the user knows what to fix.
+      if (application.status === 'pending_ai' && (application.ai_attempts ?? 0) > 0) {
+        const prevReason = isRTL
+          ? application.ai_last_response?.reason_ar || application.ai_decision_reason
+          : application.ai_last_response?.reason_en || application.ai_decision_reason;
+        if (prevReason) setFormError(prevReason);
+      }
     } else if (profile) {
       // No application yet — fall back to profile fields, normalising
       // country/city because profile storage is inconsistent between
