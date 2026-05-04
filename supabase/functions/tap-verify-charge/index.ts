@@ -146,10 +146,23 @@ Deno.serve(async (req) => {
 
     if (!tapResponse) {
       console.error("Tap verify API error after all keys:", lastStatus, lastErrText.substring(0, 200));
-      const isRateLimited = lastStatus === 429;
+      const isTransient = lastStatus === 429 || (lastStatus >= 500 && lastStatus < 600);
+      if (isTransient) {
+        // Return 200 with a retryable signal so the client keeps polling
+        // instead of throwing and breaking the verify loop / blank-screening.
+        return new Response(
+          JSON.stringify({
+            status: "processing",
+            retryable: true,
+            transient: true,
+            message: "Payment gateway busy. Still verifying…",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       return new Response(
-        JSON.stringify({ error: isRateLimited ? "Payment gateway busy. Please refresh in a moment." : "Failed to verify charge" }),
-        { status: isRateLimited ? 503 : 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Failed to verify charge" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
