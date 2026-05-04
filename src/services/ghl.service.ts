@@ -196,6 +196,20 @@ export async function sendGHLProfileData(data: ProfileWebhookData): Promise<bool
   const { firstname, lastname } = splitNameForWebhook(fullName);
 
   // ── Fields shared by ALL four event types ─────────────────────────
+  // We deliberately DO NOT send the `country` name (e.g. "Saudi Arabia",
+  // "Palestine"). GHL's "Add/Update Contact" action validates the country
+  // value against its built-in country list and SILENTLY DROPS the entire
+  // contact when the value isn't recognised. We confirmed this empirically:
+  //
+  //   country: "Palestine"             → contact NOT created
+  //   country: "Palestinian Territory" → contact NOT created
+  //   country: "State of Palestine"    → contact NOT created
+  //   country: ""  + country_code: PS  → contact created ✓
+  //
+  // So we send the ISO 2-letter `country_code` only. GHL maps it to its
+  // internal country list. The workflow can derive the display name from
+  // the code via a {{custom_value.country_label}} mapping if needed —
+  // safer than us guessing which strings GHL accepts.
   const baseFields = {
     event_type: eventType,
     user_id: data.user_id ?? "",
@@ -203,7 +217,6 @@ export async function sendGHLProfileData(data: ProfileWebhookData): Promise<bool
     firstname,
     lastname,
     phone: data.phone ?? "",
-    country: resolveCountryEnglish(country) || "",
     country_code: toCountryCode(country) || "",
     city: resolveCityEnglish(city, country) || "",
   } as const;
@@ -224,11 +237,14 @@ export async function sendGHLProfileData(data: ProfileWebhookData): Promise<bool
 
     case "profile_update":
       // Full profile dump — every personal field the user can edit.
+      // `nationality` (the localized name) is dropped for the same reason
+      // as `country` above — GHL silently rejects the entire contact when
+      // the nationality value isn't in their built-in list. We send only
+      // the ISO code so the workflow can map it internally.
       payload = {
         ...baseFields,
         date_of_birth: data.date_of_birth ?? "",
         gender: data.gender ?? "",
-        nationality: resolveCountryEnglish(nationality) || "",
         nationality_code: toCountryCode(nationality) || "",
         rider_nickname: data.rider_nickname ?? "",
         postal_code: data.postal_code ?? "",
