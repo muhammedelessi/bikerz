@@ -2,6 +2,23 @@ import { supabase } from "@/integrations/supabase/client";
 import type { FormWebhookData } from "@/types/ghl";
 import { COUNTRIES } from "@/data/countryCityData";
 
+/**
+ * Stringify a payload with non-ASCII characters escaped as \uXXXX. This
+ * prevents the "أحمد → ???" mojibake we saw in GHL: even if GHL's JSON
+ * parser is misconfigured to interpret bytes as Latin-1 (instead of
+ * UTF-8), the escape sequences are pure ASCII and JSON-spec-compliant,
+ * so any parser will decode them back to the correct Unicode chars.
+ *
+ * The browser's fetch() already sends UTF-8 bytes for JSON.stringify
+ * output, but GHL's pipeline appears to drop characters above 0x7F in
+ * some configurations. ASCII-escaping is bulletproof against that.
+ */
+function asciiSafeJson(obj: unknown): string {
+  return JSON.stringify(obj).replace(/[-￿]/g, (ch) => {
+    return "\\u" + ("0000" + ch.charCodeAt(0).toString(16)).slice(-4);
+  });
+}
+
 function getVisitSource(): string {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -123,8 +140,8 @@ export async function sendGHLFormData(data: FormWebhookData): Promise<boolean> {
       "https://services.leadconnectorhq.com/hooks/ddAvdgekc94cWL9NBHK1/webhook-trigger/0c004a12-e140-49df-8fcf-b62b101c4e8c",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: asciiSafeJson(payload),
       },
     );
     if (!res.ok) console.warn(`GHL webhook returned ${res.status}`);
@@ -244,8 +261,10 @@ export async function sendGHLProfileData(data: ProfileWebhookData): Promise<bool
   try {
     const res = await fetch(GHL_PROFILE_WEBHOOK_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      // ASCII-safe stringify guarantees Arabic / non-Latin chars survive
+      // GHL's parsing pipeline regardless of how it interprets charset.
+      body: asciiSafeJson(payload),
     });
     if (!res.ok) console.warn(`GHL profile webhook returned ${res.status}`);
     return res.ok;
