@@ -77,6 +77,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
    *  lastTokenIdRef above — the ref catches reuse, this guard catches the
    *  race that produces it in the first place. */
   const submittingRef = useRef(false);
+  const tap = useTapPayment();
   const handleCardApiReady = useCallback((api: { tokenize: () => Promise<string>; reinit: () => void }) => {
     cardApiRef.current = api;
     // Register the card reinit with useTapPayment so cancelChallenge can
@@ -108,7 +109,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const form = useCheckoutForm(open);
   const promo = useCheckoutPromo(course.id, basePrice);
-  const tap = useTapPayment();
+  
   const isMobile = useIsMobile();
   /**
    * Lifted promo-panel state — when the user opens the discount field, the
