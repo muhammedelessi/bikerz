@@ -45,6 +45,15 @@ type VerifyStatus = "verifying" | "succeeded" | "failed" | "cancelled" | "proces
 
 const MAX_RETRIES = 4;
 const RETRY_DELAY = 3000;
+/** Timeout for each supabase.functions.invoke call (30 s). Prevents the
+ *  spinner from hanging forever if the edge function is unreachable. */
+const VERIFY_TIMEOUT_MS = 30_000;
+
+/** Tap charge IDs always start with "chg_". Anything else (except the
+ *  sentinel "free_enrollment") is either spoofed or corrupted. */
+function isValidTapId(id: string): boolean {
+  return /^chg_[A-Za-z0-9]+$/.test(id);
+}
 
 const PaymentSuccess: React.FC = () => {
   const { t } = useTranslation();
@@ -416,18 +425,44 @@ const PaymentSuccess: React.FC = () => {
   useEffect(() => {
     if (!isReady) return;
 
-    // Free enrollment — skip verification
-    if (!tapId || tapId === "free_enrollment") {
+    // Legitimate free enrollment — the charge-create flow sets this sentinel
+    // when the user redeemed a 100 % coupon or a free-enroll link.
+    if (tapId === "free_enrollment") {
       setVerifyStatus("succeeded");
+      return;
+    }
+
+    // No tap_id at all → someone navigated here manually or the redirect
+    // lost the parameter.  Do NOT treat this as success — show failed so
+    // the user can retry.  (Previously this fell into the free-enrollment
+    // branch and fired false CRM / analytics events.)
+    if (!tapId) {
+      console.warn("[PaymentSuccess] No tap_id — treating as failed");
+      setVerifyStatus("failed");
+      return;
+    }
+
+    // Validate format — Tap charge IDs are always "chg_<alphanum>".
+    // Reject anything else to prevent spoofed or corrupted IDs from
+    // triggering false success analytics.
+    if (!isValidTapId(tapId)) {
+      console.warn("[PaymentSuccess] Invalid tap_id format:", tapId);
+      setVerifyStatus("failed");
       return;
     }
 
     const verify = async () => {
       try {
-        // Call verify — works with or without auth (edge function handles both)
-        const { data, error } = await supabase.functions.invoke("tap-verify-charge", {
+        // Timeout guard — Promise.race ensures we don't hang forever
+        // if the edge function is unreachable or slow.
+        const invokePromise = supabase.functions.invoke("tap-verify-charge", {
           body: { charge_id: tapId },
         });
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Verify request timed out")), VERIFY_TIMEOUT_MS),
+        );
+
+        const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
 
         if (error) throw error;
 
