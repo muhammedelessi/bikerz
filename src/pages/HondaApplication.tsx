@@ -120,6 +120,12 @@ const HondaApplication: React.FC = () => {
   const [docFile, setDocFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Inline validation + submission errors shown ABOVE the submit button.
+  // We keep field-level errors keyed by field name so we can render a
+  // red ring + a per-field message; `formError` is the catch-all
+  // (upload failed, AI rejection reason, etc.).
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
 
   // ── Existing application lookup ────────────────────────────────────
   // Drives the page state machine: form vs. status-card.
