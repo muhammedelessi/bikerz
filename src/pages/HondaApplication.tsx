@@ -398,6 +398,14 @@ const HondaApplication: React.FC = () => {
         }
       }
       await queryClient.invalidateQueries({ queryKey: ['honda-application', user.id] });
+    } catch (err) {
+      console.error('[Honda] submit failed:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      setFormError(msg || (isRTL ? 'تعذر إرسال الطلب' : 'Could not submit'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // ── Loading skeleton ───────────────────────────────────────────────
   if (authLoading || applicationQuery.isLoading) {
