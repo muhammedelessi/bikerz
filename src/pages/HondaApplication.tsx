@@ -581,8 +581,12 @@ const HondaApplication: React.FC = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder={isRTL ? 'كما يظهر في الرخصة' : 'As it appears on the registration'}
-                  required
+                  aria-invalid={!!fieldErrors.fullName}
+                  className={cn(fieldErrors.fullName && 'border-destructive focus-visible:ring-destructive')}
                 />
+                {fieldErrors.fullName && (
+                  <p className="text-xs text-destructive">{fieldErrors.fullName}</p>
+                )}
               </div>
 
               {/* Date of birth */}
