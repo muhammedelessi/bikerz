@@ -211,7 +211,7 @@ const Navbar: React.FC = () => {
     },
   });
 
-  const showTrainerFeatures = import.meta.env.DEV || (!!clientIp && ALLOWED_TRAINER_FEATURES_IPS.has(clientIp));
+  const showTrainerFeatures = import.meta.env.DEV || isAdmin || (!!clientIp && ALLOWED_TRAINER_FEATURES_IPS.has(clientIp));
 
   const menuItems = useMemo(() => {
     const hiddenLinks = new Set<string>(["/mentors"]);
