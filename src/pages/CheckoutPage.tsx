@@ -79,6 +79,8 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
   const [tokenizing, setTokenizing] = useState(false);
   const submittingRef = useRef(false);
 
+  const tap = useTapPayment();
+
   const handleCardApiReady = useCallback(
     (api: { tokenize: () => Promise<string>; reinit: () => void }) => {
       cardApiRef.current = api;
@@ -112,7 +114,6 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
 
   const form = useCheckoutForm(true);
   const promo = useCheckoutPromo(course.id, basePrice);
-  const tap = useTapPayment();
 
   const [promoOpen, setPromoOpen] = useState(false);
   useEffect(() => {
