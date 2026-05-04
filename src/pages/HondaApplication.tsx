@@ -280,6 +280,24 @@ const HondaApplication: React.FC = () => {
     setDocFile(file);
   };
 
+  const ensureFreshAuthSession = async () => {
+    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError) {
+      console.error('[Honda] refreshSession failed:', refreshError);
+    }
+
+    const activeSession = refreshData.session ?? (await supabase.auth.getSession()).data.session;
+    if (!activeSession?.access_token) {
+      throw new Error(
+        isRTL
+          ? 'انتهت جلستك. سجّل الدخول مرة أخرى ثم أعد إرسال الطلب.'
+          : 'Your session expired. Please sign in again and resubmit the form.',
+      );
+    }
+
+    return activeSession;
+  };
+
 
   // ── Submit ─────────────────────────────────────────────────────────
   // 1) Upload doc to storage. 2) Insert honda_applications row. 3) Call
@@ -300,6 +318,8 @@ const HondaApplication: React.FC = () => {
     if (!docFile) return;
     setSubmitting(true);
     try {
+      await ensureFreshAuthSession();
+
       const ext = (docFile.name.split('.').pop() || 'jpg').toLowerCase();
 
       const { data: prep, error: prepErr } = await supabase.functions.invoke(
