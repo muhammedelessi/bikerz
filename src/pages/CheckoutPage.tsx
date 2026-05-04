@@ -114,7 +114,6 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
 
   const form = useCheckoutForm(true);
   const promo = useCheckoutPromo(course.id, basePrice);
-  const tap = useTapPayment();
 
   const [promoOpen, setPromoOpen] = useState(false);
   useEffect(() => {
