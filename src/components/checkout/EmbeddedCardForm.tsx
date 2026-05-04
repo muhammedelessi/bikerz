@@ -379,7 +379,17 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
         </div>
       </div>
 
-      {/* Branded card frame: cleaner border + subtle shadow, primary header strip, primary border on valid */}
+      {/*
+        Two-section layout:
+          1) Card-number section header (its own labeled card-strip).
+          2) Iframe — Tap renders Card Number on its first row and Expiry+CVV
+             on its second row; we can't physically split the iframe (cross-
+             origin), so we add EXTERNAL labelled section bars above and
+             below to brand each "field group" visually.
+          3) Expiry/CVV section footer (labeled card-strip below).
+        The whole thing is wrapped in a single rounded card so it still
+        reads as one secure block.
+      */}
       <div
         role="region"
         aria-label={isRTL ? "نموذج بيانات البطاقة الآمن" : "Secure card details form"}
@@ -390,10 +400,7 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
             : "border-border hover:border-primary/30",
         ].join(" ")}
       >
-        {/* Branded header. Mobile uses a slimmer strip (px-3 py-1.5,
-            smaller text, "256-bit encrypted" abbreviated to a lock icon
-            only) so we save ~12px of vertical space on small viewports
-            without losing the brand color cue. */}
+        {/* Branded header (kept). */}
         <div className={[
           "flex items-center justify-between gap-2 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground",
           isMobile ? "px-3 py-2" : "px-4 py-2.5",
@@ -428,8 +435,24 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
           </div>
         </div>
 
-        {/* Iframe container — SDK injects its UI here */}
-        <div className="relative">
+        {/* SECTION 1 LABEL — sits directly above the card-number input row of
+            the Tap iframe. The user sees "1 · رقم البطاقة" then the input. */}
+        <div className="flex items-center gap-2 px-4 py-2 bg-muted/30 border-b border-border/40">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-bold">
+            1
+          </span>
+          <span className="text-xs font-semibold text-foreground">
+            {isRTL ? "رقم البطاقة" : "Card Number"}
+          </span>
+          <span className="ms-auto text-[10px] text-muted-foreground">
+            {isRTL ? "16 رقماً" : "16 digits"}
+          </span>
+        </div>
+
+        {/* Iframe container — SDK injects its UI here.
+            Padding sandwiches the iframe so its rows aren't flush with the
+            section bars above and below. */}
+        <div className="relative px-2 py-2">
           {(sdkLoading || (!sdkReady && !sdkError)) && (
             <div
               className="absolute inset-0 z-10 flex flex-col gap-3 bg-card p-4"
@@ -462,23 +485,37 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
             className="min-h-[200px] [&>iframe]:!block [&>iframe]:!w-full"
             style={{ touchAction: "manipulation" }}
           />
-
-          {/* "Card details complete" affirmation. On mobile the primary
-              border + shadow already signals validity; the extra strip
-              just eats space. Keep it on desktop where vertical room is
-              generous and the visual reassurance is welcome. */}
-          {cardValid && !isMobile && (
-            <div
-              className="border-t border-primary/15 bg-primary/5 px-4 py-2"
-              aria-live="polite"
-            >
-              <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                {isRTL ? "بيانات البطاقة مكتملة ✓" : "Card details complete ✓"}
-              </p>
-            </div>
-          )}
         </div>
+
+        {/* SECTION 2 LABEL — sits directly below the iframe so the user sees
+            "2 · تاريخ الانتهاء والرمز السري" right after they finish those
+            fields. Visually labels the bottom half of the form. */}
+        <div className="flex items-center gap-2 px-4 py-2 bg-muted/30 border-t border-border/40">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-bold">
+            2
+          </span>
+          <span className="text-xs font-semibold text-foreground">
+            {isRTL ? "تاريخ الانتهاء والرمز السري" : "Expiry & Security Code"}
+          </span>
+          <span className="ms-auto text-[10px] text-muted-foreground">
+            {isRTL ? "MM/YY · CVV" : "MM/YY · CVV"}
+          </span>
+        </div>
+
+        {/* "Card details complete" affirmation. Kept at the very bottom so it
+            doesn't fight the section labels above. Mobile suppresses it because
+            the primary border + shadow already signals validity. */}
+        {cardValid && !isMobile && (
+          <div
+            className="border-t border-primary/15 bg-primary/5 px-4 py-2"
+            aria-live="polite"
+          >
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              {isRTL ? "بيانات البطاقة مكتملة ✓" : "Card details complete ✓"}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Recoverable error: SDK init / load failure. Show a Reload button so
