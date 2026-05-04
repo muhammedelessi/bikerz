@@ -7,14 +7,17 @@ import type { PaymentStatus, TapPaymentConfig } from '@/types/payment';
 
 /**
  * How long before we silently start polling Tap to find out what happened
- * to a 3DS challenge that hasn't fired its postMessage yet. Real bank flows
- * complete in 5–20 s after OTP submit; if we're past 15 s the iframe is
- * almost certainly stuck (cross-origin navigation blocked, popup eaten by
- * an in-app browser, etc.). Polling won't bother the user — we only flip
- * the status when Tap returns a definitive result.
+ * to a 3DS challenge that hasn't fired its postMessage yet.
+ *
+ * We now start **very early** (5 s) because experience shows that the
+ * cross-origin iframe redirect chain fails consistently on many browsers
+ * and in-app webviews — postMessage never fires.  Early polling has
+ * negligible cost (one small GET /v2/charges/{id} every 2 s) and resolves
+ * the payment within seconds of the bank confirming OTP instead of making
+ * the user stare at a stuck spinner for 15+ s.
  */
-const POLL_START_AFTER_MS = 15_000;
-const POLL_INTERVAL_MS = 3_000;
+const POLL_START_AFTER_MS = 5_000;
+const POLL_INTERVAL_MS = 2_000;
 /**
  * Hard ceiling. After this we close the iframe and route to the recovery
  * UI ("still confirming" → refresh / try-again CTA). Tightened from 180 s
@@ -267,17 +270,17 @@ export function useTapPayment(): UseTapPaymentReturn {
 
   // 3-DS watchdog with active polling.
   //
-  // The original watchdog waited the full 3 minutes before doing anything,
-  // which left users staring at a stuck spinner whenever the iframe failed
-  // to relay its result back to us (cross-origin navigation blocked,
-  // in-app browser limitations, the bank's pageClosed handler crashing,
-  // etc.). The fix: silently start polling Tap directly at the 30 s mark.
+  // Tap's 3DS flow relies on nested iframes: our iframe → Tap auth →
+  // bank OTP → Tap result → our callback. The bank-to-Tap redirect is a
+  // cross-origin ancestor navigation that most browsers block silently,
+  // so postMessage almost never fires on real bank flows. We compensate
+  // by polling Tap's charge API directly:
   //
-  //   t = 0        challenge_3ds opens
-  //   t = 30 s     start polling /verify-charge every 5 s in the background
+  //   t = 0 s      challenge_3ds opens
+  //   t = 5 s      start polling /verify-charge every 2 s in the background
   //   on success   close iframe, transition to 'succeeded'
   //   on failure   close iframe, transition to 'failed' with a clear reason
-  //   t = 180 s    give up, surface the "still confirming" recovery UI
+  //   t = 75 s     give up, surface the "still confirming" recovery UI
   //
   // Polling is silent (no UI change) until Tap returns a definitive status
   // — the user keeps seeing the iframe in case the legitimate flow recovers.
@@ -287,12 +290,12 @@ export function useTapPayment(): UseTapPaymentReturn {
     let pollIntervalId: ReturnType<typeof setInterval> | null = null;
     let stopped = false;
 
-    // Start the silent poll at +30 s.
+    // Start the silent poll at +5 s.
     const pollStartTimer = setTimeout(() => {
       if (stopped) return;
       const cid = chargeIdRef.current;
       if (!cid) return;
-      console.info('[TapPayment] 3DS still pending after 30s — starting silent poll');
+      console.info('[TapPayment] 3DS still pending after 5s — starting silent poll');
       pollIntervalId = setInterval(async () => {
         if (stopped) return;
         try {

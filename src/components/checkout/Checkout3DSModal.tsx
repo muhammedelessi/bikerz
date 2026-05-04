@@ -68,11 +68,14 @@ const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ ur
     };
   }, []);
 
-  // Show the "still waiting?" hint after 60 s so the user knows they can
-  // cancel without breaking anything (banks that take longer than this
-  // are usually a sign of an OTP that didn't arrive).
+  // Show the "still waiting?" hint after 20 s. Cross-origin iframe
+  // navigation fails on most real bank flows, so the user can't rely on
+  // the redirect. Surfacing the hint early + the "Verify status now"
+  // button lets them escape within seconds instead of staring at a stuck
+  // spinner for a full minute. The background polling (useTapPayment)
+  // will also auto-resolve — this hint is a belt-and-suspenders UX.
   useEffect(() => {
-    const id = setTimeout(() => setShowStuckHint(true), 60_000);
+    const id = setTimeout(() => setShowStuckHint(true), 20_000);
     return () => clearTimeout(id);
   }, []);
 
@@ -116,13 +119,16 @@ const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ ur
         </div>
 
         {/* Reassurance strip — tells the user they're on a real verification
-            step, not stuck. Loader spins to confirm motion. */}
+            step, not stuck. Loader spins to confirm motion. Also notes we're
+            actively checking in the background — helps reassure the user
+            that even if the iframe looks stuck after OTP, the system is
+            still working. */}
         <div className="px-4 py-2.5 bg-primary/5 border-b border-primary/20 flex items-center gap-2 text-xs text-foreground/80 flex-shrink-0">
           <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
           <span className="leading-tight">
             {isRTL
-              ? 'بنك بطاقتك يطلب رمز التحقق (OTP). أدخل الرمز لإتمام الدفع.'
-              : "Your bank is requesting a verification code (OTP). Enter it to complete the payment."}
+              ? 'أدخل رمز التحقق (OTP) من بنكك. سيتم التحقق من الدفع تلقائياً بعد إدخال الرمز.'
+              : "Enter the verification code (OTP) from your bank. Payment will be verified automatically after you enter it."}
           </span>
         </div>
 
@@ -152,8 +158,8 @@ const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ ur
               </p>
               <p className="text-muted-foreground">
                 {isRTL
-                  ? 'إذا أدخلت الرمز ولم تنتقل الصفحة، اضغط "تحقق الآن". وإذا لم يصلك الرمز، اضغط إلغاء.'
-                  : 'If you entered the code but the page is stuck, tap "Verify now". If the code never arrived, tap Cancel.'}
+                  ? 'نتحقق تلقائياً من حالة الدفع. إذا أدخلت الرمز ولم تنتقل الصفحة، اضغط "تحقق الآن" أو انتظر قليلاً. إذا لم يصلك الرمز، اضغط إلغاء.'
+                  : 'We\'re auto-checking your payment status. If you entered the code but the page is stuck, tap "Verify now" or wait a moment. If the code never arrived, tap Cancel.'}
               </p>
               <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5">
                 {onVerifyNow && (
