@@ -279,17 +279,21 @@ const HondaApplication: React.FC = () => {
   // the page swaps to the result-card view.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !canSubmit || !docFile) return;
+    if (!user) return;
+    setFormError(null);
+    if (!validateForm()) {
+      setFormError(
+        isRTL
+          ? 'يرجى تصحيح الحقول المميزة بالأحمر قبل المتابعة.'
+          : 'Please correct the highlighted fields before continuing.',
+      );
+      return;
+    }
+    if (!docFile) return;
     setSubmitting(true);
     try {
       const ext = (docFile.name.split('.').pop() || 'jpg').toLowerCase();
 
-      // Server-side mints a one-time signed upload URL. This bypasses
-      // RLS on storage.objects entirely — the URL itself carries the
-      // authorisation token — and the edge function ALSO ensures the
-      // bucket exists (idempotent). End result: the upload works
-      // regardless of where the storage policies / bucket are in
-      // their migration cycle.
       const { data: prep, error: prepErr } = await supabase.functions.invoke(
         'honda-prepare-upload',
         { body: { ext } },
@@ -307,9 +311,6 @@ const HondaApplication: React.FC = () => {
         path: string;
       };
 
-      // PUT the file directly to the signed URL. The signed URL has
-      // its own auth, so we don't pass the user's bearer token — that
-      // would actually conflict.
       const putRes = await fetch(uploadUrl, {
         method: 'PUT',
         headers: { 'Content-Type': docFile.type || 'application/octet-stream' },
@@ -325,8 +326,6 @@ const HondaApplication: React.FC = () => {
         );
       }
 
-      // If a previous application exists in pending_ai (≤3 attempts), reuse it
-      // so ai_attempts continues to increment correctly. Otherwise insert new.
       let applicationId: string;
       if (
         application &&
@@ -366,51 +365,39 @@ const HondaApplication: React.FC = () => {
         applicationId = ins!.id as string;
       }
 
-      // Run AI verification.
+      // Run AI verification. All outcomes (approval / manual review /
+      // rejection-with-attempts-left) are surfaced via the page state
+      // machine after invalidateQueries refetches the row — we no longer
+      // pop a toast here. The rejection reason is rendered inline at the
+      // bottom of the form via `formError` so users can read it without
+      // it disappearing on its own.
       const { data: verifyData, error: verifyErr } = await supabase.functions.invoke(
         'honda-verify-document',
         { body: { application_id: applicationId } },
       );
       if (verifyErr) {
-        // Soft-fail: row is in DB; show a toast and refetch so the user sees
-        // a "needs manual review" state if the function bumped ai_attempts.
         console.error('[Honda] verify error:', verifyErr);
-        toast.error(
+        setFormError(
           isRTL
-            ? 'تعذر التحقق الآن — تم حفظ طلبك، فريقنا سيراجعه يدوياً'
-            : "Couldn't verify right now — your application was saved for manual review",
+            ? 'تعذر التحقق الآن — تم حفظ طلبك وسيراجعه فريقنا يدوياً.'
+            : "Couldn't verify right now — your application was saved for manual review.",
         );
       } else {
         const status = (verifyData as { status?: string })?.status;
         const reason = isRTL
           ? (verifyData as { reason_ar?: string })?.reason_ar
           : (verifyData as { reason_en?: string })?.reason_en;
-        if (status === 'approved') {
-          toast.success(
-            isRTL
-              ? 'تم القبول! كورس "فكر ماذا لو" أصبح متاحاً مجاناً.'
-              : 'Approved! The "What If" course is now free for you.',
-          );
-        } else if (status === 'needs_manual_review') {
-          toast.info(
-            isRTL
-              ? 'سيقوم فريقنا بمراجعة طلبك يدوياً'
-              : 'Your application has been queued for manual review',
-          );
-        } else if (reason) {
-          toast.error(reason);
+        // Only set inline error when the AI actively rejected this attempt
+        // AND the user still has retries (status stays `pending_ai`).
+        // Approved / needs_manual_review will swap the whole page via the
+        // status views — no inline message needed.
+        if (status === 'pending_ai' && reason) {
+          setFormError(reason);
+        } else if (status && status !== 'approved' && status !== 'needs_manual_review' && reason) {
+          setFormError(reason);
         }
       }
-      // Refresh.
       await queryClient.invalidateQueries({ queryKey: ['honda-application', user.id] });
-    } catch (err) {
-      console.error('[Honda] submit failed:', err);
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error(msg || (isRTL ? 'تعذر إرسال الطلب' : 'Could not submit'));
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   // ── Loading skeleton ───────────────────────────────────────────────
   if (authLoading || applicationQuery.isLoading) {
