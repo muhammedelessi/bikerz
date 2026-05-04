@@ -1,10 +1,18 @@
 import React, { forwardRef, useEffect, useState } from 'react';
-import { Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Loader2, ShieldCheck, AlertCircle, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface Checkout3DSModalProps {
   url: string;
   onCancel: () => void;
+  /**
+   * Optional manual verify trigger. Wired to `tap.recheckStatus()`.
+   * Shown alongside Cancel in the 60 s "stuck hint" so a user who
+   * already entered OTP successfully but is staring at a Tap loading
+   * spinner (cross-origin nav blocked the redirect chain) can force a
+   * status check from Tap directly instead of waiting for the watchdog.
+   */
+  onVerifyNow?: () => void;
 }
 
 // forwardRef so the parent (Radix Dialog Portal / framer Presence) can
@@ -44,10 +52,11 @@ interface Checkout3DSModalProps {
  *  often missed. The watchdog in useTapPayment additionally times out after
  *  3 min and routes to the recovery overlay.
  */
-const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ url, onCancel }, ref) => {
+const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ url, onCancel, onVerifyNow }, ref) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === 'rtl';
   const [showStuckHint, setShowStuckHint] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   // Lock body scroll while 3DS is open so the page behind doesn't move
   // around on iOS when the soft keyboard appears for OTP entry.
@@ -127,28 +136,52 @@ const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ ur
           referrerPolicy="no-referrer-when-downgrade"
         />
 
-        {/* "Still waiting?" hint — appears after 60 s. Most users by then
-            either succeeded (and we'd have closed) or are stuck because the
-            OTP didn't arrive. Make the cancel option visible. */}
+        {/* "Still waiting?" hint — appears after 60 s.
+            Now offers TWO actions:
+              1. "Verify status now" — for users who completed OTP but are
+                 stuck on Tap's loading spinner (the cross-origin redirect
+                 broke). Pulls the charge status directly from Tap.
+              2. "Cancel and use a different card" — for users whose OTP
+                 didn't arrive at all. */}
         {showStuckHint && (
           <div className="px-4 py-3 bg-amber-500/10 border-t-2 border-amber-500/30 flex items-start gap-2.5 flex-shrink-0">
             <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0 text-xs">
               <p className="font-semibold text-foreground mb-0.5">
-                {isRTL ? 'لم يصلك الرمز؟' : "Didn't receive the code?"}
+                {isRTL ? 'هل تأخر الرد؟' : "Taking too long?"}
               </p>
               <p className="text-muted-foreground">
                 {isRTL
-                  ? 'تحقق من الرسائل أو التطبيق البنكي، أو اضغط إلغاء وحاول ببطاقة أخرى.'
-                  : 'Check your messages or banking app, or tap Cancel to try with another card.'}
+                  ? 'إذا أدخلت الرمز ولم تنتقل الصفحة، اضغط "تحقق الآن". وإذا لم يصلك الرمز، اضغط إلغاء.'
+                  : 'If you entered the code but the page is stuck, tap "Verify now". If the code never arrived, tap Cancel.'}
               </p>
-              <button
-                type="button"
-                onClick={onCancel}
-                className="mt-1.5 inline-flex items-center gap-1 px-2 -mx-2 py-1 text-xs font-semibold text-amber-700 dark:text-amber-400 underline underline-offset-2 hover:text-amber-800 dark:hover:text-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded"
-              >
-                {isRTL ? 'إلغاء واستخدام بطاقة مختلفة' : 'Cancel and use a different card'}
-              </button>
+              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5">
+                {onVerifyNow && (
+                  <button
+                    type="button"
+                    disabled={verifying}
+                    onClick={async () => {
+                      setVerifying(true);
+                      try {
+                        await onVerifyNow();
+                      } finally {
+                        setVerifying(false);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 px-2 -mx-2 py-1 text-xs font-semibold text-primary underline underline-offset-2 hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${verifying ? 'animate-spin' : ''}`} />
+                    {isRTL ? 'تحقق من الحالة الآن' : 'Verify status now'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="inline-flex items-center gap-1 px-2 -mx-2 py-1 text-xs font-semibold text-amber-700 dark:text-amber-400 underline underline-offset-2 hover:text-amber-800 dark:hover:text-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded"
+                >
+                  {isRTL ? 'إلغاء واستخدام بطاقة مختلفة' : 'Cancel and use a different card'}
+                </button>
+              </div>
             </div>
           </div>
         )}

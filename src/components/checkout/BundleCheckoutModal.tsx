@@ -632,7 +632,7 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
 
       {/* Inline 3DS modal — opens when Tap returns a redirect_url for card verification */}
       {tap.challengeUrl && (
-        <Checkout3DSModal url={tap.challengeUrl} onCancel={tap.cancelChallenge} />
+        <Checkout3DSModal url={tap.challengeUrl} onCancel={tap.cancelChallenge} onVerifyNow={tap.recheckStatus} />
       )}
     </>
   );

@@ -819,7 +819,7 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
 
       {/* Inline 3DS — opens when Tap returns a redirect_url */}
       {tap.challengeUrl && (
-        <Checkout3DSModal url={tap.challengeUrl} onCancel={tap.cancelChallenge} />
+        <Checkout3DSModal url={tap.challengeUrl} onCancel={tap.cancelChallenge} onVerifyNow={tap.recheckStatus} />
       )}
 
       {/* Failure overlay (different state — shown above the form) */}

@@ -599,7 +599,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </div>
         </ResponsiveCheckoutShell>
         {tap.challengeUrl && (
-          <Checkout3DSModal url={tap.challengeUrl} onCancel={tap.cancelChallenge} />
+          <Checkout3DSModal url={tap.challengeUrl} onCancel={tap.cancelChallenge} onVerifyNow={tap.recheckStatus} />
         )}
       </>
     );

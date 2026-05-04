@@ -8,15 +8,20 @@ import type { PaymentStatus, TapPaymentConfig } from '@/types/payment';
 /**
  * How long before we silently start polling Tap to find out what happened
  * to a 3DS challenge that hasn't fired its postMessage yet. Real bank flows
- * complete in 5–20 s after OTP submit; if we're past 30 s the iframe is
+ * complete in 5–20 s after OTP submit; if we're past 15 s the iframe is
  * almost certainly stuck (cross-origin navigation blocked, popup eaten by
  * an in-app browser, etc.). Polling won't bother the user — we only flip
  * the status when Tap returns a definitive result.
  */
-const POLL_START_AFTER_MS = 30_000;
-const POLL_INTERVAL_MS = 5_000;
-/** Hard ceiling. Past this we surface the "still confirming" recovery UI. */
-const HARD_TIMEOUT_MS = 180_000;
+const POLL_START_AFTER_MS = 15_000;
+const POLL_INTERVAL_MS = 3_000;
+/**
+ * Hard ceiling. After this we close the iframe and route to the recovery
+ * UI ("still confirming" → refresh / try-again CTA). Tightened from 180 s
+ * because users were giving up before the timeout kicked in — most stuck
+ * bank flows don't recover after a minute regardless.
+ */
+const HARD_TIMEOUT_MS = 75_000;
 
 /**
  * Translate a Tap charge response or thrown error into a clear bilingual
@@ -196,11 +201,18 @@ export function useTapPayment(): UseTapPaymentReturn {
 
   /**
    * Allow the recovery UI to re-poll the verify endpoint when the user clicks
-   * "Refresh" on the "still confirming" state. Reuses the same backoff cap.
+   * "Refresh" on the "still confirming" state — and also for the new "Verify
+   * Status Now" button in the 3DS modal's stuck hint.
+   *
+   * Clearing challengeUrl is critical: when the user clicks Verify Now the
+   * iframe is the thing that's stuck (cross-origin redirect blocked). We need
+   * to dismiss it before flipping to 'verifying'/'succeeded'/'failed', or
+   * the modal would stay overlaid on top of whichever recovery UI we surface.
    */
   const recheckStatus = useCallback(async () => {
     const cid = chargeIdRef.current;
     if (!cid) return;
+    setChallengeUrl(null);
     await verifyCharge(cid);
   }, [verifyCharge]);
 
