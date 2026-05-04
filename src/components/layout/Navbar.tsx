@@ -549,7 +549,7 @@ const Navbar: React.FC = () => {
               >
                 <ShieldCheck className="w-5 h-5 shrink-0" aria-hidden />
                 <span className="font-semibold flex-1 min-w-0">
-                  {isRTL ? "مالك هوندا — تسجيل" : "Honda Owner — register"}
+                  {isRTL ? "ملاك هوندا" : "Honda Owners"}
                 </span>
                 <ChevronRight className={`w-4 h-4 shrink-0 ${isRTL ? "rotate-180" : ""}`} />
               </Link>
