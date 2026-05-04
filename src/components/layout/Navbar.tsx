@@ -96,7 +96,7 @@ const Navbar: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { theme } = useTheme();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
