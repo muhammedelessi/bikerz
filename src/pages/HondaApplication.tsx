@@ -617,8 +617,12 @@ const HondaApplication: React.FC = () => {
                     value={motorcycleModel}
                     onChange={(e) => setMotorcycleModel(e.target.value)}
                     placeholder={isRTL ? 'مثال: CBR 500R' : 'e.g. CBR 500R'}
-                    required
+                    aria-invalid={!!fieldErrors.motorcycleModel}
+                    className={cn(fieldErrors.motorcycleModel && 'border-destructive focus-visible:ring-destructive')}
                   />
+                  {fieldErrors.motorcycleModel && (
+                    <p className="text-xs text-destructive">{fieldErrors.motorcycleModel}</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="honda-year">
