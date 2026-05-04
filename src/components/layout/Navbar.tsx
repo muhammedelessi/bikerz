@@ -396,7 +396,7 @@ const Navbar: React.FC = () => {
                     >
                       <ShieldCheck className="w-4 h-4" aria-hidden />
                       <span className="text-sm font-semibold">
-                        {isRTL ? "مالك هوندا" : "Honda Owner"}
+                        {isRTL ? "ملاك هوندا" : "Honda Owners"}
                       </span>
                     </Button>
                   </Link>
