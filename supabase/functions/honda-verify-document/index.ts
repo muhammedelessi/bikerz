@@ -86,14 +86,17 @@ Deno.serve(async (req) => {
     return jsonResponse(500, { error: "AI verification not configured" });
   }
 
+  const token = authHeader.replace("Bearer ", "");
   const userClient = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: authHeader } },
   });
-  const { data: userData, error: userError } = await userClient.auth.getUser();
-  if (userError || !userData?.user) {
+  const { data: claimsData, error: claimsError } =
+    await userClient.auth.getClaims(token);
+  if (claimsError || !claimsData?.claims?.sub) {
+    console.error("[honda-verify] getClaims failed:", claimsError);
     return jsonResponse(401, { error: "Unauthorized" });
   }
-  const userId = userData.user.id;
+  const userId = claimsData.claims.sub as string;
 
   let body: { application_id?: string };
   try {
