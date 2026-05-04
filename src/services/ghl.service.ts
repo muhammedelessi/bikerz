@@ -52,22 +52,65 @@ if (typeof window !== "undefined") {
 
 export async function sendGHLFormData(data: FormWebhookData): Promise<boolean> {
   const { isRTL, silent, ...rest } = data;
+  const fullName = rest.full_name || "";
+  const { firstname: firstName, lastname: lastName } = splitNameForWebhook(fullName);
+  const countryCode = toCountryCode(rest.country) || "";
+  const countryEnglish = resolveCountryEnglish(rest.country) || "";
+  const cityEnglish = resolveCityEnglish(rest.city, rest.country) || "";
+
+  // Send the same data under EVERY common field-name convention. GHL's
+  // workflow auto-mapping looks for specific keys depending on how the
+  // user wired their "Add/Update Contact" action — sending camelCase
+  // (their Contact API standard), snake_case, lowercase-no-separator
+  // and the original `full_name` covers every workflow shape we've
+  // seen in the wild. Why they all matter:
+  //   • Auto-mapping in newer GHL workflows expects camelCase
+  //     (firstName, lastName, dateOfBirth, postalCode, address1).
+  //   • Older workflows / custom field maps use snake_case.
+  //   • Some templates the user might have copy-pasted use the bare
+  //     lowercase `firstname` / `lastname`.
+  // Duplicating doesn't bloat the request meaningfully (~200 extra
+  // bytes) and is the difference between "contact created with empty
+  // fields" and "contact created fully populated".
   const payload: Record<string, unknown> = {
-    full_name: rest.full_name || "",
+    // ── Name ──
+    firstName,
+    lastName,
+    first_name: firstName,
+    last_name: lastName,
+    firstname: firstName,
+    lastname: lastName,
+    name: fullName,
+    full_name: fullName,
+    fullName: fullName,
+
+    // ── Contact ──
     email: rest.email || "",
     phone: rest.phone || "",
-    country: toCountryCode(rest.country) || "",
-    city: rest.city || "",
+
+    // ── Address ──
+    address1: rest.address || "",
     address: rest.address || "",
+    city: cityEnglish || rest.city || "",
+    country: countryEnglish || rest.country || "",
+    countryCode,
+    country_code: countryCode,
+
+    // ── Personal ──
+    dateOfBirth: rest.dateOfBirth || "",
+    date_of_birth: rest.dateOfBirth || "",
+    gender: rest.gender || "",
+
+    // ── Order / context ──
     courseName: rest.courseName || "",
     amount: rest.amount || "",
     currency: rest.currency || "",
     orderStatus: rest.orderStatus || "not purchased",
     courses: rest.courses || "[]",
     totalPurchased: rest.totalPurchased ?? 0,
-    dateOfBirth: rest.dateOfBirth || "",
-    gender: rest.gender || "",
     source: getVisitSource(),
+
+    // ── Support ticket fields ──
     ticket_subject: rest.ticket_subject || "",
     ticket_message: rest.ticket_message || "",
     ticket_category: rest.ticket_category || "",
@@ -127,24 +170,55 @@ export async function sendGHLProfileData(data: ProfileWebhookData): Promise<bool
   const country = data.country ?? "";
   const city = data.city ?? "";
   const nationality = data.nationality ?? "";
-  const { firstname, lastname } = splitNameForWebhook(data.full_name ?? "");
+  const fullName = data.full_name ?? "";
+  const { firstname: firstName, lastname: lastName } = splitNameForWebhook(fullName);
+  const dob = data.date_of_birth ?? "";
+  const postalCode = data.postal_code ?? "";
 
+  // Send under every field-name convention so GHL's workflow auto-
+  // mapping picks them up regardless of how the workflow was wired.
+  // See sendGHLFormData for the full reasoning. Without this, contacts
+  // showed up in GHL with "?" avatars and dashes for name/email/phone
+  // (the workflow created them but couldn't bind any field).
   const payload: Record<string, unknown> = {
     user_id: data.user_id ?? "",
     email: data.email ?? "",
-    firstname,
-    lastname,
-    date_of_birth: data.date_of_birth ?? "",
+
+    // ── Name (every casing) ──
+    firstName,
+    lastName,
+    first_name: firstName,
+    last_name: lastName,
+    firstname: firstName,
+    lastname: lastName,
+    full_name: fullName,
+    fullName,
+    name: fullName,
+
+    // ── Personal ──
+    dateOfBirth: dob,
+    date_of_birth: dob,
     gender: data.gender ?? "",
     nationality: resolveCountryEnglish(nationality) || "",
     nationality_code: toCountryCode(nationality) || "",
+    nationalityCode: toCountryCode(nationality) || "",
     rider_nickname: data.rider_nickname ?? "",
+    riderNickname: data.rider_nickname ?? "",
+
+    // ── Contact ──
     phone: data.phone ?? "",
+
+    // ── Address ──
     country: resolveCountryEnglish(country) || "",
     country_code: toCountryCode(country) || "",
+    countryCode: toCountryCode(country) || "",
     city: resolveCityEnglish(city, country) || "",
-    postal_code: data.postal_code ?? "",
+    postal_code: postalCode,
+    postalCode,
+
+    // ── Avatar ──
     avatar_url: data.avatar_url ?? "",
+    avatarUrl: data.avatar_url ?? "",
   };
 
   try {

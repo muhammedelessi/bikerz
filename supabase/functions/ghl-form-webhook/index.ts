@@ -39,21 +39,52 @@ Deno.serve(async (req) => {
     const body = await req.json()
     const { full_name, email, phone, city, country, address, courseName, amount, orderStatus, source, courses, totalPurchased, dateOfBirth, gender } = body
 
+    // Split full name into first/last so GHL's "Add/Update Contact"
+    // action can populate the First Name + Last Name columns separately.
+    const safeFullName = String(full_name || '').trim()
+    const nameParts = safeFullName.split(/\s+/).filter(Boolean)
+    const firstName = nameParts[0] || ''
+    const lastName = nameParts.slice(1).join(' ') || ''
+
+    // Send the same data under every common field-name convention so
+    // GHL's workflow auto-mapping picks them up regardless of how the
+    // workflow was wired. Without this, contacts showed up in GHL with
+    // "?" avatars and dashes for name/email/phone (the workflow created
+    // them but couldn't bind any field).
     const payload: Record<string, unknown> = {
+      // ── Name (every casing) ──
+      firstName,
+      lastName,
+      first_name: firstName,
+      last_name: lastName,
+      firstname: firstName,
+      lastname: lastName,
+      full_name: safeFullName,
+      fullName: safeFullName,
+      name: safeFullName,
+
+      // ── Contact ──
       email: email || user.email || '',
       phone: phone || '',
-      full_name: full_name || '',
+
+      // ── Address (GHL uses address1, NOT address) ──
+      address1: address || '',
+      address: address || '',
       city: city || '',
       country: country || '',
-      address: address || '',
+
+      // ── Personal ──
+      dateOfBirth: dateOfBirth || '',
+      date_of_birth: dateOfBirth || '',
+      gender: gender || '',
+
+      // ── Order / context ──
       courseName: courseName || '',
       amount: amount || '',
       source: source || 'direct',
       orderStatus: orderStatus || 'not purchased',
       courses: courses || '[]',
       totalPurchased: totalPurchased ?? 0,
-      dateOfBirth: dateOfBirth || '',
-      gender: gender || '',
     }
 
     console.log('GHL form webhook payload:', JSON.stringify(payload))

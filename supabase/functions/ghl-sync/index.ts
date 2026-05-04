@@ -87,16 +87,43 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case 'create_or_update_contact': {
-        webhookPayload.full_name = data?.full_name || ''
+        // Split full name so GHL's "Add/Update Contact" action can
+        // populate First Name + Last Name as separate columns instead
+        // of leaving the contact card with just a "?" avatar.
+        const safeFullName = String(data?.full_name || '').trim()
+        const nameParts = safeFullName.split(/\s+/).filter(Boolean)
+        const firstName = nameParts[0] || ''
+        const lastName = nameParts.slice(1).join(' ') || ''
+        const dob = data?.date_of_birth || ''
+        const postalCode = data?.postal_code || ''
+
+        // Send the same data under every casing convention so GHL's
+        // workflow auto-mapping picks them up no matter how the user
+        // wired the contact action. See ghl.service.ts for the full
+        // reasoning. The duplication is ~200 bytes and is the
+        // difference between "contact created with empty fields" and
+        // "contact created fully populated".
+        webhookPayload.firstName = firstName
+        webhookPayload.lastName = lastName
+        webhookPayload.first_name = firstName
+        webhookPayload.last_name = lastName
+        webhookPayload.firstname = firstName
+        webhookPayload.lastname = lastName
+        webhookPayload.full_name = safeFullName
+        webhookPayload.fullName = safeFullName
+        webhookPayload.name = safeFullName
+
         webhookPayload.phone = data?.phone || ''
         webhookPayload.city = data?.city || ''
         webhookPayload.country = data?.country || ''
-        webhookPayload.postal_code = data?.postal_code || ''
+        webhookPayload.postal_code = postalCode
+        webhookPayload.postalCode = postalCode
         webhookPayload.experience_level = data?.experience_level || ''
         webhookPayload.bike_brand = data?.bike_brand || ''
         webhookPayload.bike_model = data?.bike_model || ''
         webhookPayload.rider_nickname = data?.rider_nickname || ''
-        webhookPayload.dateOfBirth = data?.date_of_birth || ''
+        webhookPayload.dateOfBirth = dob
+        webhookPayload.date_of_birth = dob
         webhookPayload.gender = data?.gender || ''
         // Override email if provided in data (e.g. during signup)
         if (data?.email) webhookPayload.email = data.email
