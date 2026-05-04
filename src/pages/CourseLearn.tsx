@@ -69,7 +69,7 @@ import {
   markTrialOfferPending,
   type GuestPreviewState
 } from '@/lib/guestPreview';
-import { setReturnUrl } from '@/lib/authReturnUrl';
+import { setReturnUrl, setSignupOrigin } from '@/lib/authReturnUrl';
 
 interface Lesson {
   id: string;
@@ -864,6 +864,9 @@ const CourseLearn: React.FC = () => {
     if (!id) return;
     setReturnUrl(`/courses/${id}`);
     markTrialOfferPending(id);
+    // Tag as course_page — the user is already engaged with this
+    // course's content (free preview), so this is high-intent.
+    setSignupOrigin("course_page");
     navigate('/signup');
   }, [id, navigate]);
 
@@ -876,6 +879,10 @@ const CourseLearn: React.FC = () => {
   const handleGuestBuyCourse = useCallback(() => {
     if (!id) return;
     setReturnUrl(`/courses/${id}?checkout=true`);
+    // NOT tagged as "course_page" — that label is reserved for the
+    // post-free-preview "create account to keep watching" CTA per spec.
+    // Buy-course click is its own intent signal that GHL tracks via
+    // checkout/payment webhooks, not the signup webhook.
     navigate('/signup');
   }, [id, navigate]);
 

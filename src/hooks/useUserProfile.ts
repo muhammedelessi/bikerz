@@ -434,8 +434,11 @@ export function useUserProfile() {
 
       const mergedProfile = { ...profile, ...changedUpdates };
 
-      // Dedicated profile webhook — only the user's personal profile fields
+      // Dedicated profile webhook — only the user's personal profile fields.
+      // event_type="profile_update" tells the GHL workflow's router to take
+      // the full-update path (vs. signup / course_page / guest_signup).
       sendGHLProfileData({
+        event_type: "profile_update",
         user_id: user.id,
         email: user.email ?? null,
         full_name: mergedProfile?.full_name ?? null,

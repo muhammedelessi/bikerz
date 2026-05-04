@@ -57,7 +57,7 @@ import { trackViewContent } from "@/utils/metaPixel";
 import StarRating from "@/components/course/StarRating";
 import CourseCard from "@/components/course/CourseCard";
 import { fetchEnrollmentsWithLiveProgress, type EnrollmentWithProgress } from "@/lib/enrollmentProgress";
-import { setReturnUrl } from "@/lib/authReturnUrl";
+import { setReturnUrl, setSignupOrigin } from "@/lib/authReturnUrl";
 import {
   getGuestPreviewState,
   setGuestPreviewState,
@@ -555,6 +555,11 @@ const CourseDetail: React.FC = () => {
   const handlePreviewPromptSignup = useCallback(() => {
     if (!id) return;
     setReturnUrl(`/courses/${id}`);
+    // Tag this signup as originating from the "free preview ended"
+    // CTA so the GHL workflow routes it through the high-intent
+    // course_page funnel (the user already showed interest in a
+    // specific course before creating the account).
+    setSignupOrigin("course_page");
     navigate("/signup");
   }, [id, navigate]);
 

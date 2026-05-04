@@ -136,13 +136,31 @@ export async function sendGHLFormData(data: FormWebhookData): Promise<boolean> {
 }
 
 // ─── Profile-only webhook ────────────────────────────────────────────────────
-// Dedicated webhook for user profile data (registration + profile updates).
-// Sends ONLY the personal profile fields below — nothing else.
+// Dedicated webhook for ALL user-data events. A single GHL workflow listens
+// here and routes by the `event_type` discriminator into four branches:
+//
+//   signup         — generic new account (top-bar / hero CTA)
+//   course_page    — ⭐ HIGH-INTENT signup: user clicked "Create account"
+//                    after the free preview ended on a course page
+//   guest_signup   — guest checkout finalised an account during paying
+//   profile_update — existing user edited their profile fields
+//
+// Payload shapes per event type are documented in ProfileWebhookEvent
+// below; the GHL router branches on `event_type` and pulls the relevant
+// fields per branch (so it doesn't need to handle absent fields).
 
 const GHL_PROFILE_WEBHOOK_URL =
-  "https://services.leadconnectorhq.com/hooks/ddAvdgekc94cWL9NBHK1/webhook-trigger/dbd98231-b486-4e88-9693-9e63962dbfd7";
+  "https://services.leadconnectorhq.com/hooks/ddAvdgekc94cWL9NBHK1/webhook-trigger/d5e018c9-941d-4425-a382-6f90569dd61b";
+
+export type ProfileWebhookEvent =
+  | "signup"
+  | "course_page"
+  | "guest_signup"
+  | "profile_update";
 
 export interface ProfileWebhookData {
+  /** Required: routes the payload to the right GHL workflow branch. */
+  event_type: ProfileWebhookEvent;
   user_id?: string | null;
   email?: string | null;
   /** Full name string — gets split into firstname/lastname before sending. */
@@ -167,59 +185,61 @@ function splitNameForWebhook(fullName: string): { firstname: string; lastname: s
 }
 
 export async function sendGHLProfileData(data: ProfileWebhookData): Promise<boolean> {
+  const eventType = data.event_type;
   const country = data.country ?? "";
   const city = data.city ?? "";
   const nationality = data.nationality ?? "";
   const fullName = data.full_name ?? "";
-  const { firstname: firstName, lastname: lastName } = splitNameForWebhook(fullName);
-  const dob = data.date_of_birth ?? "";
-  const postalCode = data.postal_code ?? "";
+  const { firstname, lastname } = splitNameForWebhook(fullName);
 
-  // Send under every field-name convention so GHL's workflow auto-
-  // mapping picks them up regardless of how the workflow was wired.
-  // See sendGHLFormData for the full reasoning. Without this, contacts
-  // showed up in GHL with "?" avatars and dashes for name/email/phone
-  // (the workflow created them but couldn't bind any field).
-  const payload: Record<string, unknown> = {
+  // ── Fields shared by ALL four event types ─────────────────────────
+  const baseFields = {
+    event_type: eventType,
     user_id: data.user_id ?? "",
     email: data.email ?? "",
-
-    // ── Name (every casing) ──
-    firstName,
-    lastName,
-    first_name: firstName,
-    last_name: lastName,
-    firstname: firstName,
-    lastname: lastName,
-    full_name: fullName,
-    fullName,
-    name: fullName,
-
-    // ── Personal ──
-    dateOfBirth: dob,
-    date_of_birth: dob,
-    gender: data.gender ?? "",
-    nationality: resolveCountryEnglish(nationality) || "",
-    nationality_code: toCountryCode(nationality) || "",
-    nationalityCode: toCountryCode(nationality) || "",
-    rider_nickname: data.rider_nickname ?? "",
-    riderNickname: data.rider_nickname ?? "",
-
-    // ── Contact ──
+    firstname,
+    lastname,
     phone: data.phone ?? "",
-
-    // ── Address ──
     country: resolveCountryEnglish(country) || "",
     country_code: toCountryCode(country) || "",
-    countryCode: toCountryCode(country) || "",
     city: resolveCityEnglish(city, country) || "",
-    postal_code: postalCode,
-    postalCode,
+  } as const;
 
-    // ── Avatar ──
-    avatar_url: data.avatar_url ?? "",
-    avatarUrl: data.avatar_url ?? "",
-  };
+  // Build the per-event payload exactly per the agreed spec — no extra
+  // keys, no field-name duplicates. Each branch returns a payload shape
+  // the GHL workflow's router can pull from cleanly.
+  let payload: Record<string, unknown>;
+
+  switch (eventType) {
+    case "guest_signup":
+      // Same as signup + postal_code (collected during guest checkout).
+      payload = {
+        ...baseFields,
+        postal_code: data.postal_code ?? "",
+      };
+      break;
+
+    case "profile_update":
+      // Full profile dump — every personal field the user can edit.
+      payload = {
+        ...baseFields,
+        date_of_birth: data.date_of_birth ?? "",
+        gender: data.gender ?? "",
+        nationality: resolveCountryEnglish(nationality) || "",
+        nationality_code: toCountryCode(nationality) || "",
+        rider_nickname: data.rider_nickname ?? "",
+        postal_code: data.postal_code ?? "",
+        avatar_url: data.avatar_url ?? "",
+      };
+      break;
+
+    case "signup":
+    case "course_page":
+    default:
+      // Minimal new-account fields — name + contact + location only.
+      payload = { ...baseFields };
+      break;
+  }
 
   try {
     const res = await fetch(GHL_PROFILE_WEBHOOK_URL, {

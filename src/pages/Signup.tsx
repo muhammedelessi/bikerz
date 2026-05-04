@@ -21,7 +21,7 @@ import logoLight from "@/assets/logo-light.png";
 import { useTheme } from "@/components/ThemeProvider";
 import { PHONE_COUNTRIES } from "@/data/phoneCountryCodes";
 import { COUNTRIES } from "@/data/countryCityData";
-import { consumeReturnUrl } from "@/lib/authReturnUrl";
+import { consumeReturnUrl, consumeSignupOrigin } from "@/lib/authReturnUrl";
 import { fetchPublicGeoHint } from "@/lib/publicGeoCountry";
 import { activateFreeTrialForCourse, consumeTrialOfferPending } from "@/lib/guestPreview";
 import { FormAlert, FormField } from "@/components/ui/form-field";
@@ -191,8 +191,14 @@ const Signup: React.FC = () => {
       console.error("GHL signup sync failed:", syncErr);
     }
 
-    // Dedicated profile webhook — fires once on registration
+    // Dedicated profile webhook — fires once on registration.
+    // event_type is "course_page" when the user came from the
+    // "Free preview ended — create an account" CTA (high-intent signup
+    // tied to a specific course), otherwise "signup" for the generic
+    // top-bar / hero CTA. Origin is one-shot: consumed and cleared.
+    const eventType = consumeSignupOrigin() === "course_page" ? "course_page" : "signup";
     sendGHLProfileData({
+      event_type: eventType,
       user_id: userId,
       email: userEmail,
       full_name: fullName,

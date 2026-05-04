@@ -54,7 +54,11 @@ export function useGuestSignup() {
           profile_complete: true,
         });
 
+        // event_type="guest_signup" routes this through GHL's checkout-
+        // funded-account branch (different from generic signup or
+        // course_page — the user paid, so they're a hot lead immediately).
         sendGHLProfileData({
+          event_type: "guest_signup",
           user_id: data.user.id,
           full_name: fullName.trim(),
           email: email.trim(),
