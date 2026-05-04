@@ -204,28 +204,44 @@ const HondaApplication: React.FC = () => {
   const yearNow = new Date().getFullYear();
 
   // ── Validation ─────────────────────────────────────────────────────
-  const canSubmit = useMemo(() => {
-    if (submitting) return false;
-    if (!fullName.trim()) return false;
-    if (!dob) return false;
-    if (!country.trim()) return false;
-    if (!city.trim()) return false;
-    if (!motorcycleModel.trim()) return false;
+  // Submit button stays enabled so the user can click and SEE which field
+  // is wrong (instead of being silently blocked). Actual gating happens
+  // inside handleSubmit via validateForm().
+  const validateForm = (): boolean => {
+    const errs: Record<string, string> = {};
+    if (!fullName.trim()) {
+      errs.fullName = isRTL ? 'الاسم الكامل مطلوب' : 'Full name is required';
+    } else if (fullName.trim().length < 2) {
+      errs.fullName = isRTL ? 'الاسم قصير جداً' : 'Name is too short';
+    }
+    if (!dob) {
+      errs.dob = isRTL ? 'تاريخ الميلاد مطلوب' : 'Date of birth is required';
+    }
+    if (!country.trim()) {
+      errs.country = isRTL ? 'الدولة مطلوبة' : 'Country is required';
+    }
+    if (!city.trim()) {
+      errs.city = isRTL ? 'المدينة مطلوبة' : 'City is required';
+    }
+    if (!motorcycleModel.trim()) {
+      errs.motorcycleModel = isRTL ? 'موديل الدراجة مطلوب' : 'Motorcycle model is required';
+    }
     const yearNum = Number(motorcycleYear);
-    if (!Number.isFinite(yearNum) || yearNum < 1900 || yearNum > yearNow + 1) return false;
-    if (!docFile) return false;
-    return true;
-  }, [
-    submitting,
-    fullName,
-    dob,
-    country,
-    city,
-    motorcycleModel,
-    motorcycleYear,
-    docFile,
-    yearNow,
-  ]);
+    if (!motorcycleYear) {
+      errs.motorcycleYear = isRTL ? 'سنة الصنع مطلوبة' : 'Year is required';
+    } else if (!Number.isFinite(yearNum) || yearNum < 1900 || yearNum > yearNow + 1) {
+      errs.motorcycleYear = isRTL
+        ? `أدخل سنة بين 1900 و ${yearNow + 1}`
+        : `Enter a year between 1900 and ${yearNow + 1}`;
+    }
+    if (!docFile) {
+      errs.docFile = isRTL
+        ? 'يرجى رفع وثيقة تسجيل الدراجة'
+        : 'Please upload your registration document';
+    }
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
   // ── File handlers ──────────────────────────────────────────────────
   const onFileChange = (file: File | null) => {
@@ -234,21 +250,28 @@ const HondaApplication: React.FC = () => {
       return;
     }
     if (file.size > MAX_FILE_BYTES) {
-      toast.error(
-        isRTL ? 'حجم الملف يجب ألا يتجاوز 10 ميجابايت' : 'File must be 10 MB or smaller',
-      );
+      setFieldErrors((p) => ({
+        ...p,
+        docFile: isRTL ? 'حجم الملف يجب ألا يتجاوز 10 ميجابايت' : 'File must be 10 MB or smaller',
+      }));
       return;
     }
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      toast.error(
-        isRTL
+      setFieldErrors((p) => ({
+        ...p,
+        docFile: isRTL
           ? 'الصيغة غير مدعومة — استخدم JPG أو PNG أو PDF'
           : 'Unsupported format — use JPG, PNG, or PDF',
-      );
+      }));
       return;
     }
+    setFieldErrors((p) => {
+      const { docFile: _omit, ...rest } = p;
+      return rest;
+    });
     setDocFile(file);
   };
+
 
   // ── Submit ─────────────────────────────────────────────────────────
   // 1) Upload doc to storage. 2) Insert honda_applications row. 3) Call
