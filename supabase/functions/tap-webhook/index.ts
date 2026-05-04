@@ -341,28 +341,60 @@ async function upsertAndSendGHLWebhook(
       totalPurchased = (row as any)?.total_purchased ?? 0;
     }
 
-    const address = [profile?.city, profile?.country, profile?.postal_code].filter(Boolean).join(", ");
+    // Country in profiles.country is sometimes the ISO code ("SA"),
+    // sometimes the localized name ("Saudi Arabia"). GHL's contact
+    // action rejects unknown country names silently — send the
+    // 2-letter code only so it maps internally regardless of how
+    // the profile field was originally written.
+    const rawCountry = (profile?.country || "").trim();
+    const countryCode = (() => {
+      // 2-letter ISO codes are 2 alphabetic characters; any other
+      // shape we treat as a name and fall back to passing it through.
+      // Mapping common GCC names to codes here would duplicate the
+      // lib in src/data/countryCityData; this defensive stub covers
+      // the common cases without pulling that lib server-side.
+      if (/^[A-Z]{2}$/i.test(rawCountry)) return rawCountry.toUpperCase();
+      const lower = rawCountry.toLowerCase();
+      const map: Record<string, string> = {
+        "saudi arabia": "SA", "السعودية": "SA",
+        "uae": "AE", "united arab emirates": "AE", "الإمارات": "AE",
+        "kuwait": "KW", "الكويت": "KW",
+        "qatar": "QA", "قطر": "QA",
+        "bahrain": "BH", "البحرين": "BH",
+        "oman": "OM", "عُمان": "OM", "عمان": "OM",
+        "egypt": "EG", "مصر": "EG",
+        "jordan": "JO", "الأردن": "JO",
+        "palestine": "PS", "فلسطين": "PS",
+        "iraq": "IQ", "العراق": "IQ",
+        "lebanon": "LB", "لبنان": "LB",
+        "syria": "SY", "سوريا": "SY",
+        "yemen": "YE", "اليمن": "YE",
+      };
+      return map[lower] || rawCountry; // pass through if unknown
+    })();
 
+    // Tight 11-field payload per spec — order webhook only carries
+    // contact identity + the order details. Personal-profile fields
+    // (DOB, gender, nationality, etc.) live on the profile webhook.
     const payload = {
       email: authUser?.user?.email || (verifiedCharge?.receipt as Record<string, unknown>)?.email || "",
-      phone: profile?.phone || "",
       full_name: profile?.full_name || "",
+      phone: profile?.phone || "",
+      country: countryCode,
       city: profile?.city || "",
-      country: profile?.country || "",
-      address,
+      source: "direct",
       courseName,
       amount: String(verifiedCharge?.amount || charge.amount || ""),
-      source: "direct",
       orderStatus: ghlOrderStatus,
-      courses: coursesJson,
       totalPurchased,
+      courses: coursesJson,
     };
 
     console.log("Sending GHL webhook for status:", status, "payload:", JSON.stringify(payload));
 
     const res = await fetch(GHL_WEBHOOK_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify(payload),
     });
 

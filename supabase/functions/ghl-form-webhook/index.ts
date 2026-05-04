@@ -37,61 +37,59 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json()
-    const { full_name, email, phone, city, country, address, courseName, amount, orderStatus, source, courses, totalPurchased, dateOfBirth, gender } = body
+    const { full_name, email, phone, city, country, courseName, amount, orderStatus, source, courses, totalPurchased } = body
 
-    // Split full name into first/last so GHL's "Add/Update Contact"
-    // action can populate the First Name + Last Name columns separately.
-    const safeFullName = String(full_name || '').trim()
-    const nameParts = safeFullName.split(/\s+/).filter(Boolean)
-    const firstName = nameParts[0] || ''
-    const lastName = nameParts.slice(1).join(' ') || ''
+    // Country: send ISO 2-letter code only (e.g. "SA"). GHL's "Add
+    // Contact" action rejects unknown country names silently — proven
+    // empirically (see ghl.service.ts comments). The caller may pass
+    // a code already, or a name we recognise; we coerce to a code,
+    // and fall through if neither.
+    const rawCountry = String(country || '').trim()
+    let countryCode = rawCountry
+    if (!/^[A-Z]{2}$/i.test(rawCountry)) {
+      const map: Record<string, string> = {
+        'saudi arabia': 'SA', 'السعودية': 'SA',
+        'uae': 'AE', 'united arab emirates': 'AE', 'الإمارات': 'AE',
+        'kuwait': 'KW', 'الكويت': 'KW',
+        'qatar': 'QA', 'قطر': 'QA',
+        'bahrain': 'BH', 'البحرين': 'BH',
+        'oman': 'OM', 'عُمان': 'OM', 'عمان': 'OM',
+        'egypt': 'EG', 'مصر': 'EG',
+        'jordan': 'JO', 'الأردن': 'JO',
+        'palestine': 'PS', 'فلسطين': 'PS',
+        'iraq': 'IQ', 'العراق': 'IQ',
+        'lebanon': 'LB', 'لبنان': 'LB',
+        'syria': 'SY', 'سوريا': 'SY',
+        'yemen': 'YE', 'اليمن': 'YE',
+      }
+      countryCode = map[rawCountry.toLowerCase()] || rawCountry
+    } else {
+      countryCode = rawCountry.toUpperCase()
+    }
 
-    // Send the same data under every common field-name convention so
-    // GHL's workflow auto-mapping picks them up regardless of how the
-    // workflow was wired. Without this, contacts showed up in GHL with
-    // "?" avatars and dashes for name/email/phone (the workflow created
-    // them but couldn't bind any field).
+    // Tight 11-field payload per the agreed order-webhook spec. No
+    // firstName/lastName splits, no address1, no DOB/gender — those
+    // belong on the profile webhook.
     const payload: Record<string, unknown> = {
-      // ── Name (every casing) ──
-      firstName,
-      lastName,
-      first_name: firstName,
-      last_name: lastName,
-      firstname: firstName,
-      lastname: lastName,
-      full_name: safeFullName,
-      fullName: safeFullName,
-      name: safeFullName,
-
-      // ── Contact ──
       email: email || user.email || '',
+      full_name: full_name || '',
       phone: phone || '',
-
-      // ── Address (GHL uses address1, NOT address) ──
-      address1: address || '',
-      address: address || '',
+      country: countryCode,
       city: city || '',
-      country: country || '',
-
-      // ── Personal ──
-      dateOfBirth: dateOfBirth || '',
-      date_of_birth: dateOfBirth || '',
-      gender: gender || '',
-
-      // ── Order / context ──
+      source: source || 'direct',
       courseName: courseName || '',
       amount: amount || '',
-      source: source || 'direct',
       orderStatus: orderStatus || 'not purchased',
-      courses: courses || '[]',
       totalPurchased: totalPurchased ?? 0,
+      courses: courses || '[]',
     }
 
     console.log('GHL form webhook payload:', JSON.stringify(payload))
 
     const webhookRes = await fetch(GHL_WEBHOOK_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      // charset=utf-8 explicit so GHL decodes Arabic correctly.
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
       body: JSON.stringify(payload),
     })
 

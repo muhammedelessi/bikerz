@@ -50,90 +50,58 @@ if (typeof window !== "undefined") {
   }
 }
 
+/**
+ * Order/payment-status webhook. Fires on signup-with-order, course
+ * purchase, training booking purchase — anything that produces an
+ * `orderStatus` for the contact.
+ *
+ * Payload is intentionally a tight 11-field shape per the agreed spec:
+ *
+ *   email, full_name, phone, country (ISO 2-letter code), city,
+ *   source, courseName, amount, orderStatus, totalPurchased, courses
+ *
+ * Anything else (firstName/lastName splits, address1, dateOfBirth,
+ * gender, ticket fields, has_motorcycle, …) is NOT sent — those have
+ * dedicated webhooks (profile webhook handles personal fields, the
+ * support webhook handles tickets, etc.). This webhook is order-only.
+ */
+const GHL_ORDER_WEBHOOK_URL =
+  "https://services.leadconnectorhq.com/hooks/ddAvdgekc94cWL9NBHK1/webhook-trigger/9a3cf7c3-0405-4667-ad02-e9c89073feb4";
+
 export async function sendGHLFormData(data: FormWebhookData): Promise<boolean> {
   const { isRTL, silent, ...rest } = data;
-  const fullName = rest.full_name || "";
-  const { firstname: firstName, lastname: lastName } = splitNameForWebhook(fullName);
+  // GHL's "Add Contact" action rejects unknown country names silently
+  // (we proved this empirically with the Palestine tests). Send the
+  // ISO 2-letter code in the `country` field — GHL maps it internally.
   const countryCode = toCountryCode(rest.country) || "";
-  const countryEnglish = resolveCountryEnglish(rest.country) || "";
   const cityEnglish = resolveCityEnglish(rest.city, rest.country) || "";
 
-  // Send the same data under EVERY common field-name convention. GHL's
-  // workflow auto-mapping looks for specific keys depending on how the
-  // user wired their "Add/Update Contact" action — sending camelCase
-  // (their Contact API standard), snake_case, lowercase-no-separator
-  // and the original `full_name` covers every workflow shape we've
-  // seen in the wild. Why they all matter:
-  //   • Auto-mapping in newer GHL workflows expects camelCase
-  //     (firstName, lastName, dateOfBirth, postalCode, address1).
-  //   • Older workflows / custom field maps use snake_case.
-  //   • Some templates the user might have copy-pasted use the bare
-  //     lowercase `firstname` / `lastname`.
-  // Duplicating doesn't bloat the request meaningfully (~200 extra
-  // bytes) and is the difference between "contact created with empty
-  // fields" and "contact created fully populated".
   const payload: Record<string, unknown> = {
-    // ── Name ──
-    firstName,
-    lastName,
-    first_name: firstName,
-    last_name: lastName,
-    firstname: firstName,
-    lastname: lastName,
-    name: fullName,
-    full_name: fullName,
-    fullName: fullName,
-
-    // ── Contact ──
     email: rest.email || "",
+    full_name: rest.full_name || "",
     phone: rest.phone || "",
-
-    // ── Address ──
-    address1: rest.address || "",
-    address: rest.address || "",
+    country: countryCode,
     city: cityEnglish || rest.city || "",
-    country: countryEnglish || rest.country || "",
-    countryCode,
-    country_code: countryCode,
-
-    // ── Personal ──
-    dateOfBirth: rest.dateOfBirth || "",
-    date_of_birth: rest.dateOfBirth || "",
-    gender: rest.gender || "",
-
-    // ── Order / context ──
+    source: getVisitSource(),
     courseName: rest.courseName || "",
     amount: rest.amount || "",
-    currency: rest.currency || "",
     orderStatus: rest.orderStatus || "not purchased",
-    courses: rest.courses || "[]",
     totalPurchased: rest.totalPurchased ?? 0,
-    source: getVisitSource(),
-
-    // ── Support ticket fields ──
-    ticket_subject: rest.ticket_subject || "",
-    ticket_message: rest.ticket_message || "",
-    ticket_category: rest.ticket_category || "",
-    has_motorcycle: rest.has_motorcycle ?? null,
-    considering_purchase: rest.considering_purchase ?? null,
+    courses: rest.courses || "[]",
   };
 
   try {
-    const res = await fetch(
-      "https://services.leadconnectorhq.com/hooks/ddAvdgekc94cWL9NBHK1/webhook-trigger/0c004a12-e140-49df-8fcf-b62b101c4e8c",
-      {
-        method: "POST",
-        // charset=utf-8 is the explicit signal — fetch sends UTF-8 bytes
-        // by default, and the header tells GHL's parser to decode as UTF-8
-        // instead of guessing (which is what produces the "???" mojibake).
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify(payload),
-      },
-    );
-    if (!res.ok) console.warn(`GHL webhook returned ${res.status}`);
+    const res = await fetch(GHL_ORDER_WEBHOOK_URL, {
+      method: "POST",
+      // charset=utf-8 is explicit so GHL decodes the body as UTF-8
+      // instead of guessing — protects Arabic full_name from "???".
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) console.warn(`GHL order webhook returned ${res.status}`);
     return true;
   } catch (err) {
-    console.error("GHL form webhook failed:", err);
+    console.error("GHL order webhook failed:", err);
     return false;
   }
 }
