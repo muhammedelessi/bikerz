@@ -479,25 +479,10 @@ const EmbeddedCardForm: React.FC<EmbeddedCardFormProps> = ({
             Iframe host. min-h ensures the loading overlay has room before the
             SDK injects its content; touch-action prevents iOS Safari from
             inheriting page-level pinch-zoom into the OTP/card iframe.
-
-            max-w-[380px] is intentional: Tap's Card SDK v2 picks its layout
-            (inline single-row vs. stacked two-row) based on container width.
-            On a wide desktop wrapper Tap fits Card Number + MM/YY + CVV all
-            in one row, which collides visually with the section bars we
-            added above (label says "Card Number" but the user actually
-            sees three fields in one line). Constraining to ~380px is below
-            Tap's inline-layout breakpoint, so the SDK switches to:
-              Row 1 — Card Number (full width)
-              Row 2 — MM/YY  |  CVV  (split half/half)
-              Row 3 — brand icons strip
-            …which matches what our two section bars promise.
-
-            Centering with mx-auto keeps the form centered on wide screens
-            so it doesn't visually drift off to one side of the wrapper.
           */}
           <div
             id={CONTAINER_ID}
-            className="min-h-[200px] mx-auto max-w-[380px] [&>iframe]:!block [&>iframe]:!w-full"
+            className="min-h-[200px] [&>iframe]:!block [&>iframe]:!w-full"
             style={{ touchAction: "manipulation" }}
           />
         </div>
