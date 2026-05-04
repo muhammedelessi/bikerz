@@ -80,7 +80,16 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
 
   const handleCardApiReady = useCallback((api: { tokenize: () => Promise<string>; reinit: () => void }) => {
     cardApiRef.current = api;
-  }, []);
+    // Wire reinit into useTapPayment so cancelChallenge can auto-refresh
+    // the card form (prevents Tap 1126 on the second Pay click after cancel).
+    tap.registerCardReinit(() => {
+      try {
+        cardApiRef.current?.reinit();
+      } catch (e) {
+        console.warn('[BundleCheckoutModal] cardApi.reinit() threw:', e);
+      }
+    });
+  }, [tap]);
   const handleCardSdkStatusChange = useCallback(
     (s: { sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null }) => {
       setCardSdkStatus(s);

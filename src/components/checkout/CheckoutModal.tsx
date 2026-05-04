@@ -79,7 +79,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const submittingRef = useRef(false);
   const handleCardApiReady = useCallback((api: { tokenize: () => Promise<string>; reinit: () => void }) => {
     cardApiRef.current = api;
-  }, []);
+    // Register the card reinit with useTapPayment so cancelChallenge can
+    // automatically refresh the form (avoids Tap 1126 "Source already
+    // used" on the next Pay click after a cancel).
+    tap.registerCardReinit(() => {
+      try {
+        cardApiRef.current?.reinit();
+      } catch (e) {
+        console.warn('[CheckoutModal] cardApi.reinit() threw:', e);
+      }
+    });
+  }, [tap]);
   const handleCardSdkStatusChange = useCallback(
     (s: { sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null }) => {
       setCardSdkStatus(s);

@@ -82,8 +82,17 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
   const handleCardApiReady = useCallback(
     (api: { tokenize: () => Promise<string>; reinit: () => void }) => {
       cardApiRef.current = api;
+      // Wire reinit into useTapPayment so cancelChallenge can auto-refresh
+      // the card form on cancel (prevents Tap error 1126 on retry).
+      tap.registerCardReinit(() => {
+        try {
+          cardApiRef.current?.reinit();
+        } catch (e) {
+          console.warn('[CheckoutPage] cardApi.reinit() threw:', e);
+        }
+      });
     },
-    [],
+    [tap],
   );
   const handleCardSdkStatusChange = useCallback(
     (s: { sdkLoading: boolean; sdkReady: boolean; cardValid: boolean; sdkError: string | null }) => {

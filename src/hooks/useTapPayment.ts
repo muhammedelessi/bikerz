@@ -1,8 +1,95 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { RecoverableTapSourceUsedError, createCharge, verifyChargeOnce } from '@/services/payment.service';
 import type { PaymentStatus, TapPaymentConfig } from '@/types/payment';
+
+/**
+ * How long before we silently start polling Tap to find out what happened
+ * to a 3DS challenge that hasn't fired its postMessage yet. Real bank flows
+ * complete in 5–20 s after OTP submit; if we're past 30 s the iframe is
+ * almost certainly stuck (cross-origin navigation blocked, popup eaten by
+ * an in-app browser, etc.). Polling won't bother the user — we only flip
+ * the status when Tap returns a definitive result.
+ */
+const POLL_START_AFTER_MS = 30_000;
+const POLL_INTERVAL_MS = 5_000;
+/** Hard ceiling. Past this we surface the "still confirming" recovery UI. */
+const HARD_TIMEOUT_MS = 180_000;
+
+/**
+ * Translate a Tap charge response or thrown error into a clear bilingual
+ * message. Tap returns generic "Payment was declined" for many distinct
+ * causes (currency-not-allowed, card-declined, insufficient-funds, BIN-
+ * blocked, …) — we surface what little signal we do have so the user
+ * isn't left guessing why the charge failed.
+ */
+function friendlyChargeError(
+  raw: unknown,
+  isRTL: boolean,
+  defaultStatus: 'failed' | 'cancelled' | string = 'failed',
+): string {
+  const obj =
+    raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+  const responseMsg = (obj.response && typeof obj.response === 'object'
+    ? (obj.response as Record<string, unknown>).message
+    : undefined) as string | undefined;
+  const tapMessage =
+    (obj.tap_message as string | undefined) ||
+    (obj.message as string | undefined) ||
+    responseMsg ||
+    '';
+
+  const code = (obj.code as string | undefined) || '';
+  const text = `${tapMessage} ${code}`.toLowerCase();
+
+  // Map common Tap reason codes to clear bilingual messages.
+  if (text.includes('insufficient') || text.includes('insufficient_funds')) {
+    return isRTL
+      ? 'رصيد البطاقة غير كافٍ. الرجاء استخدام بطاقة أخرى أو شحن البطاقة.'
+      : 'Insufficient funds on the card. Please try another card or top it up.';
+  }
+  if (text.includes('expired') || text.includes('card_expired')) {
+    return isRTL
+      ? 'البطاقة منتهية الصلاحية. الرجاء استخدام بطاقة سارية.'
+      : 'This card has expired. Please use a different card.';
+  }
+  if (text.includes('do_not_honor') || text.includes('not_honor') || text.includes('declined_by_bank')) {
+    return isRTL
+      ? 'رفض البنك العملية. تواصل مع البنك أو استخدم بطاقة أخرى.'
+      : 'Your bank declined the transaction. Contact the bank or try another card.';
+  }
+  if (text.includes('invalid_card') || text.includes('card_not_allowed') || text.includes('invalid card')) {
+    return isRTL
+      ? 'بيانات البطاقة غير صحيحة أو غير مدعومة. تأكد من الرقم وتاريخ الانتهاء وCVV.'
+      : 'Card details are invalid or not supported. Re-check the number, expiry, and CVV.';
+  }
+  if (text.includes('currency_not_allowed') || text.includes('unsupported currency')) {
+    return isRTL
+      ? 'هذه العملة غير مدعومة لبطاقتك. استخدم بطاقة دولية أو غيّر العملة.'
+      : 'Your card does not support this currency. Try an international card or switch currency.';
+  }
+  if (text.includes('3d') || text.includes('authentication_failed') || text.includes('auth_failed')) {
+    return isRTL
+      ? 'فشل التحقق ثلاثي الأبعاد. تأكد من رمز OTP أو حاول مرة أخرى.'
+      : '3-D Secure authentication failed. Re-check the OTP or try again.';
+  }
+  if (text.includes('cancelled') || text.includes('canceled') || defaultStatus === 'cancelled') {
+    return isRTL
+      ? 'تم إلغاء العملية.'
+      : 'Transaction was cancelled.';
+  }
+  if (text.includes('timeout') || text.includes('timed out')) {
+    return isRTL
+      ? 'انتهت مهلة العملية. الرجاء المحاولة مرة أخرى.'
+      : 'The transaction timed out. Please try again.';
+  }
+  if (tapMessage) return tapMessage;
+  return isRTL
+    ? 'تم رفض الدفع. الرجاء المحاولة مرة أخرى أو استخدام بطاقة مختلفة.'
+    : 'Payment was declined. Please try again or use a different card.';
+}
 
 export type { PaymentMethod, PaymentStatus, TapPaymentConfig } from '@/types/payment';
 
@@ -13,7 +100,16 @@ interface UseTapPaymentReturn {
   /** Tap 3-DS challenge URL — render in an in-page iframe (Option B custom UI). */
   challengeUrl: string | null;
   submitPayment: (config: TapPaymentConfig) => Promise<void>;
-  cancelChallenge: () => void;
+  cancelChallenge: () => Promise<void>;
+  /**
+   * Parents register their card-form `reinit()` here so cancelChallenge can
+   * automatically force a fresh card iframe + token on cancel. Without this
+   * the user clicks Pay → 3DS → Cancel → Pay-again, and Tap rejects the
+   * second attempt with error 1126 "Source already used" (the existing
+   * recovery path catches that, but the user briefly sees a flicker
+   * + retry; calling reinit on cancel makes the next attempt clean).
+   */
+  registerCardReinit: (fn: (() => void) | null) => void;
   /** Re-poll Tap for the latest status of the current charge — used by the
    *  "still confirming" recovery UI so the user can recover without retrying
    *  a payment that may have actually succeeded. */
@@ -48,6 +144,12 @@ export function useTapPayment(): UseTapPaymentReturn {
     setChargeId(cid);
   }, []);
 
+  /** Card-form reinit hook (registered by the parent via registerCardReinit). */
+  const cardReinitRef = useRef<(() => void) | null>(null);
+  const registerCardReinit = useCallback((fn: (() => void) | null) => {
+    cardReinitRef.current = fn;
+  }, []);
+
   /**
    * Verify a charge with backoff. We treat exhausting the polling window as
    * "still processing" rather than "failed" — Tap may finalize the charge
@@ -66,7 +168,10 @@ export function useTapPayment(): UseTapPaymentReturn {
           return;
         }
         if (data?.status === 'failed' || data?.status === 'cancelled') {
-          setError((data as any)?.tap_message || (data as any)?.message || 'Payment was declined. Please try again.');
+          const isRTL =
+            typeof document !== 'undefined' &&
+            document.documentElement.getAttribute('dir') === 'rtl';
+          setError(friendlyChargeError(data, isRTL, data.status));
           updateStatus('failed');
           return;
         }
@@ -81,7 +186,10 @@ export function useTapPayment(): UseTapPaymentReturn {
       setError(null);
       updateStatus('confirming');
     } catch (err: any) {
-      setError(err.message || 'Payment verification failed');
+      const isRTL =
+        typeof document !== 'undefined' &&
+        document.documentElement.getAttribute('dir') === 'rtl';
+      setError(friendlyChargeError(err, isRTL));
       updateStatus('failed');
     }
   }, [updateStatus]);
@@ -145,27 +253,98 @@ export function useTapPayment(): UseTapPaymentReturn {
     return () => window.removeEventListener('message', handler);
   }, [verifyCharge, updateStatus, setChargeIdSafe]);
 
-  // 3-DS watchdog: if the iframe is open longer than 3 minutes without
-  // sending us a result, the user is almost certainly stuck on the bank's
-  // page and won't recover without a nudge. Transition to "confirming"
-  // (not "failed") because the charge MAY still settle — the
-  // CheckoutStatusOverlay then shows a "Check status" / "Try again" CTA
-  // instead of leaving the user with a hung modal and no message.
+  // 3-DS watchdog with active polling.
+  //
+  // The original watchdog waited the full 3 minutes before doing anything,
+  // which left users staring at a stuck spinner whenever the iframe failed
+  // to relay its result back to us (cross-origin navigation blocked,
+  // in-app browser limitations, the bank's pageClosed handler crashing,
+  // etc.). The fix: silently start polling Tap directly at the 30 s mark.
+  //
+  //   t = 0        challenge_3ds opens
+  //   t = 30 s     start polling /verify-charge every 5 s in the background
+  //   on success   close iframe, transition to 'succeeded'
+  //   on failure   close iframe, transition to 'failed' with a clear reason
+  //   t = 180 s    give up, surface the "still confirming" recovery UI
+  //
+  // Polling is silent (no UI change) until Tap returns a definitive status
+  // — the user keeps seeing the iframe in case the legitimate flow recovers.
   useEffect(() => {
     if (status !== 'challenging_3ds') return;
-    const id = setTimeout(() => {
-      console.warn('[TapPayment] 3DS watchdog: no callback in 3 minutes, surfacing recovery UI');
+
+    let pollIntervalId: ReturnType<typeof setInterval> | null = null;
+    let stopped = false;
+
+    // Start the silent poll at +30 s.
+    const pollStartTimer = setTimeout(() => {
+      if (stopped) return;
+      const cid = chargeIdRef.current;
+      if (!cid) return;
+      console.info('[TapPayment] 3DS still pending after 30s — starting silent poll');
+      pollIntervalId = setInterval(async () => {
+        if (stopped) return;
+        try {
+          const data = await verifyChargeOnce(cid);
+          if (stopped) return;
+          if (data?.status === 'succeeded') {
+            console.info('[TapPayment] poll caught succeeded charge — closing iframe');
+            stopped = true;
+            if (pollIntervalId) clearInterval(pollIntervalId);
+            setChallengeUrl(null);
+            updateStatus('succeeded');
+            return;
+          }
+          if (data?.status === 'failed' || data?.status === 'cancelled') {
+            console.info('[TapPayment] poll caught', data.status, '— closing iframe');
+            stopped = true;
+            if (pollIntervalId) clearInterval(pollIntervalId);
+            const isRTL =
+              typeof document !== 'undefined' &&
+              document.documentElement.getAttribute('dir') === 'rtl';
+            setError(friendlyChargeError(data, isRTL, data.status));
+            setChallengeUrl(null);
+            updateStatus('failed');
+          }
+          // initiated / processing → keep polling, don't change UI
+        } catch (e) {
+          // Network blip; let the next tick try again. The hard timeout
+          // below will give up if it never recovers.
+          console.warn('[TapPayment] poll tick failed (will retry):', e);
+        }
+      }, POLL_INTERVAL_MS);
+    }, POLL_START_AFTER_MS);
+
+    // Hard ceiling: at +3 minutes give up the iframe and surface the
+    // recovery UI ("still confirming"). The charge may yet settle — we
+    // want the user to be able to refresh, not retry.
+    const hardTimeoutId = setTimeout(() => {
+      if (stopped) return;
+      stopped = true;
+      if (pollIntervalId) clearInterval(pollIntervalId);
+      console.warn('[TapPayment] 3DS hard timeout — surfacing recovery UI');
       setChallengeUrl(null);
       const cid = chargeIdRef.current;
       if (cid) {
-        // Re-poll Tap; it'll resolve to succeeded/failed/confirming.
         verifyCharge(cid);
       } else {
-        setError('Bank verification timed out. Please try again.');
+        const isRTL =
+          typeof document !== 'undefined' &&
+          document.documentElement.getAttribute('dir') === 'rtl';
+        setError(
+          isRTL
+            ? 'انتهت مهلة التحقق من البنك. الرجاء المحاولة مرة أخرى.'
+            : 'Bank verification timed out. Please try again.',
+        );
         updateStatus('failed');
       }
-    }, 180_000);
-    return () => clearTimeout(id);
+    }, HARD_TIMEOUT_MS);
+
+    return () => {
+      stopped = true;
+      clearTimeout(pollStartTimer);
+      clearTimeout(hardTimeoutId);
+      if (pollIntervalId) clearInterval(pollIntervalId);
+    };
   }, [status, verifyCharge, updateStatus]);
 
   const submitPayment = useCallback(async (config: TapPaymentConfig) => {
@@ -243,13 +422,73 @@ export function useTapPayment(): UseTapPaymentReturn {
     }
   }, [detectedCountry, updateStatus, setChargeIdSafe]);
 
-  const cancelChallenge = useCallback(() => {
+  const cancelChallenge = useCallback(async () => {
+    const isRTL =
+      typeof document !== 'undefined' &&
+      document.documentElement.getAttribute('dir') === 'rtl';
     setChallengeUrl(null);
     setError(null);
+
+    // Defensive verify: in rare cases the bank actually completed the
+    // charge but our iframe couldn't relay the result (cross-origin block,
+    // in-app browser, etc.) and the user clicks Cancel believing nothing
+    // happened. Ask Tap directly so we don't tell the user "no charge
+    // made" when one did go through.
+    const cid = chargeIdRef.current;
+    if (cid) {
+      try {
+        const data = await verifyChargeOnce(cid);
+        if (data?.status === 'succeeded') {
+          // Charge already went through — surface success instead of cancel.
+          updateStatus('succeeded');
+          toast.success(
+            isRTL
+              ? 'تم الدفع بنجاح! جاري التحويل…'
+              : 'Payment succeeded! Redirecting…',
+          );
+          return;
+        }
+        if (data?.status === 'failed') {
+          setError(friendlyChargeError(data, isRTL, 'failed'));
+          updateStatus('failed');
+          toast.error(
+            isRTL
+              ? 'تم رفض العملية من البنك.'
+              : 'The bank declined the transaction.',
+          );
+          return;
+        }
+        // 'initiated' / 'cancelled' / unknown → treat as a clean cancel.
+      } catch (e) {
+        // Verify failed; continue with the silent-cancel path. The user
+        // can retry; if a charge did sneak through, the next attempt's
+        // duplicate-check would still surface it.
+        console.warn('[TapPayment] cancelChallenge verify failed (proceeding as cancelled):', e);
+      }
+    }
+
     // Soft cancel — user closed the 3DS modal themselves. Reset to idle
-    // instead of 'failed' so we don't show a harsh red error UI.
+    // (not 'failed') so the parent can show its normal card form again
+    // without a red error overlay. The toast tells the user nothing was
+    // charged and they can retry — that's the missing feedback they were
+    // seeing as silent.
+    setChargeIdSafe(null);
     updateStatus('idle');
-  }, [updateStatus]);
+    // Force a fresh card iframe + token so the next Pay click doesn't
+    // bump into Tap error 1126 "Source already used". This is the silent
+    // fix to "the form doesn't reset to accept another payment".
+    try {
+      cardReinitRef.current?.();
+    } catch (e) {
+      console.warn('[TapPayment] cardReinit on cancel failed:', e);
+    }
+    toast.info(
+      isRTL
+        ? 'تم إلغاء عملية الدفع — لم يُخصم أي مبلغ من بطاقتك.'
+        : 'Payment cancelled — no amount was charged to your card.',
+      { duration: 5000 },
+    );
+  }, [updateStatus, setChargeIdSafe]);
 
   const reset = useCallback(() => {
     setChallengeUrl(null);
@@ -263,5 +502,5 @@ export function useTapPayment(): UseTapPaymentReturn {
     updateStatus('failed');
   }, [updateStatus]);
 
-  return { status, error, chargeId, challengeUrl, submitPayment, cancelChallenge, recheckStatus, setExternalError, reset };
+  return { status, error, chargeId, challengeUrl, submitPayment, cancelChallenge, recheckStatus, setExternalError, reset, registerCardReinit };
 }
