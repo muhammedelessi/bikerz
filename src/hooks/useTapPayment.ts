@@ -19,17 +19,20 @@ import type { PaymentStatus, TapPaymentConfig } from '@/types/payment';
 const POLL_START_AFTER_MS = 5_000;
 const POLL_INTERVAL_MS = 2_000;
 /**
- * Hard ceiling. After this we close the iframe and show the "Verifying
- * Payment" overlay, which gives the user **visible feedback** that the
- * system is still checking. At 30 s the iframe is almost certainly stuck
- * (cross-origin redirect never completed); closing it and surfacing the
- * verifying overlay with progress is a much better UX than leaving the
- * user staring at a blank iframe for 75+ s with zero feedback.
+ * No hard timeout — we never auto-close the 3DS iframe. The user must
+ * finish entering OTP themselves; the silent polling picks up the result
+ * the moment the bank confirms (or rejects). The iframe stays open until
+ * either:
+ *   1. The polling catches a definitive status (succeeded/failed/cancelled)
+ *      → we close the iframe and surface the result.
+ *   2. The user clicks "Cancel" or "Verify now" in the stuck hint that
+ *      appears after 60 s.
  *
- * The verifyCharge() function that runs at this point has its own 5×3 s
- * retry loop, extending actual polling coverage to ~45 s total.
+ * Previously a 30 s HARD_TIMEOUT_MS forcibly closed the iframe and showed
+ * a "verifying" overlay — this was the "payment stops at finalizing"
+ * problem users reported, because often the user hadn't finished entering
+ * OTP yet when the iframe disappeared.
  */
-const HARD_TIMEOUT_MS = 30_000;
 
 /**
  * Translate a Tap charge response or thrown error into a clear bilingual
@@ -334,43 +337,9 @@ export function useTapPayment(): UseTapPaymentReturn {
       }, POLL_INTERVAL_MS);
     }, POLL_START_AFTER_MS);
 
-    // Hard ceiling: close the iframe and switch to the "Verifying
-    // Payment" overlay so the user sees concrete progress instead of a
-    // stuck iframe. verifyCharge() has its own 5×3 s retry loop, so
-    // effective polling coverage extends to ~45 s total.
-    const hardTimeoutId = setTimeout(() => {
-      if (stopped) return;
-      stopped = true;
-      if (pollIntervalId) clearInterval(pollIntervalId);
-      console.warn('[TapPayment] 3DS hard timeout — closing iframe, showing verify overlay');
-      setChallengeUrl(null);
-      const cid = chargeIdRef.current;
-      // Visible feedback: toast so the user knows we're still working.
-      const isRTL =
-        typeof document !== 'undefined' &&
-        document.documentElement.getAttribute('dir') === 'rtl';
-      toast.info(
-        isRTL
-          ? 'جاري التحقق من حالة الدفع… يرجى الانتظار'
-          : 'Checking payment status… please wait',
-        { duration: 6000 },
-      );
-      if (cid) {
-        verifyCharge(cid);
-      } else {
-        setError(
-          isRTL
-            ? 'انتهت مهلة التحقق من البنك. الرجاء المحاولة مرة أخرى.'
-            : 'Bank verification timed out. Please try again.',
-        );
-        updateStatus('failed');
-      }
-    }, HARD_TIMEOUT_MS);
-
     return () => {
       stopped = true;
       clearTimeout(pollStartTimer);
-      clearTimeout(hardTimeoutId);
       if (pollIntervalId) clearInterval(pollIntervalId);
     };
   }, [status, verifyCharge, updateStatus]);

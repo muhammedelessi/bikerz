@@ -55,7 +55,6 @@ interface Checkout3DSModalProps {
 const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ url, onCancel, onVerifyNow }, ref) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === 'rtl';
-  const [showAutoCheck, setShowAutoCheck] = useState(false);
   const [showStuckHint, setShowStuckHint] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
@@ -69,16 +68,12 @@ const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ ur
     };
   }, []);
 
-  // Show a subtle "auto-checking" indicator at 8 s — the user sees that
-  // the system is actively working even while the iframe looks idle.
+  // Show the "still waiting?" hint after 60 s — enough time for the user
+  // to receive and enter OTP. Previously this was 15 s which was too
+  // aggressive and confused users who were still mid-OTP. The iframe
+  // stays open; this just adds helpful action buttons below it.
   useEffect(() => {
-    const id = setTimeout(() => setShowAutoCheck(true), 8_000);
-    return () => clearTimeout(id);
-  }, []);
-
-  // Show the full "still waiting?" hint with action buttons at 15 s.
-  useEffect(() => {
-    const id = setTimeout(() => setShowStuckHint(true), 15_000);
+    const id = setTimeout(() => setShowStuckHint(true), 60_000);
     return () => clearTimeout(id);
   }, []);
 
@@ -130,8 +125,8 @@ const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ ur
           <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
           <span className="leading-tight">
             {isRTL
-              ? 'أدخل رمز التحقق (OTP) من بنكك. سيتم التحقق من الدفع تلقائياً بعد إدخال الرمز.'
-              : "Enter the verification code (OTP) from your bank. Payment will be verified automatically after you enter it."}
+              ? 'أدخل رمز التحقق (OTP) المرسل من بنكك لإتمام عملية الدفع.'
+              : "Enter the verification code (OTP) sent by your bank to complete the payment."}
           </span>
         </div>
 
@@ -145,21 +140,7 @@ const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ ur
           referrerPolicy="no-referrer-when-downgrade"
         />
 
-        {/* Auto-check indicator — appears at 8 s, before the full stuck
-            hint. Tells the user the system is actively verifying even
-            while the iframe may look frozen. */}
-        {showAutoCheck && !showStuckHint && (
-          <div className="px-4 py-2 bg-emerald-500/10 border-t border-emerald-500/20 flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300 flex-shrink-0">
-            <RefreshCw className="w-3 h-3 animate-spin shrink-0" />
-            <span className="leading-tight font-medium">
-              {isRTL
-                ? 'نتحقق من حالة الدفع تلقائياً… بعد إدخال الرمز سيتم التحويل مباشرة.'
-                : 'Auto-checking payment status… you\'ll be redirected once confirmed.'}
-            </span>
-          </div>
-        )}
-
-        {/* "Still waiting?" hint — appears after 15 s.
+        {/* "Still waiting?" hint — appears after 60 s.
             Now offers TWO actions:
               1. "Verify status now" — for users who completed OTP but are
                  stuck on Tap's loading spinner (the cross-origin redirect
@@ -175,8 +156,8 @@ const Checkout3DSModal = forwardRef<HTMLDivElement, Checkout3DSModalProps>(({ ur
               </p>
               <p className="text-muted-foreground">
                 {isRTL
-                  ? 'نتحقق تلقائياً من حالة الدفع. إذا أدخلت الرمز ولم تنتقل الصفحة، اضغط "تحقق الآن" أو انتظر قليلاً. إذا لم يصلك الرمز، اضغط إلغاء.'
-                  : 'We\'re auto-checking your payment status. If you entered the code but the page is stuck, tap "Verify now" or wait a moment. If the code never arrived, tap Cancel.'}
+                  ? 'إذا أدخلت رمز التحقق ولم تنتقل الصفحة، اضغط "تحقق الآن". إذا لم يصلك الرمز، اضغط إلغاء وحاول ببطاقة أخرى.'
+                  : 'If you entered the code but the page is stuck, tap "Verify now". If the code never arrived, tap Cancel and try a different card.'}
               </p>
               <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5">
                 {onVerifyNow && (
