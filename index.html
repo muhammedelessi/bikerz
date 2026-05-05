@@ -84,6 +84,28 @@
       as conflicting signals.
     -->
 
+    <!--
+      hreflang — static defaults for the bare-path Arabic homepage.
+
+      Crawlers and validators that DON'T execute JavaScript (including
+      technicalseo.com's hreflang tester, social-media unfurlers, the
+      first pass of Google's two-pass rendering pipeline) only see the
+      raw HTML — they miss anything Helmet injects after React hydrates.
+      Without these static tags, those tools report 'no hreflang found'
+      and Google may treat the Arabic and English versions as competing
+      duplicate pages instead of language alternates.
+
+      The href values below are the homepage URLs. The inline script
+      lower in the file updates them to the actual per-page reciprocal
+      pair the moment JS runs (e.g. on /about they become /about and
+      /en/about). For the homepage they're already correct.
+
+      x-default → Arabic version (Saudi-primary brand audience).
+    -->
+    <link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/" />
+    <link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en" />
+    <link rel="alternate" hreflang="x-default" href="https://academy.bikerz.com/" />
+
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Bikerz" />
@@ -106,15 +128,20 @@
     <meta name="google-site-verification" content="google7ed1a9a1c8af8981" />
 
     <!--
-      Per-page lang/dir + og:url update for the initial HTML.
+      Per-page lang/dir + og:url + hreflang update for the initial HTML.
 
-      The static defaults above (lang="ar", og:url="/") cover the bare-
-      path Arabic homepage. For any other URL — /en/* and every deep
-      page — we patch the DOM synchronously here so:
+      The static defaults above (lang="ar", og:url=/, hreflang ar=/,
+      en=/en, x-default=/) cover the bare-path Arabic homepage. For
+      any other URL — /en/* and every deep page — we patch the DOM
+      synchronously here so:
         • Screen readers / browser translation prompts see the right
           lang on first paint.
         • Social previews (which read og:url before JS hydrates) get
           the correct page URL instead of always-root.
+        • The hreflang ar/en/x-default URLs are the reciprocal pair
+          for the CURRENT page (e.g. /about gets ar=/about, en=/en/about).
+          Validators and bots that fetch the raw HTML now see correct
+          per-page hreflang on every URL — not just the homepage.
 
       Canonical is intentionally NOT touched here — see the comment
       above where the static canonical was removed. Helmet owns the
@@ -123,14 +150,33 @@
     <script>
       (function () {
         try {
+          var DOMAIN = 'https://academy.bikerz.com';
           var p = window.location.pathname || '/';
+
+          // Strip any /en or legacy /ar prefix to get the language-agnostic
+          // base path. Mirrors stripLangPrefix() in src/lib/i18nRouting.ts.
+          var basePath = p.replace(/^\/(ar|en)(?=\/|$)/, '') || '/';
+          var arHref = DOMAIN + basePath;
+          var enHref = DOMAIN + (basePath === '/' ? '/en' : '/en' + basePath);
+
           var isEn = p === '/en' || p.indexOf('/en/') === 0;
           if (isEn) {
             document.documentElement.lang = 'en';
             document.documentElement.dir = 'ltr';
           }
+
           var ogUrl = document.querySelector('meta[property="og:url"]');
-          if (ogUrl) ogUrl.setAttribute('content', 'https://academy.bikerz.com' + p);
+          if (ogUrl) ogUrl.setAttribute('content', DOMAIN + p);
+
+          var alternates = document.querySelectorAll('link[rel="alternate"][hreflang]');
+          for (var i = 0; i < alternates.length; i++) {
+            var hl = alternates[i].getAttribute('hreflang');
+            if (hl === 'ar' || hl === 'x-default') {
+              alternates[i].setAttribute('href', arHref);
+            } else if (hl === 'en') {
+              alternates[i].setAttribute('href', enHref);
+            }
+          }
         } catch (e) { /* defensive — querySelector can't actually throw */ }
       })();
     </script>

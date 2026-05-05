@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { localizedPath, stripLangPrefix } from '@/lib/i18nRouting';
@@ -64,12 +64,35 @@ const SEOHead: React.FC<SEOHeadProps> = ({
 
   // hreflang: strip the language prefix from the canonical to get the
   // base, then build Arabic (bare) and English (/en) reciprocal URLs.
-  // Both Arabic and English versions of the page reference each other
-  // AND themselves (via canonical above) — the reciprocal pair Google
-  // requires for hreflang to be valid.
+  // These URLs are written DIRECTLY to the static <link rel="alternate">
+  // tags in index.html (see the useEffect below) instead of being added
+  // via Helmet, because Helmet appends new <link rel="alternate"> tags
+  // alongside the static ones — leaving validators with duplicates.
+  // Writing to the existing static tags keeps a single set per page.
   const basePath = stripLangPrefix(canonicalPath);
   const arUrl = `${DOMAIN}${basePath}`;
   const enUrl = `${DOMAIN}${basePath === '/' ? '/en' : `/en${basePath}`}`;
+
+  // Sync the static hreflang tags from index.html with the current page.
+  // The inline script in index.html sets them to the right values BEFORE
+  // React hydrates so validators see correct hreflang on first fetch;
+  // this effect handles SPA navigation (when the user clicks an internal
+  // link and the URL changes without a full reload) so the tags stay in
+  // sync with the new page's reciprocal pair.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const alternates = document.querySelectorAll<HTMLLinkElement>(
+      'link[rel="alternate"][hreflang]',
+    );
+    alternates.forEach((link) => {
+      const hl = link.getAttribute('hreflang');
+      if (hl === 'ar' || hl === 'x-default') {
+        link.setAttribute('href', arUrl);
+      } else if (hl === 'en') {
+        link.setAttribute('href', enUrl);
+      }
+    });
+  }, [arUrl, enUrl]);
 
   // og:locale — Arabic pages get ar_SA, English pages get en_US
   const ogLocale = language === 'ar' ? 'ar_SA' : 'en_US';
@@ -97,10 +120,10 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow'} />
       <link rel="canonical" href={canonicalUrl} />
 
-      {/* hreflang — tells Google about the Arabic and English versions */}
-      <link rel="alternate" hrefLang="ar" href={arUrl} />
-      <link rel="alternate" hrefLang="en" href={enUrl} />
-      <link rel="alternate" hrefLang="x-default" href={arUrl} />
+      {/* hreflang lives in index.html as static tags; the useEffect above
+          syncs their hrefs on SPA navigation. Don't add them via Helmet —
+          Helmet APPENDS rather than replaces, producing duplicate tags
+          that validators flag as conflicting. */}
 
       {lcpPreloads?.map((p) => (
         <link
