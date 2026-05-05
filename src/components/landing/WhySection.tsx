@@ -9,8 +9,6 @@ import {
   LucideIcon
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import safetyImage from '@/assets/safety-hands.webp';
-import instructorImage from '@/assets/instructor.webp';
 import { WhyContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
@@ -21,11 +19,6 @@ const iconMap: Record<string, LucideIcon> = {
   Home, Target, BookOpen, Megaphone, Heart, Star, Zap, Crown,
   Flame, Rocket, Globe, Lock, Eye, Clock, Calendar, Bell,
   Gift, Medal, Flag, Compass, Mountain, Sun, Moon, Wind,
-};
-
-const imageMap: Record<number, string | undefined> = {
-  0: safetyImage,
-  1: instructorImage,
 };
 
 const delayClass = (i: number) => `anim-delay-${Math.min(i + 1, 8)}`;
