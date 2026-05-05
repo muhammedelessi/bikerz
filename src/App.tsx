@@ -270,8 +270,7 @@ const AppRoutes = () => (
     <AnalyticsTracker />
     <Suspense fallback={<RouteChunkFallback />}>
       <Routes>
-        {/* ── Root redirect: / → /ar/ or /en/ based on user preference ── */}
-        <Route path="/" element={<RootRedirect />} />
+        {/* "/" is handled by the Arabic LanguageRouter tree below as its index route. */}
 
         {/* ── System routes (no language prefix) ── */}
         <Route path="/payment-success" element={<PaymentSuccess />} />
