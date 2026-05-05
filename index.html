@@ -4,6 +4,72 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
+    <!--
+      Browser-language auto-redirect (Fix #2 remediation, Problem #5).
+
+      MUST run as the FIRST <head> child so the redirect happens before
+      anything else loads — no flash of Arabic content for an English
+      visitor, and Lighthouse measures the final /en/ URL cleanly
+      instead of a mid-page locale swap.
+
+      The 4 rules from Ali's brief, in early-return order:
+
+        Rule 2 — Only fire on the bare-path homepage. Deep pages
+                 (/courses/[id] from a Google Ad, /en/about from a
+                 share link) must NEVER redirect based on browser
+                 language; they go to exactly the URL clicked.
+        Rule 3 — NEVER redirect bots. Googlebot needs to crawl both
+                 /  and /en/ as separate pages — auto-redirecting
+                 would collapse them into one.
+        Rule 1 — Skip if the user already chose a language. The
+                 saved value (i18nextLng in localStorage) wins over
+                 browser language. Returning users keep their choice.
+        Then    — If the browser primary language starts with "en",
+                 redirect to /en/. Anything else stays at root
+                 (Arabic, the brand default).
+
+      Rule 4 — Use 302-equivalent. We can't issue a real 302 from a
+      static-hosted SPA, but window.location.replace() is the closest
+      client-side equivalent: it doesn't push a history entry, so
+      browser-back doesn't loop, and Google treats it as a redirect
+      signal (not a permanent move).
+    -->
+    <script>
+      (function () {
+        try {
+          // Rule 2: only fire on the homepage.
+          if (window.location.pathname !== '/') return;
+
+          // Rule 3: never redirect search-engine crawlers.
+          var ua = (navigator && navigator.userAgent) || '';
+          if (/googlebot|bingbot|yandexbot|baiduspider|duckduckbot|applebot|facebookexternalhit|twitterbot|linkedinbot|slackbot|whatsapp|telegrambot|embedly|w3c_validator/i.test(ua)) return;
+
+          // Rule 1: a saved language choice always wins.
+          try {
+            var saved = localStorage.getItem('i18nextLng');
+            if (saved === 'ar' || saved === 'en') return;
+          } catch (e) {
+            // localStorage blocked (iOS private mode) — fall through; we'll
+            // detect language on every visit, but each one is fast.
+          }
+
+          // Browser primary language. navigator.languages is the ordered
+          // preference list; navigator.language is the legacy fallback.
+          var langs = (navigator.languages && navigator.languages.length)
+            ? navigator.languages
+            : [navigator.language || 'ar'];
+          var primary = String(langs[0] || '').toLowerCase();
+
+          // English speakers land on the English homepage. Everyone else
+          // (including unknown languages) defaults to Arabic, which is the
+          // brand's primary audience.
+          if (primary.indexOf('en') === 0) {
+            window.location.replace('/en/' + window.location.search + window.location.hash);
+          }
+        } catch (e) { /* defensive */ }
+      })();
+    </script>
+
     <title>Bikerz</title>
     <meta name="description" content="Master motorcycle riding with Bikerz Academy. Expert-led online courses designed for all levels. Gain skills, stay safe, and Let's Ride With Confidence. Enroll now!" />
     <meta name="keywords" content="motorcycle riding course, learn to ride motorcycle, motorcycle academy, biker training, riding lessons, motorcycle safety" />

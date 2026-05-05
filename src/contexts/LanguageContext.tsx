@@ -1,14 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import i18n from 'i18next';
 import { ensureLocaleLoaded } from '@/i18n';
-import { fetchCountryCodeFromPublicGeoApis } from '@/lib/publicGeoCountry';
 
 type Language = 'en' | 'ar';
-
-const ARAB_COUNTRIES = new Set([
-  'SA', 'AE', 'KW', 'BH', 'QA', 'OM', 'EG', 'IQ', 'JO', 'LB', 'SY',
-  'PS', 'YE', 'LY', 'TN', 'DZ', 'MA', 'SD', 'SO', 'MR', 'DJ', 'KM',
-]);
 
 interface LanguageContextType {
   language: Language;
@@ -58,7 +52,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   useEffect(() => {
-    // Guard: wait until i18n is fully initialized before calling changeLanguage
+    // Guard: wait until i18n is fully initialized before calling changeLanguage.
     if (!i18n.isInitialized) {
       const onInit = () => {
         if (i18n.language !== language) {
@@ -69,51 +63,17 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return () => { i18n.off('initialized', onInit); };
     }
 
-    // Ensure i18n is synced on mount
+    // Ensure i18n is synced on mount.
     if (i18n.language !== language) {
       i18n.changeLanguage(language);
     }
 
-    // Auto-detect language from country only when:
-    //   1. User has no saved preference (localStorage)
-    //   2. AND the URL doesn't already have an explicit /ar/ or /en/ prefix
-    // Visiting /ar/ or /en/ is an explicit language choice (shared link,
-    // SEO landing) and must NOT be overridden by IP geolocation. This
-    // matters especially for Lighthouse/PSI which runs from US datacenters
-    // — without this guard it switches an Arabic page to English mid-load,
-    // triggering an extra ~20 KB locale fetch on the LCP critical path.
-    let hasManualChoice: string | null = null;
-    try {
-      hasManualChoice = localStorage.getItem('i18nextLng');
-    } catch {
-      hasManualChoice = null;
-    }
-
-    const path = typeof window !== 'undefined' ? window.location.pathname : '';
-    const urlHasExplicitLang =
-      path.startsWith('/ar/') || path === '/ar' ||
-      path.startsWith('/en/') || path === '/en';
-
-    if (!hasManualChoice && !urlHasExplicitLang) {
-      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-
-      void (async () => {
-        try {
-          const countryCode = await fetchCountryCodeFromPublicGeoApis(controller?.signal);
-          if (!countryCode) return;
-          const detectedLang: Language = ARAB_COUNTRIES.has(countryCode) ? 'ar' : 'en';
-          if (detectedLang !== language) {
-            setLanguage(detectedLang);
-          }
-        } catch {
-          /* ignore */
-        }
-      })();
-
-      return () => {
-        controller?.abort();
-      };
-    }
+    // NOTE: First-visit auto-detect lives in index.html as a synchronous
+    // inline script (Fix #2 remediation Problem #5). It runs BEFORE this
+    // component ever mounts, redirecting an English-browser visitor at /
+    // to /en/ via window.location.replace(). Putting the redirect here
+    // would make Lighthouse measure an Arabic page that then locale-
+    // swaps mid-load — exactly the regression we're avoiding.
   }, []);
 
   return (
