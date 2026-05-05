@@ -53,10 +53,10 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   const canonicalUrl = `${DOMAIN}${pagePath}`;
 
   // hreflang: strip any existing lang prefix to get the base path,
-  // then build both /ar/ and /en/ variants.
+  // then build Arabic (bare) and English (/en) variants.
   const basePath = stripLangPrefix(pagePath);
-  const arUrl = `${DOMAIN}/ar${basePath === '/' ? '/' : basePath}`;
-  const enUrl = `${DOMAIN}/en${basePath === '/' ? '/' : basePath}`;
+  const arUrl = `${DOMAIN}${basePath}`;
+  const enUrl = `${DOMAIN}${basePath === '/' ? '/en' : `/en${basePath}`}`;
 
   // og:locale — Arabic pages get ar_SA, English pages get en_US
   const ogLocale = language === 'ar' ? 'ar_SA' : 'en_US';

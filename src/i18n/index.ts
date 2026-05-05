@@ -9,13 +9,13 @@ const setDocumentDirection = (lng: string) => {
   document.documentElement.lang = lng;
 };
 
-// URL prefix wins over localStorage — if the user is on /en/courses, they
-// expect English regardless of their saved preference (e.g. shared link).
+// URL prefix wins over localStorage — Arabic is the bare-path default,
+// English uses /en. Legacy /ar/* still resolves to Arabic before redirect.
 const getInitialLanguage = (): Lang => {
   try {
     const path = window.location.pathname;
-    if (path.startsWith('/en/') || path === '/en') return 'en';
-    if (path.startsWith('/ar/') || path === '/ar') return 'ar';
+    if (path === '/en' || path.startsWith('/en/')) return 'en';
+    if (path === '/ar' || path.startsWith('/ar/')) return 'ar';
   } catch {
     // window unavailable in non-browser contexts
   }

@@ -21,11 +21,12 @@ const LanguageToggle: React.FC = () => {
     const newLang = language === 'ar' ? 'en' : 'ar';
     setLanguage(newLang);
 
-    // Navigate to the same page with the new language prefix
+    // Strip any current /en (or legacy /ar) prefix, then re-localize.
     const basePath = stripLangPrefix(location.pathname);
-    navigate(`/${newLang}${basePath === '/' ? '/' : basePath}${location.search}${location.hash}`, {
-      replace: true,
-    });
+    const target = newLang === 'ar'
+      ? basePath
+      : (basePath === '/' ? '/en' : `/en${basePath}`);
+    navigate(`${target}${location.search}${location.hash}`, { replace: true });
   };
 
   return (
