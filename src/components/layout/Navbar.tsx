@@ -216,11 +216,7 @@ const Navbar: React.FC = () => {
   const showTrainerFeatures = import.meta.env.DEV || isAdmin || (!!clientIp && ALLOWED_TRAINER_FEATURES_IPS.has(clientIp));
 
   const menuItems = useMemo(() => {
-    const hiddenLinks = new Set<string>(["/mentors"]);
-    if (!showTrainerFeatures) {
-      hiddenLinks.add("/trainings");
-      hiddenLinks.add("/trainers");
-    }
+    const hiddenLinks = new Set<string>(["/mentors", "/trainings", "/trainers"]);
     const defaultItems: MenuItem[] = [
       {
         id: "home",
