@@ -408,6 +408,10 @@ Deno.serve(async (req) => {
     let trainingPlatformMarkupPercent: number | null = null;
     let localizedDisplayPrice: number | null = null;
     let localizedDisplayCurrency: string | null = null;
+    /** True when basePriceSar was overridden by a country-specific price.
+     *  In that case the price is treated as a FINAL all-in SAR amount —
+     *  global course discount + global VAT must NOT be re-applied. */
+    let countryPriceOverride = false;
     /** null when charging for a training booking (not a video course from `courses`) */
     let dbCourseId: string | null = isTrainingBooking ? null : courseIdTrim;
     /** `trainings.id` for trainer bookings; persisted on tap_charges.training_id */
@@ -529,13 +533,47 @@ Deno.serve(async (req) => {
         if (countryPrice) {
           localizedDisplayPrice = Number(countryPrice.price);
           localizedDisplayCurrency = countryPrice.currency || requestedCurrency;
-          console.log(`Localized display pricing: ${detected_country} → ${localizedDisplayPrice} ${localizedDisplayCurrency} (charging in SAR)`);
+          const cpCurrency = String(countryPrice.currency || "SAR").toUpperCase();
+
+          // BUG FIX: country prices were being stored as metadata only. The
+          // actual charge fell back to the GLOBAL SAR price + VAT, so e.g.
+          // a course priced at 37 SAR for Palestine charged 90 SAR at the
+          // gateway. Country prices are stored as FINAL all-in amounts
+          // (admin-configured to include the country-specific discount and
+          // local VAT). Use them directly when present.
+          if (cpCurrency === "SAR") {
+            basePriceSar = Number(countryPrice.price);
+            countryPriceOverride = true;
+          } else if (BUNDLE_FALLBACK_RATES[cpCurrency]) {
+            // Country price in a non-SAR currency (e.g., ILS / EGP). Convert
+            // back to SAR via the same fallback rate the frontend uses, so
+            // the server-side authoritative amount matches what the user saw.
+            const rate = BUNDLE_FALLBACK_RATES[cpCurrency];
+            if (rate > 0) {
+              basePriceSar = Number(countryPrice.price) / rate;
+              countryPriceOverride = true;
+            }
+          }
+          console.log(
+            `Localized pricing: ${detected_country} → ${localizedDisplayPrice} ${localizedDisplayCurrency}` +
+            (countryPriceOverride ? ` (basePriceSar overridden to ${basePriceSar.toFixed(2)} SAR)` : " (using global SAR)"),
+          );
         }
       }
     }
 
+    /**
+     * When `countryPriceOverride` is true, basePriceSar is the FINAL all-in
+     * SAR amount for the user's country (already includes country-specific
+     * course discount and country VAT). We skip global-discount and global-
+     * VAT recalculation so the charge matches exactly what the user saw on
+     * the course page. Coupons still apply on top of the country price.
+     */
     const courseDiscountPct =
-      !isTrainingBooking && course.discount_percentage && Number(course.discount_percentage) > 0
+      !isTrainingBooking &&
+      !countryPriceOverride &&
+      course.discount_percentage &&
+      Number(course.discount_percentage) > 0
         ? Number(course.discount_percentage)
         : 0;
     let fallbackPriceBeforeTax = courseDiscountPct > 0
@@ -573,7 +611,10 @@ Deno.serve(async (req) => {
     }
 
     const vatPercentPoints = await getTrainingPlatformVatPercent(adminClient);
-    const vatFactor = 1 + vatPercentPoints / 100;
+    // VAT factor: skipped when basePriceSar is a country-final price
+    // (country prices already include country-specific VAT — re-applying
+    // would double-charge tax, e.g. Palestine 37 SAR × 1.15 = 42.55 SAR).
+    const vatFactor = countryPriceOverride ? 1 : 1 + vatPercentPoints / 100;
 
     const clientRequestedAmount = Number(requestedAmount);
     const hasClientAmount = Number.isFinite(clientRequestedAmount) && clientRequestedAmount > 0;
