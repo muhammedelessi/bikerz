@@ -185,14 +185,16 @@ const PageLoader = () => (
   </div>
 );
 
+import { localizedPath } from "@/lib/i18nRouting";
+
 // Protected Route Component — uses localized redirect paths
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
   const { pathname } = useLocation();
-  const langPrefix = pathname.match(/^\/(ar|en)\//)?.[1] || 'ar';
+  const lang = /^\/en(\/|$)/.test(pathname) ? 'en' : 'ar';
 
   if (isLoading) return <PageLoader />;
-  if (!user) return <Navigate to={`/${langPrefix}/login`} replace />;
+  if (!user) return <Navigate to={localizedPath('/login', lang)} replace />;
   return <>{children}</>;
 };
 
@@ -200,11 +202,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, canAccessAdmin, isLoading } = useAuth();
   const { pathname } = useLocation();
-  const langPrefix = pathname.match(/^\/(ar|en)\//)?.[1] || 'ar';
+  const lang = /^\/en(\/|$)/.test(pathname) ? 'en' : 'ar';
 
   if (isLoading) return <PageLoader />;
-  if (!user) return <Navigate to={`/${langPrefix}/login`} replace />;
-  if (!canAccessAdmin) return <Navigate to={`/${langPrefix}/dashboard`} replace />;
+  if (!user) return <Navigate to={localizedPath('/login', lang)} replace />;
+  if (!canAccessAdmin) return <Navigate to={localizedPath('/dashboard', lang)} replace />;
   return <>{children}</>;
 };
 
@@ -212,9 +214,9 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const { pathname } = useLocation();
-  const langPrefix = pathname.match(/^\/(ar|en)\//)?.[1] || 'ar';
+  const lang = /^\/en(\/|$)/.test(pathname) ? 'en' : 'ar';
 
-  if (user) return <Navigate to={`/${langPrefix}/dashboard`} replace />;
+  if (user) return <Navigate to={localizedPath('/dashboard', lang)} replace />;
   // Don't block on session bootstrap — showing the form immediately improves LCP vs. a full-page spinner on cold loads.
   return <>{children}</>;
 };
