@@ -426,7 +426,7 @@
       "enrolled": "Enrolled",
       "completedWithCheck": "Completed ✓",
       "continueLearning": "Continue Learning",
-      "subscribeNow": "Subscribe now – {{price}} {{currency}}",
+      "subscribeNow": "Buy now – {{price}} {{currency}}",
       "rate": "Rate"
     }
   },
@@ -484,7 +484,7 @@
   "courseDetail": {
     "resume": "Resume",
     "enrollFree": "Enroll Free",
-    "subscribeNow": "Subscribe now – {{price}} {{currency}}",
+    "subscribeNow": "Buy now – {{price}} {{currency}}",
     "courseIntroduction": "Course Introduction",
     "playPreviewVideo": "Play preview video",
     "videoThumbnail": "Video thumbnail",
