@@ -407,7 +407,7 @@
     "fullAccess": "الوصول الكامل لجميع محتويات الدورة",
     "enrollForFree": "سجل مجاناً",
     "enrolling": "جاري التسجيل...",
-    "buyNow": "اشترك الآن",
+    "buyNow": "اشتري الآن",
     "loginToPurchase": "سجل دخول للشراء",
     "successfullyEnrolled": "تم التسجيل بنجاح!",
     "failedToEnroll": "فشل التسجيل",
@@ -426,7 +426,7 @@
       "enrolled": "مسجّل",
       "completedWithCheck": "مكتمل ✓",
       "continueLearning": "أكمل التعلم",
-      "subscribeNow": "اشترك الآن – {{price}} {{currency}}",
+      "subscribeNow": "اشتري الآن – {{price}} {{currency}}",
       "rate": "قيّم"
     }
   },
@@ -484,7 +484,7 @@
   "courseDetail": {
     "resume": "أكمل التعلم",
     "enrollFree": "سجّل مجاناً",
-    "subscribeNow": "اشترك الآن – {{price}} {{currency}}",
+    "subscribeNow": "اشتري الآن – {{price}} {{currency}}",
     "courseIntroduction": "فيديو تعريفي بالدورة",
     "playPreviewVideo": "تشغيل الفيديو التعريفي",
     "videoThumbnail": "صورة مصغرة للفيديو",
@@ -1754,7 +1754,7 @@
       "title": "أعجبك المحتوى؟ 🎉",
       "subtitle": "لقد أنهيت المقاطع المجانية! اشترِ الكورس الآن لمتابعة تعلمك واكتشاف المزيد",
       "vatIncluded": "السعر شامل الضريبة",
-      "buyNow": "اشترك الآن",
+      "buyNow": "اشتري الآن",
       "notNow": "ليس الآن"
     },
     "enrollmentCelebration": {
