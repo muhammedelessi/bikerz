@@ -32,6 +32,7 @@ import {
 } from "@/services/supabase.service";
 import { recordCheckoutPaymentPageVisit } from "@/services/checkoutVisitAnalytics";
 import { navigateToSignup } from "@/lib/authReturnUrl";
+import { isHostedMode } from "@/config/paymentMode";
 import type { CheckoutCourse } from "@/types/payment";
 
 const TAP_SUPPORTED = ["SAR", "KWD", "AED", "USD", "BHD", "QAR", "OMR", "EGP"];
@@ -253,9 +254,14 @@ export function useCheckoutFlow(
     return v.startsWith("0") ? v.slice(1) : v;
   }, [form.phone]);
 
-  /** Skip the embedded SDK entirely when the order is free (100%-off coupon). */
+  /**
+   * Skip the embedded card SDK when:
+   *   - PAYMENT_MODE === 'hosted' (full Tap-hosted redirect — user enters
+   *     card details on Tap's domain, our checkout never tokenizes)
+   *   - The order is free (100%-off coupon) — no payment to make
+   */
   const isFreeEnrollment = discountedPrice <= 0 && !!promo.appliedCoupon;
-  const showEmbeddedCard = step === "payment" && !isFreeEnrollment;
+  const showEmbeddedCard = step === "payment" && !isFreeEnrollment && !isHostedMode();
 
   // ── Effects ────────────────────────────────────────────────────────
 
@@ -502,11 +508,16 @@ export function useCheckoutFlow(
 
       const courseDisplayName = isRTL && course.title_ar ? course.title_ar : course.title;
 
-      // Tokenize the card client-side first — the secret-key backend only
-      // ever sees a tok_xxx; raw card details never leave Tap's iframe.
-      // Apple Pay supplies a token directly so we skip this when present.
+      // In HOSTED mode we skip client-side tokenization entirely. The
+      // backend will create a Tap charge with `source.id = "src_all"` and
+      // return a redirect_url to Tap's hosted card form; useTapPayment
+      // does the top-level redirect from there.
       let tokenId: string | undefined = preTokenizedTokenId;
-      if (!tokenId && cardApiRef.current) {
+      if (isHostedMode()) {
+        // No-op — leave tokenId undefined so the backend uses the hosted
+        // source. Apple Pay still supplies its own token (preTokenizedTokenId)
+        // and short-circuits this branch.
+      } else if (!tokenId && cardApiRef.current) {
         try {
           setTokenizing(true);
           // If we already used a token in this checkout session (previous

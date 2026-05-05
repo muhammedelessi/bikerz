@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { RecoverableTapSourceUsedError, createCharge, verifyChargeOnce } from '@/services/payment.service';
 import type { PaymentStatus, TapPaymentConfig } from '@/types/payment';
+import { isHostedMode } from '@/config/paymentMode';
 
 /**
  * How long before we silently start polling Tap to find out what happened
@@ -537,28 +538,35 @@ export function useTapPayment(): UseTapPaymentReturn {
       }
 
       if (data.redirect_url) {
-        // iOS Safari + in-app browsers (FB/IG/TikTok WebView) cannot run Tap's
-        // 3-DS challenge inside an iframe reliably: the bank's OTP page lives
-        // in nested cross-origin iframes, and Safari's ITP + WebKit's
-        // partitioned storage block the postMessage handshake that signals
-        // completion back to us. The user sees a perpetual "verifying" spinner
-        // even after entering the OTP, eventually closes the tab, and Tap
-        // marks the charge ABANDONED — exactly the "all payments stuck at
-        // bank verification" report we got today.
+        // Three independent reasons we do a TOP-LEVEL redirect to Tap's
+        // hosted page instead of opening it in our inline iframe:
         //
-        // For these environments we do a TOP-LEVEL navigation to Tap's hosted
-        // page instead. The static `/tap-3ds-callback.html` already handles
-        // this fallback (when there's no opener / parent it hard-redirects
-        // to `/payment-success` with `tap_id`), and PaymentSuccess polls the
-        // verify-charge function until the charge resolves.
+        // 1. HOSTED-MODE PAYMENT FLOW (PAYMENT_MODE === 'hosted')
+        //    The user clicked Pay without us tokenizing the card client-
+        //    side, so Tap is sending them to its hosted card-entry form.
+        //    The whole point of hosted mode is the user enters card +
+        //    OTP on Tap's domain — keeping it in an iframe defeats it.
+        //
+        // 2. iOS Safari + in-app browsers (FB/IG/TikTok WebView)
+        //    The bank's OTP page lives in nested cross-origin iframes;
+        //    Safari's ITP + WebKit's partitioned storage block the
+        //    postMessage handshake that signals completion back to us.
+        //    The user sees a perpetual "verifying" spinner even after
+        //    entering OTP, closes the tab, and Tap marks the charge
+        //    ABANDONED. Top-level redirect avoids the whole iframe stack.
+        //
+        // The static /tap-3ds-callback.html handles the return path:
+        // when there's no opener / parent it hard-redirects to
+        // /payment-success?tap_id=… and PaymentSuccess polls the verify
+        // endpoint until the charge resolves.
         const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
         const isIOS = /iPad|iPhone|iPod/.test(ua) && !(globalThis as any).MSStream;
         const isAndroidWebView = /Android/.test(ua) && /; wv\)/.test(ua);
         const isInAppBrowser = /(FBAN|FBAV|Instagram|Line|TikTok|Snapchat|MicroMessenger)/i.test(ua);
-        const needsTopLevelRedirect = isIOS || isAndroidWebView || isInAppBrowser;
+        const needsTopLevelRedirect = isHostedMode() || isIOS || isAndroidWebView || isInAppBrowser;
 
         if (needsTopLevelRedirect) {
-          console.info('[TapPayment] Top-level redirect for 3DS (iOS/in-app browser)');
+          console.info('[TapPayment] Top-level redirect to Tap (mode/UA-driven)');
           // Persist enough context that PaymentSuccess can render a friendly
           // state even if the user opens it in a fresh tab.
           try {
@@ -571,10 +579,10 @@ export function useTapPayment(): UseTapPaymentReturn {
           return;
         }
 
-        // Desktop / standard mobile browsers: render Tap's 3-DS challenge
-        // inside our own modal iframe — user never sees a Tap-hosted page;
-        // on completion the static callback page posts back the tap_id and
-        // our overlay verifies + finishes the flow.
+        // Desktop / standard mobile browsers in EMBEDDED mode: render Tap's
+        // 3-DS challenge inside our own modal iframe — user never sees a
+        // Tap-hosted page; on completion the static callback page posts
+        // back the tap_id and our overlay verifies + finishes the flow.
         setChallengeUrl(data.redirect_url);
         updateStatus('challenging_3ds');
       } else {

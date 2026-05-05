@@ -20,6 +20,7 @@ import EmbeddedCardForm from '@/components/checkout/EmbeddedCardForm';
 import Checkout3DSModal from '@/components/checkout/Checkout3DSModal';
 import { navigateToSignup } from '@/lib/authReturnUrl';
 import { recordCheckoutPaymentPageVisit } from '@/services/checkoutVisitAnalytics';
+import { isHostedMode } from '@/config/paymentMode';
 
 type Props = {
   open: boolean;
@@ -101,7 +102,9 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
     [],
   );
 
-  const showEmbeddedCard = step === 'payment';
+  // In hosted mode (PAYMENT_MODE === 'hosted') we skip the embedded card
+  // SDK entirely — Tap returns a redirect_url to its own card form.
+  const showEmbeddedCard = step === 'payment' && !isHostedMode();
 
   /** Phone country code for the SDK (e.g. "966" without the +). */
   const cardPhoneCountryCode = useMemo(() => {
@@ -212,9 +215,11 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
       silent: true,
     });
 
-    // Tokenize card client-side first (same pattern as single-course checkout)
+    // Tokenize card client-side first (same pattern as single-course checkout).
+    // In HOSTED mode we skip this — backend sends `source.id = "src_all"`
+    // and Tap returns a redirect_url to its hosted card form.
     let tokenId: string | undefined;
-    if (cardApiRef.current) {
+    if (!isHostedMode() && cardApiRef.current) {
       try {
         setTokenizing(true);
         // Force a fresh card iframe on retry — Tap rejects token reuse
