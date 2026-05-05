@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.png", "robots.txt", "favicon.ico", "icon-192.png", "icon-512.png"],
+      includeAssets: ["favicon.png", "robots.txt", "sitemap.xml", "favicon.ico", "icon-192.png", "icon-512.png"],
       manifest: {
         name: "Bikerz Academy",
         short_name: "Bikerz",
@@ -42,7 +42,7 @@ export default defineConfig(({ mode }) => {
         // load, without having to close their browser tab first.
         skipWaiting: true,
         clientsClaim: true,
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,avif,woff2,woff,ttf,json}"],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,avif,woff2,woff,ttf,json,xml,txt}"],
         // Workbox's default `navigateFallback: '/index.html'` rewrites EVERY
         // navigation request to the SPA shell — including requests for static
         // HTML files like /tap-3ds-callback.html. That's the SPA pattern
@@ -59,6 +59,11 @@ export default defineConfig(({ mode }) => {
           // Apple Pay merchant-id verification — also a real file that must
           // not be rewritten to the SPA shell.
           /^\/\.well-known\//,
+          // SEO files — must be served as-is so crawlers get the real
+          // XML/text content instead of the SPA shell (which renders a
+          // React 404 page for unknown routes).
+          /^\/sitemap\.xml$/,
+          /^\/robots\.txt$/,
         ],
         runtimeCaching: [
           {
