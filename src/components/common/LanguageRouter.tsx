@@ -6,12 +6,13 @@
  * 2. Sync it with i18n and LanguageContext
  * 3. Redirect bare "/" to /ar/ or /en/ based on user preference / geo-detection
  * 4. Skip redirect for bots (Googlebot must crawl both versions directly)
+ * 5. Backward-compat: old URLs without prefix (e.g. /courses) → /ar/courses
  */
 import React, { useEffect } from 'react';
 import { useParams, useLocation, Navigate, Outlet } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { SupportedLang } from '@/lib/i18nRouting';
-import { isBot } from '@/lib/i18nRouting';
+import { isBot, isUnprefixedPath } from '@/lib/i18nRouting';
 
 /**
  * Renders inside the <Route path="/:lang/*"> wrapper.
@@ -20,6 +21,7 @@ import { isBot } from '@/lib/i18nRouting';
 const LanguageRouter: React.FC = () => {
   const { lang } = useParams<{ lang: string }>();
   const { language, setLanguage } = useLanguage();
+  const location = useLocation();
 
   // Sync URL language → context/i18n (only when they differ)
   useEffect(() => {
@@ -28,9 +30,12 @@ const LanguageRouter: React.FC = () => {
     }
   }, [lang, language, setLanguage]);
 
-  // If somehow the :lang param is invalid, redirect to the user's preferred lang
+  // If the :lang param is not a valid language, this is likely an old URL
+  // without a language prefix (e.g. /courses, /about, /trainers).
+  // Redirect to the same path with the user's preferred language prefix.
   if (lang !== 'ar' && lang !== 'en') {
-    return <Navigate to={`/${language}/`} replace />;
+    const { pathname, search, hash } = location;
+    return <Navigate to={`/${language}${pathname}${search}${hash}`} replace />;
   }
 
   return <Outlet />;
@@ -58,6 +63,39 @@ export const RootRedirect: React.FC = () => {
   // Preserve query string and hash
   const target = `/${language}${location.search}${location.hash}`;
   return <Navigate to={target} replace />;
+};
+
+/**
+ * Backward-compat catch-all: handles old multi-segment URLs that aren't
+ * caught by the /:lang route (e.g. /courses/some-id, /trainers/123).
+ *
+ * Logic:
+ * - If the path already has /ar/ or /en/ prefix → it's a genuine 404
+ * - If the path is a system/admin route → genuine 404
+ * - Otherwise → redirect to /{preferred-lang}{path}
+ *
+ * This replaces the plain <NotFound /> catch-all so old bookmarked URLs
+ * and Google-indexed links keep working after the i18n migration.
+ */
+export const LegacyRedirect: React.FC<{ notFoundElement: React.ReactNode }> = ({
+  notFoundElement,
+}) => {
+  const { language } = useLanguage();
+  const location = useLocation();
+  const { pathname, search, hash } = location;
+
+  // Already has a valid language prefix — this is a real 404
+  if (/^\/(ar|en)(\/|$)/.test(pathname)) {
+    return <>{notFoundElement}</>;
+  }
+
+  // System/admin routes that should never get prefixed — real 404
+  if (isUnprefixedPath(pathname)) {
+    return <>{notFoundElement}</>;
+  }
+
+  // Old URL without lang prefix → redirect with preferred language
+  return <Navigate to={`/${language}${pathname}${search}${hash}`} replace />;
 };
 
 export default LanguageRouter;

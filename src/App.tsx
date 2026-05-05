@@ -10,7 +10,7 @@ import { HelmetProvider } from "react-helmet-async";
 import ScrollToTop from "@/components/common/ScrollToTop";
 import ProductionThirdPartyTrackers from "@/components/common/ProductionThirdPartyTrackers";
 import WhatsAppFloatingButton from "@/components/common/WhatsAppFloatingButton";
-import LanguageRouter, { RootRedirect } from "@/components/common/LanguageRouter";
+import LanguageRouter, { RootRedirect, LegacyRedirect } from "@/components/common/LanguageRouter";
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
 import { shouldSkipMarketingAnalytics } from "@/lib/shouldSkipMarketingAnalytics";
 import React, { Suspense, lazy, useEffect, useState } from "react";
@@ -739,8 +739,9 @@ const AppRoutes = () => (
           element={<ApplePayDomainVerify />}
         />
 
-        {/* 404 */}
-        <Route path="*" element={<NotFound />} />
+        {/* Backward-compat: old URLs without /ar/ or /en/ prefix get redirected.
+            If the path already has a lang prefix or is a system route, show 404. */}
+        <Route path="*" element={<LegacyRedirect notFoundElement={<NotFound />} />} />
       </Routes>
     </Suspense>
   </>
