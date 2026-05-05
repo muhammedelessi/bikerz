@@ -35,11 +35,117 @@ const POLL_INTERVAL_MS = 2_000;
  */
 
 /**
+ * Bilingual error reason. The English copy is conversational ("Your bank
+ * declined…") rather than technical ("Reason: 05") because users don't
+ * read codes — they read whether they should retry, change cards, or
+ * call their bank.
+ */
+type Reason = { ar: string; en: string };
+
+const R = (ar: string, en: string): Reason => ({ ar, en });
+
+/**
+ * Map Tap response codes to bilingual messages. Codes come from Tap's
+ * "Response Codes" reference (https://developers.tap.company/docs/response-codes)
+ * plus the ISO 8583 codes Tap proxies through from issuer banks.
+ *
+ * Keep this map narrow on purpose: only codes whose meaning is clear
+ * enough to give a user actionable advice. Anything outside this map
+ * falls through to the substring fallback (less precise but still
+ * better than the generic "Payment was declined" Tap returns by default).
+ */
+const REASON_BY_CODE: Record<string, Reason> = {
+  // ── Insufficient funds / limits ──
+  "51": R(
+    "رصيد البطاقة غير كافٍ. الرجاء استخدام بطاقة أخرى أو شحن البطاقة.",
+    "Insufficient funds on the card. Please try another card or top it up.",
+  ),
+  "61": R(
+    "تجاوزتَ الحد المسموح للسحب اليومي. حاول لاحقاً أو استخدم بطاقة أخرى.",
+    "You've exceeded your daily withdrawal limit. Try again later or use a different card.",
+  ),
+  "65": R(
+    "تجاوزتَ الحد المسموح لعدد العمليات. حاول لاحقاً أو استخدم بطاقة أخرى.",
+    "Activity limit exceeded. Try again later or use a different card.",
+  ),
+
+  // ── Card details / validity ──
+  "14": R(
+    "رقم البطاقة غير صحيح. تأكد من رقم البطاقة المُدخل.",
+    "Invalid card number. Please check the digits you entered.",
+  ),
+  "54": R(
+    "البطاقة منتهية الصلاحية. الرجاء استخدام بطاقة سارية.",
+    "This card has expired. Please use a different card.",
+  ),
+  "82": R(
+    "رمز CVV/CVC غير صحيح. تحقق من الثلاث خانات خلف البطاقة.",
+    "Incorrect CVV. Check the 3-digit code on the back of your card.",
+  ),
+
+  // ── Bank-side decline (no specific reason given) ──
+  "05": R(
+    "رفض البنك العملية. تواصل مع البنك أو استخدم بطاقة أخرى.",
+    "Your bank declined the transaction. Contact the bank or try another card.",
+  ),
+  "12": R(
+    "رفض البنك العملية. تواصل مع البنك أو استخدم بطاقة أخرى.",
+    "Your bank declined this transaction. Contact the bank or try another card.",
+  ),
+  "13": R(
+    "المبلغ غير صالح للعملية. حاول مرة أخرى أو استخدم بطاقة أخرى.",
+    "Invalid amount for this transaction. Try again or use a different card.",
+  ),
+  "57": R(
+    "البنك لا يسمح بهذا النوع من العمليات على هذه البطاقة. استخدم بطاقة أخرى.",
+    "Your bank doesn't allow this type of transaction on the card. Try another card.",
+  ),
+  "62": R(
+    "البطاقة مقيّدة من البنك. تواصل مع البنك أو استخدم بطاقة أخرى.",
+    "Card is restricted by your bank. Contact them or use another card.",
+  ),
+
+  // ── Lost / stolen / pickup — same UX message (user calls bank) ──
+  "07": R(
+    "رفض البنك العملية. الرجاء التواصل مع البنك مباشرة.",
+    "The bank declined this transaction. Please contact your bank directly.",
+  ),
+  "41": R(
+    "رفض البنك العملية. الرجاء التواصل مع البنك مباشرة.",
+    "The bank declined this transaction. Please contact your bank directly.",
+  ),
+  "43": R(
+    "رفض البنك العملية. الرجاء التواصل مع البنك مباشرة.",
+    "The bank declined this transaction. Please contact your bank directly.",
+  ),
+
+  // ── 3-DS authentication failure ──
+  "201": R(
+    "فشل التحقق ثلاثي الأبعاد. تأكد من رمز OTP أو حاول مرة أخرى.",
+    "3-D Secure authentication failed. Re-check the OTP or try again.",
+  ),
+  "203": R(
+    "تعذّر إكمال التحقق ثلاثي الأبعاد. حاول مرة أخرى.",
+    "Could not complete 3-D Secure authentication. Please try again.",
+  ),
+
+  // ── Tap-specific operational codes ──
+  "1126": R(
+    "بيانات الدفع منتهية. أدخل بيانات البطاقة من جديد ثم اضغط ادفع.",
+    "Payment session expired. Please re-enter your card details and tap Pay again.",
+  ),
+};
+
+/**
  * Translate a Tap charge response or thrown error into a clear bilingual
  * message. Tap returns generic "Payment was declined" for many distinct
  * causes (currency-not-allowed, card-declined, insufficient-funds, BIN-
- * blocked, …) — we surface what little signal we do have so the user
- * isn't left guessing why the charge failed.
+ * blocked, …). Strategy:
+ *   1. Look up the response code in REASON_BY_CODE (precise, structured).
+ *   2. Fall back to substring matching on the message text (catches Tap
+ *      response variations and issuer messages we haven't mapped yet).
+ *   3. Surface the raw Tap message if it exists.
+ *   4. Generic decline fallback.
  */
 function friendlyChargeError(
   raw: unknown,
@@ -48,35 +154,71 @@ function friendlyChargeError(
 ): string {
   const obj =
     raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
-  const responseMsg = (obj.response && typeof obj.response === 'object'
-    ? (obj.response as Record<string, unknown>).message
-    : undefined) as string | undefined;
+  const response = (obj.response && typeof obj.response === 'object'
+    ? (obj.response as Record<string, unknown>)
+    : {}) as Record<string, unknown>;
+  const responseMsg = response.message as string | undefined;
+
   const tapMessage =
     (obj.tap_message as string | undefined) ||
     (obj.message as string | undefined) ||
     responseMsg ||
     '';
 
-  const code = (obj.code as string | undefined) || '';
-  const text = `${tapMessage} ${code}`.toLowerCase();
+  // Tap surfaces the response code in a few places depending on whether
+  // we're looking at the charge object, the response sub-object, or a
+  // thrown error. Try them all.
+  const rawCode =
+    (obj.code as string | undefined) ||
+    (response.code as string | undefined) ||
+    (obj.error_code as string | undefined) ||
+    '';
+  const code = String(rawCode || '').trim();
+  const codePadded = code.length === 1 ? `0${code}` : code; // "5" → "05"
 
-  // Map common Tap reason codes to clear bilingual messages.
-  if (text.includes('insufficient') || text.includes('insufficient_funds')) {
-    return isRTL
-      ? 'رصيد البطاقة غير كافٍ. الرجاء استخدام بطاقة أخرى أو شحن البطاقة.'
-      : 'Insufficient funds on the card. Please try another card or top it up.';
+  const pick = (r: Reason) => (isRTL ? r.ar : r.en);
+
+  // ── 1. Code-based lookup (preferred) ──
+  if (code && REASON_BY_CODE[code]) return pick(REASON_BY_CODE[code]);
+  if (codePadded && REASON_BY_CODE[codePadded]) return pick(REASON_BY_CODE[codePadded]);
+
+  // ── 2. Cancelled has special handling — also triggered by `defaultStatus` ──
+  if (defaultStatus === 'cancelled') {
+    return isRTL ? 'تم إلغاء العملية.' : 'Transaction was cancelled.';
+  }
+
+  // ── 3. Substring fallback for codes we didn't map explicitly ──
+  const text = `${tapMessage} ${code}`.toLowerCase();
+  if (text.includes('insufficient')) {
+    return pick(REASON_BY_CODE['51']);
   }
   if (text.includes('expired') || text.includes('card_expired')) {
-    return isRTL
-      ? 'البطاقة منتهية الصلاحية. الرجاء استخدام بطاقة سارية.'
-      : 'This card has expired. Please use a different card.';
+    return pick(REASON_BY_CODE['54']);
   }
-  if (text.includes('do_not_honor') || text.includes('not_honor') || text.includes('declined_by_bank')) {
-    return isRTL
-      ? 'رفض البنك العملية. تواصل مع البنك أو استخدم بطاقة أخرى.'
-      : 'Your bank declined the transaction. Contact the bank or try another card.';
+  if (text.includes('cvv') || text.includes('cvc') || text.includes('security_code')) {
+    return pick(REASON_BY_CODE['82']);
   }
-  if (text.includes('invalid_card') || text.includes('card_not_allowed') || text.includes('invalid card')) {
+  if (text.includes('lost') || text.includes('stolen') || text.includes('pickup')) {
+    return pick(REASON_BY_CODE['41']);
+  }
+  if (
+    text.includes('do_not_honor') ||
+    text.includes('do_not_honour') ||
+    text.includes('not_honor') ||
+    text.includes('declined_by_bank') ||
+    text.includes('bank_declined')
+  ) {
+    return pick(REASON_BY_CODE['05']);
+  }
+  if (text.includes('restricted')) {
+    return pick(REASON_BY_CODE['62']);
+  }
+  if (
+    text.includes('invalid_card') ||
+    text.includes('card_not_allowed') ||
+    text.includes('invalid card') ||
+    text.includes('bin_not_supported')
+  ) {
     return isRTL
       ? 'بيانات البطاقة غير صحيحة أو غير مدعومة. تأكد من الرقم وتاريخ الانتهاء وCVV.'
       : 'Card details are invalid or not supported. Re-check the number, expiry, and CVV.';
@@ -86,21 +228,27 @@ function friendlyChargeError(
       ? 'هذه العملة غير مدعومة لبطاقتك. استخدم بطاقة دولية أو غيّر العملة.'
       : 'Your card does not support this currency. Try an international card or switch currency.';
   }
-  if (text.includes('3d') || text.includes('authentication_failed') || text.includes('auth_failed')) {
-    return isRTL
-      ? 'فشل التحقق ثلاثي الأبعاد. تأكد من رمز OTP أو حاول مرة أخرى.'
-      : '3-D Secure authentication failed. Re-check the OTP or try again.';
+  if (
+    text.includes('3d') ||
+    text.includes('authentication_failed') ||
+    text.includes('auth_failed') ||
+    text.includes('challenge_failed')
+  ) {
+    return pick(REASON_BY_CODE['201']);
   }
-  if (text.includes('cancelled') || text.includes('canceled') || defaultStatus === 'cancelled') {
-    return isRTL
-      ? 'تم إلغاء العملية.'
-      : 'Transaction was cancelled.';
+  if (text.includes('cancelled') || text.includes('canceled') || text.includes('abandoned')) {
+    return isRTL ? 'تم إلغاء العملية.' : 'Transaction was cancelled.';
   }
   if (text.includes('timeout') || text.includes('timed out')) {
     return isRTL
       ? 'انتهت مهلة العملية. الرجاء المحاولة مرة أخرى.'
       : 'The transaction timed out. Please try again.';
   }
+  if (text.includes('source already used') || /\b1126\b/.test(text)) {
+    return pick(REASON_BY_CODE['1126']);
+  }
+
+  // ── 4. Last resort: surface the raw Tap message (still user-readable) ──
   if (tapMessage) return tapMessage;
   return isRTL
     ? 'تم رفض الدفع. الرجاء المحاولة مرة أخرى أو استخدام بطاقة مختلفة.'
