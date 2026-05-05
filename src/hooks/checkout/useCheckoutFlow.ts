@@ -318,6 +318,8 @@ export function useCheckoutFlow(
   // Post-failure card form reset — prevents the "Validating card…" stuck
   // state on the next Pay click. Without this, lastTokenIdRef being set
   // sends the next tokenize through reinit+wait+tokenize, racing visibly.
+  // Also clears the billing-snapshot sessionStorage so a returning user
+  // on a shared device doesn't see the previous user's PII in their form.
   const lastFailedReinitRef = useRef<string | null>(null);
   useEffect(() => {
     if (tap.status !== "failed") return;
@@ -329,6 +331,11 @@ export function useCheckoutFlow(
       lastTokenIdRef.current = null;
     } catch (e) {
       console.warn("[useCheckoutFlow] post-failure reinit threw:", e);
+    }
+    try {
+      sessionStorage.removeItem("bikerz_checkout_data");
+    } catch {
+      /* ignore */
     }
   }, [tap.status, tap.chargeId]);
 

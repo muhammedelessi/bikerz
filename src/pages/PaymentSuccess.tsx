@@ -391,6 +391,10 @@ const PaymentSuccess: React.FC = () => {
           order_status: "purchased",
         }),
       }).catch(() => {});
+      // Privacy: drop the billing snapshot now that webhooks have it.
+      // Without this, the next user on a shared device sees the previous
+      // user's full name + phone + city in their checkout flow.
+      try { sessionStorage.removeItem("bikerz_checkout_data"); } catch { /* ignore */ }
       return;
     }
 
@@ -460,6 +464,9 @@ const PaymentSuccess: React.FC = () => {
         order_status: "purchased",
       }),
     }).catch(() => {});
+    // Privacy: drop any leftover checkout snapshot. Course-flow doesn't
+    // read this directly, but a stale bundle attempt may have left it.
+    try { sessionStorage.removeItem("bikerz_checkout_data"); } catch { /* ignore */ }
   }, [
     verifyStatus,
     course,

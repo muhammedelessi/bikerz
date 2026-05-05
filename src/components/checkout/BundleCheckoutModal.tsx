@@ -320,7 +320,8 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
   // Proactive form reset after payment failure. Mirrors CheckoutModal —
   // without it, the next Pay click hits the lastTokenIdRef branch which
   // spawns a second iframe lifecycle and leaves "جاري التحقق من البطاقة"
-  // visibly stuck.
+  // visibly stuck. Also clears the billing-snapshot sessionStorage so a
+  // returning user on a shared device doesn't inherit the previous PII.
   const lastFailedReinitRef = useRef<string | null>(null);
   useEffect(() => {
     if (tap.status !== 'failed') return;
@@ -332,6 +333,11 @@ const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tie
       lastTokenIdRef.current = null;
     } catch (e) {
       console.warn('[BundleCheckoutModal] post-failure reinit threw:', e);
+    }
+    try {
+      sessionStorage.removeItem('bikerz_checkout_data');
+    } catch {
+      /* ignore */
     }
   }, [tap.status, tap.chargeId]);
 
