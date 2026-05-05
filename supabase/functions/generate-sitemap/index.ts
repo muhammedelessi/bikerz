@@ -189,7 +189,7 @@ ${allEntries.map(buildUrlEntry).join("\n")}
     console.error("Sitemap generation error:", error);
     // Return a minimal static sitemap on error so Google still gets something
     const fallback = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${STATIC_PAGES.map(buildUrlEntry).join("\n")}
 </urlset>`;
     return new Response(fallback, {
