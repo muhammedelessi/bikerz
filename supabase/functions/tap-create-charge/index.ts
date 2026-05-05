@@ -577,12 +577,64 @@ Deno.serve(async (req) => {
 
     const clientRequestedAmount = Number(requestedAmount);
     const hasClientAmount = Number.isFinite(clientRequestedAmount) && clientRequestedAmount > 0;
-    /** Practical training: always server SAR (markup + VAT). Never trust client `amount` or FX. */
-    const finalAmount = isTrainingBooking
-      ? Math.ceil(fallbackPriceBeforeTax * vatFactor)
-      : hasClientAmount
-        ? Math.ceil(clientRequestedAmount)
-        : Math.ceil(fallbackPriceBeforeTax * vatFactor);
+
+    // Server-authoritative SAR amount. ALL charges are validated against
+    // this; the client amount is only trusted for non-SAR currencies and
+    // only within a tolerance band (FX drift + country-pricing variance).
+    const serverExpectedSar = Math.ceil(fallbackPriceBeforeTax * vatFactor);
+
+    /**
+     * Final charge amount, in `chargeCurrency`. Resolution rules:
+     *   - Training booking: server SAR, no client trust at all.
+     *   - SAR charge: server SAR. Client amount is logged but ignored —
+     *     attackers can't pay 1 SAR for a 1000 SAR course.
+     *   - Non-SAR charge: client supplies the localized amount (e.g. 50 USD
+     *     for a $50-equivalent course). We validate it against the server's
+     *     SAR amount converted to the same currency via fallback FX. Outside
+     *     ±50% we refuse, since that range catches obvious manipulation
+     *     while leaving room for country-pricing variance and live FX drift
+     *     from the static fallback table.
+     */
+    let finalAmount: number;
+    if (isTrainingBooking) {
+      finalAmount = serverExpectedSar;
+    } else if (chargeCurrency === "SAR") {
+      if (hasClientAmount && Math.abs(clientRequestedAmount - serverExpectedSar) > 2) {
+        console.warn(
+          "[tap-create-charge] SAR client amount differed from server — using server",
+          { clientRequestedAmount, serverExpectedSar, courseId: courseIdTrim },
+        );
+      }
+      finalAmount = serverExpectedSar;
+    } else {
+      const rate = BUNDLE_FALLBACK_RATES[chargeCurrency] ?? 1;
+      const serverExpectedLocal = Math.ceil(serverExpectedSar * rate);
+      if (!hasClientAmount) {
+        finalAmount = serverExpectedLocal;
+      } else {
+        const ratio = clientRequestedAmount / serverExpectedLocal;
+        if (ratio < 0.5 || ratio > 1.5) {
+          console.error(
+            "[tap-create-charge] Client amount out of tolerance — refusing charge",
+            {
+              clientRequestedAmount,
+              serverExpectedLocal,
+              serverExpectedSar,
+              chargeCurrency,
+              ratio: Math.round(ratio * 100) / 100,
+              courseId: courseIdTrim,
+            },
+          );
+          return new Response(
+            JSON.stringify({
+              error: "Charge amount mismatch. Please refresh the checkout and try again.",
+            }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        finalAmount = Math.ceil(clientRequestedAmount);
+      }
+    }
 
     let priceBeforeTax = Math.max(0, Math.round((finalAmount / vatFactor) * 100) / 100);
     if (isTrainingBooking) {
