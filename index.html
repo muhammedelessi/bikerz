@@ -36,8 +36,21 @@
     <link rel="shortcut icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
     <!-- manifest + SW injected by vite-plugin-pwa at build time -->
-    <!-- Hero AVIF LCP preloads: home page only (see Index.tsx SEOHead lcpPreloads) -->
     <meta name="theme-color" content="#D4AF37" />
+
+    <!--
+      Hero LCP preloads — MUST live in index.html (not in React/Helmet) so the
+      browser starts fetching the AVIF on initial HTML parse. When these were
+      added by SEOHead, Lighthouse showed a 2,860 ms "resource load delay"
+      because the preload tags didn't exist until React mounted.
+      Each <link> uses media queries so a phone only fetches the mobile AVIF
+      and a desktop only fetches the desktop AVIF — at most one ~25 KB request
+      that pays for itself on the home page LCP and adds negligible cost on
+      other pages.
+    -->
+    <link rel="preload" as="image" href="/hero-rider-mobile.avif" type="image/avif" media="(max-width: 768px)" fetchpriority="high" />
+    <link rel="preload" as="image" href="/hero-rider.avif" type="image/avif" media="(min-width: 769px)" fetchpriority="high" />
+
 
     <!-- Self-hosted Almarai + Roboto: critical weights preloaded (no Google Fonts request chain) -->
     <link rel="preload" as="font" type="font/woff2" href="/fonts/almarai-400.woff2" crossorigin />

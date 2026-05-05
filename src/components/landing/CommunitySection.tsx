@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
 import AnimatedCounter from '@/components/common/AnimatedCounter';
 import { useLanguage } from '@/contexts/LanguageContext';
-const heroBackground = "/hero-rider.webp";
+// Was /hero-rider.webp (259 KB) — Lighthouse flagged ~199 KB savings.
+// community-ride.webp ships at 47 KB and is already the alt text we use.
+import heroBackground from '@/assets/community-ride.webp';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLandingContent, CommunityContent, HeroContent } from '@/hooks/useLandingContent';
