@@ -4,40 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!--
-      Set <html lang> + dir BEFORE React hydrates so:
-        • Bots that don't execute JS see the correct language attribute
-          on the initial HTML (lang="en" on /en/* paths, lang="ar" elsewhere)
-        • Screen readers announce the right language on first paint
-        • Browser translation prompts trigger appropriately
-
-      Without this script, the static lang="ar" defaults to Arabic. The
-      script runs synchronously in <head> (no `defer` / `async`) so the
-      DOM has the right language before any content paints.
-
-      Why inline + synchronous: a network round-trip for a separate JS
-      file would defeat the purpose — by then React has already hydrated.
-      The cost is ~250 bytes of HTML, negligible.
-    -->
-    <script>
-      (function () {
-        try {
-          var p = window.location.pathname;
-          var isEn = p === '/en' || p.indexOf('/en/') === 0;
-          if (isEn) {
-            document.documentElement.lang = 'en';
-            document.documentElement.dir = 'ltr';
-          }
-          // else: HTML default is already lang="ar" dir="rtl" — no-op.
-        } catch (e) { /* malformed location.pathname is impossible in browsers */ }
-      })();
-    </script>
     <title>Bikerz</title>
     <meta name="description" content="Master motorcycle riding with Bikerz Academy. Expert-led online courses designed for all levels. Gain skills, stay safe, and Let's Ride With Confidence. Enroll now!" />
     <meta name="keywords" content="motorcycle riding course, learn to ride motorcycle, motorcycle academy, biker training, riding lessons, motorcycle safety" />
     <meta name="author" content="BIKERZ Academy" />
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://academy.bikerz.com/" />
+    <!--
+      No static <link rel="canonical"> here on purpose. SEOHead uses
+      react-helmet-async to inject a per-page self-referencing canonical
+      with data-rh="true". Having a static canonical alongside Helmet's
+      version produced TWO canonical tags (Helmet appends rather than
+      replaces non-data-rh tags), and Google treats duplicate canonicals
+      as conflicting signals.
+    -->
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -59,6 +38,36 @@
 
     <!-- Google Search Console Verification -->
     <meta name="google-site-verification" content="google7ed1a9a1c8af8981" />
+
+    <!--
+      Per-page lang/dir + og:url update for the initial HTML.
+
+      The static defaults above (lang="ar", og:url="/") cover the bare-
+      path Arabic homepage. For any other URL — /en/* and every deep
+      page — we patch the DOM synchronously here so:
+        • Screen readers / browser translation prompts see the right
+          lang on first paint.
+        • Social previews (which read og:url before JS hydrates) get
+          the correct page URL instead of always-root.
+
+      Canonical is intentionally NOT touched here — see the comment
+      above where the static canonical was removed. Helmet owns the
+      canonical exclusively to avoid duplicate tags.
+    -->
+    <script>
+      (function () {
+        try {
+          var p = window.location.pathname || '/';
+          var isEn = p === '/en' || p.indexOf('/en/') === 0;
+          if (isEn) {
+            document.documentElement.lang = 'en';
+            document.documentElement.dir = 'ltr';
+          }
+          var ogUrl = document.querySelector('meta[property="og:url"]');
+          if (ogUrl) ogUrl.setAttribute('content', 'https://academy.bikerz.com' + p);
+        } catch (e) { /* defensive — querySelector can't actually throw */ }
+      })();
+    </script>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/favicon.png" />

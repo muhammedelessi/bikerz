@@ -1,7 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { stripLangPrefix } from '@/lib/i18nRouting';
+import { localizedPath, stripLangPrefix } from '@/lib/i18nRouting';
 import { useLocation } from 'react-router-dom';
 
 export interface LcpPreloadLink {
@@ -47,14 +47,27 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   const fullTitle = `${title} | ${SITE_NAME}`;
   const image = ogImage || DEFAULT_OG_IMAGE;
 
-  // Build canonical URL — if a canonical prop is provided use it,
-  // otherwise derive from the current location path.
-  const pagePath = canonical || location.pathname;
-  const canonicalUrl = `${DOMAIN}${pagePath}`;
+  // Canonical URL — must be SELF-REFERENCING per page, not pointing to
+  // a single language version. Two cases:
+  //   1. `canonical` prop passed: pages historically pass it as the
+  //      language-AGNOSTIC base (e.g. "/about"). We localize it to the
+  //      current language so the English page canonicals to /en/about.
+  //   2. No prop: use the actual location.pathname, which already has
+  //      the right /en prefix on English pages.
+  // Without this fix every English page canonicals to root or to the
+  // Arabic URL, which tells Google "the English version is a duplicate
+  // of the Arabic page" — Google then deindexes the English version.
+  const canonicalPath = canonical
+    ? localizedPath(canonical, language)
+    : location.pathname;
+  const canonicalUrl = `${DOMAIN}${canonicalPath}`;
 
-  // hreflang: strip any existing lang prefix to get the base path,
-  // then build Arabic (bare) and English (/en) variants.
-  const basePath = stripLangPrefix(pagePath);
+  // hreflang: strip the language prefix from the canonical to get the
+  // base, then build Arabic (bare) and English (/en) reciprocal URLs.
+  // Both Arabic and English versions of the page reference each other
+  // AND themselves (via canonical above) — the reciprocal pair Google
+  // requires for hreflang to be valid.
+  const basePath = stripLangPrefix(canonicalPath);
   const arUrl = `${DOMAIN}${basePath}`;
   const enUrl = `${DOMAIN}${basePath === '/' ? '/en' : `/en${basePath}`}`;
 
