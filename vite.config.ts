@@ -114,7 +114,10 @@ export default defineConfig(({ mode }) => {
           "vendor-query": ["@tanstack/react-query", "@tanstack/query-core"],
           "vendor-ui": ["sonner"],
           "vendor-supabase": ["@supabase/supabase-js"],
-          "vendor-charts": ["recharts"],
+          // recharts is NOT in manualChunks — Vite preloads vendor chunks
+          // alongside the entry, which would force the home page to fetch
+          // 422 kB of charts code that only admin analytics need. Letting
+          // Rollup chunk recharts naturally keeps it on the lazy path.
         },
         chunkFileNames: "assets/[name]-[hash].js",
         entryFileNames: "assets/[name]-[hash].js",

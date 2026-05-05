@@ -6,7 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import * as LucideIcons from 'lucide-react';
 import SEOHead from '@/components/common/SEOHead';
 import {
   Target,
@@ -16,9 +15,44 @@ import {
   MapPin,
   Phone,
   Mail,
-  Clock
+  Clock,
+  Heart,
+  Star,
+  Trophy,
+  Bike,
+  Zap,
+  Flame,
+  Crown,
+  Gem,
+  Rocket,
+  Compass,
+  Lightbulb,
+  Sparkles,
+  CheckCircle2,
+  ThumbsUp,
+  Handshake,
+  Globe,
+  GraduationCap,
+  BookOpen,
+  Wrench,
+  Medal,
+  ShieldCheck,
+  Eye,
+  Lock,
+  Smile,
 } from 'lucide-react';
 import heroImage from '@/assets/community-ride.webp';
+
+// Curated icon registry — replaces `import * as LucideIcons` which was pulling
+// in ~1500 icons (484 kB). Admins pick from this whitelist when setting
+// value{N}_icon in admin_settings; unknown names fall back to defaults.
+const ICON_REGISTRY: Record<string, React.ElementType> = {
+  Target, Users, Shield, Award, MapPin, Phone, Mail, Clock,
+  Heart, Star, Trophy, Bike, Zap, Flame, Crown, Gem,
+  Rocket, Compass, Lightbulb, Sparkles, CheckCircle2, ThumbsUp,
+  Handshake, Globe, GraduationCap, BookOpen, Wrench, Medal,
+  ShieldCheck, Eye, Lock, Smile,
+};
 
 const AboutUs: React.FC = () => {
   const { t } = useTranslation();
@@ -42,9 +76,7 @@ const AboutUs: React.FC = () => {
   const d = aboutData || {};
 
   const getIcon = (iconName: string, fallback: React.ElementType) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const Icon = (LucideIcons as any)[iconName];
-    return Icon || fallback;
+    return ICON_REGISTRY[iconName] || fallback;
   };
 
   const defaultIcons = [Shield, Users, Award, Target];
