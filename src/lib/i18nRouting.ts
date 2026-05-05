@@ -1,9 +1,11 @@
 /**
  * i18n-aware routing utilities.
  *
- * All public-facing routes are prefixed with /:lang (ar | en).
- * System routes (admin, payment callbacks, data feeds, etc.) are exempt
- * and keep their bare paths.
+ * URL convention:
+ *   - Arabic (default): NO prefix → /, /courses, /trainers
+ *   - English:          /en prefix → /en, /en/courses, /en/trainers
+ *
+ * System routes (admin, payment callbacks, data feeds, etc.) are exempt.
  */
 
 export type SupportedLang = 'ar' | 'en';
@@ -28,38 +30,52 @@ export function isUnprefixedPath(path: string): boolean {
   return UNPREFIXED_PATTERNS.some((re) => re.test(path));
 }
 
-/** Prepend the language prefix to a path, unless it's an unprefixed route. */
+/** Build the localized URL for a path.
+ *  - Arabic → bare path (no prefix)
+ *  - English → /en prefix
+ */
 export function localizedPath(path: string, lang: SupportedLang): string {
-  // Already has a lang prefix → return as-is
-  if (/^\/(ar|en)(\/|$)/.test(path)) return path;
-
-  // System routes → no prefix
-  if (isUnprefixedPath(path)) return path;
-
   // External URLs → no prefix
   if (/^https?:\/\//.test(path)) return path;
 
   // Hash-only or empty → no prefix
   if (!path || path === '#' || path.startsWith('#')) return path;
 
-  // Ensure leading slash
-  const normalized = path.startsWith('/') ? path : `/${path}`;
-  return `/${lang}${normalized}`;
+  // Strip any existing /en or legacy /ar prefix to get the base
+  const stripped = stripLangPrefix(path);
+
+  // System routes → no prefix
+  if (isUnprefixedPath(stripped)) return stripped;
+
+  if (lang === 'ar') {
+    return stripped;
+  }
+
+  // English: prepend /en, avoid double slash when stripped is '/'
+  if (stripped === '/') return '/en';
+  return `/en${stripped}`;
 }
 
-/** Extract the language from a URL pathname, or null if none. */
-export function extractLangFromPath(pathname: string): SupportedLang | null {
-  const match = pathname.match(/^\/(ar|en)(\/|$)/);
-  return match ? (match[1] as SupportedLang) : null;
+/** Detect the language from a URL pathname.
+ *  - /en or /en/... → 'en'
+ *  - everything else → 'ar' (default)
+ */
+export function extractLangFromPath(pathname: string): SupportedLang {
+  if (/^\/en(\/|$)/.test(pathname)) return 'en';
+  return 'ar';
 }
 
-/** Strip the language prefix from a pathname (e.g. /ar/courses → /courses). */
+/** Strip the language prefix from a pathname.
+ *  Handles both new (/en/...) and legacy (/ar/...) prefixes so old links
+ *  keep working when redirected.
+ */
 export function stripLangPrefix(pathname: string): string {
-  return pathname.replace(/^\/(ar|en)(\/|$)/, '/$2') || '/';
+  const stripped = pathname.replace(/^\/(ar|en)(?=\/|$)/, '');
+  return stripped === '' ? '/' : stripped;
 }
 
 /** Known bot user-agents — these must NOT be auto-redirected so Google can
- *  crawl both /ar/ and /en/ directly. */
+ *  crawl both versions directly. */
 const BOT_UA_PATTERN =
   /googlebot|bingbot|yandexbot|baiduspider|facebookexternalhit|twitterbot|rogerbot|linkedinbot|embedly|quora|showyoubot|outbrain|pinterest|slackbot|vkshare|w3c_validator/i;
 
