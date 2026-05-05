@@ -1,8 +1,37 @@
 <!doctype html>
-<html lang="en">
+<html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!--
+      Set <html lang> + dir BEFORE React hydrates so:
+        • Bots that don't execute JS see the correct language attribute
+          on the initial HTML (lang="en" on /en/* paths, lang="ar" elsewhere)
+        • Screen readers announce the right language on first paint
+        • Browser translation prompts trigger appropriately
+
+      Without this script, the static lang="ar" defaults to Arabic. The
+      script runs synchronously in <head> (no `defer` / `async`) so the
+      DOM has the right language before any content paints.
+
+      Why inline + synchronous: a network round-trip for a separate JS
+      file would defeat the purpose — by then React has already hydrated.
+      The cost is ~250 bytes of HTML, negligible.
+    -->
+    <script>
+      (function () {
+        try {
+          var p = window.location.pathname;
+          var isEn = p === '/en' || p.indexOf('/en/') === 0;
+          if (isEn) {
+            document.documentElement.lang = 'en';
+            document.documentElement.dir = 'ltr';
+          }
+          // else: HTML default is already lang="ar" dir="rtl" — no-op.
+        } catch (e) { /* malformed location.pathname is impossible in browsers */ }
+      })();
+    </script>
     <title>Bikerz</title>
     <meta name="description" content="Master motorcycle riding with Bikerz Academy. Expert-led online courses designed for all levels. Gain skills, stay safe, and Let's Ride With Confidence. Enroll now!" />
     <meta name="keywords" content="motorcycle riding course, learn to ride motorcycle, motorcycle academy, biker training, riding lessons, motorcycle safety" />
