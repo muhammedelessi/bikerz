@@ -57,6 +57,34 @@ function isValidTapId(id: string): boolean {
   return /^chg_[A-Za-z0-9]+$/.test(id);
 }
 
+/**
+ * Persistent fire-once guard for conversion analytics. We previously used
+ * useRef + ref-based "did we fire this tapId yet" checks, but those reset
+ * on page reload — so a user who hits browser-back to /payment-success
+ * (very common!) would re-fire Meta Pixel, Google Ads, GHL, and n8n
+ * webhooks, inflating real conversion counts by 2-5×.
+ *
+ * Keyed by `${tapId}__${courseId | "bundle"}` so a free-enrollment user who
+ * applies a 100% coupon to two different courses in the same session still
+ * gets one analytics event per course (tapId is the literal string
+ * "free_enrollment" in that case, so we need the courseId disambiguator).
+ *
+ * Returns true if this is the first time we've seen this key. Safe in
+ * iOS private mode (localStorage throws → fall back to "yes, fire once
+ * this session" which matches the old in-memory behaviour).
+ */
+const ANALYTICS_FIRED_PREFIX = "bikerz_analytics_fired_";
+function claimAnalyticsFireOnce(tapId: string, scope: string): boolean {
+  const key = `${ANALYTICS_FIRED_PREFIX}${tapId}__${scope}`;
+  try {
+    if (localStorage.getItem(key)) return false;
+    localStorage.setItem(key, String(Date.now()));
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 const PaymentSuccess: React.FC = () => {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
@@ -178,6 +206,12 @@ const PaymentSuccess: React.FC = () => {
       return;
     }
 
+    // Persistent guard — survives reload/back-button so a returning user
+    // doesn't re-fire the trainer notification webhook on the same booking.
+    if (!tapId || !claimAnalyticsFireOnce(tapId, "training_booking")) {
+      bookingWebhookSentRef.current = true;
+      return;
+    }
     bookingWebhookSentRef.current = true;
 
     const booking = trainingBookingSuccess;
@@ -256,9 +290,25 @@ const PaymentSuccess: React.FC = () => {
     tapId,
   ]);
 
-  // Meta Pixel + GHL + n8n on successful verification (once per success)
+  // Meta Pixel + GHL + n8n on successful verification (once per success).
+  //
+  // Two layers of guard:
+  //   1. crmSuccessSyncedRef — in-memory; cheap; protects against React
+  //      effect re-runs within a single page load (StrictMode, dep changes).
+  //   2. claimAnalyticsFireOnce — localStorage; survives reload/back-button.
+  //      THIS is the one that fixes inflated Meta Pixel / Google Ads /
+  //      GHL / n8n conversion counts when a returning user hits the
+  //      success page a second time on the same payment.
   useEffect(() => {
     if (verifyStatus !== "succeeded" || !user || crmSuccessSyncedRef.current) return;
+
+    const fireScope = isBundle ? "bundle" : (courseId || "course");
+    if (!tapId || !claimAnalyticsFireOnce(tapId, fireScope)) {
+      // Already fired in a previous visit — mark in-memory ref so we
+      // don't keep checking localStorage, and bail.
+      crmSuccessSyncedRef.current = true;
+      return;
+    }
 
     const countryCode =
       COUNTRIES.find((c) => c.en === profile?.country || c.ar === profile?.country || c.code === profile?.country)
