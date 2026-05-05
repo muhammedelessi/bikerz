@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef } from "react";
-import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,7 +59,7 @@ const levelConfig: Record<string, { color: string; label: { en: string; ar: stri
 
 const TrainingDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const { isRTL, language } = useLanguage();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -249,10 +251,10 @@ const TrainingDetail: React.FC = () => {
         <main className="section-container pb-16">
           <div className="mb-8">
             <Button variant="ghost" size="sm" className="gap-2 -ms-2" asChild>
-              <Link to="/trainings">
+              <LocalizedLink to="/trainings">
                 <BackIcon className="w-4 h-4" />
                 {isRTL ? "العودة للتدريبات" : "Back to trainings"}
-              </Link>
+              </LocalizedLink>
             </Button>
           </div>
 
@@ -279,7 +281,7 @@ const TrainingDetail: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <Button asChild>
-                  <Link to="/trainings">{isRTL ? "عرض كل التدريبات" : "View all trainings"}</Link>
+                  <LocalizedLink to="/trainings">{isRTL ? "عرض كل التدريبات" : "View all trainings"}</LocalizedLink>
                 </Button>
               </CardContent>
             </Card>
@@ -471,7 +473,7 @@ const TrainingDetail: React.FC = () => {
                         : "This is a theory-only program, separate from practical training. To book a session with a trainer, browse the practical section on the trainings page."}
                     </p>
                     <Button asChild variant="default">
-                      <Link to="/trainings">{isRTL ? "العودة إلى التدريبات" : "Back to trainings"}</Link>
+                      <LocalizedLink to="/trainings">{isRTL ? "العودة إلى التدريبات" : "Back to trainings"}</LocalizedLink>
                     </Button>
                   </section>
                 ) : (
@@ -554,20 +556,20 @@ const TrainingDetail: React.FC = () => {
                               footer={
                                 <div className="flex flex-col sm:flex-row gap-2 w-full">
                                   <Button variant="outline" size="sm" className="w-full sm:flex-1 font-semibold" asChild>
-                                    <Link to={`/trainers/${tr.id}`}>{isRTL ? "عرض الملف" : "View Profile"}</Link>
+                                    <LocalizedLink to={`/trainers/${tr.id}`}>{isRTL ? "عرض الملف" : "View Profile"}</LocalizedLink>
                                   </Button>
                                   {!user ? (
                                     <Button className="w-full sm:flex-1 font-semibold" asChild>
-                                      <Link to={`/login?returnTo=${loginBookingReturn(tc.id)}`}>
+                                      <LocalizedLink to={`/login?returnTo=${loginBookingReturn(tc.id)}`}>
                                         {isRTL ? "سجّل الدخول للحجز" : "Sign in to book"}
-                                      </Link>
+                                      </LocalizedLink>
                                     </Button>
                                   ) : (
                                     <Button className="w-full sm:flex-1 font-semibold gap-2" asChild>
-                                      <Link to={bookingHref(tc.id)}>
+                                      <LocalizedLink to={bookingHref(tc.id)}>
                                         {isRTL ? "احجز مع هذا المدرب" : "Book this Trainer"}
                                         <BookIcon className="h-4 w-4 opacity-90" />
-                                      </Link>
+                                      </LocalizedLink>
                                     </Button>
                                   )}
                                 </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Dialog,
@@ -54,16 +54,16 @@ const AuthPromptDialog: React.FC<AuthPromptDialogProps> = ({
 
         <DialogFooter className="flex-col sm:flex-col gap-2 pt-2">
           <Button asChild variant="cta" className="w-full gap-2">
-            <Link to={`/login${returnSuffix}`}>
+            <LocalizedLink to={`/login${returnSuffix}`}>
               <LogIn className="w-4 h-4" />
               {isRTL ? "تسجيل الدخول" : "Sign in"}
-            </Link>
+            </LocalizedLink>
           </Button>
           <Button asChild variant="outline" className="w-full gap-2">
-            <Link to={`/signup${returnSuffix}`}>
+            <LocalizedLink to={`/signup${returnSuffix}`}>
               <UserPlus className="w-4 h-4" />
               {isRTL ? "إنشاء حساب" : "Create account"}
-            </Link>
+            </LocalizedLink>
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -14,7 +14,7 @@ import {
   Check, MessageCircle, Users,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import logoDark from "@/assets/logo-dark.webp";
@@ -226,11 +226,11 @@ const JoinCommunity: React.FC = () => {
               {pickText("You've been registered successfully. We'll be in touch soon!", "تم تسجيلك بنجاح. سنتواصل معك قريباً!")}
             </p>
             <div className="flex flex-col gap-3">
-              <Link to="/">
+              <LocalizedLink to="/">
                 <Button variant="outline" className="w-full">
                   {pickText("Back to Home", "العودة للرئيسية")}
                 </Button>
-              </Link>
+              </LocalizedLink>
             </div>
           </div>
         </div>

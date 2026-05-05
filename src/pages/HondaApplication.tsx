@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useLocalizedNavigate } from '@/hooks/useLocalizedNavigate';
+import LocalizedLink from '@/components/common/LocalizedLink';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -105,7 +106,7 @@ const HondaApplication: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user, profile, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const queryClient = useQueryClient();
 
   // ── Form state ─────────────────────────────────────────────────────
@@ -468,10 +469,10 @@ const HondaApplication: React.FC = () => {
                   : 'The "What If" course is now free for you. Start learning now.'}
               </p>
               <Button asChild size="lg" className="mt-2">
-                <Link to="/courses">
+                <LocalizedLink to="/courses">
                   {isRTL ? 'تصفح الكورسات' : 'Browse courses'}
                   {isRTL ? <ArrowLeft className="w-4 h-4 ms-2" /> : <ArrowRight className="w-4 h-4 ms-2" />}
-                </Link>
+                </LocalizedLink>
               </Button>
             </CardContent>
           </Card>
@@ -495,7 +496,7 @@ const HondaApplication: React.FC = () => {
                   : 'The Bikerz team will manually review your registration document and get back to you within 48 hours.'}
               </p>
               <Button asChild variant="outline" size="lg">
-                <Link to="/">{isRTL ? 'العودة للرئيسية' : 'Back to home'}</Link>
+                <LocalizedLink to="/">{isRTL ? 'العودة للرئيسية' : 'Back to home'}</LocalizedLink>
               </Button>
             </CardContent>
           </Card>
@@ -520,7 +521,7 @@ const HondaApplication: React.FC = () => {
                     : "We weren't able to verify your application. Contact support for help.")}
               </p>
               <Button asChild variant="outline" size="lg">
-                <Link to="/">{isRTL ? 'العودة للرئيسية' : 'Back to home'}</Link>
+                <LocalizedLink to="/">{isRTL ? 'العودة للرئيسية' : 'Back to home'}</LocalizedLink>
               </Button>
             </CardContent>
           </Card>

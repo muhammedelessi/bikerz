@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useLocalizedNavigate } from '@/hooks/useLocalizedNavigate';
+import LocalizedLink from '@/components/common/LocalizedLink';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from 'react-i18next';
@@ -248,7 +250,7 @@ const TrainerProfile: React.FC = () => {
   const { isRTL, language } = useLanguage();
   const { t } = useTranslation();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const queryClient = useQueryClient();
   const { formatTrainingOfferPrice } = useCurrency();
   const BackIcon = isRTL ? ArrowRight : ArrowLeft;
@@ -436,10 +438,10 @@ const TrainerProfile: React.FC = () => {
         <main className="section-container pb-16 max-w-4xl mx-auto">
           <div className="mb-6">
             <Button variant="ghost" size="sm" className="gap-2 -ms-2" asChild>
-              <Link to="/trainers">
+              <LocalizedLink to="/trainers">
                 <BackIcon className="w-4 h-4" />
                 {isRTL ? 'العودة للمدربين' : 'Back to trainers'}
-              </Link>
+              </LocalizedLink>
             </Button>
           </div>
 
@@ -711,10 +713,10 @@ const TrainerProfile: React.FC = () => {
                               </p>
                             </div>
                             <Button className="w-full mt-auto gap-2 font-semibold" asChild>
-                              <Link to={buildBookHref(tc)}>
+                              <LocalizedLink to={buildBookHref(tc)}>
                                 {isRTL ? 'احجز هذا التدريب' : 'Book this training'}
                                 <BookIcon className="h-4 w-4 opacity-90" />
-                              </Link>
+                              </LocalizedLink>
                             </Button>
                           </CardContent>
                         </Card>

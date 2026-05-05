@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SEOHead from "@/components/common/SEOHead";
@@ -123,10 +124,10 @@ const ChampionVideosList: React.FC = () => {
           >
             <nav aria-label="Breadcrumb">
               <Button variant="ghost" size="sm" className="-ms-2 min-h-10 gap-1 px-2 text-xs sm:min-h-8" asChild>
-                <Link to="/community-champions">
+                <LocalizedLink to="/community-champions">
                   <BackIcon className="h-4 w-4" />
                   {backLabel}
-                </Link>
+                </LocalizedLink>
               </Button>
             </nav>
 
@@ -148,7 +149,7 @@ const ChampionVideosList: React.FC = () => {
                   {isRTL ? "السفير غير موجود أو غير متاح." : "Ambassador not found."}
                 </p>
                 <Button asChild variant="default" size="sm" className="mt-4">
-                  <Link to="/community-champions">{backLabel}</Link>
+                  <LocalizedLink to="/community-champions">{backLabel}</LocalizedLink>
                 </Button>
               </div>
             ) : (

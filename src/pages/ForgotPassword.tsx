@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import LocalizedLink from '@/components/common/LocalizedLink';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -58,7 +58,7 @@ const ForgotPassword: React.FC = () => {
       {/* Header */}
       <header className="py-4 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link to="/">
+          <LocalizedLink to="/">
             <img
               src={theme === 'light' ? logoDark : logoLight}
               alt="BIKERZ"
@@ -68,7 +68,7 @@ const ForgotPassword: React.FC = () => {
               loading="eager"
               decoding="async"
             />
-          </Link>
+          </LocalizedLink>
         </div>
       </header>
 
@@ -94,11 +94,11 @@ const ForgotPassword: React.FC = () => {
                   </p>
                 </div>
                 <div className="space-y-3">
-                  <Link to="/login">
+                  <LocalizedLink to="/login">
                     <Button variant="outline" className="w-full">
                       {t('auth.forgotPassword.backToLogin')}
                     </Button>
-                  </Link>
+                  </LocalizedLink>
                   <button
                     onClick={() => setIsSuccess(false)}
                     className="text-sm text-primary hover:underline"
@@ -154,13 +154,13 @@ const ForgotPassword: React.FC = () => {
                 </form>
 
                 <div className="mt-6 text-center">
-                  <Link
+                  <LocalizedLink
                     to="/login"
                     className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-2"
                   >
                     <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
                     {t('auth.forgotPassword.backToLogin')}
-                  </Link>
+                  </LocalizedLink>
                 </div>
               </>
             )}

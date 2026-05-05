@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ArrowLeft, Play, Shield, Clock } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Link } from 'react-router-dom';
+import LocalizedLink from '@/components/common/LocalizedLink';
 import { CTAContent } from '@/hooks/useLandingContent';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
@@ -54,13 +54,13 @@ const CTASection: React.FC<CTASectionProps> = ({ content, isLoading = false }) =
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-10 sm:mb-12 anim-fade-up anim-delay-2">
-            <Link to="/signup" className="w-full sm:w-auto">
+            <LocalizedLink to="/signup" className="w-full sm:w-auto">
               <Button variant="hero" size="lg" className="group w-full sm:w-auto gap-2.5 px-8 py-6 text-base">
                 <Play className="w-5 h-5 transition-transform group-hover:scale-110" />
                 {buttonText}
               </Button>
-            </Link>
-            <Link to="/courses" className="w-full sm:w-auto">
+            </LocalizedLink>
+            <LocalizedLink to="/courses" className="w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="lg"
@@ -69,7 +69,7 @@ const CTASection: React.FC<CTASectionProps> = ({ content, isLoading = false }) =
                 {isRTL ? 'تصفح الدورات' : 'Browse Courses'}
                 <Arrow className="w-4 h-4 transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
               </Button>
-            </Link>
+            </LocalizedLink>
           </div>
 
           {/* Feature pills */}

@@ -3,7 +3,8 @@ import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { useLocalizedNavigate } from '@/hooks/useLocalizedNavigate';
 
 interface PurchaseData {
   firstName: string;
@@ -49,7 +50,7 @@ const SocialProofNotification: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const location = useLocation();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const [visible, setVisible] = useState(false);
   const [current, setCurrent] = useState<PurchaseData | null>(null);
   const [purchases, setPurchases] = useState<PurchaseData[]>([]);

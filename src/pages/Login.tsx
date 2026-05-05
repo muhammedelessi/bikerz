@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +35,7 @@ const Login: React.FC = () => {
   const { theme } = useTheme();
   const { isRTL } = useLanguage();
   const { signIn } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get("returnTo");
   const { data: authContent } = useAuthPageContent();
@@ -197,7 +199,7 @@ const Login: React.FC = () => {
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-6 sm:mb-8">
-            <Link to="/" className="flex items-center">
+            <LocalizedLink to="/" className="flex items-center">
               <img
                 src={theme === 'light' ? logoDark : logoLight}
                 alt="BIKERZ"
@@ -207,7 +209,7 @@ const Login: React.FC = () => {
                 loading="eager"
                 decoding="async"
               />
-            </Link>
+            </LocalizedLink>
             <LanguageToggle />
           </div>
 
@@ -252,9 +254,9 @@ const Login: React.FC = () => {
               />
 
               <div className="flex items-center justify-end">
-                <Link to="/forgot-password" className="text-sm text-primary hover:underline touch-target py-1">
+                <LocalizedLink to="/forgot-password" className="text-sm text-primary hover:underline touch-target py-1">
                   {forgotText}
-                </Link>
+                </LocalizedLink>
               </div>
 
               <Button type="submit" variant="cta" className="w-full h-11 sm:h-12 text-base" disabled={isLoading}>
@@ -306,12 +308,12 @@ const Login: React.FC = () => {
 
             <div className="mt-5 sm:mt-6 text-center text-sm sm:text-base text-muted-foreground">
               {noAccountText}{" "}
-              <Link
+              <LocalizedLink
                 to={returnTo ? `/signup?returnTo=${encodeURIComponent(returnTo)}` : "/signup"}
                 className="text-primary hover:underline font-medium"
               >
                 {signupLinkText}
-              </Link>
+              </LocalizedLink>
             </div>
           </div>
         </motion.div>

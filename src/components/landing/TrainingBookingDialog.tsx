@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import LocalizedLink from '@/components/common/LocalizedLink';
+import { useLocalizedNavigate } from '@/hooks/useLocalizedNavigate';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { format, addDays, startOfDay } from 'date-fns';
@@ -61,7 +62,7 @@ type Props = {
 };
 
 const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, selectedCourse, returnTo }) => {
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const { isRTL, language } = useLanguage();
   const { t } = useTranslation();
   const { user, profile, isLoading: authLoading } = useAuth();
@@ -407,7 +408,7 @@ const TrainingBookingDialog: React.FC<Props> = ({ open, onOpenChange, training, 
           <div className="space-y-4 py-2 text-center">
             <p className="text-sm text-muted-foreground">{isRTL ? 'يرجى تسجيل الدخول لإتمام الحجز' : 'Please sign in to complete your booking'}</p>
             <Button asChild className="w-full">
-              <Link to={`/login?returnTo=${returnTo}`}>{isRTL ? 'تسجيل الدخول' : 'Sign in'}</Link>
+              <LocalizedLink to={`/login?returnTo=${returnTo}`}>{isRTL ? 'تسجيل الدخول' : 'Sign in'}</LocalizedLink>
             </Button>
           </div>
         ) : (

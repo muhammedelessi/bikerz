@@ -1,6 +1,6 @@
 import React from "react";
 import { Check, Circle } from "lucide-react";
-import { Link } from "react-router-dom";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -96,13 +96,13 @@ export const SelectableBundleCourseCard: React.FC<Props> = ({
           <p className="text-sm font-bold tabular-nums text-primary">
             {priceInfo.finalPrice} {sym}
           </p>
-          <Link
+          <LocalizedLink
             to={`/courses/${course.id}`}
             onClick={(e) => e.stopPropagation()}
             className="text-[11px] font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
           >
             {isRTL ? "تفاصيل" : "Details"}
-          </Link>
+          </LocalizedLink>
         </div>
         {disabled && disabledReason && (
           <p className="text-[11px] text-muted-foreground">{disabledReason}</p>

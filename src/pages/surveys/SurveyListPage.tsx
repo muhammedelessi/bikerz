@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, ArrowRight, CheckCircle2, Gamepad2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -28,7 +28,7 @@ const PageLoader = () => (
 );
 
 const SurveyListPage: React.FC = () => {
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const { user } = useAuth();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import SEOHead from '@/components/common/SEOHead';
-import { useNavigate } from 'react-router-dom';
+import { useLocalizedNavigate } from '@/hooks/useLocalizedNavigate';
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
@@ -27,7 +27,7 @@ const ContactUs: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const { sendFormData } = useGHLFormWebhook();
 
   const [formData, setFormData] = useState({

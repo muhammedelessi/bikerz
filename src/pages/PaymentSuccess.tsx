@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import LocalizedLink from "@/components/common/LocalizedLink";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -60,7 +62,7 @@ const PaymentSuccess: React.FC = () => {
   const [searchParams] = useSearchParams();
   const courseId = searchParams.get("course");
   const isBundle = searchParams.get("bundle") === "1";
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const { isRTL } = useLanguage();
   const { user, isReady } = useAuthReady();
   const { profile } = useAuth();
@@ -735,7 +737,7 @@ const PaymentSuccess: React.FC = () => {
           transition={{ delay: 0.1 }}
           className="flex justify-center mb-8"
         >
-          <Link to="/" className="inline-block mb-3 sm:mb-4 lg:mb-6">
+          <LocalizedLink to="/" className="inline-block mb-3 sm:mb-4 lg:mb-6">
             <picture>
               <source srcSet={bikerLogo} type="image/webp" />
               <img
@@ -748,7 +750,7 @@ const PaymentSuccess: React.FC = () => {
                 decoding="async"
               />
             </picture>
-          </Link>
+          </LocalizedLink>
         </motion.div>
 
         <div className="bg-card border-2 border-primary/20 rounded-3xl p-8 sm:p-10 text-center shadow-2xl relative overflow-hidden">
@@ -854,18 +856,18 @@ const PaymentSuccess: React.FC = () => {
               {isBundle ? (
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button asChild className="flex-1">
-                    <Link to="/dashboard">{isRTL ? "ابدأ التعلم" : "Start Learning"}</Link>
+                    <LocalizedLink to="/dashboard">{isRTL ? "ابدأ التعلم" : "Start Learning"}</LocalizedLink>
                   </Button>
                   <Button asChild variant="outline" className="flex-1">
-                    <Link to="/courses">{isRTL ? "تصفح المزيد" : "Browse More"}</Link>
+                    <LocalizedLink to="/courses">{isRTL ? "تصفح المزيد" : "Browse More"}</LocalizedLink>
                   </Button>
                 </div>
               ) : (
                 <Button className="w-full btn-cta h-12 text-base font-bold shadow-xl shadow-primary/20" asChild>
-                  <Link to={`/courses/${courseId}/learn?welcome=1`}>
+                  <LocalizedLink to={`/courses/${courseId}/learn?welcome=1`}>
                     {t("payment.startLearning")}
                     <ArrowIcon className="w-5 h-5 ms-2" />
-                  </Link>
+                  </LocalizedLink>
                 </Button>
               )}
             </motion.div>

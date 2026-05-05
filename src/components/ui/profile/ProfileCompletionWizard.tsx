@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -216,7 +216,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({ open,
     }
   };
 
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
 
   const handleDone = () => {
     onOpenChange(false);

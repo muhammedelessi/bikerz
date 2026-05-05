@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Link } from "react-router-dom";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { BookOpen, Gift } from "lucide-react";
@@ -188,7 +188,7 @@ const Courses: React.FC = () => {
                 </div>
                 <div className="flex justify-center sm:justify-start">
                   <Button asChild size="lg" className="px-8">
-                    <Link to="/bundles">{isRTL ? "اصنع باقتك ووفر أموالك" : "Build your bundle and save"}</Link>
+                    <LocalizedLink to="/bundles">{isRTL ? "اصنع باقتك ووفر أموالك" : "Build your bundle and save"}</LocalizedLink>
                   </Button>
                 </div>
               </div>

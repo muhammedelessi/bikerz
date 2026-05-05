@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -25,7 +26,7 @@ const PageLoader = () => (
 
 const SurveyPlayPage: React.FC = () => {
   const { surveyId } = useParams<{ surveyId: string }>();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const { user } = useAuth();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();

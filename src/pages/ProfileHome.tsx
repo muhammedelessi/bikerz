@@ -1,7 +1,7 @@
 import React from "react";
 import SEOHead from "@/components/common/SEOHead";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { Gamepad2 } from "lucide-react";
 const ProfileHome: React.FC = () => {
   const { t } = useTranslation();
   const { user, isInstructor } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const {
     profile,
     learningStats,

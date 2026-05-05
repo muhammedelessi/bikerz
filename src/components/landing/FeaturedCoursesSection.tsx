@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 
 import { useInView } from "react-intersection-observer";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -126,13 +126,13 @@ const FeaturedCoursesSection: React.FC = () => {
               {isRTL ? "دوراتنا الأكثر مبيعاً" : "Our Best-Selling Courses"}
             </h2>
           </div>
-          <Link
+          <LocalizedLink
             to="/courses"
             className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors shrink-0"
           >
             {isRTL ? "عرض الكل" : "View All"}
             <Arrow className="w-4 h-4" />
-          </Link>
+          </LocalizedLink>
         </div>
 
         {/* Horizontal swipeable slider */}

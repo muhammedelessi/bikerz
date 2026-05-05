@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocalizedNavigate } from '@/hooks/useLocalizedNavigate';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -58,7 +58,7 @@ const PromoPopup: React.FC<PromoPopupProps> = ({ trigger }) => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const { getCoursePriceInfo, symbol, symbolAr } = useCurrency();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const expiryRef = useRef(getOrCreateExpiry());
   const countdown = useCountdown(expiryRef.current);
   const currencyLabel = isRTL ? symbolAr : symbol;

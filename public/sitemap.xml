@@ -1,94 +1,256 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
   <!-- Homepage -->
   <url>
-    <loc>https://academy.bikerz.com/</loc>
+    <loc>https://academy.bikerz.com/ar/</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://academy.bikerz.com/ar/" />
+    <priority>1.0</priority>
+    <changefreq>daily</changefreq>
+    <lastmod>2026-05-05</lastmod>
+  </url>
+  <url>
+    <loc>https://academy.bikerz.com/en/</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://academy.bikerz.com/ar/" />
     <priority>1.0</priority>
     <changefreq>daily</changefreq>
     <lastmod>2026-05-05</lastmod>
   </url>
 
-  <!-- Core listing pages -->
+  <!-- Courses listing -->
   <url>
-    <loc>https://academy.bikerz.com/courses</loc>
+    <loc>https://academy.bikerz.com/ar/courses</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/courses" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/courses" />
     <priority>0.9</priority>
     <changefreq>daily</changefreq>
     <lastmod>2026-05-05</lastmod>
   </url>
   <url>
-    <loc>https://academy.bikerz.com/bundles</loc>
+    <loc>https://academy.bikerz.com/en/courses</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/courses" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/courses" />
+    <priority>0.9</priority>
+    <changefreq>daily</changefreq>
+    <lastmod>2026-05-05</lastmod>
+  </url>
+
+  <!-- Bundles -->
+  <url>
+    <loc>https://academy.bikerz.com/ar/bundles</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/bundles" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/bundles" />
     <priority>0.9</priority>
     <changefreq>weekly</changefreq>
     <lastmod>2026-05-05</lastmod>
   </url>
   <url>
-    <loc>https://academy.bikerz.com/trainings</loc>
+    <loc>https://academy.bikerz.com/en/bundles</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/bundles" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/bundles" />
+    <priority>0.9</priority>
+    <changefreq>weekly</changefreq>
+    <lastmod>2026-05-05</lastmod>
+  </url>
+
+  <!-- Trainings -->
+  <url>
+    <loc>https://academy.bikerz.com/ar/trainings</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/trainings" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/trainings" />
     <priority>0.9</priority>
     <changefreq>weekly</changefreq>
     <lastmod>2026-05-05</lastmod>
   </url>
   <url>
-    <loc>https://academy.bikerz.com/trainers</loc>
+    <loc>https://academy.bikerz.com/en/trainings</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/trainings" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/trainings" />
+    <priority>0.9</priority>
+    <changefreq>weekly</changefreq>
+    <lastmod>2026-05-05</lastmod>
+  </url>
+
+  <!-- Trainers -->
+  <url>
+    <loc>https://academy.bikerz.com/ar/trainers</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/trainers" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/trainers" />
+    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+    <lastmod>2026-05-05</lastmod>
+  </url>
+  <url>
+    <loc>https://academy.bikerz.com/en/trainers</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/trainers" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/trainers" />
     <priority>0.8</priority>
     <changefreq>weekly</changefreq>
     <lastmod>2026-05-05</lastmod>
   </url>
 
-  <!-- Informational pages -->
+  <!-- About -->
   <url>
-    <loc>https://academy.bikerz.com/about</loc>
+    <loc>https://academy.bikerz.com/ar/about</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/about" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/about" />
     <priority>0.7</priority>
     <changefreq>monthly</changefreq>
     <lastmod>2026-05-05</lastmod>
   </url>
   <url>
-    <loc>https://academy.bikerz.com/contact</loc>
+    <loc>https://academy.bikerz.com/en/about</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/about" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/about" />
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-05-05</lastmod>
+  </url>
+
+  <!-- Contact -->
+  <url>
+    <loc>https://academy.bikerz.com/ar/contact</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/contact" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/contact" />
     <priority>0.7</priority>
     <changefreq>monthly</changefreq>
     <lastmod>2026-05-05</lastmod>
   </url>
   <url>
-    <loc>https://academy.bikerz.com/join-community</loc>
+    <loc>https://academy.bikerz.com/en/contact</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/contact" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/contact" />
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-05-05</lastmod>
+  </url>
+
+  <!-- Join Community -->
+  <url>
+    <loc>https://academy.bikerz.com/ar/join-community</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/join-community" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/join-community" />
     <priority>0.7</priority>
     <changefreq>monthly</changefreq>
     <lastmod>2026-05-05</lastmod>
   </url>
   <url>
-    <loc>https://academy.bikerz.com/community-champions</loc>
+    <loc>https://academy.bikerz.com/en/join-community</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/join-community" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/join-community" />
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-05-05</lastmod>
+  </url>
+
+  <!-- Community Champions -->
+  <url>
+    <loc>https://academy.bikerz.com/ar/community-champions</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/community-champions" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/community-champions" />
     <priority>0.7</priority>
     <changefreq>weekly</changefreq>
     <lastmod>2026-05-05</lastmod>
   </url>
   <url>
-    <loc>https://academy.bikerz.com/ambassador</loc>
+    <loc>https://academy.bikerz.com/en/community-champions</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/community-champions" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/community-champions" />
+    <priority>0.7</priority>
+    <changefreq>weekly</changefreq>
+    <lastmod>2026-05-05</lastmod>
+  </url>
+
+  <!-- Ambassador -->
+  <url>
+    <loc>https://academy.bikerz.com/ar/ambassador</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/ambassador" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/ambassador" />
+    <priority>0.6</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-05-05</lastmod>
+  </url>
+  <url>
+    <loc>https://academy.bikerz.com/en/ambassador</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/ambassador" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/ambassador" />
     <priority>0.6</priority>
     <changefreq>monthly</changefreq>
     <lastmod>2026-05-05</lastmod>
   </url>
 
-  <!-- Auth pages -->
+  <!-- Signup -->
   <url>
-    <loc>https://academy.bikerz.com/signup</loc>
+    <loc>https://academy.bikerz.com/ar/signup</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/signup" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/signup" />
     <priority>0.5</priority>
     <changefreq>monthly</changefreq>
     <lastmod>2026-05-05</lastmod>
   </url>
   <url>
-    <loc>https://academy.bikerz.com/login</loc>
+    <loc>https://academy.bikerz.com/en/signup</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/signup" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/signup" />
+    <priority>0.5</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-05-05</lastmod>
+  </url>
+
+  <!-- Login -->
+  <url>
+    <loc>https://academy.bikerz.com/ar/login</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/login" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/login" />
+    <priority>0.4</priority>
+    <changefreq>monthly</changefreq>
+    <lastmod>2026-05-05</lastmod>
+  </url>
+  <url>
+    <loc>https://academy.bikerz.com/en/login</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/login" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/login" />
     <priority>0.4</priority>
     <changefreq>monthly</changefreq>
     <lastmod>2026-05-05</lastmod>
   </url>
 
-  <!-- Legal pages -->
+  <!-- Privacy -->
   <url>
-    <loc>https://academy.bikerz.com/privacy</loc>
+    <loc>https://academy.bikerz.com/ar/privacy</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/privacy" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/privacy" />
     <priority>0.2</priority>
     <changefreq>yearly</changefreq>
     <lastmod>2026-05-05</lastmod>
   </url>
   <url>
-    <loc>https://academy.bikerz.com/terms</loc>
+    <loc>https://academy.bikerz.com/en/privacy</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/privacy" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/privacy" />
+    <priority>0.2</priority>
+    <changefreq>yearly</changefreq>
+    <lastmod>2026-05-05</lastmod>
+  </url>
+
+  <!-- Terms -->
+  <url>
+    <loc>https://academy.bikerz.com/ar/terms</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/terms" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/terms" />
+    <priority>0.2</priority>
+    <changefreq>yearly</changefreq>
+    <lastmod>2026-05-05</lastmod>
+  </url>
+  <url>
+    <loc>https://academy.bikerz.com/en/terms</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://academy.bikerz.com/ar/terms" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://academy.bikerz.com/en/terms" />
     <priority>0.2</priority>
     <changefreq>yearly</changefreq>
     <lastmod>2026-05-05</lastmod>

@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useMemo, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocalizedNavigate } from '@/hooks/useLocalizedNavigate';
 import { Loader2, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -37,7 +37,7 @@ function effectiveCourseDiscountCheckout(c: CheckoutCourse): number {
 const BundleCheckoutModal: React.FC<Props> = ({ open, onOpenChange, courses, tiers }) => {
   const { isRTL } = useLanguage();
   const { user, profile } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const { sendWithCourses } = useGHLFormWebhook();
   const tap = useTapPayment();
   const { getCoursePriceInfo, getCurrencySymbol, currencyCode, exchangeRate } = useCurrency();

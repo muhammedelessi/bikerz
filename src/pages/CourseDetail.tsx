@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from "react";
 import SEOHead from "@/components/common/SEOHead";
-import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -135,7 +137,7 @@ const CourseDetail: React.FC = () => {
   } = useCurrency();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const BackIcon = isRTL ? ChevronRight : ChevronLeft;
   const ForwardIcon = isRTL ? ArrowLeft : ArrowRight;
@@ -748,12 +750,12 @@ const CourseDetail: React.FC = () => {
           <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
           <h2 className="text-2xl font-bold text-foreground mb-2">{t("courses.courseNotFound")}</h2>
           <p className="text-muted-foreground mb-6">{t("courses.courseNotFoundDescription")}</p>
-          <Link to="/courses">
+          <LocalizedLink to="/courses">
             <Button variant="outline">
               <BackIcon className="w-4 h-4 me-2" />
               {t("courses.backToCourses")}
             </Button>
-          </Link>
+          </LocalizedLink>
         </div>
         <Footer />
       </div>
@@ -796,9 +798,9 @@ const CourseDetail: React.FC = () => {
               >
                 <div className="page-container h-16 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
-                    <Link to="/courses" className="text-muted-foreground hover:text-foreground flex-shrink-0">
+                    <LocalizedLink to="/courses" className="text-muted-foreground hover:text-foreground flex-shrink-0">
                       <BackIcon className="w-5 h-5" />
-                    </Link>
+                    </LocalizedLink>
                     <h1 className="text-sm sm:text-base font-semibold text-foreground truncate">{courseTitle}</h1>
                   </div>
 
@@ -811,10 +813,10 @@ const CourseDetail: React.FC = () => {
                     )}
                     {isEnrolled && resumeLesson ? (
                       <Button size="sm" className="btn-cta h-9 text-sm" asChild>
-                        <Link to={`/courses/${id}/lessons/${resumeLesson.id}`}>
+                        <LocalizedLink to={`/courses/${id}/lessons/${resumeLesson.id}`}>
                           <Play className="w-3.5 h-3.5 me-1.5" />
                           {t("courseDetail.resume")}
-                        </Link>
+                        </LocalizedLink>
                       </Button>
                     ) : !isEnrolled ? (
                       course.price === 0 ? (
@@ -829,9 +831,9 @@ const CourseDetail: React.FC = () => {
                           </Button>
                         ) : (
                           <Button size="sm" className="btn-cta h-9 text-sm" asChild>
-                            <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
+                            <LocalizedLink to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
                               {t("courseDetail.enrollFree")}
-                            </Link>
+                            </LocalizedLink>
                           </Button>
                         )
                       ) : (
@@ -866,13 +868,13 @@ const CourseDetail: React.FC = () => {
               <BreadcrumbList>
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <Link to="/">{isRTL ? "الرئيسية" : "Home"}</Link>
+                    <LocalizedLink to="/">{isRTL ? "الرئيسية" : "Home"}</LocalizedLink>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <Link to="/courses">{isRTL ? "الدورات" : "Courses"}</Link>
+                    <LocalizedLink to="/courses">{isRTL ? "الدورات" : "Courses"}</LocalizedLink>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
@@ -1266,10 +1268,10 @@ const CourseDetail: React.FC = () => {
                               </div>
                               {resumeLesson && (
                                 <Button className="w-full h-12 text-base font-bold" asChild>
-                                  <Link to={`/courses/${id}/lessons/${resumeLesson.id}`}>
+                                  <LocalizedLink to={`/courses/${id}/lessons/${resumeLesson.id}`}>
                                     <BookOpen className="w-5 h-5 me-2" />
                                     {t("courseDetail.viewCourse")}
-                                  </Link>
+                                  </LocalizedLink>
                                 </Button>
                               )}
                               {!hasReviewed && (
@@ -1287,10 +1289,10 @@ const CourseDetail: React.FC = () => {
                             </>
                           ) : resumeLesson ? (
                             <Button className="w-full btn-cta h-12 text-base" asChild>
-                              <Link to={`/courses/${id}/lessons/${resumeLesson.id}`}>
+                              <LocalizedLink to={`/courses/${id}/lessons/${resumeLesson.id}`}>
                                 <Play className="w-5 h-5 me-2" />
                                 {t("courseDetail.resumeLearning")}
-                              </Link>
+                              </LocalizedLink>
                             </Button>
                           ) : null}
                         </div>
@@ -1359,10 +1361,10 @@ const CourseDetail: React.FC = () => {
                               </Button>
                             ) : (
                               <Button className="w-full btn-cta h-12 sm:h-14 text-base sm:text-lg font-bold" asChild>
-                                <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
+                                <LocalizedLink to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
                                   <Zap className="w-5 h-5 me-2" />
                                   {t("courses.enrollForFree")}
-                                </Link>
+                                </LocalizedLink>
                               </Button>
                             )
                           ) : user ? (
@@ -1410,10 +1412,10 @@ const CourseDetail: React.FC = () => {
 
                           {course.price > 0 && id && (
                             <Button type="button" variant="outline" className="w-full border-primary/40" asChild>
-                              <Link to={`/bundles?selected=${encodeURIComponent(id)}`}>
+                              <LocalizedLink to={`/bundles?selected=${encodeURIComponent(id)}`}>
                                 <Gift className="w-4 h-4 me-2 shrink-0" />
                                 {isRTL ? "اصنع باقتك ووفر على نفسك" : "Build your bundle and save"}
-                              </Link>
+                              </LocalizedLink>
                             </Button>
                           )}
 
@@ -1846,7 +1848,7 @@ const CourseDetail: React.FC = () => {
                                             }
 
                                             return (
-                                              <Link
+                                              <LocalizedLink
                                                 key={lesson.id}
                                                 to={`/courses/${id}/lessons/${lesson.id}`}
                                                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-colors ${
@@ -1870,7 +1872,7 @@ const CourseDetail: React.FC = () => {
                                                 }}
                                               >
                                                 {lessonRowInner}
-                                              </Link>
+                                              </LocalizedLink>
                                             );
                                           })}
                                       </div>
@@ -1906,10 +1908,10 @@ const CourseDetail: React.FC = () => {
                     {isRTL ? "قد يعجبك أيضاً" : "You Might Also Like"}
                   </h2>
                   <Button variant="outline" size="sm" className="text-xs" asChild>
-                    <Link to="/courses">
+                    <LocalizedLink to="/courses">
                       <Eye className="w-3.5 h-3.5 me-1.5" />
                       {isRTL ? "عرض الكل" : "View All"}
-                    </Link>
+                    </LocalizedLink>
                   </Button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-7">
@@ -1999,10 +2001,10 @@ const CourseDetail: React.FC = () => {
                     </Button>
                   ) : (
                     <Button className="btn-cta h-11 text-sm px-6 flex-shrink-0" asChild>
-                      <Link to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
+                      <LocalizedLink to={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}>
                         <Zap className="w-4 h-4 me-1.5" />
                         {t("courseDetail.enrollFree")}
-                      </Link>
+                      </LocalizedLink>
                     </Button>
                   )
                 ) : (

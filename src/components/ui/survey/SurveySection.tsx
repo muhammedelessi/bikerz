@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSurveys } from "@/hooks/survey/useSurveys";
@@ -25,7 +25,7 @@ function getStatus(survey: Survey, surveys: Survey[] | undefined, completions: {
 const SurveySection: React.FC<SurveySectionProps> = ({ userId }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const { data: surveys } = useSurveys();
   const { completions } = useSurveyCompletion(userId);
 

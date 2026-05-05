@@ -1,4 +1,5 @@
-import { useLocation, Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import SEOHead from '@/components/common/SEOHead';
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -21,12 +22,12 @@ const NotFound = () => {
       <div className="text-center p-8">
         <h1 className="mb-4 text-6xl font-bold text-primary">{t('notFound.title')}</h1>
         <p className="mb-8 text-xl text-muted-foreground">{t('notFound.subtitle')}</p>
-        <Link to="/">
+        <LocalizedLink to="/">
           <Button variant="cta" className="gap-2">
             <Home className="w-4 h-4" />
             {t('notFound.returnHome')}
           </Button>
-        </Link>
+        </LocalizedLink>
       </div>
     </div>
   );

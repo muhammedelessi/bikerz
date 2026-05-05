@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import LocalizedLink from '@/components/common/LocalizedLink';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -126,9 +126,9 @@ const ResetPassword: React.FC = () => {
 
       <header className="py-4 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link to="/">
+          <LocalizedLink to="/">
             <img src={logo} alt="BIKERZ" width={80} height={32} className="h-6 sm:h-7 lg:h-8 w-auto object-contain" loading="eager" decoding="async" />
-          </Link>
+          </LocalizedLink>
         </div>
       </header>
 
@@ -148,11 +148,11 @@ const ResetPassword: React.FC = () => {
                     {isRTL ? 'تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول.' : 'Your password has been changed successfully. You can now log in.'}
                   </p>
                 </div>
-                <Link to="/login">
+                <LocalizedLink to="/login">
                   <Button variant="cta" className="w-full h-12">
                     {isRTL ? 'تسجيل الدخول' : 'Go to Login'}
                   </Button>
-                </Link>
+                </LocalizedLink>
               </div>
             ) : !valid ? (
               <div className="text-center space-y-6">
@@ -169,11 +169,11 @@ const ResetPassword: React.FC = () => {
                       : 'Reset links expire after 1 hour. Please request a new one.'}
                   </p>
                 </div>
-                <Link to="/forgot-password">
+                <LocalizedLink to="/forgot-password">
                   <Button variant="outline" className="w-full h-12">
                     {isRTL ? 'طلب رابط جديد' : 'Request New Link'}
                   </Button>
-                </Link>
+                </LocalizedLink>
               </div>
             ) : (
               <>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentTrainer } from "@/hooks/useCurrentTrainer";
@@ -235,7 +236,7 @@ const ApplyTrainer: React.FC = () => {
   const { user, isInstructor } = useAuth();
   const { profile, isLoading } = useUserProfile();
   const { trainer: linkedTrainerRow, isLoading: linkedTrainerLoading } = useCurrentTrainer();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);

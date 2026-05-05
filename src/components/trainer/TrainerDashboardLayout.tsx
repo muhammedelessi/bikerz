@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -54,14 +55,14 @@ const TrainerDashboardLayout: React.FC<Props> = ({ children }) => {
               <h1 className="text-xl font-black tracking-tight text-foreground sm:text-2xl">{t("trainerDashboard.title")}</h1>
               <p className="text-sm text-muted-foreground">{t("trainerDashboard.subtitle")}</p>
             </div>
-            <Link
+            <LocalizedLink
               to="/profile"
               className={cn(
                 "text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline",
               )}
             >
               {t("trainerDashboard.backToProfile")}
-            </Link>
+            </LocalizedLink>
           </div>
 
           <Tabs value={tab} onValueChange={setTab} className="w-full">

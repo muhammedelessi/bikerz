@@ -4,13 +4,14 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Link, useNavigate } from 'react-router-dom';
+import { useLocalizedNavigate } from '@/hooks/useLocalizedNavigate';
+import LocalizedLink from '@/components/common/LocalizedLink';
 import { COUNTRIES } from '@/data/countryCityData';
 import TrainerShowcaseCard from '@/components/landing/TrainerShowcaseCard';
 
 const TrainersSection: React.FC = () => {
   const { isRTL } = useLanguage();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
 
   const { data: trainers, isLoading } = useQuery({
     queryKey: ['public-trainers'],
@@ -139,12 +140,12 @@ const TrainersSection: React.FC = () => {
                 className="w-full font-semibold"
                 asChild
               >
-                <Link to={`/trainers/${t.id}`}>{isRTL ? 'عرض الملف' : 'View Profile'}</Link>
+                <LocalizedLink to={`/trainers/${t.id}`}>{isRTL ? 'عرض الملف' : 'View Profile'}</LocalizedLink>
               </Button>
             );
 
             // profileHref makes the body clickable as a single Link;
-            // wrapping the card in another <Link> (the previous setup)
+            // wrapping the card in another <LocalizedLink> (the previous setup)
             // nested two clickable layers and broke nested buttons on
             // some browsers. Move to the same pattern TrainingDetail uses.
             return (

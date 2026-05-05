@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import LocalizedLink from '@/components/common/LocalizedLink';
+import { useLocalizedNavigate } from '@/hooks/useLocalizedNavigate';
 import { useQuery } from '@tanstack/react-query';
 import {
   format,
@@ -140,7 +141,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
   loginReturnPath,
   onCancel,
 }) => {
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const { isRTL, language } = useLanguage();
   const { t } = useTranslation();
   const { user, profile, isLoading: authLoading } = useAuth();
@@ -845,7 +846,7 @@ const TrainingBookingFlow: React.FC<TrainingBookingFlowProps> = ({
           <CardContent className="py-10 text-center space-y-4">
             <p className="text-muted-foreground">{isRTL ? 'يرجى تسجيل الدخول لإتمام الحجز' : 'Please sign in to complete your booking'}</p>
             <Button asChild className="min-w-[200px]">
-              <Link to={loginHref}>{isRTL ? 'تسجيل الدخول' : 'Sign in'}</Link>
+              <LocalizedLink to={loginHref}>{isRTL ? 'تسجيل الدخول' : 'Sign in'}</LocalizedLink>
             </Button>
             <Button type="button" variant="ghost" onClick={onCancel}>
               {isRTL ? 'العودة' : 'Go back'}

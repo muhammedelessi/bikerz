@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,7 +45,7 @@ const STEPS = [
 const Bundles: React.FC = () => {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const [searchParams] = useSearchParams();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [checkoutOpen, setCheckoutOpen] = useState(false);

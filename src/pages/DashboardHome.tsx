@@ -2,7 +2,7 @@ import React from 'react';
 import SEOHead from '@/components/common/SEOHead';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import LocalizedLink from '@/components/common/LocalizedLink';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -267,11 +267,11 @@ const DashboardHome: React.FC = () => {
                 <p className="text-muted-foreground mb-4">
                   {t('dashboard.startLearningJourney')}
                 </p>
-                <Link to="/courses">
+                <LocalizedLink to="/courses">
                   <Button variant="cta">
                     {t('dashboard.browseCourses')}
                   </Button>
-                </Link>
+                </LocalizedLink>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -292,7 +292,7 @@ const DashboardHome: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.4, delay: 0.2 + index * 0.1 }}
                     >
-                      <Link to={enrollment.nextLesson ? `/courses/${course.id}/lessons/${enrollment.nextLesson.id}` : `/courses/${course.id}/learn`} className="block h-full">
+                      <LocalizedLink to={enrollment.nextLesson ? `/courses/${course.id}/lessons/${enrollment.nextLesson.id}` : `/courses/${course.id}/learn`} className="block h-full">
                         <div className="group card-premium flex flex-col h-full transition-all duration-300 hover:border-primary/40 hover:shadow-lg active:scale-[0.99] overflow-hidden">
                           {/* Thumbnail with overlay */}
                           <div className="relative aspect-video w-full overflow-hidden bg-muted">
@@ -388,7 +388,7 @@ const DashboardHome: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                      </Link>
+                      </LocalizedLink>
                     </motion.div>
                   );
                 })}
@@ -402,7 +402,7 @@ const DashboardHome: React.FC = () => {
               {t('dashboard.quickActions')}
             </h2>
             <div className="flex flex-col sm:flex-row gap-4 w-full">
-              <Link to="/courses" className="block flex-1">
+              <LocalizedLink to="/courses" className="block flex-1">
                 <div className="card-premium p-3 sm:p-4 flex items-center gap-3 sm:gap-4 hover:border-primary/40 active:scale-[0.99] transition-all touch-target w-full">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <BookOpen className="w-5 h-5 text-primary" />
@@ -411,7 +411,7 @@ const DashboardHome: React.FC = () => {
                     {t('dashboard.browseCourses')}
                   </span>
                 </div>
-              </Link>
+              </LocalizedLink>
             </div>
           </section>
       </div>

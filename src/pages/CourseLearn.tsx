@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import DOMPurify from 'dompurify';
-import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { useLocalizedNavigate } from '@/hooks/useLocalizedNavigate';
+import LocalizedLink from '@/components/common/LocalizedLink';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -137,7 +139,7 @@ interface LessonResource {
 
 const CourseLearn: React.FC = () => {
   const { id, lessonId: urlLessonId } = useParams<{ id: string; lessonId?: string }>();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
@@ -953,10 +955,10 @@ const CourseLearn: React.FC = () => {
             {t('courses.courseNotFoundDescription')}
           </p>
           <Button asChild className="h-11">
-            <Link to="/courses">
+            <LocalizedLink to="/courses">
               <BackIcon className="w-4 h-4 me-2" />
               {t('courses.backToCourses')}
-            </Link>
+            </LocalizedLink>
           </Button>
         </div>
       </div>
@@ -1294,7 +1296,7 @@ const CourseLearn: React.FC = () => {
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </Button>
           
-          <Link to="/courses" className="flex items-center gap-2 flex-shrink-0">
+          <LocalizedLink to="/courses" className="flex items-center gap-2 flex-shrink-0">
               <img
                 src={themeLogo}
                 alt="BIKERZ"
@@ -1302,7 +1304,7 @@ const CourseLearn: React.FC = () => {
                 loading="eager"
                 decoding="async"
               />
-          </Link>
+          </LocalizedLink>
           
           <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground min-w-0">
             <span>/</span>
@@ -1321,9 +1323,9 @@ const CourseLearn: React.FC = () => {
           </div>
           
           <Button variant="outline" size="sm" asChild className="hidden sm:flex">
-            <Link to={`/courses/${id}`}>
+            <LocalizedLink to={`/courses/${id}`}>
               {t('courseLearn.courseDetails')}
-            </Link>
+            </LocalizedLink>
           </Button>
         </div>
       </header>
@@ -1381,7 +1383,7 @@ const CourseLearn: React.FC = () => {
                       </p>
                       <div className="flex flex-col sm:flex-row gap-2">
                         <Button variant="cta" asChild>
-                          <Link to={`/courses/${id}`}>{t("courseLearn.courseDetails")}</Link>
+                          <LocalizedLink to={`/courses/${id}`}>{t("courseLearn.courseDetails")}</LocalizedLink>
                         </Button>
                         {!user ? (
                           <Button
@@ -1395,7 +1397,7 @@ const CourseLearn: React.FC = () => {
                           </Button>
                         ) : (
                           <Button variant="outline" asChild>
-                            <Link to={`/courses/${id}?checkout=true`}>{t("courseLearn.requiresEnrollment")}</Link>
+                            <LocalizedLink to={`/courses/${id}?checkout=true`}>{t("courseLearn.requiresEnrollment")}</LocalizedLink>
                           </Button>
                         )}
                       </div>

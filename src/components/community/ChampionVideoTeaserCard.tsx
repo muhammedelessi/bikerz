@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Play, Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -52,7 +52,7 @@ const ChampionVideoTeaserCard: React.FC<Props> = ({
     clipCat != null ? ambassadorClipCardSubLabel(clipCat, isRTL) : null;
 
   return (
-    <Link
+    <LocalizedLink
       to={`/community-champions/${championId}/videos/${video.id}`}
       className={cn(
         "group flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border/40 bg-card/40 p-1.5 shadow-sm",
@@ -117,7 +117,7 @@ const ChampionVideoTeaserCard: React.FC<Props> = ({
           )}
         </div>
       </div>
-    </Link>
+    </LocalizedLink>
   );
 };
 

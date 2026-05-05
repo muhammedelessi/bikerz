@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import LocalizedLink from '@/components/common/LocalizedLink';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -119,7 +119,7 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand */}
           <div className="space-y-4">
-            <Link to="/" className="inline-block">
+            <LocalizedLink to="/" className="inline-block">
                 <img
                   src={footerLogo}
                   alt="BIKERZ"
@@ -129,7 +129,7 @@ const Footer: React.FC = () => {
                   decoding="async"
                   className="h-12 sm:h-14 w-auto object-contain"
                 />
-            </Link>
+            </LocalizedLink>
             <p className="text-muted-foreground text-sm max-w-xs">
               {tagline}
             </p>
@@ -157,14 +157,14 @@ const Footer: React.FC = () => {
             <h4 className="font-bold text-foreground mb-3 sm:mb-4">{t('footer.links')}</h4>
             <ul className="space-y-2 sm:space-y-3">
               <li>
-                <Link to="/courses" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
+                <LocalizedLink to="/courses" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
                   {t('nav.courses')}
-                </Link>
+                </LocalizedLink>
               </li>
               <li>
-                <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
+                <LocalizedLink to="/about" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
                   {t('nav.about')}
-                </Link>
+                </LocalizedLink>
               </li>
             </ul>
           </div>
@@ -174,19 +174,19 @@ const Footer: React.FC = () => {
             <h4 className="font-bold text-foreground mb-3 sm:mb-4">{t('footer.legal')}</h4>
             <ul className="space-y-2 sm:space-y-3">
               <li>
-                <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
+                <LocalizedLink to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
                   {t('footer.privacy')}
-                </Link>
+                </LocalizedLink>
               </li>
               <li>
-                <Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
+                <LocalizedLink to="/terms" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
                   {t('footer.terms')}
-                </Link>
+                </LocalizedLink>
               </li>
               <li>
-                <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
+                <LocalizedLink to="/contact" className="text-muted-foreground hover:text-foreground transition-colors py-1 inline-block">
                   {t('footer.contact')}
-                </Link>
+                </LocalizedLink>
               </li>
             </ul>
           </div>

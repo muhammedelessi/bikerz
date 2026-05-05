@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useLocalizedNavigate } from '@/hooks/useLocalizedNavigate';
+import LocalizedLink from '@/components/common/LocalizedLink';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +18,7 @@ import { parseTrainingSessions } from '@/lib/trainingSessionCurriculum';
 
 const TrainingBooking: React.FC = () => {
   const { trainingId, trainerCourseId } = useParams<{ trainingId: string; trainerCourseId: string }>();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const { isRTL, language } = useLanguage();
   useEffect(() => {
     document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
@@ -145,7 +147,7 @@ const TrainingBooking: React.FC = () => {
                       : 'This is a theory-only program and cannot be used for practical session booking. Browse practical programs from the trainings list.'}
                   </p>
                   <Button asChild>
-                    <Link to="/trainings">{isRTL ? 'تصفح التدريبات' : 'Browse trainings'}</Link>
+                    <LocalizedLink to="/trainings">{isRTL ? 'تصفح التدريبات' : 'Browse trainings'}</LocalizedLink>
                   </Button>
                 </CardContent>
               </Card>
@@ -159,7 +161,7 @@ const TrainingBooking: React.FC = () => {
                     {isRTL ? 'الرابط غير صالح أو التدريب غير متاح.' : 'This booking link is invalid or the training is unavailable.'}
                   </p>
                   <Button asChild>
-                    <Link to="/trainings">{isRTL ? 'تصفح التدريبات' : 'Browse trainings'}</Link>
+                    <LocalizedLink to="/trainings">{isRTL ? 'تصفح التدريبات' : 'Browse trainings'}</LocalizedLink>
                   </Button>
                 </CardContent>
               </Card>

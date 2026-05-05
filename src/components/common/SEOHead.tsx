@@ -1,5 +1,8 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { stripLangPrefix } from '@/lib/i18nRouting';
+import { useLocation } from 'react-router-dom';
 
 export interface LcpPreloadLink {
   href: string;
@@ -38,9 +41,26 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   breadcrumbs,
   lcpPreloads,
 }) => {
+  const { language } = useLanguage();
+  const location = useLocation();
+
   const fullTitle = `${title} | ${SITE_NAME}`;
-  const canonicalUrl = canonical ? `${DOMAIN}${canonical}` : undefined;
   const image = ogImage || DEFAULT_OG_IMAGE;
+
+  // Build canonical URL — if a canonical prop is provided use it,
+  // otherwise derive from the current location path.
+  const pagePath = canonical || location.pathname;
+  const canonicalUrl = `${DOMAIN}${pagePath}`;
+
+  // hreflang: strip any existing lang prefix to get the base path,
+  // then build both /ar/ and /en/ variants.
+  const basePath = stripLangPrefix(pagePath);
+  const arUrl = `${DOMAIN}/ar${basePath === '/' ? '/' : basePath}`;
+  const enUrl = `${DOMAIN}/en${basePath === '/' ? '/' : basePath}`;
+
+  // og:locale — Arabic pages get ar_SA, English pages get en_US
+  const ogLocale = language === 'ar' ? 'ar_SA' : 'en_US';
+  const ogLocaleAlt = language === 'ar' ? 'en_US' : 'ar_SA';
 
   const breadcrumbSchema = breadcrumbs
     ? {
@@ -62,7 +82,12 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
       <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow'} />
-      {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+      <link rel="canonical" href={canonicalUrl} />
+
+      {/* hreflang — tells Google about the Arabic and English versions */}
+      <link rel="alternate" hrefLang="ar" href={arUrl} />
+      <link rel="alternate" hrefLang="en" href={enUrl} />
+      <link rel="alternate" hrefLang="x-default" href={arUrl} />
 
       {lcpPreloads?.map((p) => (
         <link
@@ -86,9 +111,10 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       <meta property="og:image" content={image} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+      <meta property="og:url" content={canonicalUrl} />
       <meta property="og:site_name" content={SITE_NAME} />
-      <meta property="og:locale" content="en_US" />
+      <meta property="og:locale" content={ogLocale} />
+      <meta property="og:locale:alternate" content={ogLocaleAlt} />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />

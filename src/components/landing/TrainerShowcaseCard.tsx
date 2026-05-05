@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import LocalizedLink from '@/components/common/LocalizedLink';
 import { Clock, Gauge, MapPin, Star, Users } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -177,7 +177,7 @@ const TrainerShowcaseCard: React.FC<TrainerShowcaseCardProps> = ({
       <CardContent className="p-4 sm:p-5 flex flex-col gap-4">
         <div className="relative flex flex-col gap-4">
           {profileHref ? (
-            <Link
+            <LocalizedLink
               to={profileHref}
               className="absolute inset-0 z-[1] rounded-md outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               aria-label={profileLabel}

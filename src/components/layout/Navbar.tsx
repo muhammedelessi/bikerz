@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 
@@ -98,7 +100,7 @@ const Navbar: React.FC = () => {
   const { theme } = useTheme();
   const { user, profile, signOut, isAdmin } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
@@ -312,7 +314,7 @@ const Navbar: React.FC = () => {
           {/* dir=ltr keeps physical layout: logo left, burger & actions right (flex start/end are not flipped in site RTL) */}
           <div className="flex h-14 items-center justify-between gap-2 lg:h-16 lg:gap-4" dir="ltr">
             {/* Logo */}
-            <Link
+            <LocalizedLink
               to="/"
               className="flex items-center flex-shrink-0 relative z-10 lg:min-w-max"
             >
@@ -325,7 +327,7 @@ const Navbar: React.FC = () => {
                 decoding="async"
                 className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
               />
-            </Link>
+            </LocalizedLink>
 
             {/* Desktop Nav Links — centered, visual order reversed (last CMS/default item appears leftmost) */}
             <div className="hidden lg:flex flex-1 min-w-0 justify-center">
@@ -363,9 +365,9 @@ const Navbar: React.FC = () => {
                     );
                   }
                   return (
-                    <Link key={item.id} to={item.link} className={className}>
+                    <LocalizedLink key={item.id} to={item.link} className={className}>
                       {content}
-                    </Link>
+                    </LocalizedLink>
                   );
                 })}
               </div>
@@ -388,7 +390,7 @@ const Navbar: React.FC = () => {
                     sits before the login/dashboard cluster so it reads
                     naturally next to the login button per spec. */}
                 {showHondaCTA && (
-                  <Link to="/honda/apply">
+                  <LocalizedLink to="/honda/apply">
                     <Button
                       variant="outline"
                       size="sm"
@@ -399,7 +401,7 @@ const Navbar: React.FC = () => {
                         {isRTL ? "ملاك هوندا" : "Honda Owners"}
                       </span>
                     </Button>
-                  </Link>
+                  </LocalizedLink>
                 )}
                 {user
                   ? (
@@ -411,7 +413,7 @@ const Navbar: React.FC = () => {
                           insert rows for trainer.user_id and
                           training_bookings.user_id. */}
                       <NotificationsDropdown />
-                      <Link to="/dashboard">
+                      <LocalizedLink to="/dashboard">
                         <Button variant="ghost" size="sm" className="gap-2">
                           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
                             <span className="text-xs font-bold text-primary-foreground">
@@ -424,7 +426,7 @@ const Navbar: React.FC = () => {
                               t("nav.dashboard")}
                           </span>
                         </Button>
-                      </Link>
+                      </LocalizedLink>
                       <LogoutConfirmDialog onConfirm={handleSignOut}>
                         <Button
                           variant="ghost"
@@ -440,21 +442,21 @@ const Navbar: React.FC = () => {
                   : (
                     <>
                       {loginButton.is_visible && (
-                        <Link to={loginButton.link}>
+                        <LocalizedLink to={loginButton.link}>
                           <Button variant="ghost" size="sm" className="text-sm">
                             {isRTL ? loginButton.text_ar : loginButton.text_en}
                           </Button>
-                        </Link>
+                        </LocalizedLink>
                       )}
                       {ctaButton.is_visible && (
-                        <Link to={ctaButton.link}>
+                        <LocalizedLink to={ctaButton.link}>
                           <Button
                             size="sm"
                             className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-bold px-5 py-2 text-sm shadow-[0_0_20px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] hover:scale-105 transition-all duration-300"
                           >
                             {isRTL ? ctaButton.text_ar : ctaButton.text_en}
                           </Button>
-                        </Link>
+                        </LocalizedLink>
                       )}
                     </>
                   )}
@@ -463,14 +465,14 @@ const Navbar: React.FC = () => {
               {/* Mobile: Sign up (guest) to the left of burger; dir=ltr keeps order in site RTL */}
               <div className="flex items-center gap-2 lg:hidden" dir="ltr">
                 {!user && ctaButton.is_visible && (
-                  <Link to={ctaButton.link} className="shrink-0">
+                  <LocalizedLink to={ctaButton.link} className="shrink-0">
                     <Button
                       size="sm"
                       className="whitespace-nowrap bg-gradient-to-r from-primary to-primary/80 px-3 py-2 text-xs font-bold text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] sm:px-4 sm:text-sm"
                     >
                       {isRTL ? ctaButton.text_ar : ctaButton.text_en}
                     </Button>
-                  </Link>
+                  </LocalizedLink>
                 )}
                 <button
                   type="button"
@@ -516,7 +518,7 @@ const Navbar: React.FC = () => {
           </p>
           {/* Drawer Header */}
           <div className="flex items-center justify-between px-4 h-14 border-b border-border/30">
-            <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>
+            <LocalizedLink to="/" onClick={() => setIsMobileMenuOpen(false)}>
               <img
                 src={logoUrl}
                 alt={logoAlt}
@@ -526,7 +528,7 @@ const Navbar: React.FC = () => {
                 loading="eager"
                 decoding="async"
               />
-            </Link>
+            </LocalizedLink>
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(false)}
@@ -542,7 +544,7 @@ const Navbar: React.FC = () => {
                 to the top of the drawer because it's a feature highlight,
                 not a routine menu link. */}
             {showHondaCTA && (
-              <Link
+              <LocalizedLink
                 to="/honda/apply"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="flex w-full items-center gap-3 py-3.5 px-4 rounded-xl mb-2 text-start min-h-[48px] border-2 border-red-500/40 bg-red-500/5 text-red-700 dark:text-red-300 transition-colors hover:bg-red-500/10"
@@ -552,7 +554,7 @@ const Navbar: React.FC = () => {
                   {isRTL ? "ملاك هوندا" : "Honda Owners"}
                 </span>
                 <ChevronRight className={`w-4 h-4 shrink-0 ${isRTL ? "rotate-180" : ""}`} />
-              </Link>
+              </LocalizedLink>
             )}
             <div className="space-y-0.5">
               {menuItems.map((item) => {
@@ -584,7 +586,7 @@ const Navbar: React.FC = () => {
                   );
                 }
                 return (
-                  <Link
+                  <LocalizedLink
                     key={item.id}
                     to={item.link}
                     onClick={() => setIsMobileMenuOpen(false)}
@@ -596,7 +598,7 @@ const Navbar: React.FC = () => {
                         isRTL ? "rotate-180" : ""
                       }`}
                     />
-                  </Link>
+                  </LocalizedLink>
                 );
               })}
             </div>
@@ -622,7 +624,7 @@ const Navbar: React.FC = () => {
             {user
               ? (
                 <>
-                  <Link
+                  <LocalizedLink
                     to="/dashboard"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="block"
@@ -639,7 +641,7 @@ const Navbar: React.FC = () => {
                       </div>
                       {profile?.full_name || t("nav.dashboard")}
                     </Button>
-                  </Link>
+                  </LocalizedLink>
                   <LogoutConfirmDialog onConfirm={handleSignOut}>
                     <Button
                       variant="ghost"
@@ -654,7 +656,7 @@ const Navbar: React.FC = () => {
               : (
                 <>
                   {loginButton.is_visible && (
-                    <Link
+                    <LocalizedLink
                       to={loginButton.link}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block"
@@ -665,10 +667,10 @@ const Navbar: React.FC = () => {
                       >
                         {isRTL ? loginButton.text_ar : loginButton.text_en}
                       </Button>
-                    </Link>
+                    </LocalizedLink>
                   )}
                   {ctaButton.is_visible && (
-                    <Link
+                    <LocalizedLink
                       to={ctaButton.link}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block"
@@ -676,7 +678,7 @@ const Navbar: React.FC = () => {
                       <Button className="w-full h-12 justify-start text-start text-base font-bold bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.3)]">
                         {isRTL ? ctaButton.text_ar : ctaButton.text_en}
                       </Button>
-                    </Link>
+                    </LocalizedLink>
                   )}
                 </>
               )}

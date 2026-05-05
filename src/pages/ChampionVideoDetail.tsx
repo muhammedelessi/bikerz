@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SEOHead from "@/components/common/SEOHead";
@@ -65,18 +66,18 @@ const ChampionVideoDetail: React.FC = () => {
             >
               <div className="flex flex-wrap items-center gap-1">
                 <Button variant="ghost" size="sm" className="h-8 gap-1 px-2 text-xs" asChild>
-                  <Link to="/community-champions">
+                  <LocalizedLink to="/community-champions">
                     <BackIcon className="h-4 w-4" />
                     {isRTL ? "السفراء" : "Ambassadors"}
-                  </Link>
+                  </LocalizedLink>
                 </Button>
                 {champion && (
                   <>
                     <span className="text-muted-foreground/50">/</span>
                     <Button variant="ghost" size="sm" className="h-8 gap-1 px-2 text-xs" asChild>
-                      <Link to={`/community-champions/${champion.id}`}>
+                      <LocalizedLink to={`/community-champions/${champion.id}`}>
                         {isRTL ? "قائمة الفيديو" : "All videos"}
-                      </Link>
+                      </LocalizedLink>
                     </Button>
                   </>
                 )}
@@ -102,7 +103,7 @@ const ChampionVideoDetail: React.FC = () => {
                   {isRTL ? "تحقق من الرابط أو عد إلى السفراء." : "Check the link or go back to Ambassadors."}
                 </p>
                 <Button asChild variant="default" size="sm" className="mt-4">
-                  <Link to="/community-champions">{isRTL ? "السفراء" : "Ambassadors"}</Link>
+                  <LocalizedLink to="/community-champions">{isRTL ? "السفراء" : "Ambassadors"}</LocalizedLink>
                 </Button>
               </div>
             ) : (

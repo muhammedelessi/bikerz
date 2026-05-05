@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrentTrainer } from "@/hooks/useCurrentTrainer";
 import { TrainerProfileView } from "@/components/admin/TrainerProfileView";
@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 const DashboardTrainerWorkspace: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const { trainer, isLoading } = useCurrentTrainer();
 
   if (isLoading || !trainer) {

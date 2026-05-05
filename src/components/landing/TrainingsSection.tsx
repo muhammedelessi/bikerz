@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useLocalizedNavigate } from '@/hooks/useLocalizedNavigate';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Bike, Clock, Users } from 'lucide-react';
 
 const TrainingsSection: React.FC = () => {
   const { isRTL } = useLanguage();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
 
   const { data: trainings, isLoading } = useQuery({
     queryKey: ['public-trainings'],

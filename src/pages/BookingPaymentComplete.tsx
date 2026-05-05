@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import { useLocalizedNavigate } from '@/hooks/useLocalizedNavigate';
 import { supabase } from '@/integrations/supabase/client';
 import { verifyChargeOnce } from '@/services/payment.service';
 import {
@@ -15,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 const BookingPaymentComplete: React.FC = () => {
   const { isRTL, language } = useLanguage();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const [message, setMessage] = useState(isRTL ? 'جاري تأكيد الدفع…' : 'Confirming payment…');
 
   useEffect(() => {

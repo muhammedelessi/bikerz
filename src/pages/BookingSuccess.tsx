@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import LocalizedLink from '@/components/common/LocalizedLink';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -107,10 +108,10 @@ const BookingSuccess: React.FC = () => {
             )}
             <div className="flex flex-col sm:flex-row gap-2 pt-2">
               <Button asChild className="flex-1">
-                <Link to="/profile/bookings">{isRTL ? 'عرض حجوزاتي' : 'My bookings'}</Link>
+                <LocalizedLink to="/profile/bookings">{isRTL ? 'عرض حجوزاتي' : 'My bookings'}</LocalizedLink>
               </Button>
               <Button asChild variant="outline" className="flex-1">
-                <Link to="/">{isRTL ? 'العودة للرئيسية' : 'Back home'}</Link>
+                <LocalizedLink to="/">{isRTL ? 'العودة للرئيسية' : 'Back home'}</LocalizedLink>
               </Button>
             </div>
           </CardContent>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import LocalizedLink from '@/components/common/LocalizedLink';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Progress } from '@/components/ui/progress';
 import { BookOpen, Clock, CheckCircle, Play, TrendingUp, Trophy, ChevronRight, ChevronLeft, ShoppingCart, GraduationCap } from 'lucide-react';
@@ -16,7 +16,7 @@ const CourseRow: React.FC<{ course: EnrolledCourseItem; isRTL: boolean }> = ({ c
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
 
   return (
-    <Link
+    <LocalizedLink
       to={`/courses/${course.course_id}/learn`}
       className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
     >
@@ -49,7 +49,7 @@ const CourseRow: React.FC<{ course: EnrolledCourseItem; isRTL: boolean }> = ({ c
         </div>
       </div>
       <Chevron className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
-    </Link>
+    </LocalizedLink>
   );
 };
 
@@ -63,7 +63,7 @@ const AvailableCourseRow: React.FC<{ course: AvailableCourseItem; isRTL: boolean
   const hasDiscount = priceInfo.discountPct > 0;
 
   return (
-    <Link
+    <LocalizedLink
       to={`/courses/${course.id}`}
       className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
     >
@@ -106,7 +106,7 @@ const AvailableCourseRow: React.FC<{ course: AvailableCourseItem; isRTL: boolean
         </div>
       </div>
       <Chevron className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
-    </Link>
+    </LocalizedLink>
   );
 };
 
@@ -318,12 +318,12 @@ export const LearningProgress: React.FC<LearningProgressProps> = ({ stats }) => 
           </div>
 
           <div className="mt-5 text-center">
-            <Link to="/courses">
+            <LocalizedLink to="/courses">
               <Button variant="outline" size="sm" className="gap-2">
                 <ShoppingCart className="w-4 h-4" />
                 {isRTL ? 'تصفح جميع الدورات' : 'Browse All Courses'}
               </Button>
-            </Link>
+            </LocalizedLink>
           </div>
         </div>
       )}

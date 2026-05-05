@@ -17,7 +17,8 @@
  * is the chrome: this is a plain page section instead of a Dialog/Drawer.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -63,7 +64,7 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user, profile } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const { getCoursePriceInfo, getCurrencySymbol, isSAR, exchangeRate } = useCurrency();
@@ -857,7 +858,7 @@ const CheckoutPageInner: React.FC<{ course: CourseRow }> = ({ course }) => {
 const CheckoutPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const { isRTL } = useLanguage();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
 
   const { data: course, isLoading, isError } = useQuery({
     queryKey: ["course", courseId],

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Play, Users } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Link } from "react-router-dom";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import { supabase } from "@/integrations/supabase/client";
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { HeroContent } from "@/hooks/useLandingContent";
@@ -230,7 +230,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
 
         {/* CTA Buttons */}
         <div className="anim-fade-up anim-delay-3 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full sm:w-auto">
-          <Link to="/courses" className="sm:flex-none">
+          <LocalizedLink to="/courses" className="sm:flex-none">
             <Button
               variant="hero"
               size="default"
@@ -243,8 +243,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
               <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current transition-transform group-hover:scale-125" />
               {ctaText}
             </Button>
-          </Link>
-          <Link to="/join-community" className="sm:flex-none">
+          </LocalizedLink>
+          <LocalizedLink to="/join-community" className="sm:flex-none">
             <Button
               variant="heroOutline"
               size="default"
@@ -257,7 +257,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
               <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:scale-110" />
               {isRTL ? "انضم لمجتمع بايكرز" : "Join Bikerz Community"}
             </Button>
-          </Link>
+          </LocalizedLink>
         </div>
       </div>
 

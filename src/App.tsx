@@ -10,6 +10,7 @@ import { HelmetProvider } from "react-helmet-async";
 import ScrollToTop from "@/components/common/ScrollToTop";
 import ProductionThirdPartyTrackers from "@/components/common/ProductionThirdPartyTrackers";
 import WhatsAppFloatingButton from "@/components/common/WhatsAppFloatingButton";
+import LanguageRouter, { RootRedirect } from "@/components/common/LanguageRouter";
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
 import { shouldSkipMarketingAnalytics } from "@/lib/shouldSkipMarketingAnalytics";
 import React, { Suspense, lazy, useEffect, useState } from "react";
@@ -184,30 +185,36 @@ const PageLoader = () => (
   </div>
 );
 
-// Protected Route Component
+// Protected Route Component — uses localized redirect paths
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
+  const { pathname } = useLocation();
+  const langPrefix = pathname.match(/^\/(ar|en)\//)?.[1] || 'ar';
 
   if (isLoading) return <PageLoader />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to={`/${langPrefix}/login`} replace />;
   return <>{children}</>;
 };
 
-// Admin Route Component - checks for admin roles
+// Admin Route Component - checks for admin roles (admin stays unprefixed)
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, canAccessAdmin, isLoading } = useAuth();
+  const { pathname } = useLocation();
+  const langPrefix = pathname.match(/^\/(ar|en)\//)?.[1] || 'ar';
 
   if (isLoading) return <PageLoader />;
-  if (!user) return <Navigate to="/login" replace />;
-  if (!canAccessAdmin) return <Navigate to="/dashboard" replace />;
+  if (!user) return <Navigate to={`/${langPrefix}/login`} replace />;
+  if (!canAccessAdmin) return <Navigate to={`/${langPrefix}/dashboard`} replace />;
   return <>{children}</>;
 };
 
 // Auth Route - redirects if already logged in
 const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
+  const { pathname } = useLocation();
+  const langPrefix = pathname.match(/^\/(ar|en)\//)?.[1] || 'ar';
 
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user) return <Navigate to={`/${langPrefix}/dashboard`} replace />;
   // Don't block on session bootstrap — showing the form immediately improves LCP vs. a full-page spinner on cold loads.
   return <>{children}</>;
 };
@@ -261,56 +268,10 @@ const AppRoutes = () => (
     <AnalyticsTracker />
     <Suspense fallback={<RouteChunkFallback />}>
       <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/courses" element={<Courses />} />
-        <Route path="/bundles" element={<Bundles />} />
-        <Route path="/trainings" element={<Trainings />} />
-        <Route path="/trainings/:trainingId/book/:trainerCourseId" element={<TrainingBooking />} />
-        <Route path="/trainings/:id" element={<TrainingDetail />} />
-        <Route path="/trainers" element={<Trainers />} />
-        <Route path="/trainers/:id" element={<TrainerProfile />} />
-        <Route path="/courses/:id" element={<CourseDetail />} />
-        <Route
-          path="/checkout/:courseId"
-          element={
-            <ProtectedRoute>
-              <CheckoutPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/login"
-          element={
-            <AuthRoute>
-              <Login />
-            </AuthRoute>
-          }
-        />
-        <Route
-          path="/signup"
-          element={
-            <AuthRoute>
-              <Signup />
-            </AuthRoute>
-          }
-        />
+        {/* ── Root redirect: / → /ar/ or /en/ based on user preference ── */}
+        <Route path="/" element={<RootRedirect />} />
 
-        {/* Secondary public routes */}
-        <Route
-          path="/forgot-password"
-          element={
-            <AuthRoute>
-              <ForgotPassword />
-            </AuthRoute>
-          }
-        />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/about" element={<AboutUs />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/contact" element={<ContactUs />} />
-        <Route path="/courses/:id/learn" element={<CourseLearn />} />
-        <Route path="/courses/:id/lessons/:lessonId" element={<CourseLearn />} />
+        {/* ── System routes (no language prefix) ── */}
         <Route path="/payment-success" element={<PaymentSuccess />} />
         {/*
           Tap 3-D Secure callback. The PRIMARY entry point is the static file at
@@ -327,86 +288,122 @@ const AppRoutes = () => (
         */}
         <Route path="/tap-3ds-callback" element={<Tap3DSCallback />} />
         <Route path="/tap-3ds-callback.html" element={<Tap3DSCallback />} />
-        <Route
-          path="/booking-payment-complete"
-          element={
-            <ProtectedRoute>
-              <BookingPaymentComplete />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/booking-success"
-          element={
-            <ProtectedRoute>
-              <BookingSuccess />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/my-bookings"
-          element={
-            <ProtectedRoute>
-              <Navigate to="/profile/bookings" replace />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/join-community" element={<JoinCommunity />} />
-        <Route path="/community-champions/:championId/videos/:videoId" element={<ChampionVideoDetail />} />
-        <Route path="/community-champions/:championId" element={<ChampionVideosList />} />
-        <Route path="/community-champions" element={<CommunityChampions />} />
-        <Route path="/ambassador" element={<Ambassador />} />
+        <Route path="/booking-payment-complete" element={<BookingPaymentComplete />} />
+        <Route path="/booking-success" element={<BookingSuccess />} />
 
-        {/* Honda Owners application — public landing route. The page itself
-            redirects to /login if the user isn't authenticated. */}
-        <Route path="/honda/apply" element={<HondaApplication />} />
-        <Route path="/honda" element={<HondaApplication />} />
-
-        {/* Protected Routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<DashboardHome />} />
-          <Route path="apply-trainer" element={<ApplyTrainer />} />
+        {/* ── Language-prefixed routes: /:lang/* ── */}
+        <Route path="/:lang" element={<LanguageRouter />}>
+          <Route index element={<Index />} />
+          <Route path="courses" element={<Courses />} />
+          <Route path="bundles" element={<Bundles />} />
+          <Route path="trainings" element={<Trainings />} />
+          <Route path="trainings/:trainingId/book/:trainerCourseId" element={<TrainingBooking />} />
+          <Route path="trainings/:id" element={<TrainingDetail />} />
+          <Route path="trainers" element={<Trainers />} />
+          <Route path="trainers/:id" element={<TrainerProfile />} />
+          <Route path="courses/:id" element={<CourseDetail />} />
           <Route
-            path="trainer"
+            path="checkout/:courseId"
             element={
-              <RequireInstructor>
-                <DashboardTrainerWorkspace />
-              </RequireInstructor>
+              <ProtectedRoute>
+                <CheckoutPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="login"
+            element={
+              <AuthRoute>
+                <Login />
+              </AuthRoute>
+            }
+          />
+          <Route
+            path="signup"
+            element={
+              <AuthRoute>
+                <Signup />
+              </AuthRoute>
+            }
+          />
+          <Route
+            path="forgot-password"
+            element={
+              <AuthRoute>
+                <ForgotPassword />
+              </AuthRoute>
+            }
+          />
+          <Route path="reset-password" element={<ResetPassword />} />
+          <Route path="about" element={<AboutUs />} />
+          <Route path="privacy" element={<PrivacyPolicy />} />
+          <Route path="terms" element={<TermsOfService />} />
+          <Route path="contact" element={<ContactUs />} />
+          <Route path="courses/:id/learn" element={<CourseLearn />} />
+          <Route path="courses/:id/lessons/:lessonId" element={<CourseLearn />} />
+          <Route
+            path="my-bookings"
+            element={
+              <ProtectedRoute>
+                <Navigate to="../profile/bookings" replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="join-community" element={<JoinCommunity />} />
+          <Route path="community-champions/:championId/videos/:videoId" element={<ChampionVideoDetail />} />
+          <Route path="community-champions/:championId" element={<ChampionVideosList />} />
+          <Route path="community-champions" element={<CommunityChampions />} />
+          <Route path="ambassador" element={<Ambassador />} />
+          <Route path="honda/apply" element={<HondaApplication />} />
+          <Route path="honda" element={<HondaApplication />} />
+
+          {/* Protected Routes (inside /:lang) */}
+          <Route
+            path="dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DashboardHome />} />
+            <Route path="apply-trainer" element={<ApplyTrainer />} />
+            <Route
+              path="trainer"
+              element={
+                <RequireInstructor>
+                  <DashboardTrainerWorkspace />
+                </RequireInstructor>
+              }
+            />
+          </Route>
+          <Route
+            path="profile"
+            element={
+              <ProtectedRoute>
+                <ProfileLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<ProfileHome />} />
+            <Route path="bookings" element={<MyBookings />} />
+            <Route path="surveys" element={<SurveyListPage />} />
+            <Route path="surveys/:surveyId/play" element={<SurveyPlayPage />} />
+            <Route path="surveys/:surveyId/results" element={<SurveyResultsPage />} />
+            <Route path="apply-trainer" element={<ApplyTrainer />} />
+          </Route>
+          <Route
+            path="settings"
+            element={
+              <ProtectedRoute>
+                <AccountSettingsPage />
+              </ProtectedRoute>
             }
           />
         </Route>
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfileLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<ProfileHome />} />
-          <Route path="bookings" element={<MyBookings />} />
-          <Route path="surveys" element={<SurveyListPage />} />
-          <Route path="surveys/:surveyId/play" element={<SurveyPlayPage />} />
-          <Route path="surveys/:surveyId/results" element={<SurveyResultsPage />} />
-          <Route path="apply-trainer" element={<ApplyTrainer />} />
-        </Route>
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <AccountSettingsPage />
-            </ProtectedRoute>
-          }
-        />
+        {/* ── End of /:lang routes ── */}
 
-        {/* Admin Routes */}
+        {/* Admin Routes (no language prefix) */}
         <Route
           path="/admin"
           element={

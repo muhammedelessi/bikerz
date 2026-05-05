@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import { sendGHLProfileData } from "@/services/ghl.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +39,7 @@ const Signup: React.FC = () => {
   const { theme } = useTheme();
   const { isRTL } = useLanguage();
   const { signUp } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get("returnTo");
   const { data: authContent } = useAuthPageContent();
@@ -352,7 +354,7 @@ const Signup: React.FC = () => {
       <div className="w-full max-w-md mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6 sm:mb-8">
-            <Link to="/" className="flex items-center">
+            <LocalizedLink to="/" className="flex items-center">
               <img
                 src={logoSrc}
                 alt="BIKERZ"
@@ -363,7 +365,7 @@ const Signup: React.FC = () => {
                 decoding="async"
                 fetchPriority="high"
               />
-            </Link>
+            </LocalizedLink>
             <LanguageToggle />
           </div>
 
@@ -466,12 +468,12 @@ const Signup: React.FC = () => {
 
             <div className="mt-5 sm:mt-6 text-center text-sm sm:text-base text-muted-foreground">
               {hasAccountText}{" "}
-              <Link
+              <LocalizedLink
                 to={returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login"}
                 className="text-primary hover:underline font-medium"
               >
                 {loginLinkText}
-              </Link>
+              </LocalizedLink>
             </div>
           </div>
       </div>

@@ -1,5 +1,7 @@
 import React, { useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,7 +46,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ sidebarOpen, onSidebarOpenChang
   const { trainer } = useCurrentTrainer();
   const hideApplyTrainer = isTrainerRole || !!trainer;
   const { theme } = useTheme();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const location = useLocation();
 
   const themeLogo = theme === "light" ? logoDark : logoLight;
@@ -108,7 +110,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ sidebarOpen, onSidebarOpenChang
         <div className="flex flex-col h-full safe-area-inset">
           {/* Logo header */}
           <div className="p-4 sm:p-6 border-b border-border flex items-center justify-between">
-            <Link to="/" className="flex items-center">
+            <LocalizedLink to="/" className="flex items-center">
               <img
                 src={themeLogo}
                 alt="BIKERZ"
@@ -116,7 +118,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ sidebarOpen, onSidebarOpenChang
                 loading={sidebarOpen ? "eager" : "lazy"}
                 decoding="async"
               />
-            </Link>
+            </LocalizedLink>
             <button
               type="button"
               onClick={() => onSidebarOpenChange(false)}
@@ -129,7 +131,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ sidebarOpen, onSidebarOpenChang
           {/* Main nav */}
           <nav className="flex-1 min-h-0 p-3 sm:p-4 space-y-1 sm:space-y-2 overflow-y-auto overscroll-y-contain">
             {navItems.map((item) => (
-              <Link
+              <LocalizedLink
                 key={item.to}
                 to={item.to}
                 onClick={() => onSidebarOpenChange(false)}
@@ -141,7 +143,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ sidebarOpen, onSidebarOpenChang
               >
                 <item.icon className="w-5 h-5 flex-shrink-0" />
                 <span className="font-medium flex-1 min-w-0">{item.label}</span>
-              </Link>
+              </LocalizedLink>
             ))}
           </nav>
 
@@ -166,7 +168,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ sidebarOpen, onSidebarOpenChang
             */}
             <div className="mt-3 space-y-2">
               {!hideApplyTrainer && (
-                <Link
+                <LocalizedLink
                   to="/dashboard/apply-trainer"
                   onClick={() => onSidebarOpenChange(false)}
                   className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
@@ -177,11 +179,11 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ sidebarOpen, onSidebarOpenChang
                 >
                   <Award className="w-5 h-5 flex-shrink-0" />
                   <span className="font-semibold flex-1 min-w-0">{t("nav.applyTrainer")}</span>
-                </Link>
+                </LocalizedLink>
               )}
 
               {trainer ? (
-                <Link
+                <LocalizedLink
                   to="/dashboard/trainer"
                   onClick={() => onSidebarOpenChange(false)}
                   className={`flex w-full items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-3 rounded-lg text-start transition-all duration-300 touch-target border shadow-sm ${
@@ -192,7 +194,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ sidebarOpen, onSidebarOpenChang
                 >
                   <BadgeCheck className="w-5 h-5 flex-shrink-0" />
                   <span className="font-semibold flex-1 min-w-0">{t("nav.trainerWorkspace")}</span>
-                </Link>
+                </LocalizedLink>
               ) : null}
             </div>
 

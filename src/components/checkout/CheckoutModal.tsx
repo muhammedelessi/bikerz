@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { DialogHeader } from "@/components/ui/dialog";
@@ -52,7 +52,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user, profile } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const { getCoursePriceInfo, getCurrencySymbol, isSAR, exchangeRate } = useCurrency();
   const { sendCourseStatus } = useGHLFormWebhook();
   const { handleGuestSignup, guestSigningUp } = useGuestSignup();

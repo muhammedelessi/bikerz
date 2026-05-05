@@ -8,7 +8,7 @@ import { useLandingContent, CommunityContent, HeroContent } from '@/hooks/useLan
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
 import { Users, GraduationCap, PlayCircle, BookOpen } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import LocalizedLink from '@/components/common/LocalizedLink';
 import { Button } from '@/components/ui/button';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
@@ -166,11 +166,11 @@ const CommunitySection: React.FC<CommunitySectionProps> = ({ content, contentLoa
 
           {/* CTA Button */}
           <div className="mt-10 anim-fade-up anim-delay-5">
-            <Link to="/join-community">
+            <LocalizedLink to="/join-community">
               <Button size="lg" className="rounded-full px-10 py-4 text-base font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 hover:scale-105 transition-all duration-300">
                 {isRTL ? 'انضم لمجتمع بايكرز' : 'Join Bikerz Community'}
               </Button>
-            </Link>
+            </LocalizedLink>
           </div>
         </div>
       </div>

@@ -1,7 +1,8 @@
 import React from "react";
 
 import { motion } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import LocalizedLink from "@/components/common/LocalizedLink";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
 import { Clock, BookOpen, ArrowRight, ArrowLeft, Star, Trophy, ShoppingCart, Unlock, Play } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -59,7 +60,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const { getCoursePriceInfo, getCurrencySymbol } = useCurrency();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const locale = isRTL ? "ar" : "en";
   

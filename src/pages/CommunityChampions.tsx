@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import LocalizedLink from "@/components/common/LocalizedLink";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SEOHead from "@/components/common/SEOHead";
@@ -369,7 +369,7 @@ const CommunityChampions: React.FC = () => {
                             size="sm"
                             className="h-9 shrink-0 px-3 text-xs sm:h-8"
                           >
-                            <Link to={`/community-champions/${c.id}`}>{viewAllLabel}</Link>
+                            <LocalizedLink to={`/community-champions/${c.id}`}>{viewAllLabel}</LocalizedLink>
                           </Button>
                         )}
                       </footer>

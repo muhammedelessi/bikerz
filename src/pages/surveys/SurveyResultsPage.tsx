@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useLocalizedNavigate } from "@/hooks/useLocalizedNavigate";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, User } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -11,7 +12,7 @@ import { Button } from "@/components/ui/button";
 
 const SurveyResultsPage: React.FC = () => {
   const { surveyId } = useParams<{ surveyId: string }>();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const { user } = useAuth();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();

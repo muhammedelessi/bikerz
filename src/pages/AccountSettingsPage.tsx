@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import SEOHead from '@/components/common/SEOHead';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useLocalizedNavigate } from '@/hooks/useLocalizedNavigate';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -15,7 +15,7 @@ const AccountSettingsPage: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const { profile, isLoading, isUpdating, updateProfile } = useUserProfile();
