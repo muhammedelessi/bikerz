@@ -6,3 +6,19 @@
 /.well-known/apple-developer-merchantid-domain-association  https://gifovgwlxwuiibfzyvwb.supabase.co/functions/v1/apple-pay-verify  301
 
 /datafeed.xml https://gifovgwlxwuiibfzyvwb.supabase.co/functions/v1/meta-product-feed 301
+
+# Per-locale HTML shell for /en/*.
+# A Vite closeBundle plugin (see vite.config.ts) generates dist/en/index.html
+# with <html lang="en" dir="ltr"> alongside the regular dist/index.html
+# (which has lang="ar"). Without these rewrite rules, Lovable's default SPA
+# fallback serves dist/index.html for every unknown path — meaning /en/*
+# would still get the Arabic shell and validators (technicalseo.com, Bing
+# first-pass, etc.) report lang="ar" on English URLs.
+#
+# 200 rewrites (not 301/302) preserve the URL in the address bar — the
+# user stays on /en/about while the host internally serves /en/index.html.
+# The trailing `!` forces the rewrite even when a file exists at the
+# requested path (which isn't actually possible for SPA routes, but
+# explicit is better than implicit).
+/en          /en/index.html   200
+/en/*        /en/index.html   200!
