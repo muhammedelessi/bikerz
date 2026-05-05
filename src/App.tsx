@@ -293,117 +293,128 @@ const AppRoutes = () => (
         <Route path="/booking-payment-complete" element={<BookingPaymentComplete />} />
         <Route path="/booking-success" element={<BookingSuccess />} />
 
-        {/* ── Language-prefixed routes: /:lang/* ── */}
-        <Route path="/:lang" element={<LanguageRouter />}>
-          <Route index element={<Index />} />
-          <Route path="courses" element={<Courses />} />
-          <Route path="bundles" element={<Bundles />} />
-          <Route path="trainings" element={<Trainings />} />
-          <Route path="trainings/:trainingId/book/:trainerCourseId" element={<TrainingBooking />} />
-          <Route path="trainings/:id" element={<TrainingDetail />} />
-          <Route path="trainers" element={<Trainers />} />
-          <Route path="trainers/:id" element={<TrainerProfile />} />
-          <Route path="courses/:id" element={<CourseDetail />} />
+        {/* ──
+          Public routes are mounted twice:
+            • Arabic (default)  — bare paths under "/"
+            • English           — under "/en"
+          Each tree uses LanguageRouter to sync the lang to i18n.
+        ── */}
+        {(['ar', 'en'] as const).map((lang) => (
           <Route
-            path="checkout/:courseId"
-            element={
-              <ProtectedRoute>
-                <CheckoutPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="login"
-            element={
-              <AuthRoute>
-                <Login />
-              </AuthRoute>
-            }
-          />
-          <Route
-            path="signup"
-            element={
-              <AuthRoute>
-                <Signup />
-              </AuthRoute>
-            }
-          />
-          <Route
-            path="forgot-password"
-            element={
-              <AuthRoute>
-                <ForgotPassword />
-              </AuthRoute>
-            }
-          />
-          <Route path="reset-password" element={<ResetPassword />} />
-          <Route path="about" element={<AboutUs />} />
-          <Route path="privacy" element={<PrivacyPolicy />} />
-          <Route path="terms" element={<TermsOfService />} />
-          <Route path="contact" element={<ContactUs />} />
-          <Route path="courses/:id/learn" element={<CourseLearn />} />
-          <Route path="courses/:id/lessons/:lessonId" element={<CourseLearn />} />
-          <Route
-            path="my-bookings"
-            element={
-              <ProtectedRoute>
-                <Navigate to="../profile/bookings" replace />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="join-community" element={<JoinCommunity />} />
-          <Route path="community-champions/:championId/videos/:videoId" element={<ChampionVideoDetail />} />
-          <Route path="community-champions/:championId" element={<ChampionVideosList />} />
-          <Route path="community-champions" element={<CommunityChampions />} />
-          <Route path="ambassador" element={<Ambassador />} />
-          <Route path="honda/apply" element={<HondaApplication />} />
-          <Route path="honda" element={<HondaApplication />} />
-
-          {/* Protected Routes (inside /:lang) */}
-          <Route
-            path="dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }
+            key={lang}
+            path={lang === 'ar' ? '/' : '/en'}
+            element={<LanguageRouter lang={lang} />}
           >
-            <Route index element={<DashboardHome />} />
-            <Route path="apply-trainer" element={<ApplyTrainer />} />
+            <Route index element={<Index />} />
+            <Route path="courses" element={<Courses />} />
+            <Route path="bundles" element={<Bundles />} />
+            <Route path="trainings" element={<Trainings />} />
+            <Route path="trainings/:trainingId/book/:trainerCourseId" element={<TrainingBooking />} />
+            <Route path="trainings/:id" element={<TrainingDetail />} />
+            <Route path="trainers" element={<Trainers />} />
+            <Route path="trainers/:id" element={<TrainerProfile />} />
+            <Route path="courses/:id" element={<CourseDetail />} />
             <Route
-              path="trainer"
+              path="checkout/:courseId"
               element={
-                <RequireInstructor>
-                  <DashboardTrainerWorkspace />
-                </RequireInstructor>
+                <ProtectedRoute>
+                  <CheckoutPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="login"
+              element={
+                <AuthRoute>
+                  <Login />
+                </AuthRoute>
+              }
+            />
+            <Route
+              path="signup"
+              element={
+                <AuthRoute>
+                  <Signup />
+                </AuthRoute>
+              }
+            />
+            <Route
+              path="forgot-password"
+              element={
+                <AuthRoute>
+                  <ForgotPassword />
+                </AuthRoute>
+              }
+            />
+            <Route path="reset-password" element={<ResetPassword />} />
+            <Route path="about" element={<AboutUs />} />
+            <Route path="privacy" element={<PrivacyPolicy />} />
+            <Route path="terms" element={<TermsOfService />} />
+            <Route path="contact" element={<ContactUs />} />
+            <Route path="courses/:id/learn" element={<CourseLearn />} />
+            <Route path="courses/:id/lessons/:lessonId" element={<CourseLearn />} />
+            <Route
+              path="my-bookings"
+              element={
+                <ProtectedRoute>
+                  <Navigate to="../profile/bookings" replace />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="join-community" element={<JoinCommunity />} />
+            <Route path="community-champions/:championId/videos/:videoId" element={<ChampionVideoDetail />} />
+            <Route path="community-champions/:championId" element={<ChampionVideosList />} />
+            <Route path="community-champions" element={<CommunityChampions />} />
+            <Route path="ambassador" element={<Ambassador />} />
+            <Route path="honda/apply" element={<HondaApplication />} />
+            <Route path="honda" element={<HondaApplication />} />
+
+            {/* Protected Routes */}
+            <Route
+              path="dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<DashboardHome />} />
+              <Route path="apply-trainer" element={<ApplyTrainer />} />
+              <Route
+                path="trainer"
+                element={
+                  <RequireInstructor>
+                    <DashboardTrainerWorkspace />
+                  </RequireInstructor>
+                }
+              />
+            </Route>
+            <Route
+              path="profile"
+              element={
+                <ProtectedRoute>
+                  <ProfileLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<ProfileHome />} />
+              <Route path="bookings" element={<MyBookings />} />
+              <Route path="surveys" element={<SurveyListPage />} />
+              <Route path="surveys/:surveyId/play" element={<SurveyPlayPage />} />
+              <Route path="surveys/:surveyId/results" element={<SurveyResultsPage />} />
+              <Route path="apply-trainer" element={<ApplyTrainer />} />
+            </Route>
+            <Route
+              path="settings"
+              element={
+                <ProtectedRoute>
+                  <AccountSettingsPage />
+                </ProtectedRoute>
               }
             />
           </Route>
-          <Route
-            path="profile"
-            element={
-              <ProtectedRoute>
-                <ProfileLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<ProfileHome />} />
-            <Route path="bookings" element={<MyBookings />} />
-            <Route path="surveys" element={<SurveyListPage />} />
-            <Route path="surveys/:surveyId/play" element={<SurveyPlayPage />} />
-            <Route path="surveys/:surveyId/results" element={<SurveyResultsPage />} />
-            <Route path="apply-trainer" element={<ApplyTrainer />} />
-          </Route>
-          <Route
-            path="settings"
-            element={
-              <ProtectedRoute>
-                <AccountSettingsPage />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        {/* ── End of /:lang routes ── */}
+        ))}
+        {/* ── End of public language-aware routes ── */}
 
         {/* Admin Routes (no language prefix) */}
         <Route
