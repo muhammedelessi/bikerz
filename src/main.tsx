@@ -97,7 +97,8 @@ const renderApp = () => {
 
 const bootstrap = async () => {
   try {
-    await import("./i18n");
+    const { initI18n } = await import("./i18n");
+    await initI18n();
   } catch {
     // Prevent iOS WebKit startup crash from blocking app mount
   }

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import i18n from 'i18next';
+import { ensureLocaleLoaded } from '@/i18n';
 import { fetchCountryCodeFromPublicGeoApis } from '@/lib/publicGeoCountry';
 
 type Language = 'en' | 'ar';
@@ -34,12 +35,21 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const isRTL = language === 'ar';
 
   const setLanguage = (lang: Language) => {
-    i18n.changeLanguage(lang);
-    setLanguageState(lang);
-    try {
-      localStorage.setItem('i18nextLng', lang);
-    } catch {
-      // Ignore storage failures on restricted iOS browsers
+    const apply = () => {
+      i18n.changeLanguage(lang);
+      setLanguageState(lang);
+      try {
+        localStorage.setItem('i18nextLng', lang);
+      } catch {
+        // Ignore storage failures on restricted iOS browsers
+      }
+    };
+    // Load the target locale bundle first so the UI doesn't briefly render
+    // raw translation keys. Apply immediately if it's already cached.
+    if (i18n.hasResourceBundle(lang, 'translation')) {
+      apply();
+    } else {
+      void ensureLocaleLoaded(lang).then(apply);
     }
   };
 
