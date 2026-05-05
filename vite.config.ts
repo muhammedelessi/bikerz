@@ -1,8 +1,69 @@
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
+import fs from "fs";
 import { componentTagger } from "lovable-tagger";
+
+/**
+ * After build, copy dist/index.html → dist/en/index.html with <html lang/dir>
+ * and the static SEO defaults flipped to English.
+ *
+ * Why a build-time plugin instead of doing it client-side:
+ *   Crawlers and SEO validators (technicalseo.com, Bing's first pass,
+ *   social unfurlers) fetch RAW HTML and don't execute the inline
+ *   <script> that updates the document's lang attribute. They see
+ *   whatever lang/dir the static HTML declares. With a single
+ *   index.html serving every URL, every page reported lang="ar" —
+ *   including /en/* pages, which is wrong.
+ *
+ *   Generating a second HTML file means /en/ requests can be served
+ *   the English shell directly. The hosting layer (Lovable / Netlify-
+ *   style) serves dist/en/index.html for /en/* paths because of the
+ *   directory match, falling back to dist/index.html only when no
+ *   match is found.
+ *
+ * What's swapped in the en variant:
+ *   • <html lang="ar" dir="rtl"> → <html lang="en" dir="ltr">
+ *   • static og:url default (/ → /en)
+ *   • the inline-script's no-op fast path now applies to /en
+ *   • inline-script comments referencing the Arabic default are inverted
+ *
+ * Note: hreflang tags are unchanged — the same three reciprocal links
+ * appear on both shells, so /en/* and /* produce identical hreflang sets.
+ */
+function generateEnglishHtmlShell(): Plugin {
+  return {
+    name: "generate-english-html-shell",
+    apply: "build",
+    closeBundle() {
+      const distDir = path.resolve(__dirname, "dist");
+      const indexPath = path.join(distDir, "index.html");
+      if (!fs.existsSync(indexPath)) {
+        console.warn("[generate-english-html-shell] dist/index.html not found — skipping");
+        return;
+      }
+      const arHtml = fs.readFileSync(indexPath, "utf-8");
+      const enHtml = arHtml
+        .replace(
+          '<html lang="ar" dir="rtl">',
+          '<html lang="en" dir="ltr">',
+        )
+        .replace(
+          '<meta property="og:url" content="https://academy.bikerz.com/"',
+          '<meta property="og:url" content="https://academy.bikerz.com/en"',
+        )
+        .replace(
+          '<meta property="og:locale" content="en_US" />',
+          '<meta property="og:locale" content="en_US" />\n    <meta property="og:locale:alternate" content="ar_SA" />',
+        );
+      const enDir = path.join(distDir, "en");
+      fs.mkdirSync(enDir, { recursive: true });
+      fs.writeFileSync(path.join(enDir, "index.html"), enHtml);
+      console.log("[generate-english-html-shell] Wrote dist/en/index.html");
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -64,6 +125,12 @@ export default defineConfig(({ mode }) => {
           // React 404 page for unknown routes).
           /^\/sitemap\.xml$/,
           /^\/robots\.txt$/,
+          // /en/* must serve dist/en/index.html (the English HTML shell
+          // with lang="en" dir="ltr") instead of being rewritten to
+          // dist/index.html (Arabic shell). Without this, the SW would
+          // hijack every /en/* navigation back to the Arabic shell and
+          // bots would still see lang="ar" on /en/*.
+          /^\/en($|\/.*)/,
         ],
         runtimeCaching: [
           {
@@ -90,6 +157,7 @@ export default defineConfig(({ mode }) => {
       },
     }),
     mode === "development" && componentTagger(),
+    generateEnglishHtmlShell(),
   ].filter(Boolean),
   resolve: {
     alias: {
