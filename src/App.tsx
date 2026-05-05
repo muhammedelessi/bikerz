@@ -10,7 +10,7 @@ import { HelmetProvider } from "react-helmet-async";
 import ScrollToTop from "@/components/common/ScrollToTop";
 import ProductionThirdPartyTrackers from "@/components/common/ProductionThirdPartyTrackers";
 import WhatsAppFloatingButton from "@/components/common/WhatsAppFloatingButton";
-import LanguageRouter, { RootRedirect, LegacyRedirect } from "@/components/common/LanguageRouter";
+import LanguageRouter, { LegacyRedirect } from "@/components/common/LanguageRouter";
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
 import { shouldSkipMarketingAnalytics } from "@/lib/shouldSkipMarketingAnalytics";
 import React, { Suspense, lazy, useEffect, useState } from "react";
