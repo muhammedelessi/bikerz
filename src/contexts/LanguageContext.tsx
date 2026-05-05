@@ -74,7 +74,14 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       i18n.changeLanguage(language);
     }
 
-    // Auto-detect language from country if user hasn't manually chosen
+    // Auto-detect language from country only when:
+    //   1. User has no saved preference (localStorage)
+    //   2. AND the URL doesn't already have an explicit /ar/ or /en/ prefix
+    // Visiting /ar/ or /en/ is an explicit language choice (shared link,
+    // SEO landing) and must NOT be overridden by IP geolocation. This
+    // matters especially for Lighthouse/PSI which runs from US datacenters
+    // — without this guard it switches an Arabic page to English mid-load,
+    // triggering an extra ~20 KB locale fetch on the LCP critical path.
     let hasManualChoice: string | null = null;
     try {
       hasManualChoice = localStorage.getItem('i18nextLng');
@@ -82,7 +89,12 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       hasManualChoice = null;
     }
 
-    if (!hasManualChoice) {
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    const urlHasExplicitLang =
+      path.startsWith('/ar/') || path === '/ar' ||
+      path.startsWith('/en/') || path === '/en';
+
+    if (!hasManualChoice && !urlHasExplicitLang) {
       const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
 
       void (async () => {
