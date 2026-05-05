@@ -54,14 +54,40 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
+/**
+ * Build a sitemap entry per language variant. URL convention:
+ *   - Arabic (default): bare path  → https://academy.bikerz.com/courses
+ *   - English:          /en prefix → https://academy.bikerz.com/en/courses
+ * Each <url> includes hreflang alternates so Google indexes both.
+ */
 function buildUrlEntry(entry: SitemapEntry): string {
   const lastmod = entry.lastmod || TODAY;
-  return `  <url>
-    <loc>${escapeXml(BASE + entry.loc)}</loc>
+  const arPath = entry.loc;
+  const enPath = entry.loc === "/" ? "/en" : `/en${entry.loc}`;
+  const arUrl = BASE + arPath;
+  const enUrl = BASE + enPath;
+
+  const alternates = `    <xhtml:link rel="alternate" hreflang="ar" href="${escapeXml(arUrl)}" />
+    <xhtml:link rel="alternate" hreflang="en" href="${escapeXml(enUrl)}" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(arUrl)}" />`;
+
+  const arEntry = `  <url>
+    <loc>${escapeXml(arUrl)}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>${entry.changefreq}</changefreq>
     <priority>${entry.priority}</priority>
+${alternates}
   </url>`;
+
+  const enEntry = `  <url>
+    <loc>${escapeXml(enUrl)}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>${entry.changefreq}</changefreq>
+    <priority>${entry.priority}</priority>
+${alternates}
+  </url>`;
+
+  return `${arEntry}\n${enEntry}`;
 }
 
 Deno.serve(async (_req) => {
