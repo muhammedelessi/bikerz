@@ -55,3 +55,7 @@ verify_jwt = false
 
 [functions.honda-verify-document]
 verify_jwt = false
+
+# Public sitemap — no auth needed, Google/Bing crawl this directly.
+[functions.generate-sitemap]
+verify_jwt = false

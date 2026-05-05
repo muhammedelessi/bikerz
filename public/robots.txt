@@ -15,5 +15,12 @@ Allow: /
 Disallow: /admin/
 Disallow: /dashboard
 Disallow: /profile
+Disallow: /checkout/
+Disallow: /settings
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /payment-success
+Disallow: /booking-payment-complete
+Disallow: /booking-success
 
 Sitemap: https://academy.bikerz.com/sitemap.xml
