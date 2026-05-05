@@ -151,25 +151,46 @@ Deno.serve(async (req) => {
         console.log("User enrolled:", existingCharge.user_id, "in course:", existingCharge.course_id);
       }
 
-      // Increment coupon usage if a coupon was applied
+      // Increment coupon usage if a coupon was applied. The RPC is atomic
+      // (UPDATE ... WHERE used_count < max_usage), but two charges that
+      // BOTH passed validation right before max_usage was hit can produce
+      // a race where one increment returns false. Log loudly when that
+      // happens — the customer was charged with a discount we didn't end
+      // up logging, so we owe them either a manual increment or a refund.
       const meta = existingCharge.metadata as Record<string, unknown> | null;
       const couponId = meta?.coupon_id as string | null;
       if (couponId) {
         const originalAmount = (meta?.original_amount as number) || verifiedCharge.amount || 0;
         const finalAmount = verifiedCharge.amount || 0;
         const discountAmount = originalAmount - finalAmount;
-        
-        const { data: couponResult } = await adminClient.rpc("increment_coupon_usage", {
-          p_coupon_id: couponId,
-          p_user_id: existingCharge.user_id,
-          p_course_id: existingCharge.course_id,
-          p_order_id: existingCharge.id,
-          p_charge_id: chargeId,
-          p_discount_amount: discountAmount,
-          p_original_amount: originalAmount,
-          p_final_amount: finalAmount,
-        });
-        console.log("Coupon usage incremented:", couponId, "result:", couponResult);
+
+        const { data: couponResult, error: couponErr } = await adminClient.rpc(
+          "increment_coupon_usage",
+          {
+            p_coupon_id: couponId,
+            p_user_id: existingCharge.user_id,
+            p_course_id: existingCharge.course_id,
+            p_order_id: existingCharge.id,
+            p_charge_id: chargeId,
+            p_discount_amount: discountAmount,
+            p_original_amount: originalAmount,
+            p_final_amount: finalAmount,
+          },
+        );
+        if (couponErr) {
+          console.error(
+            "[tap-webhook] CRITICAL: coupon increment RPC failed",
+            { couponId, chargeId, userId: existingCharge.user_id, error: couponErr.message },
+          );
+        } else if (couponResult === false) {
+          console.error(
+            "[tap-webhook] CRITICAL: coupon was already maxed out at increment time " +
+              "(race or audit-of-race) — customer charged with discount but usage not logged",
+            { couponId, chargeId, userId: existingCharge.user_id, discountAmount },
+          );
+        } else {
+          console.log("Coupon usage incremented:", couponId);
+        }
       }
 
       await recordSeriesUsage(adminClient, {

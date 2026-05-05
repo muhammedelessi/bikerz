@@ -362,23 +362,40 @@ Deno.serve(async (req) => {
         console.error("Revenue analytics insert error:", revenueError.message);
       }
 
-      // Increment coupon usage if a coupon was applied
+      // Increment coupon usage if a coupon was applied. RPC is atomic but
+      // the pre-charge validation is not — log loudly if increment returns
+      // false (race winner already maxed out the coupon).
       const couponId = metaBundle?.coupon_id as string | null;
       if (couponId) {
         const originalAmount = (metaBundle?.original_amount as number) || tapCharge.amount || 0;
         const finalAmount = tapCharge.amount || 0;
         const discountAmount = originalAmount - finalAmount;
 
-        await adminClient.rpc("increment_coupon_usage", {
-          p_coupon_id: couponId,
-          p_user_id: chargeUserId,
-          p_course_id: dbCharge.course_id,
-          p_order_id: dbCharge.id,
-          p_charge_id: charge_id,
-          p_discount_amount: discountAmount,
-          p_original_amount: originalAmount,
-          p_final_amount: finalAmount,
-        });
+        const { data: couponResult, error: couponErr } = await adminClient.rpc(
+          "increment_coupon_usage",
+          {
+            p_coupon_id: couponId,
+            p_user_id: chargeUserId,
+            p_course_id: dbCharge.course_id,
+            p_order_id: dbCharge.id,
+            p_charge_id: charge_id,
+            p_discount_amount: discountAmount,
+            p_original_amount: originalAmount,
+            p_final_amount: finalAmount,
+          },
+        );
+        if (couponErr) {
+          console.error(
+            "[tap-verify-charge] CRITICAL: coupon increment RPC failed",
+            { couponId, chargeId: charge_id, error: couponErr.message },
+          );
+        } else if (couponResult === false) {
+          console.error(
+            "[tap-verify-charge] CRITICAL: coupon maxed out at increment time " +
+              "(race) — customer charged with discount but usage not logged",
+            { couponId, chargeId: charge_id, userId: chargeUserId, discountAmount },
+          );
+        }
       }
 
       await recordSeriesUsage(adminClient, {
