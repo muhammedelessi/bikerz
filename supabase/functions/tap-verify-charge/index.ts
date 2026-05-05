@@ -195,19 +195,44 @@ Deno.serve(async (req) => {
     const { data: dbCharge } = await dbQuery.maybeSingle();
 
     if (!dbCharge) {
-      // GoSell LightBox flow: charge created client-side, no pre-existing DB record.
-      // Create one from the Tap API response metadata.
+      // GoSell LightBox flow: charge created client-side via Tap's GoSell SDK,
+      // no pre-existing DB record. We need to create one and (if successful)
+      // enroll the user.
+      //
+      // SECURITY: never trust `meta.user_id` from the Tap API response. The
+      // GoSell client SDK lets the caller set arbitrary metadata, so an
+      // attacker could create a $1 Tap charge with metadata.user_id set to
+      // a victim's ID, then call this endpoint to enroll the victim in
+      // courses they didn't pay for. We require the caller to be authenticated
+      // and use ONLY the JWT-derived user_id; if metadata also carries a
+      // user_id it must match exactly.
       const meta = (tapCharge.metadata || {}) as Record<string, any>;
-      const chargeUserId = meta.user_id || userId;
       const chargeCourseId = meta.course_id || null;
 
-      if (!chargeUserId) {
-        console.warn("Cannot create DB record: no user_id in charge metadata or auth");
+      if (!userId) {
+        console.warn("[tap-verify-charge] GoSell verify rejected: no authenticated user");
         return new Response(
-          JSON.stringify({ status, charge_id, warning: "no_user_context" }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({
+            error: "Authentication required to verify a GoSell charge",
+            charge_id,
+          }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      const metaUserId = typeof meta.user_id === "string" ? meta.user_id.trim() : null;
+      if (metaUserId && metaUserId !== userId) {
+        console.warn(
+          "[tap-verify-charge] GoSell verify rejected: metadata.user_id mismatch",
+          { metaUserId, authUserId: userId, charge_id },
+        );
+        return new Response(
+          JSON.stringify({ error: "Charge does not belong to authenticated user" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const chargeUserId = userId;
 
       const { error: insertErr } = await adminClient.from("tap_charges").insert({
         user_id: chargeUserId,

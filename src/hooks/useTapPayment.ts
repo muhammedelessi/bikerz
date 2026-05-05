@@ -288,10 +288,15 @@ export function useTapPayment(): UseTapPaymentReturn {
   //   t = 5 s      start polling /verify-charge every 2 s in the background
   //   on success   close iframe, transition to 'succeeded'
   //   on failure   close iframe, transition to 'failed' with a clear reason
-  //   t = 75 s     give up, surface the "still confirming" recovery UI
+  //   t = 60 s     Checkout3DSModal surfaces the "still waiting?" hint with
+  //                "Verify status now" + "Cancel" buttons (the iframe stays
+  //                open — no auto-close, see HARD_TIMEOUT_MS removal note).
   //
   // Polling is silent (no UI change) until Tap returns a definitive status
   // — the user keeps seeing the iframe in case the legitimate flow recovers.
+  // Polling continues for as long as the iframe is open; cleanup runs when
+  // status leaves 'challenging_3ds' (success/failure caught by polling, or
+  // the user clicks Cancel/Verify Now in the stuck hint).
   useEffect(() => {
     if (status !== 'challenging_3ds') return;
 
